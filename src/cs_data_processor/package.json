@@ -1,0 +1,16 @@
+{
+  "name": "cs_data_processor",
+  "version": "1.0.0",
+  "description": "Process realtime data updated to mongodb through change streams.",
+  "main": "cs_data_processor",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ricardo Lastra Olsen",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "mongodb": "^3.5.9",
+    "queue-fifo": "^0.2.6"
+  }
+}

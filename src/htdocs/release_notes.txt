@@ -1,0 +1,151 @@
+    {json:scada} 
+    
+    © 2008-2020 - Ricardo L. Olsen 
+    (https://www.linkedin.com/in/ricardo-olsen/)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+    
+The system will install to "c:\json-scada\" (on Windows).
+
+Acknowledgements:
+
+  MongoDB - https://github.com/mongodb/mongo, https://www.mongodb.com/
+  PostgreSQL - https://www.postgresql.org/
+  TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
+  Grafana - https://github.com/grafana/grafana, https://grafana.com/
+  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
+  ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
+  Inkscape - https://inkscape.org
+  Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
+  Chromium - by "The Chromium Authors"
+  Chromium x86 binaries - http://chromium.woolyss.com
+  NGINX - http://nginx.org
+  Opendnp3 - https://www.automatak.com/opendnp3/
+  Open Sans Fonts by Steve Matteson
+  Source Sans Pro by Adobe Systems Incorporated. License - http://scripts.sil.org/OFL
+  Google Fonts - https://fonts.google.com/
+  JQuery - http://jquery.com
+  Shortcut - http://www.openjs.com/scripts/events/keyboard_shortcuts
+  Core JS - http://www.sitepoint.com
+  Modernzr - http://www.modernizr.com
+  Flot - http://www.flotcharts.org
+  Snap SVG - http://snapsvg.io
+  Chroma.js - https://github.com/gka/chroma.js
+  CSS Animation Cheat Sheet - http://www.justinaguilar.com/animations
+  D3JS - http://d3js.org
+  Radar-chart-d3 - https://github.com/alangrafu/radar-chart-d3
+  Vega A Visualization Grammar - https://vega.github.io/vega
+  NSSM - The Non-Sucking Service Manager: http://nssm.cc
+  Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
+  CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/
+  
+-------------------------------------------------------------------
+
+QUICKSTART:
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+  - On the JSON-SCADA desktop folder: execute _Start_OSHMI.
+ OR 
+  - Execute the "Webserver" program.
+  - Next open the Screen Viewer (and other viewers) using the icons on the OSHMI folder.
+ OR
+  - Execute the "HMIShell" program (intended method for production/locked HMIs).
+  - Next open the Screen Viewer (and other viewers) using the HMIShell.
+
+The default password for HMIShell is "oshmi".
+
+The system is preconfigured to run a simulation with an example point list and screens.
+To simulate a command, click on a breaker and push the "Command" button then choose 
+  an action like "open" or "close" and push the action button.
+To stop the system click on the "Stop_All" icon in the JSON-SCADA folder.
+To edit and create new SVG screens, use the customized Inkscape+SAGE 
+  (shortcut in the JSON-SCADA folder). 
+Screens are in "c:\json-scada\src\htdocs\svg\".
+JSON SCADA configuration files are in "c:\json-scada\conf\".
+For more info about configuration please read the OSHMI Configuration Manual.
+
+By default, the system is configured to allow HTTP access only by the local machine.
+To allow other IP addresses edit the "c:\json-scada\conf\nginx_access_control.conf" file.
+To configure safe remote client access, configure IP address access control, HTTPS, 
+  client certificates and user authentication directly in the Nginx configuration files.
+
+-------------------------------------------------------------------
+
+The customized Inkscape SVG graphics editor is a derivative of the Inkscape Project
+ work and of the Ecava SAGE work, it is not in any way associated with the Inkscape 
+ Project nor Ecava.
+We respect and intend to comply with the branding policy of the Inkscape Project
+  https://inkscape.org/en/about/branding/
+In our view, the modifications introduced are not substantial and do not intend 
+  to create a competitive product.
+The modifications introduced are meant only to allow the use of the software as a 
+  SCADA Synoptic Editor.
+We respect the GPL license of the upstream work by making the source code of the 
+  modifications to the original Inkscape and SAGE code available at:
+
+Source Code:
+  https://sourceforge.net/p/oshmiopensubstationhmi/mercurial/ci/default/tree/inkscape_sage_src/
+
+-------------------------------------------------------------------
+
+Recommended utils (can be downloaded running the "download_external_progs.bat" script that 
+  is located inside the "extprogs" folder):
+ - Alternative (older) screen editor Inkscape 0.481 + SAGE 3.03. (To edit/create SVG screens)
+     https://sourceforge.net/projects/sage-scada/files/SAGE%20v3.03/inkscape0481_sage303.exe/download
+ - SysInternals (useful systems utilities)
+     http://technet.microsoft.com/en-us/sysinternals/default
+     http://live.sysinternals.com/
+ - Notepad++ (text editor): http://notepad-plus-plus.org/
+ - Visual Studio Code: https://code.visualstudio.com/
+     
+Recommended Operating Systems:
+ - Windows 10 Pro/Home/Enterprise, 64 bits.
+ - Modern 64bit Windows server OSs.
+ - Centos 8, 64 bits
+
+Please use an updated OS.
+
+If you encounter errors related to Windows Universal C Runtime (CRT), update the Windows OS or see:
+  https://support.microsoft.com/help/2999226/update-for-universal-c-runtime-in-windows
+
+Can also run on:
+ - Other Linux distros, x86, x64, ARM 32/64, (no specific instructions provided).
+ - See configuration manual.
+
+Client user interface can be used on:
+ - Modern IOS and Android devices.
+ - Any device with an updated HTML5 browser like Chrome/Chromium, Firefox, Opera, Edge (Chromium based) or Safari.
+ - Internet Explorer and non-Chromium based Edge are not supported!
+
+-------------------------------------------------------------------
+
+BUILD REQUIREMENTS.
+
+To compile the source code you will need the following frameworks:
+
+Node.js
+Dotnet Core 3.1
+GoLang
+
+For ICCP:
+GCC
+
+Inkscape+SAGE:
+ - See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.1: 
+

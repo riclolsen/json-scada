@@ -1,0 +1,37 @@
+node_modules/
+src/lib60870.netcore/.vs/
+src/lib60870.netcore/iec101client/bin/
+src/lib60870.netcore/iec101client/obj/
+src/lib60870.netcore/iec104client/bin/
+src/lib60870.netcore/iec104client/obj/
+src/lib60870.netcore/iec104server/bin/
+src/lib60870.netcore/iec104server/obj/
+src/lib60870.netcore/lib60870.netcore/bin/
+src/lib60870.netcore/lib60870.netcore/obj/
+
+[Dd]ebug/
+[Rr]elease/
+publish/
+
+.vs/
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+*.log
+
+
+

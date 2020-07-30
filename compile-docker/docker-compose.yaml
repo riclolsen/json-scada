@@ -1,0 +1,51 @@
+version: '2.1'
+
+# {json:scada} Docker Compilation for Linux x64 - (c) 2020 - Ricardo L. Olsen 
+# Requires Internet connection!
+
+services:
+
+    
+  lib60870_dotnet_compile:
+    image: mcr.microsoft.com/dotnet/core/sdk:3.1
+    container_name: js_lib60870_compile
+    command: sh -c "cd /src/lib60870.netcore/ && dotnet publish -p:PublishSingleFile=true --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
+    #command: tail -f /dev/null
+    volumes:
+      - ../src/lib60870.netcore:/src/lib60870.netcore
+      - ../demo-docker/bin:/publish_bin
+ 
+  calculations_compile:
+    image: golang:alpine
+    container_name: js_calculations_compile
+    command: sh -c "apk add --no-cache git && cd /go/src/calculations/ && go get ./... && go build && cp calculations /publish_bin/"
+    #command: tail -f /dev/null
+    volumes:
+      - ../src/calculations:/go/src/calculations
+      - ../demo-docker/bin:/publish_bin
+
+  i104m_compile:
+    image: golang:alpine
+    container_name: js_i104m_compile
+    command: sh -c "apk add --no-cache git && cd /go/src/i104m/ && go get ./... && go build && cp i104m /publish_bin/"
+    #command: tail -f /dev/null
+    volumes:
+      - ../src/i104m:/go/src/i104m
+      - ../demo-docker/bin:/publish_bin
+
+  cs_data_processor_update:
+    image: node:current-alpine3.12
+    container_name: js_cs_data_processor_update
+    command:  sh -c "cd /cs_data_processor && npm update"
+    #command: tail -f /dev/null
+    volumes:
+      - ../src/cs_data_processor:/cs_data_processor
+
+  # realtime web server, listen on port 3001
+  server_realtime_update:
+    image: node:current-alpine3.12
+    container_name: js_server_realtime_update
+    command:  sh -c "cd /server_realtime && npm update"
+    #command: tail -f /dev/null
+    volumes:
+      - ../src/server_realtime:/server_realtime

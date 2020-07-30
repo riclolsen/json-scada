@@ -1,0 +1,1522 @@
+'use strict'
+// A realtime point data HTTP web server for JSON SCADA.
+// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+
+const HTTP_PORT = process.env.JS_HTTP_PORT || 3001;
+const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
+const API_AP = '/server_realtime'
+const API_AP_CMD = '/server_command'
+const APP_NAME = ':' + HTTP_PORT + API_AP
+const COLL_REALTIME = 'realtimeData'
+const COLL_SOE = 'soeData'
+const COLL_COMMANDS = 'commandsQueue'
+const jsConfigFile = '../../conf/json-scada.json'
+const express = require('express')
+const path = require('path')
+const cors = require('cors')
+const bodyParser = require('body-parser')
+const app = express()
+const fs = require('fs')
+const mongo = require('mongodb')
+const MongoClient = require('mongodb').MongoClient
+let Server = require('mongodb').Server
+const opc = require('./opc_codes.js')
+const { Pool } = require('pg')
+
+const opcIdTypeNumber = 0
+const opcIdTypeString = 1
+const beepPointKey = -1
+const cntUpdatesPointKey = -2
+
+let rawfilecontents = fs.readFileSync(jsConfigFile)
+let jsConfig = JSON.parse(rawfilecontents)
+if (
+  typeof jsConfig.mongoConnectionString != 'string' ||
+  jsConfig.mongoConnectionString === ''
+) {
+  console.log('Error reading config file.')
+  process.exit(-1)
+}
+
+app.use(express.static('../htdocs')) // serve static files
+app.options('/Invoke/', cors()) // enable pre-flight request
+app.use(bodyParser.json())
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+)
+
+// Here we serve up our index page
+app.get('/', function (req, res) {
+  res.sendFile(path.join(__dirname + '../htdocs/index.html'))
+})
+
+let db = null
+let clientMongo = null
+let pool = null
+
+  ; (async () => {
+    app.listen(HTTP_PORT, () => {
+      console.log('listening on ' + HTTP_PORT)
+    })
+
+    // if env variables defined use them, if not set local defaults
+    let pgopt = {}
+    if ("PGHOST" in process.env)
+      pgopt = null;
+    else
+      pgopt = {
+        host: '127.0.0.1',
+        database: 'json_scada',
+        user: 'json_scada',
+        password: 'json_scada',
+        port: 5432
+      }
+
+    if (pool == null) {
+      pool = new Pool(pgopt)
+      pool.on('error', (err, client) => {
+        console.error(err)
+        setTimeout(() => {
+          pool = null
+        }, 5000)
+      })
+    }
+
+    // OPC WEB HMI API
+    app.post(OPCAPI_AP, async (req, res) => {
+      let tini = new Date().getTime()
+
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      res.setHeader('Content-Type', 'application/json')
+
+      let ServiceId,
+        RequestHandle,
+        Timestamp = new Date().toISOString()
+
+      if ('ServiceId' in req.body) {
+        ServiceId = req.body.ServiceId
+        if ('Body' in req.body) {
+          if ('RequestHeader' in req.body.Body) {
+            if ('RequestHandle' in req.body.Body.RequestHeader) {
+              RequestHandle = req.body.Body.RequestHeader.RequestHandle
+            }
+          }
+        }
+      }
+
+      let OpcResp = {
+        NamespaceUris: [
+          'urn:opcf-apps-01:UA:Quickstarts:ReferenceServer',
+          'http://opcfoundation.org/Quickstarts/ReferenceApplications',
+          'http://opcfoundation.org/UA/Diagnostics'
+        ],
+        ServerUris: [],
+        ServiceId: ServiceId,
+        Body: {
+          ResponseHeader: {
+            RequestHandle: RequestHandle,
+            Timestamp: Timestamp,
+            ServiceDiagnostics: {
+              LocalizedText: 0
+            },
+            StringTable: []
+          }
+          //, "DiagnosticInfos": []
+        }
+      }
+
+      // will handle auth here (to-do)
+
+      if (!clientMongo || !clientMongo.isConnected()) {
+        // fail if not connected to database server
+        OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+        OpcResp.Body.ResponseHeader.ServiceResult =
+          opc.StatusCode.BadServerNotConnected
+        OpcResp.Body.ResponseHeader.StringTable = [
+          opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
+          opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
+          'Database disconnected!'
+        ]
+        res.send(OpcResp)
+        return
+      }
+
+      if (ServiceId === undefined) {
+        // fail if no service id defined
+        OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+        OpcResp.Body.ResponseHeader.ServiceResult =
+          opc.StatusCode.BadRequestHeaderInvalid
+        OpcResp.Body.ResponseHeader.StringTable = [
+          opc.getStatusCodeName(opc.StatusCode.BadRequestHeaderInvalid),
+          opc.getStatusCodeText(opc.StatusCode.BadRequestHeaderInvalid),
+          'No ServiceID'
+        ]
+        res.send(OpcResp)
+        return
+      }
+
+      if (RequestHandle === undefined) {
+        // fail if not defined a request handle
+        OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+        OpcResp.Body.ResponseHeader.ServiceResult =
+          opc.StatusCode.BadRequestHeaderInvalid
+        OpcResp.Body.ResponseHeader.StringTable = [
+          opc.getStatusCodeName(opc.StatusCode.BadRequestHeaderInvalid),
+          opc.getStatusCodeText(opc.StatusCode.BadRequestHeaderInvalid),
+          'No RequestHandle'
+        ]
+        res.send(OpcResp)
+        return
+      }
+
+      switch (req.body.ServiceId) {
+        case opc.ServiceCode.WriteRequest: // WRITE SERVICE
+          {
+            OpcResp.ServiceId = opc.ServiceCode.WriteResponse
+            if (!('NodesToWrite' in req.body.Body)) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.GoodNoData
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                'No NodesToWrite'
+              ]
+              res.send(OpcResp)
+              return
+            }
+            OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+            OpcResp.Body.Results = []
+            OpcResp.Body._CommandHandles = []
+            for (let i = 0; i < req.body.Body.NodesToWrite.length; i++) {
+              let node = req.body.Body.NodesToWrite[i]
+              if ('AttributeId' in node) {
+                if (node.AttributeId == opc.AttributeId.ExtendedAlarmEventsAck) {
+                  // alarm / event ack
+
+                  let findPoint = null
+                  if (node.NodeId.IdType === opcIdTypeNumber) {
+                    findPoint = { _id: parseInt(node.NodeId.Id) }
+                  } else if (node.NodeId.IdType === opcIdTypeString) {
+                    findPoint = { tag: node.NodeId.Id }
+                  }
+
+                  if (node.Value.Body & opc.Acknowledge.RemoveAllEvents) {
+                    console.log('Remove All Events')
+                    let result = await db.collection(COLL_SOE).updateMany(
+                      { ack: { $lte: 1 } },
+                      {
+                        $set: {
+                          ack: 2
+                        }
+                      }
+                    )
+                  } else if (node.Value.Body & opc.Acknowledge.AckAllEvents) {
+                    console.log('Ack All Events')
+                    let result = await db.collection(COLL_SOE).updateMany(
+                      { ack: 0 },
+                      {
+                        $set: {
+                          ack: 1
+                        }
+                      }
+                    )
+                  } else if (
+                    node.Value.Body & opc.Acknowledge.RemovePointEvents
+                  ) {
+                    console.log('Remove Point Events: ' + node.NodeId.Id)
+                    let result = await db.collection(COLL_SOE).updateMany(
+                      { tag: node.NodeId.Id, ack: { $lte: 1 } },
+                      {
+                        $set: {
+                          ack: 2
+                        }
+                      }
+                    )
+                  } else if (node.Value.Body & opc.Acknowledge.AckPointEvents) {
+                    console.log('Ack Point Events: ' + node.NodeId.Id)
+                    let result = await db.collection(COLL_SOE).updateMany(
+                      { tag: node.NodeId.Id, ack: 0 },
+                      {
+                        $set: {
+                          ack: 1
+                        }
+                      }
+                    )
+                  } else if (node.Value.Body & opc.Acknowledge.RemoveOneEvent) {
+                    console.log('Remove One Event: ' + node.NodeId.Id)
+                    let result = await db.collection(COLL_SOE).updateMany(
+                      {
+                        _id: new mongo.ObjectID(node._Properties.event_id),
+                        ack: { $lte: 1 }
+                      },
+                      {
+                        $set: {
+                          ack: 2
+                        }
+                      }
+                    )
+                  } else if (node.Value.Body & opc.Acknowledge.AckOneEvent) {
+                    console.log('Ack One Event: ' + node.NodeId.Id)
+                    let result = await db.collection(COLL_SOE).updateMany(
+                      {
+                        _id: new mongo.ObjectID(node._Properties.event_id),
+                        ack: 0
+                      },
+                      {
+                        $set: {
+                          ack: 1
+                        }
+                      }
+                    )
+                  }
+
+                  if (node.Value.Body & opc.Acknowledge.AckAllAlarms) {
+                    console.log('Ack all alarms')
+                    let result = await db.collection(COLL_REALTIME).updateMany(
+                      {},
+                      {
+                        $set: {
+                          alarmed: false
+                        }
+                      }
+                    )
+                    result = await db
+                      .collection(COLL_REALTIME)
+                      .updateMany({ isEvent: true }, [
+                        {
+                          $set: {
+                            value: 0,
+                            valueString: '$stateTextFalse',
+                            timeTagAtSource: null,
+                            TimeTagAtSourceOk: null
+                          }
+                        }
+                      ])
+                  } else if (node.Value.Body & opc.Acknowledge.AckOneAlarm) {
+                    console.log('Ack alarm: ' + node.NodeId.Id)
+                    let result = await db
+                      .collection(COLL_REALTIME)
+                      .updateOne(findPoint, {
+                        $set: {
+                          alarmed: false
+                        }
+                      })
+                    findPoint['isEvent'] = true
+                    result = await db
+                      .collection(COLL_REALTIME)
+                      .updateOne(findPoint, [
+                        {
+                          $set: {
+                            value: 0,
+                            valueString: '$stateTextFalse',
+                            timeTagAtSource: null,
+                            TimeTagAtSourceOk: null
+                          }
+                        }
+                      ])
+                  }
+                  if (node.Value.Body & opc.Acknowledge.SilenceBeep) {
+                    console.log('Silence beep')
+                    let result = await db.collection(COLL_REALTIME).updateOne(
+                      { _id: beepPointKey },
+                      {
+                        $set: {
+                          value: new mongo.Double(0),
+                          valueString: '0'
+                        }
+                      }
+                    )
+                  }
+
+                  OpcResp.ServiceId = opc.ServiceCode.WriteResponse
+                  OpcResp.Body.ResponseHeader.ServiceResult =
+                    opc.StatusCode.GoodNoData
+                  OpcResp.Body.ResponseHeader.StringTable = [
+                    opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                    opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                    'Ok, no data returned. Query time: ' +
+                    (new Date().getTime() - tini) +
+                    ' ms'
+                  ]
+                  res.send(OpcResp)
+                  console.log(
+                    'Write. Elapsed ' + (new Date().getTime() - tini) + ' ms'
+                  )
+                  return
+                }
+
+                if (node.AttributeId == opc.AttributeId.Value) {
+                  // Write a Value: Command
+                  if ('NodeId' in node)
+                    if ('Id' in node.NodeId) {
+                      if (
+                        typeof node.Value !== 'object' ||
+                        typeof node.Value.Type !== 'number' ||
+                        node.Value.Type !== opc.DataType.Double || // only accepts a double value for the command
+                        typeof node.Value.Body !== 'number'
+                      ) {
+                        OpcResp.Body.ResponseHeader.ServiceResult =
+                          opc.StatusCode.BadNodeAttributesInvalid
+                        OpcResp.Body.ResponseHeader.StringTable = [
+                          opc.getStatusCodeName(
+                            opc.StatusCode.BadNodeAttributesInvalid
+                          ),
+                          opc.getStatusCodeText(
+                            opc.StatusCode.BadNodeAttributesInvalid
+                          ),
+                          'Invalid command type, malformed or missing information!'
+                        ]
+                        res.send(OpcResp)
+                        return
+                      }
+
+                      // look for the the command info in the database
+
+                      let cmd_id = node.NodeId.Id
+                      let cmd_val = node.Value.Body
+                      let found = false
+                      let query = { _id: parseInt(cmd_id) }
+                      if (isNaN(parseInt(cmd_id))) query = { tag: cmd_id }
+
+                      // search command in database (wait for results)
+                      let data = await db.collection(COLL_REALTIME).findOne(query)
+
+                      if (data === null || typeof data._id !== 'number') {
+                        // command not found, abort
+                        console.log('Command not found!')
+                        OpcResp.Body.ResponseHeader.ServiceResult =
+                          opc.StatusCode.BadNodeIdUnknown
+                        OpcResp.Body.ResponseHeader.StringTable = [
+                          opc.getStatusCodeName(opc.StatusCode.BadNodeIdUnknown),
+                          opc.getStatusCodeText(opc.StatusCode.BadNodeIdUnknown),
+                          'Command point not found!'
+                        ]
+                        res.send(OpcResp)
+                        return
+                      }
+
+                      let result = await db.collection(COLL_COMMANDS).insertOne({
+                        protocolSourceConnectionNumber: new mongo.Double(
+                          data.protocolSourceConnectionNumber
+                        ),
+                        protocolSourceCommonAddress: new mongo.Double(
+                          data.protocolSourceCommonAddress
+                        ),
+                        protocolSourceObjectAddress: new mongo.Double(
+                          data.protocolSourceObjectAddress
+                        ),
+                        protocolSourceASDU: new mongo.Double(
+                          data.protocolSourceASDU
+                        ),
+                        protocolSourceCommandDuration: new mongo.Double(
+                          data.protocolSourceCommandDuration
+                        ),
+                        protocolSourceCommandUseSBO:
+                          data.protocolSourceCommandUseSBO,
+                        pointKey: new mongo.Double(data._id),
+                        tag: data.tag,
+                        timeTag: new Date(),
+                        value: new mongo.Double(cmd_val),
+                        valueString: parseFloat(cmd_val).toString(),
+                        originatorUserName: 'unknown',
+                        originatorIpAddress:
+                          req.headers['x-real-ip'] ||
+                          req.headers['x-forwarded-for'] ||
+                          req.connection.remoteAddress
+                      })
+                      // console.log(result);
+                      if (result.insertedCount !== 1) {
+                        OpcResp.Body.ResponseHeader.ServiceResult =
+                          opc.StatusCode.BadUnexpectedError
+                        OpcResp.Body.ResponseHeader.StringTable = [
+                          opc.getStatusCodeName(
+                            opc.StatusCode.BadUnexpectedError
+                          ),
+                          opc.getStatusCodeText(
+                            opc.StatusCode.BadUnexpectedError
+                          ),
+                          'Could not queue command!'
+                        ]
+                        res.send(OpcResp)
+                        return
+                      }
+
+                      OpcResp.Body.Results.push(opc.StatusCode.Good) // write ok
+                      // a way for the client to find this inserted command
+                      OpcResp.Body._CommandHandles.push(result.insertedId)
+                    }
+                } else if (node.AttributeId == opc.AttributeId.Description) {
+                  // Write Properties
+                  if ('NodeId' in node)
+                    if ('Id' in node.NodeId) {
+                      let findPoint = null
+                      if (node.NodeId.IdType === opcIdTypeNumber) {
+                        findPoint = { _id: parseInt(node.NodeId.Id) }
+                      } else if (node.NodeId.IdType === opcIdTypeString) {
+                        findPoint = { tag: node.NodeId.Id }
+                      }
+                      if (findPoint === null) {
+                        OpcResp.Body.ResponseHeader.ServiceResult =
+                          opc.StatusCode.BadNodeIdInvalid
+                        OpcResp.Body.ResponseHeader.StringTable = [
+                          opc.getStatusCodeName(opc.StatusCode.BadNodeIdInvalid),
+                          opc.getStatusCodeText(opc.StatusCode.BadNodeIdInvalid),
+                          'Invalid IdType!'
+                        ]
+                        res.send(OpcResp)
+                        return
+                      }
+
+                      if (findPoint !== null) {
+                        let result = await db
+                          .collection(COLL_REALTIME)
+                          .updateOne(findPoint, {
+                            $set: {
+                              alarmDisabled: node.Value._Properties.alarmDisabled,
+                              annotation: node.Value._Properties.annotation,
+                              loLimit: new mongo.Double(
+                                node.Value._Properties.loLimit
+                              ),
+                              //loloLimit: node.Value._Properties.loLimit,
+                              //lololoLimit: node.Value._Properties.loLimit,
+                              hiLimit: new mongo.Double(
+                                node.Value._Properties.hiLimit
+                              ),
+                              //hihiLimit: node.Value._Properties.hiLimit,
+                              //hihihiLimit: node.Value._Properties.hiLimit,
+                              hysteresis: new mongo.Double(
+                                node.Value._Properties.hysteresis
+                              ),
+                              notes: node.Value._Properties.notes,
+                              ...(("substituted" in node.Value._Properties && "newValue" in node.Value._Properties)? {value: node.Value._Properties.newValue} : {})
+                            }
+                          })
+                        if (
+                          typeof result.result.n === 'number' &&
+                          result.result.n === 1
+                        ) {
+                          // updateOne ok
+                          OpcResp.Body.Results.push(opc.StatusCode.Good)
+                          console.log('update ok id: ' + node.NodeId.Id)
+                        } else {
+                          // some updateOne error
+                          OpcResp.Body.Results.push(
+                            opc.StatusCode.BadNodeIdUnknown
+                          )
+                          console.log('update error id: ' + node.NodeId.Id)
+                        }
+                      }
+                    } else
+                      OpcResp.Body.Results.push(opc.StatusCode.BadNodeIdInvalid)
+                }
+              }
+            }
+            OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+            res.send(OpcResp)
+          }
+          return
+        case opc.ServiceCode.ReadRequest: // READ SERVICE
+          {
+            OpcResp.ServiceId = opc.ServiceCode.ReadResponse
+            if (
+              !('NodesToRead' in req.body.Body) &&
+              !('ContentFilter' in req.body.Body)
+            ) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.GoodNoData
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                'No NodesToRead nor Content Filter'
+              ]
+              res.send(OpcResp)
+              return
+            }
+
+            // if for some point Description is solicited, will respond with full info for all the points
+            let points = [],
+              cmdHandles = [],
+              info = false,
+              ack = false
+            if ('NodesToRead' in req.body.Body)
+              req.body.Body.NodesToRead.map(node => {
+                if ('AttributeId' in node) {
+                  if (node.AttributeId == opc.AttributeId.EventNotifier) {
+                    if ('ClientHandle' in node) {
+                      ack = true
+                      cmdHandles.push(node.ClientHandle)
+                    }
+                  }
+                  if (node.AttributeId == opc.AttributeId.Description) {
+                    info = true
+                  }
+                }
+                if ('NodeId' in node)
+                  if ('Id' in node.NodeId) {
+                    points.push(node.NodeId.Id)
+                  }
+                return node
+              })
+            if (points.length == 0 && !('ContentFilter' in req.body.Body)) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.GoodNoData
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                'No NodeId.Id found'
+              ]
+              res.send(OpcResp)
+              return
+            }
+
+            if (ack) {
+              // look for command ack
+              // console.log(cmdHandles[0])
+              if (
+                typeof cmdHandles[0] !== 'string' ||
+                cmdHandles[0].length < 24
+              ) {
+                OpcResp.Body.ResponseHeader.ServiceResult =
+                  opc.StatusCode.BadRequestNotAllowed
+                OpcResp.Body.ResponseHeader.StringTable = [
+                  opc.getStatusCodeName(opc.StatusCode.BadRequestNotAllowed),
+                  opc.getStatusCodeText(opc.StatusCode.BadRequestNotAllowed),
+                  'Missing or invalid ClientHandle.'
+                ]
+                res.send(OpcResp)
+                return
+              }
+
+              let data = await db
+                .collection(COLL_COMMANDS)
+                .findOne({ _id: new mongo.ObjectID(cmdHandles[0]) })
+
+              // console.log(data);
+              let status = -1,
+                ackTime,
+                cmdTime
+              if (typeof data.ack === 'boolean') {
+                // ack received
+                if ((data.ack = true)) status = opc.StatusCode.Good
+                else status = opc.StatusCode.Bad
+                cmdTime = data.timeTag
+                ackTime = data.ackTimeTag
+              } else status = opc.StatusCode.BadWaitingForResponse
+
+              OpcResp.ServiceId = opc.ServiceCode.DataChangeNotification
+              OpcResp.Body.MonitoredItems = [
+                {
+                  ClientHandle: cmdHandles[0],
+                  Value: {
+                    Value: data.value,
+                    StatusCode: status,
+                    SourceTimestamp: cmdTime,
+                    ServerTimestamp: ackTime
+                  },
+                  NodeId: {
+                    IdType: opcIdTypeString,
+                    Id: data.tag,
+                    Namespace: opc.NamespaceMongodb
+                  }
+                }
+              ]
+              OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+              res.send(OpcResp)
+              return
+            }
+
+            let tags = [],
+              npts = []
+            for (let i = 0; i < points.length; i++) {
+              let val = parseInt(points[i])
+              if (!isNaN(val)) npts.push(val)
+              else tags.push(points[i])
+            }
+
+            let projection = info
+              ? null
+              : {
+                projection: {
+                  _id: 1,
+                  tag: 1,
+                  value: 1,
+                  valueString: 1,
+                  invalid: 1,
+                  timeTag: 1,
+                  alarmed: 1,
+                  type: 1,
+                  annotation: 1,
+                  origin: 1
+                }
+              }
+
+            // optimize query for better performance
+            // there is a cost to query empty $in lists!
+            let findTags = {
+              tag: {
+                $in: tags
+              }
+            }
+            let findKeys = {
+              _id: {
+                $in: npts
+              }
+            }
+            let query = findTags
+            if (npts.length > 0 && tags.length > 0)
+              query = {
+                // use $or only to find tags and _id keys
+                $or: [findKeys, findTags]
+              }
+            else if (npts.length > 0) query = findKeys
+
+            let sort = {}
+
+            // if there is a content filter, it takes precedence over NodesToRead lists
+            if ('ContentFilter' in req.body.Body) {
+              sort = { group1: 1, group2: 1 }
+              projection = null
+              query = {}
+              req.body.Body.ContentFilter.map(contentFilter => {
+                // supports attribute (operand) Equals (operator) to a literal value (operand)
+                if (contentFilter.FilterOperator === opc.FilterOperator.Equals) {
+                  if (
+                    contentFilter.FilterOperands[0].FilterOperand ===
+                    opc.Operand.Attribute &&
+                    contentFilter.FilterOperands[1].FilterOperand ===
+                    opc.Operand.Literal
+                  ) {
+                    if (
+                      // fake attribute 'persistentAlarms' means add not normal states (digitals with alarmState=0 and value=0 or alarmState=1 and value=1)
+                      contentFilter.FilterOperands[0].Value == 'persistentAlarms'
+                    ) {
+                      sort = { alarmed: -1, timeTagAlarm: -1 }
+                      query = {
+                        $or: [
+                          {
+                            $and: [
+                              { type: 'digital' },
+                              { alarmState: 0 },
+                              { value: 0 },
+                              { invalid: false }
+                            ]
+                          },
+                          {
+                            $and: [
+                              { type: 'digital' },
+                              { alarmState: 1 },
+                              { value: 1 },
+                              { invalid: false }
+                            ]
+                          },
+                          query
+                        ]
+                      }
+                    } else
+                      query[contentFilter.FilterOperands[0].Value] =
+                        contentFilter.FilterOperands[1].Value
+                  }
+                }
+                return contentFilter
+              })
+            }
+
+            db.collection(COLL_REALTIME)
+              .find(query, projection)
+              .sort(sort)
+              .toArray(function (err, results) {
+                if (results) {
+                  if (results.length == 0) {
+                    OpcResp.Body.ResponseHeader.ServiceResult =
+                      opc.StatusCode.GoodNoData
+                    OpcResp.Body.ResponseHeader.StringTable = [
+                      opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                      opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                      'No NodeId.Id requested found on realtimeDatabase'
+                    ]
+                    res.send(OpcResp)
+                    return
+                  }
+
+                  let Results = []
+                  if ('NodesToRead' in req.body.Body) {
+                    req.body.Body.NodesToRead.map(node => {
+                      let Result = {
+                        StatusCode: opc.StatusCode.BadNotFound,
+                        NodeId: node.NodeId,
+                        Value: null,
+                        _Properties: null
+                      }
+
+                      for (let i = 0; i < results.length; i++) {
+                        let pointInfo = results[i]
+
+                        if (
+                          node.NodeId.Id === pointInfo.tag ||
+                          node.NodeId.Id === pointInfo._id
+                        ) {
+                          Result.StatusCode = opc.StatusCode.Good
+                          Result._Properties = {
+                            _id: pointInfo._id,
+                            valueString: pointInfo.valueString,
+                            alarmed: pointInfo.alarmed,
+                            transit: pointInfo.transit,
+                            annotation: pointInfo.annotation,
+                            notes: pointInfo.notes,
+                            origin: pointInfo.origin
+                          }
+                          if (info) {
+                            Result._Properties = {
+                              _id: pointInfo._id,
+                              valueString: pointInfo.valueString,
+                              valueDefault: pointInfo.valueDefault,
+                              alarmed: pointInfo.alarmed,
+                              alarmDisabled: pointInfo.alarmDisabled,
+                              transit: pointInfo.transit,
+                              group1: pointInfo.group1,
+                              group2: pointInfo.group2,
+                              description: pointInfo.description,
+                              ungroupedDescription:
+                                pointInfo.ungroupedDescription,
+                              hiLimit: pointInfo.hiLimit,
+                              loLimit: pointInfo.loLimit,
+                              hysteresis: pointInfo.hysteresis,
+                              stateTextTrue: pointInfo.stateTextTrue,
+                              stateTextFalse: pointInfo.stateTextFalse,
+                              unit: pointInfo.unit,
+                              annotation: pointInfo.annotation,
+                              notes: pointInfo.notes,
+                              commandOfSupervised: pointInfo.commandOfSupervised,
+                              supervisedOfCommand: pointInfo.supervisedOfCommand,
+                              origin: pointInfo.origin
+                            }
+                          }
+                          Result.Value = {
+                            Type:
+                              pointInfo.type === 'digital'
+                                ? opc.DataType.Boolean
+                                : opc.DataType.Double,
+                            Body:
+                              pointInfo.type === 'digital'
+                                ? pointInfo.value !== 0
+                                  ? true
+                                  : false
+                                : parseFloat(pointInfo.value),
+                            Quality: pointInfo.invalid
+                              ? opc.StatusCode.Bad
+                              : opc.StatusCode.Good
+                          }
+                          Result.NodeId = {
+                            IdType: opcIdTypeString,
+                            Id: pointInfo.tag,
+                            Namespace: opc.NamespaceMongodb
+                          }
+                          Result.SourceTimestamp = pointInfo.timeTag
+                          break
+                        }
+                      }
+                      Results.push(Result)
+                    })
+                  } else {
+                    // no NodesToRead so it is a filtered query
+                    results.map(node => {
+                      let Result = {
+                        StatusCode: opc.StatusCode.Good,
+                        NodeId: {
+                          IdType: opcIdTypeString,
+                          Id: node.tag
+                        },
+                        Value: {
+                          Type:
+                            node.type === 'digital'
+                              ? opc.DataType.Boolean
+                              : opc.DataType.Double,
+                          Body:
+                            node.type === 'digital'
+                              ? node.value !== 0
+                                ? true
+                                : false
+                              : node.value,
+                          Quality: node.invalid
+                            ? opc.StatusCode.Bad
+                            : opc.StatusCode.Good
+                        },
+                        _Properties: {
+                          _id: node._id,
+                          valueString: node.valueString,
+                          valueDefault: node.valueDefault,
+                          alarmed: node.alarmed,
+                          alarmDisabled: node.alarmDisabled,
+                          alarmState: node.alarmState,
+                          isEvent: node.isEvent,
+                          transit: node.transit,
+                          group1: node.group1,
+                          group2: node.group2,
+                          description: node.description,
+                          ungroupedDescription: node.ungroupedDescription,
+                          hiLimit: node.hiLimit,
+                          loLimit: node.loLimit,
+                          hysteresis: node.hysteresis,
+                          stateTextTrue: node.stateTextTrue,
+                          stateTextFalse: node.stateTextFalse,
+                          unit: node.unit,
+                          annotation: node.annotation,
+                          notes: node.notes,
+                          commandOfSupervised: node.commandOfSupervised,
+                          supervisedOfCommand: node.supervisedOfCommand,
+                          origin: node.origin,
+                          timeTagAlarm: node.timeTagAlarm,
+                          priority: node.priority,
+                          origin: node.origin,
+                          timeTagAtSourceOk:
+                            'timeTagAtSourceOk' in node
+                              ? node.TimeTagAtSourceOk
+                              : null
+                        }
+                      }
+                      Result.ServerTimestamp = node.timeTag
+                      Result.SourceTimestamp =
+                        'timeTagAtSource' in node && node.timeTagAtSource !== null
+                          ? node.timeTagAtSource
+                          : null
+                      Results.push(Result)
+
+                      return node
+                    })
+                  }
+
+                  OpcResp.Body.Results = Results
+                  OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+                  OpcResp.Body.ResponseHeader.StringTable = [
+                    opc.getStatusCodeName(opc.StatusCode.Good),
+                    opc.getStatusCodeText(opc.StatusCode.Good),
+                    'Query time: ' + (new Date().getTime() - tini) + ' ms'
+                  ]
+                  res.send(OpcResp)
+                  console.log(
+                    'Read returned ' +
+                    results.length +
+                    ' values. Elapsed ' +
+                    (new Date().getTime() - tini) +
+                    ' ms'
+                  )
+                }
+              })
+          }
+          return
+        case opc.ServiceCode.HistoryReadRequest: // HISTORY READ SERVICE
+          {
+            OpcResp.ServiceId = opc.ServiceCode.HistoryReadResponse
+            if (
+              !('HistoryReadDetails' in req.body.Body) ||
+              !('ParameterTypeId' in req.body.Body.HistoryReadDetails) ||
+              req.body.Body.HistoryReadDetails.ParameterTypeId !==
+              opc.ServiceCode.ReadRawModifiedDetails
+            ) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.BadHistoryOperationInvalid
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.BadHistoryOperationInvalid),
+                opc.getStatusCodeText(opc.StatusCode.BadHistoryOperationInvalid),
+                'Invalid HistoryReadDetails option'
+              ]
+              res.send(OpcResp)
+              return
+            }
+
+            let returnServerTimestamp = true
+            let returnSourceTimestamp = true
+            if ('TimestampsToReturn' in req.body.Body) {
+              switch (req.body.Body.TimestampsToReturn) {
+                case opc.TimestampsToReturn.Source:
+                  returnServerTimestamp = false
+                  break
+                case opc.TimestampsToReturn.Server:
+                  returnSourceTimestamp = false
+                  break
+                case opc.TimestampsToReturn.Neither:
+                  returnServerTimestamp = false
+                  returnSourceTimestamp = false
+                  break
+                case opc.TimestampsToReturn.Both:
+                case opc.TimestampsToReturn.Invalid:
+                default:
+                  break
+              }
+            }
+
+            if (
+              !('NodesToRead' in req.body.Body) &&
+              !('ContentFilter' in req.body.Body)
+            ) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.GoodNoData
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                'No NodesToRead'
+              ]
+              res.send(OpcResp)
+              return
+            }
+
+            let tags = []
+            if ('NodesToRead' in req.body.Body) {
+              req.body.Body.NodesToRead.map(node => {
+                if ('AttributeId' in node) {
+                  if (node.AttributeId == opc.AttributeId.Value) {
+                    if ('NodeId' in node)
+                      if ('IdType' in node.NodeId)
+                        if (node.NodeId.IdType === opcIdTypeString)
+                          if ('Id' in node.NodeId) {
+                            // only string keys supported here
+                            tags.push("'" + node.NodeId.Id + "'")
+                          }
+                  }
+                }
+                return node
+              })
+              if (tags.length == 0) {
+                OpcResp.Body.ResponseHeader.ServiceResult =
+                  opc.StatusCode.GoodNoData
+                OpcResp.Body.ResponseHeader.StringTable = [
+                  opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                  opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                  'No valid NodeId.Ids/Attribute request found'
+                ]
+                res.send(OpcResp)
+                return
+              }
+            }
+
+            // default read is last hour
+            let dt = new Date()
+            let endDateTime = dt.toISOString()
+            dt.setHours(dt.getHours() - 1)
+            let startDateTime = dt.toISOString()
+            let limitValues = 10000
+
+            if ('ParameterData' in req.body.Body.HistoryReadDetails) {
+              if ('StartTime' in req.body.Body.HistoryReadDetails.ParameterData)
+                startDateTime =
+                  req.body.Body.HistoryReadDetails.ParameterData.StartTime
+              if ('EndTime' in req.body.Body.HistoryReadDetails.ParameterData)
+                endDateTime =
+                  req.body.Body.HistoryReadDetails.ParameterData.EndTime
+              if (
+                'NumValuesPerNode' in
+                req.body.Body.HistoryReadDetails.ParameterData
+              )
+                limitValues =
+                  req.body.Body.HistoryReadDetails.ParameterData.NumValuesPerNode
+
+              // req.body.Body.HistoryReadDetails.ParameterData.IsTeasModified is expected to be false!
+              if (
+                'IsReadModified' in
+                req.body.Body.HistoryReadDetails.ParameterData &&
+                req.body.Body.HistoryReadDetails.ParameterData.IsReadModified ===
+                true
+              ) {
+                OpcResp.Body.ResponseHeader.ServiceResult =
+                  opc.StatusCode.BadHistoryOperationUnsupported
+                OpcResp.Body.ResponseHeader.StringTable = [
+                  opc.getStatusCodeName(
+                    opc.StatusCode.BadHistoryOperationUnsupported
+                  ),
+                  opc.getStatusCodeText(
+                    opc.StatusCode.BadHistoryOperationUnsupported
+                  ),
+                  'Invalid ReadRawModifiedDetails/isReadModified option (must be false)'
+                ]
+                res.send(OpcResp)
+                return
+              }
+
+              // Ignored parameters
+              // req.body.Body.ReadRawModifiedDetails.NumValuesPerNode
+              // req.body.Body.ReadRawModifiedDetails.ReturnBounds
+            }
+
+            // when Namespace is 2 (mongodb) will read from mongodb soeData
+            if (
+              'Namespace' in req.body.Body &&
+              req.body.Body.Namespace === opc.NamespaceMongodb
+            ) {
+              let group1Filter = []
+              let filterPriority = {}
+
+              if (
+                'ContentFilter' in req.body.Body &&
+                req.body.Body.ContentFilter.length > 0
+                // &&
+                // req.body.Body.ContentFilter[0].FilterOperands.length > 0
+              )
+                req.body.Body.ContentFilter.map(node => {
+                  if (node.FilterOperator === opc.FilterOperator.LessThanOrEqual)
+                    // priority filter
+                    filterPriority = {
+                      priority: { $lte: node.FilterOperands[0] }
+                    }
+
+                  if (node.FilterOperator === opc.FilterOperator.InList)
+                    // group1 list filter
+                    node.FilterOperands.map(element => {
+                      if (element.FilterOperand === opc.Operand.Literal)
+                        if (typeof element.Value === 'string') {
+                          group1Filter.push(element.Value)
+                        }
+                      return element
+                    })
+
+                  return node
+                })
+
+              let filterDateGte = {
+                timeTag: { $gte: new Date(startDateTime) }
+              }
+              let filterDateLte = {
+                timeTag: { $lte: new Date(endDateTime) }
+              }
+              let sort = { timeTag: -1 }
+              if (endDateTime !== null && endDateTime !== null)
+                sort = { timeTag: 1 }
+
+              if (!returnServerTimestamp) {
+                sort = { timeTagAtSource: -1 }
+                if (endDateTime !== null && endDateTime !== null)
+                  sort = { timeTagAtSource: 1 }
+                filterDateGte = {
+                  timeTagAtSource: { $gte: new Date(startDateTime) }
+                }
+                filterDateLte = {
+                  timeTagAtSource: { $lte: new Date(endDateTime) }
+                }
+              }
+
+              if (startDateTime === null) {
+                filterDateGte = {}
+              }
+              if (endDateTime === null) {
+                filterDateLte = {}
+              }
+
+              let filterGroup = {}
+              if (group1Filter.length > 0)
+                filterGroup = {
+                  $or: [
+                    {
+                      group1: {
+                        $in: group1Filter
+                      }
+                    },
+                    {
+                      tag: {
+                        $in: tags
+                      }
+                    }
+                  ]
+                }
+
+              // depending on aggregation do a aggregate (more expensive) or a simple find
+              if (
+                'AggregateFilter' in req.body.Body &&
+                req.body.Body.AggregateFilter !== null &&
+                'AggregateType' in req.body.Body.AggregateFilter &&
+                req.body.Body.AggregateFilter.AggregateType === 'Count'
+              ) {
+                db.collection(COLL_SOE)
+                  .aggregate([
+                    {
+                      $match: {
+                        $and: [
+                          filterDateGte,
+                          filterDateLte,
+                          filterGroup,
+                          filterPriority,
+                          { ack: { $lte: 1 } }
+                        ]
+                      }
+                    },
+                    {
+                      $group: {
+                        _id: '$tag',
+                        tag: { $last: '$tag' },
+                        pointKey: { $last: '$pointKey' },
+                        group1: { $last: '$group1' },
+                        description: { $last: '$description' },
+                        eventText: { $last: '$eventText' },
+                        description: { $last: '$description' },
+                        invalid: { $last: '$invalid' },
+                        priority: { $last: '$priority' },
+                        timeTag: { $last: '$timeTag' },
+                        timeTagAtSource: { $last: '$timeTagAtSource' },
+                        timeTagAtSourceOk: { $last: '$timeTagAtSourceOk' },
+                        ack: { $last: '$ack' },
+                        count: { $sum: 1 },
+                        event_id: { $last: '$_id' }
+                      }
+                    }
+                  ])
+                  .sort(sort)
+                  .limit(limitValues)
+                  .toArray(procArrayResults)
+              } else {
+                db.collection(COLL_SOE)
+                  .find(
+                    {
+                      $and: [
+                        filterDateGte,
+                        filterDateLte,
+                        filterGroup,
+                        filterPriority,
+                        { ack: { $lte: 1 } }
+                      ]
+                    },
+                    {}
+                  )
+                  .sort(sort)
+                  .limit(limitValues)
+                  .toArray(procArrayResults)
+              }
+
+              function procArrayResults(err, results) {
+                if (results) {
+                  if (results.length == 0) {
+                    OpcResp.Body.ResponseHeader.ServiceResult =
+                      opc.StatusCode.GoodNoData
+                    OpcResp.Body.ResponseHeader.StringTable = [
+                      opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                      opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                      'No NodeId.Id requested found on soeData'
+                    ]
+                    res.send(OpcResp)
+                    return
+                  }
+
+                  let Results = []
+                  results.map(node => {
+                    let NodeId = {
+                      IdType: opcIdTypeString,
+                      Id: node.tag,
+                      Namespace: opc.NamespaceMongodb
+                    }
+
+                    let HistoryData = {
+                      Value: {
+                        Type: opc.DataType.String,
+                        Body: node.eventText,
+                        Quality: node.invalid
+                          ? opc.StatusCode.Bad
+                          : opc.StatusCode.Good,
+                        Count: typeof node.count === 'number' ? node.count : 1
+                      },
+                      ServerTimestamp: node.timeTag,
+                      SourceTimestamp: node.timeTagAtSource,
+                      SourceTimestampOk: node.timeTagAtSourceOk,
+                      Acknowledge: node.ack
+                    }
+
+                    let _Properties = {
+                      group1: node.group1,
+                      description: node.description,
+                      priority: node.priority,
+                      pointKey: node.pointKey,
+                      event_id: node._id === node.tag ? node.event_id : node._id
+                    }
+
+                    let HistoryReadResult = {
+                      StatusCode: opc.StatusCode.Good,
+                      HistoryData: [HistoryData],
+                      // ContinuationPoint: null,
+                      NodeId: NodeId,
+                      _Properties: _Properties
+                    }
+                    Results.push(HistoryReadResult)
+                    return node
+                  })
+
+                  OpcResp.Body.Results = Results
+                  OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+                  OpcResp.Body.ResponseHeader.StringTable = [
+                    opc.getStatusCodeName(opc.StatusCode.Good),
+                    opc.getStatusCodeText(opc.StatusCode.Good),
+                    'Query time: ' + (new Date().getTime() - tini) + ' ms'
+                  ]
+                  res.send(OpcResp)
+                  console.log(
+                    'HistoryRead (Events) returned ' +
+                    Results.length +
+                    ' values. Elapsed ' +
+                    (new Date().getTime() - tini) +
+                    ' ms'
+                  )
+                  return
+                }
+              }
+              return
+            }
+
+            let query =
+              'SELECT tag, value, flags, ' +
+              'time_tag, ' +
+              'time_tag_at_source ' +
+              'FROM hist ' +
+              "WHERE time_tag>='" +
+              startDateTime +
+              "' AND " +
+              "time_tag<='" +
+              endDateTime +
+              "' AND " +
+              'tag IN (' +
+              tags.join(',') +
+              ') ' +
+              'ORDER BY tag asc, time_tag ASC'
+
+            if (startDateTime === endDateTime) {
+              query =
+                'SELECT tag as tag, ' +
+                'last(value, time_tag) as value, ' +
+                'last(flags, time_tag) as flags, ' +
+                'last(time_tag, time_tag) as time_tag, ' +
+                'last(time_tag_at_source, time_tag) as time_tag_at_source ' +
+                'from hist ' +
+                'where ' +
+                "time_tag<='" +
+                startDateTime +
+                "' and " +
+                "time_tag> (TIMESTAMP '" +
+                startDateTime +
+                "' - INTERVAL '0.5 day') and " +
+                'tag in (' +
+                tags.join(',') +
+                ') group by tag'
+            }
+
+            // read data from postgreSQL
+            pool.query(query, (err, resp) => {
+              if (err) {
+                OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+                OpcResp.Body.ResponseHeader.ServiceResult =
+                  opc.StatusCode.BadServerNotConnected
+                OpcResp.Body.ResponseHeader.StringTable = [
+                  opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
+                  opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
+                  'Database error!'
+                ]
+                res.send(OpcResp)
+                return
+              }
+
+              let Results = [] // [{ StatusCode, ContinuationPoint, HistoryData[], NodeId }]
+              req.body.Body.NodesToRead.map(node => {
+                let HistoryReadResult = {
+                  StatusCode: opc.StatusCode.BadNotFound,
+                  HistoryData: [],
+                  ContinuationPoint: null,
+                  NodeId: null
+                }
+                if ('AttributeId' in node) {
+                  if (node.AttributeId == opc.AttributeId.Value) {
+                    if ('NodeId' in node)
+                      if ('IdType' in node.NodeId)
+                        if (node.NodeId.IdType === opcIdTypeString)
+                          if ('Id' in node.NodeId) {
+                            // only string keys supported here
+                            HistoryReadResult.NodeId = node.NodeId
+                            resp.rows.map(node => {
+                              if (node.tag === HistoryReadResult.NodeId.Id) {
+                                HistoryReadResult.StatusCode = opc.StatusCode.Good
+                                HistoryReadResult.HistoryData.push({
+                                  Value: {
+                                    Type:
+                                      node.flags.charAt(2) === '0'
+                                        ? opc.DataType.Boolean
+                                        : opc.DataType.Double,
+                                    Body:
+                                      node.flags.charAt(2) === '0'
+                                        ? node.value === 0
+                                          ? false
+                                          : true
+                                        : node.value,
+                                    Quality:
+                                      node.flags.charAt(0) === '0'
+                                        ? opc.StatusCode.Good
+                                        : opc.StatusCode.Bad
+                                  },
+                                  SourceTimestamp: returnSourceTimestamp
+                                    ? node.time_tag_at_source
+                                    : undefined,
+                                  ServerTimestamp: returnServerTimestamp
+                                    ? node.time_tag
+                                    : undefined
+                                })
+                              }
+                              return node
+                            })
+                          }
+                  }
+                  Results.push(HistoryReadResult)
+                }
+                return node
+              })
+
+              OpcResp.Body.Results = Results
+              OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.Good),
+                opc.getStatusCodeText(opc.StatusCode.Good),
+                'Query time: ' + (new Date().getTime() - tini) + ' ms'
+              ]
+              res.send(OpcResp)
+              console.log(
+                'HistoryRead returned ' +
+                resp.rows.length +
+                ' values. Elapsed ' +
+                (new Date().getTime() - tini) +
+                ' ms'
+              )
+            })
+          }
+          return
+        case opc.ServiceCode.Extended_RequestUniqueAttributeValues: // list unique attribute values
+          {
+            OpcResp.ServiceId =
+              opc.ServiceCode.Extended_ResponseUniqueAttributeValues
+
+            if (req.body.Body.AttributeId !== opc.AttributeId.ExtendedGroup1) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.BadAttributeIdInvalid
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.BadAttributeIdInvalid),
+                opc.getStatusCodeText(opc.StatusCode.BadAttributeIdInvalid),
+                'Requested attribute not supported!'
+              ]
+              res.send(OpcResp)
+              return
+            }
+
+            db.collection(COLL_REALTIME)
+              .aggregate([
+                {
+                  $group: {
+                    _id: '$group1',
+                    group1: { $last: '$group1' },
+                    count: { $sum: 1 }
+                  }
+                }
+              ])
+              .sort({ group1: 1 })
+              .toArray(function (err, results) {
+                let Results = []
+                results.map(node => {
+                  let Value = {
+                    Value: {
+                      Type: opc.DataType.String,
+                      Body: node.group1,
+                      Count: node.count
+                    }
+                  }
+                  Results.push(Value)
+                  return node
+                })
+
+                OpcResp.Body.Results = Results
+                OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+                OpcResp.Body.ResponseHeader.StringTable = [
+                  opc.getStatusCodeName(opc.StatusCode.Good),
+                  opc.getStatusCodeText(opc.StatusCode.Good),
+                  'Query time: ' + (new Date().getTime() - tini) + ' ms'
+                ]
+                res.send(OpcResp)
+                console.log(
+                  'Unique attribute values returned ' +
+                  Results.length +
+                  ' values. Elapsed ' +
+                  (new Date().getTime() - tini) +
+                  ' ms'
+                )
+                return
+              })
+          }
+          return
+        default:
+          OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+          OpcResp.Body.ResponseHeader.ServiceResult =
+            opc.StatusCode.BadServiceUnsupported
+          OpcResp.Body.ResponseHeader.StringTable = [
+            opc.getStatusCodeName(opc.StatusCode.BadServiceUnsupported),
+            opc.getStatusCodeText(opc.StatusCode.BadServiceUnsupported),
+            'Existing services: 629=ReadRequest, 671=WriteRequest, 100000001=Extended_RequestListUniqueAttributeValues'
+          ]
+          res.send(OpcResp)
+          return
+      }
+    })
+
+    for (; ;) {
+      try {
+        if (clientMongo)
+          if (!clientMongo.isConnected()) {
+            // not anymore connected, will retry
+            clientMongo.close()
+            db = null
+            clientMongo = null
+          }
+
+        if (!clientMongo) {
+          let connOptions = {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            appname: APP_NAME,
+            poolSize: 20,
+            readPreference: Server.READ_PRIMARY
+          }
+
+          if (
+            typeof jsConfig.tlsCaPemFile === 'string' &&
+            jsConfig.tlsCaPemFile.trim() !== ''
+          ) {
+            jsConfig.tlsClientKeyPassword = jsConfig.tlsClientKeyPassword || ""
+            jsConfig.tlsAllowInvalidHostnames = jsConfig.tlsAllowInvalidHostnames || false
+            jsConfig.tlsAllowChainErrors = jsConfig.tlsAllowChainErrors || false
+            jsConfig.tlsInsecure = jsConfig.tlsInsecure || false
+
+            connOptions.tls = true
+            connOptions.tlsCAFile = jsConfig.tlsCaPemFile
+            connOptions.tlsCertificateKeyFile = jsConfig.tlsClientPemFile
+            connOptions.tlsCertificateKeyFilePassword = jsConfig.tlsClientKeyPassword
+            connOptions.tlsAllowInvalidHostnames = jsConfig.tlsAllowInvalidHostnames
+            connOptions.tlsInsecure = jsConfig.tlsInsecure
+          }
+
+          // new connection
+          console.log('Connecting to ' + jsConfig.mongoConnectionString)
+          MongoClient.connect(
+            jsConfig.mongoConnectionString,
+            connOptions,
+            async (err, client) => {
+              if (err) {
+                db = null
+                clientMongo = null
+                console.log(err)
+                if (err.name == 'MongoParseError') process.exit(-1)
+                return
+              }
+              db = client.db(jsConfig.mongoDatabaseName)
+              clientMongo = client
+            }
+          )
+        }
+      } catch (e) {
+        if (clientMongo) clientMongo.close()
+        db = null
+        clientMongo = null
+        console.log(e)
+      }
+
+      // wait 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000))
+    }
+  })()
