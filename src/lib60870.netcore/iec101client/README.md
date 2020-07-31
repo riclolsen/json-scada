@@ -20,7 +20,7 @@ To create a new IEC 101 client instance, insert a new document in the _protocolD
             keepProtocolRunningWhileInactive: false
         });
 
-* _**protocolDriver**_ [String] - Name of the protocol driver, must be  "IEC60870-5-104". **Mandatory parameter**.
+* _**protocolDriver**_ [String] - Name of the protocol driver, must be  "IEC60870-5-101". **Mandatory parameter**.
 * _**protocolDriverInstanceNumber**_ [Double] - Number of the instance. Use 1 to N to number instances. For the same driver instance numbers should be unique. The instance number makes possible to run use multiple processes of the driver, each one with a distinct configuration. **Mandatory parameter**.
 * _**enabled**_ [Boolean] - Controls the enabling of the instance. Use false here to disable the instance. **Mandatory parameter**.
 * _**logLevel**_ [Double] - Number code for log level (0=minimum,1=basic,2=detailed,3=debug). Too much logging (levels 2 and 3) can affect performance. **Mandatory parameter**.
