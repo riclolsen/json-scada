@@ -73,7 +73,7 @@ A instance for this driver can have many server ports defined that must be descr
 * _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
-* _**portName**_ [String] - Comm port name Ex. "COM1", "/dev/ttyS0", "192.168.0.1:2410" for TCP address:port. **Mandatory parameter**.
+* _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0", "192.168.0.1:2410" for TCP address:port. **Mandatory parameter**.
 * _**baudRate**_ [Double] - Comm port baud rate. **Mandatory parameter**.
 * _**parity**_ [String] - Comm port parity Even|None|Odd|Mark|Space. **Mandatory parameter**.
 * _**stopBits**_ [String] - Comm port number of stop bits One|One5|Two. **Mandatory parameter**.
@@ -81,15 +81,15 @@ A instance for this driver can have many server ports defined that must be descr
 * _**timeoutForACK**_ [Double] - Comm port timeout for ACK of the link layer message (ms). **Mandatory parameter**.
 * _**timeoutRepeat**_ [Double] - Comm port timeout for repeated transmission of link layer messages (ms). **Mandatory parameter**.
 * _**useSingleCharACK**_ [Boolean] - Indicates if the secondary link layer will use single char ACK (E5). **Mandatory parameter**.
-* _**sizeOfLinkAddress**_ [Double] - Size of the link layer address field of the LPCI. Can be 0, 1, or 2.. **Mandatory parameter**.
+* _**sizeOfLinkAddress**_ [Double] - Size of the link layer address field of the LPCI. Can be 0, 1, or 2. **Mandatory parameter**.
 * _**localLinkAddress**_ [Double] - Local link address for the connection (originator address). **Mandatory parameter**.
 * _**remoteLinkAddress**_ [Double] - Not used for this driver. **Optional parameter**.
 * _**giInterval**_ [Double] - Not used for this driver. **Optional parameter**.
 * _**testCommandInterval**_ [Double] - Not used for this driver. **Optional parameter**.
 * _**timeSyncInterval**_ [Double] - Not used for this driver. **Mandatory parameter**.
-* _**sizeOfCOT**_ [Double] - Size of Cause Of Transmission protocol field in bytes. **Mandatory parameter**.
-* _**sizeOfCA**_ [Double] - Size of Command Address protocol field in bytes. **Mandatory parameter**.
-* _**sizeOfIOA**_ [Double] - Size of Information Object Address protocol field in bytes. **Mandatory parameter**.
+* _**sizeOfCOT**_ [Double] - Size of Cause Of Transmission protocol field in bytes (1 or 2). **Mandatory parameter**.
+* _**sizeOfCA**_ [Double] - Size of Command Address protocol field in bytes (1 or 2). **Mandatory parameter**.
+* _**sizeOfIOA**_ [Double] - Size of Information Object Address protocol field in bytes (1, 2, or 3). **Mandatory parameter**.
 * _**maxQueueSize**_ [Double] - Maximum number of (Class1 or Class 2) messages that can be buffered. **Mandatory parameter**.
 
 ## Configure tags for distribution

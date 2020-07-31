@@ -81,9 +81,9 @@ A instance for this driver can have many server ports defined that must be descr
 * _**giInterval**_ [Double] - Not used for this driver. **Optional parameter**.
 * _**testCommandInterval**_ [Double] - Not used for this driver. **Optional parameter**.
 * _**timeSyncInterval**_ [Double] - Not used for this driver. **Mandatory parameter**.
-* _**sizeOfCOT**_ [Double] - Size of Cause Of Transmission protocol field in bytes. **Mandatory parameter**.
-* _**sizeOfCA**_ [Double] - Size of Command Address protocol field in bytes. **Mandatory parameter**.
-* _**sizeOfIOA**_ [Double] - Size of Information Object Address protocol field in bytes. **Mandatory parameter**.
+* _**sizeOfCOT**_ [Double] - Size of Cause Of Transmission protocol field in bytes  (1 or 2). **Mandatory parameter**.
+* _**sizeOfCA**_ [Double] - Size of Command Address protocol field in bytes (1 or 2). **Mandatory parameter**.
+* _**sizeOfIOA**_ [Double] - Size of Information Object Address protocol field in bytes (1, 2, or 3). **Mandatory parameter**.
 * _**k**_ [Double] - Protocol _k_ parameter. **Mandatory parameter**.
 * _**w**_ [Double] - Protocol _w_ parameter. **Mandatory parameter**.
 * _**t0**_ [Double] - Protocol _t0_ timeout in seconds. **Mandatory parameter**.
