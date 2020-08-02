@@ -62,8 +62,8 @@ services:
       - ./postgres_seed:/docker-entrypoint-initdb.d/
       #- ./timescale:/var/lib/postgresql
     # to export postgresql port on main host!
-    #ports:
-    #  - 5432:5432
+    ports:
+      - 5432:5432
     # internal container port
     expose:
       - "5432"
