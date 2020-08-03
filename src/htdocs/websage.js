@@ -2658,7 +2658,7 @@ else
                     // show the linked page preview on mouseover
                     WebSAGE.setPreview(
                       item,
-                      "screen.html?SELTELA=../svg/" +
+                      "?SELTELA=../svg/" +
                         idtela +
                         "&ZPX=0&ZPY=0&ZPW=5280&ZPH=3300&HIDETB=1",
                       700,

@@ -11,6 +11,7 @@ A portable SCADA/IoT platform centered on the MongoDB database server.
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Unlimited tags, servers, and users.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
+* MongoDB Change Streams for realtime async database events processing.
 * HTML5 Web interface. UTF-8/I18N. Mobile access.
 * Inkscape-based SVG synoptic display editor.
 * IEC60870-101/104 Client and Server protocols.
@@ -95,6 +96,16 @@ You certify that:
 * [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
 * [OSHMI2JSON Tool](src/oshmi2json/README.md)
 * [Schema Documentation](docs/schema.md)
+
+## Requirements
+
+* Node.js 14.
+* Dotnet Core 3.1.
+* Golang 1.14.
+* MongoDB 4.2.
+* PostgreSQL 12.
+* TimescaleDB 1.7.
+* Grafana 7.0.
 
 ## Contact
 

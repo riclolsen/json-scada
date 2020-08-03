@@ -15,7 +15,7 @@
    height="1500"
    id="svg2"
    version="1.1"
-   inkscape:version="0.92.3 (cc100de, 2018-03-31, custom)"
+   inkscape:version="0.92.4 (e05b578f1, 2019-02-26, custom)"
    onload="var src; if (document.documentURI) src = document.documentURI; else if (this.getSrc) src = this.getSrc(); else src = document.location.href + ''; try {parent.preload.load(src);}catch(e) {}"
    sodipodi:docname="kaw2.svg">
   <sodipodi:namedview
@@ -26,15 +26,15 @@
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
      inkscape:zoom="1.005"
-     inkscape:cx="-8.3662433"
-     inkscape:cy="821.04734"
+     inkscape:cx="-180.00803"
+     inkscape:cy="1139.4553"
      inkscape:document-units="px"
-     inkscape:current-layer="layer2"
+     inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="3840"
-     inkscape:window-height="2126"
-     inkscape:window-x="-11"
-     inkscape:window-y="-11"
+     inkscape:window-width="2560"
+     inkscape:window-height="1057"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      inkscape:snap-global="true"
      showguides="true"
@@ -6680,29 +6680,6 @@
            x="1340.7743"
            sodipodi:role="line"
            style="font-size:14px;line-height:1">TR5</tspan></text>
-    </g>
-    <g
-       id="g4700"
-       transform="translate(-102.7034,44.703397)">
-      <path
-         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;0&quot;,&quot;param&quot;:&quot;none|none&quot;,&quot;tag&quot;:&quot;!EVAL V[38506] &amp; V[38509]&quot;},{&quot;data&quot;:&quot;1&quot;,&quot;param&quot;:&quot;yellow|black&quot;,&quot;tag&quot;:&quot;!EVAL V[38506] &amp; V[38509]&quot;}]}"
-         sodipodi:nodetypes="cccc"
-         inkscape:connector-curvature="0"
-         id="almshape1-1"
-         d="m 307.5,-357.63782 -22.5,30 45,0 -22.5,-30"
-         style="fill:#ffff00;stroke:#000000;stroke-width:1.75662017;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
-      <text
-         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;0&quot;,&quot;param&quot;:&quot;none|none&quot;,&quot;tag&quot;:&quot;!EVAL V[38506] &amp; V[38509]&quot;},{&quot;data&quot;:&quot;1&quot;,&quot;param&quot;:&quot;black|&quot;,&quot;tag&quot;:&quot;!EVAL V[38506] &amp; V[38509]&quot;}]}"
-         id="almshapetext-7"
-         y="-332.34122"
-         x="306.7034"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:sans-serif;-inkscape-font-specification:Sans;text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none"
-         xml:space="preserve"><tspan
-           y="-332.34122"
-           x="306.7034"
-           id="tspan7330-0-40"
-           sodipodi:role="line"
-           style="font-size:20px;line-height:1.25;font-family:sans-serif">1</tspan></text>
     </g>
     <g
        id="g5500"
@@ -15869,62 +15846,57 @@
            y="-274.63782"
            style="font-size:20px;line-height:1.25;font-family:sans-serif">86BF</tspan></text>
     </g>
-    <a
-       xlink:href="kor1.svg"
-       transform="translate(-28.855722,-45.771144)"
-       id="a7142">
+    <g
+       id="g12290"
+       inkscape:label="{&quot;attr&quot;:&quot;open&quot;,&quot;height&quot;:400,&quot;istag&quot;:0,&quot;src&quot;:&quot;kik3.svg&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}">
       <text
-         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-14|&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;open&quot;,&quot;height&quot;:400,&quot;istag&quot;:0,&quot;src&quot;:&quot;kor1.svg&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
-         id="text6774-9-3-7-8-2"
-         y="-358.5686"
-         x="31.992514"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Trebuchet MS';-inkscape-font-specification:'Trebuchet MS, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;fill:#666666;fill-opacity:1;stroke:none"
+         onload="evt.currentTarget.style.cursor='pointer';"
          xml:space="preserve"
-         onload="evt.currentTarget.style.cursor='pointer';"><tspan
-           y="-358.5686"
-           x="31.992514"
-           id="tspan6778-1-5-8-4-8"
-           sodipodi:role="line"
-           style="font-size:17.5px;line-height:1.25">KOR1»</tspan></text>
-    </a>
-    <a
-       xlink:href="knh2.svg"
-       style="display:inline"
-       id="a7142-9"
-       transform="translate(-28.855722,-23.771108)">
-      <text
-         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-14|&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;open&quot;,&quot;height&quot;:400,&quot;istag&quot;:0,&quot;src&quot;:&quot;knh2.svg&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
-         id="text6774-9-3-7-8-2-5"
-         y="-358.5686"
-         x="31.992514"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Trebuchet MS';-inkscape-font-specification:'Trebuchet MS, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;fill:#666666;fill-opacity:1;stroke:none"
-         xml:space="preserve"
-         onload="evt.currentTarget.style.cursor='pointer';"><tspan
-           y="-358.5686"
-           x="31.992514"
-           id="tspan6778-1-5-8-4-8-7"
-           sodipodi:role="line"
-           style="font-size:17.5px;line-height:1.25">KNH2»</tspan></text>
-    </a>
-    <a
-       xlink:href="kik3.svg"
-       style="display:inline"
-       id="a7142-90"
-       transform="translate(-28.855722,-1.7711077)">
-      <text
-         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-14|&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;open&quot;,&quot;height&quot;:400,&quot;istag&quot;:0,&quot;src&quot;:&quot;kik3.svg&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
+         x="3.1367917"
+         y="-340.33975"
          id="text6774-9-3-7-8-2-9"
-         y="-358.5686"
-         x="31.992514"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Trebuchet MS';-inkscape-font-specification:'Trebuchet MS, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;fill:#666666;fill-opacity:1;stroke:none"
-         xml:space="preserve"
-         onload="evt.currentTarget.style.cursor='pointer';"><tspan
-           y="-358.5686"
-           x="31.992514"
-           id="tspan6778-1-5-8-4-8-4"
+         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-14|&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"><tspan
+           style="font-size:17.5px;line-height:1.25"
            sodipodi:role="line"
-           style="font-size:17.5px;line-height:1.25">KIK3»</tspan></text>
-    </a>
+           id="tspan6778-1-5-8-4-8-4"
+           x="3.1367917"
+           y="-340.33975">KIK3»</tspan></text>
+    </g>
+    <g
+       id="g12298"
+       inkscape:label="{&quot;attr&quot;:&quot;open&quot;,&quot;height&quot;:400,&quot;istag&quot;:0,&quot;src&quot;:&quot;knh2.svg&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}">
+      <text
+         onload="evt.currentTarget.style.cursor='pointer';"
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Trebuchet MS';-inkscape-font-specification:'Trebuchet MS, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;fill:#666666;fill-opacity:1;stroke:none"
+         x="3.1367917"
+         y="-362.33975"
+         id="text6774-9-3-7-8-2-5"
+         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-14|&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"><tspan
+           style="font-size:17.5px;line-height:1.25"
+           sodipodi:role="line"
+           id="tspan6778-1-5-8-4-8-7"
+           x="3.1367917"
+           y="-362.33975">KNH2»</tspan></text>
+    </g>
+    <g
+       id="g12302"
+       inkscape:label="{&quot;attr&quot;:&quot;open&quot;,&quot;height&quot;:400,&quot;istag&quot;:0,&quot;src&quot;:&quot;kor1.svg&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}">
+      <text
+         onload="evt.currentTarget.style.cursor='pointer';"
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Trebuchet MS';-inkscape-font-specification:'Trebuchet MS, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;fill:#666666;fill-opacity:1;stroke:none"
+         x="3.1367912"
+         y="-384.33975"
+         id="text6774-9-3-7-8-2"
+         inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-14|&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"><tspan
+           style="font-size:17.5px;line-height:1.25"
+           sodipodi:role="line"
+           id="tspan6778-1-5-8-4-8"
+           x="3.1367912"
+           y="-384.33975">KOR1»</tspan></text>
+    </g>
   </g>
   <g
      inkscape:groupmode="layer"
@@ -17537,10 +17509,10 @@
        style="display:inline"
        id="gDetalhe230"
        inkscape:label="{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.display=\&quot;none\&quot;;&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;}"
-       transform="translate(-24,-392.36212)">
+       transform="translate(-26,-404.36212)">
       <path
-         style="color:#000000;fill:#cccccc;stroke:#808080;stroke-width:3.16531467;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         d="m 44,722.36212 177.12,0 52.88,-210 25.84,210 1220.16,0 -1.968,229.99994 -1474.032,0 z"
+         style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:#cccccc;stroke:#808080;stroke-width:3.16531467;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+         d="m 44,722.36212 h 177.12 l 52.88,-210 25.84,210 H 1520 l -1.968,229.99994 H 44 Z"
          id="rect5762"
          inkscape:connector-curvature="0"
          sodipodi:nodetypes="cccccccc"
@@ -17550,7 +17522,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=11404&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-8">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-2"
            width="33.313698"
            height="33.313698"
@@ -17576,7 +17548,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=11439&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9"
            width="33.313698"
            height="33.313698"
@@ -17606,14 +17578,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-9-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-3-7"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17647,7 +17619,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=6620&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-8-8">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-2-0"
            width="33.313698"
            height="33.313698"
@@ -17677,14 +17649,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17722,14 +17694,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-8-5"
-           d="m 87.229606,527.3621 53.184704,0 0,15.00016 -67.294933,0 z"
+           d="m 87.229606,527.3621 h 53.184704 v 15.00016 H 73.119377 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77772224;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-5-5"
-           d="m 21.020611,527.36218 66.208848,0 -14.110082,15 -52.098766,0 z"
+           d="m 21.020611,527.36218 h 66.208848 l -14.110082,15 H 21.020611 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76740986;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17767,14 +17739,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17812,14 +17784,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-8-5-5"
-           d="m 87.229606,527.3621 53.184704,0 0,15.00016 -67.294933,0 z"
+           d="m 87.229606,527.3621 h 53.184704 v 15.00016 H 73.119377 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77772224;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-5-5-7"
-           d="m 21.020611,527.36218 66.208848,0 -14.110082,15 -52.098766,0 z"
+           d="m 21.020611,527.36218 h 66.208848 l -14.110082,15 H 21.020611 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76740986;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17857,14 +17829,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17902,14 +17874,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-8-5-3"
-           d="m 87.229606,527.3621 53.184704,0 0,15.00016 -67.294933,0 z"
+           d="m 87.229606,527.3621 h 53.184704 v 15.00016 H 73.119377 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77772224;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-5-5-3"
-           d="m 21.020611,527.36218 66.208848,0 -14.110082,15 -52.098766,0 z"
+           d="m 21.020611,527.36218 h 66.208848 l -14.110082,15 H 21.020611 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76740986;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17947,14 +17919,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -17992,14 +17964,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18037,14 +18009,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-7-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-9-3"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18082,14 +18054,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-8-3-6"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-6-3-0"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18127,14 +18099,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-0-7-9"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-6-4-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18172,14 +18144,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-91"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-35"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18217,14 +18189,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-61"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-5"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18262,14 +18234,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-6-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-1-5"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18307,14 +18279,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-7-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-8-4"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18352,14 +18324,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-6-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-1-3"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18397,14 +18369,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-7"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-4"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18442,14 +18414,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-7-1-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-9-3-7"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18487,14 +18459,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-8-3-6-6"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-6-3-0-1"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18532,14 +18504,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-0-7-9-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-6-4-6-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18577,14 +18549,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-91-8"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-35-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18622,14 +18594,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-61-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-5-1"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18667,14 +18639,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-9-3-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-3-7-3"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18712,14 +18684,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-6-7-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-1-5-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18757,14 +18729,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-7-1-5"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-8-4-0"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18802,14 +18774,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-6-7-4"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-1-3-8"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18847,14 +18819,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-0"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-6"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18892,14 +18864,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-0-7-9-2"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-6-4-6-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18937,14 +18909,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-9-3-2"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-3-7-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -18982,14 +18954,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-6-7-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-1-3-3"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19027,14 +18999,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4-5"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2-2"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19068,7 +19040,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=1998&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-8-5">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-2-7"
            width="33.313698"
            height="33.313698"
@@ -19098,14 +19070,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-7-9"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-4-2"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19143,14 +19115,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-7-1-1-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-9-3-7-2"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19188,14 +19160,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-8-3-6-6-3"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-6-3-0-1-8"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19233,14 +19205,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-0-7-9-1-9"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-6-4-6-6-3"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19278,14 +19250,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-91-8-0"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-35-9-2"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19323,14 +19295,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-61-3-8"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-5-1-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19368,14 +19340,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-9-3-1-6"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-3-7-3-1"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19413,14 +19385,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-6-7-7-4"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-1-5-9-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19458,14 +19430,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-7-1-5-4"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-8-4-0-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19503,14 +19475,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-6-7-4-2"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-1-3-8-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19549,14 +19521,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-8-5-5-5"
-           d="m 87.229606,527.3621 53.184704,0 0,15.00016 -67.294933,0 z"
+           d="m 87.229606,527.3621 h 53.184704 v 15.00016 H 73.119377 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77772224;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-5-5-7-2"
-           d="m 21.020611,527.36218 66.208848,0 -14.110082,15 -52.098766,0 z"
+           d="m 21.020611,527.36218 h 66.208848 l -14.110082,15 H 21.020611 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76740986;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19595,14 +19567,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-8-5-3-3"
-           d="m 87.229606,527.3621 53.184704,0 0,15.00016 -67.294933,0 z"
+           d="m 87.229606,527.3621 h 53.184704 v 15.00016 H 73.119377 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77772224;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-5-5-3-22"
-           d="m 21.020611,527.36218 66.208848,0 -14.110082,15 -52.098766,0 z"
+           d="m 21.020611,527.36218 h 66.208848 l -14.110082,15 H 21.020611 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76740986;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19637,7 +19609,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=38494&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-8-4-4-1">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-2-09-2-7"
            width="33.313698"
            height="33.313698"
@@ -19668,14 +19640,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-7-6-7-4"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-4-0-7-8"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19722,10 +19694,10 @@
        style="display:inline"
        id="gDetalhe69"
        inkscape:label="{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.display=\&quot;none\&quot;;&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;}"
-       transform="translate(-20,-62.36212)">
+       transform="translate(-20,-68.36212)">
       <path
-         style="color:#000000;fill:#cccccc;stroke:#808080;stroke-width:3.23950362;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         d="m 30,722.36218 119.55733,0 L 180,367.36212 l 19.02933,355.00006 1376.97067,0 -2.0613,229.99994 -1543.9387,0 z"
+         style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:#cccccc;stroke:#808080;stroke-width:3.23950362;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
+         d="M 30,722.36218 H 149.55733 L 180,367.36212 199.02933,722.36218 H 1576 l -2.0613,229.99994 H 30 Z"
          id="rect5762-7"
          inkscape:connector-curvature="0"
          sodipodi:nodetypes="cccccccc"
@@ -19735,7 +19707,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=6894&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-8-4">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-2-09"
            width="33.313698"
            height="33.313698"
@@ -19761,7 +19733,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=6817&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-82">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-4"
            width="33.313698"
            height="33.313698"
@@ -19791,14 +19763,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-9-3-15"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-3-7-2"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19836,14 +19808,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-4"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19881,14 +19853,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4-7-9"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0-9-8"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19926,14 +19898,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4-0"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -19971,14 +19943,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-6"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-1"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20016,14 +19988,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-7-1-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-9-3-8"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20061,14 +20033,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-8-3-6-5"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-6-3-0-9"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20106,14 +20078,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-0-7-9-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-6-4-6-61"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20151,14 +20123,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-91-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-35-3"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20196,14 +20168,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-61-6"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-5-5"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20241,14 +20213,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-6-7-0"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-1-5-0"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20286,14 +20258,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-7-1-1"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-8-4-7"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20331,14 +20303,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-6-7-5"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-1-3-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20376,14 +20348,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-7-6"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-4-0"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20421,14 +20393,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-7-1-1-5"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-9-3-7-0"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20466,14 +20438,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-8-3-6-6-5"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-6-3-0-1-1"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20511,14 +20483,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-0-7-9-1-0"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-6-4-6-6-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20556,14 +20528,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-91-8-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-35-9-9"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20601,14 +20573,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-61-3-83"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-5-1-8"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20646,14 +20618,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-6-7-7-9"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-1-5-9-68"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20691,14 +20663,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-6-7-4-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-1-3-8-4"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20736,14 +20708,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4-5-6"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2-2-1"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20781,14 +20753,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4-7-9-3"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0-9-8-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20826,14 +20798,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4-0-4"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2-9-6"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20871,14 +20843,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4-7-9-36"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0-9-8-4"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20916,14 +20888,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4-0-40"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2-9-5"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -20961,14 +20933,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4-7-9-36-8"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0-9-8-4-8"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -21006,14 +20978,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-7-7-4-0-40-5"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-4-61-2-9-5-7"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -21047,7 +21019,7 @@
          inkscape:label="{&quot;attr&quot;:&quot;clone&quot;,&quot;map&quot;:[&quot;%n=11533&quot;]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;notrace&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}"
          id="g7512-7-5-1-2-0-8-4-4">
         <rect
-           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.66568494;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="almshape0-2-4-5-1-2-9-2-09-2"
            width="33.313698"
            height="33.313698"
@@ -21077,14 +21049,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-8-2-81-4-7-5-0-7-6-7"
-           d="m 87.235569,527.36218 53.233841,0 0,15 -67.357107,0 z"
+           d="m 87.235569,527.36218 h 53.233841 v 15 H 73.112303 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77807736;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Relé 50/51&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-4-2-25-3-4-7-2-4-0-7"
-           d="m 20.964861,527.36218 66.270708,0 -14.123266,15 -52.147442,0 z"
+           d="m 20.964861,527.36218 h 66.270708 l -14.123266,15 H 20.964861 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76776826;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -21127,14 +21099,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-8-9-3-15-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on_inv&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-6-3-7-2-4"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -21173,14 +21145,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-03-1-5-3-09-7-1-1-2"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-64-9-0-8-0-8-4-7-4"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
@@ -21219,14 +21191,14 @@
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-5-7-4-8-2-9-4-4-7-9-7"
-           d="m 87.262607,527.36218 53.454743,0 0,15 -67.636615,0 z"
+           d="m 87.262607,527.36218 h 53.454743 v 15 H 73.080735 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.77969009;stroke-opacity:1" />
         <path
            inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;box_on&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;}"
            sodipodi:nodetypes="ccccc"
            inkscape:connector-curvature="0"
            id="rect1324-11-2-5-7-8-2-0-9-8-40"
-           d="m 20.7169,527.36218 66.545707,0 -14.181872,15 -52.363835,0 z"
+           d="m 20.7169,527.36218 h 66.545707 l -14.181872,15 H 20.7169 Z"
            style="fill:#7797a3;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:0.76935959;stroke-opacity:1" />
         <text
            transform="scale(0.99207383,1.0079895)"
