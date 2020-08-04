@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.8'
 
 # {json:scada} Demo - (c) 2020 - Ricardo L. Olsen 
 
@@ -14,37 +14,22 @@ services:
   jsdemo_mongorsn1:
     image: mongo:4.2.8
     container_name: jsdemo_mongors1
-    hostname: mongors1
+    hostname: jsdemo_mongorsn1
     restart: unless-stopped
-    command: "mongod --bind_ip_all --replSet rs1 --wiredTigerCacheSizeGB 2 --dbpath /data/db --port 27017"
+    command: "mongod --bind_ip_all --replSet rs1 --wiredTigerCacheSizeGB 2 --dbpath /data/db --port 27017"    
+    extra_hosts:
+      - "jsdemo_mongorsn1:127.0.0.1"
     volumes:
       - ./mongors1/files:/files
+      - ./mongo_seed/files:/docker-entrypoint-initdb.d
+    environment:
+      - MONGO_INITDB_DATABASE=json_scada
     # to export mongodb port on main host!
-    #ports:
-    #  - "27017:27017"
+    ports:
+      - "27017:27017"
     # internal container port
     expose:
       - "27017"
-    healthcheck:
-      test: ["CMD", "/files/docker-healthcheck"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-    networks:
-      - jsdemo_net
-  
-  # init mongo replica set and json_scada database
-  mongo_seed:
-    image: mongo:4.2.8
-    container_name: jsdemo_mongo_seed
-    command: sh -c "mongo mongodb://jsdemo_mongorsn1:27017 /files/rs-init.js && sleep 5 && mongo mongodb://jsdemo_mongorsn1:27017/json_scada?replSet=rs1 /files/create-db.js && mongoimport --host jsdemo_mongorsn1 --db json_scada --collection protocolDriverInstances --type json --file /files/demo_instances.json && mongoimport --host jsdemo_mongorsn1 --db json_scada --collection protocolConnections --type json --file /files/demo_connections.json && mongoimport --host jsdemo_mongorsn1 --db json_scada --collection realtimeData --type json --file /files/demo_data.json "
-    volumes:
-      - ./mongo_seed/files:/files
-    links:
-      - jsdemo_mongorsn1
-    depends_on:
-      jsdemo_mongorsn1:
-        condition: service_healthy    
     networks:
       - jsdemo_net
   
