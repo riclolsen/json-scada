@@ -121,7 +121,7 @@ services:
   iec104client:
     image: mcr.microsoft.com/dotnet/core/runtime:3.1
     container_name: jsdemo_iec104client
-    command: sh -c "sleep 30 && /jsonscada_bin/iec104client"
+    command: sh -c "sleep 20 && /jsonscada_bin/iec104client"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
@@ -135,7 +135,7 @@ services:
   iec104server:
     image: mcr.microsoft.com/dotnet/core/runtime:3.1
     container_name:  jsdemo_iec104server
-    command: sh -c "sleep 30 && /jsonscada_bin/iec104server"
+    command: sh -c "sleep 20 && /jsonscada_bin/iec104server"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
@@ -154,7 +154,7 @@ services:
   cs_data_processor:
     image: node:current-alpine3.12
     container_name: jsdemo_cs_data_processor
-    command:  sh -c "cd /cs_data_processor && sleep 15 && node cs_data_processor.js"
+    command:  sh -c "cd /cs_data_processor && sleep 10 && node cs_data_processor.js"
     restart: unless-stopped
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
@@ -169,7 +169,7 @@ services:
   server_realtime:
     image: node:current-alpine3.12
     container_name: jsdemo_server_realtime
-    command:  sh -c "cd /server_realtime && sleep 15 && node index.js"
+    command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
     restart: unless-stopped
     environment:
       - JS_HTTP_PORT=8080
@@ -196,7 +196,7 @@ services:
   calculations:
     image: node:current-alpine3.12
     container_name: jsdemo_calculations
-    command:  sh -c "sleep 30 && cd /jsonscada_bin/ && ./calculations"
+    command:  sh -c "sleep 15 && cd /jsonscada_bin/ && ./calculations"
     restart: unless-stopped
     volumes:
       - ./conf:/conf

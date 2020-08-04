@@ -17,9 +17,9 @@ To run this demo, a docker runtime is needed with docker-compose command availab
 
 It can run on any Linux x64 or Windows 10 x64 (use Docker/WSL2 on Windows 10 version 2004 for best performance on this platform).
 
-Clone the whole repository on the host computer.
+Clone the whole repository on the host computer. 
 
-	git clone https://github.com/riclolsen/json-scada.git 
+	git clone https://github.com/riclolsen/json-scada.git  --config core.autocrlf=input
 
 Go to the compile-docker folder to create binaries.
 
