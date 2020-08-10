@@ -37,6 +37,8 @@ Wait until images are pulled, the databases are seeded and the protocol communic
 
 Access http://localhost:3001 on Chrome or Firefox.
 
+To access Grafana the credentials are user="admin" and password="jsonscada".
+
 This demo will connect to the online demo using IEC60870-5-104. 
 
 Online demo: http://vmi233205.contaboserver.net:8080/.
