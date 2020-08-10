@@ -149,7 +149,7 @@ Example document.
 * _**_protocolSourceCommandUseSBO_**_ [Boolean] - Use or not Select Before Operate for commands. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or empty array when not point is not to be distributed. See protocol documentation. **Mandatory parameter**.
 
-### Values that can be configured and altered by the operators.
+### Fields that can be configured and altered by the operators.
 
 * _**_hiLimit_**_ [Double] - High limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
 * _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm. Use null,Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
@@ -164,7 +164,7 @@ Example document.
 * _**_commandBlocked_**_ [Boolean] - When true, the command is disabled by the operator. **Mandatory parameter**.
 * _**_notes_**_ [String] - Documental notes text about the point. **Mandatory parameter**.
 
-### Values updated by the system.
+### Fields updated by the system.
 
 * _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
 * _**_invalid_**_ [Boolean] - When true value is considered old or not trusted. **Mandatory parameter**.

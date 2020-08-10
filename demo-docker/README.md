@@ -35,7 +35,7 @@ Go to the demo-docker folder and run the system.
 
 Wait until images are pulled, the databases are seeded and the protocol communication begins.
 
-Access http://localhost:3001 on Chrome or Firefox.
+Access http://localhost:8080 on Chrome or Firefox.
 
 To access Grafana the credentials are user="admin" and password="jsonscada".
 
