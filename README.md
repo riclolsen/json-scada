@@ -85,6 +85,7 @@ You certify that:
 ## Documentation
 
 * [Docker Demo](demo-docker/README.md)
+* [Config File](conf/README.md)
 * [Calculations](src/calculations/README.md)
 * [IEC60870-5-104 Server Driver](src/lib60870.netcore/iec104server/README.md)
 * [IEC60870-5-104 Client Driver](src/lib60870.netcore/iec104client/README.md)
@@ -96,6 +97,7 @@ You certify that:
 * [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
 * [OSHMI2JSON Tool](src/oshmi2json/README.md)
 * [Schema Documentation](docs/schema.md)
+* [Install Guide](docs/install.md)
 
 ## Requirements
 

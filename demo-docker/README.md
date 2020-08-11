@@ -53,3 +53,4 @@ Suggestions of free IEC60870-5-104 clients
 
 * https://github.com/riclolsen/qtester104
 * http://the-vinci.com/vinci-software.
+* https://www.mz-automation.de/communication-protocols/iec-60870-5-104-test-tool/
