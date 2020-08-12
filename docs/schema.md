@@ -1,12 +1,12 @@
-# Schema Documentation
+# MongoDB Schema Documentation
 
 The JSON-SCADA MongoDB database is comprised of the following collections.
 
 * _realtimeData_ - This is the table that contains point information, tag names, point attributes and realtime values.
 * _protocolDriverInstances_ - Configuration of protocol drivers instances. See specific protocol for documentation.
 * _protocolConnections_ - Configuration of protocol connections. See specific protocol for documentation.
-* _commandsQueue_ - Queue for commands. This collection has no configuration, it is written by the system when user issue commands in the UI. It is consumed by protocol drivers only when new documents are inserted. Old documents are not erased automatically. Protocol acknowledgement information is updated by the protocol driver.
-* _soeData_ - Sequence of Events data. This is a Capped Collection, it has a limited size. Old documents are overwritten when the maximum sized is reached. Data here is only written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30).
+* _commandsQueue_ - Queue for commands.
+* _soeData_ - Sequence of Events data. This is a Capped Collection, it has a limited size.
 
 Please notice that all numeric fields from the schema is recorded as BSON Doubles (64 bit floating point). However, some numeric fields are expected to contain only integer values. When numbers are updated by the Mongo Shell manually, all numeric data is converted to BSON Doubles by default. Some languages like Node.js can cause values to be stored as integers or doubles depending on the current value. It is important that values are always stored as BSON Doubles as otherwise problems may be encountered by protocol drivers, specially those programmed in C#/DotNet Core.
 
@@ -142,9 +142,9 @@ Example document.
 * _**_kconv1_**_ [Double] - Conversion factor 1 (multiplier). Applied when _origin=supervised_, _origin=command_ or _origin=calculated_. Use -1 to invert states of digital values and commands. **Mandatory parameter**.
 * _**_kconv2_**_ [Double] - Conversion factor 2 (adder). Applied when _origin=supervised_ or _origin=calculated_. **Mandatory parameter**.
 * _**_protocolSourceConnectionNumber_**_ [Double] - Indicates the protocol connection that can updated the point. Should contain only integer values. Only meaningful when _origin=supervised_ or _origin=command_. **Mandatory parameter**.
-* _**_protocolSourceCommonAddress_**_ [Double] - Protocol driver common address (device address). Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
-* _**_protocolSourceObjectAddress_**_ [Double or String] -  Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
-* _**_protocolSourceASDU_**_ [Double or String] -  Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
+* _**_protocolSourceCommonAddress_**_ [Double] - Protocol common address (device address). Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
+* _**_protocolSourceObjectAddress_**_ [Double or String] -  Protocol object address. Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
+* _**_protocolSourceASDU_**_ [Double or String] - Protocol information ASDU TI type. Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolSourceCommandDuration_**_ [Double] - Additional command specification. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolSourceCommandUseSBO_**_ [Boolean] - Use or not Select Before Operate for commands. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or empty array when not point is not to be distributed. See protocol documentation. **Mandatory parameter**.
@@ -201,9 +201,106 @@ _**_updatesCnt_**_ [Double] - Count of updates. **Mandatory parameter**.
 
 ## _commandsQueue_ collection
 
+This collection has no configuration, it is written by the system when user issue commands in the UI. Commands are inserted here to be dispatched by protocols drivers. Protocol acknowledgement information is updated here also by protocol drivers.
+
+Custom applications can also create commands to be dispatched by protocol drivers if desired.
+
+Commands are processed only for new insertions. Old documents are preserved and can only be manually removed.
+
+Example document
+
+    {
+    "_id":{
+        "$oid":"5f1098dfd0ea7b5d01d6045c"
+    },
+    "protocolSourceConnectionNumber":61,
+    "protocolSourceCommonAddress":1,
+    "protocolSourceObjectAddress":64139,
+    "protocolSourceASDU":45,
+    "protocolSourceCommandDuration":0,
+    "protocolSourceCommandUseSBO":false,
+    "pointKey":64139,
+    "tag":"KAW2KPR21XCBR5217----K",
+    "timeTag":{
+        "$date":"2020-07-16T18:13:51.182Z"
+    },
+    "value":1,
+    "valueString":"1",
+    "originatorUserName":"Protocol connection: IEC104DIST",
+    "originatorIpAddress":"127.0.0.1:58446 127.0.0.1:58446 ",
+    "delivered":true,
+    "ack":true,
+    "ackTimeTag":{
+        "$date":"2020-07-16T18:13:51.304Z"
+    }
+    }
+
+* _**__id_**_ [ObjectId] - MongoDB document id.
+* _**_protocolSourceConnectionNumber_**_ [Double] - Indicates the protocol connection that will dispatch the command. Should contain only integer values.
+* _**_protocolSourceCommonAddress_**_ [Double] - Protocol common address (device address). See specific protocol documentation.
+* _**_protocolSourceObjectAddress_**_ [Double or String] - Protocol object address. See specific protocol documentation.
+* _**_protocolSourceASDU_**_ [Double or String] - Protocol information ASDU type. See specific protocol documentation.
+* _**_protocolSourceCommandDuration_**_ [Double] - Additional command specification. See specific protocol documentation.
+* _**_protocolSourceCommandUseSBO_**_ [Boolean] - When true means it is desired to use Select-Before-Operate sequence.
+* _**_pointKey_**_ [Double] - Numeric key of the point (link to _id field of _realtimeData_ collection).
+* _**_tag_**_ [String] - Point tag name of event.
+* _**_timeTag_**_ [Date] - Timestamp for the insertion of the command document.
+* _**_value_**_ [Double] - Numeric value for the command.
+* _**_valueString_**_ [String] - String text for the command.
+* _**_originatorUserName_**_ [String] - Name of command originator process and user name.
+* _**_originatorIpAddress_**_ [String] - IP address of originator.
+* _**_delivered_**_ [Boolean] - When true means the protocol driver consumed and dispatched the command.
+* _**_ack_**_ [Boolean] - The value means the protocol driver received true=positive or false=negative confirmation for the dispatched command. This property is to be inserted by the consuming protocol driver.
+* _**_ackTimeTag_**_ [Date] - Timestamp of the ack insertion.
+
+
 ## _soeData_ collection
 
-## Extending the Schema
+Here are stored Sequence of Events (SOE) information for digital values with source timestamps.
 
+This is a Capped Collection, it has a limited size. Old documents are overwritten when the maximum sized is reached. Data here is only written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30).
 
+    {
+    "_id":{
+        "$oid":"5f3427575afe8a451246eb4e"
+    },
+    "tag":"KAW2IB1-bRPRT----CmFl",
+    "pointKey":2742,
+    "group1":"KAW2",
+    "description":"KAW2~IB1 13,8kV~Protection-Communic.Failure",
+    "eventText":"COMM FAILURE",
+    "invalid":false,
+    "priority":3,
+    "timeTag":{
+        "$date":"2020-08-12T17:31:03.702Z"
+    },
+    "timeTagAtSource":{
+        "$date":"2020-08-12T13:31:03.499Z"
+    },
+    "timeTagAtSourceOk":true,
+    "ack":0
+    }
 
+* _**__id_**_ [ObjectId] - MongoDB document id.
+* _**_tag_**_ [String] - Point tag name of event.
+* _**_pointKey_**_ [Double] - Numeric key of the point (link to _id field of _realtimeData_ collection).
+* _**_group1_**_ [String] - Highest level grouping.
+* _**_description_**_ [String] - Full description of monitored information.
+* _**_eventText_**_ [String] - Text related to the event status change.
+* _**_invalid_**_ [Boolean] - When true means the status change is not trusted to be ok.
+* _**_priority_**_ [Double] - Priority of the point, 0 (highest) - 9 (lowest)
+* _**_timeTag_**_ [Date] - Timestamp for the arrival of information.
+* _**_timeTagAtSource_**_ [Date] - Timestamp for the change stamped by the source device (RTU/IED).
+* _**_timeTagAtSourceOk_**_ [Boolean] - When true means the source timestamp is considered ok.
+* _**_ack_**_ [Double] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
+
+## Extending the Database Schema
+
+MongoDB schemas can be extended without affecting the JSON-SCADA standard processes. New properties and collections can be added to the standard schema. However care should be taken to avoid naming collisions with future properties of the system.
+
+All JSON-SCADA collections and fields are named with an initial lower case letter.
+So, extended collections and properties should avoid this reserved convention.
+
+Is is recommended that custom collections and extended fields/properties be named with an initial upper case letter and also should be used a prefix that can identify the company or application.
+
+# PostgreSQL/TimescaleDB Schema
