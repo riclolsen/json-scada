@@ -201,3 +201,9 @@ _**_updatesCnt_**_ [Double] - Count of updates. **Mandatory parameter**.
 
 ## _commandsQueue_ collection
 
+## _soeData_ collection
+
+## Extending the Schema
+
+
+
