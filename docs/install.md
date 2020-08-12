@@ -2,23 +2,23 @@
 
 To install JSON-SCADA, it is required to install all the requirements first. There is no point reproducing original installation instructions for each upstream project. Here are links and relevant information specific to JSON-SCADA.
 
-## Supported platforms
+## Supported Hardware/OS Platforms
 
-* Most modern Linux x86/64 bits. Recommend Centos/Redhat 8.2.
+* Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2.
 
-* Windows 10 or Server x86/64 bits.
+* Windows 10 or Server x86-64 bits.
 
 * Linux ARM 32 bits (tested at least for protocol drivers on Raspberry Pi 3/Raspbian OS).
 
 It can possibly work also on MacOS and Linux ARM-64.
 
-A full system can run on a single commodity computer but for high performance and high availability on big systems (> 10.000 tags) it is strongly recommended the following hardware
+A full system can run on a single commodity x86 computer but for high performance and high availability on big systems (> 10.000 tags) it is strongly recommended the following hardware
 
 * Recent Intel Xeon, AMD Epyc or Threadripper server processors.
 
 * 32 GB RAM or more.
 
-* Exclusive data disks (XFS formatted on Linux) on 1TB+ NVMe SSDs for MongoDB (RAID-1 mirrored for high availability).
+* Exclusive data disks (XFS formatted on Linux) on 512GB+ NVMe SSDs for MongoDB (RAID-1 mirrored for high availability).
 
 * Exclusive data disks on 1TB+ NVMe SSDs for PostgreSQL (RAID-1 mirrored for high availability).
 
@@ -26,7 +26,7 @@ A full system can run on a single commodity computer but for high performance an
 
 * 2 PostgreSQL servers with replication.
 
-For more than 200.000 tags, a MongoDB sharded cluster may be needed.
+For large systems (like with more than 200.000 tags), a MongoDB sharded cluster may be needed.
 
 ## Software Requirements
 
@@ -61,6 +61,11 @@ For not trusted or open to Internet networks it is important to secure PostgreSQ
 
 * https://www.postgresql.org/docs/12/ssl-tcp.html
 
+Replication to a Standby server is recommended for high availability.
+
+* https://www.postgresql.org/docs/12/different-replication-solutions.html
+* https://www.postgresql.org/docs/12/warm-standby.html#STANDBY-SERVER-OPERATION
+
 ### 3. Grafana
 
 Grafana version 7.1.x. Previous versions can work but are not recommended.
@@ -87,7 +92,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 7. Other recommended software tools
 
-* Inkscape SAGE or SCADAvis.io SVG Editor - https://sourceforge.net/projects/oshmiopensubstationhmi/ or https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
+* Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://sourceforge.net/projects/oshmiopensubstationhmi/ or https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
 * MongoDB Compass - https://www.mongodb.com/products/compass
 * Git - https://git-scm.com/
 * Visual Studio Code - https://code.visualstudio.com/
@@ -104,13 +109,13 @@ Or do a git clone
 
     git clone https://github.com/riclolsen/json-scada
 
-Build the code (use inverted slashes and copy instead of cp on Windows)
+Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows)
     
     cd json-scada
     mkdir bin
 
-    cd src/lib60870
-    dotnet publish -p:PublishSingleFile=true -p:PublishReadyToRun=true -c Release -o ../../bin/
+    cd src/lib60870.netcore
+    dotnet publish -c Release -o ../../bin/
 
     cd ../calculations
     go get ./... 
@@ -137,7 +142,7 @@ Processes can be distributed on distinct servers, each server must have a differ
 
 Multiple JSON-SCADA systems can run on the same server, for this each one must have a distinct MongoDB and PostgreSQL database and a separate folder structure. Also a distinct listen HTTP ports must be configured.
 
-It is recommended to run JSON-SCADA processes as services or daemons. On Linux it is recommended the _Supervisor_ tool to manage processes. On Windows we recommend to convert processes on Windows services using the NSSM tool.
+It is recommended to run JSON-SCADA processes as services or daemons. On Linux it is recommended the _Supervisor_ tool to manage processes. On Windows it is recommend to convert processes on Windows services using the NSSM tool.
 
 ### Supervisor Configuration (Linux)
 
@@ -169,14 +174,6 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     silent=false                 ; no logs to stdout if true; default false
     minfds=1024                  ; min. avail startup file descriptors; default 1024
     minprocs=200                 ; min. avail process descriptors;default 200
-    ;umask=022                   ; process file creation umask; default 022
-    ;user=supervisord            ; setuid to this UNIX account at startup; recommended if root
-    ;identifier=supervisor       ; supervisord identifier, default is 'supervisor'
-    ;directory=/tmp              ; default is not to cd during start
-    ;nocleanup=true              ; don't clean up tempfiles at start; default false
-    ;childlogdir=/tmp            ; 'AUTO' child log dir, default $TEMP
-    ;environment=KEY="value"     ; key value pairs to add to environment
-    ;strip_ansi=false            ; strip ansi escape codes in logs; def. false
 
     ; The rpcinterface:supervisor section must remain in the config file for
     ; RPC (supervisorctl/web interface) to work.  Additional interfaces may be
@@ -192,7 +189,7 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     [supervisorctl]
     serverurl=unix:///tmp/supervisor.sock ; use a unix:// URL  for a unix socket
     ;serverurl=http://127.0.0.1:9001 ; use an http:// url to specify an inet socket
-    ;username=user              ; should be same as in [*_http_server] if set
+    ;username=user               ; should be same as in [*_http_server] if set
     ;password=123                ; should be same as in [*_http_server] if set
     ;prompt=mysupervisor         ; cmd line prompt (default "supervisor")
     ;history_file=~/.sc_history  ; use readline history if available
@@ -201,235 +198,108 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     command=/usr/bin/node /home/jsuser/json-scada/src/server_realtime/index.js
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/server_realtime.log    ; stdout log path, NONE for none; default AUTO
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/server_realtime.err    ; stderr log path, NONE for none; default AUTO
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
+    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/server_realtime.log    ; stdout log path, NONE for none;
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/server_realtime.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
     [program:cs_data_processor]
     command=/usr/bin/node /home/jsuser/json-scada/src/cs_data_processor/cs_data_processor.js
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/cs_data_processor_demo.log    ; stdout log path, NONE for none; default AUTO
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/cs_data_processor_demo.err    ; stderr log path, NONE for none; default AUTO
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
+    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/cs_data_processor.log    ; stdout log path, NONE for none;
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/cs_data_processor.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
     [program:calculations]
     command=/home/jsuser/json-scada/bin/calculations
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/calculations_demo1.log    ; stdout log path, NONE for none; default A$
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/calculations_demo1.err    ; stderr log path, NONE for none; default $
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
+    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/calculations.log    ; stdout log path, NONE for none;
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/calculations.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
     [program:iec104client]
     command=/home/jsuser/json-scada/bin/iec104client 1 1
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/iec104client_demo1.log    ; stdout log path, NONE for none; default A$
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/iec104client_demo1.err    ; stderr log path, NONE for none; default $
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
-
+    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/iec104client.log    ; stdout log path, NONE for none; 
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/iec104client.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
     [program:iec104server]
     command=/home/jsuser/json-scada/bin/iec104server 1 1
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/iec104server_demo1.log       ; stdout log path, NONE for none; default AUTO
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/iec104server_demo1.err      ; stderr log path, NONE for none; default AUTO
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
+    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/iec104server.log    ; stdout log path, NONE for none;
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/iec104server.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
     [program:pg_hist]
     command=/home/jsuser/json-scada/sql/process_pg_hist.sh
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/sql/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/pg_hist.log       ; stdout log path, NONE for none; default AUTO
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/pg_hist.err      ; stderr log path, NONE for none; default AUTO
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
+    directory=/home/jsuser/json-scada/sql/   ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/pg_hist.log    ; stdout log path, NONE for none;
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/pg_hist.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
     [program:pg_rtdata]
     command=/home/jsuser/json-scada/sql/process_pg_rtdata.sh
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/sql/                ; directory to cwd to before exec (def no cwd)
-    ;umask=022                     ; umask for process (default None)
-    ;priority=999                  ; the relative start priority (default 999)
-    ;autostart=true                ; start at supervisord start (default: true)
-    ;startsecs=1                   ; # of secs prog must stay up to be running (def.1)
-    ;startretries=3                ; max # of serial start failures when starting (default 3)
-    ;autorestart=unexpected        ; when to restart if exited after running (def: unexpected)
-    ;exitcodes=0                   ; 'expected' exit codes used with autorestart (default 0)
-    ;stopsignal=QUIT               ; signal used to kill process (default TERM)
-    ;stopwaitsecs=10               ; max num secs to wait b4 SIGKILL (default 10)
-    ;stopasgroup=false             ; send stop signal to the UNIX process group (default false)
-    ;killasgroup=false             ; SIGKILL the UNIX process group (def false)
-    user=jsuser                   ; setuid to this UNIX account to run the program
-    ;redirect_stderr=true          ; redirect proc stderr to stdout (default false)
-    stdout_logfile=/home/jsuser/json-scada/log/pg_rtdata.log       ; stdout log path, NONE for none; default AUTO
-    stdout_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0     ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stdout_events_enabled=false   ; emit events on stdout writes (default false)
-    ;stdout_syslog=false           ; send stdout to syslog with process name (default false)
-    stderr_logfile=/home/jsuser/json-scada/log/pg_rtdata.err      ; stderr log path, NONE for none; default AUTO
-    stderr_logfile_maxbytes=1MB   ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0     ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB   ; number of bytes in 'capturemode' (default 0)
-    ;stderr_events_enabled=false   ; emit events on stderr writes (default false)
-    ;stderr_syslog=false           ; send stderr to syslog with process name (default false)
-    ;environment=A="1",B="2"       ; process environment additions (def no adds)
-    ;serverurl=AUTO                ; override serverurl computation (childutils)
+    directory=/home/jsuser/json-scada/sql/    ; directory to cwd to before exec (def no cwd)
+    user=jsuser                    ; setuid to this UNIX account to run the program
+    stdout_logfile=/home/jsuser/json-scada/log/pg_rtdata.log    ; stdout log path, NONE for none;
+    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
+    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
+    stderr_logfile=/home/jsuser/json-scada/log/pg_rtdata.err    ; stderr log path, NONE for none;
+    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
+    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
+    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
 
-Excute the supervisor daemon
+Execute the supervisor daemon
 
     supervisord -c /etc/supervisord.conf
 
@@ -452,13 +322,13 @@ Use the tool create necessary services.
     nssm install JSON_SCADA_iec104server "C:\json-scada\bin\iec104server.exe"
     nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe"
     nssm install JSON_SCADA_cs_data_processor <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\cs_data_processor\cs_data_processor.js"
-    nssm set JSON_SCADA_cs_data_processor AppDirectory AppDirectory c:\json-scada\bin
+    nssm set JSON_SCADA_cs_data_processor AppDirectory c:\json-scada\bin
     nssm install JSON_SCADA_server_realtime <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\server_realtime\index.js"
-    nssm set JSON_SCADA_server_realtime AppDirectory AppDirectory c:\json-scada\bin
+    nssm set JSON_SCADA_server_realtime AppDirectory c:\json-scada\bin
 
     ... and so on ...
 
-Start, stop, restart services 
+To manage services use
 
     nssm start service_name
     nssm stop service_name
