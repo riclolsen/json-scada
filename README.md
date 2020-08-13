@@ -2,7 +2,7 @@
 
 ![logo](https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg "{json:scada} Logo")
 
-A portable SCADA/IoT platform centered on the MongoDB database server.
+A portable and scalable SCADA/IoT platform centered on the MongoDB database server.
 
 ## Major features and characteristics
 * Standard IT tools applied to SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB,Node.js, C#, Golang, Grafana, etc.).

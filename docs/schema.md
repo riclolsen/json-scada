@@ -253,7 +253,6 @@ Example document
 * _**_ack_**_ [Boolean] - The value means the protocol driver received true=positive or false=negative confirmation for the dispatched command. This property is to be inserted by the consuming protocol driver.
 * _**_ackTimeTag_**_ [Date] - Timestamp of the ack insertion.
 
-
 ## _soeData_ collection
 
 Here are stored Sequence of Events (SOE) information for digital values with source timestamps.
@@ -296,11 +295,80 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 
 ## Extending the Database Schema
 
-MongoDB schemas can be extended without affecting the JSON-SCADA standard processes. New properties and collections can be added to the standard schema. However care should be taken to avoid naming collisions with future properties of the system.
+MongoDB schemas can be extended without affecting the JSON-SCADA standard processes. New properties and collections can be added to the standard schema. However, care should be taken to avoid naming collisions with future properties of the system.
 
 All JSON-SCADA collections and fields are named with an initial lower case letter.
 So, extended collections and properties should avoid this reserved convention.
 
-Is is recommended that custom collections and extended fields/properties be named with an initial upper case letter and also should be used a prefix that can identify the company or application.
+Is is recommended that custom collections and extended fields/properties be named with an initial upper case letter and also should be used a prefix that can identify the company and/or application.
 
 # PostgreSQL/TimescaleDB Schema
+
+## Historian table
+
+In this table historical data is written. Local and source timestamps are recorded so that SOE events can be also extracted from this table. This table is converted to a TimescaleDB hypertable to be treated optimally as a time series table. The recommended partition is by day, but this can be changed if desired.
+
+    CREATE TABLE hist (
+        tag text not null,
+        time_tag TIMESTAMPTZ(3),
+        value float not null,
+        value_json jsonb,
+        time_tag_at_source TIMESTAMPTZ(3),
+        flags bit(8) not null,
+        PRIMARY KEY ( tag, time_tag )
+        );
+    CREATE INDEX ind_timeTag on hist ( time_tag );
+    CREATE INDEX ind_tagTimeTag on hist ( tag, time_tag_at_source );
+    comment on table hist is 'Historical data table';
+    comment on column hist.tag is 'String key for the point';
+    comment on column hist.value is 'Value as a double precision float';
+    comment on column hist.time_tag is 'GMT Timestamp for the time data was received by the server';
+    comment on column hist.time_tag_at_source is 'Field GMT timestamp for the event (null if not available)';
+    comment on column hist.value_json is 'Structured value as JSON, can be null when do not apply. For digital point it should be the status as in {s:"OFF"}';
+    comment on column hist.flags is 'Bit mask 0x80=value invalid, 0x40=Time tag at source invalid, 0x20=Analog, 0x10=value recorded by integrity (not by variation)';
+
+    -- timescaledb hypertable, partitioned by day
+    SELECT create_hypertable('hist', 'time_tag', chunk_time_interval=>86400000000);
+
+## Realtime Data Table
+
+This table is updated with all fields and values changed from the realtimeData collection from the MongoDB database. It is a helper for apps that can use only the PostgreSQL historian. The internal structure of the realtimeData collection is reflected in the _json_data_ field that has _bson_ type, so when this internal schema change it will be automatically updated here without changing the PostgreSQL table schema. The application should select the the data fields it needs from this JSON object structure. This table only has the latest snapshots for tags, it does not grow with time, so it does not need to be converted to be managed by TimescaleDB.
+
+    CREATE TABLE realtime_data (
+        tag text not null,
+        time_tag TIMESTAMPTZ(3) not null,
+        json_data jsonb,
+        PRIMARY KEY ( tag )
+        );
+
+    comment on table realtime_data is 'Realtime data and catalog data';
+    comment on column realtime_data.tag is 'String key for the point';
+    comment on column realtime_data.time_tag is 'GMT Timestamp for the data update';
+    comment on column realtime_data.json_data is 'Data image as JSON from Mongodb realtimeData collection';
+    CREATE INDEX ind_tag on realtime_data ( tag );
+
+## Helper Views for Grafana
+
+These views are helpful to create queries in Grafana, the column names are adapted to what is best expected by the Grafana query editor.
+
+    CREATE VIEW grafana_hist AS
+        SELECT
+            time_tag AS "time",
+            tag AS metric,
+            value as value,
+            time_tag_at_source,
+            value_json,
+            flags
+        FROM hist;
+
+    CREATE VIEW grafana_realtime AS
+        SELECT
+            tag as metric, 
+            time_tag as time, 
+            cast(json_data->>'value' as float) as value, 
+            cast(json_data->>'_id' as text) as point_key, 
+            json_data->>'valueString' as value_string, 
+            cast(json_data->>'invalid' as boolean) as invalid, 
+            json_data->>'description' as description, 
+            json_data->>'group1' as group1  
+        FROM realtime_data;
