@@ -1,11 +1,26 @@
 'use strict'
-// A realtime point data HTTP web server for JSON SCADA.
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+
+/* 
+ * A realtime point data HTTP web server for JSON SCADA.
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 const HTTP_PORT = process.env.JS_HTTP_PORT || 3001;
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const API_AP = '/server_realtime'
-const API_AP_CMD = '/server_command'
 const APP_NAME = ':' + HTTP_PORT + API_AP
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'

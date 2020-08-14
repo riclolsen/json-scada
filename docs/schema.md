@@ -7,6 +7,7 @@ The JSON-SCADA MongoDB database is comprised of the following collections.
 * _protocolConnections_ - Configuration of protocol connections. See specific protocol for documentation.
 * _commandsQueue_ - Queue for commands.
 * _soeData_ - Sequence of Events data. This is a Capped Collection, it has a limited size.
+* _processInstances_ - Configuration and information about JSON-SCADA instances of processes.
 
 Please notice that all numeric fields from the schema is recorded as BSON Doubles (64 bit floating point). However, some numeric fields are expected to contain only integer values. When numbers are updated by the Mongo Shell manually, all numeric data is converted to BSON Doubles by default. Some languages like Node.js can cause values to be stored as integers or doubles depending on the current value. It is important that values are always stored as BSON Doubles as otherwise problems may be encountered by protocol drivers, specially those programmed in C#/DotNet Core.
 
@@ -15,7 +16,6 @@ All string parameters are UTF-8 encoded.
 Dates are stored as MongoDB BSON Dates (UTC).
 
 ## _realtimeData_ collection
-
 
 Example document.
 
@@ -292,6 +292,44 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 * _**_timeTagAtSource_**_ [Date] - Timestamp for the change stamped by the source device (RTU/IED).
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true means the source timestamp is considered ok.
 * _**_ack_**_ [Double] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
+
+## _processInstances_ collection
+
+This collection must be configured when some process requires more than one instance. Also it can be used to restrict nodes that can connect to the database by filling the _nodeNames_ array.
+
+### CS_DATA_PROCESSOR module
+
+Example document for the CS_DATA_PROCESSOR module. Currently this process supports just one redundant instance. There is no need to configure this for this process as it can create the entry automatically when one is not found.
+
+    {
+        "_id":{
+            "$oid":"6e3427575afe8a451246eb4f"
+        },
+        processName: "CS_DATA_PROCESSOR",
+        processInstanceNumber: 1,
+        enabled: true,
+        logLevel: 1,
+        nodeNames: [], 
+        activeNodeName: "mainNode",
+        activeNodeKeepAliveTimeTag: { "$date": "2020-08-11T21:04:59.678Z" },
+        softwareVersion: "0.1.1",
+        latencyAvg: 123.2,
+        latencyAvgMinute: 89.1,
+        latencyPeak: 240.12
+    }
+
+* _**__id_**_ [ObjectId] - MongoDB document id.
+* _**_processName_**_ [String] - Process name ("CS_DATA_PROCESSOR" or "CALCULATIONS")
+* _**_instanceNumber_**_ [Double] - Process instance number.
+* _**_enabled_**_ [Boolean] - When true, this instance is enabled.
+* _**_logLevel_**_ [Double] - Log level (0=min, 3=max).
+* _**_nodeNames_**_ [Array of String] - Names of allows nodes. If null or empty any node is allowed.
+* _**_activeNodeName_**_ [String] - Name of the current active node for this process instance.
+* _**_activeNodeKeepAliveTimeTag_**_ [Date] - Keep-alive for the active node.
+* _**_softwareVersion_**_ [String] - Software version of the process.
+* _**_latencyAvg_**_ [Double] - Average latency in ms (only for CS_DATA_PROCESSOR).
+* _**_latencyAvgMinute_**_ [Double] - Average latency on a minute in ms (only for CS_DATA_PROCESSOR).
+* _**_latencyPeak_**_ [Double] - Peak latency (only for CS_DATA_PROCESSOR).
 
 ## Extending the Database Schema
 

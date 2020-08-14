@@ -198,7 +198,7 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     command=/usr/bin/node /home/jsuser/json-scada/src/server_realtime/index.js
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    directory=/home/jsuser/json-scada/src/server_realtime/    ; directory to cwd to before exec (def no cwd)
     user=jsuser                    ; setuid to this UNIX account to run the program
     stdout_logfile=/home/jsuser/json-scada/log/server_realtime.log    ; stdout log path, NONE for none;
     stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
@@ -213,7 +213,7 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     command=/usr/bin/node /home/jsuser/json-scada/src/cs_data_processor/cs_data_processor.js
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
+    directory=/home/jsuser/json-scada/bin/src/cs_data_processor/    ; directory to cwd to before exec (def no cwd)
     user=jsuser                    ; setuid to this UNIX account to run the program
     stdout_logfile=/home/jsuser/json-scada/log/cs_data_processor.log    ; stdout log path, NONE for none;
     stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
@@ -322,9 +322,7 @@ Use the tool create necessary services.
     nssm install JSON_SCADA_iec104server "C:\json-scada\bin\iec104server.exe"
     nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe"
     nssm install JSON_SCADA_cs_data_processor <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\cs_data_processor\cs_data_processor.js"
-    nssm set JSON_SCADA_cs_data_processor AppDirectory c:\json-scada\bin
     nssm install JSON_SCADA_server_realtime <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\server_realtime\index.js"
-    nssm set JSON_SCADA_server_realtime AppDirectory c:\json-scada\bin
 
     ... and so on ...
 

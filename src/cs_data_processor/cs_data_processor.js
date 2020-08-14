@@ -1,10 +1,28 @@
 'use strict'
 
-// A process that watches for raw data updates from protocols using a MongoDB change stream.
-// Convert raw values and update realtime values and statuses.
-// JSON SCADA - Copyright 2020 - Ricardo L. Olsen
+/* 
+ * A process that watches for raw data updates from protocols using a MongoDB change stream.
+ * Convert raw values and update realtime values and statuses.
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-const APP_NAME = 'cs_data_processor.js'
+const APP_NAME = 'CS_DATA_PROCESSOR'
+const APP_MSG = '{json:scada} - Change Stream Data Processor'
+const VERSION = '0.1.1'
+let ProcessActive = false // for redundancy control
 const jsConfigFile = '../../conf/json-scada.json'
 const sqlFilesPath = '../../sql/'
 const fs = require('fs')
@@ -14,7 +32,17 @@ let Server = require('mongodb').Server
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
+const args = process.argv.slice(2)
+const inst = 0
+if (args.length > 0)
+  inst = parseInt(args[1])
+const Instance = inst || process.env.JS_CSDATAPROC_INSTANCE || 1;
+
+console.log(APP_MSG + " Version " + VERSION)
+console.log("Instance: " + Instance)
+
 const RealtimeDataCollectionName = 'realtimeData'
+const ProcessInstancesCollectionName = 'processInstances'
 const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
 const ProtocolConnectionsCollectionName = 'protocolConnections'
 const beepPointKey = -1
@@ -31,7 +59,7 @@ if (
   process.exit()
 }
 
-console.log('Connecting to ' + jsConfig.mongoConnectionString)
+console.log('Connecting to MongoDB server...')
 
 const pipeline = [
   {
@@ -142,7 +170,7 @@ const pipeline = [
     let connOptions = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      appname: APP_NAME,
+      appname: APP_NAME + " Version:" + VERSION + " Instance:" + Instance,
       poolSize: 20,
       readPreference: Server.READ_PRIMARY
     }
@@ -162,13 +190,26 @@ const pipeline = [
     }
 
     let clientMongo = null
-    let invalidDetectInterval = null
+    let invalidDetectIntervalHandle = null
+    let redundancyIntervalHandle = null
+    let latencyIntervalHandle = null
     while (true) {
       if (clientMongo === null)
         await MongoClient.connect(jsConfig.mongoConnectionString, connOptions)
           .then(async client => {
             clientMongo = client
             console.log('Connected correctly to MongoDB server')
+
+            let latencyAccTotal = 0
+            let latencyTotalCnt = 0
+            let latencyAccMinute = 0
+            let latencyMinuteCnt = 0
+            let latencyPeak = 0
+            clearInterval(latencyIntervalHandle)
+            latencyIntervalHandle = setInterval(function () {
+              latencyAccMinute = 0
+              latencyMinuteCnt = 0
+            }, 60000)
 
             // specify db and collections
             const db = client.db(jsConfig.mongoDatabaseName)
@@ -177,10 +218,104 @@ const pipeline = [
               fullDocument: 'updateLookup'
             })
 
+            let lastActiveNodeKeepAliveTimeTag = null;
+            let countKeepAliveNotUpdated = 0;
+            let countKeepAliveUpdatesLimit = 4;
+            async function ProcessRedundancy() {
+              if (!clientMongo)
+                return
+              // look for process instance entry, if not found create a new entry
+              db.collection(ProcessInstancesCollectionName).find(
+                {
+                  'processName': APP_NAME,
+                  'processInstanceNumber': Instance
+                })
+                .toArray(function (err, results) {
+                  if (err)
+                    console.log(err)
+                  else
+                    if (results) {
+                      if (results.length == 0) { // not found, then create
+                        ProcessActive = true
+                        console.log("Instance config not found, creating one...")
+                        db.collection(ProcessInstancesCollectionName).insertOne({
+                          processName: APP_NAME,
+                          processInstanceNumber: 1,
+                          enabled: true,
+                          logLevel: 1,
+                          nodeNames: null,
+                          activeNodeName: jsConfig.nodeName,
+                          activeNodeKeepAliveTimeTag: new Date(),
+                        })
+                      } else { // check for disabled or node not allowed
+                        let instance = results[0]
+                        if (instance?.enabled === false) {
+                          console.log("Instance disabled, exiting...")
+                          process.exit()
+                        }
+                        if (instance?.nodeNames !== null && instance.nodeNames.length > 0) {
+                          if (!instance.nodeNames.includes(jsConfig.nodeName)) {
+                            console.log("Node name not allowed, exiting...")
+                            process.exit()
+                          }
+                        }
+                        if (instance?.activeNodeName === jsConfig.nodeName) {
+                          if (!ProcessActive)
+                            console.log("Node activated!")
+                          countKeepAliveNotUpdated = 0
+                          ProcessActive = true
+                        }
+                        else { // other node active
+                          if (ProcessActive) {
+                            console.log("Node deactivated!")
+                            countKeepAliveNotUpdated = 0;
+                          }
+                          ProcessActive = false
+                          if (lastActiveNodeKeepAliveTimeTag === instance.activeNodeKeepAliveTimeTag.toISOString()) {
+                            countKeepAliveNotUpdated++;
+                            console.log("Keep-alive from active node not updated. " + countKeepAliveNotUpdated)
+                          }
+                          else {
+                            countKeepAliveNotUpdated = 0;
+                            console.log("Keep-alive updated by active node. Staying inactive.")
+                          }
+                          lastActiveNodeKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
+                          if (countKeepAliveNotUpdated > countKeepAliveUpdatesLimit) { // cnt exceeded, be active
+                            countKeepAliveNotUpdated = 0;
+                            console.log("Node activated!")
+                            ProcessActive = true;
+                          }
+                        }
+
+                        if (ProcessActive) { // process active, then update keep alive
+                          db.collection(ProcessInstancesCollectionName).updateOne({
+                            processName: APP_NAME,
+                            processInstanceNumber: 1
+                          }, {
+                            $set: {
+                              activeNodeName: jsConfig.nodeName,
+                              activeNodeKeepAliveTimeTag: new Date(),
+                              softwareVersion: VERSION,
+                              latencyAvg: latencyAccTotal / latencyTotalCnt,
+                              latencyAvgMinute: latencyAccMinute / latencyMinuteCnt,
+                              latencyPeak: latencyPeak
+                            }
+                          })
+                        }
+                      }
+                    }
+                })
+            }
+
+            // check and update redundancy control
+            ProcessRedundancy()
+            clearInterval(redundancyIntervalHandle)
+            redundancyIntervalHandle = setInterval(ProcessRedundancy, 5000)
+
             // periodically, mark invalid data when supervised points not updated within specified period (invalidDetectTimeout) for the point
             // check also stopped protocol driver instances 
-            clearInterval(invalidDetectInterval)
-            invalidDetectInterval = setInterval(function () {
+            clearInterval(invalidDetectIntervalHandle)
+            invalidDetectIntervalHandle = setInterval(function () {
               if (clientMongo !== null) {
                 collection.updateMany(
                   {
@@ -294,6 +429,9 @@ const pipeline = [
                     )
                   }
 
+                  if (!ProcessActive) // when inactive, ignore changes
+                    return
+
                   if (
                     !(
                       'sourceDataUpdate' in change.updateDescription.updatedFields
@@ -301,6 +439,14 @@ const pipeline = [
                   )
                     // if not a Source Data Update (protocol update), return
                     return
+
+                  let delay = (new Date().getTime() - change.updateDescription.updatedFields.sourceDataUpdate.timeTag.getTime())
+                  latencyAccTotal += delay
+                  latencyTotalCnt++
+                  latencyAccMinute += delay
+                  latencyMinuteCnt++
+                  if (delay > latencyPeak)
+                    latencyPeak = delay
 
                   // consider SOE when digital changes has field timestamp  
                   if (
