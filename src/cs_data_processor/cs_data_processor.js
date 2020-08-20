@@ -616,6 +616,11 @@ const pipeline = [
                         .valueAtSource *
                       change.fullDocument.kconv1 +
                       change.fullDocument.kconv2
+
+                    if ('zeroDeadband' in change.fullDocument)
+                      if (change.fullDocument.zeroDeadband !== 0 && Math.abs(value) < change.fullDocument.zeroDeadband)
+                        value = 0.0
+
                     valueString =
                       '' +
                       parseFloat(value.toFixed(4)) +

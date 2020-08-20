@@ -109,7 +109,7 @@ Select a tag for a update on a connection as below.
 
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can update the tag. **Mandatory parameter**.
 * _**protocolSourceCommonAddress**_ [Double] - Common Address of ASDU. There can be more than one common address in the same connection. **Mandatory parameter**.
-* _**protocolSourceObjectAddress**_ [Double] - Object address. This must be unique for the connection. **Mandatory parameter**.
+* _**protocolSourceObjectAddress**_ [Double] - Object address. This address combined with _protocolSourceCommonAddress_ must be unique for the connection. **Mandatory parameter**.
 * _**protocolSourceASDU**_ [Double] - Source ASDU TI type. This is documental, the protocol driver will update the tag using any supported ASDU type. **Mandatory parameter**.
 * _**protocolSourceCommandDuration**_ [Double] - Command options, IEC-104 QU field: 0=Unspecified, 1=Short Pulse, 2=Long Pulse, 3=Persistent. Just meaningful for commands. **Mandatory parameter**.
 * _**protocolSourceCommandUseSBO**_ [Double] - Use Select-Before-Operate control sequence. Just meaningful for commands. **Mandatory parameter**.

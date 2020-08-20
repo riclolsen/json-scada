@@ -15,6 +15,15 @@ services:
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../demo-docker/bin:/publish_bin
  
+  dnp3_dotnet_compile:
+    image: mcr.microsoft.com/dotnet/core/sdk:3.1
+    container_name: js_dnp3_compile
+    command: sh -c "cd /src/dnp3/Dnp3Client && dotnet publish -p:PublishSingleFile=true --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
+    #command: tail -f /dev/null
+    volumes:
+      - ../src/dnp3:/src/dnp3
+      - ../demo-docker/bin:/publish_bin
+
   calculations_compile:
     image: golang:alpine
     container_name: js_calculations_compile

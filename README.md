@@ -15,6 +15,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * HTML5 Web interface. UTF-8/I18N. Mobile access.
 * Inkscape-based SVG synoptic display editor.
 * IEC60870-101/104 Client and Server protocols.
+* DNP3 Client (TCP, UDP, Serial and TLS).
 * PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 * Extensibility of data model (MongoDB: NoSQL/schema-less).
 * Development of custom applications with modern stacks like MEAN/MERN, etc.
@@ -25,7 +26,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * Future-proof, vendor independence, flexibility, extensibility.
 * Reduced human costs for maintenance and development thanks to the employment of widely-used open-source IT technologies.
 * Live configuration updates.
-* Planned protocol drivers: OPC-UA, DNP3, MODBUS, MQTT, Ethernet/IP.
+* Planned protocol drivers: OPC-UA, DNP3 Server, MODBUS, MQTT, Ethernet/IP.
 * Planned integrations: InfluxDB/Telegraf, NodeRed, MS Power BI.
 
 ## Use cases

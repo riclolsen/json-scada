@@ -20,100 +20,102 @@ Dates are stored as MongoDB BSON Dates (UTC).
 Example document.
 
     {
-    "_id": 3285,
-    "alarmDisabled": false,
-    "alarmState": -1,
-    "alarmed": false,
-    "annotation": "",
-    "commandBlocked": false,
-    "commandOfSupervised": 0,
-    "description": "KAW2~FD21 13,8kV~Active power",
-    "eventTextFalse": "undefined",
-    "eventTextTrue": "undefined",
-    "formula": 0,
-    "frozen": false,
-    "frozenDetectTimeout": 300,
-    "group1": "KAW2",
-    "group2": "FD21 13,8kV",
-    "group3": "",
-    "hiLimit": null,
-    "hihiLimit": null,
-    "hihihiLimit": null,
-    "historianDeadBand": 0,
-    "historianPeriod": 0,
-    "hysteresis": 0,
-    "invalid": false,
-    "invalidDetectTimeout": 300,
-    "isEvent": false,
-    "kconv1": 1,
-    "kconv2": 0,
-    "loLimit": null,
-    "location": null,
-    "loloLimit": null,
-    "lololoLimit": null,
-    "notes": "",
-    "origin": "supervised",
-    "overflow": false,
-    "parcels": null,
-    "priority": 0,
-    "protocolSourceASDU": 13,
-    "protocolSourceCommandDuration": null,
-    "protocolSourceCommandUseSBO": null,
-    "protocolSourceCommonAddress": 1,
-    "protocolSourceConnectionNumber": 61,
-    "protocolSourceObjectAddress": 3285,
-    "sourceDataUpdate": {
-        "valueAtSource": 2.9959075450897217,
-        "valueStringAtSource": "2.9959075450897217",
-        "asduAtSource": "M_ME_NC_1",
-        "causeOfTransmissionAtSource": "3",
+        "_id": 3285,
+        "alarmDisabled": false,
+        "alarmState": -1,
+        "alarmed": false,
+        "annotation": "",
+        "commandBlocked": false,
+        "commandOfSupervised": 0,
+        "commissioningRemarks": "",
+        "description": "KAW2~FD21 13,8kV~Active power",
+        "eventTextFalse": "undefined",
+        "eventTextTrue": "undefined",
+        "formula": 0,
+        "frozen": false,
+        "frozenDetectTimeout": 300,
+        "group1": "KAW2",
+        "group2": "FD21 13,8kV",
+        "group3": "",
+        "hiLimit": null,
+        "hihiLimit": null,
+        "hihihiLimit": null,
+        "historianDeadBand": 0,
+        "historianPeriod": 0,
+        "hysteresis": 0,
+        "invalid": false,
+        "invalidDetectTimeout": 300,
+        "isEvent": false,
+        "kconv1": 1,
+        "kconv2": 0,
+        "loLimit": null,
+        "location": null,
+        "loloLimit": null,
+        "lololoLimit": null,
+        "notes": "",
+        "origin": "supervised",
+        "overflow": false,
+        "parcels": null,
+        "priority": 0,
+        "protocolSourceASDU": 13,
+        "protocolSourceCommandDuration": null,
+        "protocolSourceCommandUseSBO": null,
+        "protocolSourceCommonAddress": 1,
+        "protocolSourceConnectionNumber": 61,
+        "protocolSourceObjectAddress": 3285,
+        "sourceDataUpdate": {
+            "valueAtSource": 2.9959075450897217,
+            "valueStringAtSource": "2.9959075450897217",
+            "asduAtSource": "M_ME_NC_1",
+            "causeOfTransmissionAtSource": "3",
+            "timeTagAtSource": null,
+            "timeTagAtSourceOk": false,
+            "timeTag": { "$date": "2020-08-10T19:04:59.774Z" },
+            "notTopicalAtSource": false,
+            "invalidAtSource": false,
+            "overflowAtSource": false,
+            "blockedAtSource": false,
+            "substitutedAtSource": false
+        },
+        "stateTextFalse": "undefined",
+        "stateTextTrue": "undefined",
+        "substituted": false,
+        "supervisedOfCommand": 0,
+        "tag": "KAW2AL-21MTWT",
+        "timeTag": { "$date": "2020-08-10T19:04:59.785Z" },
+        "timeTagAlarm": { "$date": "2020-07-13T20:24:54.126Z" },
         "timeTagAtSource": null,
-        "timeTagAtSourceOk": false,
-        "timeTag": { "$date": "2020-08-10T19:04:59.774Z" },
-        "notTopicalAtSource": false,
-        "invalidAtSource": false,
-        "overflowAtSource": false,
-        "blockedAtSource": false,
-        "substitutedAtSource": false
-    },
-    "stateTextFalse": "undefined",
-    "stateTextTrue": "undefined",
-    "substituted": false,
-    "supervisedOfCommand": 0,
-    "tag": "KAW2AL-21MTWT",
-    "timeTag": { "$date": "2020-08-10T19:04:59.785Z" },
-    "timeTagAlarm": { "$date": "2020-07-13T20:24:54.126Z" },
-    "timeTagAtSource": null,
-    "timeTagAtSourceOk": null,
-    "transient": false,
-    "type": "analog",
-    "ungroupedDescription": "Active power",
-    "unit": "MW",
-    "updatesCnt": 86580,
-    "valueDefault": 3.1,
-    "valueString": "2.9959 MW",
-    "protocolDestinations": [
-        {
-        "protocolDestinationConnectionNumber": 1001,
-        "protocolDestinationCommonAddress": 1,
-        "protocolDestinationObjectAddress": 3285,
-        "protocolDestinationASDU": 13,
-        "protocolDestinationCommandDuration": 0,
-        "protocolDestinationCommandUseSBO": false,
-        "protocolDestinationKConv1": 1,
-        "protocolDestinationKConv2": 0,
-        "protocolDestinationGroup": 0,
-        "protocolDestinationHoursShift": -2
-        }
-    ],
-    "value": 2.9959075450897217
+        "timeTagAtSourceOk": null,
+        "transient": false,
+        "type": "analog",
+        "ungroupedDescription": "Active power",
+        "unit": "MW",
+        "updatesCnt": 86580,
+        "valueDefault": 3.1,
+        "valueString": "2.9959 MW",
+        "protocolDestinations": [
+            {
+            "protocolDestinationConnectionNumber": 1001,
+            "protocolDestinationCommonAddress": 1,
+            "protocolDestinationObjectAddress": 3285,
+            "protocolDestinationASDU": 13,
+            "protocolDestinationCommandDuration": 0,
+            "protocolDestinationCommandUseSBO": false,
+            "protocolDestinationKConv1": 1,
+            "protocolDestinationKConv2": 0,
+            "protocolDestinationGroup": 0,
+            "protocolDestinationHoursShift": -2
+            }
+        ],
+        "value": 2.9959075450897217,
+        "zeroDeadband": 0
     }
     
 
 ### Configuration fields
 
 * _**_id_**_ [Double] - Numeric key for the point. This is stored as a BSON Double but should only contain integer values. Must be unique for the collection. **Mandatory parameter**.
-* _**_tag_**_ [String] - String key for the point. It must begin with a letter char (A-Z or a-z). Allowed symbols are underscore, dash and dot. Do not use spaces or symbols like #*!^~%$. There is no enforced limit for the size but we recommend to keep it below 30 characters to make displays more readable. Must be unique for the collection. **Mandatory parameter**.
+* _**_tag_**_ [String] - String key for the point. It must begin with a letter char (A-Z or a-z) or underscore. Allowed symbols are underscore, dash and dot. Do not use spaces or symbols like #/|*!^~%$. Tags beginning with "_System." are reserved for internal system data. There is no enforced limit for the size but we recommend to keep it below 30 characters to make displays more readable. Must be unique for the collection. **Mandatory parameter**.
 * _**_type_**_ [String] - Data type. Can be "digital", "analog", "string" or "json". **Mandatory parameter**.
 * _**_origin_**_ [String] - How the value is obtained. Can be "supervised", "calculated", "manual", or "command". **Mandatory parameter**.
 * _**_description_**_ [String] - Complete textual description of the tag information. **Mandatory parameter**.
@@ -141,6 +143,7 @@ Example document.
 * _**_parcels_**_ [Array of Double] - Numeric key references to parcel points for calculations. Only meaningful when _origin=calculated_. Can be null for other origins. **Mandatory parameter**.
 * _**_kconv1_**_ [Double] - Conversion factor 1 (multiplier). Applied when _origin=supervised_, _origin=command_ or _origin=calculated_. Use -1 to invert states of digital values and commands. **Mandatory parameter**.
 * _**_kconv2_**_ [Double] - Conversion factor 2 (adder). Applied when _origin=supervised_ or _origin=calculated_. **Mandatory parameter**.
+* _**_zeroDeadband_**_ [Double] - When acquired value is below this deadband it will be zeroed. Only meaningful for _type=analog_. **Mandatory parameter**.
 * _**_protocolSourceConnectionNumber_**_ [Double] - Indicates the protocol connection that can updated the point. Should contain only integer values. Only meaningful when _origin=supervised_ or _origin=command_. **Mandatory parameter**.
 * _**_protocolSourceCommonAddress_**_ [Double] - Protocol common address (device address). Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolSourceObjectAddress_**_ [Double or String] -  Protocol object address. Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
@@ -163,6 +166,7 @@ Example document.
 * _**_annotation_**_ [String] - Blocking annotation text (reason command for blocking). **Mandatory parameter**.
 * _**_commandBlocked_**_ [Boolean] - When true, the command is disabled by the operator. **Mandatory parameter**.
 * _**_notes_**_ [String] - Documental notes text about the point. **Mandatory parameter**.
+* _**_commissioningRemarks_**_ [String] - Remarks about the point commissioning. **Mandatory parameter**.
 
 ### Fields updated by the system.
 
@@ -178,7 +182,7 @@ Example document.
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.
 * _**_timeTagAtSource_**_ [Date] - Timestamp from the source. **Mandatory parameter**.
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true, the source timestamp is * considered ok. **Mandatory parameter**.
-_**_updatesCnt_**_ [Double] - Count of updates. **Mandatory parameter**.
+* _**_updatesCnt_**_ [Double] - Count of updates. **Mandatory parameter**.
 * _**_sourceDataUpdate_**_ [Object] - Information updated by protocol driver or calculation process.
 
 #### The sourceDataUpdate object
@@ -210,29 +214,29 @@ Commands are processed only for new insertions. Old documents are preserved and 
 Example document
 
     {
-    "_id":{
-        "$oid":"5f1098dfd0ea7b5d01d6045c"
-    },
-    "protocolSourceConnectionNumber":61,
-    "protocolSourceCommonAddress":1,
-    "protocolSourceObjectAddress":64139,
-    "protocolSourceASDU":45,
-    "protocolSourceCommandDuration":0,
-    "protocolSourceCommandUseSBO":false,
-    "pointKey":64139,
-    "tag":"KAW2KPR21XCBR5217----K",
-    "timeTag":{
-        "$date":"2020-07-16T18:13:51.182Z"
-    },
-    "value":1,
-    "valueString":"1",
-    "originatorUserName":"Protocol connection: IEC104DIST",
-    "originatorIpAddress":"127.0.0.1:58446 127.0.0.1:58446 ",
-    "delivered":true,
-    "ack":true,
-    "ackTimeTag":{
-        "$date":"2020-07-16T18:13:51.304Z"
-    }
+        "_id":{
+            "$oid":"5f1098dfd0ea7b5d01d6045c"
+        },
+        "protocolSourceConnectionNumber":61,
+        "protocolSourceCommonAddress":1,
+        "protocolSourceObjectAddress":64139,
+        "protocolSourceASDU":45,
+        "protocolSourceCommandDuration":0,
+        "protocolSourceCommandUseSBO":false,
+        "pointKey":64139,
+        "tag":"KAW2KPR21XCBR5217----K",
+        "timeTag":{
+            "$date":"2020-07-16T18:13:51.182Z"
+        },
+        "value":1,
+        "valueString":"1",
+        "originatorUserName":"Protocol connection: IEC104DIST",
+        "originatorIpAddress":"127.0.0.1:58446 127.0.0.1:58446 ",
+        "delivered":true,
+        "ack":true,
+        "ackTimeTag":{
+            "$date":"2020-07-16T18:13:51.304Z"
+        }
     }
 
 * _**__id_**_ [ObjectId] - MongoDB document id.
@@ -252,6 +256,8 @@ Example document
 * _**_delivered_**_ [Boolean] - When true means the protocol driver consumed and dispatched the command.
 * _**_ack_**_ [Boolean] - The value means the protocol driver received true=positive or false=negative confirmation for the dispatched command. This property is to be inserted by the consuming protocol driver.
 * _**_ackTimeTag_**_ [Date] - Timestamp of the ack insertion.
+* _**_cancelReason_**_ [String] - Text description of cancel reason (when the command is cancelled).
+* _**_resultDescription_**_ [String] - Text description of the command result (when provided by the protocol).
 
 ## _soeData_ collection
 
@@ -260,24 +266,24 @@ Here are stored Sequence of Events (SOE) information for digital values with sou
 This is a Capped Collection, it has a limited size. Old documents are overwritten when the maximum sized is reached. Data here is only written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30).
 
     {
-    "_id":{
-        "$oid":"5f3427575afe8a451246eb4e"
-    },
-    "tag":"KAW2IB1-bRPRT----CmFl",
-    "pointKey":2742,
-    "group1":"KAW2",
-    "description":"KAW2~IB1 13,8kV~Protection-Communic.Failure",
-    "eventText":"COMM FAILURE",
-    "invalid":false,
-    "priority":3,
-    "timeTag":{
-        "$date":"2020-08-12T17:31:03.702Z"
-    },
-    "timeTagAtSource":{
-        "$date":"2020-08-12T13:31:03.499Z"
-    },
-    "timeTagAtSourceOk":true,
-    "ack":0
+        "_id":{
+            "$oid":"5f3427575afe8a451246eb4e"
+        },
+        "tag":"KAW2IB1-bRPRT----CmFl",
+        "pointKey":2742,
+        "group1":"KAW2",
+        "description":"KAW2~IB1 13,8kV~Protection-Communic.Failure",
+        "eventText":"COMM FAILURE",
+        "invalid":false,
+        "priority":3,
+        "timeTag":{
+            "$date":"2020-08-12T17:31:03.702Z"
+        },
+        "timeTagAtSource":{
+            "$date":"2020-08-12T13:31:03.499Z"
+        },
+        "timeTagAtSourceOk":true,
+        "ack":0
     }
 
 * _**__id_**_ [ObjectId] - MongoDB document id.
@@ -295,15 +301,15 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 
 ## _processInstances_ collection
 
-This collection must be configured when some process requires more than one instance. Also it can be used to restrict nodes that can connect to the database by filling the _nodeNames_ array.
+This collection must be configured when some process requires more than one instance. Also it can be used to restrict nodes that can connect to the database by filling the _nodeNames_ array. For this collection, the pair processName/processInstanceNumber should not repeat (there is a unique index for those fields combined to prevent this kind of error).
 
-### CS_DATA_PROCESSOR module
+### _processInstances_ entry for the _CS_DATA_PROCESSOR_ module
 
-Example document for the CS_DATA_PROCESSOR module. Currently this process supports just one redundant instance. There is no need to configure this for this process as it can create the entry automatically when one is not found.
+Example document for the _CS_DATA_PROCESSOR_ module. Currently, this process supports just one redundant instance. There is no need to configure this document for this module as it can create the entry automatically when one is not found.
 
     {
         "_id":{
-            "$oid":"6e3427575afe8a451246eb4f"
+            "$oid":"1d3427575afe8a451246eb23"
         },
         processName: "CS_DATA_PROCESSOR",
         processInstanceNumber: 1,
@@ -323,7 +329,7 @@ Example document for the CS_DATA_PROCESSOR module. Currently this process suppor
 * _**_instanceNumber_**_ [Double] - Process instance number.
 * _**_enabled_**_ [Boolean] - When true, this instance is enabled.
 * _**_logLevel_**_ [Double] - Log level (0=min, 3=max).
-* _**_nodeNames_**_ [Array of String] - Names of allows nodes. If null or empty any node is allowed.
+* _**_nodeNames_**_ [Array of String] - Names of allowed nodes. If null or empty any node is allowed.
 * _**_activeNodeName_**_ [String] - Name of the current active node for this process instance.
 * _**_activeNodeKeepAliveTimeTag_**_ [Date] - Keep-alive for the active node.
 * _**_softwareVersion_**_ [String] - Software version of the process.
