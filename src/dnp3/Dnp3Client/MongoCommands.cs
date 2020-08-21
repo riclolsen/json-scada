@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Linq;
 using Automatak.DNP3.Interface;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -293,6 +294,10 @@ namespace Dnp3Driver
                                                                     var update =
                                                                         new BsonDocument("$set", new BsonDocument{
                                                                              {"delivered",  true},
+                                                                             {"ack", 
+                                                                                result.Result.Results.FirstOrDefault().PointState==CommandPointState.SUCCESS &&
+                                                                                result.Result.Results.FirstOrDefault().Status==CommandStatus.SUCCESS },
+                                                                             {"ackTimeTag", BsonValue.Create(DateTime.Now) },
                                                                              {"resultDescription", result.Result.ToString()}
                                                                             });
                                                                     var res =

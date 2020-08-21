@@ -50,9 +50,34 @@ namespace Dnp3Driver
                     dnp3conn.isConnected = true;
                 }
                 else
-                {   
+                {
                     dnp3conn.isConnected = false;
-                    // TODO invalidate points on connection
+                }
+
+                // TODO invalidate points on connection                    
+                var Client = ConnectMongoClient(JSConfig);
+                var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
+                var collection = DB.GetCollection<rtData>(RealtimeDataCollectionName);
+                foreach (DNP3_connection srv in DNP3conns)
+                {
+                    if (srv.channel == dnp3conn.channel) // all connections on the same channel
+                    {
+                        srv.isConnected = dnp3conn.isConnected;
+                        if ( dnp3conn.isConnected == false )
+                        {
+                            // update as invalid
+                            Log("Invalidating points on connection " + srv.protocolConnectionNumber);
+                            var filter =
+                                new BsonDocument(new BsonDocument("protocolSourceConnectionNumber",
+                                    srv.protocolConnectionNumber));
+                            var update =
+                                new BsonDocument("$set", new BsonDocument{
+                                    {"invalid",  true},
+                                    {"timeTag", BsonValue.Create(DateTime.Now) },
+                                    });
+                            var res = collection.UpdateManyAsync(filter, update);
+                        }
+                    }
                 }
             }
         }

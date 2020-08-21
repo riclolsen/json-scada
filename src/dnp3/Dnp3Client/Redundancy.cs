@@ -23,6 +23,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using System.ComponentModel.DataAnnotations;
 
 namespace Dnp3Driver
 {
@@ -31,6 +32,7 @@ namespace Dnp3Driver
         // This process monitor and updates redundancy control of the driver instance in mongodb
         static async void ProcessRedundancyMongo(JSONSCADAConfig jsConfig)
         {
+            Thread.Sleep(5000);
             do
             {
                 try
@@ -47,6 +49,11 @@ namespace Dnp3Driver
                             .GetCollection
                             <protocolDriverInstancesClass
                             >(ProtocolDriverInstancesCollectionName);
+                    var collconns =
+                        DB
+                            .GetCollection
+                            <DNP3_connection
+                            >(ProtocolConnectionsCollectionName);
                     do
                     {
                         bool isMongoLive =
@@ -87,7 +94,15 @@ namespace Dnp3Driver
                             if (inst.activeNodeName == JSConfig.nodeName)
                             {
                                 if (!Active) // will go active
+                                {
                                     Log("Redundancy - ACTIVATING this Node!");
+                                    foreach (DNP3_connection srv in DNP3conns)
+                                    {                                       
+                                        if (!(srv.master is null))
+                                            if (!srv.isConnected)
+                                                srv.master.Enable();
+                                    }
+                                }
                                 Active = true;
                                 countKeepAliveUpdates = 0;
                             }
@@ -97,6 +112,12 @@ namespace Dnp3Driver
                                 {   // wait a random time
                                     Log("Redundancy - DEACTIVATING this Node (other node active)!");
                                     countKeepAliveUpdates = 0;
+                                    foreach (DNP3_connection srv in DNP3conns)
+                                    {
+                                        if (!(srv.master is null))
+                                            srv.master.Disable();
+                                        srv.isConnected = false;
+                                    }
                                     Random rnd = new Random();
                                     Thread.Sleep(rnd.Next(1000, 5000));
                                 }
@@ -110,6 +131,12 @@ namespace Dnp3Driver
                                 { // time exceeded, be active
                                     Log("Redundancy - ACTIVATING this Node!");
                                     Active = true;
+                                    foreach (DNP3_connection srv in DNP3conns)
+                                    {
+                                        if (!(srv.master is null))
+                                            if (!srv.isConnected)
+                                                srv.master.Enable();
+                                    }
                                 }
                             }
 
@@ -145,6 +172,36 @@ namespace Dnp3Driver
                                 options.IsUpsert = false;
                                 await collinsts
                                     .FindOneAndUpdateAsync(filter, update, options);
+
+                                // update statistics
+                                foreach (DNP3_connection srv in DNP3conns)
+                                {
+                                    if (!(srv.channel is null))
+                                    {
+                                        var stats = srv.channel.GetChannelStatistics();
+                                        var filt =
+                                            new BsonDocument(new BsonDocument("protocolConnectionNumber",
+                                                srv.protocolConnectionNumber));
+                                        var upd =
+                                            new BsonDocument("$set", new BsonDocument{
+                                            {"stats", new BsonDocument{
+                                                { "nodeName", JSConfig.nodeName },
+                                                { "timeTag", BsonValue.Create(DateTime.Now) },
+                                                { "isConnected", BsonBoolean.Create(srv.isConnected) },
+                                                { "numBadLinkFrameRx", BsonDouble.Create(stats.NumBadLinkFrameRx) },
+                                                { "NumBytesRx", BsonDouble.Create(stats.NumBytesRx) },
+                                                { "NumBytesTx", BsonDouble.Create(stats.NumBytesTx) },
+                                                { "NumClose", BsonDouble.Create(stats.NumClose) },
+                                                { "NumCrcError", BsonDouble.Create(stats.NumCrcError) },
+                                                { "NumLinkFrameRx", BsonDouble.Create(stats.NumLinkFrameRx) },
+                                                { "NumLinkFrameTx", BsonDouble.Create(stats.NumLinkFrameTx) },
+                                                { "NumOpen", BsonDouble.Create(stats.NumOpen) },
+                                                { "NumOpenFail", BsonDouble.Create(stats.NumOpenFail) }
+                                                }},
+                                                });
+                                        var res = collconns.UpdateOneAsync(filt, upd);
+                                    }
+                                }
                             }
                             else
                             {
@@ -153,7 +210,6 @@ namespace Dnp3Driver
                                 else
                                     Log("Redundancy - This node is INACTIVE! No node is active, wait...");
                             }
-
                             break; // process just first result
                         }
 
@@ -165,6 +221,12 @@ namespace Dnp3Driver
                                 countKeepAliveUpdates = 0;
                                 Random rnd = new Random();
                                 Thread.Sleep(rnd.Next(1000, 5000));
+                                foreach (DNP3_connection srv in DNP3conns)
+                                {
+                                    if (!(srv.master is null))
+                                        srv.master.Disable();
+                                    srv.isConnected = false;
+                                }
                             }
                             Active = false;
                         }

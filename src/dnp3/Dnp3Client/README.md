@@ -124,7 +124,7 @@ For TLS over TCP.
 
 In the multi-drop case, multiple slave devices share the same TCP, UDP, TLS or Serial channel connection.
 
-For a multi-drop configuration, use a new connection (in the _protocolConnections_ collection) for each device repeating channel specification (endpoint IP address or serial port). Each device connection must have a distinct _remoteLinkAddress_ parameter.
+For a multi-drop configuration, use a new connection (in the _protocolConnections_ collection) for each device repeating channel specification (endpoint IP address or serial port). Each device on a shared channel must have a distinct _remoteLinkAddress_ parameter.
 
 ## Configure tags for update
 

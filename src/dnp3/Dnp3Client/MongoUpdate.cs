@@ -54,44 +54,6 @@ namespace Dnp3Driver
                                 .Wait(1000);
                         if (!isMongoLive)
                             throw new Exception("Error on MongoDB connection ");
-                        /*
-                                                IEC_CmdAck ia;
-                                                while (IECCmdAckQueue.TryDequeue(out ia))
-                                                {
-                                                    var filter1 =
-                                                        Builders<rtCommand>
-                                                            .Filter
-                                                            .Eq(m => m.protocolSourceConnectionNumber,
-                                                            ia.conn_number);
-                                                    var filter2 =
-                                                        Builders<rtCommand>
-                                                            .Filter
-                                                            .Eq(m => m.protocolSourceObjectAddress,
-                                                            ia.object_address);
-                                                    var filter =
-                                                        Builders<rtCommand>
-                                                            .Filter
-                                                            .And(filter1, filter2);
-
-                                                    var update =
-                                                        Builders<rtCommand>
-                                                            .Update
-                                                            .Set(m => m.ack, ia.ack)
-                                                            .Set(m => m.ackTimeTag, ia.ack_time_tag);
-
-                                                    // sort by priority then by insert order
-                                                    var sort =
-                                                        Builders<rtCommand>.Sort.Descending("$natural");
-
-                                                    var options =
-                                                        new FindOneAndUpdateOptions<rtCommand, rtCommand
-                                                        >();
-                                                    options.IsUpsert = false;
-                                                    options.Sort = sort;
-                                                    await collection_cmd
-                                                        .FindOneAndUpdateAsync(filter, update, options);
-                                                }
-                        */
                         DNP3_Value iv;
                         while (DNP3DataQueue.TryDequeue(out iv))
                         {
@@ -211,15 +173,16 @@ namespace Dnp3Driver
                                         iv.base_group,
                                     protocolSourceObjectAddress = iv.address
                                 };
-                            Log("MongoDB - ADD " + iv.address + " " + iv.value,
-                            LogLevelDetailed);
-
+                            Log("MongoDB - ADD - Connection: " + iv.conn_number + 
+                                " Group: " + iv.base_group + 
+                                " Address: " + iv.address + 
+                                " Value: " + iv.value,
+                                LogLevelDetailed);
                             listWrites
                                 .Add(new UpdateOneModel<rtData>(filt
                                         .ToBsonDocument(),
                                     update));
                         }
-
                         if (listWrites.Count > 0)
                         {
                             Log("MongoDB - Bulk write " + listWrites.Count);

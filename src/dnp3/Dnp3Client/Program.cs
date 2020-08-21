@@ -122,7 +122,7 @@ namespace Dnp3Driver
             public int class2ScanInterval { get; set; }
             [BsonDefaultValue(0)]
             public int class3ScanInterval { get; set; }
-            public RangeScans []rangeScans;
+            public RangeScans []rangeScans { get; set; }
             [BsonDefaultValue(0)]
             public int timeSyncMode { get; set; }
             [BsonDefaultValue(true)]
@@ -388,7 +388,6 @@ namespace Dnp3Driver
                                 new IPEndpoint(remoteIpAddrPort[0], remoteUdpPort),
                                 chlistener
                                 );
-                            srv.channel = channel;
                         }
                     }
                     else
@@ -437,7 +436,6 @@ namespace Dnp3Driver
                                     tlscfg,
                                     chlistener
                                     );
-                                srv.channel = channel;
                             }
                             else
                             { // TCP
@@ -449,7 +447,6 @@ namespace Dnp3Driver
                                     new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
                                     chlistener
                                     );
-                                srv.channel = channel;
                             }
                         }
                     }
@@ -532,7 +529,6 @@ namespace Dnp3Driver
                             ss,
                             chlistener
                             );
-                        srv.channel = channel;
                     }
                 }
                 else
@@ -547,7 +543,8 @@ namespace Dnp3Driver
                     continue;
                 }
                 else
-                { 
+                {
+                    srv.channel = channel;
                     var config = new MasterStackConfig();
                     // setup stack configuration here.
                     config.link.localAddr = System.Convert.ToUInt16(srv.localLinkAddress);
@@ -602,7 +599,8 @@ namespace Dnp3Driver
                             TaskConfig.Default);
                     }
 
-                    master.Enable(); // enable communications
+                    master.Disable(); // disable communications
+                    srv.isConnected = false;
                 }
             }
 
