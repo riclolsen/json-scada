@@ -19,5 +19,5 @@ jobs:
         dotnet-version: 3.1.301
     - name: Install dependencies
       run: dotnet restore
-    - name: Build iec101client
-      run: dotnet build src/lib60870.netcore/iec101client --configuration Release --no-restore
+    - name: Build lib60870
+      run: dotnet build src/lib60870.netcore/lib60870.netcore --configuration Release --no-restore
