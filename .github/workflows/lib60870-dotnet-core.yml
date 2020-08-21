@@ -1,4 +1,4 @@
-name: .NET Core
+name: lib60870 .NET Core
 
 on:
   push:
