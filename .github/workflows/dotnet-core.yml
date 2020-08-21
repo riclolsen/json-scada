@@ -20,4 +20,5 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
     - name: Build lib60870
-      run: dotnet build <my project>/src/lib60870.netcore/lib60870.netcore --configuration Release --no-restore
+      working-directory: src/lib60870.netcore/lib60870.netcore
+      run: dotnet build --configuration Release 
