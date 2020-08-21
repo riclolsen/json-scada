@@ -18,7 +18,8 @@ jobs:
       with:
         dotnet-version: 3.1.301
     - name: Install dependencies
+      working-directory: src/lib60870.netcore
       run: dotnet restore
     - name: Build lib60870
-      working-directory: src/lib60870.netcore/lib60870.netcore
-      run: dotnet build --configuration Release 
+      working-directory: src/lib60870.netcore
+      run: dotnet build lib60870.netcore.sln --configuration Release 
