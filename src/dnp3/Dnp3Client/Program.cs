@@ -332,7 +332,6 @@ namespace Dnp3Driver
 
             Log("Setting up connections & ASDU handlers...");
             IDNP3Manager mgr = DNP3ManagerFactory.CreateManager(2*Environment.ProcessorCount, new PrintingLogAdapter());
-            int cntDnp3Srv = 0;
             foreach (DNP3_connection srv in DNP3conns)
             {
                 uint logLevel = LogLevels.NONE;
@@ -346,30 +345,51 @@ namespace Dnp3Driver
                 MyChannelListener chlistener = new MyChannelListener();
                 chlistener.dnp3conn = srv;
 
-                IChannel channel; // can be tcp, udp, tls, or serial
+                IChannel channel = null; // can be tcp, udp, tls, or serial
                 if (srv.ipAddresses.Length > 0) // TCP, TLS or UDP
                 { 
                     if (srv.ipAddressLocalBind.Trim() != "")
                     { // UDP
-                        Log(srv.name + " - Creating UDP channel...");
-                        ushort localUdpPort = 20000;
-                        string[] localIpAddrPort = srv.ipAddressLocalBind.Split(':');
-                        if (localIpAddrPort.Length > 1)
-                            if (int.TryParse(localIpAddrPort[1], out _))
-                                localUdpPort = System.Convert.ToUInt16(localIpAddrPort[1]);
-                        ushort remoteUdpPort = 20000;
-                        string[] remoteIpAddrPort = srv.ipAddresses[0].Split(':');
-                        if (remoteIpAddrPort.Length > 1)
-                            if (int.TryParse(remoteIpAddrPort[1], out _))
-                                remoteUdpPort = System.Convert.ToUInt16(remoteIpAddrPort[1]);
-                        channel = mgr.AddUDPChannel(
-                            srv.name,
-                            logLevel,
-                            new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                            new IPEndpoint(localIpAddrPort[0], localUdpPort),
-                            new IPEndpoint(remoteIpAddrPort[0], remoteUdpPort),
-                            chlistener
-                            );
+                        // look for the same channel config already created (multi-drop case)
+                        // if found, just reuse
+                        foreach (DNP3_connection conn in DNP3conns)
+                        {
+                            if (!(conn.channel is null))
+                                if (conn.ipAddressLocalBind.Trim() != "" &&
+                                    srv.ipAddressLocalBind.Trim() == conn.ipAddressLocalBind.Trim() &&
+                                    srv.ipAddresses[0] == conn.ipAddresses[0])
+                                {
+                                    channel = conn.channel;
+                                    break;
+                                }
+                        }
+                        if (!(channel is null))
+                        {
+                            Log(srv.name + " - Reusing channel...");
+                        }
+                        else
+                        {
+                            Log(srv.name + " - Creating UDP channel...");
+                            ushort localUdpPort = 20000;
+                            string[] localIpAddrPort = srv.ipAddressLocalBind.Split(':');
+                            if (localIpAddrPort.Length > 1)
+                                if (int.TryParse(localIpAddrPort[1], out _))
+                                    localUdpPort = System.Convert.ToUInt16(localIpAddrPort[1]);
+                            ushort remoteUdpPort = 20000;
+                            string[] remoteIpAddrPort = srv.ipAddresses[0].Split(':');
+                            if (remoteIpAddrPort.Length > 1)
+                                if (int.TryParse(remoteIpAddrPort[1], out _))
+                                    remoteUdpPort = System.Convert.ToUInt16(remoteIpAddrPort[1]);
+                            channel = mgr.AddUDPChannel(
+                                "UDP:" + srv.name,
+                                logLevel,
+                                new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                                new IPEndpoint(localIpAddrPort[0], localUdpPort),
+                                new IPEndpoint(remoteIpAddrPort[0], remoteUdpPort),
+                                chlistener
+                                );
+                            srv.channel = channel;
+                        }
                     }
                     else
                     { // TCP or TLS
@@ -378,238 +398,218 @@ namespace Dnp3Driver
                         if (ipAddrPort.Length > 1)
                             if (int.TryParse(ipAddrPort[1], out _))
                                 tcpPort = System.Convert.ToUInt16(ipAddrPort[1]);
-                        if (srv.localCertFilePath.Trim() != "")
-                        { // TLS
-                            Log(srv.name + " - Creating TLS channel...");
-                            TLSConfig tlscfg = new TLSConfig(
-                                srv.peerCertFilePath,
-                                srv.localCertFilePath,
-                                srv.privateKeyFilePath,
-                                srv.allowTLSv10,
-                                srv.allowTLSv11,
-                                srv.allowTLSv12,
-                                srv.allowTLSv13,
-                                srv.cipherList
-                                );
-                            channel = mgr.AddTLSClient(
-                                srv.name,
-                                logLevel,
-                                new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                                new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
-                                tlscfg,
-                                chlistener
-                                );
+
+                        // look for the same channel config already created (multi-drop case)
+                        // if found, just reuse
+                        foreach (DNP3_connection conn in DNP3conns)
+                        {
+                            if ( !(conn.channel is null) ) 
+                            if (srv.ipAddresses.SequenceEqual(conn.ipAddresses))
+                            {
+                                channel = conn.channel;                                
+                                break;
+                            }
+                        }
+                        if (!(channel is null))
+                        {
+                            Log(srv.name + " - Reusing channel...");
                         }
                         else
-                        { // TCP
-                            Log(srv.name + " - Creating TCP channel...");
-                            channel = mgr.AddTCPClient(
-                                srv.name,
-                                logLevel,
-                                new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                                new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
-                                chlistener
-                                );
+                        {
+                            if (srv.localCertFilePath.Trim() != "")
+                            { // TLS
+                                Log(srv.name + " - Creating TLS channel...");
+                                TLSConfig tlscfg = new TLSConfig(
+                                    srv.peerCertFilePath,
+                                    srv.localCertFilePath,
+                                    srv.privateKeyFilePath,
+                                    srv.allowTLSv10,
+                                    srv.allowTLSv11,
+                                    srv.allowTLSv12,
+                                    srv.allowTLSv13,
+                                    srv.cipherList
+                                    );
+                                channel = mgr.AddTLSClient(
+                                    "TLS:" + srv.name,
+                                    logLevel,
+                                    new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                                    new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
+                                    tlscfg,
+                                    chlistener
+                                    );
+                                srv.channel = channel;
+                            }
+                            else
+                            { // TCP
+                                Log(srv.name + " - Creating TCP channel...");
+                                channel = mgr.AddTCPClient(
+                                    "TCP:" + srv.name,
+                                    logLevel,
+                                    new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                                    new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
+                                    chlistener
+                                    );
+                                srv.channel = channel;
+                            }
                         }
                     }
                 }
                 else if (srv.portName.Trim() != "" )
                 { // serial connection
-                    Log(srv.name + " - Creating serial channel...");
-                    StopBits stopbits;
-                    switch (srv.stopBits.ToLower())
+                    // look for the same channel config already created (multi-drop case)
+                    // if found, just reuse
+                    foreach (DNP3_connection conn in DNP3conns)
                     {
-                        default:
-                        case "1":
-                        case "one":
-                            stopbits = StopBits.One;
-                            break;
-                        case "1.5":
-                        case "one.five":
-                        case "one5":
-                            stopbits = StopBits.OnePointFive;
-                            break;
-                        case "2":
-                        case "two":
-                            stopbits = StopBits.Two;
-                            break;
-                        case "none":
-                            stopbits = StopBits.None;
-                            break;
+                        if (!(conn.channel is null))
+                            if (conn.portName.Trim() != "" &&
+                                srv.portName.Trim() == conn.portName.Trim())
+                            {
+                                channel = conn.channel;
+                                break;
+                            }
                     }
-                    Parity parity;
-                    switch (srv.parity.ToLower())
+                    if (!(channel is null))
                     {
-                        default:
-                        case "none":
-                            parity = Parity.None;
-                            break;
-                        case "even":
-                            parity = Parity.Even;
-                            break;
-                        case "odd":
-                            parity = Parity.Odd;
-                            break;
+                        Log(srv.name + " - Reusing channel...");
                     }
-                    FlowControl fc;
-                    switch (srv.handshake.ToLower())
+                    else
                     {
-                        default:
-                        case "none":
-                            fc = FlowControl.None;
-                            break;
-                        case "xon":
-                            fc = FlowControl.XONXOFF;
-                            break;
-                        case "rts":
-                            fc = FlowControl.Hardware;
-                            break;
+                        Log(srv.name + " - Creating serial channel...");
+                        StopBits stopbits;
+                        switch (srv.stopBits.ToLower())
+                        {
+                            default:
+                            case "1":
+                            case "one":
+                                stopbits = StopBits.One;
+                                break;
+                            case "1.5":
+                            case "one.five":
+                            case "one5":
+                                stopbits = StopBits.OnePointFive;
+                                break;
+                            case "2":
+                            case "two":
+                                stopbits = StopBits.Two;
+                                break;
+                            case "none":
+                                stopbits = StopBits.None;
+                                break;
+                        }
+                        Parity parity;
+                        switch (srv.parity.ToLower())
+                        {
+                            default:
+                            case "none":
+                                parity = Parity.None;
+                                break;
+                            case "even":
+                                parity = Parity.Even;
+                                break;
+                            case "odd":
+                                parity = Parity.Odd;
+                                break;
+                        }
+                        FlowControl fc;
+                        switch (srv.handshake.ToLower())
+                        {
+                            default:
+                            case "none":
+                                fc = FlowControl.None;
+                                break;
+                            case "xon":
+                                fc = FlowControl.XONXOFF;
+                                break;
+                            case "rts":
+                                fc = FlowControl.Hardware;
+                                break;
+                        }
+                        SerialSettings ss = new SerialSettings(srv.portName, srv.baudRate, 8, stopbits, parity, fc);
+                        channel = mgr.AddSerial(
+                            "SERIAL:" + srv.name,
+                            logLevel,
+                            new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                            ss,
+                            chlistener
+                            );
+                        srv.channel = channel;
                     }
-                    SerialSettings ss = new SerialSettings(srv.portName, srv.baudRate, 8, stopbits, parity, fc);
-                    channel = mgr.AddSerial(
-                        srv.name, 
-                        logLevel, 
-                        new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                        ss,
-                        chlistener
-                        );
                 }
                 else
                 { // bad connection config, skip
                     Log(srv.name  + " - Bad connection config! Ingoring...");
                     continue;
                 }
-                var config = new MasterStackConfig();
-                // setup stack configuration here.
-                config.link.localAddr = System.Convert.ToUInt16(srv.localLinkAddress);
-                config.link.remoteAddr = System.Convert.ToUInt16(srv.remoteLinkAddress);
-                //config.link.responseTimeout = TimeSpan.FromSeconds(5);
-                //config.link.keepAliveTimeout =  TimeSpan.FromSeconds(60);
-                config.master.startupIntegrityClassMask = ClassField.AllClasses;
-                config.master.timeSyncMode = TimeSyncMode.None;
-                if (srv.timeSyncMode>=2)
-                  config.master.timeSyncMode = TimeSyncMode.LAN;
-                else
-                if (srv.timeSyncMode == 1)
-                    config.master.timeSyncMode = TimeSyncMode.NonLAN;
-                // config.master.responseTimeout = TimeSpan.FromSeconds(5);
-                if (srv.enableUnsolicited)
+
+                if (channel is null)
                 {
-                    config.master.disableUnsolOnStartup = false;
-                    config.master.unsolClassMask = ClassField.AllClasses;
-                }                    
-                else
-                {
-                    config.master.disableUnsolOnStartup = true;
-                    config.master.unsolClassMask = ClassField.None;
+                    Log("Channel allocation error!");
+                    continue;
                 }
+                else
+                { 
+                    var config = new MasterStackConfig();
+                    // setup stack configuration here.
+                    config.link.localAddr = System.Convert.ToUInt16(srv.localLinkAddress);
+                    config.link.remoteAddr = System.Convert.ToUInt16(srv.remoteLinkAddress);
+                    //config.link.responseTimeout = TimeSpan.FromSeconds(5);
+                    //config.link.keepAliveTimeout =  TimeSpan.FromSeconds(60);
+                    config.master.startupIntegrityClassMask = ClassField.AllClasses;
+                    config.master.timeSyncMode = TimeSyncMode.None;
+                    if (srv.timeSyncMode>=2)
+                      config.master.timeSyncMode = TimeSyncMode.LAN;
+                    else
+                    if (srv.timeSyncMode == 1)
+                        config.master.timeSyncMode = TimeSyncMode.NonLAN;
+                    // config.master.responseTimeout = TimeSpan.FromSeconds(5);
+                    if (srv.enableUnsolicited)
+                    {
+                        config.master.disableUnsolOnStartup = false;
+                        config.master.unsolClassMask = ClassField.AllClasses;
+                    }                    
+                    else
+                    {
+                        config.master.disableUnsolOnStartup = true;
+                        config.master.unsolClassMask = ClassField.None;
+                    }
 
-                var soe_handler = new MySOEHandler();
-                soe_handler.ConnectionName = srv.name;
-                soe_handler.ConnectionNumber = srv.protocolConnectionNumber;
-                var master = channel.AddMaster(srv.name, soe_handler,  DefaultMasterApplication.Instance, config);
-                srv.master = master;
-                srv.channel = channel;
+                    var soe_handler = new MySOEHandler();
+                    soe_handler.ConnectionName = srv.name;
+                    soe_handler.ConnectionNumber = srv.protocolConnectionNumber;
+                    var master = channel.AddMaster(srv.name, soe_handler, DefaultMasterApplication.Instance, config);
+                    srv.master = master;
+                    if (srv.giInterval > 0)
+                        master.AddClassScan(ClassField.AllClasses, TimeSpan.FromSeconds(srv.giInterval), soe_handler, TaskConfig.Default);
 
-                if (srv.giInterval > 0)
-                    master.AddClassScan(ClassField.AllClasses, TimeSpan.FromSeconds(srv.giInterval), soe_handler, TaskConfig.Default);
+                    if (srv.class0ScanInterval > 0)
+                        master.AddClassScan(ClassField.From(PointClass.Class0), TimeSpan.FromSeconds(srv.class0ScanInterval), soe_handler, TaskConfig.Default);
+                    if (srv.class1ScanInterval > 0)
+                        master.AddClassScan(ClassField.From(PointClass.Class1), TimeSpan.FromSeconds(srv.class1ScanInterval), soe_handler, TaskConfig.Default);
+                    if (srv.class2ScanInterval > 0)
+                        master.AddClassScan(ClassField.From(PointClass.Class2), TimeSpan.FromSeconds(srv.class2ScanInterval), soe_handler, TaskConfig.Default);
+                    if (srv.class3ScanInterval > 0)
+                        master.AddClassScan(ClassField.From(PointClass.Class3), TimeSpan.FromSeconds(srv.class3ScanInterval), soe_handler, TaskConfig.Default);
 
-                if (srv.class0ScanInterval > 0)
-                  master.AddClassScan(ClassField.From(PointClass.Class0), TimeSpan.FromSeconds(srv.class0ScanInterval), soe_handler, TaskConfig.Default);
-                if (srv.class1ScanInterval > 0)
-                    master.AddClassScan(ClassField.From(PointClass.Class1), TimeSpan.FromSeconds(srv.class1ScanInterval), soe_handler, TaskConfig.Default);
-                if (srv.class2ScanInterval > 0)
-                    master.AddClassScan(ClassField.From(PointClass.Class2), TimeSpan.FromSeconds(srv.class2ScanInterval), soe_handler, TaskConfig.Default);
-                if (srv.class3ScanInterval > 0)
-                    master.AddClassScan(ClassField.From(PointClass.Class3), TimeSpan.FromSeconds(srv.class3ScanInterval), soe_handler, TaskConfig.Default);
-
-                foreach (RangeScans rs in srv.rangeScans)
-                {
-                    master.AddRangeScan(
-                        System.Convert.ToByte(rs.group),
-                        System.Convert.ToByte(rs.variation),
-                        System.Convert.ToUInt16(rs.startAddress),
-                        System.Convert.ToUInt16(rs.stopAddress), 
-                        TimeSpan.FromSeconds(rs.period), 
-                        soe_handler, 
-                        TaskConfig.Default);
-                }
-                    // you can also do very custom scans
-                    // var headers = new Header[] { Header.Range8(1, 2, 7, 8), Header.Count8(2, 3, 7) };
-                    // var weirdPoll = master.AddScan(headers, TimeSpan.FromSeconds(20));
+                    foreach (RangeScans rs in srv.rangeScans)
+                    {
+                        master.AddRangeScan(
+                            System.Convert.ToByte(rs.group),
+                            System.Convert.ToByte(rs.variation),
+                            System.Convert.ToUInt16(rs.startAddress),
+                            System.Convert.ToUInt16(rs.stopAddress),
+                            TimeSpan.FromSeconds(rs.period),
+                            soe_handler,
+                            TaskConfig.Default);
+                    }
 
                     master.Enable(); // enable communications
+                }
             }
-
-            /*
-                        var channel = mgr.AddTCPClient(
-                            "client",
-                            LogLevels.NONE, // LogLevels.NORMAL | LogLevels.APP_COMMS,
-                            new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                            new List<IPEndpoint> { new IPEndpoint("127.0.0.1", 20000) },
-                            ChannelListener.Print()
-                        );
-                        var config = new MasterStackConfig();
-                        //setup your stack configuration here.
-                        config.link.localAddr = 1;
-                        config.link.remoteAddr = 1024;
-
-                        var key = new byte[16];
-                        for (int i = 0; i < key.Length; ++i)
-                        {
-                            key[i] = 0xFF;
-                        }
-
-                        var master = channel.AddMaster("master", PrintingSOEHandler.Instance, DefaultMasterApplication.Instance, config);
-                        var soe_handler = new MySOEHandler();
-                        soe_handler.ConnectionName = "Connection 64";
-                        soe_handler.ConnectionNumber = 64;
-
-                        // you a can optionally add various kinds of polls
-                        var integrityPoll = master.AddClassScan(ClassField.AllClasses, TimeSpan.FromMinutes(1), soe_handler, TaskConfig.Default);
-                        var rangePoll = master.AddRangeScan(30, 2, 5, 7, TimeSpan.FromSeconds(20), soe_handler, TaskConfig.Default);
-                        var classPoll = master.AddClassScan(ClassField.AllEventClasses, TimeSpan.FromSeconds(5), soe_handler, TaskConfig.Default);
-
-                        // you can also do very custom scans
-                        // var headers = new Header[] { Header.Range8(1, 2, 7, 8), Header.Count8(2, 3, 7) };
-                        // var weirdPoll = master.AddScan(headers, TimeSpan.FromSeconds(20));
-
-
-                        master.Enable(); // enable communications
-            */
-            Console.WriteLine("Enter a command");
 
             while (true)
             {
                 switch (Console.ReadLine())
                 {
-                    case "a":
-                        // perform an ad-hoc scan of all analogs
-                        //master.ScanAllObjects(30, 0, PrintingSOEHandler.Instance, TaskConfig.Default);
-                        break;
-                    case "c":
-                        //var task = master.SelectAndOperate(GetCommandHeaders(), TaskConfig.Default);
-                        //task.ContinueWith((result) => Console.WriteLine("Result: " + result.Result));
-                        break;
-                    case "o":
-                        //var crob = new ControlRelayOutputBlock(OperationType.PULSE_ON, TripCloseCode.NUL, false, 1, 100, 100);
-                        //var single = master.SelectAndOperate(crob, 1, TaskConfig.Default);
-                        //single.ContinueWith((result) => Console.WriteLine("Result: " + result.Result));
-                        break;
-                    case "l":
-                        // add interpretation to the current logging level
-                        //var filters = channel.GetLogFilters();
-                        //channel.SetLogFilters(filters.Add(LogFilters.TRANSPORT_TX | LogFilters.TRANSPORT_RX));
-                        break;
-                    case "i":
-                        //integrityPoll.Demand();
-                        break;
-                    case "r":
-                        //rangePoll.Demand();
-                        break;
-                    case "e":
-                        //classPoll.Demand();
-                        break;
                     case "x":
                         return 0;
                     default:

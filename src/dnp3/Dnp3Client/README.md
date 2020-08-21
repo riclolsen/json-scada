@@ -120,6 +120,12 @@ For TLS over TCP.
 * _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server..
 * _**privateKeyFilePath**_ [String] - File that contains the private key corresponding to the local certificate.
 
+### Multi-drop 
+
+In the multi-drop case, multiple slave devices share the same TCP, UDP, TLS or Serial channel connection.
+
+For a multi-drop configuration, use a new connection (in the _protocolConnections_ collection) for each device repeating channel specification (endpoint IP address or serial port). Each device connection must have a distinct _remoteLinkAddress_ parameter.
+
 ## Configure tags for update
 
 Each tag to be update on a connection must have a protocol source set configured. 
