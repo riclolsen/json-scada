@@ -1,0 +1,25 @@
+name: lib60870 .NET Core
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+    - name: Install dependencies
+      working-directory: src/lib60870.netcore
+      run: dotnet restore
+    - name: Build lib60870
+      working-directory: src/lib60870.netcore
+      run: dotnet build lib60870.netcore.sln --configuration Release 
