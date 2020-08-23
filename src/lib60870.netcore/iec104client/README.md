@@ -59,7 +59,8 @@ Each instance for this driver can have many client connection defined that must 
         t0: 10,
         t1: 15,
         t2: 10,
-        t3: 20
+        t3: 20,
+        stats: null
     });
 
 * _**protocolDriver**_ [String] - Name of the protocol driver, must be  "IEC60870-5-104". **Mandatory parameter**.
@@ -85,6 +86,7 @@ Each instance for this driver can have many client connection defined that must 
 * _**t1**_ [Double] - Protocol _t1_ timeout in seconds. **Mandatory parameter**.
 * _**t2**_ [Double] - Protocol _t2_ timeout in seconds. **Mandatory parameter**.
 * _**t3**_ [Double] - Protocol _t3_ timeout in seconds. **Mandatory parameter**.
+* _**stats**_ [Double] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 ## Configure tags for update
 

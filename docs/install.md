@@ -117,6 +117,9 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     cd src/lib60870.netcore
     dotnet publish -c Release -o ../../bin/
 
+    cd ../dnp3/Dnp3Client
+    dotnet publish -c Release -o ../../bin/
+
     cd ../calculations
     go get ./... 
     go build 

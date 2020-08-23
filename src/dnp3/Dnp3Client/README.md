@@ -76,8 +76,8 @@ Each instance for this driver can have many client connection defined that must 
                 stopAddress: 50,
                 period: 150
             },
-        ]
-
+        ],
+        stats: null
     });
 
 * _**protocolDriver**_ [String] - Name of the protocol driver, must be  "DNP3". **Mandatory parameter**.
@@ -91,6 +91,7 @@ Each instance for this driver can have many client connection defined that must 
 * _**remoteLinkAddress**_ [Double] - Remote link address of the server (originator address). **Optional parameter**.
 * _**giInterval**_ [Double] - General station interrogation period in seconds. **Optional parameter**.
 * _**timeSyncMode**_ [Double] - Time sync mode (from client when requested by the RTU server): 0=none, 1=non-lan, 2=lan. Use zero to disable. **Mandatory parameter**.
+* _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 For TCP communication.
 * _**ipAddressLocalBind**_ [String] - Not used for TCP option (leave empty). **Optional parameter**.

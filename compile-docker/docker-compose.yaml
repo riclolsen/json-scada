@@ -6,28 +6,35 @@ version: '2.1'
 services:
 
     
-  lib60870_dotnet_compile:
+  dotnet_compile:
     image: mcr.microsoft.com/dotnet/core/sdk:3.1
-    container_name: js_lib60870_compile
-    command: sh -c "cd /src/lib60870.netcore/ && dotnet publish -p:PublishSingleFile=true --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
+    container_name: js_dotnet_compile
+    command: sh -c "cd /src/lib60870.netcore/lib60870.netcore/ && 
+                    dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
+                    cd /src/lib60870.netcore/iec101client/ &&
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/lib60870.netcore/iec101server/ &&
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/lib60870.netcore/iec104client/ &&
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/lib60870.netcore/iec104server/ &&
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/dnp3/Dnp3Client/ && 
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
     #command: tail -f /dev/null
     volumes:
       - ../src/lib60870.netcore:/src/lib60870.netcore
-      - ../demo-docker/bin:/publish_bin
- 
-  dnp3_dotnet_compile:
-    image: mcr.microsoft.com/dotnet/core/sdk:3.1
-    container_name: js_dnp3_compile
-    command: sh -c "cd /src/dnp3/Dnp3Client && dotnet publish -p:PublishSingleFile=true --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
-    #command: tail -f /dev/null
-    volumes:
       - ../src/dnp3:/src/dnp3
       - ../demo-docker/bin:/publish_bin
-
+ 
   calculations_compile:
     image: golang:alpine
     container_name: js_calculations_compile
-    command: sh -c "apk add --no-cache git && cd /go/src/calculations/ && go get ./... && go build && cp calculations /publish_bin/"
+    command: sh -c "apk add --no-cache git && 
+                    cd /go/src/calculations/ && 
+                    go get ./... && 
+                    go build && 
+                    cp calculations /publish_bin/"
     #command: tail -f /dev/null
     volumes:
       - ../src/calculations:/go/src/calculations
@@ -36,7 +43,11 @@ services:
   i104m_compile:
     image: golang:alpine
     container_name: js_i104m_compile
-    command: sh -c "apk add --no-cache git && cd /go/src/i104m/ && go get ./... && go build && cp i104m /publish_bin/"
+    command: sh -c "apk add --no-cache git && 
+                    cd /go/src/i104m/ &&
+                    go get ./... && 
+                    go build && 
+                    cp i104m /publish_bin/"
     #command: tail -f /dev/null
     volumes:
       - ../src/i104m:/go/src/i104m

@@ -27,7 +27,6 @@ using MongoDB.Bson.Serialization.Attributes;
 using System.Net.Security;
 using MongoDB.Driver;
 using System.Security.Cryptography.X509Certificates;
-using Automatak.DNP3.Adapter;
 using Automatak.DNP3.Interface;
 
 namespace Dnp3Driver

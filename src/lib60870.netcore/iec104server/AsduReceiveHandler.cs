@@ -1,5 +1,27 @@
-﻿using System;
+﻿/* 
+ * IEC 60870-5-104 Server Protocol driver for {json:scada}
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+using System;
+using System.Linq;
+using System.Net;
 using lib60870.CS101;
+using lib60870.CS104;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Iec10XDriver
@@ -7,6 +29,76 @@ namespace Iec10XDriver
     partial class MainClass
     {
         public static Int32 LastPointKeySelectedOk = 0;
+        // This is a handler for IEC104 connection requests
+        private static bool
+        ConnectionRequestHandler(object parameter, IPAddress ipAddress)
+        {
+            var srv = IEC10Xconns[(int)parameter];
+            var conNameStr = srv.name + " - ";
+            Log(conNameStr + "New connection request from IP " + ipAddress.ToString());
+
+            // Allow only known IP addresses!
+            // Implement allowed client whitelist here
+
+            if (srv.ipAddresses.Length == 0 || // empty list: accept any client IP
+                 (srv.ipAddresses.Length >= 1 && srv.ipAddresses[0] == "*") || // list with one "*" : accept any client IP
+                 srv.ipAddresses.Contains(ipAddress.ToString()) // verify if client IP connecting is in the list
+                 )
+                return true; // can connect
+            else
+                return false; // can't connect
+        }
+
+        // This is a handler for IEC104 connection events
+        private static void ConnectionEventHandler(
+            object parameter,
+            ClientConnection connection,
+            ClientConnectionEvent conEvent
+        )
+        {
+            var srv = IEC10Xconns[(int)parameter];
+            var conNameStr = srv.name + " - ";
+            if (conEvent == ClientConnectionEvent.OPENED)
+            {
+                srv.clientConnections.Add(connection);
+            }
+            else if (conEvent == ClientConnectionEvent.CLOSED)
+            {
+                srv.clientConnections.Remove(connection);
+            }
+            Log(conNameStr + "Connection event " +
+                connection.RemoteEndpoint.Address.ToString() + ":" +
+                connection.RemoteEndpoint.Port + " - " +
+                conEvent.ToString());
+
+            var Client = ConnectMongoClient(JSConfig);
+            var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
+            var collection = DB.GetCollection<IEC10X_connection>(ProtocolConnectionsCollectionName);
+            // update stats
+            var filter =
+                new BsonDocument(new BsonDocument("protocolConnectionNumber",
+                    srv.protocolConnectionNumber));
+            var update =
+                new BsonDocument("$set", 
+                    new BsonDocument{
+                        {"stats", new BsonDocument{
+                            { "nodeName", JSConfig.nodeName },
+                            { "timeTag", BsonDateTime.Create(DateTime.Now) },
+                            { "openConnections", BsonValue.Create(srv.server.OpenConnections) },
+                            { "clientConnections", BsonValue.Create(srv.clientConnections.Count) },
+                            { "endpoint." +
+                                connection.RemoteEndpoint.Address.ToString(),
+                                    new BsonDocument{
+                                        { "timeTag", BsonDateTime.Create(DateTime.Now) },
+                                        { "connectionState", BsonValue.Create(conEvent.ToString()) },
+                                }
+                            },
+                        }},
+                    });
+            var res = collection.UpdateOneAsync(filter, update);
+            Log("Mongo protocolConnections Matched " + res.Result.MatchedCount + " Updated " + res.Result.ModifiedCount);
+        }
+
         // Receive commands from client and insert in Mongo if appropriate.
         private static bool
         AsduReceivedHandler(object parameter, IMasterConnection connection, ASDU asdu)

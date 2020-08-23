@@ -21,7 +21,6 @@ using System.Threading;
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Automatak.DNP3.Adapter;
 using Automatak.DNP3.Interface;
 
 namespace Dnp3Driver

@@ -1,10 +1,25 @@
-// IEC60870-104 Server Protocol driver for {json:scada}
-// Copyright 2020 Ricardo Lastra Olsen
+/* 
+ * IEC 60870-5-104 Server Protocol driver for {json:scada}
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Net;
 using System.Text.Json;
 using System.Threading;
 using System.Linq;
@@ -135,49 +150,6 @@ namespace Iec10XDriver
             public BsonDouble kconv2 { get; set; }
             public rtSourceDataUpdate sourceDataUpdate { get; set; }
             public rtDataProtocDest[] protocolDestinations { get; set; }
-        }
-
-        // This is a handler for IEC104 connection requests
-        private static bool
-        ConnectionRequestHandler(object parameter, IPAddress ipAddress)
-        {
-            var srv = IEC10Xconns[(int)parameter];
-            var conNameStr = srv.name + " - ";
-            Log(conNameStr + "New connection request from IP " + ipAddress.ToString());
-
-            // Allow only known IP addresses!
-            // Implement allowed client whitelist here
-
-            if (srv.ipAddresses.Length == 0 || // empty list: accept any client IP
-                 (srv.ipAddresses.Length >= 1 && srv.ipAddresses[0] == "*") || // list with one "*" : accept any client IP
-                 srv.ipAddresses.Contains(ipAddress.ToString()) // verify if client IP connecting is in the list
-                 )
-                return true; // can connect
-            else
-                return false; // can't connect
-        }
-
-        // This is a handler for IEC104 connection events
-        private static void ConnectionEventHandler(
-            object parameter,
-            ClientConnection connection,
-            ClientConnectionEvent conEvent
-        )
-        {
-            var srv = IEC10Xconns[(int)parameter];
-            var conNameStr = srv.name + " - ";
-            if (conEvent == ClientConnectionEvent.OPENED)
-            {
-                srv.clientConnections.Add(connection);
-            }
-            else if (conEvent == ClientConnectionEvent.CLOSED)
-            {
-                srv.clientConnections.Remove(connection);
-            }
-            Log(conNameStr + "Connection event " +
-                connection.RemoteEndpoint.Address.ToString() + ":" +
-                connection.RemoteEndpoint.Port + " - " +
-                conEvent.ToString());
         }
 
         static void Main(string[] args)

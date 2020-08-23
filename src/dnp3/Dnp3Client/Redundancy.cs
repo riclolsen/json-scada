@@ -19,11 +19,7 @@
 using System;
 using System.Threading;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
-using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using System.ComponentModel.DataAnnotations;
 
 namespace Dnp3Driver
 {
@@ -173,7 +169,7 @@ namespace Dnp3Driver
                                 await collinsts
                                     .FindOneAndUpdateAsync(filter, update, options);
 
-                                // update statistics
+                                // update statistics for connections
                                 foreach (DNP3_connection srv in DNP3conns)
                                 {
                                     if (!(srv.channel is null))
@@ -185,18 +181,18 @@ namespace Dnp3Driver
                                         var upd =
                                             new BsonDocument("$set", new BsonDocument{
                                             {"stats", new BsonDocument{
-                                                { "nodeName", JSConfig.nodeName },
-                                                { "timeTag", BsonValue.Create(DateTime.Now) },
+                                                { "nodeName", BsonString.Create(JSConfig.nodeName) },
+                                                { "timeTag", BsonDateTime.Create(DateTime.Now) },
                                                 { "isConnected", BsonBoolean.Create(srv.isConnected) },
                                                 { "numBadLinkFrameRx", BsonDouble.Create(stats.NumBadLinkFrameRx) },
-                                                { "NumBytesRx", BsonDouble.Create(stats.NumBytesRx) },
-                                                { "NumBytesTx", BsonDouble.Create(stats.NumBytesTx) },
-                                                { "NumClose", BsonDouble.Create(stats.NumClose) },
-                                                { "NumCrcError", BsonDouble.Create(stats.NumCrcError) },
-                                                { "NumLinkFrameRx", BsonDouble.Create(stats.NumLinkFrameRx) },
-                                                { "NumLinkFrameTx", BsonDouble.Create(stats.NumLinkFrameTx) },
-                                                { "NumOpen", BsonDouble.Create(stats.NumOpen) },
-                                                { "NumOpenFail", BsonDouble.Create(stats.NumOpenFail) }
+                                                { "numBytesRx", BsonDouble.Create(stats.NumBytesRx) },
+                                                { "numBytesTx", BsonDouble.Create(stats.NumBytesTx) },
+                                                { "numClose", BsonDouble.Create(stats.NumClose) },
+                                                { "numCrcError", BsonDouble.Create(stats.NumCrcError) },
+                                                { "numLinkFrameRx", BsonDouble.Create(stats.NumLinkFrameRx) },
+                                                { "numLinkFrameTx", BsonDouble.Create(stats.NumLinkFrameTx) },
+                                                { "numOpen", BsonDouble.Create(stats.NumOpen) },
+                                                { "numOpenFail", BsonDouble.Create(stats.NumOpenFail) }
                                                 }},
                                                 });
                                         var res = collconns.UpdateOneAsync(filt, upd);

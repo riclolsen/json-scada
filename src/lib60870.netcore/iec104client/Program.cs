@@ -1,5 +1,21 @@
-// IEC60870-104 Client Protocol driver for {json:scada}
-// Copyright 2020 Ricardo Lastra Olsen
+/* 
+ * IEC 60870-5-104 Client Protocol driver for {json:scada}
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 using System;
 using System.IO;
 using System.Text.Json;
@@ -106,6 +122,20 @@ namespace Iec10XDriver
                     break;
                 case ConnectionEvent.CLOSED:
                     Log(srv.name + " - Connection closed ");
+                    var Client = ConnectMongoClient(JSConfig);
+                    var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
+                    var collection = DB.GetCollection<rtData>(RealtimeDataCollectionName);
+                    // update as invalid
+                    Log("Invalidating points on connection " + srv.protocolConnectionNumber);
+                    var filter =
+                        new BsonDocument(new BsonDocument("protocolSourceConnectionNumber",
+                            srv.protocolConnectionNumber));
+                    var update =
+                        new BsonDocument("$set", new BsonDocument{
+                        {"invalid",  true},
+                        {"timeTag", BsonValue.Create(DateTime.Now) },
+                            });
+                    var res = collection.UpdateManyAsync(filter, update);
                     break;
                 case ConnectionEvent.STARTDT_CON_RECEIVED:
                     Log(srv.name + " - STARTDT CON received ");

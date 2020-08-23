@@ -18,19 +18,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Net;
-using System.Text.Json;
-using System.Threading;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
-
-using Automatak.DNP3.Adapter;
 using Automatak.DNP3.Interface;
 
 namespace Dnp3Driver
@@ -54,28 +42,31 @@ namespace Dnp3Driver
                     dnp3conn.isConnected = false;
                 }
 
-                // TODO invalidate points on connection                    
-                var Client = ConnectMongoClient(JSConfig);
-                var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
-                var collection = DB.GetCollection<rtData>(RealtimeDataCollectionName);
-                foreach (DNP3_connection srv in DNP3conns)
+                if (state == ChannelState.CLOSED)
                 {
-                    if (srv.channel == dnp3conn.channel) // all connections on the same channel
+                    // Ivalidate points on connection if disconnected
+                    var Client = ConnectMongoClient(JSConfig);
+                    var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
+                    var collection = DB.GetCollection<rtData>(RealtimeDataCollectionName);
+                    foreach (DNP3_connection srv in DNP3conns)
                     {
-                        srv.isConnected = dnp3conn.isConnected;
-                        if ( dnp3conn.isConnected == false )
+                        if (srv.channel == dnp3conn.channel) // all connections on the same channel
                         {
-                            // update as invalid
-                            Log("Invalidating points on connection " + srv.protocolConnectionNumber);
-                            var filter =
-                                new BsonDocument(new BsonDocument("protocolSourceConnectionNumber",
-                                    srv.protocolConnectionNumber));
-                            var update =
-                                new BsonDocument("$set", new BsonDocument{
+                            srv.isConnected = dnp3conn.isConnected;
+                            if (dnp3conn.isConnected == false)
+                            {
+                                // update as invalid
+                                Log("Invalidating points on connection " + srv.protocolConnectionNumber);
+                                var filter =
+                                    new BsonDocument(new BsonDocument("protocolSourceConnectionNumber",
+                                        srv.protocolConnectionNumber));
+                                var update =
+                                    new BsonDocument("$set", new BsonDocument{
                                     {"invalid",  true},
                                     {"timeTag", BsonValue.Create(DateTime.Now) },
-                                    });
-                            var res = collection.UpdateManyAsync(filter, update);
+                                        });
+                                var res = collection.UpdateManyAsync(filter, update);
+                            }
                         }
                     }
                 }

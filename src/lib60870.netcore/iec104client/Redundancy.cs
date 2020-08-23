@@ -1,9 +1,24 @@
-﻿using System;
+﻿/* 
+ * IEC 60870-5-104 Client Protocol driver for {json:scada}
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+using System;
 using System.Threading;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
-using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
 namespace Iec10XDriver
@@ -39,6 +54,11 @@ namespace Iec10XDriver
                         if (!isMongoLive)
                             throw new Exception("Error on MongoDB connection ");
 
+                        var collconns =
+                            DB
+                                .GetCollection
+                                <IEC10X_connection
+                                >(ProtocolConnectionsCollectionName);
                         var instances =
                             collinsts
                                 .Find(inst =>
@@ -127,6 +147,31 @@ namespace Iec10XDriver
                                 options.IsUpsert = false;
                                 await collinsts
                                     .FindOneAndUpdateAsync(filter, update, options);
+
+                                // update statistics for connections
+                                foreach (IEC10X_connection srv in IEC10Xconns)
+                                {
+                                    if (!(srv.connection is null))
+                                    {
+                                        var stats = srv.connection.GetStatistics();
+                                        var filt =
+                                            new BsonDocument(new BsonDocument("protocolConnectionNumber",
+                                                srv.protocolConnectionNumber));
+                                        var upd =
+                                            new BsonDocument("$set", new BsonDocument{
+                                            {"stats", new BsonDocument{
+                                                { "nodeName", JSConfig.nodeName },
+                                                { "timeTag", BsonDateTime.Create(DateTime.Now) },
+                                                { "isConnected", BsonBoolean.Create(srv.connection.IsRunning) },
+                                                { "rcvdMsgCounter", BsonDouble.Create(stats.RcvdMsgCounter) },
+                                                { "sentMsgCounter", BsonDouble.Create(stats.SentMsgCounter) },
+                                                { "rcvdTestFrActCounter", BsonDouble.Create(stats.RcvdTestFrActCounter) },
+                                                { "rcvdTestFrConCounter", BsonDouble.Create(stats.RcvdTestFrConCounter) }
+                                                }},
+                                                });
+                                        var res = collconns.UpdateOneAsync(filt, upd);
+                                    }
+                                }
                             }
                             else
                             {
