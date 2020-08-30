@@ -30,14 +30,18 @@ const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
 let Server = require('mongodb').Server
 const { setInterval } = require('timers')
-let beep = require('beepbeep')
-let winApi = require('child_process')
+const {beep}=require('a1-beep')
+let sys = require('child_process')
 
 function Beep(...args) {
   if (process.platform === "win32")
-    winApi.exec(`rundll32 user32.dll,MessageBeep`)
-  else
+    sys.exec(`rundll32 user32.dll,MessageBeep`)
+  else {
+    // using beepbeep package
     beep(...args)
+    // alternative method
+    sys.spawn('/usr/bin/aplay -q -D default /usr/share/sounds/linuxmint-gdm.wav')
+  }
 }
 
 Beep()

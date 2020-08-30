@@ -23,7 +23,7 @@ const APP_NAME = 'CS_DATA_PROCESSOR'
 const APP_MSG = '{json:scada} - Change Stream Data Processor'
 const VERSION = '0.1.1'
 let ProcessActive = false // for redundancy control
-const jsConfigFile = '../../conf/json-scada.json'
+var jsConfigFile = '../../conf/json-scada.json'
 const sqlFilesPath = '../../sql/'
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -33,13 +33,31 @@ const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
 const args = process.argv.slice(2)
-const inst = 0
+console.log(args)
+var inst = null
 if (args.length > 0)
-  inst = parseInt(args[1])
+  inst = parseInt(args[0])
 const Instance = inst || process.env.JS_CSDATAPROC_INSTANCE || 1;
+
+var logLevel = null
+if (args.length > 1)
+logLevel = parseInt(args[1])
+const LogLevel = logLevel || process.env.JS_CSDATAPROC_LOGLEVEL || 1;
+
+var confFile = null
+if (args.length > 2)
+confFile = args[2]
+jsConfigFile = confFile || process.env.JS_CONFIG_FILE || jsConfigFile;
 
 console.log(APP_MSG + " Version " + VERSION)
 console.log("Instance: " + Instance)
+console.log("Log level: " + LogLevel)
+console.log("Config File: " + jsConfigFile)
+
+if (!fs.existsSync(jsConfigFile)) {
+    console.log('Error: config file not found!')
+    process.exit()  
+  }
 
 const RealtimeDataCollectionName = 'realtimeData'
 const ProcessInstancesCollectionName = 'processInstances'

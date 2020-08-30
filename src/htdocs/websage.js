@@ -1546,8 +1546,8 @@ else
   // open plot visor (historical) of point info
   curvas: function() {
     window.open(
-      "histwebview/histwebview.php?NPONTO_1=" + NPTO,
-      "Histwebview " + NPTO,
+      "/grafana/d/78X6BmvMk/json-scada-history?var-point_tag=" + TAGS[NPTO],
+      "History " + TAGS[NPTO],
       "dependent=no,height=600,width=1000,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
     );
     setTimeout("WebSAGE.g_win_cmd.close()", 500);

@@ -18,7 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const HTTP_PORT = process.env.JS_HTTP_PORT || 3001;
+const IP_BIND = process.env.JS_IP_BIND || "localhost";
+const HTTP_PORT = process.env.JS_HTTP_PORT || 8080;
+const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || "http://127.0.0.1:3000";
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const API_AP = '/server_realtime'
 const APP_NAME = ':' + HTTP_PORT + API_AP
@@ -27,6 +29,7 @@ const COLL_SOE = 'soeData'
 const COLL_COMMANDS = 'commandsQueue'
 const jsConfigFile = '../../conf/json-scada.json'
 const express = require('express')
+const httpProxy = require('express-http-proxy');
 const path = require('path')
 const cors = require('cors')
 const bodyParser = require('body-parser')
@@ -67,12 +70,15 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname + '../htdocs/index.html'))
 })
 
+// reverse proxy for grafana
+app.use('/grafana', httpProxy(GRAFANA_SERVER))
+
 let db = null
 let clientMongo = null
 let pool = null
 
   ; (async () => {
-    app.listen(HTTP_PORT, () => {
+    app.listen(HTTP_PORT, IP_BIND, () => {
       console.log('listening on ' + HTTP_PORT)
     })
 

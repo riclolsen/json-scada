@@ -109,17 +109,18 @@ Or do a git clone
 
     git clone https://github.com/riclolsen/json-scada
 
-Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows)
+Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform)
     
     cd json-scada
     mkdir bin
 
     cd src/lib60870.netcore
-    dotnet publish -c Release -o ../../bin/
+    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
     cd ../dnp3/Dnp3Client
-    dotnet publish -c Release -o ../../bin/
+    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
+    export GOBIN=~/json-scada/bin
     cd ../calculations
     go get ./... 
     go build 
@@ -216,7 +217,7 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     command=/usr/bin/node /home/jsuser/json-scada/src/cs_data_processor/cs_data_processor.js
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/src/cs_data_processor/    ; directory to cwd to before exec (def no cwd)
+    directory=/home/jsuser/json-scada/src/cs_data_processor/    ; directory to cwd to before exec (def no cwd)
     user=jsuser                    ; setuid to this UNIX account to run the program
     stdout_logfile=/home/jsuser/json-scada/log/cs_data_processor.log    ; stdout log path, NONE for none;
     stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)

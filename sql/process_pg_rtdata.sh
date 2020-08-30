@@ -45,4 +45,4 @@ while [ 1 ]; do
 
 done
 
-) 9>/sql/process_pg_rtdata.exclusivelock
+) 9>process_pg_rtdata.exclusivelock

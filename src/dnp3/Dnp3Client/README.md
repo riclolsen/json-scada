@@ -205,5 +205,5 @@ LATCH + CLOSE=0/TRIP=1 | 23
 This driver has the following command line arguments.
 
 * _**1st arg. - Instance Number**_ [Integer] - Instance number to be executed. **Optional argument, default=1**.
-* _**2nd arg. - Log. Level**_ [Integer] - Instance number to be executed (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**.
-* _**3rd arg. - Config File Name**_ [String] - Name of config file to use. **Optional argument, default="../conf/json-scada.conf"**.
+* _**2nd arg. - Log. Level**_ [Integer] - Log level (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**.
+* _**3rd arg. - Config File Path/Name**_ [String] - Complete path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**.

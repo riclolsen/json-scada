@@ -1,15 +1,26 @@
 conf/json-scada.json
 
+bin/
+!bin/Readme.md
+
+src/dnp3/opendnp3-3.0.4/
+src/dnp3/Dnp3Client/bin/
+src/dnp3/Dnp3Client/obj/
+src/dnp3/Dnp3Client/Properties/
+demo-docker/bin/
+*.exclusivelock
+pg_hist_*.sql
+pg_rtdata_*.sql
+
+obj/
+
 node_modules/
 src/lib60870.netcore/.vs/
 src/lib60870.netcore/iec101client/bin/
-src/lib60870.netcore/iec101client/obj/
+src/lib60870.netcore/iec101server/bin/
 src/lib60870.netcore/iec104client/bin/
-src/lib60870.netcore/iec104client/obj/
 src/lib60870.netcore/iec104server/bin/
-src/lib60870.netcore/iec104server/obj/
 src/lib60870.netcore/lib60870.netcore/bin/
-src/lib60870.netcore/lib60870.netcore/obj/
 
 [Dd]ebug/
 [Rr]elease/

@@ -36,6 +36,8 @@ comment on column hist.flags is 'Bit mask 0x80=value invalid, 0x40=Time tag at s
 
 -- timescaledb hypertable, partitioned by day
 SELECT create_hypertable('hist', 'time_tag', chunk_time_interval=>86400000000);
+-- data retention policy (older data will be deleted)
+SELECT add_drop_chunks_policy('hist', INTERVAL '45 days');
 
 -- DROP TABLE realtime_data;
 CREATE TABLE IF NOT EXISTS realtime_data (

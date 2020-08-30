@@ -107,6 +107,10 @@ services:
     restart: unless-stopped
     volumes: 
       - ./grafana_data:/var/lib/grafana
+    environment: 
+      - GF_SERVER_DOMAIN=127.0.0.1
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     # export grafana port to the host
     ports:
       - 3000:3000
@@ -172,7 +176,9 @@ services:
     command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
     restart: unless-stopped
     environment:
+      - JS_IP_BIND=0.0.0.0
       - JS_HTTP_PORT=8080
+      - JS_GRAFANA_SERVER=http://jsdemo_grafana:3000
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
