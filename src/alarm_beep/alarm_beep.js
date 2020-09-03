@@ -40,7 +40,7 @@ function Beep(...args) {
     // using beepbeep package
     beep(...args)
     // alternative method
-    sys.spawn('/usr/bin/aplay -q -D default /usr/share/sounds/linuxmint-gdm.wav')
+    sys.exec('/usr/bin/aplay -q -D default /usr/share/sounds/linuxmint-gdm.wav')
   }
 }
 
