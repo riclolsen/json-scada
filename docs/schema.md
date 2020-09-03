@@ -337,6 +337,36 @@ Example document for the _CS_DATA_PROCESSOR_ module. Currently, this process sup
 * _**_latencyAvgMinute_**_ [Double] - Average latency on a minute in ms (only for CS_DATA_PROCESSOR).
 * _**_latencyPeak_**_ [Double] - Peak latency (only for CS_DATA_PROCESSOR).
 
+### _processInstances_ entry for the _CALCULATIONS_ module
+
+Example document for the _CALCULATIONS_ module. Currently, this process supports just one redundant instance. There is no need to configure this document for this module as it can create the entry automatically when one is not found.
+
+    {
+        "_id":{
+            "$oid":"1d3427575afe8a451246eb24"
+        },
+        processName: "CALCULATIONS",
+        processInstanceNumber: 1,
+        enabled: true,
+        logLevel: 1,
+        nodeNames: [], 
+        activeNodeName: "mainNode",
+        activeNodeKeepAliveTimeTag: { "$date": "2020-08-11T21:04:59.678Z" },
+        softwareVersion: "0.1.1",
+        periodOfCalculation: 2.0
+    }
+
+* _**__id_**_ [ObjectId] - MongoDB document id.
+* _**_processName_**_ [String] - Process name ("CS_DATA_PROCESSOR" or "CALCULATIONS")
+* _**_instanceNumber_**_ [Double] - Process instance number.
+* _**_enabled_**_ [Boolean] - When true, this instance is enabled.
+* _**_logLevel_**_ [Double] - Log level (0=min, 3=max).
+* _**_nodeNames_**_ [Array of String] - Names of allowed nodes. If null or empty any node is allowed.
+* _**_activeNodeName_**_ [String] - Name of the current active node for this process instance.
+* _**_activeNodeKeepAliveTimeTag_**_ [Date] - Keep-alive for the active node.
+* _**_softwareVersion_**_ [String] - Software version of the process.
+* _**_periodOfCalculation_**_ [Double] - Period in seconds to run the calculation cycle.
+
 ## Extending the Database Schema
 
 MongoDB schemas can be extended without affecting the JSON-SCADA standard processes. New properties and collections can be added to the standard schema. However, care should be taken to avoid naming collisions with future properties of the system.

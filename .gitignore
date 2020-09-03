@@ -3,6 +3,11 @@ conf/json-scada.json
 bin/
 !bin/Readme.md
 
+mongodb-data/
+mongodb-runtime/
+postgresql-data/
+postgresql-runtime/
+
 src/dnp3/opendnp3-3.0.4/
 src/dnp3/Dnp3Client/bin/
 src/dnp3/Dnp3Client/obj/

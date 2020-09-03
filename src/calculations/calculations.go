@@ -1,6 +1,21 @@
-// This process calculates point values based of predefined formulas and configured parcels.
-// All data is read from and results are written to the MongoDB server.
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+/*
+ * This process calculates point values based of predefined formulas and configured parcels.
+ * All data is read from and results are written to the MongoDB server.
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package main
 
@@ -10,19 +25,34 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var configFileName string = "json-scada.json"
+const softwareVersion string = "0.1.1"
+const processName string = "CALCULATIONS"
+const appMsg string = "{json:scada} - " + processName + " - Version " + softwareVersion
+const appUsage string = "Usage: calculations [instance number] [log level] [period of calculation in seconds] [config file path/name]"
+const appUsageDefaults string = "Default args: calculations 1 1 2.0 ../conf/json-scada.json"
+
+var mongoClient *mongo.Client // global mongodb connection handle
+
+var defaultConfigFileName string = "json-scada.json"
+var configFileCompletePath string = ""
 var realtimeDataConnectionName string = "realtimeData"
-var defaultPeriodOfCalculation float64 = 2.0
+var instanceNumber int = 1
+var logLevel int = 1
+var periodOfCalculation float64 = 2.0 // cycle period of calculation in seconds
+var isActive bool = false             // redundancy flag, do not write calculations to the DB while inactive
 
 type config struct {
 	NodeName                 string `json: "nodeName"`
@@ -54,6 +84,18 @@ type realtimeDataForm struct {
 	PARCELS []int `bson:"parcels"`
 }
 
+type processInstance struct {
+	ProcessName                string    `bson: "processName"`
+	ProcessInstanceNumber      int       `bson: "processInstanceNumber"`
+	Enabled                    bool      `bson: "enabled"`
+	LogLevel                   int       `bson: "logLevel"`
+	NodeNames                  []string  `bson: "nodeNames"`
+	ActiveNodeName             string    `bson: "activeNodeName"`
+	ActiveNodeKeepAliveTimeTag time.Time `bson: "activeNodeKeepAliveTimeTag"`
+	SoftwareVersion            string    `bson: "softwareVersion"`
+	PeriodOfCalculation        float64   `bson: "periodOfCalculation"`
+}
+
 // A Simple function to verify error
 func checkError(err error) {
 	if err != nil {
@@ -62,14 +104,14 @@ func checkError(err error) {
 	}
 }
 
-// Reads the config file and connects to MongoDB server
-func mongoConnect() (client *mongo.Client, colRTD *mongo.Collection, err error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+// Reads the config file
+func readConfigFile(cfg *config) {
+	if configFileCompletePath == "" {
+		configFileCompletePath = filepath.Join("..", "conf", defaultConfigFileName)
+	}
 
 	// tries to open and read the json config file
-	jsonFile, err := os.Open(filepath.Join("..", "conf", configFileName))
+	jsonFile, err := os.Open(configFileCompletePath)
 	if err != nil {
 		log.Printf("Fail to read file: %v", err)
 		os.Exit(1)
@@ -77,7 +119,6 @@ func mongoConnect() (client *mongo.Client, colRTD *mongo.Collection, err error) 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 
 	// unmarshals the json file's content into a config structure
-	var cfg config
 	err = json.Unmarshal(byteValue, &cfg)
 	if err != nil {
 		log.Printf("Error parsing json config file: %v", err)
@@ -112,26 +153,220 @@ func mongoConnect() (client *mongo.Client, colRTD *mongo.Collection, err error) 
 	if cfg.TlsAllowInvalidHostnames {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
 	}
+}
+
+// Reads the config file and connects to MongoDB server
+func mongoConnect(cfg config) (client *mongo.Client, colRTD *mongo.Collection, err error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 
 	client, err = mongo.NewClient(options.Client().ApplyURI(cfg.MongoConnectionString))
 	if err != nil {
+		mongoClient = nil
 		return client, colRTD, err
 	}
 	err = client.Connect(ctx)
 	if err != nil {
+		mongoClient = nil
 		return client, colRTD, err
 	}
+	mongoClient = client
 	colRTD = client.Database(cfg.MongoDatabaseName).Collection(realtimeDataConnectionName)
 
 	return client, colRTD, err
 }
 
-func main() {
+// Check for processInstances entry, if not found create one with defaults
+// Keep checking active node and update keep alive time while active
+func processRedundancy(cfg config) {
+	const countKeepAliveUpdatesLimit = 4
+	var countKeepAliveUpdates = 0
+	var lastActiveNodeKeepAliveTimeTag time.Time
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	client, collection, err := mongoConnect()
+	// repeat for time period circa 5s (plus randomized time up to 100 ms to avoid exact sync with other nodes)
+	for _ = range time.Tick(time.Duration(5)*time.Second + time.Duration(100*r.Float64())*time.Millisecond) {
+
+		if mongoClient == nil { // not connected?
+			log.Println("Redundancy - Disconnected from Mongodb server!")
+			continue
+		}
+
+		var collectionProcessInstances = mongoClient.Database(cfg.MongoDatabaseName).Collection("processInstances")
+		var instance processInstance
+		filter := bson.D{{"processName", processName}}
+		err := collectionProcessInstances.FindOne(context.TODO(), filter).Decode(&instance)
+		if err != nil && err != mongo.ErrNoDocuments {
+			log.Println("Redundancy - Error querying processInstances!")
+			log.Println(err)
+		} else {
+			if err == mongo.ErrNoDocuments {
+				log.Println("Redundancy - No process instance found!")
+				_, err := collectionProcessInstances.InsertOne(context.TODO(),
+					bson.M{
+						"processName":                processName,
+						"processInstanceNumber":      instanceNumber,
+						"enabled":                    true,
+						"logLevel":                   logLevel,
+						"nodeNames":                  bson.A{},
+						"activeNodeName":             cfg.NodeName,
+						"activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now()),
+						"softwareVersion":            softwareVersion,
+						"periodOfCalculation":        periodOfCalculation,
+					})
+				if err != nil {
+					log.Println("Redundancy - Error inserting in processInstances!")
+					log.Println(err)
+					os.Exit(2)
+				}
+				continue
+			} else {
+				if instance.Enabled == false {
+					log.Println("Redundancy - Process instance disabled!")
+					os.Exit(0)
+				}
+				if len(instance.NodeNames) > 0 { // check if node names allowed are limited
+					var found bool = false
+					for i := range instance.NodeNames {
+						if instance.NodeNames[i] == cfg.NodeName {
+							found = true
+							break
+						}
+					}
+					if !found {
+						log.Println("Redundancy - Node name not allowed!")
+						os.Exit(0)
+					}
+				}
+				if instance.LogLevel > logLevel {
+					logLevel = instance.LogLevel
+					log.Println("Redundancy - Log level updated to ", logLevel)
+				}
+				if instance.PeriodOfCalculation > periodOfCalculation {
+					periodOfCalculation = instance.PeriodOfCalculation
+					log.Println("Redundancy - Period of calculation updated to ", periodOfCalculation)
+				}
+				// check node active
+				if instance.ActiveNodeName == cfg.NodeName {
+					if isActive == false {
+						log.Println("Redundancy - ACTIVATING this Node!")
+					}
+					isActive = true
+				} else {
+					if isActive { // was active, other node assumed, so be inactive and wait a random time
+						log.Println("Redundancy - DEACTIVATING this Node (other node active)!")
+						countKeepAliveUpdates = 0
+						isActive = false
+						time.Sleep(time.Duration(1000) * time.Millisecond)
+					}
+					isActive = false
+					if lastActiveNodeKeepAliveTimeTag == instance.ActiveNodeKeepAliveTimeTag {
+						countKeepAliveUpdates++
+					}
+					lastActiveNodeKeepAliveTimeTag = instance.ActiveNodeKeepAliveTimeTag
+					if countKeepAliveUpdates > countKeepAliveUpdatesLimit { // time exceeded, be active
+						log.Println("Redundancy - ACTIVATING this Node!")
+						isActive = true
+					}
+
+				}
+				if isActive {
+					log.Println("Redundancy - This node is active.")
+
+					// update keep alive time and node name
+					_, err := collectionProcessInstances.UpdateOne(
+						context.TODO(),
+						bson.M{"processName": bson.M{"$eq": instance.ProcessName}},
+						bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now())}},
+					)
+					if err != nil {
+						log.Println("Redundancy - Error updating in processInstances!")
+						log.Println(err)
+					}
+				} else {
+					log.Println("Redundancy - This node is inactive.")
+				}
+
+			}
+		}
+	}
+}
+
+func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	log.Println(appMsg)
+	log.Println(appUsage)
+	log.Println(appUsageDefaults)
+
+	if os.Getenv("JS_CALCULATIONS_INSTANCE") != "" {
+		i, err := strconv.Atoi(os.Getenv("JS_CALCULATIONS_INSTANCE"))
+		if err != nil {
+			log.Println("JS_CALCULATIONS_INSTANCE environment variable should be a number!")
+			os.Exit(2)
+		}
+		instanceNumber = i
+	}
+	if len(os.Args) > 1 {
+		i, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			log.Println("Instance parameter should be a number!")
+			os.Exit(2)
+		}
+		instanceNumber = i
+	}
+	if os.Getenv("JS_CALCULATIONS_LOGLEVEL") != "" {
+		i, err := strconv.Atoi(os.Getenv("JS_CALCULATIONS_LOGLEVEL"))
+		if err != nil {
+			log.Println("JS_CALCULATIONS_LOGLEVEL environment variable should be a number!")
+			os.Exit(2)
+		}
+		logLevel = i
+	}
+	if len(os.Args) > 2 {
+		i, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Println("Log Level parameter should be a number!")
+			os.Exit(2)
+		}
+		logLevel = i
+	}
+	if os.Getenv("JS_CALCULATIONS_PERIOD") != "" {
+		f, err := strconv.ParseFloat(os.Getenv("JS_CALCULATIONS_PERIOD"), 64)
+		if err != nil {
+			log.Println("JS_CALCULATIONS_PERIOD environment variable should be a number!")
+			os.Exit(2)
+		}
+		periodOfCalculation = f
+	}
+	if len(os.Args) > 3 {
+		f, err := strconv.ParseFloat(os.Args[3], 64)
+		if err != nil {
+			log.Println("Period of Calculation parameter should be a number!")
+			os.Exit(2)
+		}
+		periodOfCalculation = f
+	}
+	if os.Getenv("JS_CONFIG_FILE") != "" {
+		configFileCompletePath = os.Getenv("JS_CONFIG_FILE")
+	}
+	if len(os.Args) > 4 {
+		configFileCompletePath = os.Args[4]
+	}
+
+	log.Println("Instance number: ", instanceNumber)
+	log.Println("Log level: ", logLevel)
+	log.Println("Period of calculation (s): ", periodOfCalculation)
+	log.Println("Config file: ", configFileCompletePath)
+
+	var cfg config
+	readConfigFile(&cfg)
+	client, collection, err := mongoConnect(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go processRedundancy(cfg)
 
 	var calcs map[int]*pointCalc
 	calcs = make(map[int]*pointCalc)
@@ -146,7 +381,7 @@ func main() {
 	cur, err := collection.Find(context.Background(),
 		bson.D{
 			{"formula", bson.D{
-				{"$type", 1},
+				{"$gt", 0},
 			}},
 		},
 		options.Find().SetProjection(projection),
@@ -172,7 +407,9 @@ func main() {
 		calcs[nponto].calc = elem.FORMULA
 		for _, parcel := range elem.PARCELS {
 			calcs[nponto].idParcels = append(calcs[nponto].idParcels, parcel)
-			log.Printf("%d %d\n", nponto, parcel)
+			if logLevel > 1 {
+				log.Printf("%d %d\n", nponto, parcel)
+			}
 		}
 	}
 
@@ -197,15 +434,18 @@ func main() {
 		{"invalid", 1},
 	}
 	for {
+		if isActive == false {
+			continue
+		}
 		tbegin := time.Now()
-		after := tbegin.Add(time.Duration(defaultPeriodOfCalculation) * time.Second)
+		after := tbegin.Add(time.Duration(periodOfCalculation) * time.Second)
 
 		// Check the connection
 		errp := client.Ping(context.TODO(), nil)
 		if errp != nil {
 			log.Printf("%s \n", err)
 			client.Disconnect(context.TODO())
-			client, collection, errp = mongoConnect()
+			client, collection, errp = mongoConnect(cfg)
 		}
 
 		// find all parcel and current calculated values
@@ -252,6 +492,10 @@ func main() {
 			invalid := true
 			transient := false
 			switch p.calc {
+			default:
+				if logLevel > 1 {
+					log.Println("Formula not available ", p.calc)
+				}
 			case 1: // CURRENT
 				if len(p.idParcels) == 3 {
 					if vals[p.idParcels[2]] > 0 {
@@ -266,7 +510,6 @@ func main() {
 					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
 					ok = true
 				}
-
 			case 3: // Apparent Power
 				if len(p.idParcels) == 2 {
 					val = math.Sqrt(vals[p.idParcels[0]]*vals[p.idParcels[0]] + vals[p.idParcels[1]]*vals[p.idParcels[1]])
@@ -907,6 +1150,14 @@ func main() {
 					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
 					ok = true
 				}
+			}
+
+			if logLevel > 2 {
+				var chg string
+				if val == vals[id] && invalid == invalids[id] {
+					chg = "NOT_CHANGED"
+				}
+				log.Printf("Key %d Parcels %+v Result %f Invalid %v %s", id, p.idParcels, val, invalid, chg)
 			}
 
 			// accumulates updates for changed data

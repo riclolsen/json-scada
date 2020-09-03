@@ -47,3 +47,10 @@ This driver has the following command line arguments and equivalent environment 
 
 Command line args take precedence over environment variables.
 
+## Process Instance Collection
+
+A _processInstance_ entry will be created with defaults if one is not found. It can be used to configure some parameters and limit nodes allowed to run instances.
+
+See also 
+
+* [Schema Documentation](../../docs/schema.md) 
