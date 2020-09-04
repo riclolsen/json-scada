@@ -112,10 +112,10 @@ For Serial communication.
 For TLS over TCP.
 * _**ipAddressLocalBind**_ [String] - Not used for TLS option (leave empty). **Optional parameter**.
 * _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for DNP3 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
-* _**allowTLSv10**_ [Double] - Allow TLS version 1.0 (default false).
-* _**allowTLSv11**_ [Double] - Allow TLS version 1.1 (default false).
-* _**allowTLSv12**_ [Double] - Allow TLS version 1.2 (default true).
-* _**allowTLSv13**_ [Double] - Allow TLS version 1.3 (default true).
+* _**allowTLSv10**_ [Boolean] - Allow TLS version 1.0 (default false).
+* _**allowTLSv11**_ [Boolean] - Allow TLS version 1.1 (default false).
+* _**allowTLSv12**_ [Boolean] - Allow TLS version 1.2 (default true).
+* _**allowTLSv13**_ [Boolean] - Allow TLS version 1.3 (default true).
 * _**cipherList**_ [String] - Openssl format cipher list .
 * _**localCertFilePath**_ [String] - File that contains the certificate (or certificate chain) that will be presented to the remote side of the connection.
 * _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server..

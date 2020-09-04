@@ -258,10 +258,10 @@ const pipeline = [
                         console.log("Instance config not found, creating one...")
                         db.collection(ProcessInstancesCollectionName).insertOne({
                           processName: APP_NAME,
-                          processInstanceNumber: 1,
+                          processInstanceNumber: new mongo.Double(1),
                           enabled: true,
-                          logLevel: 1,
-                          nodeNames: null,
+                          logLevel: new mongo.Double(1),
+                          nodeNames: [],
                           activeNodeName: jsConfig.nodeName,
                           activeNodeKeepAliveTimeTag: new Date(),
                         })
@@ -314,9 +314,11 @@ const pipeline = [
                               activeNodeName: jsConfig.nodeName,
                               activeNodeKeepAliveTimeTag: new Date(),
                               softwareVersion: VERSION,
-                              latencyAvg: latencyAccTotal / latencyTotalCnt,
-                              latencyAvgMinute: latencyAccMinute / latencyMinuteCnt,
-                              latencyPeak: latencyPeak
+                              stats : {
+                                latencyAvg: new mongo.Double(latencyAccTotal / latencyTotalCnt),
+                                latencyAvgMinute: new mongo.Double(latencyAccMinute / latencyMinuteCnt),
+                                latencyPeak: new mongo.Double(latencyPeak)
+                              }
                             }
                           })
                         }

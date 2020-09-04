@@ -7,7 +7,10 @@ mongodb-data/
 mongodb-runtime/
 postgresql-data/
 postgresql-runtime/
+grafana-runtime/
 
+src/calculations/calculations
+src/i104m/i104m
 src/dnp3/opendnp3-3.0.4/
 src/dnp3/Dnp3Client/bin/
 src/dnp3/Dnp3Client/obj/

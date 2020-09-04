@@ -90,7 +90,7 @@ A instance for this driver can have many server ports defined that must be descr
 * _**t1**_ [Double] - Protocol _t1_ timeout in seconds. **Mandatory parameter**.
 * _**t2**_ [Double] - Protocol _t2_ timeout in seconds. **Mandatory parameter**.
 * _**t3**_ [Double] - Protocol _t3_ timeout in seconds. **Mandatory parameter**.
-* _**serverModeMultiActive**_ [Double] - When true there is kept a separate data buffer for each client. **Mandatory parameter**.
+* _**serverModeMultiActive**_ [Boolean] - When true there is kept a separate data buffer for each client. **Mandatory parameter**.
 * _**maxClientConnections**_ [Double] - Maximum number of clients allowed to connect at the same time. **Mandatory parameter**.
 * _**maxQueueSize**_ [Double] - Maximum number of messages that can be buffered. **Mandatory parameter**.
 
