@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>libplctag</AssemblyName>
+    <RootNamespace>libplctag</RootNamespace>
+    <PackageId>libplctag</PackageId>
+    <Version>0.0.27-alpha13</Version>
+    <Authors>libplctag</Authors>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <PackageDescription>A library for PLC communication</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/libplctag/libplctag.NET</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="libplctag.NativeImport" Version="0.0.11-beta" />
+  </ItemGroup>
+
+</Project>
