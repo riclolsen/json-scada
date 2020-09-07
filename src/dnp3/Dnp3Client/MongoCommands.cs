@@ -60,6 +60,9 @@ namespace Dnp3Driver
                         await cursor
                             .ForEachAsync(async change =>
                             {
+                                if (!Active)
+                                    return;
+
                                 // process change event, only process inserts
                                 if (
                                     change.OperationType ==
