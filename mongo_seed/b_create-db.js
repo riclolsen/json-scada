@@ -1,5 +1,30 @@
 var validationLevel = 'strict'
 var validationAction = 'error'
+var protocolDriverNames = [
+          'IEC60870-5-104',
+          'IEC60870-5-104_SERVER',
+          'IEC60870-5-101',
+          'IEC60870-5-101_SERVER',
+          'IEC60870-5-103',
+          'I104M',
+          'DNP3',
+          'DNP3_SERVER',
+          'PLCTAG',
+          'OPC-UA',
+          'OPC-UA_SERVER',
+          'OPC-DA',
+          'OPC-DA_SERVER',
+          'MODBUS',
+          'MODBUS_SERVER',
+          'MQTT',
+          'IEC61850-GOOSE',
+          'IEC61850-MMS',
+          'IEC61850-MMS_SERVER',
+          'CIP-ETHERNET/IP',
+          'S7',
+          'SPA-BUS',
+          'BACNET',
+          'ICCP']
 
 var protocolDriverInstancesValidator = {
   $jsonSchema: {
@@ -18,32 +43,7 @@ var protocolDriverInstancesValidator = {
       },
       protocolDriver: {
         bsonType: 'string',
-        enum: [
-          'IEC60870-5-104',
-          'IEC60870-5-104_SERVER',
-          'IEC60870-5-101',
-          'IEC60870-5-101_SERVER',
-          'IEC60870-5-103',
-          'I104M',
-          'DNP3',
-          'DNP3_SERVER',
-          'OPC-UA',
-          'OPC-UA_SERVER',
-          'OPC-DA',
-          'OPC-DA_SERVER',
-          'MODBUS',
-          'MODBUS_SERVER',
-          'MQTT',
-          'IEC61850-GOOSE',
-          'IEC61850-MMS',
-          'IEC61850-MMS_SERVER',
-          'CIP-ETHERNET/IP',
-          'S7',
-          'SPA-BUS',
-          'BACNET',
-          'ICCP',
-          'PLC-TAGS'
-        ],
+        enum: protocolDriverNames,
         description: 'Driver name. Required.'
       },
       protocolDriverInstanceNumber: {
@@ -95,7 +95,7 @@ var protocolDriverInstancesValidator = {
         description: 'Software version.'
       },
       stats: {
-        bsonType: 'object',
+        bsonType: ['object', 'null'],
         description: 'Driver specific statistics.'
       }
     }
@@ -177,7 +177,7 @@ var processInstancesValidator = {
         description: 'Period of cycle of calculations in seconds.'
       },
       stats: {
-        bsonType: 'object',
+        bsonType: ['object', 'null'],
         additionalProperties: true,
         description: 'Process specific statistics.',
         properties: {
@@ -219,32 +219,7 @@ var protocolConnectionsValidator = {
       },
       protocolDriver: {
         bsonType: 'string',
-        enum: [
-          'IEC60870-5-104',
-          'IEC60870-5-104_SERVER',
-          'IEC60870-5-101',
-          'IEC60870-5-101_SERVER',
-          'IEC60870-5-103',
-          'I104M',
-          'DNP3',
-          'DNP3_SERVER',
-          'OPC-UA',
-          'OPC-UA_SERVER',
-          'OPC-DA',
-          'OPC-DA_SERVER',
-          'MODBUS',
-          'MODBUS_SERVER',
-          'MQTT',
-          'IEC61850-GOOSE',
-          'IEC61850-MMS',
-          'IEC61850-MMS_SERVER',
-          'CIP-ETHERNET/IP',
-          'S7',
-          'SPA-BUS',
-          'BACNET',
-          'ICCP',
-          'PLC-TAGS'
-        ],
+        enum: protocolDriverNames,
         description: 'Protocol driver name. Required.'
       },
       protocolDriverInstanceNumber: {
@@ -527,7 +502,7 @@ var protocolConnectionsValidator = {
         bsonType: ['string', 'null']
       },
       stats: {
-        bsonType: 'object',
+        bsonType: ['object', 'null'],
         description: 'Driver specific statistics.'
       }
     }

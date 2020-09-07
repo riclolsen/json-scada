@@ -77,7 +77,7 @@ Each instance for this driver can have many client connection defined that must 
                 period: 150
             },
         ],
-        stats: null
+        stats: {}
     });
 
 * _**protocolDriver**_ [String] - Name of the protocol driver, must be  "DNP3". **Mandatory parameter**.
