@@ -18,8 +18,8 @@ jobs:
       with:
         dotnet-version: 3.1.301
     - name: Install dependencies
-      working-directory: /src/libplctag/libplctag.NET/src/libplctag
+      working-directory: src/libplctag/libplctag.NET/src/libplctag
       run: dotnet restore
     - name: Build lib60870
-      working-directory: /src/libplctag/libplctag.NET/src/libplctag
+      working-directory: src/libplctag/libplctag.NET/src/libplctag
       run: dotnet build --configuration Release 
