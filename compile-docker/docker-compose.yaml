@@ -20,11 +20,17 @@ services:
                     cd /src/lib60870.netcore/iec104server/ &&
                     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/dnp3/Dnp3Client/ && 
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/libplctag/libplctag.NET/src/libplctag &&
+                    dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
+                    cd /src/libplctag/PLCTagsClient &&
                     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
+                    
     #command: tail -f /dev/null
     volumes:
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/dnp3:/src/dnp3
+      - ../src/libplctag:/src/libplctag
       - ../demo-docker/bin:/publish_bin
  
   calculations_compile:
@@ -35,7 +41,6 @@ services:
                     go get ./... && 
                     go build && 
                     cp calculations /publish_bin/"
-    #command: tail -f /dev/null
     volumes:
       - ../src/calculations:/go/src/calculations
       - ../demo-docker/bin:/publish_bin
@@ -48,7 +53,6 @@ services:
                     go get ./... && 
                     go build && 
                     cp i104m /publish_bin/"
-    #command: tail -f /dev/null
     volumes:
       - ../src/i104m:/go/src/i104m
       - ../demo-docker/bin:/publish_bin
@@ -57,15 +61,26 @@ services:
     image: node:current-alpine3.12
     container_name: js_cs_data_processor_update
     command:  sh -c "cd /cs_data_processor && npm update"
-    #command: tail -f /dev/null
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
 
-  # realtime web server, listen on port 3001
   server_realtime_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_update
     command:  sh -c "cd /server_realtime && npm update"
-    #command: tail -f /dev/null
     volumes:
       - ../src/server_realtime:/server_realtime
+
+  alarm_beep_update:
+    image: node:current-alpine3.12
+    container_name: js_alarm_beep_update
+    command:  sh -c "cd /alarm_beep && npm update"
+    volumes:
+      - ../src/alarm_beep:/alarm_beep
+
+  oshmi2json_update:
+    image: node:current-alpine3.12
+    container_name: js_oshmi2json_update
+    command:  sh -c "cd /oshmi2json && npm update"
+    volumes:
+      - ../src/oshmi2json:/oshmi2json

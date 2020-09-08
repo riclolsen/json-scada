@@ -104,7 +104,6 @@ namespace Iec10XDriver
             public Server server;
             public ConcurrentQueue<InfoCA> infoCAQueue = new ConcurrentQueue<InfoCA>(); // data objects to send 
             public List<ClientConnection> clientConnections = new List<ClientConnection>();
-            public int cntgi;
         }
 
         [BsonIgnoreExtraElements]

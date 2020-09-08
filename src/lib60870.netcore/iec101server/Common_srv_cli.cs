@@ -53,13 +53,13 @@ namespace Iec10XDriver
         public static String CommandsQueueCollectionName = "commandsQueue";
         public static Int32 ProtocolDriverInstanceNumber = 1;
         public static String redundantIpAddress = "";
-        public static ConcurrentQueue<IEC_Value>
-            IECDataQueue = new ConcurrentQueue<IEC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
-        public static ConcurrentQueue<IEC_CmdAck>
-            IECCmdAckQueue = new ConcurrentQueue<IEC_CmdAck>(); // command acknowledges queue (to be updated in mongodb commands collection)
+        //public static ConcurrentQueue<IEC_Value>
+        //    IECDataQueue = new ConcurrentQueue<IEC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
+        //public static ConcurrentQueue<IEC_CmdAck>
+        //    IECCmdAckQueue = new ConcurrentQueue<IEC_CmdAck>(); // command acknowledges queue (to be updated in mongodb commands collection)
         public static List<IEC10X_connection>
             IEC10Xconns = new List<IEC10X_connection>(); // list of RTU connections
-
+            
         public class
         JSONSCADAConfig // base configuration of the system (how to reach mongodb, etc.)
         {
@@ -87,35 +87,35 @@ namespace Iec10XDriver
             public DateTime activeNodeKeepAliveTimeTag { get; set; } = DateTime.MinValue;
             public Boolean keepProtocolRunningWhileInactive { get; set; } = false;
         }
-        public struct IEC_Value
-        {
-            public int address;
-            public lib60870.CS101.TypeID asdu;
-            public bool isDigital;
-            public double value;
-            public int cot;
-            public DateTime serverTimestamp;
-            public bool hasSourceTimestampCP24;
-            public bool hasSourceTimestampCP56;
-            public CP24Time2a sourceTimestampCP24;
-            public CP56Time2a sourceTimestampCP56;
-            public lib60870.CS101.QualityDescriptor quality;
-            public int conn_number;
-            public int common_address;
-        }
-        public struct IEC_CmdAck
-        {
-            public bool ack; // ack positive(true) or negative(false)
-            public int conn_number;
-            public int object_address;
-            public DateTime ack_time_tag;
-        }
-        public class rtFilt
-        {
-            public int protocolSourceConnectionNumber;
-            public int protocolSourceCommonAddress;
-            public int protocolSourceObjectAddress;
-        }
+        //public struct IEC_Value
+        //{
+        //    public int address;
+        //    public lib60870.CS101.TypeID asdu;
+        //    public bool isDigital;
+        //    public double value;
+        //    public int cot;
+        //    public DateTime serverTimestamp;
+        //    public bool hasSourceTimestampCP24;
+        //    public bool hasSourceTimestampCP56;
+        //    public CP24Time2a sourceTimestampCP24;
+        //    public CP56Time2a sourceTimestampCP56;
+        //    public lib60870.CS101.QualityDescriptor quality;
+        //    public int conn_number;
+        //    public int common_address;
+        //}
+        //public struct IEC_CmdAck
+        //{
+        //    public bool ack; // ack positive(true) or negative(false)
+        //    public int conn_number;
+        //    public int object_address;
+        //    public DateTime ack_time_tag;
+        //}
+        //public class rtFilt
+        //{
+        //    public int protocolSourceConnectionNumber;
+        //    public int protocolSourceCommonAddress;
+        //    public int protocolSourceObjectAddress;
+        //}
         [BsonIgnoreExtraElements]
         public class rtCommand
         {

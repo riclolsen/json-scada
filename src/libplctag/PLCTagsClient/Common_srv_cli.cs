@@ -55,8 +55,8 @@ namespace PLCTagDriver
         public static String redundantIpAddress = "";
         public static ConcurrentQueue<PLC_Value>
             PLCDataQueue = new ConcurrentQueue<PLC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
-        public static ConcurrentQueue<PLC_CmdAck>
-            PLCCmdAckQueue = new ConcurrentQueue<PLC_CmdAck>(); // command acknowledges queue (to be updated in mongodb commands collection)
+        //public static ConcurrentQueue<PLC_CmdAck>
+        //    PLCCmdAckQueue = new ConcurrentQueue<PLC_CmdAck>(); // command acknowledges queue (to be updated in mongodb commands collection)
         public static List<PLC_connection>
             PLCconns = new List<PLC_connection>(); // list of RTU connections
 
@@ -98,13 +98,13 @@ namespace PLCTagDriver
             public string common_address;
             public DateTime time_tag;
         }
-        public struct PLC_CmdAck
-        {
-            public bool ack; // ack positive(true) or negative(false)
-            public int conn_number;
-            public string object_address;
-            public DateTime ack_time_tag;
-        }
+        //public struct PLC_CmdAck
+        //{
+        //    public bool ack; // ack positive(true) or negative(false)
+        //    public int conn_number;
+        //    public string object_address;
+        //    public DateTime ack_time_tag;
+        //}
         public class rtFilt
         {
             public int protocolSourceConnectionNumber;

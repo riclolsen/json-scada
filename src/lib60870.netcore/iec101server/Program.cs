@@ -107,7 +107,6 @@ namespace Iec10XDriver
             public int maxQueueSize { get; set; }
             public CS101Slave server;
             public ConcurrentQueue<InfoCA> infoCAQueue = new ConcurrentQueue<InfoCA>(); // data objects to send 
-            public int cntgi;
         }
 
         [BsonIgnoreExtraElements]

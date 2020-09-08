@@ -44,7 +44,6 @@ namespace Iec10XDriver
                             <rtData>(RealtimeDataCollectionName);
                     Double val = 0;
                     Int32 objaddr = 0;
-                    Boolean sbo = false;
                     Int32 dur = 0;
                     Boolean isselect = false;
                     Boolean cmdhastime = false;

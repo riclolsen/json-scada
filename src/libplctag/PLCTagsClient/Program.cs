@@ -102,7 +102,6 @@ namespace PLCTagDriver
             public List<libplctag.Tag<RealPlcMapper, float>> listRealTags = new List<libplctag.Tag<RealPlcMapper, float>>();
             public List<libplctag.Tag<LrealPlcMapper, double>> listLrealTags = new List<libplctag.Tag<LrealPlcMapper, double>>();
 
-
             public List<libplctag.Tag<BoolPlcMapper, bool[]>> listBoolArrayTags = new List<libplctag.Tag<BoolPlcMapper, bool[]>>();
             public List<libplctag.Tag<SintPlcMapper, sbyte[]>> listSintArrayTags = new List<libplctag.Tag<SintPlcMapper, sbyte[]>>();
             public List<libplctag.Tag<IntPlcMapper, short[]>> listIntArrayTags = new List<libplctag.Tag<IntPlcMapper, short[]>>();
@@ -110,9 +109,6 @@ namespace PLCTagDriver
             public List<libplctag.Tag<LintPlcMapper, long[]>> listLintArrayTags = new List<libplctag.Tag<LintPlcMapper, long[]>>();
             public List<libplctag.Tag<RealPlcMapper, float[]>> listRealArrayTags = new List<libplctag.Tag<RealPlcMapper, float[]>>();
             public List<libplctag.Tag<LrealPlcMapper, double[]>> listLrealArrayTags = new List<libplctag.Tag<LrealPlcMapper, double[]>>();
-
-            public int CntGI;
-            public System.Timers.Timer TimerCnt;
         }
 
 
@@ -410,7 +406,6 @@ namespace PLCTagDriver
             thrMongo.Start();
 
             Log("Setting up IEC Connections & ASDU handlers...");
-            int cntIecSrv = 0;
             foreach (PLC_connection srv in PLCconns)
             {
                 var collection = DB.GetCollection<rtData>(RealtimeDataCollectionName);
