@@ -10,6 +10,10 @@ C:\json-scada\postgresql-runtime\bin\pg_ctl.exe register -N JSON_SCADA_postgresq
 nssm install JSON_SCADA_mongodb "C:\json-scada\mongodb-runtime\bin\mongod.exe" --config  "c:\json-scada\mongodb-runtime\bin\mongod.cfg" 
 nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe" 1 1 "c:\json-scada\json-scada.json"
 
+REM STDOUT logging
+nssm set JSON_SCADA_calculations AppStdout C:\json-scada\log\calculations.log
+REM See log rotation options https://nssm.cc/usage#io
+
 nssm install JSON_SCADA_cs_data_processor "c:\Program Files\nodejs\node.exe" "C:\json-scada\src\cs_data_processor\cs_data_processor.js" 1 1 "c:\json-scada\json-scada.json"
 nssm set AppDirectory JSON_SCADA_cs_data_processor  "C:\json-scada\src\cs_data_processor"
 nssm install JSON_SCADA_server_realtime  "c:\Program Files\nodejs\node.exe" "C:\json-scada\src\server_realtime\index.js" 1 1 "c:\json-scada\json-scada.json"
