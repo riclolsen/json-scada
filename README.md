@@ -16,6 +16,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * Inkscape-based SVG synoptic display editor.
 * IEC60870-101/104 Client and Server protocols.
 * DNP3 Client (TCP, UDP, Serial and TLS).
+* CIP Ethernet/IP PLCTags Client Driver.
 * PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 * Extensibility of data model (MongoDB: NoSQL/schema-less).
 * Development of custom applications with modern stacks like MEAN/MERN, etc.
@@ -25,8 +26,8 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * Possibility of easy integration of new and custom protocol drivers developed with modern programming languages.
 * Future-proof, vendor independence, flexibility, extensibility.
 * Reduced human costs for maintenance and development thanks to the employment of widely-used open-source IT technologies.
-* Live configuration updates.
-* Planned protocol drivers: OPC-UA, DNP3 Server, MODBUS, MQTT, Ethernet/IP.
+* Live point configuration updates.
+* Planned protocol drivers: OPC-UA, DNP3 Server, MODBUS, MQTT.
 * Planned integrations: InfluxDB/Telegraf, NodeRed, MS Power BI.
 
 ## Use cases
@@ -93,6 +94,7 @@ You certify that:
 * [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
 * [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
 * [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
+* [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](src/i104m/README.md)
 * [Change Stream Data Processor](src/cs_data_processor/README.md)
 * [Realtime Data Server](src/server_realtime/README.md)
