@@ -36,10 +36,10 @@ namespace PLCTagDriver
     {
         public static string JsonConfigFilePath = @"../conf/json-scada.json";
         public static string JsonConfigFilePathAlt = @"c:/json-scada/conf/json-scada.json";
-        public static Int32 LogLevelNoLog = 0; // log level 0=no
-        public static Int32 LogLevelBasic = 1; // log level 1=basic (default)
-        public static Int32 LogLevelDetailed = 2; // log level 2=detailed
-        public static Int32 LogLevelDebug = 3; // log level 3=debug
+        public const Int32 LogLevelNoLog = 0; // log level 0=no
+        public const Int32 LogLevelBasic = 1; // log level 1=basic (default)
+        public const Int32 LogLevelDetailed = 2; // log level 2=detailed
+        public const Int32 LogLevelDebug = 3; // log level 3=debug
         public static Int32 LogLevel = 1; // log level 0=no 1=min
         private static Mutex LogMutex = new Mutex();
         public static JSONSCADAConfig JSConfig;
@@ -91,7 +91,6 @@ namespace PLCTagDriver
         {
             public string address;
             public string asdu;
-            public bool isDigital;
             public double value;
             public int cot;
             public int conn_number;

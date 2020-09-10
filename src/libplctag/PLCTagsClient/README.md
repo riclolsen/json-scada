@@ -8,7 +8,9 @@ This driver implements a client for the CIP Ethernet/IP protocol for the followi
 * Omron NX/N
 * Allen-Bradley Micro80
 
-This driver also supports the Modbus TCP protocol.
+This driver uses the _libplctag.NET_ library that is currently in alpha stage, be careful!
+
+This driver eventually will also support the Modbus TCP protocol.
 
 This driver is based on the [libplctag/libplctag.NET](https://github.com/libplctag/libplctag.NET) project.
 
@@ -88,23 +90,20 @@ Common parameters for _CIP Ethernet/IP_ and _Modbus TCP_ communication.
 * _**giInterval**_ [Double] - PLC interrogation interval in milliseconds. **Optional parameter**.
 * _**timeSyncMode**_ [Double] - Time sync mode (from client when requested by the RTU server): 0=none, 1=non-lan, 2=lan. Use zero to disable. **Mandatory parameter**.
 * _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
-
-CIP Ethernet/IP specific parameters.
-
-PLC Types     | 
---------------|------------------------------
-ControlLogix  |
-Plc5          |
-Slc500        |
-LogixPccc     |
-Micro800      |
-MicroLogix    | 
-OmronNJNX     |
-
+* _**protocol**_ [String] - Protocol "ab_eip" or "modbus". **Mandatory parameter**.
+* _**plc**_ [String] - PLC type: controllogix | logixpccc | micrologix800 | omronnjnx | micrologix |plc5 | slc500. **Mandatory parameter**.
+* _**useConnectedMsg**_ [Boolean] - Use or not connected messages method. **Mandatory parameter**.
+* _**readCacheMs**_ [Double] - Use this attribute to cause the tag read operations to cache data the requested number of milliseconds. This can be used to lower the actual number of requests against the PLC. **Mandatory parameter**.
+* _**timeoutMs**_ [Double] - Timeout for read/write/init operations. **Mandatory parameter**.
+* _**int16ByteOrder**_ [String] - Reserved parameter. **Optional parameter**.
+* _**int32ByteOrder**_ [String] - Reserved parameter. **Optional parameter**.
+* _**int64ByteOrder**_ [String] - Reserved parameter. **Optional parameter**.
+* _**float32ByteOrder**_ [String] - Reserved parameter. **Optional parameter**.
+* _**float64ByteOrder**_ [String] - Reserved parameter. **Optional parameter**.
 
 ### Multi-drop 
 
-In the Modbus TCO multi-drop case, multiple slave devices share the same TCP, UDP, TLS or Serial channel connection.
+In the Modbus TCP multi-drop case, multiple slave devices share the same TCP, UDP, TLS or Serial channel connection.
 
 For a multi-drop configuration, use a new connection (in the _protocolConnections_ collection) for each device repeating channel specification (endpoint IP address or serial port). Each device on a shared channel must have a distinct _remoteLinkAddress_ parameter.
 
@@ -119,8 +118,8 @@ Select a tag for a update on a connection as below.
         $set: {
             protocolSourceConnectionNumber: 81,
             protocolSourceCommonAddress: "1,0", // path
-            protocolSourceObjectAddress: "MyTag[0]",
-            protocolSourceASDU: "Int16", // data type
+            protocolSourceObjectAddress: "MyPlcTag",
+            protocolSourceASDU: "dint", // data type
             kconv1: 1,
             kconv2: 0
             }
@@ -129,25 +128,11 @@ Select a tag for a update on a connection as below.
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can update the tag. **Mandatory parameter**.
 * _**protocolSourceCommonAddress**_ [Double] - Plc Path or Modbus Slave ID. **Mandatory parameter**.
 * _**protocolSourceObjectAddress**_ [Double] - Tag name or modbus address (co42). When the PLC Tag is an array, use the "TagName[element_pos]" notation to identify which element to read. It is possible to read a full array into a JSON-SCADA tag (as a JSON array) just by omitting the element position. This address combined with _protocolSourceCommonAddress_ must be unique for the connection. **Mandatory parameter**.
-* _**protocolSourceASDU**_ [Double] - Data type [Int16]. **Mandatory parameter**.
+* _**protocolSourceASDU**_ [Double] - Data type: bool | sint | int | dint | lint | real | lreal. In case of arrays, indicate the size as in "dint[10]". **Mandatory parameter**.
 * _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 * _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 
-## Supported Data Types
-
-Operation Type         | protocolSourceCommandDuration
------------------------|------------------------------
-UNDEFINED/NUL          | 0
-PULSE 1=ON 0=OFF       | 1
-PULSE 0=ON 1=OFF       | 2
-LATCH 1=ON 0=OFF       | 3
-LATCH 0=ON 1=OFF       | 3
-PULSE + CLOSE=1/TRIP=0 | 11
-LATCH + CLOSE=1/TRIP=0 | 13
-PULSE + CLOSE=0/TRIP=1 | 21
-LATCH + CLOSE=0/TRIP=1 | 23
-
-## Process Command Line Arguments
+## Command Line Arguments
 
 This driver has the following command line arguments.
 

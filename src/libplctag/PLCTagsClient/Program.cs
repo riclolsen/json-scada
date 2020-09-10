@@ -158,21 +158,13 @@ namespace PLCTagDriver
 
         public static void Main(string[] args)
         {
-            //Instantiate the tag with the proper mapper and datatype
-//            var myTag = new Tag<DintPlcMapper, int>()
-//            {
-//                Name = "PLC1ANA0",
-//                Gateway = "127.0.0.1",
-//                Path = "1,0",
-//                PlcType = PlcType.ControlLogix,
-//                Protocol = Protocol.ab_eip,
-//                Timeout = TimeSpan.FromSeconds(5)
-//            };
 
+            /*
+             * 
             //Instantiate the tag with the proper mapper and datatype
             var myTag = new Tag<RealPlcMapper, float>()
             {
-                Name = "FLOAT",
+                Name = "PLC1FLOAT0",
                 Gateway = "127.0.0.1",
                 Path = "1,0",
                 PlcType = PlcType.ControlLogix,
@@ -240,8 +232,7 @@ namespace PLCTagDriver
             myTag.Dispose();
             myTag2.Dispose();
             myTag3.Dispose();
-
-
+            */
 
             Log("{json:scada} PLC TAG Driver - Copyright 2020 RLO");
             Log("Driver version " + DriverVersion);
@@ -259,8 +250,14 @@ namespace PLCTagDriver
                 bool res = int.TryParse(args[1], out num);
                 if (res) LogLevel = num;
             }
-
             string fname = JsonConfigFilePath;
+            if (args.Length > 2) // third argument is config file name
+            {
+                if (File.Exists(args[2]))
+                {
+                    fname = args[2];
+                }
+            }
             if (!File.Exists(fname))
                 fname = JsonConfigFilePathAlt;
             if (!File.Exists(fname))
@@ -393,6 +390,23 @@ namespace PLCTagDriver
                 Environment.Exit(-1);
             }
 
+            switch (LogLevel)
+            {
+                case LogLevelNoLog:
+                    LibPlcTag.DebugLevel = DebugLevel.Detail;
+                    break;
+                default:
+                case LogLevelBasic:
+                    LibPlcTag.DebugLevel = DebugLevel.Warn;
+                    break;
+                case LogLevelDetailed:
+                    LibPlcTag.DebugLevel = DebugLevel.Info;
+                    break;
+                case LogLevelDebug:
+                    LibPlcTag.DebugLevel = DebugLevel.Detail;
+                    break;
+            }
+
             // start thread to process redundancy control
             Thread thrMongoRedundacy =
                 new Thread(() =>
@@ -426,6 +440,7 @@ namespace PLCTagDriver
                         case "controllogix":
                             plctp = PlcType.ControlLogix;
                             break;
+                        case "pccc":
                         case "lgxpccc":
                         case "logixpccc":
                             plctp = PlcType.LogixPccc;
@@ -472,6 +487,7 @@ namespace PLCTagDriver
                                         UseConnectedMessaging = srv.useConnectedMsg,
                                         Timeout = TimeSpan.FromMilliseconds(1000),
                                         ArrayDimensions = new int[] { arrlen, 1 },
+                                        ReadCacheMillisecondDuration = srv.readCacheMs
                                     };
 
                                     var tagFound = false; // avoid tag re-insertion 
@@ -501,6 +517,7 @@ namespace PLCTagDriver
                                         UseConnectedMessaging = srv.useConnectedMsg,
                                         Timeout = TimeSpan.FromMilliseconds(1000),
                                         ArrayDimensions = new int[] { arrlen, 1 },
+                                        ReadCacheMillisecondDuration = srv.readCacheMs
                                     };
                                     var tagFound = false; // avoid tag re-insertion 
                                     foreach (var tg in srv.listSintArrayTags)
@@ -529,6 +546,7 @@ namespace PLCTagDriver
                                         UseConnectedMessaging = srv.useConnectedMsg,
                                         Timeout = TimeSpan.FromMilliseconds(1000),
                                         ArrayDimensions = new int[] { arrlen, 1 },
+                                        ReadCacheMillisecondDuration = srv.readCacheMs
                                     };
                                     var tagFound = false; // avoid tag re-insertion 
                                     foreach (var tg in srv.listIntArrayTags)
@@ -556,6 +574,7 @@ namespace PLCTagDriver
                                         UseConnectedMessaging = srv.useConnectedMsg,
                                         Timeout = TimeSpan.FromMilliseconds(1000),
                                         ArrayDimensions = new int[] { arrlen, 1 },
+                                        ReadCacheMillisecondDuration = srv.readCacheMs
                                     };
                                     tag.Initialize();
                                     srv.listDintArrayTags.Add(tag);
@@ -585,6 +604,7 @@ namespace PLCTagDriver
                                         UseConnectedMessaging = srv.useConnectedMsg,
                                         Timeout = TimeSpan.FromMilliseconds(1000),
                                         ArrayDimensions = new int[] { arrlen, 1 },
+                                        ReadCacheMillisecondDuration = srv.readCacheMs
                                     };
                                     tag.Initialize();
                                     srv.listLintArrayTags.Add(tag);
@@ -641,6 +661,7 @@ namespace PLCTagDriver
                                         UseConnectedMessaging = srv.useConnectedMsg,
                                         Timeout = TimeSpan.FromMilliseconds(1000),
                                         ArrayDimensions = new int[] { arrlen, 1 },
+                                        ReadCacheMillisecondDuration = srv.readCacheMs
                                     };
                                     var tagFound = false; // avoid tag re-insertion 
                                     foreach (var tg in srv.listLrealArrayTags)
@@ -672,6 +693,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listBoolTags.Add(tag);
@@ -690,6 +712,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listSintTags.Add(tag);
@@ -708,6 +731,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listIntTags.Add(tag);
@@ -725,6 +749,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listDintTags.Add(tag);
@@ -742,6 +767,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listLintTags.Add(tag);
@@ -759,6 +785,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listRealTags.Add(tag);
@@ -776,6 +803,7 @@ namespace PLCTagDriver
                                     Protocol = (srv.protocol.ToLower() == "modbus") ? Protocol.modbus_tcp : Protocol.ab_eip,
                                     UseConnectedMessaging = srv.useConnectedMsg,
                                     Timeout = TimeSpan.FromMilliseconds(1000),
+                                    ReadCacheMillisecondDuration = srv.readCacheMs
                                 };
                                 tag.Initialize();
                                 srv.listLrealTags.Add(tag);
@@ -800,35 +828,11 @@ namespace PLCTagDriver
                         ProcessMongoCmd(JSConfig));
             thrMongoCmd.Start();
 
-            /*
-            var asyncStopWatch = Stopwatch.StartNew();
-            
-            foreach (var tag in tags)
-            {
-                Task.WaitAll(tag.ReadAsync());
-                PLC_Value iv =
-                    new PLC_Value()
-                    {
-                        conn_number = 81,
-                        address = tag.Name,
-                        common_address = tag.Path,
-                        asdu = tag.GetType().ToString(),
-                        isDigital = true,
-                        value = tag.Value,
-                        time_tag = DateTime.Now,
-                        cot = 20
-                    };
-                PLCDataQueue.Enqueue(iv);
-                Console.WriteLine(tag.Name + " " + tag.Value);
-            asyncStopWatch.Stop();
-            Console.WriteLine($"\ttook {(float)asyncStopWatch.ElapsedMilliseconds} ms on average");
-            }
-            */
-
 
             do
             {
                 Thread.Sleep(500);
+
                 if (!Console.IsInputRedirected)
                     if (Console.KeyAvailable)
                     {
@@ -841,47 +845,6 @@ namespace PLCTagDriver
                             Log("Press 'Esc' key to terminate...");
                     }
             } while (true);
-
-
-            /*
-
-            foreach (var tag in tags)
-            {
-                Console.WriteLine(tag.Name, " ", tag.Value);
-                tag.Dispose();
-            }
-
-            //Instantiate the tag with the proper mapper and datatype
-            var myTag = new Tag<DintPlcMapper, int>()
-            {
-                Name = "PLC1ANA0",
-                Gateway = "127.0.0.1",
-                Path = "1,0",
-                PlcType = PlcType.ControlLogix,
-                Protocol = Protocol.ab_eip,
-                Timeout = TimeSpan.FromSeconds(5)
-            };
-            
-            //Initialize the tag to set up structures and prepare for read/write
-            //This is optional as an optimization before using the tag
-            //If omitted, the tag will initialize on the first Read() or Write()
-            myTag.Initialize();
-
-            //The value is held locally and only synchronized on Read() or Write()
-            myTag.Value = 3737;
-
-            //Transfer Value to PLC
-            myTag.Write();
-
-            //Transfer from PLC to Value
-            myTag.Read();
-
-            //Write to console
-            int myDint = myTag.Value;
-            Console.WriteLine(myDint);
-
-            myTag.Dispose();
-            */
         }
     }
 }
