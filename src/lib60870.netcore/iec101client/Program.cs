@@ -149,6 +149,13 @@ namespace Iec10XDriver
             }
 
             string fname = JsonConfigFilePath;
+            if (args.Length > 2) // third argument is config file name
+            {
+                if (File.Exists(args[2]))
+                {
+                    fname = args[2];
+                }
+            }
             if (!File.Exists(fname))
                 fname = JsonConfigFilePathAlt;
             if (!File.Exists(fname))

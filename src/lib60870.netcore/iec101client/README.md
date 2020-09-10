@@ -117,3 +117,11 @@ Select a tag for a update on a connection as below.
 * _**protocolSourceCommandUseSBO**_ [Double] - Use Select-Before-Operate control sequence. Just meaningful for commands. **Mandatory parameter**.
 * _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 * _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
+
+## Command Line Arguments
+
+This driver has the following command line arguments.
+
+* _**1st arg. - Instance Number**_ [Integer] - Instance number to be executed. **Optional argument, default=1**.
+* _**2nd arg. - Log. Level**_ [Integer] - Log level (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**.
+* _**3rd arg. - Config File Path/Name**_ [String] - Complete path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**.
