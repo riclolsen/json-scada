@@ -1,3 +1,21 @@
+/*
+ * I104M Client Protocol driver for {json:scada}
+ * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package main
 
 import (
@@ -327,7 +345,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		buffer := bytes.NewBuffer(buf[0:])
 		binary.Read(buffer, binary.LittleEndian, &i16value)
 		value = float64(i16value)
-		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
 			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	case 5, 32:
@@ -339,7 +357,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		blocked = (flags & 0x10) == 0x10
 		transient = (buf[0] & 0x80) == 0x80
 		value = float64(buf[0] & 0x7F)
-		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
 			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	case 13, 36: // float
@@ -353,7 +371,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		buffer := bytes.NewBuffer(buf[0:])
 		binary.Read(buffer, binary.LittleEndian, &f32value)
 		value = float64(f32value)
-		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
 			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	case 1, 2, 3, 4, 30, 31: // digital
@@ -382,7 +400,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 				value = 0
 			}
 		}
-		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
 			log.Printf("Parser - Digital %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	}
@@ -536,14 +554,17 @@ func containsIp(a []string, str string) bool {
 
 // listen for I104M UDP packets, put packets on channel
 func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan []byte) {
-	buf := make([]byte, 2048)
+	cntEnqPkt := 0
+	prevBuf := make([]byte, 2048)
 
 	for {
+		buf := make([]byte, 2048)
+
 		n, addr, err := con.ReadFromUDP(buf)
 		if err != nil {
-			log.Printf("UDP - %s \n", err)
+			log.Printf("UDP - Error: %s \n", err)
+			continue
 		}
-		err = nil
 
 		ipPort := strings.Split(addr.String(), ":")
 		if !containsIp(ipAddresses, ipPort[0]) {
@@ -554,7 +575,14 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 		}
 
 		if n > 4 {
-			log.Printf("UDP - Received packet with %d bytes from %s", n, ipPort)
+			if bytes.Equal(buf, prevBuf) {
+				if LogLevel >= LogLevelDebug {
+					log.Printf("UDP - Duplicated message. Ignored.\n")
+				}
+				continue
+			}
+			copy(prevBuf, buf)
+
 			if !IsActive { // do not process packets while inactive
 				continue
 			}
@@ -562,6 +590,15 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 			case chanBuf <- buf: // Put buffer in the channel unless it is full
 			default:
 				log.Println("UDP - Channel is full. Discarding packet!")
+				continue
+			}
+			cntEnqPkt++
+			if LogLevel >= LogLevelBasic {
+				log.Printf("UDP - Enqueued received packet with %d bytes from %s, #%d", n, ipPort, cntEnqPkt)
+			}
+		} else {
+			if LogLevel >= LogLevelDebug {
+				log.Printf("UDP - Invalid small packet. Ignored.\n")
 			}
 		}
 	}
@@ -650,7 +687,9 @@ func main() {
 	filter = bson.D{{"protocolDriver", DriverName}, {"protocolDriverInstanceNumber", instanceNumber}, {"enabled", true}}
 	err = collectionConnections.FindOne(context.TODO(), filter).Decode(&protocolConn)
 	checkFatalError(err)
-	fmt.Println(protocolConn)
+	if LogLevel >= LogLevelDebug {
+		log.Println(protocolConn)
+	}
 	if protocolConn.ProtocolDriver == "" {
 		log.Fatal("No connection found!")
 	}
@@ -658,6 +697,10 @@ func main() {
 	if strings.TrimSpace(protocolConn.IpAddressLocalBind) == "" {
 		protocolConn.IpAddressLocalBind = "0.0.0.0:8099"
 	}
+	if LogLevel >= LogLevelBasic {
+		log.Printf("UDP - Binding to address: %s", protocolConn.IpAddressLocalBind)
+	}
+
 	if len(protocolConn.IpAddresses) == 0 {
 		protocolConn.IpAddresses[0] = "127.0.0.1"
 	}
@@ -676,7 +719,6 @@ func main() {
 	checkFatalError(err)
 
 	buf := make([]byte, 2048)
-	prevbuf := make([]byte, 2048)
 
 	tm := time.Now().Add(-6 * time.Second)
 
@@ -688,6 +730,7 @@ func main() {
 	}
 
 	// listen for UDP packets on a go routine, return packets via a channel (packets as []byte )
+	cntDequeuedPackets := 0
 	chanBuf := make(chan []byte, UDPChannelSize)
 	go listenI104MUdpPackets(ServerConn, protocolConn.IpAddresses, chanBuf)
 
@@ -719,11 +762,13 @@ func main() {
 		case <-time.After(5 * time.Second):
 			continue
 		}
+		cntDequeuedPackets++
 
 		n := len(buf)
 		if n > 4 {
 			signature := binary.LittleEndian.Uint32(buf[0:])
 			if signature == 0x64646464 {
+
 				numpoints := binary.LittleEndian.Uint32(buf[4:])
 				iecASDU := binary.LittleEndian.Uint32(buf[8:])
 				primaryAddr := binary.LittleEndian.Uint32(buf[12:])
@@ -742,7 +787,7 @@ func main() {
 						primaryAddr, " ",
 						secondaryAddr, " ",
 						cause, " ",
-						infoSize)
+						infoSize, " #", cntDequeuedPackets)
 				}
 
 				switch {
@@ -773,6 +818,9 @@ func main() {
 					incinfo = 4 + 5
 				default:
 					ok = false
+					if LogLevel >= LogLevelDebug {
+						log.Printf("Channel - ASDU type [%d] not supported", iecASDU)
+					}
 					return
 				}
 
@@ -810,12 +858,6 @@ func main() {
 				}
 			} else if signature == 0x53535353 {
 
-				// avoid duplicated message
-				if bytes.Compare(buf, prevbuf) == 0 {
-					log.Printf("Channel - Duplicated message. Ignored.\n")
-					continue
-				}
-
 				objAddr := binary.LittleEndian.Uint32(buf[4:])
 				iecASDU := binary.LittleEndian.Uint32(buf[8:])
 				primaryAddr := binary.LittleEndian.Uint32(buf[12:])
@@ -832,7 +874,7 @@ func main() {
 						primaryAddr, " ",
 						secondaryAddr, " ",
 						cause, " ",
-						infoSize)
+						infoSize, " #", cntDequeuedPackets)
 				}
 
 				var opers []mongo.WriteModel
@@ -850,7 +892,6 @@ func main() {
 					}
 					log.Println(res)
 				}
-				copy(prevbuf, buf)
 			} else {
 				if LogLevel >= LogLevelBasic {
 					log.Println("Channel - Invalid message!")
