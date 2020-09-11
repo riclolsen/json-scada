@@ -22,11 +22,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Version string = "{json:scada} I104M Protocol Driver v.0.1 - Copyright 2020 Ricardo L. Olsen"
+var Version string = "{json:scada} I104M Protocol Driver v.0.1.1 - Copyright 2020 Ricardo L. Olsen"
 var DriverName string = "I104M"
 var IsActive bool = false
 
+var LogLevel = 1
+
+const LogLevelMin = 0
+const LogLevelBasic = 1
+const LogLevelDetailed = 2
+const LogLevelDebug = 3
+
 const UDPChannelSize = 1000
+const UDPReadBufferPackets = 100
+
+var PointFilter uint32 = 0
 
 type ConfigData struct {
 	NodeName                 string `json: "nodeName"`
@@ -148,7 +158,7 @@ func CommandCancel(collectionCommands *mongo.Collection, Id primitive.ObjectID, 
 	)
 	if err != nil {
 		log.Println(err)
-		log.Println("Can not write update to command on mongo!")
+		log.Println("Mongodb - Can not write update to command on mongo!")
 	}
 }
 
@@ -162,7 +172,7 @@ func CommandDelivered(collectionCommands *mongo.Collection, Id primitive.ObjectI
 	)
 	if err != nil {
 		log.Println(err)
-		log.Println("Can not write update to command on mongo!")
+		log.Println("Mongodb - Can not write update to command on mongo!")
 	}
 }
 
@@ -177,16 +187,16 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 
 		var insDoc InsertChange
 		if err := stream.Decode(&insDoc); err != nil {
-			log.Println(err)
+			log.Printf("Commands - %s", err)
 			continue
 		}
 
 		if insDoc.OperationType == "insert" && insDoc.FullDocument.ProtocolSourceConnectionNumber == protCon.ProtocolConnectionNumber {
-			log.Printf("Command received on connection %d, %s %f", insDoc.FullDocument.ProtocolSourceConnectionNumber, insDoc.FullDocument.Tag, insDoc.FullDocument.Value)
+			log.Printf("Commands - Command received on connection %d, %s %f", insDoc.FullDocument.ProtocolSourceConnectionNumber, insDoc.FullDocument.Tag, insDoc.FullDocument.Value)
 
 			// test for time expired, if too old command (> 10s) then cancel it
 			if time.Now().Sub(insDoc.FullDocument.TimeTag) > 10*time.Second {
-				log.Println("Command expired ", time.Now().Sub(insDoc.FullDocument.TimeTag))
+				log.Println("Commands - Command expired ", time.Now().Sub(insDoc.FullDocument.TimeTag))
 				// write cancel to the command in mongo
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "expired")
 				continue
@@ -199,28 +209,28 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 			err := binary.Write(buf, binary.LittleEndian, cmdSig)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var addr uint32 = uint32(insDoc.FullDocument.ProtocolSourceObjectAddress)
 			err = binary.Write(buf, binary.LittleEndian, addr)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var tiType uint32 = uint32(insDoc.FullDocument.ProtocolSourceASDU)
 			err = binary.Write(buf, binary.LittleEndian, tiType)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var value uint32 = uint32(insDoc.FullDocument.Value)
 			err = binary.Write(buf, binary.LittleEndian, value)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var sbo uint32 = 0
@@ -230,53 +240,53 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 			err = binary.Write(buf, binary.LittleEndian, sbo)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var qu uint32 = uint32(insDoc.FullDocument.ProtocolSourceCommandDuration)
 			err = binary.Write(buf, binary.LittleEndian, qu)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var ca uint32 = uint32(insDoc.FullDocument.ProtocolSourceCommonAddress)
 			err = binary.Write(buf, binary.LittleEndian, ca)
 			if err != nil {
 				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
-				log.Println("binary.Write failed:", err)
+				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 
-			err_msg := ""
+			errMsg := ""
 			ok := false
 			for _, ipAddressDest := range protCon.IpAddresses {
 				if strings.TrimSpace(ipAddressDest) == "" {
-					err_msg = "no IP destination"
+					errMsg = "no IP destination"
 					continue
 				}
 				udpAddr, err := net.ResolveUDPAddr("udp", ipAddressDest)
 				if err != nil {
-					err_msg = "IP address error"
-					log.Println("Error on IP: ", err)
+					errMsg = "IP address error"
+					log.Println("Commands - Error on IP: ", err)
 					continue
 				}
 				_, err = UdpConn.WriteToUDP(buf.Bytes(), udpAddr)
 				if err != nil {
-					err_msg = "UDP send error"
-					log.Println("Error on IP: ", err)
+					errMsg = "UDP send error"
+					log.Println("Commands - Error on IP: ", err)
 					continue
 				}
 				// success delivering command
-				log.Println("Command sent to: ", ipAddressDest)
+				log.Println("Commands - Command sent to: ", ipAddressDest)
 				ok = true
 				// log.Println(buf.Bytes())
 			}
 			if ok == true {
 				CommandDelivered(collectionCommands, insDoc.FullDocument.Id)
 			} else {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, err_msg)
-				log.Println("Command canceled!")
+				CommandCancel(collectionCommands, insDoc.FullDocument.Id, errMsg)
+				log.Println("Commands - Command canceled!")
 			}
 		}
 	}
@@ -303,9 +313,10 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 
 	switch iecAsdu {
 	case 45, 46, 47:
-		log.Println("Command ack")
+		if LogLevel >= LogLevelDetailed {
+			log.Println("Parser - Command ack")
+		}
 		return false
-
 	case 9, 11, 34, 35:
 		ok = true
 		flags = buf[2]
@@ -316,8 +327,9 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		buffer := bytes.NewBuffer(buf[0:])
 		binary.Read(buffer, binary.LittleEndian, &i16value)
 		value = float64(i16value)
-		log.Printf("Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
-
+		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
+		}
 	case 5, 32:
 		ok = true
 		flags = buf[1]
@@ -327,8 +339,9 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		blocked = (flags & 0x10) == 0x10
 		transient = (buf[0] & 0x80) == 0x80
 		value = float64(buf[0] & 0x7F)
-		log.Printf("Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
-
+		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
+		}
 	case 13, 36: // float
 		ok = true
 		flags = buf[4]
@@ -340,8 +353,9 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		buffer := bytes.NewBuffer(buf[0:])
 		binary.Read(buffer, binary.LittleEndian, &f32value)
 		value = float64(f32value)
-		log.Printf("Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
-
+		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
+		}
 	case 1, 2, 3, 4, 30, 31: // digital
 		ok = true
 		// convert qualifiers
@@ -368,14 +382,15 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 				value = 0
 			}
 		}
-		log.Printf("Digital %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
+		if LogLevel >= LogLevelDetailed && (PointFilter == 0 || PointFilter == objAddr) {
+			log.Printf("Parser - Digital %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
+		}
 	}
-
 	if iecAsdu == 2 || iecAsdu == 4 || iecAsdu == 30 || iecAsdu == 31 {
 		hasTime = true
-		srcTimeQualityOk = !(buf[3]&0x80 == 80)
+		srcTimeQualityOk = !(buf[3]&0x80 == 0x80)
 		srcTimeMSec = binary.LittleEndian.Uint16(buf[1:])
-		srcTime = time.Date(2000+int(buf[7]), time.Month(buf[6]), int(buf[5]), int(buf[4]), int(buf[3]&0xEF), int(srcTimeMSec/1000), 0 /*1000*int(srcTimeMSec%1000)*/, time.Local)
+		srcTime = time.Date(2000+int(buf[7]), time.Month(buf[6]), int(buf[5]), int(buf[4]), int(buf[3]&0x3F), int(srcTimeMSec/1000), 0 /*1000*int(srcTimeMSec%1000)*/, time.Local)
 		srcTime = srcTime.Add(time.Duration(srcTimeMSec%1000) * time.Millisecond)
 		// log.Printf(">>>> %v\n", srcTime);
 	}
@@ -442,15 +457,15 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 	filter := bson.D{{"_id", id}}
 	err := collectionInstances.FindOne(context.TODO(), filter).Decode(&instance)
 	if err != nil {
-		log.Println("Error querying protocolDriverInstances!")
+		log.Println("Redundancy - Error querying protocolDriverInstances!")
 		log.Println(err)
 	}
 	if instance.ProtocolDriver == "" {
-		log.Println("No driver instance found!")
+		log.Println("Redundancy - No driver instance found!")
 	}
 
 	if !contains(instance.NodeNames, cfg.NodeName) {
-		log.Fatal("This node name not in the list of nodes from driver instance!")
+		log.Fatal("Redundancy - This node name not in the list of nodes from driver instance!")
 	}
 
 	if instance.ActiveNodeName == cfg.NodeName {
@@ -489,7 +504,9 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 		if err != nil {
 			log.Println(err)
 		} else {
-			log.Println(result)
+			if LogLevel >= LogLevelDebug {
+				log.Println("Redundancy - Update result: ", result)
+			}
 		}
 	}
 }
@@ -524,31 +541,35 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 	for {
 		n, addr, err := con.ReadFromUDP(buf)
 		if err != nil {
-			log.Printf("%s \n", err)
+			log.Printf("UDP - %s \n", err)
 		}
 		err = nil
 
-		ip_port := strings.Split(addr.String(), ":")
-		if !containsIp(ipAddresses, ip_port[0]) {
+		ipPort := strings.Split(addr.String(), ":")
+		if !containsIp(ipAddresses, ipPort[0]) {
+			if LogLevel >= LogLevelDebug {
+				log.Printf("UDP - Message origin not allowed!\n")
+			}
 			continue
 		}
 
 		if n > 4 {
-			log.Printf("Received packet with %d bytes from %s", n, ip_port)
+			log.Printf("UDP - Received packet with %d bytes from %s", n, ipPort)
 			if !IsActive { // do not process packets while inactive
 				continue
 			}
 			select {
 			case chanBuf <- buf: // Put buffer in the channel unless it is full
 			default:
-				log.Println("Channel full. Discarding packet!")
+				log.Println("UDP - Channel is full. Discarding packet!")
 			}
-
 		}
 	}
 }
 
 func main() {
+
+	log.SetOutput(os.Stdout) // log to standard output
 
 	var client *mongo.Client
 	var err error
@@ -557,13 +578,32 @@ func main() {
 
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Println(Version)
-	log.Println("Usage i104m [instance number] [log level]")
+	log.Println("Usage i104m [instance number] [log level] [config file name] [point address filter]")
 
+	instanceNumber := 1
+	if len(os.Args) > 1 {
+		instanceNumber, _ = strconv.Atoi(os.Args[1])
+	}
+
+	if len(os.Args) > 2 {
+		LogLevel, _ = strconv.Atoi(os.Args[2])
+	}
+
+	cfgFileName := filepath.Join("..", "conf", "json-scada.json")
 	cfg := ConfigData{}
-	file, err := ioutil.ReadFile(filepath.Join("..", "conf", "json-scada.json"))
+	if len(os.Args) > 3 {
+		cfgFileName = os.Args[3]
+	}
+	file, err := ioutil.ReadFile(cfgFileName)
 	if err != nil {
 		log.Printf("Failed to read file: %v", err)
 		os.Exit(1)
+	}
+
+	if len(os.Args) > 4 {
+		ipf, _ := strconv.Atoi(os.Args[4])
+		PointFilter = uint32(ipf)
+		log.Printf("Point filter set to: %d", PointFilter)
 	}
 
 	_ = json.Unmarshal([]byte(file), &cfg)
@@ -576,19 +616,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	instanceNumber := 1
-	if len(os.Args) > 1 {
-		instanceNumber, _ = strconv.Atoi(os.Args[1])
-	}
-
-	/*
-		logLevel := 1
-		if len(os.Args) > 2 {
-			logLevel, _ = strconv.Atoi(os.Args[2])
-		}
-	*/
-
-	log.Print("Try to connect MongoDB server...")
+	log.Print("Mongodb - Try to connect server...")
 	client, err, collection, collectionInstances, collectionConnections, collectionCommands = mongoConnect(cfg)
 	checkFatalError(err)
 	defer client.Disconnect(context.TODO())
@@ -596,7 +624,7 @@ func main() {
 	// Check the connection
 	err = client.Ping(context.TODO(), nil)
 	checkFatalError(err)
-	log.Print("MongoDB connected.")
+	log.Print("Mongodb - Connected to server.")
 
 	csCommands, err = collectionCommands.Watch(context.TODO(), mongo.Pipeline{bson.D{
 		{
@@ -644,6 +672,8 @@ func main() {
 	ServerConn, err := net.ListenUDP("udp", ServerAddr)
 	checkFatalError(err)
 	defer ServerConn.Close()
+	err = ServerConn.SetReadBuffer(1500 * UDPReadBufferPackets)
+	checkFatalError(err)
 
 	buf := make([]byte, 2048)
 	prevbuf := make([]byte, 2048)
@@ -663,15 +693,17 @@ func main() {
 
 	for {
 		if time.Since(tm) > 5*time.Second {
-			log.Printf("Ping Mongo \n")
+			if LogLevel >= LogLevelDebug {
+				log.Printf("Mongodb - Ping server.\n")
+			}
 			tm = time.Now()
 
 			for {
 				// Check the connection
 				err = client.Ping(context.TODO(), nil)
 				if err != nil {
-					log.Printf("%s \n", err)
-					log.Print("Disconnected MongoDB server...")
+					log.Printf("Mongodb - %s \n", err)
+					log.Print("Mongodb - Disconnected MongoDB server...")
 				}
 				if err == nil {
 					break
@@ -700,17 +732,18 @@ func main() {
 				infoSize := binary.LittleEndian.Uint32(buf[24:])
 				incinfo := uint32(0)
 				ok := true
-				//_, _, _, _, _ = primaryAddr, secondaryAddr, cause, infoSize, addr
 
-				log.Println("Received Seqncy ",
-					// n, " ",
-					// signature, " ",
-					numpoints, " ",
-					iecASDU, " ",
-					primaryAddr, " ",
-					secondaryAddr, " ",
-					cause, " ",
-					infoSize)
+				if LogLevel >= LogLevelBasic {
+					log.Println("Channel - Received Seqncy ",
+						// n, " ",
+						// signature, " ",
+						numpoints, " ",
+						iecASDU, " ",
+						primaryAddr, " ",
+						secondaryAddr, " ",
+						cause, " ",
+						infoSize)
+				}
 
 				switch {
 				case iecASDU == 1 || // simples sem tag
@@ -762,24 +795,24 @@ func main() {
 							options.BulkWrite().SetOrdered(false),
 						)
 						if res == nil {
-							log.Print("bulk")
+							log.Print("Mongodb - bulk error!")
 							log.Fatal(err)
 						}
 						t2 := time.Now()
-						if numpoints > 10 {
-							log.Printf("%f upserts/s\n", float64(numpoints)/t2.Sub(t1).Seconds())
-						} else {
-							log.Printf("%d ms\n", t2.Sub(t1).Milliseconds())
+
+						if LogLevel >= LogLevelDetailed {
+							log.Printf("Mongodb - Matched count: %d, Updated Count: %d, Bulk upsert time: %d ms \n", res.MatchedCount, res.ModifiedCount, t2.Sub(t1).Milliseconds())
+							if numpoints > 20 {
+								log.Printf("Mongodb - %d bulk upserts/s\n", int64(float64(numpoints)/t2.Sub(t1).Seconds()))
+							}
 						}
-						//log.Println(res.MatchedCount)
-						//log.Println(res.ModifiedCount)
 					}
 				}
 			} else if signature == 0x53535353 {
 
 				// avoid duplicated message
 				if bytes.Compare(buf, prevbuf) == 0 {
-					log.Printf("Duplicated message.\n")
+					log.Printf("Channel - Duplicated message. Ignored.\n")
 					continue
 				}
 
@@ -790,17 +823,17 @@ func main() {
 				cause := binary.LittleEndian.Uint32(buf[20:])
 				infoSize := binary.LittleEndian.Uint32(buf[24:])
 
-				_, _, _, _ = primaryAddr, secondaryAddr, cause, infoSize
-
-				log.Println("Received Single ",
-					// n, " ",
-					// signature, " ",
-					objAddr, " ",
-					iecASDU, " ",
-					primaryAddr, " ",
-					secondaryAddr, " ",
-					cause, " ",
-					infoSize)
+				if LogLevel >= LogLevelBasic {
+					log.Println("Channel - Received Single ",
+						// n, " ",
+						// signature, " ",
+						objAddr, " ",
+						iecASDU, " ",
+						primaryAddr, " ",
+						secondaryAddr, " ",
+						cause, " ",
+						infoSize)
+				}
 
 				var opers []mongo.WriteModel
 				oper := mongo.NewUpdateOneModel()
@@ -812,16 +845,20 @@ func main() {
 						opers,
 					)
 					if res == nil {
-						log.Print("bulk")
+						log.Print("Mongodb - bulk error!")
 						log.Fatal(err)
 					}
 					log.Println(res)
 				}
 				copy(prevbuf, buf)
+			} else {
+				if LogLevel >= LogLevelBasic {
+					log.Println("Channel - Invalid message!")
+				}
 			}
 
 			if err != nil {
-				log.Println("Error: ", err)
+				log.Println("Channel - Error: ", err)
 			}
 		}
 	}
