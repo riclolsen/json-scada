@@ -40,79 +40,79 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Version string = "{json:scada} I104M Protocol Driver v.0.1.1 - Copyright 2020 Ricardo L. Olsen"
-var DriverName string = "I104M"
-var IsActive bool = false
+var softwareVersion string = "{json:scada} I104M Protocol Driver v.0.1.1 - Copyright 2020 Ricardo L. Olsen"
+var driverName string = "I104M"
+var isActive bool = false
 
-var LogLevel = 1
+var logLevel = 1
 
-const LogLevelMin = 0
-const LogLevelBasic = 1
-const LogLevelDetailed = 2
-const LogLevelDebug = 3
+const logLevelMin = 0
+const logLevelBasic = 1
+const logLevelDetailed = 2
+const logLevelDebug = 3
 
-const UDPChannelSize = 1000
-const UDPReadBufferPackets = 100
+const udpChannelSize = 1000
+const udpReadBufferPackets = 100
 
-var PointFilter uint32 = 0
+var pointFilter uint32 = 0
 
-type ConfigData struct {
-	NodeName                 string `json: "nodeName"`
-	MongoConnectionString    string `json: "mongoConnectionString"`
-	MongoDatabaseName        string `json: "mongoDatabaseName"`
-	TlsCaPemFile             string `json: "tlsCaPemFile"`
-	TlsClientPemFile         string `json: "tlsClientPemFile"`
-	TlsClientPfxFile         string `json: "tlsClientPfxFile"`
-	TlsClientKeyPassword     string `json: "tlsClientKeyPassword"`
-	TlsAllowInvalidHostnames bool   `json: "tlsAllowInvalidHostnames"`
-	TlsAllowChainErrors      bool   `json: "tlsAllowChainErrors"`
-	TlsInsecure              bool   `json: "tlsInsecure"`
+type configData struct {
+	NodeName                 string `json:"nodeName"`
+	MongoConnectionString    string `json:"mongoConnectionString"`
+	MongoDatabaseName        string `json:"mongoDatabaseName"`
+	TLSCaPemFile             string `json:"tlsCaPemFile"`
+	TLSClientPemFile         string `json:"tlsClientPemFile"`
+	TLSClientPfxFile         string `json:"tlsClientPfxFile"`
+	TLSClientKeyPassword     string `json:"tlsClientKeyPassword"`
+	TLSAllowInvalidHostnames bool   `json:"tlsAllowInvalidHostnames"`
+	TLSAllowChainErrors      bool   `json:"tlsAllowChainErrors"`
+	TLSInsecure              bool   `json:"tlsInsecure"`
 }
 
-type Command struct {
-	Id                             primitive.ObjectID `json:"_id" bson:"_id"`
-	ProtocolSourceConnectionNumber int                `json: "protocolSourceConnectionNumber"`
-	ProtocolSourceCommonAddress    int                `json: "protocolSourceCommonAddress"`
-	ProtocolSourceObjectAddress    int                `json: "protocolSourceObjectAddress"`
-	ProtocolSourceASDU             int                `json: "protocolSourceASDU"`
-	ProtocolSourceCommandDuration  int                `json: "protocolSourceCommandDuration"`
-	ProtocolSourceCommandUseSBO    bool               `json: "protocolSourceCommandUseSBO"`
-	PointKey                       int                `json: "pointKey"`
-	Tag                            string             `json: "tag"`
-	TimeTag                        time.Time          `json: "timeTag"`
-	Value                          float64            `json: "value"`
-	ValueString                    string             `json: "valueString"`
-	OriginatorUserName             string             `json: "originatorUserName"`
-	OriginatorIpAddress            string             `json: "originatorIpAddress"`
+type commandQueueEntry struct {
+	ID                             primitive.ObjectID `json:"_id" bson:"_id"`
+	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
+	ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
+	ProtocolSourceObjectAddress    int                `json:"protocolSourceObjectAddress"`
+	ProtocolSourceASDU             int                `json:"protocolSourceASDU"`
+	ProtocolSourceCommandDuration  int                `json:"protocolSourceCommandDuration"`
+	ProtocolSourceCommandUseSBO    bool               `json:"protocolSourceCommandUseSBO"`
+	PointKey                       int                `json:"pointKey"`
+	Tag                            string             `json:"tag"`
+	TimeTag                        time.Time          `json:"timeTag"`
+	Value                          float64            `json:"value"`
+	ValueString                    string             `json:"valueString"`
+	OriginatorUserName             string             `json:"originatorUserName"`
+	OriginatorIPAddress            string             `json:"originatorIpAddress"`
 }
 
-type InsertChange struct {
-	FullDocument  Command `json: "fullDocument"`
-	OperationType string  `json: "operationType"`
+type insertChange struct {
+	FullDocument  commandQueueEntry `json:"fullDocument"`
+	OperationType string            `json:"operationType"`
 }
 
-type ProtocolDriverInstance struct {
-	Id                               primitive.ObjectID `json:"_id" bson:"_id"`
-	ProtocolDriver                   string             `json: "protocolDriver"`
-	ProtocolDriverInstanceNumber     int                `json: "protocolDriverInstanceNumber"`
-	Enabled                          bool               `json: "enabled"`
-	LogLevel                         int                `json: "logLevel"`
-	NodeNames                        []string           `json: "nodeNames"`
-	ActiveNodeName                   string             `json: "activeNodeName"`
-	ActiveNodeKeepAliveTimeTag       time.Time          `json: "activeNodeKeepAliveTimeTag"`
-	KeepProtocolRunningWhileInactive bool               `json: "keepProtocolRunningWhileInactive"`
+type protocolDriverInstance struct {
+	ID                               primitive.ObjectID `json:"_id" bson:"_id"`
+	ProtocolDriver                   string             `json:"protocolDriver"`
+	ProtocolDriverInstanceNumber     int                `json:"protocolDriverInstanceNumber"`
+	Enabled                          bool               `json:"enabled"`
+	LogLevel                         int                `json:"logLevel"`
+	NodeNames                        []string           `json:"nodeNames"`
+	ActiveNodeName                   string             `json:"activeNodeName"`
+	ActiveNodeKeepAliveTimeTag       time.Time          `json:"activeNodeKeepAliveTimeTag"`
+	KeepProtocolRunningWhileInactive bool               `json:"keepProtocolRunningWhileInactive"`
 }
 
-type ProtocolConnection struct {
-	ProtocolDriver               string   `json: "protocolDriver"`
-	ProtocolDriverInstanceNumber int      `json: "protocolDriverInstanceNumber"`
-	ProtocolConnectionNumber     int      `json: "protocolConnectionNumber"`
-	Name                         string   `json: "name"`
-	Description                  string   `json: "description"`
-	Enabled                      bool     `json: "enabled"`
-	CommandsEnabled              bool     `json: "commandsEnabled"`
-	IpAddressLocalBind           string   `json: "ipAddressLocalBind"`
-	IpAddresses                  []string `json: "ipAddresses"`
+type protocolConnection struct {
+	ProtocolDriver               string   `json:"protocolDriver"`
+	ProtocolDriverInstanceNumber int      `json:"protocolDriverInstanceNumber"`
+	ProtocolConnectionNumber     int      `json:"protocolConnectionNumber"`
+	Name                         string   `json:"name"`
+	Description                  string   `json:"description"`
+	Enabled                      bool     `json:"enabled"`
+	CommandsEnabled              bool     `json:"commandsEnabled"`
+	IPAddressLocalBind           string   `json:"ipAddressLocalBind"`
+	IPAddresses                  []string `json:"ipAddresses"`
 }
 
 // check error, terminate app if error
@@ -122,56 +122,56 @@ func checkFatalError(err error) {
 	}
 }
 
-func mongoConnect(cfg ConfigData) (client *mongo.Client, err error, collRTD *mongo.Collection, collInsts *mongo.Collection, collConns *mongo.Collection, collCmds *mongo.Collection) {
+func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collection, collInsts *mongo.Collection, collConns *mongo.Collection, collCmds *mongo.Collection, err error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	if cfg.TlsCaPemFile != "" || cfg.TlsClientPemFile != "" {
+	if cfg.TLSCaPemFile != "" || cfg.TLSClientPemFile != "" {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tls=true"
 	}
-	if cfg.TlsCaPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCAFile=" + cfg.TlsCaPemFile
+	if cfg.TLSCaPemFile != "" {
+		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCAFile=" + cfg.TLSCaPemFile
 	}
-	if cfg.TlsClientPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFile=" + cfg.TlsClientPemFile
+	if cfg.TLSClientPemFile != "" {
+		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFile=" + cfg.TLSClientPemFile
 	}
-	if cfg.TlsClientKeyPassword != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFilePassword=" + cfg.TlsClientKeyPassword
+	if cfg.TLSClientKeyPassword != "" {
+		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFilePassword=" + cfg.TLSClientKeyPassword
 	}
-	if cfg.TlsInsecure {
+	if cfg.TLSInsecure {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsInsecure=true"
 	}
-	if cfg.TlsAllowChainErrors {
+	if cfg.TLSAllowChainErrors {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsInsecure=true"
 	}
-	if cfg.TlsAllowInvalidHostnames {
+	if cfg.TLSAllowInvalidHostnames {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
 	}
 
 	client, err = mongo.NewClient(options.Client().ApplyURI(cfg.MongoConnectionString))
 	if err != nil {
-		return client, err, collRTD, collInsts, collConns, collCmds
+		return client, collRTD, collInsts, collConns, collCmds, err
 	}
 
 	err = client.Connect(ctx)
 	if err != nil {
-		return client, err, collRTD, collInsts, collConns, collCmds
+		return client, collRTD, collInsts, collConns, collCmds, err
 	}
 	collRTD = client.Database(cfg.MongoDatabaseName).Collection("realtimeData")
 	collInsts = client.Database(cfg.MongoDatabaseName).Collection("protocolDriverInstances")
 	collConns = client.Database(cfg.MongoDatabaseName).Collection("protocolConnections")
 	collCmds = client.Database(cfg.MongoDatabaseName).Collection("commandsQueue")
 
-	return client, err, collRTD, collInsts, collConns, collCmds
+	return client, collRTD, collInsts, collConns, collCmds, err
 }
 
 // Cancel a command on commandsQueue collection
-func CommandCancel(collectionCommands *mongo.Collection, Id primitive.ObjectID, cancelReason string) {
+func commandCancel(collectionCommands *mongo.Collection, ID primitive.ObjectID, cancelReason string) {
 	// write cancel to the command in mongo
 	_, err := collectionCommands.UpdateOne(
 		context.TODO(),
-		bson.M{"_id": bson.M{"$eq": Id}},
+		bson.M{"_id": bson.M{"$eq": ID}},
 		bson.M{"$set": bson.M{"cancelReason": cancelReason}},
 	)
 	if err != nil {
@@ -181,11 +181,11 @@ func CommandCancel(collectionCommands *mongo.Collection, Id primitive.ObjectID, 
 }
 
 // Signals a command delvered to protocol on commandsQueue collection
-func CommandDelivered(collectionCommands *mongo.Collection, Id primitive.ObjectID) {
+func commandDelivered(collectionCommands *mongo.Collection, ID primitive.ObjectID) {
 	// write cancel to the command in mongo
 	_, err := collectionCommands.UpdateOne(
 		context.TODO(),
-		bson.M{"_id": bson.M{"$eq": Id}},
+		bson.M{"_id": bson.M{"$eq": ID}},
 		bson.M{"$set": bson.M{"delivered": true, "ack": true, "ackTimeTag": time.Now()}},
 	)
 	if err != nil {
@@ -195,15 +195,15 @@ func CommandDelivered(collectionCommands *mongo.Collection, Id primitive.ObjectI
 }
 
 // process commands from change stream, forward commands via UDP
-func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, stream *mongo.ChangeStream, protCon *ProtocolConnection, UdpConn *net.UDPConn, collectionCommands *mongo.Collection) {
+func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, stream *mongo.ChangeStream, protCon *protocolConnection, UdpConn *net.UDPConn, collectionCommands *mongo.Collection) {
 	defer stream.Close(routineCtx)
 	defer waitGroup.Done()
 	for stream.Next(routineCtx) {
-		if !IsActive {
+		if !isActive {
 			return
 		}
 
-		var insDoc InsertChange
+		var insDoc insertChange
 		if err := stream.Decode(&insDoc); err != nil {
 			log.Printf("Commands - %s", err)
 			continue
@@ -216,7 +216,7 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 			if time.Now().Sub(insDoc.FullDocument.TimeTag) > 10*time.Second {
 				log.Println("Commands - Command expired ", time.Now().Sub(insDoc.FullDocument.TimeTag))
 				// write cancel to the command in mongo
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "expired")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "expired")
 				continue
 			}
 
@@ -226,28 +226,28 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 			var cmdSig uint32 = 0x4b4b4b4b
 			err := binary.Write(buf, binary.LittleEndian, cmdSig)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var addr uint32 = uint32(insDoc.FullDocument.ProtocolSourceObjectAddress)
 			err = binary.Write(buf, binary.LittleEndian, addr)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var tiType uint32 = uint32(insDoc.FullDocument.ProtocolSourceASDU)
 			err = binary.Write(buf, binary.LittleEndian, tiType)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var value uint32 = uint32(insDoc.FullDocument.Value)
 			err = binary.Write(buf, binary.LittleEndian, value)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
@@ -257,28 +257,28 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 			}
 			err = binary.Write(buf, binary.LittleEndian, sbo)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var qu uint32 = uint32(insDoc.FullDocument.ProtocolSourceCommandDuration)
 			err = binary.Write(buf, binary.LittleEndian, qu)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 			var ca uint32 = uint32(insDoc.FullDocument.ProtocolSourceCommonAddress)
 			err = binary.Write(buf, binary.LittleEndian, ca)
 			if err != nil {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, "udp buffer write error")
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
 				log.Println("Commands - binary.Write failed:", err)
 				continue
 			}
 
 			errMsg := ""
 			ok := false
-			for _, ipAddressDest := range protCon.IpAddresses {
+			for _, ipAddressDest := range protCon.IPAddresses {
 				if strings.TrimSpace(ipAddressDest) == "" {
 					errMsg = "no IP destination"
 					continue
@@ -301,9 +301,9 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 				// log.Println(buf.Bytes())
 			}
 			if ok == true {
-				CommandDelivered(collectionCommands, insDoc.FullDocument.Id)
+				commandDelivered(collectionCommands, insDoc.FullDocument.ID)
 			} else {
-				CommandCancel(collectionCommands, insDoc.FullDocument.Id, errMsg)
+				commandCancel(collectionCommands, insDoc.FullDocument.ID, errMsg)
 				log.Println("Commands - Command canceled!")
 			}
 		}
@@ -331,7 +331,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 
 	switch iecAsdu {
 	case 45, 46, 47:
-		if LogLevel >= LogLevelDetailed {
+		if logLevel >= logLevelDetailed {
 			log.Println("Parser - Command ack")
 		}
 		return false
@@ -345,7 +345,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		buffer := bytes.NewBuffer(buf[0:])
 		binary.Read(buffer, binary.LittleEndian, &i16value)
 		value = float64(i16value)
-		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
+		if logLevel >= logLevelDetailed || pointFilter == objAddr {
 			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	case 5, 32:
@@ -357,7 +357,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		blocked = (flags & 0x10) == 0x10
 		transient = (buf[0] & 0x80) == 0x80
 		value = float64(buf[0] & 0x7F)
-		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
+		if logLevel >= logLevelDetailed || pointFilter == objAddr {
 			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	case 13, 36: // float
@@ -371,7 +371,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 		buffer := bytes.NewBuffer(buf[0:])
 		binary.Read(buffer, binary.LittleEndian, &f32value)
 		value = float64(f32value)
-		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
+		if logLevel >= logLevelDetailed || pointFilter == objAddr {
 			log.Printf("Parser - Analogic %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	case 1, 2, 3, 4, 30, 31: // digital
@@ -400,7 +400,7 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 				value = 0
 			}
 		}
-		if LogLevel >= LogLevelDetailed || PointFilter == objAddr {
+		if logLevel >= logLevelDetailed || pointFilter == objAddr {
 			log.Printf("Parser - Digital %d: %d %f %d\n", iecAsdu, objAddr, value, flags)
 		}
 	}
@@ -415,51 +415,47 @@ func i104mParseObj(oper *mongo.UpdateOneModel, buf []byte, objAddr uint32, iecAs
 
 	if ok {
 		oper.SetFilter(bson.D{
-			{"protocolSourceConnectionNumber", connectionNumber},
-			{"protocolSourceObjectAddress", objAddr},
+			{Key: "protocolSourceConnectionNumber", Value: connectionNumber},
+			{Key: "protocolSourceObjectAddress", Value: objAddr},
 		})
 
 		if hasTime {
 			oper.SetUpdate(
-				bson.D{{"$set",
-					bson.D{{"sourceDataUpdate",
-						bson.D{
-							{"valueAtSource", value},
-							{"valueStringAtSource", fmt.Sprintf("%f", value)},
-							{"invalidAtSource", invalid},
-							{"notTopicalAtSource", notTopical},
-							{"substitutedAtSource", substituted},
-							{"blockedAtSource", blocked},
-							{"overflowAtSource", overflow},
-							{"transientAtSource", transient},
-							{"carryAtSource", carry},
-							{"asduAtSource", fmt.Sprintf("%d", iecAsdu)},
-							{"causeOfTransmissionAtSource", cause},
-							{"timeTag", time.Now()},
-							{"timeTagAtSource", srcTime},
-							{"timeTagAtSourceOk", srcTimeQualityOk},
-						}},
-					}}})
+				bson.D{{Key: "$set", Value: bson.D{{Key: "sourceDataUpdate", Value: bson.D{
+					{Key: "valueAtSource", Value: value},
+					{Key: "valueStringAtSource", Value: fmt.Sprintf("%f", value)},
+					{Key: "invalidAtSource", Value: invalid},
+					{Key: "notTopicalAtSource", Value: notTopical},
+					{Key: "substitutedAtSource", Value: substituted},
+					{Key: "blockedAtSource", Value: blocked},
+					{Key: "overflowAtSource", Value: overflow},
+					{Key: "transientAtSource", Value: transient},
+					{Key: "carryAtSource", Value: carry},
+					{Key: "asduAtSource", Value: fmt.Sprintf("%d", iecAsdu)},
+					{Key: "causeOfTransmissionAtSource", Value: cause},
+					{Key: "timeTag", Value: time.Now()},
+					{Key: "timeTagAtSource", Value: srcTime},
+					{Key: "timeTagAtSourceOk", Value: srcTimeQualityOk},
+				}},
+				}}})
 		} else {
 			oper.SetUpdate(
-				bson.D{{"$set",
-					bson.D{{"sourceDataUpdate",
-						bson.D{
-							{"valueAtSource", value},
-							{"valueStringAtSource", fmt.Sprintf("%f", value)},
-							{"invalidAtSource", invalid},
-							{"notTopicalAtSource", notTopical},
-							{"substitutedAtSource", substituted},
-							{"blockedAtSource", blocked},
-							{"overflowAtSource", overflow},
-							{"transientAtSource", transient},
-							{"carryAtSource", carry},
-							{"asduAtSource", fmt.Sprintf("%d", iecAsdu)},
-							{"causeOfTransmissionAtSource", cause},
-							{"timeTag", time.Now()},
-							{"timeTagAtSourceOk", false},
-						}},
-					}}})
+				bson.D{{Key: "$set", Value: bson.D{{Key: "sourceDataUpdate", Value: bson.D{
+					{Key: "valueAtSource", Value: value},
+					{Key: "valueStringAtSource", Value: fmt.Sprintf("%f", value)},
+					{Key: "invalidAtSource", Value: invalid},
+					{Key: "notTopicalAtSource", Value: notTopical},
+					{Key: "substitutedAtSource", Value: substituted},
+					{Key: "blockedAtSource", Value: blocked},
+					{Key: "overflowAtSource", Value: overflow},
+					{Key: "transientAtSource", Value: transient},
+					{Key: "carryAtSource", Value: carry},
+					{Key: "asduAtSource", Value: fmt.Sprintf("%d", iecAsdu)},
+					{Key: "causeOfTransmissionAtSource", Value: cause},
+					{Key: "timeTag", Value: time.Now()},
+					{Key: "timeTagAtSourceOk", Value: false},
+				}},
+				}}})
 		}
 	}
 	return ok // , oksoe, aggrSoePipeline
@@ -469,10 +465,10 @@ var countKeepAliveUpdates = 0
 var countKeepAliveUpdatesLimit = 4
 var lastActiveNodeKeepAliveTimeTag time.Time
 
-func processRedundancy(collectionInstances *mongo.Collection, id primitive.ObjectID, cfg ConfigData) {
+func processRedundancy(collectionInstances *mongo.Collection, id primitive.ObjectID, cfg configData) {
 
-	var instance ProtocolDriverInstance
-	filter := bson.D{{"_id", id}}
+	var instance protocolDriverInstance
+	filter := bson.D{{Key: "_id", Value: id}}
 	err := collectionInstances.FindOne(context.TODO(), filter).Decode(&instance)
 	if err != nil {
 		log.Println("Redundancy - Error querying protocolDriverInstances!")
@@ -487,30 +483,30 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 	}
 
 	if instance.ActiveNodeName == cfg.NodeName {
-		if IsActive == false {
+		if isActive == false {
 			log.Println("Redundancy - ACTIVATING this Node!")
 		}
-		IsActive = true
+		isActive = true
 	} else {
-		if IsActive { // was active, other node assumed, so be inactive and wait a random time
+		if isActive { // was active, other node assumed, so be inactive and wait a random time
 			log.Println("Redundancy - DEACTIVATING this Node (other node active)!")
 			countKeepAliveUpdates = 0
-			IsActive = false
+			isActive = false
 			time.Sleep(time.Duration(1000) * time.Millisecond)
 		}
-		IsActive = false
+		isActive = false
 		if lastActiveNodeKeepAliveTimeTag == instance.ActiveNodeKeepAliveTimeTag {
 			countKeepAliveUpdates++
 		}
 		lastActiveNodeKeepAliveTimeTag = instance.ActiveNodeKeepAliveTimeTag
 		if countKeepAliveUpdates > countKeepAliveUpdatesLimit { // time exceeded, be active
 			log.Println("Redundancy - ACTIVATING this Node!")
-			IsActive = true
+			isActive = true
 		}
 
 	}
 
-	if IsActive {
+	if isActive {
 		log.Println("Redundancy - This node is active.")
 
 		// update keep alive time and node name
@@ -522,7 +518,7 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 		if err != nil {
 			log.Println(err)
 		} else {
-			if LogLevel >= LogLevelDebug {
+			if logLevel >= logLevelDebug {
 				log.Println("Redundancy - Update result: ", result)
 			}
 		}
@@ -541,7 +537,7 @@ func contains(a []string, str string) bool {
 }
 
 // find if array contains a IP address ( compare just left part of ":" as in 127.0.0.1:8099 )
-func containsIp(a []string, str string) bool {
+func containsIP(a []string, str string) bool {
 	tStr := strings.Split(strings.TrimSpace(str), ":")[0]
 	for _, n := range a {
 		str = strings.Split(n, ":")[0]
@@ -567,8 +563,8 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 		}
 
 		ipPort := strings.Split(addr.String(), ":")
-		if !containsIp(ipAddresses, ipPort[0]) {
-			if LogLevel >= LogLevelDebug {
+		if !containsIP(ipAddresses, ipPort[0]) {
+			if logLevel >= logLevelDebug {
 				log.Printf("UDP - Message origin not allowed!\n")
 			}
 			continue
@@ -576,14 +572,14 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 
 		if n > 4 {
 			if bytes.Equal(buf, prevBuf) {
-				if LogLevel >= LogLevelDebug {
+				if logLevel >= logLevelDebug {
 					log.Printf("UDP - Duplicated message. Ignored.\n")
 				}
 				continue
 			}
 			copy(prevBuf, buf)
 
-			if !IsActive { // do not process packets while inactive
+			if !isActive { // do not process packets while inactive
 				continue
 			}
 			select {
@@ -593,11 +589,11 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 				continue
 			}
 			cntEnqPkt++
-			if LogLevel >= LogLevelBasic {
+			if logLevel >= logLevelBasic {
 				log.Printf("UDP - Enqueued received packet with %d bytes from %s, #%d", n, ipPort, cntEnqPkt)
 			}
 		} else {
-			if LogLevel >= LogLevelDebug {
+			if logLevel >= logLevelDebug {
 				log.Printf("UDP - Invalid small packet. Ignored.\n")
 			}
 		}
@@ -606,28 +602,55 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 
 func main() {
 
-	log.SetOutput(os.Stdout) // log to standard output
-
 	var client *mongo.Client
 	var err error
 	var collection, collectionInstances, collectionConnections, collectionCommands *mongo.Collection
 	var csCommands *mongo.ChangeStream
 
+	log.SetOutput(os.Stdout) // log to standard output
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.Println(Version)
+	log.Println(softwareVersion)
 	log.Println("Usage i104m [instance number] [log level] [config file name] [point address filter]")
 
 	instanceNumber := 1
+	if os.Getenv("JS_I104M_INSTANCE") != "" {
+		i, err := strconv.Atoi(os.Getenv("JS_I104M_INSTANCE"))
+		if err != nil {
+			log.Println("JS_I104M_INSTANCE environment variable should be a number!")
+			os.Exit(2)
+		}
+		instanceNumber = i
+	}
 	if len(os.Args) > 1 {
-		instanceNumber, _ = strconv.Atoi(os.Args[1])
+		i, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			log.Println("Instance parameter should be a number!")
+			os.Exit(2)
+		}
+		instanceNumber = i
 	}
 
+	if os.Getenv("JS_I104M_LOGLEVEL") != "" {
+		i, err := strconv.Atoi(os.Getenv("JS_I104M_LOGLEVEL"))
+		if err != nil {
+			log.Println("JS_I104M_LOGLEVEL environment variable should be a number!")
+			os.Exit(2)
+		}
+		logLevel = i
+	}
 	if len(os.Args) > 2 {
-		LogLevel, _ = strconv.Atoi(os.Args[2])
+		logLevel, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Println("Log Level parameter should be a number!")
+			os.Exit(2)
+		}
 	}
 
 	cfgFileName := filepath.Join("..", "conf", "json-scada.json")
-	cfg := ConfigData{}
+	cfg := configData{}
+	if os.Getenv("JS_CONFIG_FILE") != "" {
+		cfgFileName = os.Getenv("JS_CONFIG_FILE")
+	}
 	if len(os.Args) > 3 {
 		cfgFileName = os.Args[3]
 	}
@@ -639,8 +662,8 @@ func main() {
 
 	if len(os.Args) > 4 {
 		ipf, _ := strconv.Atoi(os.Args[4])
-		PointFilter = uint32(ipf)
-		log.Printf("Point filter set to: %d", PointFilter)
+		pointFilter = uint32(ipf)
+		log.Printf("Point filter set to: %d", pointFilter)
 	}
 
 	_ = json.Unmarshal([]byte(file), &cfg)
@@ -654,7 +677,7 @@ func main() {
 	}
 
 	log.Print("Mongodb - Try to connect server...")
-	client, err, collection, collectionInstances, collectionConnections, collectionCommands = mongoConnect(cfg)
+	client, collection, collectionInstances, collectionConnections, collectionCommands, err = mongoConnect(cfg)
 	checkFatalError(err)
 	defer client.Disconnect(context.TODO())
 
@@ -665,8 +688,8 @@ func main() {
 
 	csCommands, err = collectionCommands.Watch(context.TODO(), mongo.Pipeline{bson.D{
 		{
-			"$match", bson.D{
-				{"operationType", "insert"},
+			Key: "$match", Value: bson.D{
+				{Key: "operationType", Value: "insert"},
 			},
 		},
 	}})
@@ -674,48 +697,56 @@ func main() {
 	defer csCommands.Close(context.TODO())
 
 	// read instances config
-	var instance ProtocolDriverInstance
-	filter := bson.D{{"protocolDriver", DriverName}, {"protocolDriverInstanceNumber", instanceNumber}, {"enabled", true}}
+	var instance protocolDriverInstance
+	filter := bson.D{
+		{Key: "protocolDriver", Value: driverName},
+		{Key: "protocolDriverInstanceNumber", Value: instanceNumber},
+		{Key: "enabled", Value: true},
+	}
 	err = collectionInstances.FindOne(context.TODO(), filter).Decode(&instance)
 	if err != nil || instance.ProtocolDriver == "" {
-		log.Fatal("No driver instance found on configuration! Driver Name: ", DriverName, " Instance number: ", instanceNumber)
+		log.Fatal("No driver instance found on configuration! Driver Name: ", driverName, " Instance number: ", instanceNumber)
 	}
 
 	// read connections config
 	// This driver admits only 1 connection per instance!
-	var protocolConn ProtocolConnection
-	filter = bson.D{{"protocolDriver", DriverName}, {"protocolDriverInstanceNumber", instanceNumber}, {"enabled", true}}
+	var protocolConn protocolConnection
+	filter = bson.D{
+		{Key: "protocolDriver", Value: driverName},
+		{Key: "protocolDriverInstanceNumber", Value: instanceNumber},
+		{Key: "enabled", Value: true},
+	}
 	err = collectionConnections.FindOne(context.TODO(), filter).Decode(&protocolConn)
 	checkFatalError(err)
-	if LogLevel >= LogLevelDebug {
+	if logLevel >= logLevelDebug {
 		log.Println(protocolConn)
 	}
 	if protocolConn.ProtocolDriver == "" {
 		log.Fatal("No connection found!")
 	}
 
-	if strings.TrimSpace(protocolConn.IpAddressLocalBind) == "" {
-		protocolConn.IpAddressLocalBind = "0.0.0.0:8099"
+	if strings.TrimSpace(protocolConn.IPAddressLocalBind) == "" {
+		protocolConn.IPAddressLocalBind = "0.0.0.0:8099"
 	}
-	if LogLevel >= LogLevelBasic {
-		log.Printf("UDP - Binding to address: %s", protocolConn.IpAddressLocalBind)
+	if logLevel >= logLevelBasic {
+		log.Printf("UDP - Binding to address: %s", protocolConn.IPAddressLocalBind)
 	}
 
-	if len(protocolConn.IpAddresses) == 0 {
-		protocolConn.IpAddresses[0] = "127.0.0.1"
+	if len(protocolConn.IPAddresses) == 0 {
+		protocolConn.IPAddresses[0] = "127.0.0.1"
 	}
 
 	log.Printf("Instance:%d Connection:%d", protocolConn.ProtocolDriverInstanceNumber, protocolConn.ProtocolConnectionNumber)
 
 	// Lets prepare an server address at any address at port 10001
-	ServerAddr, err := net.ResolveUDPAddr("udp", protocolConn.IpAddressLocalBind)
+	ServerAddr, err := net.ResolveUDPAddr("udp", protocolConn.IPAddressLocalBind)
 	checkFatalError(err)
 
 	// Now listen at selected port
 	ServerConn, err := net.ListenUDP("udp", ServerAddr)
 	checkFatalError(err)
 	defer ServerConn.Close()
-	err = ServerConn.SetReadBuffer(1500 * UDPReadBufferPackets)
+	err = ServerConn.SetReadBuffer(1500 * udpReadBufferPackets)
 	checkFatalError(err)
 
 	buf := make([]byte, 2048)
@@ -731,12 +762,12 @@ func main() {
 
 	// listen for UDP packets on a go routine, return packets via a channel (packets as []byte )
 	cntDequeuedPackets := 0
-	chanBuf := make(chan []byte, UDPChannelSize)
-	go listenI104MUdpPackets(ServerConn, protocolConn.IpAddresses, chanBuf)
+	chanBuf := make(chan []byte, udpChannelSize)
+	go listenI104MUdpPackets(ServerConn, protocolConn.IPAddresses, chanBuf)
 
 	for {
 		if time.Since(tm) > 5*time.Second {
-			if LogLevel >= LogLevelDebug {
+			if logLevel >= logLevelDebug {
 				log.Printf("Mongodb - Ping server.\n")
 			}
 			tm = time.Now()
@@ -753,7 +784,7 @@ func main() {
 				}
 			}
 
-			processRedundancy(collectionInstances, instance.Id, cfg)
+			processRedundancy(collectionInstances, instance.ID, cfg)
 		}
 
 		select {
@@ -778,7 +809,7 @@ func main() {
 				incinfo := uint32(0)
 				ok := true
 
-				if LogLevel >= LogLevelBasic {
+				if logLevel >= logLevelBasic {
 					log.Println("Channel - Received Seqncy ",
 						// n, " ",
 						// signature, " ",
@@ -818,7 +849,7 @@ func main() {
 					incinfo = 4 + 5
 				default:
 					ok = false
-					if LogLevel >= LogLevelDebug {
+					if logLevel >= logLevelDebug {
 						log.Printf("Channel - ASDU type [%d] not supported", iecASDU)
 					}
 					return
@@ -848,7 +879,7 @@ func main() {
 						}
 						t2 := time.Now()
 
-						if LogLevel >= LogLevelDetailed {
+						if logLevel >= logLevelDetailed {
 							log.Printf("Mongodb - Matched count: %d, Updated Count: %d, Bulk upsert time: %d ms \n", res.MatchedCount, res.ModifiedCount, t2.Sub(t1).Milliseconds())
 							if numpoints > 20 {
 								log.Printf("Mongodb - %d bulk upserts/s\n", int64(float64(numpoints)/t2.Sub(t1).Seconds()))
@@ -865,7 +896,7 @@ func main() {
 				cause := binary.LittleEndian.Uint32(buf[20:])
 				infoSize := binary.LittleEndian.Uint32(buf[24:])
 
-				if LogLevel >= LogLevelBasic {
+				if logLevel >= logLevelBasic {
 					log.Println("Channel - Received Single ",
 						// n, " ",
 						// signature, " ",
@@ -893,7 +924,7 @@ func main() {
 					log.Println(res)
 				}
 			} else {
-				if LogLevel >= LogLevelBasic {
+				if logLevel >= logLevelBasic {
 					log.Println("Channel - Invalid message!")
 				}
 			}

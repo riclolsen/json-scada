@@ -55,16 +55,16 @@ var periodOfCalculation float64 = 2.0 // cycle period of calculation in seconds
 var isActive bool = false             // redundancy flag, do not write calculations to the DB while inactive
 
 type config struct {
-	NodeName                 string `json: "nodeName"`
-	MongoConnectionString    string `json: "mongoConnectionString"`
-	MongoDatabaseName        string `json: "mongoDatabaseName"`
-	TlsCaPemFile             string `json: "tlsCaPemFile"`
-	TlsClientPemFile         string `json: "tlsClientPemFile"`
-	TlsClientPfxFile         string `json: "tlsClientPfxFile"`
-	TlsClientKeyPassword     string `json: "tlsClientKeyPassword"`
-	TlsAllowInvalidHostnames bool   `json: "tlsAllowInvalidHostnames"`
-	TlsAllowChainErrors      bool   `json: "tlsAllowChainErrors"`
-	TlsInsecure              bool   `json: "tlsInsecure"`
+	NodeName                 string `json:"nodeName"`
+	MongoConnectionString    string `json:"mongoConnectionString"`
+	MongoDatabaseName        string `json:"mongoDatabaseName"`
+	TLSCaPemFile             string `json:"tlsCaPemFile"`
+	TLSClientPemFile         string `json:"tlsClientPemFile"`
+	TLSClientPfxFile         string `json:"tlsClientPfxFile"`
+	TLSClientKeyPassword     string `json:"tlsClientKeyPassword"`
+	TLSAllowInvalidHostnames bool   `json:"tlsAllowInvalidHostnames"`
+	TLSAllowChainErrors      bool   `json:"tlsAllowChainErrors"`
+	TLSInsecure              bool   `json:"tlsInsecure"`
 }
 
 type pointCalc struct {
@@ -85,15 +85,15 @@ type realtimeDataForm struct {
 }
 
 type processInstance struct {
-	ProcessName                string    `bson: "processName"`
-	ProcessInstanceNumber      int       `bson: "processInstanceNumber"`
-	Enabled                    bool      `bson: "enabled"`
-	LogLevel                   int       `bson: "logLevel"`
-	NodeNames                  []string  `bson: "nodeNames"`
-	ActiveNodeName             string    `bson: "activeNodeName"`
-	ActiveNodeKeepAliveTimeTag time.Time `bson: "activeNodeKeepAliveTimeTag"`
-	SoftwareVersion            string    `bson: "softwareVersion"`
-	PeriodOfCalculation        float64   `bson: "periodOfCalculation"`
+	ProcessName                string    `bson:"processName"`
+	ProcessInstanceNumber      int       `bson:"processInstanceNumber"`
+	Enabled                    bool      `bson:"enabled"`
+	LogLevel                   int       `bson:"logLevel"`
+	NodeNames                  []string  `bson:"nodeNames"`
+	ActiveNodeName             string    `bson:"activeNodeName"`
+	ActiveNodeKeepAliveTimeTag time.Time `bson:"activeNodeKeepAliveTimeTag"`
+	SoftwareVersion            string    `bson:"softwareVersion"`
+	PeriodOfCalculation        float64   `bson:"periodOfCalculation"`
 }
 
 // A Simple function to verify error
@@ -132,25 +132,25 @@ func readConfigFile(cfg *config) {
 		log.Printf("Empty string in config file.")
 		os.Exit(1)
 	}
-	if cfg.TlsCaPemFile != "" || cfg.TlsClientPemFile != "" {
+	if cfg.TLSCaPemFile != "" || cfg.TLSClientPemFile != "" {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tls=true"
 	}
-	if cfg.TlsCaPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCAFile=" + cfg.TlsCaPemFile
+	if cfg.TLSCaPemFile != "" {
+		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCAFile=" + cfg.TLSCaPemFile
 	}
-	if cfg.TlsClientPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFile=" + cfg.TlsClientPemFile
+	if cfg.TLSClientPemFile != "" {
+		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFile=" + cfg.TLSClientPemFile
 	}
-	if cfg.TlsClientKeyPassword != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFilePassword=" + cfg.TlsClientKeyPassword
+	if cfg.TLSClientKeyPassword != "" {
+		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFilePassword=" + cfg.TLSClientKeyPassword
 	}
-	if cfg.TlsInsecure {
+	if cfg.TLSInsecure {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsInsecure=true"
 	}
-	if cfg.TlsAllowChainErrors {
+	if cfg.TLSAllowChainErrors {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsInsecure=true"
 	}
-	if cfg.TlsAllowInvalidHostnames {
+	if cfg.TLSAllowInvalidHostnames {
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
 	}
 }
@@ -186,7 +186,7 @@ func processRedundancy(cfg config) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// repeat for time period circa 5s (plus randomized time up to 100 ms to avoid exact sync with other nodes)
-	for _ = range time.Tick(time.Duration(5)*time.Second + time.Duration(100*r.Float64())*time.Millisecond) {
+	for range time.Tick(time.Duration(5)*time.Second + time.Duration(100*r.Float64())*time.Millisecond) {
 
 		if mongoClient == nil { // not connected?
 			log.Println("Redundancy - Disconnected from Mongodb server!")
@@ -195,7 +195,7 @@ func processRedundancy(cfg config) {
 
 		var collectionProcessInstances = mongoClient.Database(cfg.MongoDatabaseName).Collection("processInstances")
 		var instance processInstance
-		filter := bson.D{{"processName", processName}}
+		filter := bson.D{{Key: "processName", Value: processName}}
 		err := collectionProcessInstances.FindOne(context.TODO(), filter).Decode(&instance)
 		if err != nil && err != mongo.ErrNoDocuments {
 			log.Println("Redundancy - Error querying processInstances!")
@@ -294,6 +294,7 @@ func processRedundancy(cfg config) {
 }
 
 func main() {
+	log.SetOutput(os.Stdout) // log to standard output
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Println(appMsg)
 	log.Println(appUsage)
@@ -374,14 +375,14 @@ func main() {
 	var nponto int
 
 	projection := bson.D{
-		{"_id", 1},
-		{"formula", 1},
-		{"parcels", 1},
+		{Key: "_id", Value: 1},
+		{Key: "formula", Value: 1},
+		{Key: "parcels", Value: 1},
 	}
 	cur, err := collection.Find(context.Background(),
 		bson.D{
-			{"formula", bson.D{
-				{"$gt", 0},
+			{Key: "formula", Value: bson.D{
+				{Key: "$gt", Value: 0},
 			}},
 		},
 		options.Find().SetProjection(projection),
@@ -429,9 +430,9 @@ func main() {
 	}
 
 	projection = bson.D{
-		{"_id", 1},
-		{"value", 1},
-		{"invalid", 1},
+		{Key: "_id", Value: 1},
+		{Key: "value", Value: 1},
+		{Key: "invalid", Value: 1},
 	}
 	for {
 		if isActive == false {
@@ -451,8 +452,8 @@ func main() {
 		// find all parcel and current calculated values
 		cur, err := collection.Find(context.Background(),
 			bson.D{
-				{"_id", bson.D{
-					{"$in", barr},
+				{Key: "_id", Value: bson.D{
+					{Key: "$in", Value: barr},
 				}},
 			},
 			options.Find().SetProjection(projection),
