@@ -282,8 +282,8 @@ for (var se in Lista)
  }
 
 // ve se recebeu algum modulo (SE+MODULO) para mostrar pela URL, caso positivo já usa para filtrar  
-var se = gup("SUBST");
-var mod = gup("BAY");
+var se = decodeURI(gup("SUBST"));
+var mod = decodeURI(gup("BAY"));
 
 if ( se != "" )
   {

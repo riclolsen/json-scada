@@ -27,7 +27,7 @@ const APP_NAME = ':' + HTTP_PORT + API_AP
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
 const COLL_COMMANDS = 'commandsQueue'
-const jsConfigFile = '../../conf/json-scada.json'
+const jsConfigFile = process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
 const express = require('express')
 const httpProxy = require('express-http-proxy');
 const path = require('path')
@@ -37,17 +37,16 @@ const app = express()
 const fs = require('fs')
 const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
-let Server = require('mongodb').Server
+let Server = require('mongodb')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 
 const opcIdTypeNumber = 0
 const opcIdTypeString = 1
 const beepPointKey = -1
-const cntUpdatesPointKey = -2
 
-let rawfilecontents = fs.readFileSync(jsConfigFile)
-let jsConfig = JSON.parse(rawfilecontents)
+let rawFileContents = fs.readFileSync(jsConfigFile)
+let jsConfig = JSON.parse(rawFileContents)
 if (
   typeof jsConfig.mongoConnectionString != 'string' ||
   jsConfig.mongoConnectionString === ''
@@ -511,7 +510,7 @@ let pool = null
                                 node.Value._Properties.hysteresis
                               ),
                               notes: node.Value._Properties.notes,
-                              ...(("substituted" in node.Value._Properties && "newValue" in node.Value._Properties)? {value: node.Value._Properties.newValue} : {})
+                              ...(("substituted" in node.Value._Properties && "newValue" in node.Value._Properties) ? { value: node.Value._Properties.newValue } : {})
                             }
                           })
                         if (
@@ -700,6 +699,8 @@ let pool = null
               sort = { group1: 1, group2: 1 }
               projection = null
               query = {}
+              let grp1 = null
+              let grp2 = null
               req.body.Body.ContentFilter.map(contentFilter => {
                 // supports attribute (operand) Equals (operator) to a literal value (operand)
                 if (contentFilter.FilterOperator === opc.FilterOperator.Equals) {
@@ -709,6 +710,13 @@ let pool = null
                     contentFilter.FilterOperands[1].FilterOperand ===
                     opc.Operand.Literal
                   ) {
+                    if (contentFilter.FilterOperands[0].Value == 'group1') {
+                      grp1 = { group1: contentFilter.FilterOperands[1].Value }
+                    }
+                    if (contentFilter.FilterOperands[0].Value == 'group2') {
+                      grp2 = { group2: contentFilter.FilterOperands[1].Value }
+                    }
+
                     if (
                       // fake attribute 'persistentAlarms' means add not normal states (digitals with alarmState=0 and value=0 or alarmState=1 and value=1)
                       contentFilter.FilterOperands[0].Value == 'persistentAlarms'
@@ -718,10 +726,21 @@ let pool = null
                         $or: [
                           {
                             $and: [
+                              { type: 'analog' },
+                              { alarmed: true },
+                              { invalid: false },
+                              { ...((grp1 !== null)?grp1:{}) },
+                              { ...((grp2 !== null)?grp2:{}) }
+                            ]
+                          },
+                          {
+                            $and: [
                               { type: 'digital' },
                               { alarmState: 0 },
                               { value: 0 },
-                              { invalid: false }
+                              { invalid: false },
+                              { ...((grp1 !== null)?grp1:{}) },
+                              { ...((grp2 !== null)?grp2:{}) }
                             ]
                           },
                           {
@@ -729,7 +748,9 @@ let pool = null
                               { type: 'digital' },
                               { alarmState: 1 },
                               { value: 1 },
-                              { invalid: false }
+                              { invalid: false },
+                              { ...((grp1 !== null)?grp1:{}) },
+                              { ...((grp2 !== null)?grp2:{}) }
                             ]
                           },
                           query

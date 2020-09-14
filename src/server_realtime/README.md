@@ -52,3 +52,8 @@ Request Unique Attributes Value
 * _**JS_IP_BIND**_ [String] - IP address for server to listen. Use "0.0.0.0" to listen on all interfaces. **Optional argument, default="localhost" (local host only)**.
 * _**JS_HTTP_PORT**_ [Integer] - HTTP Port for server listening. **Optional argument, default=8080**.
 * _**JS_GRAFANA_SERVER**_ [Integer] - HTTP URL to the Grafana server (for reverse proxy on /grafana). **Optional argument, default="http://127.0.0.1:3000"**.
+* _**JS_CONFIG_FILE**_ [String] - JSON SCADA config file name. **Optional argument, default="../../conf/json-scada.json"**.
+
+## Command line arguments
+
+This process has no command line arguments.
