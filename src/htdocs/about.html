@@ -172,7 +172,7 @@ h1 sub
 </head>
 <body>
 
-<h1>{json:scada}<sub>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</sub></h1>
+<h1>{json:scada}<sub>Next Generation SCADA/IoT Software</sub></h1>
 
 <marquee id="titles" style="text-align:left" direction="up" behavior="scroll" scrollamount="0" scrolldelay="85" >
 
@@ -183,7 +183,7 @@ $("html > head").append("<style> body { user-select:none; -webkit-user-select:no
 
 // Based Craig Buckler's code from https://www.sitepoint.com/css3-starwars-scrolling-text/
 setTimeout(  function (){
-	$.get('../../README.md', function(data) {
+	$.get('release_notes.txt', function(data) {
 	  document.getElementById("titles").innerText=data;
 	  document.getElementById("titles").scrollAmount=12
 	  document.getElementById("titles").start();

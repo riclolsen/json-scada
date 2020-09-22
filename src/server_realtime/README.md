@@ -139,7 +139,7 @@ The non OPC-UA standard __Properties_ object from the response has extended attr
 
 This service is used to send commands from the web UI to the server. 
 
-Reference documentation: https://reference.opcfoundation.org/v104/Core/docs/Part4/5.10.4/.
+Reference documentation: https://reference.opcfoundation.org/Core/docs/Part4/5.10.4/.
 
 Write Request: call the Post method for the /Invoke access point with the following JSON structure:
 
