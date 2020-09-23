@@ -1,0 +1,18 @@
+[{
+  "_id": {
+    "$oid": "5f6b4b38b2a89711f04dba0a"
+  },
+  "roles": [
+    {
+   {
+      "$oid": "5f6640217c0983837b6d07ab"
+    },
+    {
+      "$oid": "5f6640587c0983837b6d07ad"
+    }
+  ],
+  "username": "admin",
+  "email": "admin@json-scada.org",
+  "password": "$2a$08$8BZKbQkra8qAYDQWOr7DCe3LdRvxbdjmlGPlXka75h/xOfq6hcrZ6",
+  "__v": 1
+}]

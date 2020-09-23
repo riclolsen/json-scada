@@ -4,14 +4,6 @@
     <title>JSON_SCADA Login Form</title>
     <link rel="stylesheet" type="text/css" href="login.css" />
     <style>
-      @font-face {
-        font-family: 'Source Sans Pro';
-        font-style: normal;
-        font-weight: 400;
-        src: local('Source Sans Pro'), local('SourceSansPro-Regular'),
-          url(lib/SourceSansPro-Regular.woff2) format('woff2');
-      }
-
       .blocks {
         display: flex;
         flex: 0 1 min-content;
@@ -53,7 +45,7 @@
         color: inherit;
       }
       body {
-        font-family: Source Sans Pro, helvetica, arial;
+        font-family: calibri, helvetica, arial;
         font-size: 20px;
         background: linear-gradient(to bottom, #deefff 0%, #98bede 100%);
         background-position: center;
@@ -65,6 +57,11 @@
       }
     </style>
     <script>
+
+      String.prototype.trim = function () {
+        return this.replace(/^\s+|\s+$/g, '')
+      }
+
       const parseCookie = str =>
         str
           .split(';')
@@ -103,7 +100,7 @@
         })
           .then(resp => resp.json())
           .then(data => {
-            console.log(data)
+            // console.log(data)
             if (data.ok) {
               document.getElementById('divlogout').style.display = ''
               document.getElementById('divlogin').style.display = 'none'
@@ -171,10 +168,11 @@
   </head>
   <body>
     <div id="divlogin" class="login" style="display:none">
-      
-      <h1><img height="90" src="images/json-scada.svg" alt="{json:scada}" />
-        <br />Login</h1>
-      
+      <h1>
+        <img height="90" src="images/json-scada.svg" alt="{json:scada}" />
+        <br />Login
+      </h1>
+
       <input
         type="text"
         name="username"
@@ -253,7 +251,7 @@
 
     <script>
       ;(function () {
-        LoadFavicon("images/favicon.ico")
+        LoadFavicon('images/favicon.ico')
         testLogin()
         setInterval(testLogin, 5000)
 

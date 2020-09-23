@@ -1,0 +1,26 @@
+[{
+  "_id": {
+    "$oid": "5f6640217c0983837b6d07ab"
+  },
+  "name": "user"
+},{
+  "_id": {
+    "$oid": "5f6640407c0983837b6d07ac"
+  },
+  "name": "moderator"
+},{
+  "_id": {
+    "$oid": "5f6640587c0983837b6d07ad"
+  },
+  "name": "admin"
+},{
+  "_id": {
+    "$oid": "5f6640677c0983837b6d07ae"
+  },
+  "name": "operator"
+},{
+  "_id": {
+    "$oid": "5f66407c7c0983837b6d07af"
+  },
+  "name": "viewer"
+}]
