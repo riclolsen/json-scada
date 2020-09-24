@@ -41,12 +41,12 @@ const Instance = inst || process.env.JS_CSDATAPROC_INSTANCE || 1;
 
 var logLevel = null
 if (args.length > 1)
-logLevel = parseInt(args[1])
+  logLevel = parseInt(args[1])
 const LogLevel = logLevel || process.env.JS_CSDATAPROC_LOGLEVEL || 1;
 
 var confFile = null
 if (args.length > 2)
-confFile = args[2]
+  confFile = args[2]
 jsConfigFile = confFile || process.env.JS_CONFIG_FILE || jsConfigFile;
 
 console.log(APP_MSG + " Version " + VERSION)
@@ -55,9 +55,9 @@ console.log("Log level: " + LogLevel)
 console.log("Config File: " + jsConfigFile)
 
 if (!fs.existsSync(jsConfigFile)) {
-    console.log('Error: config file not found!')
-    process.exit()  
-  }
+  console.log('Error: config file not found!')
+  process.exit()
+}
 
 const RealtimeDataCollectionName = 'realtimeData'
 const ProcessInstancesCollectionName = 'processInstances'
@@ -314,7 +314,7 @@ const pipeline = [
                               activeNodeName: jsConfig.nodeName,
                               activeNodeKeepAliveTimeTag: new Date(),
                               softwareVersion: VERSION,
-                              stats : {
+                              stats: {
                                 latencyAvg: new mongo.Double(latencyAccTotal / latencyTotalCnt),
                                 latencyAvgMinute: new mongo.Double(latencyAccMinute / latencyMinuteCnt),
                                 latencyPeak: new mongo.Double(latencyPeak)
@@ -630,8 +630,20 @@ const pipeline = [
                   } else if (change.fullDocument.type === 'analog') {
                     if (txtQualif != '') txtQualif = ' ' + txtQualif
 
+                    // consider IEC60870-5-104/101 normalized values
+                    let mul = 1
+                    if ('asduAtSource' in change.updateDescription.updatedFields.sourceDataUpdate)
+                      switch (change.updateDescription.updatedFields.sourceDataUpdate.asduAtSource) {
+                        case 'M_ME_NA_1':
+                        case 'M_ME_TA_1':
+                        case 'M_ME_TD_1':
+                        case 'M_ME_ND_1':
+                        case 'P_ME_NA_1':
+                          mul = 32768;
+                      }
+
                     // apply conversion factors 
-                    value =
+                    value = mul *
                       change.updateDescription.updatedFields.sourceDataUpdate
                         .valueAtSource *
                       change.fullDocument.kconv1 +

@@ -62,8 +62,10 @@
         return this.replace(/^\s+|\s+$/g, '')
       }
 
-      const parseCookie = str =>
-        str
+      const parseCookie = str => {
+        if (str === "") 
+           return {}
+        return str
           .split(';')
           .map(v => v.split('='))
           .reduce((acc, v) => {
@@ -72,6 +74,7 @@
             )
             return acc
           }, {})
+        }
 
       function LoadFavicon (href) {
         var link = document.createElement('link')
