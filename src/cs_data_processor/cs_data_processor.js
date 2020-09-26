@@ -630,20 +630,8 @@ const pipeline = [
                   } else if (change.fullDocument.type === 'analog') {
                     if (txtQualif != '') txtQualif = ' ' + txtQualif
 
-                    // consider IEC60870-5-104/101 normalized values
-                    let mul = 1
-                    if ('asduAtSource' in change.updateDescription.updatedFields.sourceDataUpdate)
-                      switch (change.updateDescription.updatedFields.sourceDataUpdate.asduAtSource) {
-                        case 'M_ME_NA_1':
-                        case 'M_ME_TA_1':
-                        case 'M_ME_TD_1':
-                        case 'M_ME_ND_1':
-                        case 'P_ME_NA_1':
-                          mul = 32768;
-                      }
-
                     // apply conversion factors 
-                    value = mul *
+                    value = 
                       change.updateDescription.updatedFields.sourceDataUpdate
                         .valueAtSource *
                       change.fullDocument.kconv1 +
