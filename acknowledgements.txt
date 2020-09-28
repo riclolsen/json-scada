@@ -18,19 +18,34 @@
     
 Acknowledgements:
 
-  MongoDB - https://github.com/mongodb/mongo, https://www.mongodb.com/
-  PostgreSQL - https://www.postgresql.org/
-  TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
+Subsystems integrated
+
+  MongoDB - https://github.com/mongodb/mongo, https://www.mongodb.com
+  PostgreSQL - https://www.postgresql.org
+  TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com
   Grafana - https://github.com/grafana/grafana, https://grafana.com/
-  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
+
+Languages and frameworks
+
+  C# Dotnet Core - https://dotnet.microsoft.com
+  Go - https://golang.org
+  NodeJS - https://nodejs.org
+  ExpressJS - https://expressjs.com
+
+Protocol libraries
+  
+  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de
+  Opendnp3 - https://www.automatak.com/opendnp3/
+  Libplctag - https://github.com/libplctag/libplctag
   ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
+
+Other libraries
+
   Inkscape - https://inkscape.org
   Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
-  NGINX - http://nginx.org
-  Opendnp3 - https://www.automatak.com/opendnp3/
   Open Sans Fonts by Steve Matteson
   Source Sans Pro by Adobe Systems Incorporated. License - http://scripts.sil.org/OFL
-  Google Fonts - https://fonts.google.com/
+  Google Fonts - https://fonts.google.com
   JQuery - http://jquery.com
   Shortcut - http://www.openjs.com/scripts/events/keyboard_shortcuts
   Core JS - http://www.sitepoint.com
@@ -42,7 +57,11 @@ Acknowledgements:
   D3JS - http://d3js.org
   Radar-chart-d3 - https://github.com/alangrafu/radar-chart-d3
   Vega A Visualization Grammar - https://vega.github.io/vega
-  NSSM - The Non-Sucking Service Manager: http://nssm.cc
   Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
   CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/
-  
+
+Other tools
+
+  NGINX - http://nginx.org
+  NSSM - The Non-Sucking Service Manager: http://nssm.cc
+  Docker - https://www.docker.com/
