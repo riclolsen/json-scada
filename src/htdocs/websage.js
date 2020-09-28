@@ -1814,6 +1814,11 @@ else
           'var thisobj=window.SVGDoc.getElementById("' + obj.id + '"); ' + t
         );
       } catch (err) {
+        if (err.toString().indexOf("contentWindow.WebSAGE is undefined") !== -1 ||
+            err.toString().indexOf("g_alminfo") !== -1
+           )
+          return WebSAGE.g_retnok;
+   
         WebSAGE.processInvalidTagInElement(tag, obj);
         return WebSAGE.g_retnok;
       }
@@ -3937,8 +3942,10 @@ getHistoricalData: function (i, pnt, timeBegin) {
                   typeof WebSAGE.InkSage[i].parent.changeAnim.beginElement ===
                     "function"
                 ) {
+                  try {
                   WebSAGE.InkSage[i].parent.changeAnim.endElement();
                   WebSAGE.InkSage[i].parent.changeAnim.beginElement();
+                  } catch (e){}
                 }
 
                 if (WebSAGE.InkSage[i].parent.groupDistrib) {
