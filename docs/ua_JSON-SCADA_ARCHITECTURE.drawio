@@ -1,0 +1,332 @@
+<mxfile host="1ef1f91c-f974-4c78-9aaa-2ef759bf2b74" modified="2020-08-16T01:43:57.922Z" agent="5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.48.0 Chrome/78.0.3904.130 Electron/7.3.2 Safari/537.36" etag="T-FkwdfxwDiTdCZmHIoS" version="13.1.3">
+    <diagram id="DClBRWJwVnQ7L_78uhSN" name="Page-1">
+        <mxGraphModel dx="1115" dy="2233" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2CWKWO84OULizUMqtcW2-84" value="" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.cloud_rect;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="48" width="720" height="622" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-62" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/switch/Industrial_Ethernet_IE200_POE.svg;" parent="1" vertex="1">
+                    <mxGeometry x="99" y="292.79" width="40.2" height="56.4" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-59" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/switch/Industrial_Ethernet_IE300.svg;" parent="1" vertex="1">
+                    <mxGeometry x="99" y="175.44" width="49.6" height="55.16" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-55" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-2" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-91" value="TLS" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="2CWKWO84OULizUMqtcW2-55" vertex="1" connectable="0">
+                    <mxGeometry x="-0.5691" relative="1" as="geometry">
+                        <mxPoint y="-9" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-2" target="2CWKWO84OULizUMqtcW2-4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-2" value="Client&lt;br&gt;Protocol&lt;br&gt;Driver" style="triangle;whiteSpace=wrap;html=1;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="229" y="194.84" width="80" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-4" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/switch/Industrial_Ethernet_IE300.svg;" parent="1" vertex="1">
+                    <mxGeometry x="105.3" y="194.84" width="49.6" height="55.16" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-5" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/switch/Industrial_Ethernet_IE200_POE.svg;" parent="1" vertex="1">
+                    <mxGeometry x="109.99999999999999" y="309.59000000000003" width="40.2" height="56.4" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-7" target="2CWKWO84OULizUMqtcW2-20" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="463" y="70"/>
+                            <mxPoint x="570" y="70"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-7" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Personal_Computer.svg;" parent="1" vertex="1">
+                    <mxGeometry x="440" y="-30" width="45.6" height="61.800000000000004" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-8" target="2CWKWO84OULizUMqtcW2-20" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="666" y="70"/>
+                            <mxPoint x="570" y="70"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-88" value="HTTPS" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="2CWKWO84OULizUMqtcW2-33" vertex="1" connectable="0">
+                    <mxGeometry x="0.2373" y="6" relative="1" as="geometry">
+                        <mxPoint x="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-8" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Personal_Computer.svg;" parent="1" vertex="1">
+                    <mxGeometry x="642.9" y="-30" width="45.6" height="61.800000000000004" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-9" target="2CWKWO84OULizUMqtcW2-20" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="570" y="80" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-9" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Personal_Computer.svg;" parent="1" vertex="1">
+                    <mxGeometry x="547.06" y="-30" width="45.6" height="61.800000000000004" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.478;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-12" target="2CWKWO84OULizUMqtcW2-21" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-12" target="2CWKWO84OULizUMqtcW2-39" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="338"/>
+                            <mxPoint x="590" y="480"/>
+                            <mxPoint x="730" y="480"/>
+                            <mxPoint x="730" y="397"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-82" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-12" target="2CWKWO84OULizUMqtcW2-81" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="338"/>
+                            <mxPoint x="590" y="510"/>
+                            <mxPoint x="693" y="510"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-12" value="MongoDB&lt;br&gt;Сервер&amp;nbsp;&lt;br&gt;Реального Часу" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/storage/Datacenter_Server_Half_Rack_ToR.svg;" parent="1" vertex="1">
+                    <mxGeometry x="488.5" y="284.84" width="81.5" height="105.9" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-13" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="107.6" y="412.74" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.008;entryY=0.64;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-14" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-14" value="Обчислювання" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="480" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-15" value="Процесор &#10;Тривог" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="445.6" y="510" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-71" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-16" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="830" y="160"/>
+                            <mxPoint x="710" y="160"/>
+                            <mxPoint x="710" y="260"/>
+                            <mxPoint x="557" y="260"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-72" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.006;entryY=0.698;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-16" target="2CWKWO84OULizUMqtcW2-66" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="900" y="120"/>
+                            <mxPoint x="900" y="42"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-86" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-16" target="2CWKWO84OULizUMqtcW2-87" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="830" y="-20" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-16" value="Інтеграція з&#10;IT&#10;Системами" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="90" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-19" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.015;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-19" target="2CWKWO84OULizUMqtcW2-22" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-19" value="NodeJS&#10;Express" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="194.84" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-20" target="2CWKWO84OULizUMqtcW2-22" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="570" y="170"/>
+                            <mxPoint x="639" y="170"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-78" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-20" target="2CWKWO84OULizUMqtcW2-19" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="570" y="172"/>
+                            <mxPoint x="510" y="172"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-20" value="NGINX&#10;або &#10;APACHE" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="519.86" y="100" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-21" value="PostgreSQL&lt;br&gt;TimescaleDB&lt;br&gt;Історія" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/storage/Datacenter_Server_Half_Rack_ToR.svg;" parent="1" vertex="1">
+                    <mxGeometry x="630" y="290" width="76.96" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-22" target="2CWKWO84OULizUMqtcW2-21" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-22" value="Grafana" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="588.5" y="194.84" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-36" target="2CWKWO84OULizUMqtcW2-42" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="900" y="240"/>
+                            <mxPoint x="900" y="227"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-65" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" target="2CWKWO84OULizUMqtcW2-36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="730" y="410" as="sourcePoint"/>
+                        <Array as="points">
+                            <mxPoint x="730" y="240"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-90" value="TLS" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="2CWKWO84OULizUMqtcW2-65" vertex="1" connectable="0">
+                    <mxGeometry x="0.4165" y="-20" relative="1" as="geometry">
+                        <mxPoint x="20" y="-28" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-36" value="Server&lt;br&gt;Protocol&lt;br&gt;Driver" style="triangle;whiteSpace=wrap;html=1;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="194.84" width="80" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-54" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.031;entryY=0.515;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-37" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-58" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-37" target="2CWKWO84OULizUMqtcW2-5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-37" value="Client&lt;br&gt;Protocol&lt;br&gt;Driver" style="triangle;whiteSpace=wrap;html=1;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="229" y="292.79" width="80" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-52" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="2CWKWO84OULizUMqtcW2-38" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-64" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.984;entryY=0.436;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-38" target="2CWKWO84OULizUMqtcW2-13" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="170" y="436" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-38" value="Client&lt;br&gt;Protocol&lt;br&gt;Driver" style="triangle;whiteSpace=wrap;html=1;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="228" y="390.74" width="80" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-39" target="2CWKWO84OULizUMqtcW2-45" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="900" y="375"/>
+                            <mxPoint x="900" y="356"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-39" value="Server&lt;br&gt;Protocol&lt;br&gt;Driver" style="triangle;whiteSpace=wrap;html=1;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="330" width="80" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-40" value="I/O ПРИЛАДИ&lt;br&gt;PLC&lt;br&gt;RTU&lt;br&gt;Сенсори&lt;br&gt;SCADA Системи" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="73.89999999999999" y="485" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-41" value="інші&amp;nbsp;&lt;br&gt;SCADA&lt;br&gt;Системи" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="934.3" y="390" width="60" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-42" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="943.7" y="200" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-43" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="943.7" y="239.6" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-44" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="943.7" y="284.84" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-45" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="943.7" y="328.79" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-60" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/switch/Industrial_Ethernet_IE300.svg;" parent="1" vertex="1">
+                    <mxGeometry x="112" y="217" width="49.6" height="55.16" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-61" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/switch/Industrial_Ethernet_IE200_POE.svg;" parent="1" vertex="1">
+                    <mxGeometry x="116.69999999999999" y="330.00000000000006" width="40.2" height="56.4" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-66" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="938" y="4" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-67" value="Корпоративні&amp;nbsp;&lt;br&gt;IT&lt;br&gt;Сервери&lt;br&gt;ERP. MES&lt;sub&gt;1&lt;/sub&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;rotation=0;" parent="1" vertex="1">
+                    <mxGeometry x="915" y="-90" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-68" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/computer_and_terminals/Server_Desktop.svg;" parent="1" vertex="1">
+                    <mxGeometry x="935" y="48" width="42.599999999999994" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-103" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-73" target="2CWKWO84OULizUMqtcW2-19" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-73" value="Модуль&#10;Візуалізації" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="403" y="100" width="101.5" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-79" value="SCADA&lt;br&gt;HMI&lt;br&gt;Кліенти" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="-30" width="60" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-80" value="Автоматизація&#10;Процесів" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="479.25" y="550" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-81" value="SPARK&#10;Connector&#10;ML/Big Data" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="642.9" y="540" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-85" value="АРXІТЕКТУРА JSON SCADA&lt;br&gt;&lt;br&gt;ЕДИНИЙ СЕРВЕР&lt;br&gt;АБО&lt;br&gt;МАСТЕР/СЛЕЙВ&lt;br&gt;АБО&lt;br&gt;КЛАСТЕР СЕРВЕРІВ&lt;br&gt;АБО&lt;br&gt;ГЕТЕРОГЕННІ СЕРВЕРИ" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="211" y="517" width="180" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-87" value="MS POWER BI" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="742.9" y="-90" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-95" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.002;entryY=0.481;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="2CWKWO84OULizUMqtcW2-92" target="2CWKWO84OULizUMqtcW2-12" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="400" y="145"/>
+                            <mxPoint x="400" y="336"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-92" value="MQTT&lt;br&gt;BROKER" style="triangle;whiteSpace=wrap;html=1;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="228" y="100" width="80" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-96" value="IoT&lt;br&gt;ПУБЛІКАЦІЇ&lt;br&gt;ВІД ПРИЛАДІВ" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="69.1" y="-10" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-98" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/media_converters/Industrial_Media_Converter.svg;" parent="1" vertex="1">
+                    <mxGeometry x="92" y="44" width="30" height="57" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-99" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/media_converters/Industrial_Media_Converter.svg;" parent="1" vertex="1">
+                    <mxGeometry x="102" y="54" width="30" height="57" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-100" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/media_converters/Industrial_Media_Converter.svg;" parent="1" vertex="1">
+                    <mxGeometry x="112" y="64" width="30" height="57" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-102" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-101" target="2CWKWO84OULizUMqtcW2-92" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-101" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;image;image=img/lib/allied_telesis/media_converters/Industrial_Media_Converter.svg;" parent="1" vertex="1">
+                    <mxGeometry x="122" y="74" width="30" height="57" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-104" value="РОЗГОРТАННЯ&lt;br&gt;JSON SCADA&lt;br&gt;НА&lt;br&gt;BARE METAL&lt;br&gt;АБО&lt;br&gt;VMs&lt;br&gt;АБО&lt;br&gt;CONTAINERS&lt;br&gt;АБО&lt;br&gt;KUBERNETES&lt;br&gt;АБО&lt;br&gt;CLOUD&lt;br&gt;АБО&lt;br&gt;MIXED" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="795" y="455" width="110" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-105" value="Інші  &#10;Додатки" style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="504.5" y="585" width="105.5" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-107" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2CWKWO84OULizUMqtcW2-106" target="2CWKWO84OULizUMqtcW2-19" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="681" y="170"/>
+                            <mxPoint x="510" y="170"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2CWKWO84OULizUMqtcW2-106" value="Додатки &#10;користувача&#10;MERN/MEAN..." style="shape=module;align=left;spacingLeft=20;align=center;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="630" y="100" width="101.5" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="&lt;font style=&quot;font-size: 12px&quot;&gt;1&amp;nbsp;&amp;nbsp;&lt;i style=&quot;color: rgb(32 , 33 , 34) ; background-color: rgb(255 , 255 , 255)&quot;&gt;&lt;span lang=&quot;en&quot;&gt;Manufacturing execution system&amp;nbsp;&lt;/span&gt;&lt;/i&gt;системи управління виробничими процесами&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;" parent="1" vertex="1">
+                    <mxGeometry x="244" y="690" width="460" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
