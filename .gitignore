@@ -54,5 +54,6 @@ publish/
 
 *.log
 
+.DS_Store
 
 
