@@ -44,7 +44,7 @@
 
 ## Архітектура
 
-![architecture](https://github.com/joyshmitz/json-scada/blob/master/docs/ua_JSON-SCADA_ARCHITECTURE.png "{json:scada} Architecture")
+![architecture](docs/ua_JSON-SCADA_ARCHITECTURE.png "{json:scada} Architecture")
 
 ## License
 
