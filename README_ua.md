@@ -1,6 +1,6 @@
 # {json:scada}
 
-![logo](https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg "{json:scada} Logo")
+![logo](/src/htdocs/images/json-scada.svg "{json:scada} Logo")
 
 Портативна і масштабуюча платформа SCADA/IoT, згуртована навкруги сервера баз даних MongoDB.
 
