@@ -517,7 +517,8 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
           console.log("ReadRequest invalid or unexpected service response!");
           return;
           }
-        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good && data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData){
+        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good && 
+             data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData){
           console.log("ReadRequest service error!");
           return;
         }

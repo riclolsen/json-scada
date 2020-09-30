@@ -3404,7 +3404,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
       })
       .then(response => response.json())
       .then(data => {
-        if (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle || !data.Body.Results){
+        if (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle){
           console.log("ReadRequest invalid service response!");
           return;
           }
@@ -3416,11 +3416,21 @@ getHistoricalData: function (i, pnt, timeBegin) {
           console.log("ReadRequest invalid or unexpected service response!");
           return;
           }
-        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ){
+
+        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good && 
+             data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData) {
           console.log("ReadRequest service error!");
+          // check access control denied, in this case go to initial page
+          if ( data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadUserAccessDenied ||
+               data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadIdentityTokenInvalid ||
+               data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadIdentityTokenRejected 
+           ) {
+               window.onbeforeunload = null;
+               window.location.href = "/";
+           }
           return;
         }
-
+  
         WebSAGE.Pass++;
 
         var prop;

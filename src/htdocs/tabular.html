@@ -1246,6 +1246,7 @@ if ( WebSAGE.isAlarmsViewer() )
 
       if ( priority in almFilter ) 
         {
+          WebSAGE.g_alminfo[ priority ] = {};
           WebSAGE.g_alminfo[ priority ].filterout = almFilter[priority];
         }
     }
@@ -1472,7 +1473,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
       })
       .then(response => response.json())
       .then(data => {
-        if (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle || !data.Body.Results){
+        if (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle){
           console.log("ReadRequest invalid service response!");
           return;
           }
@@ -1484,8 +1485,17 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
           console.log("ReadRequest invalid or unexpected service response!");
           return;
           }
-        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ){
+        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good && 
+             data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData) {
           console.log("ReadRequest service error!");
+          // check access control denied, in this case go to initial page
+          if ( data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadUserAccessDenied ||
+              data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadIdentityTokenInvalid ||
+              data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadIdentityTokenRejected 
+          ) {
+             window.onbeforeunload = null;
+             window.location.href = "/";
+          }
           return;
         }
 
@@ -1668,7 +1678,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
     })
     .then(response => response.json())
     .then(data => {
-      if (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle || !data.Body.Results){
+      if (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle){
         console.log("ReadRequest invalid service response!");
         return;
         }
@@ -1680,8 +1690,17 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
         console.log("ReadRequest invalid or unexpected service response!");
         return;
         }
-      if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ){
+      if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good && 
+           data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData) {
         console.log("ReadRequest service error!");
+        // check access control denied, in this case go to initial page
+        if ( data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadUserAccessDenied ||
+             data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadIdentityTokenInvalid ||
+             data.Body.ResponseHeader.ServiceResult === OpcStatusCodes.BadIdentityTokenRejected 
+         ) {
+             window.onbeforeunload = null;
+             window.location.href = "/";
+         }
         return;
       }
 

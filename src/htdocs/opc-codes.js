@@ -33,6 +33,8 @@ var OpcStatusCodes = {
   BadServerHalted: 0x800E0000,
   BadNothingToDo: 0x800F0000,
   BadUserAccessDenied: 0x801F0000,
+  BadIdentityTokenInvalid: 0x80200000,
+  BadIdentityTokenRejected: 0x80210000,
   BadUnexpectedError: 0x80010000,
   BadInternalError: 0x80020000,
   BadOutOfMemory: 0x80030000,
