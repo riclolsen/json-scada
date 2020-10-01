@@ -179,6 +179,7 @@ services:
       - JS_IP_BIND=0.0.0.0
       - JS_HTTP_PORT=8080
       - JS_GRAFANA_SERVER=http://jsdemo_grafana:3000
+      - JS_AUTHENTICATION=NOAUTH
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
