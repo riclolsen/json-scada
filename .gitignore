@@ -3,11 +3,26 @@ conf/json-scada.json
 bin/
 !bin/Readme.md
 
+temp/
 mongodb-data/
 mongodb-runtime/
 postgresql-data/
 postgresql-runtime/
 grafana-runtime/
+nodejs-runtime/
+nginx_php/
+platform-windows/browser-runtime/
+platform-windows/browser-data/
+platform-windows/installer-release/
+platform-windows/inkscape-runtime/
+platform-windows/mongodb-compass-runtime/
+platform-windows/mongodb-data/
+platform-windows/mongodb-runtime/
+platform-windows/postgresql-data/
+platform-windows/postgresql-data/
+platform-windows/grafana-runtime/
+platform-windows/nodejs-runtime/
+platform-windows/nginx_php-runtime/
 
 src/calculations/calculations
 src/i104m/i104m

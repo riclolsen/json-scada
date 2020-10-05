@@ -5,7 +5,8 @@
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
 Unicode True
-RequestExecutionLevel user
+; RequestExecutionLevel user
+RequestExecutionLevel admin
 
 !include "TextFunc.nsh"
 !include "WordFunc.nsh"
@@ -16,7 +17,7 @@ RequestExecutionLevel user
 !define VERSION_ "0.1.0.0"
 
 Function .onInit
- System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexOshmiInstall") i .r1 ?e'
+ System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
  Pop $R0
  StrCmp $R0 0 +3
    MessageBox MB_OK|MB_ICONEXCLAMATION "Installer already executing!"
@@ -41,7 +42,7 @@ Caption "{json:scada} Installer ${VERSION} ${DATEBAR}"
 Icon "..\src\htdocs\images\j-s-256.ico"
 
 !define /date DATE "%d_%m_%Y"
-OutFile "json-scada_setup_${VERSION}.exe"
+OutFile "installer-release\json-scada_setup_${VERSION}.exe"
 
 VIProductVersion ${VERSION_}
 VIAddVersionKey ProductName "JSON SCADA"
@@ -71,9 +72,6 @@ CheckBitmap "${NSISDIR}\Contrib\Graphics\Checks\classic-cross.bmp"
 LicenseText "JSON-SCADA Release Notes"
 LicenseData "release_notes.txt"
 
-; Must be admin
-RequestExecutionLevel admin
-
 ;--------------------------------
 
 Page license
@@ -95,25 +93,28 @@ ShowInstDetails show
 
 Section "" ; empty string makes it hidden, so would starting with -
 
-; Closes all OSHMI processes
+; Closes all processes
   nsExec::Exec 'net stop JSON_SCADA_mongodb'
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
-  nsExec::Exec 'net stop OSHMI_iec104'
-  nsExec::Exec 'net stop OSHMI_iec104'
+  nsExec::Exec 'net stop JSON_SCADA_iec104'
+  nsExec::Exec 'net stop JSON_SCADA_iec104_server'
+  nsExec::Exec 'net stop JSON_SCADA_dnp3'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
-  nsExec::Exec '..\postgresql-runtime\bin\pg_ctl stop -D ..\postgresql-data'
+  nsExec::Exec '"c:\json-scada\platform-windows\postgresql-runtime\bin\pg_ctl" stop -D c:\json-scada\platform-windows\postgresql-runtime'
+  nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
   ; nsExec::Exec 'taskkill /F /IM mon_proc.exe'
-  ; nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\oshmi\\bin\\%'" CALL TERMINATE`
+  ; nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
   SetOverwrite on
 
   var /GLOBAL NAVWINCMD
   var /GLOBAL NAVDATDIR
   var /GLOBAL NAVPREOPT
   var /GLOBAL NAVPOSOPT
+  var /GLOBAL NAVINDEX
   var /GLOBAL NAVVISABO
   var /GLOBAL NAVVISEVE
   var /GLOBAL NAVVISHEV
@@ -129,10 +130,11 @@ Section "" ; empty string makes it hidden, so would starting with -
     
   StrCpy $HTTPSRV   "http://127.0.0.1:8080"
  #StrCpy $HTTPSRV   "https://127.0.0.1"
-  StrCpy $NAVWINCMD "browser-runtime\chrome.exe"
+  StrCpy $NAVWINCMD "platform-windows\browser-runtime\chrome.exe"
   StrCpy $NAVDATDIR "--user-data-dir=$INSTDIR\browser-data"
   StrCpy $NAVPREOPT "--process-per-site --no-sandbox"
   StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi --disable-extensions --disable-sync --no-first-run"
+  StrCpy $NAVINDEX  "/"
   StrCpy $NAVVISABO "/htdocs/about.html"
   StrCpy $NAVVISEVE "/htdocs/events.html"
   StrCpy $NAVVISHEV "/htdocs/events.html?MODO=4"
@@ -146,7 +148,7 @@ Section "" ; empty string makes it hidden, so would starting with -
   StrCpy $NAVGRAFAN "/grafana"
 
   ; write reg info
-  WriteRegStr HKLM SOFTWARE\OSHMI "Install_Dir" "$INSTDIR"
+  WriteRegStr HKLM SOFTWARE\JSON_SCADA "Install_Dir" "$INSTDIR"
 
   ; write uninstall strings
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "DisplayName" "JSON SCADA (remove only)"
@@ -158,47 +160,51 @@ Section "" ; empty string makes it hidden, so would starting with -
 
   ; erases all of the old Inkscape but the share dir
   ; New files will replace old.
-  RMDir /r "$INSTDIR\inkscape-runtime\doc" 
-  RMDir /r "$INSTDIR\inkscape-runtime\etc" 
-  RMDir /r "$INSTDIR\inkscape-runtime\lib"  
-  Delete "$INSTDIR\inkscape-runtime\*.*"  
+  RMDir /r "$INSTDIR\platform-windows\inkscape-runtime\doc" 
+  RMDir /r "$INSTDIR\platform-windows\inkscape-runtime\etc" 
+  RMDir /r "$INSTDIR\platform-windows\inkscape-runtime\lib"  
+  Delete "$INSTDIR\platform-windows\inkscape-runtime\*.*"  
   
   CreateDirectory "$INSTDIR\bin"
-  CreateDirectory "$INSTDIR\browser-runtime"
-  CreateDirectory "$INSTDIR\browser-data"
   CreateDirectory "$INSTDIR\conf"
   CreateDirectory "$INSTDIR\docs"
   CreateDirectory "$INSTDIR\grafana-dashboards"
-  CreateDirectory "$INSTDIR\grafana-runtime"
-  CreateDirectory "$INSTDIR\inkscape-runtime"
   CreateDirectory "$INSTDIR\log"
   CreateDirectory "$INSTDIR\mongo_seed"
-  CreateDirectory "$INSTDIR\mongodb-data"
-  CreateDirectory "$INSTDIR\mongodb-runtime"
-  CreateDirectory "$INSTDIR\nodejs-runtime"
-  CreateDirectory "$INSTDIR\platform-windows"
-  CreateDirectory "$INSTDIR\postgresql-data"
-  CreateDirectory "$INSTDIR\postgresql-runtime"
-  CreateDirectory "$INSTDIR\sql"
+; CreateDirectory "$INSTDIR\sql"
   CreateDirectory "$INSTDIR\src"
-  CreateDirectory "$INSTDIR\nginx_php-runtime"
-; CreateDirectory "$INSTDIR\PowerBI"
+  CreateDirectory "$INSTDIR\PowerBI"
 ; CreateDirectory "$INSTDIR\Opc.Ua.CertificateGenerator"
+  CreateDirectory "$INSTDIR\platform-windows"
+  CreateDirectory "$INSTDIR\platform-windows\grafana-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\browser-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\browser-data"
+  CreateDirectory "$INSTDIR\platform-windows\mongodb-compass-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\mongodb-data"
+  CreateDirectory "$INSTDIR\platform-windows\mongodb-conf"
+  CreateDirectory "$INSTDIR\platform-windows\mongodb-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\nodejs-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\inkscape-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\postgresql-data"
+  CreateDirectory "$INSTDIR\platform-windows\postgresql-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\nginx_php-runtime"
 
   SetOutPath $INSTDIR
 
-  File /a "..\platform-windows-installer\release_notes.txt"
+  File /a ".\release_notes.txt"
   File /a "..\LICENSE"
 
   SetOutPath $INSTDIR\bin
   File /a /r "..\bin\*.*"
-  File /a /r "..\platform-windows\nssm.exe"
+  File /a "..\platform-windows\nssm.exe"
 
   SetOutPath $INSTDIR\platform-windows
-  File /a /r "..\platform-windows\*.*"
+  File /a "..\platform-windows\*.bat"
+  File /a "..\platform-windows\nssm.exe"
+  File /a "..\platform-windows\vc_redist.x64.exe"
 
-  SetOutPath $INSTDIR\nodejs-runtime
-  File /a /r "..\nodejs-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\nodejs-runtime
+  File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
@@ -206,31 +212,41 @@ Section "" ; empty string makes it hidden, so would starting with -
   SetOutPath $INSTDIR\grafana-dashboards
   File /a /r "..\grafana-dashboards\*.*"
 
-  SetOutPath $INSTDIR\grafana-runtime
-  File /a /r "..\grafana-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\grafana-runtime
+  File /a /r "..\platform-windows\grafana-runtime\*.*"
 
   SetOutPath $INSTDIR\mongo_seed_demo
-  File /a /r "..\demo-docker\mongo_seed\*.*"
+  File /a /r "..\demo-docker\mongo_seed\files\*.*"
+
+  SetOutPath $INSTDIR\mongo_seed_demo
+  File /a /r "..\mongo_seed\a_rs-init.js"
 
   SetOutPath $INSTDIR\mongo_seed
   File /a /r "..\mongo_seed\*.*"
 
-  SetOutPath $INSTDIR\mongodb-runtime
-  File /a /r "..\mongodb-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\mongodb-compass-runtime
+  File /a /r "..\platform-windows\mongodb-compass-runtime\*.*"
 
-  SetOutPath $INSTDIR\postgresql-runtime
-  File /a /r "..\postgresql-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\mongodb-runtime
+  File /a /r "..\platform-windows\mongodb-runtime\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\mongodb-conf
+  File /a /r "..\platform-windows\mongodb-conf\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\postgresql-runtime
+  File /a /r "..\platform-windows\postgresql-runtime\*.*"
 
   SetOutPath $INSTDIR\sql
   File /a "..\sql\*.bat"
+  File /a "..\sql\create_tables.sql"
   File /a "..\sql\*.md"
 
-  SetOutPath $INSTDIR\nginx_php-runtime
-  File /r /x *.log "..\nginx_php-runtime\*.*" 
+  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime
+  File /r /x *.log "..\platform-windows\nginx_php-runtime\*.*" 
 
-;  SetOutPath $INSTDIR\nginx_php-runtime\php
+;  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime\php
 ;  File /a "..\conf-templates-runtime\php.ini"
-;  SetOutPath $INSTDIR\nginx_php-runtime\conf
+;  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime\conf
 ;  File /a "..\conf-templates\nginx.conf"
 
 ;  SetOutPath $INSTDIR\conf-templates
@@ -263,19 +279,19 @@ Section "" ; empty string makes it hidden, so would starting with -
   ;File /a "..\extprogs\vcredist_x86-2017.exe"
   ;File /a "..\extprogs\vcredist_x86-15-17-19.exe"
 
-  SetOutPath $INSTDIR\browser-runtime
-  File /a /r "..\browser-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\browser-runtime
+  File /a /r "..\platform-windows\browser-runtime\*.*"
 
-  SetOutPath $INSTDIR\browser-data
-  File /a /r "..\browser-data\*.*"
+  SetOutPath $INSTDIR\platform-windows\browser-data
+  File /a /r "..\platform-windows\browser-data\*.*"
 
   ; Inkscape custom built
-  SetOutPath $INSTDIR\inkscape-runtime
-  File /a /r "..\inkscape-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\inkscape-runtime
+  File /a /r "..\platform-windows\inkscape-runtime\*.*"
 
   ; Inkscape additional symbols
-  ; SetOutPath $INSTDIR\inkscape-runtime\share\symbols
-  ; File /a /r "..\inkscape-symbols\*.*"
+  ; SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\symbols
+  ; File /a /r "..\platform-windows\inkscape-symbols\*.*"
   
   ;SetOutPath $INSTDIR\Opc.Ua.CertificateGenerator
   ;File /a /r "..\Opc.Ua.CertificateGenerator\*.*"  
@@ -284,9 +300,6 @@ Section "" ; empty string makes it hidden, so would starting with -
   File /a "..\conf-templates\*.*"  
 
   SetOverwrite off
-
-  ;SetOutPath $INSTDIR\mongodb-data
-  ;File /a /r "..\mongodb-data\*.*"
 
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\nginx_http.conf"  
@@ -300,21 +313,8 @@ Section "" ; empty string makes it hidden, so would starting with -
   File /a "..\src\htdocs\svg\kor1.svg"
   File /a "..\conf-templates\screen_list.js"
 
-; Visual C redist: necessario para executar o PHP
-  ;nsExec::Exec '"$INSTDIR\extprogs\vcredist_x86.exe" /q'
-  ;nsExec::Exec '"$INSTDIR\extprogs\vcredist_x86-2012.exe" /q'
-  ;nsExec::Exec '"$INSTDIR\extprogs\vcredist_x86-2013.exe" /q'
-  ;nsExec::Exec '"$INSTDIR\extprogs\vcredist_x86-2015.exe" /q'
-  ;nsExec::Exec '"$INSTDIR\extprogs\vcredist_x86-2017.exe" /q'
-  ;nsExec::Exec '"$INSTDIR\extprogs\vcredist_x86-15-17-19.exe" /q'
-
-;  MessageBox MB_YESNO "Wish to substitute Windows Shell by the HMIShell? \nWARNING: ANSWERING YES WILL BLOCK THE MACHINE FOR THE OPERATOR" IDNO InstFim 
-; LabelShell:
-; registry key to change Windows shell
-;  WriteRegStr HKCU "Software\Microsoft\Windows NT\CurrentVersion\Winlogon" "Shell" "c:\\oshmi\\bin\\hmishell.exe"
-; registry key to disable task manager
-;  WriteRegDword HKCU "Software\Microsoft\Windows\CurrentVersion\Policies\System" "DisableTaskMgr" 0x01
-; InstFim:
+; Visual C redist: necessario para executar o timescaledb
+  nsExec::Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
 
 ; chaves para o windows   
 ;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "EVENTS_VIEWER"     '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISEVE"'
@@ -329,27 +329,35 @@ Section "" ; empty string makes it hidden, so would starting with -
   CreateDirectory "$DESKTOP\JSON-SCADA"
 
 ; Cria atalhos para os aplicativos
-  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_OSHMI.lnk"                "$INSTDIR\bin\start_hmi.bat"  
-  CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"         "$INSTDIR\bin\cache_clean.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_JSON_SCADA.lnk"             "$INSTDIR\bin\start_hmi.bat"  
 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"            "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
-  CreateShortCut "$DESKTOP\JSON-SCADA\About.lnk"                       "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISABO $NAVPOSOPT" "$INSTDIR\htdocs\images\oshmi.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Display Viewer.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\htdocs\images\tela.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Events Viewer.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\htdocs\images\chrono.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Historical Events.lnk"           "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\htdocs\images\calendar.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Tabular Viewer.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\htdocs\images\tabular.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Alarms Viewer.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\htdocs\images\firstaid.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Grafana.lnk"                     "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\htdocs\images\grafana.ico" 
+; CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"           "$INSTDIR\bin\cache_clean.bat"  
+  
+  CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
+  
+  CreateShortCut "$DESKTOP\JSON-SCADA\JSON SCADA WEB.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\htdocs\images\j-s-256.ico" 
 
-;  CreateShortCut "$DESKTOP\JSON-SCADA\Operation Manual.lnk"            "$INSTDIR\bin\operation_manual.bat"
-;  CreateShortCut "$DESKTOP\JSON-SCADA\Configuration Manual.lnk"        "$INSTDIR\bin\configuration_manual.bat"
+  CreateShortCut "$DESKTOP\JSON-SCADA\About.lnk"                         "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISABO $NAVPOSOPT" "$INSTDIR\htdocs\images\j-s-256.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Display Viewer.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\htdocs\images\tela.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Events Viewer.lnk"                 "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\htdocs\images\chrono.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Historical Events.lnk"             "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\htdocs\images\calendar.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Tabular Viewer.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\htdocs\images\tabular.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Alarms Viewer.lnk"                 "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\htdocs\images\firstaid.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Grafana.lnk"                       "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\htdocs\images\grafana.ico" 
 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE.lnk"               "$INSTDIR\inkscape-runtime\inkscape.exe"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Nginx and PHP Start.lnk"         "$INSTDIR\nginx_php-runtime\start_nginx_php.bat"
+; CreateShortCut "$DESKTOP\JSON-SCADA\Operation Manual.lnk"              "$INSTDIR\bin\operation_manual.bat"
+; CreateShortCut "$DESKTOP\JSON-SCADA\Configuration Manual.lnk"          "$INSTDIR\bin\configuration_manual.bat"
+
+  CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
+
+  CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\inkscape.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\Nginx and PHP Start.lnk"           "$INSTDIR\nginx_php-runtime\start_nginx_php.bat"
+
+
 
 ; apaga o cache do chrome
-  Delete "$INSTDIR\browser-data\Default\Cache\*.*"
-  RMDir /r "$INSTDIR\browser-data\Default\Web Aplications"
+  Delete "$INSTDIR\platform-windows\browser-data\Default\Cache\*.*"
+  RMDir /r "$INSTDIR\platform-windows\browser-data\Default\Web Aplications"
 
 ; cria regras de firewall
 
@@ -461,16 +469,21 @@ Section "" ; empty string makes it hidden, so would starting with -
   WriteUninstaller "bt-uninst.exe"
 
 
-  IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
-
-  nsExec::Exec '$INSTDIR\platform-windows\postgrsql-initdb.bat'
-  nsExec::Exec 'copy $INSTDIR\conf-templates\pg_hba.conf $INSTDIR\postgresql-data'
-  nsExec::Exec 'copy $INSTDIR\conf-templates\postgresql.conf $INSTDIR\postgresql-data'
-  nsExec::Exec '$INSTDIR\platform-windows\postgrsql-create_service.bat'
-  nsExec::Exec '$INSTDIR\platform-windows\postgrsql-start.bat'
-  nsExec::Exec '$INSTDIR\postgrsql-runtime\bin\psql -U postgres -h localhost -f c:\json-scada\sq\create-tables.sql'
-
-  pgDatabaseExists:
+;  IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
+;
+;  ExpandEnvStrings $0 %COMSPEC%
+;
+;  ExecWait '"$0" /C "$INSTDIR\platform-windows\initial_setup.bat"'
+;
+;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgrsql-initdb.bat"'
+;  ;SetOutPath $INSTDIR\postgresql-data
+;  ;File /a "..\conf-templates\pg_hba.conf"
+;  ;File /a "..\conf-templates\postgresql.conf"
+;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgrsql-create_service.bat"'
+;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgrsql-start.bat"'
+;  ;ExecWait '"$0" /C "$INSTDIR\\platform-windows\postgrsql-runtime\bin\psql" -U json_scada -h localhost -f c:\json-scada\sq\create_tables.sql template1'
+;
+;  pgDatabaseExists:
 
   MessageBox MB_OK "JSON-SCADA Installed! To quickly run the system after installed: Open the JSON-SCADA desktop folder and execute the '_Start JSON-SCADA' shortcut."
   
@@ -478,7 +491,7 @@ SectionEnd
 
 ; Uninstaller
 
-UninstallText "OSHMI Uninstall. All files will be removed from $INSTDIR !"
+UninstallText "JSON SCADA Uninstall. All files will be removed from $INSTDIR !"
 UninstallIcon "${NSISDIR}\Contrib\Graphics\Icons\nsis1-uninstall.ico"
 
 Section "Uninstall"
@@ -486,21 +499,15 @@ Section "Uninstall"
 ; Fecha processos
 
   ; SetOutPath $INSTDIR\bin
-  nsExec::Exec 'net stop OSHMI_rtwebsrv'
-  nsExec::Exec 'net stop OSHMI_iec104'
-  nsExec::Exec 'net stop OSHMI_iccp'
-  nsExec::Exec 'net stop OSHMI_dnp3'
-  nsExec::Exec 'net stop OSHMI_modbus'
-  nsExec::Exec 'net stop OSHMI_opc'
-  nsExec::Exec 'net stop OSHMI_s7'
-  nsExec::Exec 'c:\oshmi\bin\stop_all.bat'
-  nsExec::Exec 'c:\oshmi\nginx_php\stop_nginx_php.bat'
+  ExecWait '"$0" /C "$INSTDIR\platform-windows\nginx_php\stop_nginx_php.bat"'
+  ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
+  ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\browser-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\nginx_php\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\inkscape-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\postgresql-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\grafana-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\platform-windows\inkscape-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\postgresql-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\grafana-runtime\\%'" CALL TERMINATE`
   nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
 
 ; Remove an application from the firewall exception list
@@ -534,20 +541,8 @@ Section "Uninstall"
   
   nsExec::Exec '$INSTDIR\etc\remove_services.bat'
   
-  Delete "$INSTDIR\*.*"
-  Delete "$INSTDIR\bin\*.*"
-  Delete "$INSTDIR\browser-data\*.*"
-  Delete "$INSTDIR\browser-runtime\*.*"
-  Delete "$INSTDIR\conf\*.*"
-  Delete "$INSTDIR\docs\*.*"
   RMDir /r "$INSTDIR\bin" 
-  RMDir /r "$INSTDIR\browser-runtime" 
-  RMDir /r "$INSTDIR\browser-data" 
-  RMDir /r "$INSTDIR\inkscape-runtime" 
-  RMDir /r "$INSTDIR\mongodb-runtime" 
-  RMDir /r "$INSTDIR\mongodb-data" 
-  RMDir /r "$INSTDIR\postgresql-runtime" 
-  RMDir /r "$INSTDIR\postgresql-data" 
+  RMDir /r "$INSTDIR\platform-windows" 
   RMDir /r "$INSTDIR\conf" 
   RMDir /r "$INSTDIR\docs" 
   RMDir /r "$INSTDIR"
