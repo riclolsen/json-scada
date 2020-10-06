@@ -22,7 +22,7 @@ dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\b
 cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
 dotnet build --runtime win-x64 -c Release -o ..\..\bin\
 cd \json-scada\src\libplctag\PLCTagsClient
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 
 set GOBIN=c:\json-scada\bin
 cd \json-scada\src\calculations

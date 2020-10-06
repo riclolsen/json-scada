@@ -17,13 +17,14 @@ nssm start JSON_SCADA_calculations
 nssm start JSON_SCADA_process_rtdata
 nssm start JSON_SCADA_process_hist 
 
-nssm start JSON_SCADA_iec104server
-nssm start JSON_SCADA_iec104client
-
 nssm start JSON_SCADA_php
 nssm start JSON_SCADA_nginx
 
+REM SELECT PROTOCOLS TO START
+nssm start JSON_SCADA_iec104client
+REM nssm start JSON_SCADA_iec104server
 REM nssm start JSON_SCADA_iec101server
 REM nssm start JSON_SCADA_iec101client
 REM nssm start JSON_SCADA_dnp3client
 REM nssm start JSON_SCADA_i104m
+REM nssm start JSON_SCADA_plctags

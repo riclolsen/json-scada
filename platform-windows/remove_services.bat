@@ -19,13 +19,14 @@ nssm remove JSON_SCADA_calculations confirm
 nssm remove JSON_SCADA_process_rtdata confirm
 nssm remove JSON_SCADA_process_hist confirm
 
+nssm remove JSON_SCADA_nginx confirm
+nssm remove JSON_SCADA_php confirm
+
 nssm remove JSON_SCADA_iec104server confirm
 nssm remove JSON_SCADA_iec104client confirm
-
 nssm remove JSON_SCADA_iec101server confirm
 nssm remove JSON_SCADA_iec101client confirm
 nssm remove JSON_SCADA_dnp3client confirm
 nssm remove JSON_SCADA_i104m confirm
+nssm remove JSON_SCADA_plctags confirm
 
-nssm remove JSON_SCADA_nginx confirm
-nssm remove JSON_SCADA_php confirm

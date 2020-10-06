@@ -341,10 +341,10 @@ SetRegView 64
   CreateDirectory "$DESKTOP\JSON-SCADA"
 
 ; Cria atalhos para os aplicativos
-  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"               "$INSTDIR\bin\platform-windows\start_services.bat"  
-  CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                "$INSTDIR\bin\platform-windows\stop_services.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"               "$INSTDIR\platform-windows\start_services.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                "$INSTDIR\platform-windows\stop_services.bat"  
 
-; CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"           "$INSTDIR\bin\cache_clean.bat"  
+; CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"           "$INSTDIR\platform-windows\cache_clean.bat"  
   
   CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
   
@@ -515,10 +515,10 @@ Section "Uninstall"
 ; Fecha processos
 
   ; SetOutPath $INSTDIR\bin
-  ExecWait '"$0" /C "$INSTDIR\platform-windows\nginx_php\stop_nginx_php.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
+  Sleep 3000
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
   nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`

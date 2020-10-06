@@ -89,4 +89,4 @@ GRANT SELECT ON grafana_realtime TO grafana;
 
 CREATE USER json_scada WITH PASSWORD 'json_scada';
 GRANT CONNECT ON DATABASE json_scada TO json_scada;
-GRANT all ON realtime_data, hist TO json_scada;
+GRANT all ON realtime_data, hist, grafana_hist TO json_scada;

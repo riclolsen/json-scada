@@ -17,13 +17,13 @@ nssm stop JSON_SCADA_calculations
 nssm stop JSON_SCADA_process_rtdata
 nssm stop JSON_SCADA_process_hist 
 
-nssm stop JSON_SCADA_iec104server
-nssm stop JSON_SCADA_iec104client
-
 nssm stop JSON_SCADA_nginx
 nssm stop JSON_SCADA_php
 
-REM nssm stop JSON_SCADA_iec101server
-REM nssm stop JSON_SCADA_iec101client
-REM nssm stop JSON_SCADA_dnp3client
-REM nssm stop JSON_SCADA_i104m
+nssm stop JSON_SCADA_iec104server
+nssm stop JSON_SCADA_iec104client
+nssm stop JSON_SCADA_iec101server
+nssm stop JSON_SCADA_iec101client
+nssm stop JSON_SCADA_dnp3client
+nssm stop JSON_SCADA_i104m
+nssm stop JSON_SCADA_plctags
