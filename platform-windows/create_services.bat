@@ -15,15 +15,18 @@ nssm set AppDirectory JSON_SCADA_grafana  "C:\json-scada\platform-windows\grafan
 
 nssm install JSON_SCADA_mongodb "C:\json-scada\platform-windows\mongodb-runtime\bin\mongod.exe" --config  "c:\json-scada\platform-windows\mongodb-conf\mongod.cfg" 
 
-nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe" 1 1 "c:\json-scada\json-scada.json"
+nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe" 1 1 "c:\json-scada\conf\json-scada.json"
 REM STDOUT logging
 nssm set JSON_SCADA_calculations AppStdout C:\json-scada\log\calculations.log
 REM See log rotation options https://nssm.cc/usage#io
 
-nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_data_processor\cs_data_processor.js" 1 1 "c:\json-scada\json-scada.json"
-nssm set AppDirectory JSON_SCADA_cs_data_processor  "C:\json-scada\src\cs_data_processor"
-nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" 1 1 "c:\json-scada\json-scada.json"
-nssm set AppDirectory JSON_SCADA_server_realtime "C:\json-scada\src\server_realtime"
+nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_data_processor\cs_data_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_cs_data_processor AppDirectory  "C:\json-scada\src\cs_data_processor"
+nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
+
+nssm install JSON_SCADA_alarm_beep  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\alarm_beep\alarm_beep.js" 
+nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
 
 nssm install JSON_SCADA_process_rtdata "C:\json-scada\sql\process_pg_rtdata.bat"
 nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\sql"
@@ -38,3 +41,5 @@ REM nssm install JSON_SCADA_iec101server "C:\json-scada\bin\iec101server.exe" 1 
 REM nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\iec104client.exe" 1 1 
 REM nssm install JSON_SCADA_i104m "C:\json-scada\bin\i104m.exe" 1 1 
 
+nssm install JSON_SCADA_php "c:\json-scada\platform-windows\nginx_php-runtime\php\php-cgi.exe" -b 127.0.0.1:9000 -c c:\json-scada\conf\php.ini
+nssm install JSON_SCADA_nginx "c:\json-scada\platform-windows\nginx_php-runtime\nginx.exe" -c c:\json-scada\conf\nginx.conf

@@ -10,6 +10,7 @@ RequestExecutionLevel admin
 
 !include "TextFunc.nsh"
 !include "WordFunc.nsh"
+!include x64.nsh
 
 ;--------------------------------
 
@@ -23,7 +24,7 @@ Function .onInit
    MessageBox MB_OK|MB_ICONEXCLAMATION "Installer already executing!"
    Abort
 FunctionEnd
- 
+
 ;--------------------------------
 
 !ifdef HAVE_UPX
@@ -93,6 +94,18 @@ ShowInstDetails show
 
 Section "" ; empty string makes it hidden, so would starting with -
 
+; REJECT NON 64 BIT OS
+${IfNot} ${RunningX64}
+
+    Abort
+
+${EndIf}
+
+${DisableX64FSRedirection}
+
+SetRegView 64
+
+
 ; Closes all processes
   nsExec::Exec 'net stop JSON_SCADA_mongodb'
   nsExec::Exec 'net stop JSON_SCADA_calculations'
@@ -128,7 +141,7 @@ Section "" ; empty string makes it hidden, so would starting with -
   var /GLOBAL NAVGRAFAN
   var /GLOBAL HTTPSRV
     
-  StrCpy $HTTPSRV   "http://127.0.0.1:8080"
+  StrCpy $HTTPSRV   "http://127.0.0.1:80"
  #StrCpy $HTTPSRV   "https://127.0.0.1"
   StrCpy $NAVWINCMD "platform-windows\browser-runtime\chrome.exe"
   StrCpy $NAVDATDIR "--user-data-dir=$INSTDIR\browser-data"
@@ -244,32 +257,27 @@ Section "" ; empty string makes it hidden, so would starting with -
   SetOutPath $INSTDIR\platform-windows\nginx_php-runtime
   File /r /x *.log "..\platform-windows\nginx_php-runtime\*.*" 
 
-;  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime\php
-;  File /a "..\conf-templates-runtime\php.ini"
-;  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime\conf
-;  File /a "..\conf-templates\nginx.conf"
-
-;  SetOutPath $INSTDIR\conf-templates
-;  File /a "..\conf-templates\*.*"
+  SetOutPath $INSTDIR\conf-templates
+  File /a "..\conf-templates\*.*"
 
   SetOutPath $INSTDIR\src\htdocs
-  File /a "..\src\htdocs\*.*"
+  File /a /r "..\src\htdocs\*.*"
   SetOutPath $INSTDIR\src\htdocs-admin
-  File /a "..\src\htdocs-admin\*.*"
+  File /a /r "..\src\htdocs-admin\*.*"
   SetOutPath $INSTDIR\src\htdocs-login
-  File /a "..\src\htdocs-login\*.*"
+  File /a /r "..\src\htdocs-login\*.*"
 
   SetOutPath $INSTDIR\src\alarm_beep
-  File /a "..\src\alarm_beep\*.*"
+  File /a /r "..\src\alarm_beep\*.*"
 
   SetOutPath $INSTDIR\src\oshmi2json
-  File /a "..\src\oshmi2json\*.*"
+  File /a /r "..\src\oshmi2json\*.*"
 
   SetOutPath $INSTDIR\src\cs_data_processor
-  File /a "..\src\cs_data_processor\*.*"
+  File /a /r "..\src\cs_data_processor\*.*"
 
   SetOutPath $INSTDIR\src\server_realtime
-  File /a "..\src\server_realtime\*.*"
+  File /a /r "..\src\server_realtime\*.*"
     
   ;SetOutPath $INSTDIR\extprogs
   ;File /a "..\extprogs\vcredist_x86.exe"
@@ -302,6 +310,10 @@ Section "" ; empty string makes it hidden, so would starting with -
   SetOverwrite off
 
   SetOutPath $INSTDIR\conf
+  File /a "..\conf-templates\php.ini"
+  SetOutPath $INSTDIR\conf
+  File /a "..\conf-templates\nginx.conf"
+  File /a "..\conf-templates\nginx_access_control.conf"
   File /a "..\conf-templates\nginx_http.conf"  
   File /a "..\conf-templates\nginx_https.conf"  
   File /a "..\conf-templates\json-scada.json"
@@ -329,7 +341,8 @@ Section "" ; empty string makes it hidden, so would starting with -
   CreateDirectory "$DESKTOP\JSON-SCADA"
 
 ; Cria atalhos para os aplicativos
-  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_JSON_SCADA.lnk"             "$INSTDIR\bin\start_hmi.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"               "$INSTDIR\bin\platform-windows\start_services.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                "$INSTDIR\bin\platform-windows\stop_services.bat"  
 
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"           "$INSTDIR\bin\cache_clean.bat"  
   
@@ -353,6 +366,7 @@ Section "" ; empty string makes it hidden, so would starting with -
   CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\inkscape.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Nginx and PHP Start.lnk"           "$INSTDIR\nginx_php-runtime\start_nginx_php.bat"
 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                     "$INSTDIR\bt-uninst.exe"
 
 
 ; apaga o cache do chrome
@@ -469,21 +483,23 @@ Section "" ; empty string makes it hidden, so would starting with -
   WriteUninstaller "bt-uninst.exe"
 
 
-;  IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
+; If database data empty (no previous installation), then do initial setup for MongoDB and PostgreSQL
+IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
+
+  ExpandEnvStrings $0 %COMSPEC%
+  ExecWait '"$0" /C "$INSTDIR\platform-windows\initial_setup.bat"'
+
 ;
-;  ExpandEnvStrings $0 %COMSPEC%
-;
-;  ExecWait '"$0" /C "$INSTDIR\platform-windows\initial_setup.bat"'
-;
-;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgrsql-initdb.bat"'
+;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-initdb.bat"'
 ;  ;SetOutPath $INSTDIR\postgresql-data
 ;  ;File /a "..\conf-templates\pg_hba.conf"
 ;  ;File /a "..\conf-templates\postgresql.conf"
-;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgrsql-create_service.bat"'
-;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgrsql-start.bat"'
-;  ;ExecWait '"$0" /C "$INSTDIR\\platform-windows\postgrsql-runtime\bin\psql" -U json_scada -h localhost -f c:\json-scada\sq\create_tables.sql template1'
+;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-create_service.bat"'
+;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-start.bat"'
+;  ;ExecWait '"$0" /C "$INSTDIR\\platform-windows\postgresql-runtime\bin\psql" -U json_scada -h localhost -f c:\json-scada\sq\create_tables.sql template1'
 ;
-;  pgDatabaseExists:
+
+pgDatabaseExists:
 
   MessageBox MB_OK "JSON-SCADA Installed! To quickly run the system after installed: Open the JSON-SCADA desktop folder and execute the '_Start JSON-SCADA' shortcut."
   
@@ -500,6 +516,8 @@ Section "Uninstall"
 
   ; SetOutPath $INSTDIR\bin
   ExecWait '"$0" /C "$INSTDIR\platform-windows\nginx_php\stop_nginx_php.bat"'
+  ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'
+  ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`

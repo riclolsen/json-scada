@@ -21,6 +21,5 @@ mongodb-runtime\bin\mongoimport --db json_scada --collection protocolDriverInsta
 mongodb-runtime\bin\mongoimport --db json_scada --collection protocolConnections --type json --file ..\mongo_seed_demo\demo_connections.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection realtimeData --type json --file ..\mongo_seed_demo\demo_data.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection processInstances --type json --file ..\mongo_seed_demo\demo_process_instances.json 
-
 mongodb-runtime\bin\mongoimport --db json_scada --collection users --type json --file ..\mongo_seed_demo\demo_users.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection roles --type json --file ..\mongo_seed_demo\demo_roles.json 

@@ -20,6 +20,9 @@ nssm stop JSON_SCADA_process_hist
 nssm stop JSON_SCADA_iec104server
 nssm stop JSON_SCADA_iec104client
 
+nssm stop JSON_SCADA_nginx
+nssm stop JSON_SCADA_php
+
 REM nssm stop JSON_SCADA_iec101server
 REM nssm stop JSON_SCADA_iec101client
 REM nssm stop JSON_SCADA_dnp3client
