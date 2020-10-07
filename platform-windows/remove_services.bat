@@ -18,6 +18,7 @@ nssm remove JSON_SCADA_server_realtime confirm
 nssm remove JSON_SCADA_calculations confirm
 nssm remove JSON_SCADA_process_rtdata confirm
 nssm remove JSON_SCADA_process_hist confirm
+nssm remove JSON_SCADA_alarm_beep confirm
 
 nssm remove JSON_SCADA_nginx confirm
 nssm remove JSON_SCADA_php confirm

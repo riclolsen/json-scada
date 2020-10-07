@@ -134,30 +134,25 @@ SetRegView 64
   var /GLOBAL NAVVISTAB
   var /GLOBAL NAVVISANO
   var /GLOBAL NAVVISTEL
-  var /GLOBAL NAVVISTRE
-  var /GLOBAL NAVVISOVW
-  var /GLOBAL NAVVISDOC
-  var /GLOBAL NAVVISLOG
   var /GLOBAL NAVGRAFAN
   var /GLOBAL HTTPSRV
     
-  StrCpy $HTTPSRV   "http://127.0.0.1:80"
+  # PROTOCOL://IP:PORT  
+  StrCpy $HTTPSRV   "http://127.0.0.1" 
  #StrCpy $HTTPSRV   "https://127.0.0.1"
   StrCpy $NAVWINCMD "platform-windows\browser-runtime\chrome.exe"
-  StrCpy $NAVDATDIR "--user-data-dir=$INSTDIR\browser-data"
-  StrCpy $NAVPREOPT "--process-per-site --no-sandbox"
-  StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi --disable-extensions --disable-sync --no-first-run"
+  StrCpy $NAVDATDIR "--user-data-dir=$INSTDIR\platform-windows\browser-data"
+ #StrCpy $NAVPREOPT "--process-per-site --no-sandbox"
+  StrCpy $NAVPREOPT "--process-per-site"
+ #StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi --disable-extensions --disable-sync --no-first-run"
+  StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi"
   StrCpy $NAVINDEX  "/"
-  StrCpy $NAVVISABO "/htdocs/about.html"
-  StrCpy $NAVVISEVE "/htdocs/events.html"
-  StrCpy $NAVVISHEV "/htdocs/events.html?MODO=4"
-  StrCpy $NAVVISTAB "/htdocs/tabular.html"
-  StrCpy $NAVVISANO "/htdocs/tabular.html?SELMODULO=TODOS_ANORMAIS"
-  StrCpy $NAVVISTEL "/htdocs/display.html"
-  StrCpy $NAVVISTRE "/htdocs/trend.html"
-  StrCpy $NAVVISOVW "/htdocs/overview.html"
-  StrCpy $NAVVISDOC "/htdocs/listdocs.php"
-  StrCpy $NAVVISLOG "/htdocs/listlogs.php"
+  StrCpy $NAVVISABO "/about.html"
+  StrCpy $NAVVISEVE "/events.html"
+  StrCpy $NAVVISHEV "/events.html?MODO=4"
+  StrCpy $NAVVISTAB "/tabular.html"
+  StrCpy $NAVVISANO "/tabular.html?SELMODULO=ALARMS_VIEWER"
+  StrCpy $NAVVISTEL "/display.html"
   StrCpy $NAVGRAFAN "/grafana"
 
   ; write reg info
@@ -181,7 +176,6 @@ SetRegView 64
   CreateDirectory "$INSTDIR\bin"
   CreateDirectory "$INSTDIR\conf"
   CreateDirectory "$INSTDIR\docs"
-  CreateDirectory "$INSTDIR\grafana-dashboards"
   CreateDirectory "$INSTDIR\log"
   CreateDirectory "$INSTDIR\mongo_seed"
 ; CreateDirectory "$INSTDIR\sql"
@@ -221,9 +215,6 @@ SetRegView 64
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
-
-  SetOutPath $INSTDIR\grafana-dashboards
-  File /a /r "..\grafana-dashboards\*.*"
 
   SetOutPath $INSTDIR\platform-windows\grafana-runtime
   File /a /r "..\platform-windows\grafana-runtime\*.*"
@@ -328,14 +319,6 @@ SetRegView 64
 ; Visual C redist: necessario para executar o timescaledb
   nsExec::Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
 
-; chaves para o windows   
-;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "EVENTS_VIEWER"     '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISEVE"'
-;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "TABULAR_VIEWER"    '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISTAB"'
-;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "SCREEN_VIEWER"     '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISTEL"'
-;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "TREND_VIEWER"      '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISTRE"'
-;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "DOCS_VIEWER"       '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISDOC"'
-;  WriteINIStr "$INSTDIR\conf\hmi.ini"  "RUN" "LOGS_VIEWER"       '"$INSTDIR\$NAVWINCMD $NAVDATDIR --bopt --app=$HTTPSRV$NAVVISLOG"'
- 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
   CreateDirectory "$DESKTOP\JSON-SCADA"
@@ -343,29 +326,26 @@ SetRegView 64
 ; Cria atalhos para os aplicativos
   CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"               "$INSTDIR\platform-windows\start_services.bat"  
   CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                "$INSTDIR\platform-windows\stop_services.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\Windows Services.lnk"              "services.msc"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_JSON SCADA WEB.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
 
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"           "$INSTDIR\platform-windows\cache_clean.bat"  
-  
   CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
-  
-  CreateShortCut "$DESKTOP\JSON-SCADA\JSON SCADA WEB.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\htdocs\images\j-s-256.ico" 
 
-  CreateShortCut "$DESKTOP\JSON-SCADA\About.lnk"                         "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISABO $NAVPOSOPT" "$INSTDIR\htdocs\images\j-s-256.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Display Viewer.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\htdocs\images\tela.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Events Viewer.lnk"                 "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\htdocs\images\chrono.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Historical Events.lnk"             "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\htdocs\images\calendar.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Tabular Viewer.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\htdocs\images\tabular.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Alarms Viewer.lnk"                 "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\htdocs\images\firstaid.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Grafana.lnk"                       "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\htdocs\images\grafana.ico" 
+; CreateShortCut "$DESKTOP\JSON-SCADA\About.lnk"                         "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISABO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
+
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Display.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tela.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Events.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\src\htdocs\images\chrono.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Historical.lnk"           "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\src\htdocs\images\calendar.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Tabular.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tabular.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Alarms.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\firstaid.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Grafana.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\src\htdocs\images\grafana.ico" 
 
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Operation Manual.lnk"              "$INSTDIR\bin\operation_manual.bat"
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Configuration Manual.lnk"          "$INSTDIR\bin\configuration_manual.bat"
 
   CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
-
   CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\inkscape.exe"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Nginx and PHP Start.lnk"           "$INSTDIR\nginx_php-runtime\start_nginx_php.bat"
-
   CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                     "$INSTDIR\bt-uninst.exe"
 
 
@@ -397,10 +377,10 @@ SetRegView 64
 ;  SimpleFC::AddApplication "OSHMI ICCP" "$INSTDIR\bin\iccp_client.exe" 0 2 "" 1
 ;  Pop $0 ; return error(1)/success(0)
 ;
-;  SimpleFC::AddApplication "OSHMI NGINX" "$INSTDIR\nginx_php\nginx.exe" 0 2 "" 1
+;  SimpleFC::AddApplication "OSHMI NGINX" "$INSTDIR\platform-windows\nginx_php-runtime\nginx.exe" 0 2 "" 1
 ;  Pop $0 ; return error(1)/success(0)
 ;
-;  SimpleFC::AddApplication "OSHMI PHP-CGI" "$INSTDIR\nginx_php\php\php-cgi.exe" 0 2 "" 1
+;  SimpleFC::AddApplication "OSHMI PHP-CGI" "$INSTDIR\platform-windows\nginx_php-runtime\php\php-cgi.exe" 0 2 "" 1
 ;  Pop $0 ; return error(1)/success(0)
 
 ;  SimpleFC::AddPort 65280 "OSHMI Webserver" 256 0 2 "" 1
@@ -501,7 +481,7 @@ IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
 
 pgDatabaseExists:
 
-  MessageBox MB_OK "JSON-SCADA Installed! To quickly run the system after installed: Open the JSON-SCADA desktop folder and execute the '_Start JSON-SCADA' shortcut."
+  MessageBox MB_OK "Installation finished! To run the system: Open the JSON-SCADA desktop folder, execute the '_Start_Services' shortcut and then open '_JSON SCADA WEB'."
   
 SectionEnd
 
@@ -512,52 +492,47 @@ UninstallIcon "${NSISDIR}\Contrib\Graphics\Icons\nsis1-uninstall.ico"
 
 Section "Uninstall"
 
+; Remove an application from the firewall exception list
+; SimpleFC::RemoveApplication "$INSTDIR\bin\hmishell.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\mon_proc.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\QTester104.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\dnp3.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\modbus.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\iccp_client.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication  "$INSTDIR\platform-windows\nginx_php-runtime\nginx.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\platform-windows\nginx_php-runtime\php\php-cgi.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\opc_client.exe"
+; Pop $0 ; return error(1)/success(0)
+; SimpleFC::RemoveApplication "$INSTDIR\bin\s7client.exe"
+; Pop $0 ; return error(1)/success(0)
+
+; WriteRegStr  HKCU "Software\Microsoft\Windows NT\CurrentVersion\Winlogon" "Shell" "explorer.exe"
+; WriteRegDword HKCU "Software\Microsoft\Windows\CurrentVersion\Policies\System" "DisableTaskMgr" 0x00
+  
 ; Fecha processos
 
-  ; SetOutPath $INSTDIR\bin
   ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
-  Sleep 3000
+  Sleep 5000
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\platform-windows\inkscape-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\postgresql-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\grafana-runtime\\%'" CALL TERMINATE`
+  Sleep 1000
   nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
-
-; Remove an application from the firewall exception list
-; SimpleFC::RemoveApplication "$INSTDIR\webserver.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\hmishell.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\mon_proc.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\QTester104.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\dnp3.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\modbus.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\iccp_client.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication  "$INSTDIR\nginx_php\nginx.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\nginx_php\php\php-cgi.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\opc_client.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\s7client.exe"
-; Pop $0 ; return error(1)/success(0)
-
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA"
-  DeleteRegKey HKLM "SOFTWARE\JSON_SCADA"
-  ;WriteRegStr  HKCU "Software\Microsoft\Windows NT\CurrentVersion\Winlogon" "Shell" "explorer.exe"
-  ;WriteRegDword HKCU "Software\Microsoft\Windows\CurrentVersion\Policies\System" "DisableTaskMgr" 0x00
-  
-  nsExec::Exec '$INSTDIR\etc\remove_services.bat'
+  Sleep 1000
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\mongodb-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\inkscape-runtime\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\%'" CALL TERMINATE`
+  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
+  Sleep 1000
   
   RMDir /r "$INSTDIR\bin" 
   RMDir /r "$INSTDIR\platform-windows" 
@@ -565,6 +540,9 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\docs" 
   RMDir /r "$INSTDIR"
   RMDir /r "$DESKTOP\JSON-SCADA"
+
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA"
+  DeleteRegKey HKLM "SOFTWARE\JSON_SCADA"
 
 SectionEnd
                                                                                                                                             

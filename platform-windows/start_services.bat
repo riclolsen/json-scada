@@ -16,6 +16,7 @@ nssm start JSON_SCADA_server_realtime
 nssm start JSON_SCADA_calculations 
 nssm start JSON_SCADA_process_rtdata
 nssm start JSON_SCADA_process_hist 
+REM nssm start JSON_SCADA_alarm_beep
 
 nssm start JSON_SCADA_php
 nssm start JSON_SCADA_nginx
