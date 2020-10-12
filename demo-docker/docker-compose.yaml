@@ -100,7 +100,6 @@ services:
       - timescaledb
     networks:
       - jsdemo_net
-
   grafana:
     image: grafana/grafana
     container_name: jsdemo_grafana
@@ -120,6 +119,26 @@ services:
       - timescaledb
     networks:
       - jsdemo_net
+
+#  grafana:
+#    image: grafana/grafana
+#    container_name: jsdemo_grafana
+#    restart: unless-stopped
+#    volumes: 
+#      - ./grafana_data:/var/lib/grafana
+#    environment: 
+#      - GF_SERVER_DOMAIN=127.0.0.1
+#      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/
+#      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    # export grafana port to the host
+#    ports:
+#      - 3000:3000
+#    expose:
+#      - "3000"
+#    links:
+#      - timescaledb
+#    networks:
+#      - jsdemo_net
   
   # IEC6079-5-104 CLIENT, will connect to a demo server on 207.180.242.96:2404
   iec104client:
