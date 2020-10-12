@@ -56,7 +56,8 @@ QUICKSTART:
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
-  - On the JSON-SCADA desktop folder: execute _Start_JSON_SCADA.
+  - On the JSON-SCADA desktop folder: execute _Start_Services.
+  - On the JSON-SCADA desktop folder: execute _JSON SCADA WEB.
 
 The system is preconfigured to connect to a online demo simulation via IEC60870-5-104 protocol with an example point list and screens.
 To issue a command, click on a breaker and push the "Command" button then choose 

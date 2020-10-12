@@ -1,7 +1,9 @@
+@echo off
+if not "%1"=="am_admin" (powershell start -verb runas '%0' am_admin & exit /b)
 
 call postgresql-stop.bat
 
-SET PATH=%PATH%;c:\json-scada\postgresql-runtime\bin\
+SET PATH=%PATH%;c:\json-scada\platform-windows\postgresql-runtime\bin\
 
 cd timescaledb
 setup.exe

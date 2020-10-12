@@ -552,3 +552,8 @@ db.soeData.createIndex({ timeTag: 1 })
 db.soeData.createIndex({ timeTagAtSource: 1 })
 db.soeData.createIndex({ group1: 1 })
 db.soeData.createIndex({ ack: 1 })
+
+db.createCollection('roles')
+db.roles.createIndex({ name: 1 }, { name: 'roleNameIndex', unique: true })
+db.createCollection('users')
+db.users.createIndex({ username: 1 }, { name: 'userNameIndex', unique: true })
