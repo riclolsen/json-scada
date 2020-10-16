@@ -19,245 +19,295 @@
       </v-col>
 
       <v-divider vertical></v-divider>
-<v-col class="d-flex text-left">
-      <v-scroll-y-transition mode="out-in">
-        <div
-          v-if="!selected"
-          class="title grey--text text--lighten-1 font-weight-light text-center"
-          style="align-self: center"
-        >
-          Select a Role
-        </div>
-        <v-card v-else :key="selected.id" class="pt-6 mx-auto" flat>
-          <v-card-text>
-            <h3 class="primary--text headline mb-2">
-              <v-icon x-large color="primary darken-2">mdi-security</v-icon>
-              {{ selected.name }}
-            </h3>
-          </v-card-text>
-          <v-divider></v-divider>
+      <v-col class="d-flex text-left">
+        <v-scroll-y-transition mode="out-in">
+          <div
+            v-if="!selected"
+            class="title grey--text text--lighten-1 font-weight-light text-center"
+            style="align-self: center"
+          >
+            Select a Role
+          </div>
+          <v-card v-else :key="selected.id" class="pt-6 mx-auto" flat>
+            <v-card-text>
+              <h3 class="primary--text headline mb-2">
+                <v-icon x-large color="primary darken-2">mdi-security</v-icon>
+                {{ selected.name }}
+              </h3>
+            </v-card-text>
+            <v-divider></v-divider>
 
-          <v-autocomplete
-            v-model="groups"
-            :items="group1List"
-            outlined
-            dense
-            chips
-            small-chips
-            label="Group1 List"
-            multiple
-          ></v-autocomplete>
+            <v-autocomplete
+              v-model="selected.group1List"
+              :items="group1ListAll"
+              outlined
+              dense
+              chips
+              small-chips
+              label="Group1 List"
+              multiple
+              @change="roleChange"
+            ></v-autocomplete>
 
-          <v-autocomplete
-            v-model="displays"
-            :items="displayList"
-            outlined
-            dense
-            chips
-            small-chips
-            label="Display List"
-            multiple
-          ></v-autocomplete>
+            <v-autocomplete
+              v-model="selected.displayList"
+              :items="displayListAll"
+              outlined
+              dense
+              chips
+              small-chips
+              label="Display List"
+              multiple
+              @change="roleChange"
+            ></v-autocomplete>
 
-          <v-card class="mx-auto" tile>
-            <v-list flat dense shaped subheader>
-              <v-subheader>Rights</v-subheader>
+            <v-card class="mx-auto" tile>
+              <v-list flat dense shaped subheader>
+                <v-subheader>Rights</v-subheader>
 
-              <v-list-item-group v-model="settings" multiple active-class="">
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                <v-list-item-group multiple active-class="">
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.isAdmin"
+                          @change="roleChange"
+                        >
+                        </v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Is Admin</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Add/remove/edit users and roles.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Is Admin</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Add/remove/edit users and
+                          roles.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.changePassword"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Change Password</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can change its own password.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Change Password</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can change its own password.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.sendCommands"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Send Commands</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can send commands (controls).</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Send Commands</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can send commands (controls).</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.enterAnnotations"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Enter Annotations</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can create/edit blocking
-                        annotations.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Enter Annotations</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can create/edit blocking
+                          annotations.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.enterNotes"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Enter Notes</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can edit/create documental notes.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Enter Notes</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can edit/create documental
+                          notes.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.enterManuals"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Enter Manuals</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can change state of manual
-                        points.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Enter Manuals</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can change state of manual
+                          points.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.enterLimits"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Enter Limits</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can change limits for analog
-                        points.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Enter Limits</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can change limits for analog
+                          points.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.substituteValues"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Substitute Values</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can replace (impose) supervised
-                        values.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Substitute Values</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can replace (impose) supervised
+                          values.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.ackEvents"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Ack Events</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can acknowledge events.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Ack Events</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can acknowledge events.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.ackAlarms"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Ack Alarms</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can acknowledge alarms.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Ack Alarms</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can acknowledge alarms.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-checkbox :input-value="active"></v-checkbox>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-checkbox
+                          :input-value="active"
+                          v-model="selected.disableAlarms"
+                          @change="roleChange"
+                        ></v-checkbox>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Disable Alarms</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Can disable/enable alarms.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Disable Alarms</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Can disable/enable alarms.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
 
-                <v-list-item>
-                  <template v-slot:default="{ active }">
-                    <v-list-item-action>
-                      <v-text-field
-                        type="number"
-                        :input-value="active"
-                        label="Number of days..."
-                        hide-details="auto"
-                      ></v-text-field>
-                    </v-list-item-action>
+                  <v-list-item>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          label="Number of days..."
+                          hide-details="auto"
+                          v-model="selected.maxSessionDays"
+                          @change="roleChange"
+                        ></v-text-field>
+                      </v-list-item-action>
 
-                    <v-list-item-content>
-                      <v-list-item-title>Max Session Days</v-list-item-title>
-                      <v-list-item-subtitle
-                        >Maximum days of session period.</v-list-item-subtitle
-                      >
-                    </v-list-item-content>
-                  </template>
-                </v-list-item>
-
-              </v-list-item-group>
-            </v-list>
+                      <v-list-item-content>
+                        <v-list-item-title>Max Session Days</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Maximum days of session period.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-card>
           </v-card>
-        </v-card>
-      </v-scroll-y-transition>
+        </v-scroll-y-transition>
       </v-col>
     </v-row>
   </v-card>
@@ -274,10 +324,8 @@ export default {
     open: [],
     roles: [],
     settings: [],
-    displayList: ["Display1", "Display2", "Display3"],
-    displays: [],
-    group1List: [],
-    groups: [],
+    displayListAll: [],
+    group1ListAll: [],
   }),
 
   computed: {
@@ -356,6 +404,7 @@ export default {
           this.roles.length = 0;
           this.roles.push(...json);
           this.fetchGroup1List();
+          this.fetchDisplayList();
         })
         .catch((err) => console.warn(err));
     },
@@ -363,8 +412,35 @@ export default {
       return await fetch("/Invoke/auth/listGroup1")
         .then((res) => res.json())
         .then((json) => {
-          this.group1List.length = 0;
-          this.group1List.push(...json);
+          this.group1ListAll.length = 0;
+          this.group1ListAll.push(...json);
+        })
+        .catch((err) => console.warn(err));
+    },
+    async fetchDisplayList() {
+      return await fetch("/Invoke/auth/listDisplays")
+        .then((res) => res.json())
+        .then((json) => {
+          this.displayListAll.length = 0;
+          this.displayListAll.push(...json);
+        })
+        .catch((err) => console.warn(err));
+    },
+    async roleChange() {
+      var roleDup = Object.assign({}, this.selected);
+      delete roleDup['id'];
+      return await fetch("/Invoke/auth/updateRole", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },        
+        body: JSON.stringify(roleDup),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          this.fetchRoles(); // refreshes roles
         })
         .catch((err) => console.warn(err));
     },
