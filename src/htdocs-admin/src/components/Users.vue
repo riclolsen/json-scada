@@ -14,8 +14,26 @@
         >
           <template v-slot:prepend="{ item }">
             <v-icon v-if="!item.children"> mdi-account </v-icon>
+            {{item.username}}
           </template>
         </v-treeview>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-bind="attrs"
+            v-on="on"
+            class="mx-2"
+            fab
+            dark
+            x-small
+            color="blue"
+            @click="createUser($event)"
+          >
+            <v-icon dark> mdi-plus </v-icon>
+          </v-btn>
+        </template>
+        <span>New user!</span>
+      </v-tooltip>
       </v-col>
 
       <v-divider vertical></v-divider>
@@ -36,52 +54,97 @@
             flat
             max-width="400"
           >
-            <v-card-text>
-              <v-icon x-large color="primary darken-2"> mdi-account </v-icon>
-              <h3 class="primary--text headline mb-2">
-                {{ selected.name }}
-              </h3>
-              <div class="primary--text mb-2">
-                {{ selected.email }}
-              </div>
-              <div class="primary--text subheading font-weight-bold">
-                {{ selected.username }}
-              </div>
-            </v-card-text>
+
+              <v-row class="pb-8 mx-auto" justify="space-between">  
+              <v-text-field
+                prepend-inner-icon="mdi-account"
+                type="text"
+                outlined
+                clearable
+                :input-value="active"
+                label="User name"
+                hide-details="auto"
+                v-model="selected.username"
+                @change="updateUser"
+              ></v-text-field>
+              <v-tooltip bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    v-bind="attrs"
+                    v-on="on"
+                    class="mx-2"
+                    fab
+                    dark
+                    x-small
+                    color="red"
+                    @click="deleteUser($event)"
+                  >
+                    <v-icon dark> mdi-minus </v-icon>
+                  </v-btn>
+                </template>
+                <span>Delete user!</span>
+              </v-tooltip>
+              </v-row>
+
+              <v-text-field
+                class="pb-8"
+                prepend-inner-icon="mdi-email"
+                type="text"
+                outlined
+                clearable
+                :input-value="active"
+                label="email"
+                hide-details="auto"
+                v-model="selected.email"
+                @change="updateUser"
+              ></v-text-field>
+
+              <v-text-field
+                prepend-inner-icon="mdi-account-key"
+                type="password"
+                outlined
+                clearable
+                :input-value="active"
+                label="password"
+                hide-details="auto"
+                v-model="selected.password"
+                @change="updateUser"
+              ></v-text-field>
+
             <v-divider></v-divider>
 
             <v-card-text>
               <v-icon x-large color="primary darken-2">mdi-security</v-icon>
               <h3 class="headline mb-2">ROLES</h3>
-            <v-menu :load-children="fetchRoles">
-              <template v-slot:activator="{ on: menu, attrs }">
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on: tooltip }">
-                    <v-btn
-                      color="primary"
-                      fab
-                      dark
-                      x-small
-                      v-bind="attrs"
-                      v-on="{ ...tooltip, ...menu }"
-                      @click="fetchRoles()"
-                    >
-                      <v-icon dark> mdi-plus </v-icon>
-                    </v-btn>
-                  </template>
-                  <span>Add Role</span>
-                </v-tooltip>
-              </template>
-              <v-list>
-                <v-list-item
-                  v-for="(item, index) in roles"
-                  :key="index"
-                  @click="addRole($event, item.name)"
-                >
-                  <v-list-item-title>{{ item.name }}</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
+              <v-menu :load-children="fetchRoles">
+                <template v-slot:activator="{ on: menu, attrs }">
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on: tooltip }">
+                      <v-btn
+                        color="primary"
+                        fab
+                        dark
+                        x-small
+                        v-bind="attrs"
+                        v-on="{ ...tooltip, ...menu }"
+                        @click="fetchRoles()"
+                      >
+                        <v-icon dark> mdi-plus </v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Add Role</span>
+                  </v-tooltip>
+                </template>
+                <v-list>
+                  <v-list-item
+                    v-for="(item, index) in roles"
+                    :key="index"
+                    @click="addRoleToUser($event, item.name)"
+                  >
+                    <v-list-item-title>{{ item.name }}</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
             </v-card-text>
             <v-card class="mx-auto" max-width="400" tile>
               <v-list nav dense>
@@ -104,7 +167,7 @@
                             dark
                             x-small
                             color="red"
-                            @click="removeRole($event, item.name)"
+                            @click="removeRoleFromUser($event, item.name)"
                           >
                             <v-icon dark> mdi-minus </v-icon>
                           </v-btn>
@@ -160,9 +223,7 @@ export default {
   },
 
   methods: {
-    async addRole(evt, roleName) {
-      console.log(roleName);
-
+    async addRoleToUser(evt, roleName) {
       return await fetch("/Invoke/auth/userAddRole", {
         method: "post",
         headers: {
@@ -181,9 +242,7 @@ export default {
         })
         .catch((err) => console.warn(err));
     },
-    async removeRole(evt, roleName) {
-      console.log(roleName);
-
+    async removeRoleFromUser(evt, roleName) {
       return await fetch("/Invoke/auth/userRemoveRole", {
         method: "post",
         headers: {
@@ -208,7 +267,7 @@ export default {
         .then((json) => {
           for (let i = 0; i < json.length; i++) {
             json[i].id = i + 1;
-            json[i].name = json[i].username;
+            // json[i].name = json[i].username;
           }
           this.users.length = 0;
           this.users.push(...json);
@@ -221,6 +280,63 @@ export default {
         .then((json) => {
           this.roles.length = 0;
           this.roles.push(...json);
+        })
+        .catch((err) => console.warn(err));
+    },
+    async deleteUser() {
+      return await fetch("/Invoke/auth/deleteUser", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: this.selected.username,
+          _id: this.selected._id,
+        }),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          this.fetchUsers(); // refreshes users
+        })
+        .catch((err) => console.warn(err));
+    },
+    async updateUser() {
+      var userDup = Object.assign({}, this.selected);
+      delete userDup["id"];
+      if ("password" in userDup )
+      if (userDup.password === "" || userDup.password===null)
+        delete userDup["password"];
+      this.selected.password=""
+      return await fetch("/Invoke/auth/updateUser", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userDup),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          this.fetchUsers(); // refreshes users
+        })
+        .catch((err) => console.warn(err));
+    },
+    async createUser() {
+      return await fetch("/Invoke/auth/createUser", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          this.fetchUsers(); // refreshes users
         })
         .catch((err) => console.warn(err));
     },
