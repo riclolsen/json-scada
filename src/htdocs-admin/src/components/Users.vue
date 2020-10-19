@@ -14,26 +14,19 @@
         >
           <template v-slot:prepend="{ item }">
             <v-icon v-if="!item.children"> mdi-account </v-icon>
-            {{item.username}}
+            {{ item.username }}
           </template>
         </v-treeview>
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn
-            v-bind="attrs"
-            v-on="on"
-            class="mx-2"
-            fab
-            dark
-            x-small
-            color="blue"
-            @click="createUser($event)"
-          >
-            <v-icon dark> mdi-plus </v-icon>
-          </v-btn>
-        </template>
-        <span>New user!</span>
-      </v-tooltip>
+            <v-btn              
+              class="mt-6"
+              dark
+              x-small
+              color="blue"
+              @click="createUser($event)"
+            >
+              <v-icon dark> mdi-plus </v-icon>
+              New User
+            </v-btn>
       </v-col>
 
       <v-divider vertical></v-divider>
@@ -54,10 +47,10 @@
             flat
             max-width="400"
           >
-
-              <v-row class="pb-8 mx-auto" justify="space-between">  
+            <v-row class="pb-8 mx-auto" justify="space-between">
               <v-text-field
                 prepend-inner-icon="mdi-account"
+                :disabled="selected.username==='admin' ? true : false"
                 type="text"
                 outlined
                 clearable
@@ -70,6 +63,7 @@
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn
+                    v-if="!(selected.username==='admin')"
                     v-bind="attrs"
                     v-on="on"
                     class="mx-2"
@@ -84,100 +78,104 @@
                 </template>
                 <span>Delete user!</span>
               </v-tooltip>
-              </v-row>
+            </v-row>
 
-              <v-text-field
-                class="pb-8"
-                prepend-inner-icon="mdi-email"
-                type="text"
-                outlined
-                clearable
-                :input-value="active"
-                label="email"
-                hide-details="auto"
-                v-model="selected.email"
-                @change="updateUser"
-              ></v-text-field>
+            <v-text-field
+              class="pb-8"
+              prepend-inner-icon="mdi-email"
+              type="text"
+              outlined
+              clearable
+              :input-value="active"
+              label="email"
+              hide-details="auto"
+              v-model="selected.email"
+              @change="updateUser"
+            ></v-text-field>
 
-              <v-text-field
-                prepend-inner-icon="mdi-account-key"
-                type="password"
-                outlined
-                clearable
-                :input-value="active"
-                label="password"
-                hide-details="auto"
-                v-model="selected.password"
-                @change="updateUser"
-              ></v-text-field>
+            <v-text-field
+              prepend-inner-icon="mdi-account-key"
+              type="password"
+              outlined
+              clearable
+              :input-value="active"
+              label="password"
+              hide-details="auto"
+              v-model="selected.password"
+              @change="updateUser"
+            ></v-text-field>
 
-            <v-divider></v-divider>
-
-            <v-card-text>
-              <v-icon x-large color="primary darken-2">mdi-security</v-icon>
-              <h3 class="headline mb-2">ROLES</h3>
-              <v-menu :load-children="fetchRoles">
-                <template v-slot:activator="{ on: menu, attrs }">
-                  <v-tooltip bottom>
-                    <template v-slot:activator="{ on: tooltip }">
-                      <v-btn
-                        color="primary"
-                        fab
-                        dark
-                        x-small
-                        v-bind="attrs"
-                        v-on="{ ...tooltip, ...menu }"
-                        @click="fetchRoles()"
-                      >
-                        <v-icon dark> mdi-plus </v-icon>
-                      </v-btn>
-                    </template>
-                    <span>Add Role</span>
-                  </v-tooltip>
-                </template>
-                <v-list>
-                  <v-list-item
-                    v-for="(item, index) in roles"
-                    :key="index"
-                    @click="addRoleToUser($event, item.name)"
-                  >
-                    <v-list-item-title>{{ item.name }}</v-list-item-title>
-                  </v-list-item>
+            <v-card class="my-4" tile>
+              <v-card-text>
+                <v-icon x-large color="primary darken-2">mdi-security</v-icon>
+                <h3 class="headline mb-2">ROLES</h3>
+                <v-menu :load-children="fetchRoles">
+                  <template v-slot:activator="{ on: menu, attrs }">
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on: tooltip }">
+                        <v-btn
+                          color="primary"
+                          fab
+                          dark
+                          x-small
+                          v-bind="attrs"
+                          v-on="{ ...tooltip, ...menu }"
+                          @click="fetchRoles()"
+                        >
+                          <v-icon dark> mdi-plus </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Add Role</span>
+                    </v-tooltip>
+                  </template>
+                  <v-list>
+                    <v-list-item
+                      v-for="(item, index) in roles"
+                      :key="index"
+                      @click="addRoleToUser($event, item.name)"
+                    >
+                      <v-list-item-title>{{ item.name }}</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+              </v-card-text>
+              <v-card class="mx-auto" tile>
+                <v-list nav dense>
+                  <v-list-item-group color="primary">
+                    <v-list-item v-for="(item, i) in selected.roles" :key="i">
+                      <v-list-item-icon>
+                        <v-icon>mdi-security</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          class="primary--text subheading font-weight-bold"
+                          v-text="item.name"
+                        ></v-list-item-title>
+                      </v-list-item-content>
+                      <v-list-item-action>
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                              :disabled="(selected.username==='admin' && item.name==='admin')"
+                              v-bind="attrs"
+                              v-on="on"
+                              class="mx-2"
+                              fab
+                              dark
+                              x-small
+                              color="red"
+                              @click="removeRoleFromUser($event, item.name)"
+                            >
+                              <v-icon dark> mdi-minus </v-icon>
+                            </v-btn>
+                          </template>
+                          <span>Remove role!</span>
+                        </v-tooltip>
+                      </v-list-item-action>
+                    </v-list-item>
+                  </v-list-item-group>
                 </v-list>
-              </v-menu>
-            </v-card-text>
-            <v-card class="mx-auto" max-width="400" tile>
-              <v-list nav dense>
-                <v-list-item-group color="primary">
-                  <v-list-item v-for="(item, i) in selected.roles" :key="i">
-                    <v-list-item-content>
-                      <v-list-item-title
-                        class="primary--text subheading font-weight-bold"
-                        v-text="item.name"
-                      ></v-list-item-title>
-                    </v-list-item-content>
-                    <v-list-item-action>
-                      <v-tooltip bottom>
-                        <template v-slot:activator="{ on, attrs }">
-                          <v-btn
-                            v-bind="attrs"
-                            v-on="on"
-                            class="mx-2"
-                            fab
-                            dark
-                            x-small
-                            color="red"
-                            @click="removeRoleFromUser($event, item.name)"
-                          >
-                            <v-icon dark> mdi-minus </v-icon>
-                          </v-btn>
-                        </template>
-                        <span>Remove role!</span>
-                      </v-tooltip>
-                    </v-list-item-action>
-                  </v-list-item>
-                </v-list-item-group>
-              </v-list>
+              </v-card>
             </v-card>
           </v-card>
         </v-scroll-y-transition>
@@ -224,6 +222,12 @@ export default {
 
   methods: {
     async addRoleToUser(evt, roleName) {
+      console.log(this.selected.roles)
+      if (this.selected.roles.some(e => e.name === roleName)) 
+        return
+ 
+      if (this.selected.roles.includes(roleName))
+        return
       return await fetch("/Invoke/auth/userAddRole", {
         method: "post",
         headers: {
@@ -305,10 +309,10 @@ export default {
     async updateUser() {
       var userDup = Object.assign({}, this.selected);
       delete userDup["id"];
-      if ("password" in userDup )
-      if (userDup.password === "" || userDup.password===null)
-        delete userDup["password"];
-      this.selected.password=""
+      if ("password" in userDup)
+        if (userDup.password === "" || userDup.password === null)
+          delete userDup["password"];
+      this.selected.password = "";
       return await fetch("/Invoke/auth/updateUser", {
         method: "post",
         headers: {

@@ -16,23 +16,16 @@
             <v-icon v-if="!item.children"> mdi-security </v-icon>
           </template>
         </v-treeview>
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on, attrs }">
           <v-btn
-            v-bind="attrs"
-            v-on="on"
-            class="mx-2"
-            fab
+            class="mt-6"
             dark
             x-small
             color="blue"
             @click="createRole($event)"
           >
             <v-icon dark> mdi-plus </v-icon>
+            New Role
           </v-btn>
-        </template>
-        <span>New role!</span>
-      </v-tooltip>
       </v-col>
 
       <v-divider vertical></v-divider>
@@ -51,6 +44,7 @@
               <v-text-field
                 prepend-inner-icon="mdi-security"
                 type="text"
+                :disabled="selected.name==='admin' ? true : false"
                 outlined
                 clearable
                 :input-value="active"
@@ -62,6 +56,7 @@
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn
+                    v-if="!(selected.name==='admin')"
                     v-bind="attrs"
                     v-on="on"
                     class="mx-2"
@@ -77,8 +72,6 @@
                 <span>Delete role!</span>
               </v-tooltip>
               </v-row>
-
-            
 
             <v-autocomplete
               v-model="selected.group1List"
@@ -113,6 +106,7 @@
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
                         <v-checkbox
+                          :disabled="selected.name==='admin' ? true : false"
                           :input-value="active"
                           v-model="selected.isAdmin"
                           @change="roleChange"
@@ -134,6 +128,7 @@
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
                         <v-checkbox
+                          :disabled="selected.name==='admin' ? true : false"
                           :input-value="active"
                           v-model="selected.changePassword"
                           @change="roleChange"
@@ -518,7 +513,7 @@ export default {
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
-          this.fetchRoles(); // refreshes roles
+          this.fetchRoles(); // refreshes roles          
         })
         .catch((err) => console.warn(err));
     },
