@@ -28,9 +28,15 @@ REM See log rotation options https://nssm.cc/usage#io
 nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_data_processor\cs_data_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
 nssm set JSON_SCADA_cs_data_processor AppDirectory  "C:\json-scada\src\cs_data_processor"
 nssm set JSON_SCADA_cd_data_processor Start SERVICE_AUTO_START
+
 nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
 nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
 nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
+
+
+nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
+nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
+nssm set JSON_SCADA_demo_simul SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_alarm_beep  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\alarm_beep\alarm_beep.js" 
 nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
@@ -39,6 +45,7 @@ nssm set JSON_SCADA_alarm_beep Start SERVICE_AUTO_START
 nssm install JSON_SCADA_process_rtdata "C:\json-scada\sql\process_pg_rtdata.bat"
 nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\sql"
 nssm set JSON_SCADA_process_rtdata Start SERVICE_AUTO_START
+
 nssm install JSON_SCADA_process_hist "C:\json-scada\sql\process_pg_hist.bat"
 nssm set JSON_SCADA_process_hist AppDirectory "C:\json-scada\sql"
 nssm set JSON_SCADA_process_hist Start SERVICE_AUTO_START

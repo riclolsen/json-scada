@@ -120,6 +120,14 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.2: 
+
+ - Fixed PostgreSQL initdb problems, locale, timing, Windows user rights.
+ - Added demo_simul service for offline simulation and testing (must be manually started).
+ - Fixed uninstall services removal.
+
+-------------------------------------------------------------------
+
 Notes for version 0.1: 
 
  - First Windows binary release.

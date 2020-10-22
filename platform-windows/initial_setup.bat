@@ -4,6 +4,7 @@ if not "%1"=="am_admin" (powershell start -verb runas '%0' am_admin & exit /b)
 cd \json-scada\platform-windows\
 
 call postgresql-initdb.bat
+ping -n 15 127.0.0.1
 copy /Y ..\conf-templates\pg_hba.conf postgresql-data\
 copy /Y ..\conf-templates\postgresql.conf postgresql-data\
 call postgresql-create_service.bat
