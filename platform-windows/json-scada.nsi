@@ -653,9 +653,9 @@ Section "Uninstall"
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\mongodb-runtime\\%'" CALL TERMINATE`
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\inkscape-runtime\\%'" CALL TERMINATE`
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%\\platform-windows\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%..\\platform-windows\\%'" CALL TERMINATE`
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
   Sleep 5000
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   Sleep 5000
