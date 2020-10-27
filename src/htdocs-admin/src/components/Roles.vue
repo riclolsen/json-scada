@@ -13,9 +13,19 @@
           transition
         >
           <template v-slot:prepend="{ item }">
-            <v-icon v-if="!item.children"> mdi-account </v-icon>
+            <v-icon v-if="!item.children"> mdi-security </v-icon>
           </template>
         </v-treeview>
+          <v-btn
+            class="mt-6"
+            dark
+            x-small
+            color="blue"
+            @click="createRole($event)"
+          >
+            <v-icon dark> mdi-plus </v-icon>
+            New Role
+          </v-btn>
       </v-col>
 
       <v-divider vertical></v-divider>
@@ -28,14 +38,40 @@
           >
             Select a Role
           </div>
-          <v-card v-else :key="selected.id" class="pt-6 mx-auto" flat>
-            <v-card-text>
-              <h3 class="primary--text headline mb-2">
-                <v-icon x-large color="primary darken-2">mdi-security</v-icon>
-                {{ selected.name }}
-              </h3>
-            </v-card-text>
-            <v-divider></v-divider>
+          <v-card v-else :key="selected.id" class="pt-6 mx-auto" flat max-width="600">
+
+              <v-row class="pb-8 mx-auto" justify="space-between">  
+              <v-text-field
+                prepend-inner-icon="mdi-security"
+                type="text"
+                :disabled="selected.name==='admin' ? true : false"
+                outlined
+                clearable
+                :input-value="active"
+                label="Role name"
+                hide-details="auto"
+                v-model="selected.name"
+                @change="roleChange"
+              ></v-text-field>
+              <v-tooltip bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    v-if="!(selected.name==='admin')"
+                    v-bind="attrs"
+                    v-on="on"
+                    class="mx-2"
+                    fab
+                    dark
+                    x-small
+                    color="red"
+                    @click="deleteRole($event)"
+                  >
+                    <v-icon dark> mdi-minus </v-icon>
+                  </v-btn>
+                </template>
+                <span>Delete role!</span>
+              </v-tooltip>
+              </v-row>
 
             <v-autocomplete
               v-model="selected.group1List"
@@ -70,6 +106,7 @@
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
                         <v-checkbox
+                          :disabled="selected.name==='admin' ? true : false"
                           :input-value="active"
                           v-model="selected.isAdmin"
                           @change="roleChange"
@@ -91,6 +128,7 @@
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
                         <v-checkbox
+                          :disabled="selected.name==='admin' ? true : false"
                           :input-value="active"
                           v-model="selected.changePassword"
                           @change="roleChange"
@@ -428,19 +466,54 @@ export default {
     },
     async roleChange() {
       var roleDup = Object.assign({}, this.selected);
-      delete roleDup['id'];
+      delete roleDup["id"];
       return await fetch("/Invoke/auth/updateRole", {
         method: "post",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-        },        
+        },
         body: JSON.stringify(roleDup),
       })
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
           this.fetchRoles(); // refreshes roles
+        })
+        .catch((err) => console.warn(err));
+    },
+    async deleteRole() {
+      return await fetch("/Invoke/auth/deleteRole", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: this.selected.name,
+          _id: this.selected._id,
+        }),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          this.fetchRoles(); // refreshes roles
+        })
+        .catch((err) => console.warn(err));
+    },
+    async createRole() {
+      return await fetch("/Invoke/auth/createRole", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          this.fetchRoles(); // refreshes roles          
         })
         .catch((err) => console.warn(err));
     },

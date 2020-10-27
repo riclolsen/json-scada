@@ -698,6 +698,26 @@ const pipeline = [
                         change.fullDocument.hysteresis
                       )
                         alarmed = false
+
+                      // create a SOE entry for the limits alarm/normalization when analog alarm condition changes  
+                      if (alarmed != change.fullDocument.alarmed) {
+                        let eventDate = new Date()
+                        let eventText = value.toFixed(2) + " " + change.fullDocument.unit + (alarmed? " &#x1F6A9;" : " &#x1F197;")
+                        const coll_soe = db.collection('soeData')
+                        coll_soe.insertOne({
+                          tag: change.fullDocument.tag,
+                          pointKey: change.fullDocument._id,
+                          group1: change.fullDocument.group1,
+                          description: change.fullDocument.description,
+                          eventText: eventText,
+                          invalid: false,
+                          priority: change.fullDocument.priority,
+                          timeTag: eventDate,
+                          timeTagAtSource: eventDate,
+                          timeTagAtSourceOk: true,
+                          ack: alarmed? 0 : 1 // enter as acknowledged when normalized
+                        })
+                      }
                     }
                   }
 

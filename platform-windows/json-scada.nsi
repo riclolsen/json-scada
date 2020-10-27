@@ -14,8 +14,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.1"
-!define VERSION_ "0.1.0.0"
+!define VERSION "v.0.2"
+!define VERSION_ "0.2.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -113,9 +113,16 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
-  nsExec::Exec 'net stop JSON_SCADA_iec104'
-  nsExec::Exec 'net stop JSON_SCADA_iec104_server'
-  nsExec::Exec 'net stop JSON_SCADA_dnp3'
+  nsExec::Exec 'net stop JSON_SCADA_iec101client'
+  nsExec::Exec 'net stop JSON_SCADA_iec101server'
+  nsExec::Exec 'net stop JSON_SCADA_iec104client'
+  nsExec::Exec 'net stop JSON_SCADA_iec104server'
+  nsExec::Exec 'net stop JSON_SCADA_plctags'
+  nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
+  nsExec::Exec 'net stop JSON_SCADA_process_hist'
+  nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
+  nsExec::Exec 'net stop JSON_SCADA_process_nginx'
+  nsExec::Exec 'net stop JSON_SCADA_process_php'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
   nsExec::Exec '"c:\json-scada\platform-windows\postgresql-runtime\bin\pg_ctl" stop -D c:\json-scada\platform-windows\postgresql-runtime'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
@@ -180,7 +187,7 @@ SetRegView 64
   CreateDirectory "$INSTDIR\mongo_seed"
 ; CreateDirectory "$INSTDIR\sql"
   CreateDirectory "$INSTDIR\src"
-  CreateDirectory "$INSTDIR\PowerBI"
+; CreateDirectory "$INSTDIR\PowerBI"
 ; CreateDirectory "$INSTDIR\Opc.Ua.CertificateGenerator"
   CreateDirectory "$INSTDIR\platform-windows"
   CreateDirectory "$INSTDIR\platform-windows\grafana-runtime"
@@ -196,6 +203,13 @@ SetRegView 64
   CreateDirectory "$INSTDIR\platform-windows\postgresql-runtime"
   CreateDirectory "$INSTDIR\platform-windows\nginx_php-runtime"
 
+  ; This is to try to avoid this Postgresql error:
+  ; https://edwin.baculsoft.com/2014/05/fixing-postgresql-error-initdb-could-not-change-permissions-of-directory-permission-denied/
+  ; (S-1-5-32-545)=Users (S-1-1-0)=Everyone
+  ; https://docs.microsoft.com/pt-br/troubleshoot/windows-server/identity/security-identifiers-in-windows
+  AccessControl::GrantOnFile "$INSTDIR\platform-windows\postgresql-data" "(S-1-5-32-545)" "FullAccess"
+  AccessControl::GrantOnFile "$INSTDIR\platform-windows\postgresql-data" "(S-1-1-0)" "FullAccess"
+
   SetOutPath $INSTDIR
 
   File /a ".\release_notes.txt"
@@ -207,6 +221,7 @@ SetRegView 64
 
   SetOutPath $INSTDIR\platform-windows
   File /a "..\platform-windows\*.bat"
+  File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
 
@@ -257,6 +272,9 @@ SetRegView 64
   File /a /r "..\src\htdocs-admin\*.*"
   SetOutPath $INSTDIR\src\htdocs-login
   File /a /r "..\src\htdocs-login\*.*"
+
+  SetOutPath $INSTDIR\src\demo_simul
+  File /a /r "..\src\demo_simul\*.*"
 
   SetOutPath $INSTDIR\src\alarm_beep
   File /a /r "..\src\alarm_beep\*.*"
@@ -519,20 +537,128 @@ Section "Uninstall"
   
 ; Fecha processos
 
+  !define SC  `$SYSDIR\sc.exe`
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_demo_simul"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_demo_simul"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_rtdata"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_rtdata"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_alarm_beep"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_alarm_beep"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_php"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_php"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_nginx"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_nginx"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_i104m"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_i104m"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_plctags"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_plctags"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_iec101client"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iec101client"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_iec104client"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iec104client"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_dnp3client"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_dnp3client"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_iec101server"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iec101server"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_iec104server"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iec104server"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_cs_data_processor"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_cs_data_processor"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_calculations"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_calculations"`
+  ClearErrors
+  
+  ExecWait `"${SC}" stop "JSON_SCADA_mongodb"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_mongodb"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_postgresql"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_postgresql"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_postgresql"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_postgresql"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_hist"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_hist"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_process_rtdata"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_process_rtdata"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_postgresql"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_postgresql"`
+  ClearErrors
+
   ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
   Sleep 5000
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
+  Sleep 1000
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\grafana-runtime\\bin\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\php\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nodejs-runtime\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\mongodb-runtime\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\inkscape-runtime\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%..\\platform-windows\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
+  Sleep 5000
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
-  Sleep 1000
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
-  Sleep 1000
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\mongodb-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\inkscape-runtime\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\%'" CALL TERMINATE`
-  nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
-  Sleep 1000
+  Sleep 5000
   
   RMDir /r "$INSTDIR\bin" 
   RMDir /r "$INSTDIR\platform-windows" 
