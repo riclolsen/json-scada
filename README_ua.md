@@ -88,18 +88,22 @@ You certify that:
 
 ## Documentation
 
-- [Docker Demo](demo-docker/README.md)
-- [Calculations](src/calculations/README.md)
-- [IEC60870-5-104 Server Driver](src/lib60870.netcore/iec104server/README.md)
-- [IEC60870-5-104 Client Driver](src/lib60870.netcore/iec104client/README.md)
-- [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
-- [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
-- [I104M Client Driver](src/i104m/README.md)
-- [Change Stream Data Processor](src/cs_data_processor/README.md)
-- [Realtime Data Server](src/server_realtime/README.md)
-- [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
-- [OSHMI2JSON Tool](src/oshmi2json/README.md)
-- [Schema Documentation](docs/schema.md)
+* [Docker Demo](demo-docker/README.md)
+* [Config File](conf/README.md)
+* [Calculations](src/calculations/README.md)
+* [IEC60870-5-104 Server Driver](src/lib60870.netcore/iec104server/README.md)
+* [IEC60870-5-104 Client Driver](src/lib60870.netcore/iec104client/README.md)
+* [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
+* [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
+* [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
+* [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
+* [I104M Client Driver](src/i104m/README.md)
+* [Change Stream Data Processor](src/cs_data_processor/README.md)
+* [Realtime Data Server](src/server_realtime/README.md)
+* [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
+* [OSHMI2JSON Tool](src/oshmi2json/README.md)
+* [Schema Documentation](docs/schema.md)
+* [Install Guide](docs/install.md)
 
 ## Requirements
 
