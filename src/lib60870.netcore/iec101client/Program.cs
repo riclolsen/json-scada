@@ -448,9 +448,11 @@ namespace Iec10XDriver
             {
                 foreach (IEC10X_connection srv in IEC10Xconns)
                 {
+                    var conNameStr = srv.name + " - ";
+
                     if (Active)
                     {
-                        //Log("MASTER LL: " + srv.master.GetLinkLayerState().ToString());
+                        //Log(conNameStr + "MASTER LL: " + srv.master.GetLinkLayerState().ToString());
                         if (/*srv.master.GetLinkLayerState() == LinkLayerState.AVAILABLE && */srv.master.GetLinkLayerState(srv.master.SlaveAddress) == LinkLayerState.AVAILABLE )
                         {
                             if (srv.giInterval > 0)
@@ -459,7 +461,7 @@ namespace Iec10XDriver
                                 {
                                     try
                                     {
-                                        Log("Interrogation ----------------------------------- " + srv.remoteLinkAddress);
+                                        Log(conNameStr + "Interrogation " + srv.remoteLinkAddress, LogLevelDetailed);
                                         srv.master.SlaveAddress = srv.remoteLinkAddress;
                                         srv
                                             .master
@@ -471,7 +473,7 @@ namespace Iec10XDriver
                                     catch (LinkLayerBusyException)
                                     {
                                         srv.CntGI = 0;
-                                        Log("Master " + srv.name + ": Link layer busy or not ready");
+                                        Log(conNameStr + "Link layer busy or not ready");
                                         Thread.Sleep(100);
                                     }
                                     srv.CntGI = 0;
@@ -483,13 +485,13 @@ namespace Iec10XDriver
                                 {
                                     try
                                     {
-                                        Log("Test Command");
+                                        Log(conNameStr + "Test Command", LogLevelDetailed);
                                         srv.master.SlaveAddress = srv.remoteLinkAddress;
                                         srv.master.SendTestCommand(srv.master.SlaveAddress);
                                     }
                                     catch (LinkLayerBusyException)
                                     {
-                                        Log("Master " + srv.name + ": Link layer busy or not ready");
+                                        Log(conNameStr + "Link layer busy or not ready");
                                         Thread.Sleep(100);
                                     }
                                     srv.CntTestCommand = 0;
@@ -501,13 +503,13 @@ namespace Iec10XDriver
                                 {
                                     try
                                     {
-                                        Log("Send Clock Sync");
+                                        Log(conNameStr + "Send Clock Sync", LogLevelDetailed);
                                         srv.master.SlaveAddress = srv.remoteLinkAddress;
                                         srv.master.SendClockSyncCommand(srv.master.SlaveAddress, new CP56Time2a(DateTime.Now));
                                     }
                                     catch (LinkLayerBusyException)
                                     {
-                                        Log("Master " + srv.name + ": Link layer busy or not ready");
+                                        Log(conNameStr + "Link layer busy or not ready");
                                         Thread.Sleep(100);
                                     }
                                     srv.CntTimeSync = 0;
@@ -525,7 +527,7 @@ namespace Iec10XDriver
                             srv.CntGI = srv.giInterval - 5;
                             srv.CntTestCommand = srv.testCommandInterval - 2;
                             srv.CntTimeSync = srv.timeSyncInterval;
-                            Log("Link error: " + srv.name);
+                            Log(conNameStr + "Link error!");
                             srv.master.Stop();
                             Thread.Sleep(50);
                             srv.master.Start();
