@@ -87,6 +87,12 @@ Each instance for this driver can have many client connection defined that must 
 * _**t2**_ [Double] - Protocol _t2_ timeout in seconds. **Mandatory parameter**.
 * _**t3**_ [Double] - Protocol _t3_ timeout in seconds. **Mandatory parameter**.
 * _**stats**_ [Double] - Protocol statistics updated by the driver. **Mandatory parameter**.
+Parameters needed only for TLS encrypted connections (when there are redundant servers, the same set of certificates is applied to connections to both servers).
+* _**localCertFilePath**_ [String] - File that contains the certificate (*.pfx) that will be presented to the remote side of the connection. **Optional parameter**.
+* _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server (*.cer). **Optional parameter**.
+* _**rootCertFilePath**_ [String] - CA certificate to check the certificate provided by the server - not required when ChainValidation == false. **Optional parameter**.
+* _**allowOnlySpecificCertificates**_ [bool] - Indicates whether the driver allows only specific certificates. Default: false. **Optional parameter**.
+* _**chainValidation**_ [bool] - Indicates whether the drivers performs a X509 chain validation against the registered CA certificates. Default: false. **Optional parameter**.
 
 ## Configure tags for update
 
