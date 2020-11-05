@@ -489,6 +489,12 @@ var protocolConnectionsValidator = {
       allowTLSv13: {
         bsonType: ['bool', 'null']
       },
+      chainValidation: {
+        bsonType: ['bool', 'null']
+      },
+      allowOnlySpecificCertificates: {
+        bsonType: ['bool', 'null']
+      },
       cipherList: {
         bsonType: ['string', 'null']
       },
@@ -496,6 +502,9 @@ var protocolConnectionsValidator = {
         bsonType: ['string', 'null']
       },
       peerCertFilePath: {
+        bsonType: ['string', 'null']
+      },
+      rootCertFilePath: {
         bsonType: ['string', 'null']
       },
       privateKeyFilePath: {
