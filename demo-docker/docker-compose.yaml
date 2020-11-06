@@ -213,6 +213,19 @@ services:
     networks:
       - jsdemo_net
 
+## Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
+#  metabase:
+#    image: metabase/metabase:latest
+#    container_name: jsdemo_metabase
+#    restart: unless-stopped
+#    ports:
+#      - 3001:3000
+#    links:
+#      - jsdemo_mongorsn1
+#      - timescaledb
+#    networks:
+#      - jsdemo_net
+
 networks:
   jsdemo_net:
     driver: bridge
