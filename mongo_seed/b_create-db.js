@@ -566,3 +566,7 @@ db.createCollection('roles')
 db.roles.createIndex({ name: 1 }, { name: 'roleNameIndex', unique: true })
 db.createCollection('users')
 db.users.createIndex({ username: 1 }, { name: 'userNameIndex', unique: true })
+
+db.createCollection('userActions')
+db.roles.createIndex({ timeTag: 1 }, { name: 'actionsTimeTagIndex' })
+
