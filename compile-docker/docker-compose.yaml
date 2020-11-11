@@ -7,7 +7,8 @@ services:
 
     
   dotnet_compile:
-    image: mcr.microsoft.com/dotnet/core/sdk:3.1
+    image: mcr.microsoft.com/dotnet/sdk:5.0
+    #image: mcr.microsoft.com/dotnet/core/sdk:3.1
     container_name: js_dotnet_compile
     command: sh -c "cd /src/lib60870.netcore/lib60870.netcore/ && 
                     dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
@@ -25,7 +26,8 @@ services:
                     dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/libplctag/PLCTagsClient &&
                     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
-                    
+    environment:
+      - DOTNET_CLI_TELEMETRY_OPTOUT=1
     #command: tail -f /dev/null
     volumes:
       - ../src/lib60870.netcore:/src/lib60870.netcore

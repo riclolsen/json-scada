@@ -7,6 +7,8 @@ echo - Node.js 14+
 cd c:\json-scada
 mkdir bin
 
+set DOTNET_CLI_TELEMETRY_OPTOUT=1
+
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
 dotnet build --runtime win-x64 -c Release -o ..\..\bin\ 
 cd \json-scada\src\lib60870.netcore\iec101client\

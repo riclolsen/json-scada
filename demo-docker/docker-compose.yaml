@@ -123,7 +123,8 @@ services:
   
   # IEC6079-5-104 CLIENT, will connect to a demo server on 207.180.242.96:2404
   iec104client:
-    image: mcr.microsoft.com/dotnet/core/runtime:3.1
+    image: mcr.microsoft.com/dotnet/runtime:5.0
+    #image: mcr.microsoft.com/dotnet/core/runtime:3.1
     container_name: jsdemo_iec104client
     command: sh -c "sleep 20 && /jsonscada_bin/iec104client"
     restart: unless-stopped
@@ -137,7 +138,8 @@ services:
 
   # IEC6079-5-104 SERVER, accepts connection on 127.0.0.1:2404 (originator address 1)
   iec104server:
-    image: mcr.microsoft.com/dotnet/core/runtime:3.1
+    image: mcr.microsoft.com/dotnet/runtime:5.0
+    #image: mcr.microsoft.com/dotnet/core/runtime:3.1
     container_name:  jsdemo_iec104server
     command: sh -c "sleep 20 && /jsonscada_bin/iec104server"
     restart: unless-stopped
