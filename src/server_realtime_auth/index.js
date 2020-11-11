@@ -691,26 +691,18 @@ let pool = null
                         .collection(COLL_REALTIME)
                         .updateOne(findPoint, {
                           $set: {
-                            alarmDisabled: node.Value._Properties.alarmDisabled,
-                            annotation: node.Value._Properties.annotation,
-                            loLimit: new mongo.Double(
-                              node.Value._Properties.loLimit
-                            ),
-                            //loloLimit: node.Value._Properties.loLimit,
-                            //lololoLimit: node.Value._Properties.loLimit,
-                            hiLimit: new mongo.Double(
-                              node.Value._Properties.hiLimit
-                            ),
-                            //hihiLimit: node.Value._Properties.hiLimit,
-                            //hihihiLimit: node.Value._Properties.hiLimit,
-                            hysteresis: new mongo.Double(
-                              node.Value._Properties.hysteresis
-                            ),
-                            notes: node.Value._Properties.notes,
-                            ...('substituted' in node.Value._Properties &&
-                            'newValue' in node.Value._Properties
-                              ? { value: node.Value._Properties.newValue }
-                              : {})
+                            ...((!AUTHENTICATION || userRights?.disableAlarms)? {alarmDisabled: node.Value._Properties.alarmDisabled }:{}),
+                            ...((!AUTHENTICATION || userRights?.enterAnnotations)? {annotation: node.Value._Properties.annotation}:{}),
+                            ...((!AUTHENTICATION || userRights?.enterLimits)? {loLimit: new mongo.Double( node.Value._Properties.loLimit )}:{}),
+                            // loloLimit: node.Value._Properties.loLimit,
+                            // lololoLimit: node.Value._Properties.loLimit,
+                            ...((!AUTHENTICATION || userRights?.enterLimits)? {hiLimit: new mongo.Double( node.Value._Properties.hiLimit )}:{}),
+                            // hihiLimit: node.Value._Properties.hiLimit,
+                            // hihihiLimit: node.Value._Properties.hiLimit,
+                            ...((!AUTHENTICATION || userRights?.enterLimits)? {hysteresis: new mongo.Double(node.Value._Properties.hysteresis)}:{}),
+                            ...((!AUTHENTICATION || userRights?.enterNotes)? {notes: node.Value._Properties.notes}:{}),
+                            ...(('substituted' in node.Value._Properties && 'newValue' in node.Value._Properties && (!AUTHENTICATION || userRights?.substituteValues))
+                              ? { value: node.Value._Properties.newValue } : {})
                           }
                         })
                       if (
@@ -722,6 +714,7 @@ let pool = null
                         console.log('update ok id: ' + node.NodeId.Id)
                         actionsQueue.enqueue({
                           username: username,
+                          pointKey: node.NodeId.Id,
                           action: 'Update Properties',
                           properties: node.Value._Properties,
                           timeTag: new Date()
