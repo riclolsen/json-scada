@@ -51,6 +51,7 @@ if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
 const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const { AsyncLocalStorage } = require('async_hooks')
+const { canSendCommands } = require('./app/middlewares/authJwt.js')
 
 let actionsQueue = new Queue() // queue of user actions to write to mongo collection
 
@@ -204,7 +205,7 @@ let pool = null
     // handle auth here
     if (AUTHENTICATION) {
       let rslt = authJwt.checkToken(req)
-      console.log(rslt)
+      // console.log(rslt)
       if (rslt === false) {
         // fail if not connected to database server
         OpcResp.ServiceId = opc.ServiceCode.ServiceFault
@@ -293,7 +294,7 @@ let pool = null
                   // test for user rights
                   if (
                     !userRights?.ackEvents &&
-                    ( node.Value.Body & opc.Acknowledge.RemoveAllEvents ||
+                    (node.Value.Body & opc.Acknowledge.RemoveAllEvents ||
                       node.Value.Body & opc.Acknowledge.RemoveOneEvent ||
                       node.Value.Body & opc.Acknowledge.RemovePointEvents ||
                       node.Value.Body & opc.Acknowledge.AckAllEvents ||
@@ -301,7 +302,9 @@ let pool = null
                       node.Value.Body & opc.Acknowledge.AckPointEvents)
                   ) {
                     // ACTION DENIED
-                    console.log(`User has no right to ack/remove events! [{username}]`)
+                    console.log(
+                      `User has no right to ack/remove events! [${username}]`
+                    )
                     OpcResp.Body.ResponseHeader.ServiceResult =
                       opc.StatusCode.BadUserAccessDenied
                     OpcResp.Body.ResponseHeader.StringTable = [
@@ -314,12 +317,14 @@ let pool = null
                   }
                   if (
                     !userRights?.ackAlarms &&
-                    ( node.Value.Body & opc.Acknowledge.AckOneAlarm ||
+                    (node.Value.Body & opc.Acknowledge.AckOneAlarm ||
                       node.Value.Body & opc.Acknowledge.AckAllAlarms ||
                       node.Value.Body & opc.Acknowledge.SilenceBeep)
                   ) {
                     // ACTION DENIED
-                    console.log(`User has no right to ack or silence alarms! [{username}]`)
+                    console.log(
+                      `User has no right to ack or silence alarms! [${username}]`
+                    )
                     OpcResp.Body.ResponseHeader.ServiceResult =
                       opc.StatusCode.BadUserAccessDenied
                     OpcResp.Body.ResponseHeader.StringTable = [
@@ -538,6 +543,30 @@ let pool = null
 
               if (node.AttributeId == opc.AttributeId.Value) {
                 // Write a Value: Command
+
+                if (AUTHENTICATION) {
+                  // go check user right for command in mongodb (not just in the token for better security)
+                  if (!await canSendCommands(req)) { 
+                    // ACTION DENIED
+                    console.log(
+                      `User has no right to issue commands! [${username}]`
+                    )
+                    OpcResp.Body.ResponseHeader.ServiceResult =
+                      opc.StatusCode.BadUserAccessDenied
+                    OpcResp.Body.ResponseHeader.StringTable = [
+                      opc.getStatusCodeName(opc.StatusCode.BadUserAccessDenied),
+                      opc.getStatusCodeText(opc.StatusCode.BadUserAccessDenied),
+                      'User has no right to issue commands!'
+                    ]
+                    res.send(OpcResp)
+                    return
+                  } else {
+                    console.log(
+                      `User authorized to issue commands! [${username}]`
+                    )
+                  }
+                }
+
                 if ('NodeId' in node)
                   if ('Id' in node.NodeId) {
                     if (
@@ -565,7 +594,6 @@ let pool = null
 
                     let cmd_id = node.NodeId.Id
                     let cmd_val = node.Value.Body
-                    let found = false
                     let query = { _id: parseInt(cmd_id) }
                     if (isNaN(parseInt(cmd_id))) query = { tag: cmd_id }
 
@@ -692,6 +720,13 @@ let pool = null
                         // updateOne ok
                         OpcResp.Body.Results.push(opc.StatusCode.Good)
                         console.log('update ok id: ' + node.NodeId.Id)
+                        actionsQueue.enqueue({
+                          username: username,
+                          action: 'Update Properties',
+                          properties: node.Value._Properties,
+                          timeTag: new Date()
+                        })
+      
                       } else {
                         // some updateOne error
                         OpcResp.Body.Results.push(

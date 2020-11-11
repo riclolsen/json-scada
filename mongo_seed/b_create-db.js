@@ -568,5 +568,7 @@ db.createCollection('users')
 db.users.createIndex({ username: 1 }, { name: 'userNameIndex', unique: true })
 
 db.createCollection('userActions')
-db.roles.createIndex({ timeTag: 1 }, { name: 'actionsTimeTagIndex' })
+db.userActions.createIndex({ timeTag: 1 }, { name: 'actionsTimeTagIndex' })
+// use this to make records expire after a number of seconds
+// db.userActions.createIndex( { timeTag: 1 }, { expireAfterSeconds: 2592000 } )
 
