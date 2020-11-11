@@ -18,8 +18,8 @@ jobs:
       with:
         dotnet-version: 5.0.100
     - name: Install dependencies
-      working-directory: src/lib60870.netcore
+      working-directory: sr/dnp3/Dnp3Client
       run: dotnet restore
     - name: Build DNP3 Client
       working-directory: src/dnp3/Dnp3Client
-      run: dotnet build -r linux-x64 --configuration Release 
+      run: dotnet build --configuration Release 
