@@ -21,8 +21,8 @@ exports.listUsers = (req, res) => {
         return
       }
       users.forEach(user => {
-        user.password = null;
-      });
+        user.password = null
+      })
       res.status(200).send(users)
     })
 }
@@ -117,18 +117,21 @@ exports.updateRole = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   console.log('updateUser')
-  if ( "password" in req.body && req.body.password !== "" && req.body.password !== null)
+  if (
+    'password' in req.body &&
+    req.body.password !== '' &&
+    req.body.password !== null
+  )
     req.body.password = bcrypt.hashSync(req.body.password, 8)
-  else
-    delete req.body["password"]
+  else delete req.body['password']
   await User.findOneAndUpdate({ _id: req.body._id }, req.body)
   res.status(200).send()
 }
 
 exports.createRole = async (req, res) => {
-  console.log('createRole')  
+  console.log('createRole')
   const role = new Role()
-  role.save((err) => {
+  role.save(err => {
     if (err) {
       res.status(200).send({ error: err })
       return
@@ -139,10 +142,10 @@ exports.createRole = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   console.log('createUser')
-  if (req.body.password && req.body.password !== "")
+  if (req.body.password && req.body.password !== '')
     req.body.password = bcrypt.hashSync(req.body.password, 8)
   const user = new User(req.body)
-  user.save((err) => {
+  user.save(err => {
     if (err) {
       res.status(200).send({ error: err })
       return
@@ -220,6 +223,8 @@ exports.signup = (req, res) => {
   })
 }
 
+// User signin request
+// Will check for valid user and then create a JWT access token
 exports.signin = (req, res) => {
   User.findOne({
     username: req.body.username
@@ -247,6 +252,7 @@ exports.signin = (req, res) => {
           })
       }
 
+      // Combines all roles rights for the user
       var authorities = []
       var rights = {
         isAdmin: false,
@@ -261,6 +267,7 @@ exports.signin = (req, res) => {
         ackAlarms: false,
         disableAlarms: false,
         group1List: [],
+        group1CommandList: [],
         displayList: [],
         maxSessionDays: 0.0
       }
@@ -296,6 +303,10 @@ exports.signin = (req, res) => {
             rights.disableAlarms || user.roles[i].disableAlarms
         if ('group1List' in user.roles[i])
           rights.group1List = rights.group1List.concat(user.roles[i].group1List)
+        if ('group1CommandList' in user.roles[i])
+          rights.group1CommandList = rights.group1CommandList.concat(
+            user.roles[i].group1CommandList
+          )
         if ('displayList' in user.roles[i])
           rights.displayList = rights.displayList.concat(
             user.roles[i].displayList

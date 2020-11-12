@@ -80,7 +80,19 @@
               dense
               chips
               small-chips
-              label="Group1 List"
+              label="Can View - Group1 List"
+              multiple
+              @change="roleChange"
+            ></v-autocomplete>
+
+            <v-autocomplete
+              v-model="selected.group1CommandList"
+              :items="group1ListAll"
+              outlined
+              dense
+              chips
+              small-chips
+              label="Can Command - Group1 List"
               multiple
               @change="roleChange"
             ></v-autocomplete>
@@ -364,6 +376,7 @@ export default {
     settings: [],
     displayListAll: [],
     group1ListAll: [],
+    group1ListCommandAll: [],
   }),
 
   computed: {

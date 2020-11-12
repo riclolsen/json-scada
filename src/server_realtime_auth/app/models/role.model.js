@@ -16,6 +16,7 @@ const Role = mongoose.model(
     ackAlarms: {type: Boolean, default: false},
     disableAlarms: {type: Boolean, default: false},
     group1List: {type: [String], default: []},
+    group1CommandList: {type: [String], default: []},
     displayList: {type: [String], default: []},
     maxSessionDays: {type: Number, default: 3.0}
   }),
