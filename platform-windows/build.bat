@@ -39,9 +39,15 @@ copy /Y i104m ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
 npm update
-cd \json-scada\src\server_realtime
-npm update
 cd \json-scada\src\oshmi2json
 npm update
 cd \json-scada\src\alarm_beep
 npm update
+cd \json-scada\src\server_realtime
+npm update
+cd \json-scada\src\server_realtime_auth
+npm update
+cd \json-scada\src\htdocs-admin
+npm update
+npm run build
+

@@ -73,6 +73,20 @@ services:
     volumes:
       - ../src/server_realtime:/server_realtime
 
+  server_realtime_auth_update:
+    image: node:current-alpine3.12
+    container_name: js_server_realtime_auth_update
+    command:  sh -c "cd /server_realtime_auth && npm update"
+    volumes:
+      - ../src/server_realtime_auth:/server_realtime_auth
+
+  htdocs_admin_update:
+    image: node:current-alpine3.12
+    container_name: js_htdocs_admin_update
+    command:  sh -c "cd /htdocs-admin && npm update && npm run build"
+    volumes:
+      - ../src/htdocs-admin:/htdocs-admin
+
   alarm_beep_update:
     image: node:current-alpine3.12
     container_name: js_alarm_beep_update
