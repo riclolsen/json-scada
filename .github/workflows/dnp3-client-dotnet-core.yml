@@ -16,10 +16,10 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.301
+        dotnet-version: 5.0.100
     - name: Install dependencies
-      working-directory: src/lib60870.netcore
+      working-directory: src/dnp3/Dnp3Client
       run: dotnet restore
     - name: Build DNP3 Client
       working-directory: src/dnp3/Dnp3Client
-      run: dotnet build -r linux-x64 --configuration Release 
+      run: dotnet build Dnp3Client.csproj -r linux-x64 --configuration Release 

@@ -18,6 +18,10 @@
         <v-icon>mdi-tag-multiple</v-icon>
       </v-tab>
       <v-tab href="#tab-4">
+        DRIVER INSTANCES
+        <v-icon>mdi-cogs</v-icon>
+      </v-tab>
+      <v-tab href="#tab-5">
         CONNECTIONS
         <v-icon>mdi-file-tree</v-icon>
       </v-tab>
@@ -35,6 +39,10 @@
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 4">
+        <v-card-text>Under Construction...</v-card-text>
+      </v-tab-item>
+
+      <v-tab-item :value="'tab-' + 5">
         <v-card-text>Under Construction...</v-card-text>
       </v-tab-item>
 

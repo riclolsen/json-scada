@@ -95,7 +95,19 @@ namespace Iec10XDriver
             public int maxClientConnections { get; set; }
             [BsonDefaultValue(1000)]
             public int MaxQueueSize { get; set; }
+            [BsonDefaultValue("")]
+            public string localCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string peerCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string rootCertFilePath { get; set; }
+            [BsonDefaultValue(false)]
+            public bool allowOnlySpecificCertificates { get; set; }
+            [BsonDefaultValue(false)]
+            public bool chainValidation { get; set; }
             public Connection connection;
+            public Connection conn1;
+            public Connection conn2;
             public int CntGI;
             public int CntTestCommand;
             public ushort CntTestCommandSeq;
@@ -340,6 +352,38 @@ namespace Iec10XDriver
                 alpars.SizeOfCA = srv.sizeOfCA;
                 alpars.SizeOfIOA = srv.sizeOfIOA;
                 alpars.OA = srv.localLinkAddress;
+
+                TlsSecurityInformation secInfo = null;
+                if (srv.localCertFilePath != "")
+                {
+                    try 
+                    {
+                        // Own certificate has to be a pfx file that contains the private key
+                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath);
+
+                        // Create a new security information object to configure TLS
+                        secInfo = new TlsSecurityInformation(null, ownCertificate);
+
+                        // Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
+                        secInfo.AddAllowedCertificate(new X509Certificate2(srv.peerCertFilePath));
+
+                        // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
+                        secInfo.AddCA(new X509Certificate2(srv.rootCertFilePath));
+
+                        // Check if the certificate is signed by a provided CA
+                        secInfo.ChainValidation = srv.chainValidation;
+
+                        // Check that the shown server certificate is in the list of allowed certificates
+                        secInfo.AllowOnlySpecificCertificates = srv.allowOnlySpecificCertificates;
+                    }
+                    catch (Exception e)
+                    {
+                        Log(srv.name + " - Error configuring TLS certficates.");
+                        Log(srv.name + " - " + e.Message);
+                        Environment.Exit(1);
+                    }
+                }
+
                 var tcpPort = 2404;
                 string[] ipAddrPort = srv.ipAddresses[0].Split(':');
                 if (ipAddrPort.Length > 1)
@@ -351,6 +395,8 @@ namespace Iec10XDriver
                         apcipars,
                         alpars);
                 con.Parameters.OA = srv.localLinkAddress;
+                srv.conn1 = con;
+                srv.conn2 = con;
                 srv.connection = con;
                 srv.CntGI = srv.giInterval - 3;
                 srv.CntTestCommand = srv.testCommandInterval - 1;
@@ -360,6 +406,32 @@ namespace Iec10XDriver
                     con.DebugOutput = true;
                 con.SetASDUReceivedHandler(AsduReceivedHandler, cntIecSrv);
                 con.SetConnectionHandler(ConnectionHandler, cntIecSrv);
+
+                if (srv.ipAddresses.Length>1) // is there a secondary server ?
+                { 
+                    string[] ipAddrPort2 = srv.ipAddresses[1].Split(':');
+                    if (ipAddrPort2.Length > 1)
+                        if (int.TryParse(ipAddrPort2[1], out _))
+                            tcpPort = System.Convert.ToInt32(ipAddrPort2[1]);
+                    var c2 =
+                        new Connection(ipAddrPort2[0],
+                            tcpPort,
+                            apcipars,
+                            alpars);
+                    con.Parameters.OA = srv.localLinkAddress;
+                    srv.conn2 = c2;
+                    srv.connection = c2; // force initial swap to primary server
+                    if (LogLevel >= LogLevelDebug)
+                        c2.DebugOutput = true;
+                    c2.SetASDUReceivedHandler(AsduReceivedHandler, cntIecSrv);
+                    c2.SetConnectionHandler(ConnectionHandler, cntIecSrv);
+                }
+
+                if (srv.localCertFilePath != "" && secInfo != null)
+                {
+                    srv.conn1.SetTlsSecurity(secInfo);
+                    srv.conn2.SetTlsSecurity(secInfo);
+                }
 
                 // create timer to increment counters each second
                 srv.TimerCnt = new System.Timers.Timer();
@@ -384,6 +456,7 @@ namespace Iec10XDriver
             {
                 foreach (IEC10X_connection srv in IEC10Xconns)
                 {
+                    var conNameStr = srv.name + " - ";
                     if (Active)
                     {
                         if (srv.connection.IsRunning)
@@ -392,7 +465,7 @@ namespace Iec10XDriver
                             {
                                 if (srv.CntGI >= srv.giInterval)
                                 {
-                                    Log("Send Interrogation Request");
+                                    Log(conNameStr + "Send Interrogation Request", LogLevelDetailed);
                                     srv.CntGI = 0;
                                     srv
                                         .connection
@@ -406,7 +479,7 @@ namespace Iec10XDriver
                             {
                                 if (srv.CntTestCommand >= srv.testCommandInterval)
                                 {
-                                    Log("Send Test Command");
+                                    Log(conNameStr + "Send Test Command", LogLevelDetailed);
                                     srv.CntTestCommand = 0;
                                     srv.CntTestCommandSeq++;
                                     srv.connection.SendTestCommandWithCP56Time2a(srv.remoteLinkAddress, srv.CntTestCommandSeq, new CP56Time2a(DateTime.Now));
@@ -416,7 +489,7 @@ namespace Iec10XDriver
                             {
                                 if (srv.CntTimeSync >= srv.timeSyncInterval)
                                 {
-                                    Log("Send Clock Sync");
+                                    Log(conNameStr + "Send Clock Sync", LogLevelDetailed);
                                     srv.CntTimeSync = 0;
                                     srv.connection.SendClockSyncCommand(srv.remoteLinkAddress, new CP56Time2a(DateTime.Now));
                                 }
@@ -430,13 +503,29 @@ namespace Iec10XDriver
                             srv.CntTestCommandSeq = 0;
                             srv.connection.Close();
                             srv.connection.Cancel();
+
+                            // swap slave connection when not connected
+                            if ( srv.ipAddresses.Length > 1 )
+                            {
+                                if (srv.connection == srv.conn1)
+                                {
+                                    Log(conNameStr + "Trying server " + srv.ipAddresses[1]);
+                                    srv.connection = srv.conn2;
+                                }
+                                else
+                                {
+                                    Log(conNameStr + "Trying server " + srv.ipAddresses[0]);
+                                    srv.connection = srv.conn1;
+                                }
+                            }
+
                             try
                             {
-                                srv.connection.Connect();
+                                srv.connection.Connect(); // (re)try to connect to server
                             }
                             catch
                             {
-                                Log("Error connecting " + srv.name);
+                                Log(conNameStr + "Error connecting!");
                             }
                         }
                     }

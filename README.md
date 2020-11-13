@@ -14,9 +14,9 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * MongoDB Change Streams for realtime async database events processing.
 * HTML5 Web interface. UTF-8/I18N. Mobile access.
 * Inkscape-based SVG synoptic display editor.
-* IEC60870-101/104 Client and Server protocols.
+* IEC60870-5-101/104 client and server protocols. IEC60870-5-104 client with TLS support.
 * DNP3 Client (TCP, UDP, Serial and TLS).
-* CIP Ethernet/IP PLCTags Client Driver.
+* CIP Ethernet/IP PLCTags client driver (experimental).
 * PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 * Extensibility of data model (MongoDB: NoSQL/schema-less).
 * Development of custom applications with modern stacks like MEAN/MERN, etc.
@@ -27,6 +27,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * Future-proof, vendor independence, flexibility, extensibility.
 * Reduced human costs for maintenance and development thanks to the employment of widely-used open-source IT technologies.
 * Live point configuration updates.
+* Role-based access control and web-based configuration management (now under development).
 * Planned protocol drivers: OPC-UA, DNP3 Server, MODBUS, MQTT.
 * Planned integrations: InfluxDB/Telegraf, NodeRed, MS Power BI.
 
@@ -105,13 +106,13 @@ You certify that:
 
 ## Requirements
 
-* Node.js 14.
-* Dotnet Core 3.1.
-* Golang 1.14.
-* MongoDB 4.2.
-* PostgreSQL 12.
-* TimescaleDB 1.7.
-* Grafana 7.0.
+* Node.js 14+.
+* Dotnet Core 3.1+.
+* Golang 1.14+.
+* MongoDB 4.2+.
+* PostgreSQL 12+.
+* TimescaleDB 1.7+.
+* Grafana 7.0+.
 
 ## Contact
 

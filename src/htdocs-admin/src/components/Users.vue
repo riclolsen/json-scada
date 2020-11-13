@@ -60,10 +60,11 @@
                 v-model="selected.username"
                 @change="updateUser"
               ></v-text-field>
+              
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn
-                    v-if="!(selected.username==='admin')"
+                    v-if="!(selected.name === 'admin')"
                     v-bind="attrs"
                     v-on="on"
                     class="mx-2"
@@ -71,13 +72,45 @@
                     dark
                     x-small
                     color="red"
-                    @click="deleteUser($event)"
+                    @click="dialog = true"
                   >
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
                 <span>Delete user!</span>
               </v-tooltip>
+
+              <v-dialog v-model="dialog" max-width="290">
+                <v-card>
+                  <v-card-title class="headline"> Delete User! </v-card-title>
+
+                  <v-card-text>
+                    Please confirm removal of user.
+                  </v-card-text>
+
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+
+                    <v-btn color="green darken-1" text @click="dialog = false">
+                      Cancel
+                    </v-btn>
+
+                    <v-btn
+                      color="red darken-1"
+                      text
+                      @click="
+                        dialog = false;
+                        deleteUser($event);
+                      "
+                    >
+                      Delete User!
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+
+
+
             </v-row>
 
             <v-text-field
@@ -191,6 +224,7 @@ export default {
   name: "Users",
 
   data: () => ({
+    dialog: false,
     active: [],
     open: [],
     users: [],

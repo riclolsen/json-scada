@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="libplctag" Version="0.0.29-alpha01" />
-    <PackageReference Include="libplctag.NativeImport" Version="0.0.14" />
-    <PackageReference Include="MongoDB.Bson" Version="2.11.1" />
-    <PackageReference Include="MongoDB.Driver" Version="2.11.1" />
+    <PackageReference Include="libplctag" Version="1.0.0" />
+    <PackageReference Include="libplctag.NativeImport" Version="1.0.1" />
+    <PackageReference Include="MongoDB.Bson" Version="2.12.0-beta1" />
+    <PackageReference Include="MongoDB.Driver" Version="2.12.0-beta1" />
   </ItemGroup>
 
 </Project>

@@ -489,6 +489,12 @@ var protocolConnectionsValidator = {
       allowTLSv13: {
         bsonType: ['bool', 'null']
       },
+      chainValidation: {
+        bsonType: ['bool', 'null']
+      },
+      allowOnlySpecificCertificates: {
+        bsonType: ['bool', 'null']
+      },
       cipherList: {
         bsonType: ['string', 'null']
       },
@@ -496,6 +502,9 @@ var protocolConnectionsValidator = {
         bsonType: ['string', 'null']
       },
       peerCertFilePath: {
+        bsonType: ['string', 'null']
+      },
+      rootCertFilePath: {
         bsonType: ['string', 'null']
       },
       privateKeyFilePath: {
@@ -557,3 +566,9 @@ db.createCollection('roles')
 db.roles.createIndex({ name: 1 }, { name: 'roleNameIndex', unique: true })
 db.createCollection('users')
 db.users.createIndex({ username: 1 }, { name: 'userNameIndex', unique: true })
+
+db.createCollection('userActions')
+db.userActions.createIndex({ timeTag: 1 }, { name: 'actionsTimeTagIndex' })
+// use this to make records expire after a number of seconds
+// db.userActions.createIndex( { timeTag: 1 }, { expireAfterSeconds: 2592000 } )
+

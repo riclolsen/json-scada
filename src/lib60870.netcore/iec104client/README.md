@@ -45,7 +45,7 @@ Each instance for this driver can have many client connection defined that must 
         enabled: true,
         commandsEnabled: true,
         ipAddressLocalBind: "", 
-        ipAddresses: ["192.168.0.21:2404"],
+        ipAddresses: ["192.168.0.21:2404", "192.168.0.22:2404"],
         localLinkAddress: 1,
         remoteLinkAddress: 205,
         giInterval: 300,
@@ -71,7 +71,7 @@ Each instance for this driver can have many client connection defined that must 
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**ipAddressLocalBind**_ [String] - Not used for this driver. **Optional parameter**.
-* _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for IEC-104 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
+* _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for IEC-104 servers to be scanned (only the first 2 servers are currently supported). When there are 2 servers configured, only one is connected and scanned at each time, servers are swapped when disconnected. **Mandatory parameter**.
 * _**localLinkAddress**_ [Double] - Local link address for the connection (originator address). **Mandatory parameter**.
 * _**remoteLinkAddress**_ [Double] - Remote link address of the server (originator address). **Optional parameter**.
 * _**giInterval**_ [Double] - General station interrogation period in seconds. **Optional parameter**.
@@ -87,6 +87,14 @@ Each instance for this driver can have many client connection defined that must 
 * _**t2**_ [Double] - Protocol _t2_ timeout in seconds. **Mandatory parameter**.
 * _**t3**_ [Double] - Protocol _t3_ timeout in seconds. **Mandatory parameter**.
 * _**stats**_ [Double] - Protocol statistics updated by the driver. **Mandatory parameter**.
+
+Parameters needed only for TLS encrypted connections (when there are redundant servers, the same set of certificates is applied to connections to both servers).
+
+* _**localCertFilePath**_ [String] - File that contains the certificate (*.pfx) that will be presented to the remote side of the connection. **Optional parameter**.
+* _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server (*.cer). **Optional parameter**.
+* _**rootCertFilePath**_ [String] - CA certificate to check the certificate provided by the server - not required when ChainValidation == false. **Optional parameter**.
+* _**allowOnlySpecificCertificates**_ [bool] - Indicates whether the driver allows only specific certificates. Default: false. **Optional parameter**.
+* _**chainValidation**_ [bool] - Indicates whether the drivers performs a X509 chain validation against the registered CA certificates. Default: false. **Optional parameter**.
 
 ## Configure tags for update
 

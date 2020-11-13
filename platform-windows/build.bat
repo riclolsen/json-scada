@@ -7,6 +7,8 @@ echo - Node.js 14+
 cd c:\json-scada
 mkdir bin
 
+set DOTNET_CLI_TELEMETRY_OPTOUT=1
+
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
 dotnet build --runtime win-x64 -c Release -o ..\..\bin\ 
 cd \json-scada\src\lib60870.netcore\iec101client\
@@ -37,9 +39,15 @@ copy /Y i104m ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
 npm update
-cd \json-scada\src\server_realtime
-npm update
 cd \json-scada\src\oshmi2json
 npm update
 cd \json-scada\src\alarm_beep
 npm update
+cd \json-scada\src\server_realtime
+npm update
+cd \json-scada\src\server_realtime_auth
+npm update
+cd \json-scada\src\htdocs-admin
+npm update
+npm run build
+
