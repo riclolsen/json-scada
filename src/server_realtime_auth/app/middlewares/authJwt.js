@@ -126,6 +126,7 @@ checkToken = req => {
   return res
 }
 
+// User in request can send commands?
 canSendCommands = async req => {
   console.log('canSendCommands?')
 
@@ -138,10 +139,47 @@ canSendCommands = async req => {
 
     for (let i = 0; i < roles.length; i++) {
       if (roles[i].sendCommands) {
-        console.log('User can command!')
         return true
       }
     }
+  } catch (err) {
+    console.log(err)
+  }
+
+  return false
+}
+
+// User in request can send commands to a group1 location?
+canSendCommandTo = async (req, group1) => {
+  console.log('canSendCommandTo?')
+  let result = true
+
+  try {
+    const user = await User.findById(req.userId).exec()
+
+    const roles = await Role.find({
+      _id: { $in: user.roles }
+    }).exec()
+
+    if (roles.length == 0) return false
+
+    for (let i = 0; i < roles.length; i++) {
+      if (roles[i].group1CommandList.length > 0) {
+        // has a list so in principle deny command
+        result = false
+      }
+      for (let j = 0; j < roles[i].group1CommandList.length; j++)
+        if (roles[i].group1CommandList[j] === group1) {
+          console.log('User can command!')
+          return true
+        }
+    }
+    // all lists empty
+    if (result)
+       console.log('User can command!')
+    else
+       console.log('User has no right to issue commands!')
+    return result
   } catch (err) {
     console.log(err)
   }
@@ -167,6 +205,7 @@ const authJwt = {
   checkToken,
   hasRight,
   isAdmin,
-  canSendCommands
+  canSendCommands,
+  canSendCommandTo
 }
 module.exports = authJwt

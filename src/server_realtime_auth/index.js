@@ -614,6 +614,29 @@ let pool = null
                       return
                     }
 
+                    if (AUTHENTICATION) {
+                      // check if user has group1 list it can command
+                      if (!await canSendCommandTo(req, data.group1)) { 
+                        // ACTION DENIED
+                        console.log(
+                          `User has no right to issue commands to the group1 destination! [${username}] [${data.group1}]`
+                        )
+                        OpcResp.Body.ResponseHeader.ServiceResult =
+                          opc.StatusCode.BadUserAccessDenied
+                        OpcResp.Body.ResponseHeader.StringTable = [
+                          opc.getStatusCodeName(opc.StatusCode.BadUserAccessDenied),
+                          opc.getStatusCodeText(opc.StatusCode.BadUserAccessDenied),
+                          'User has no right to issue commands to the group1 destination!'
+                        ]
+                        res.send(OpcResp)
+                        return
+                      } else {
+                        console.log(
+                          `User authorized to issue commands to the group1 destination! [${username}]`
+                        )
+                      }
+                    }
+    
                     let result = await db.collection(COLL_COMMANDS).insertOne({
                       protocolSourceConnectionNumber: new mongo.Double(
                         data.protocolSourceConnectionNumber
