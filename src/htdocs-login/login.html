@@ -57,14 +57,12 @@
       }
     </style>
     <script>
-
       String.prototype.trim = function () {
         return this.replace(/^\s+|\s+$/g, '')
       }
 
       const parseCookie = str => {
-        if (str === "") 
-           return {}
+        if (str === '') return {}
         return str
           .split(';')
           .map(v => v.split('='))
@@ -74,7 +72,7 @@
             )
             return acc
           }, {})
-        }
+      }
 
       function LoadFavicon (href) {
         var link = document.createElement('link')
@@ -94,9 +92,8 @@
             logoutButton.textContent = buttonMessage
 
           if (ck.rights.isAdmin)
-            document.getElementById('divAdmin').style.display = ""
-          else  
-            document.getElementById('divAdmin').style.display = "none"
+            document.getElementById('divAdmin').style.display = ''
+          else document.getElementById('divAdmin').style.display = 'none'
         }
 
         fetch('/Invoke/test/user', {
@@ -109,9 +106,10 @@
           .then(resp => resp.json())
           .then(data => {
             // console.log(data)
-            if (data.ok) {
+            if ('ok' in data && data.ok) {
               document.getElementById('divlogout').style.display = ''
               document.getElementById('divlogin').style.display = 'none'
+              document.getElementById('divloginerror').style.display = 'none'
             } else {
               document.getElementById('divlogout').style.display = 'none'
               document.getElementById('divlogin').style.display = ''
@@ -141,7 +139,12 @@
         })
           .then(resp => resp.json())
           .then(data => {
-            // console.log(data)
+            if ('ok' in data && data.ok == false) {
+              document.getElementById('divloginerror').style.display = ''
+              setTimeout(function () {
+                document.getElementById('divloginerror').style.display = 'none'
+              }, 3000)
+            }
           })
           .catch(error => {
             console.log('Error on a fetch operation: ' + error.message)
@@ -203,6 +206,10 @@
       >
         LOGIN
       </button>
+
+      <div id="divloginerror" style="display:none">
+        Login error, invalid credentials!
+      </div>
     </div>
 
     <div id="divlogout" style="display:none">
@@ -218,6 +225,7 @@
       >
         LOGOUT
       </button>
+
       <div class="blocks">
         <a target="_blank" href="../display.html?SVGFILE=../svg/kaw2.svg">
           <img height="40" src="images/tela.png" /><br />Display Viewer
@@ -256,7 +264,12 @@
         </a>
       </div>
 
-      <div class="blocks" id="divAdmin" title="Administrative Panel" style="display:none">
+      <div
+        class="blocks"
+        id="divAdmin"
+        title="Administrative Panel"
+        style="display:none"
+      >
         <a target="_blank" href="../admin/">
           <img height="40" src="images/admin.png" /><br />Admin
         </a>
