@@ -1022,6 +1022,15 @@ let pool = null
                         node.NodeId.Id === pointInfo.tag ||
                         node.NodeId.Id === pointInfo._id
                       ) {
+
+                        // check for group1 list in user rights (from token)
+                        if (AUTHENTICATION && userRights.group1List.length>0){
+                          if ( !userRights.group1List.includes(pointInfo.group1) ){
+                            // Access to data denied!
+                            break
+                          }
+                        }
+
                         Result.StatusCode = opc.StatusCode.Good
                         Result._Properties = {
                           _id: pointInfo._id,
@@ -1146,6 +1155,15 @@ let pool = null
                       'timeTagAtSource' in node && node.timeTagAtSource !== null
                         ? node.timeTagAtSource
                         : null
+
+                    // check for group1 list in user rights (from token)
+                    if (AUTHENTICATION && userRights.group1List.length>0){
+                      if ( !userRights.group1List.includes(node.group1) ){
+                        // Access to data denied!
+                        return node
+                      }
+                    }
+
                     Results.push(Result)
 
                     return node
