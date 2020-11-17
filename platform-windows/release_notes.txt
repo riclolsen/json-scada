@@ -120,6 +120,14 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.3: 
+
+ - Role based access control (RBAC), user authentication (JWT).
+ - Web-based admin panel for users/roles configuration.
+ - Dotnet protocol drivers updated to DOTNET 5.0.
+
+-------------------------------------------------------------------
+
 Notes for version 0.2: 
 
  - Fixed PostgreSQL initdb problems, locale, timing, Windows user rights.
