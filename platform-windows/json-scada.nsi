@@ -339,7 +339,7 @@ SetRegView 64
   File /a "..\conf-templates\screen_list.js"
 
 ; Visual C redist: necessario para executar o timescaledb
-  nsExec::Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
