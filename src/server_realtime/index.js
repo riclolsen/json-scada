@@ -1121,14 +1121,14 @@ let pool = null
               let filterDateLte = {
                 timeTag: { $lte: new Date(endDateTime) }
               }
-              let sort = { timeTag: -1 }
+              let sort = { timeTag: -1, timeTagAtSource: -1, tag: -1 }
               if (endDateTime !== null && endDateTime !== null)
-                sort = { timeTag: 1 }
+                sort = { timeTag: 1, timeTagAtSource: 1, tag: 1 }
 
               if (!returnServerTimestamp) {
-                sort = { timeTagAtSource: -1 }
+                sort = { timeTagAtSource: -1, timeTag: -1, tag: -1 }
                 if (endDateTime !== null && endDateTime !== null)
-                  sort = { timeTagAtSource: 1 }
+                  sort = { timeTagAtSource: 1, timeTag: 1, tag: 1 }
                 filterDateGte = {
                   timeTagAtSource: { $gte: new Date(startDateTime) }
                 }
