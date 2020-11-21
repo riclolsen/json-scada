@@ -62,7 +62,7 @@
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn
-                    v-if="!(selected.name === 'admin')"
+                    v-if="selected.name !== 'admin'"
                     v-bind="attrs"
                     v-on="on"
                     class="mx-2"

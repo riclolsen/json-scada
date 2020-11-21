@@ -14,8 +14,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.2"
-!define VERSION_ "0.2.0.0"
+!define VERSION "v.0.3"
+!define VERSION_ "0.3.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -111,6 +111,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
+  nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
   nsExec::Exec 'net stop JSON_SCADA_iec101client'
@@ -287,7 +288,10 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\server_realtime
   File /a /r "..\src\server_realtime\*.*"
-    
+
+  SetOutPath $INSTDIR\src\server_realtime_auth
+  File /a /r "..\src\server_realtime_auth\*.*"
+
   ;SetOutPath $INSTDIR\extprogs
   ;File /a "..\extprogs\vcredist_x86.exe"
   ;File /a "..\extprogs\vcredist_x86-2012.exe"
@@ -335,7 +339,7 @@ SetRegView 64
   File /a "..\conf-templates\screen_list.js"
 
 ; Visual C redist: necessario para executar o timescaledb
-  nsExec::Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
@@ -538,6 +542,16 @@ Section "Uninstall"
 ; Fecha processos
 
   !define SC  `$SYSDIR\sc.exe`
+
+  ExecWait `"${SC}" stop "JSON_SCADA_server_realtime"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_server_realtime"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_server_realtime_auth"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_server_realtime_auth"`
+  ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_process_demo_simul"`
   Sleep 50

@@ -165,16 +165,14 @@ canSendCommandTo = async (req, group1) => {
 
     for (let i = 0; i < roles.length; i++) {
       if (roles[i].group1CommandList.length > 0) {
-        // has a list so in principle deny command
+        // has a list, so in principle deny command
         result = false
       }
-      for (let j = 0; j < roles[i].group1CommandList.length; j++)
-        if (roles[i].group1CommandList[j] === group1) {
-          console.log('User can command!')
-          return true
-        }
+      if ( roles[i].group1CommandList.includes(group1) ){
+        console.log('User can command!')
+        return true
+      }
     }
-    // all lists empty
     if (result)
        console.log('User can command!')
     else

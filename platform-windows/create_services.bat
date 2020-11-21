@@ -29,9 +29,15 @@ nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs
 nssm set JSON_SCADA_cs_data_processor AppDirectory  "C:\json-scada\src\cs_data_processor"
 nssm set JSON_SCADA_cd_data_processor Start SERVICE_AUTO_START
 
-nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
-nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
-nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
+REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token based auth and RBAC)
+
+REM nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
+REM nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
+REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
+
+nssm install JSON_SCADA_server_realtime_auth  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime_auth\index.js" 
+nssm set JSON_SCADA_server_realtime_auth AppDirectory "C:\json-scada\src\server_realtime_auth"
+nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
 
 
 nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
