@@ -3,123 +3,6 @@
 
 var Msg =
 {
-<<<<<<< HEAD
-    NomeProduto: 'OSHMI',
-    VersaoProduto: '6.17',
-
-    NomeVisorTelas: 'Перегляд ',
-    NomeVisorEventos: 'Події',
-    NomeVisorHistorico: 'Події - Історія',
-    NomeVisorTabular: 'Таблиці',
-    NomeVisorAnormais: 'Тривоги',
-    NomeVisorTendencias: 'Тренд',
-    NomeVisorCurvas: 'Графіки',
-    NomeDialogoInfo: 'Інформ про точку',
-    NomeDialogoCmd: 'Команда',
-
-    FalhaWebserver: 'Помилка веб-сервера!',
-
-    // websage.js
-    BlqAnot: 'Команда заблокована анотацією.',
-    AcessCmd: 'Натисніть, для доступу до діалогового вікна команд.',
-    EstadoAtual: 'Поточний стан',
-    ConfNSuport: 'Непідтримувана конфігурація!',
-    BrowserNSup: 'Непідтримуваний браузер!',
-    Qualific: 'Кваліфікатор',
-    QFalhado: 'НЕВДАЛИЙ',
-    QSubst: 'ВИДАЛЕНО',
-    QCalculado: 'РОЗРАХОВАНО',
-    QManual: 'ПОСІБНИК',
-    QNuncaAtu: 'НЕ ОНОВЛЕНО',
-    QAlarmado: 'НАСТОРОЖЕНИЙ',
-    QAnotacao: 'НОТАТКА',
-    QAlmInib: 'ВІДКЛАДЕНА_ТРИВОГА',
-    QNaoNormal: 'ПОСТІЙНА_ТРИВОГА',
-    QLimiteViol: 'ПОРУШЕНИЙ_ЛІМІТ',
-    QCongelado: 'ЗАМОРОЖЕНИЙ',
-    QNormal: 'НОРМАЛЬНИЙ',
-    QDPIntermed: 'ПРОМІЖНИЙ',
-    QDPInvalido: 'НЕПРАЦЕЗДАТНИЙ',
-    QValor: 'Значення',
-    SELTELA_OPC1: 'Виберіть екран ...',
-
-    // Events.html
-    Eventos: 'Події',
-    ModoNormal: 'Нормальний режим',
-    ModoAgregado: 'Агрегований режим',
-    ModoPanico: 'Панічний режим',
-    ModoCongelado: 'Заморожений!',
-    ModoHistorico: 'Історичний',
-    HIST: '>Історичні події',
-    SPDATAINI: 'Дата: ',
-    SPHORAINI: 'Початковий час: ',
-    SPFILTRO: 'Фільтр: ',
-    btBuscaHist: 'Пошук',
-    EveNomesColunas: 'Дата,Час,мс,точка #,Ідентифікатор,Підстанція,Опис,Подія,Прапори,Кваліфікація.',
-    ConfirmaSaida: 'Закрити переглядач подій?',
-    EveFiltradosSE: 'ФІЛЬТРОВАНО',
-
-    // tabular.html
-    SPCOMANDAVEIS: 'Командний',
-    SPANORMAIS: 'Тривога',
-    SPSUBEST: 'Підстанція',
-    SPMODULO: 'Комірка',
-    SPFILTROID: 'Фільтр (ID)',
-    SELSE: 'Вибір підстанції',
-    SELMOD: 'Вибір комірки',
-    Filtro: 'Фільтр за ід.',
-    TabNomesColunas: 'Точка №,Іден,Підстанція, Опис,Статус/Парам,Прапор,Команда,Кваліфікація,Норм,Час тривоги',
-    SelectAll: 'Вибрати все',
-    UnselectAll: 'Скасувати вибір всіх',
-
-    // dlginfo.html
-    TENDTXT: '>Дотримуйтесь заходів',
-    TABULARTXT: '>Bay Tabular Screen',
-    CURVTXT: '>Відкрити в Графіках',
-    ANOTACAOTXT: 'Анотація:',
-    DESBLOQTXT: 'Команда Розблкувати',
-    COMANDAR: 'КОМАНДА',
-    CBMOREINFO: '+ Інші Параметри',
-    SPPONTOSUP: 'Точка Контролю:',
-    ALRINTXT: 'Вимкнута Тревога',
-    SPLIMSUP: 'Верхня Межа',
-    SPLIMINF: 'Нижня Межа',
-    SPLIMHIS: 'Гістерезис',
-    SPALTVALOR: 'Змінити Значення',
-    SAIR: 'ВИХІД',
-    CANCELAR: 'СКАСОВАНО',
-    FSINFO: 'Інфо. Точки',
-    FSBLKANNOT: 'Блокування Анотацій',
-    FSANNOT: 'Анотація',
-    FSOPTION: 'Параметри',
-
-    // dlgcomando.html
-    SPPASSO2: 'Оберіть функцію та натисніть командну кнопку.',
-    CMDMOREINFO: '+ Детальніше',
-    SPPONTOCMD: 'Введіть Команду:',
-    FSCMDINFO: 'Інформація про Команду',
-    FSCMDACTION: 'Дія Команди',
-    FSCMDOPTION: 'Параметри',
-
-    // trend.html
-    yaxisleft: 'Показати менші значення [стрілка вгору]',
-    yaxisright: 'Показати великі значення [стрілка вниз]',
-    yaxiszoomout: 'Зменшити [-]',
-    yaxiszoomin: 'Збільшити [+]',
-    yaxisminus: 'Коротше [1]',
-    yaxisplus: 'Taller [2]',
-    yaxiscolor: 'Змінити Колір [3]',
-    xaxisleft: 'Назад [ліва стрілка]',
-    xaxisright: 'Вперед [права стрілка]',
-    xaxiszoomout: 'Зменшити [/]',
-    xaxiszoomin: 'Збільшити [*]',
-    xaxisminus: 'Менше [<]',
-    xaxisplus: 'Більше [>]',
-    plotreset: 'Скинути Параметри [0] [Num 5]',
-    ValorAtual: 'Поточні Значеня',
-
-    Fim: ""
-=======
 NomeProduto: '{json:scada}',
 VersaoProduto: '0.4',
 
@@ -218,7 +101,7 @@ FSCMDACTION: 'Дія Команди',
 FSCMDOPTION: 'Параметри',
 
 // trend.html
-yaxisleft: 'Показати менші значення [стрілка вгору],
+yaxisleft: 'Показати менші значення [стрілка вгору]',
 yaxisright: 'Показати великі значення [стрілка вниз]',
 yaxiszoomout: 'Зменшити [-]',
 yaxiszoomin: 'Збільшити [+]',
@@ -235,7 +118,6 @@ plotreset: 'Скинути Параметри [0] [Num 5]',
 ValorAtual: 'Поточні Значеня',
 
 Fim: ""
->>>>>>> upstream/master
 };
 
 var Titles =
