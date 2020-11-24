@@ -60,7 +60,7 @@ nssm install JSON_SCADA_php "c:\json-scada\platform-windows\nginx_php-runtime\ph
 nssm set JSON_SCADA_php Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_nginx "c:\json-scada\platform-windows\nginx_php-runtime\nginx.exe" -c c:\json-scada\conf\nginx.conf
-nssm set JSON_SCADA_php Start SERVICE_AUTO_START
+nssm set JSON_SCADA_nginx Start SERVICE_AUTO_START
 
 REM SELECT THE DESIRED PROTOCOL DRIVERS (service startup options: SERVICE_AUTO_START, SERVICE_DELAYED_START, SERVICE_DEMAND_START, SERVICE_DISABLED)
 
