@@ -252,6 +252,7 @@ getGroup1List : function()
           return;
         }
 
+        if ("Results" in data.Body)
         data.Body.Results.map(element => {
           if (element.Value.Body !== null && element.Value.Body !== "")
             GROUP1_LIST.push(element.Value.Body);
@@ -530,6 +531,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
 
         L = [];
         var prop;
+        if ("Results" in data.Body)
         data.Body.Results.map(element => {
           if (typeof element.StatusCode == "number" && element.StatusCode != 0) // reject a bad result
             return;
@@ -712,6 +714,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
       WebSAGE.Pass++;
 
       var prop;
+      if ("Results" in data.Body)
       data.Body.Results.map(element => {
         if (typeof element.StatusCode == "number" && element.StatusCode != 0) // reject a bad result
           return;
