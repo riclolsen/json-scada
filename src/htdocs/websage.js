@@ -3479,11 +3479,11 @@ getHistoricalData: function (i, pnt, timeBegin) {
             SUBS[pointKey] = prop.group1;
             BAYS[pointKey] = prop.group2;
             DCRS[pointKey] = (prop.ungroupedDescription!="")? prop.ungroupedDescription : prop.description;
-            if (isNaN(prop.hiLimit))
+            if (isNaN(prop.hiLimit) || prop.hiLimit === null)
               LIMSUPS[pointKey] = Infinity;
             else  
               LIMSUPS[pointKey] = prop.hiLimit;
-            if (isNaN(prop.loLimit))
+            if (isNaN(prop.loLimit) || prop.loLimit === null)
               LIMINFS[pointKey] = -Infinity;
             else
               LIMINFS[pointKey] = prop.loLimit;
