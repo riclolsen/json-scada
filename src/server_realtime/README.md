@@ -253,6 +253,10 @@ When the StatusCode for the command is 0 (Good) the command was acknowledged ok.
 * _**JS_GRAFANA_SERVER**_ [Integer] - HTTP URL to the Grafana server (for reverse proxy on /grafana). **Default="http://127.0.0.1:3000"**.
 * _**JS_CONFIG_FILE**_ [String] - JSON SCADA config file name. **Default="../../conf/json-scada.json"**.
 
+For connection to the PostgreSQL historian, it is possible to use the standard _Libpq_ environment variables. 
+
+* https://www.postgresql.org/docs/current/libpq-envars.html
+
 ## Command line arguments
 
 This process has no command line arguments.

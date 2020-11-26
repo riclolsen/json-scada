@@ -267,6 +267,9 @@ SetRegView 64
   SetOutPath $INSTDIR\conf-templates
   File /a "..\conf-templates\*.*"
 
+  ; preserve previous screen_list 
+  Rename $INSTDIR\src\htdocs\svg\screen_list.js $INSTDIR\src\htdocs\svg\screen_list.js.bak
+
   SetOutPath $INSTDIR\src\htdocs
   File /a /r "..\src\htdocs\*.*"
   SetOutPath $INSTDIR\src\htdocs-admin
@@ -330,13 +333,6 @@ SetRegView 64
   File /a "..\conf-templates\nginx_http.conf"  
   File /a "..\conf-templates\nginx_https.conf"  
   File /a "..\conf-templates\json-scada.json"
-
-  SetOutPath "$INSTDIR\svg"
-  File /a "..\src\htdocs\svg\kaw2.svg"
-  File /a "..\src\htdocs\svg\kik3.svg"
-  File /a "..\src\htdocs\svg\knh2.svg"
-  File /a "..\src\htdocs\svg\kor1.svg"
-  File /a "..\conf-templates\screen_list.js"
 
 ; Visual C redist: necessario para executar o timescaledb
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
