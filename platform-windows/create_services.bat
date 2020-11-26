@@ -34,11 +34,14 @@ REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token
 REM nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
 REM nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
 REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
+rem Use environment variables to connect to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
+rem nssm set JSON_SCADA_server_realtime AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_server_realtime_auth  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime_auth\index.js" 
 nssm set JSON_SCADA_server_realtime_auth AppDirectory "C:\json-scada\src\server_realtime_auth"
 nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
-
+rem Use environment variables to connect to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
+rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
 nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
