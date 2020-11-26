@@ -129,7 +129,8 @@ let pool = null
 
   // if env variables defined use them, if not set local defaults
   let pgopt = {}
-  if ('PGHOST' in process.env) pgopt = null
+  if ("PGHOST" in process.env || "PGHOSTADDR" in process.env)
+    pgopt = null
   else
     pgopt = {
       host: '127.0.0.1',
