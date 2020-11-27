@@ -78,6 +78,7 @@
                 inset
                 color="primary"
                 :label="`Enabled: ${selected.enabled.toString()}`"
+                @change="updateProtocolDriverInstance"
               ></v-switch>
               <v-dialog v-model="dialogDelInst" max-width="290">
                 <v-card>
