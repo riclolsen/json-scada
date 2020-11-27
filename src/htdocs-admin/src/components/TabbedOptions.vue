@@ -39,7 +39,7 @@
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 4">
-        <v-card-text>Under Construction...</v-card-text>
+        <ProtocolDriverInstances />
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 5">
@@ -68,6 +68,7 @@
 <script>
 import Users from "@/components/Users";
 import Roles from "@/components/Roles";
+import ProtocolDriverInstances from "@/components/ProtocolDriverInstances";
 
 export default {
   name: "TabbedOptions",
@@ -80,7 +81,8 @@ export default {
   },
   components: {
     Users,
-    Roles
+    Roles,
+    ProtocolDriverInstances
   },
 };
 </script>

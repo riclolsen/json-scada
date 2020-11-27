@@ -24,7 +24,9 @@ var protocolDriverNames = [
           'S7',
           'SPA-BUS',
           'BACNET',
-          'ICCP']
+          'ICCP',
+          'UNDEFINED'
+          ]
 
 var protocolDriverInstancesValidator = {
   $jsonSchema: {

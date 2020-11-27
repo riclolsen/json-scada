@@ -23,6 +23,31 @@ module.exports = function (app, accessPoint) {
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
   app.use(
+    accessPoint + 'auth/listNodes',
+    [authJwt.isAdmin],
+    controller.listNodes
+  )  
+  app.use(
+    accessPoint + 'auth/deleteProtocolDriverInstance',
+    [authJwt.isAdmin],
+    controller.deleteProtocolDriverInstance
+  )
+  app.use(
+    accessPoint + 'auth/createProtocolDriverInstance',
+    [authJwt.isAdmin],
+    controller.createProtocolDriverInstance
+  )
+  app.use(
+    accessPoint + 'auth/listProtocolDriverInstances',
+    [authJwt.isAdmin],
+    controller.listProtocolDriverInstances
+  )
+  app.use(
+    accessPoint + 'auth/updateProtocolDriverInstance',
+    [authJwt.isAdmin],
+    controller.updateProtocolDriverInstance
+  )
+  app.use(
     accessPoint + 'auth/listUsers',
     [authJwt.isAdmin],
     controller.listUsers

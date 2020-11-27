@@ -5,10 +5,65 @@ var path = require('path')
 const User = db.user
 const Role = db.role
 const Tag = db.tag
+const ProtocolDriverInstance = db.protocolDriverInstance
 
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
 const { Recoverable } = require('repl')
+
+exports.deleteProtocolDriverInstance = async (req, res) => {
+  console.log('deleteProtocolDriverInstance')
+  await ProtocolDriverInstance.findOneAndDelete({ _id: req.body._id }, req.body)
+  res.status(200).send({ error: false })
+}
+
+exports.listNodes = (req, res) => {
+  console.log('listNodes')
+
+  ProtocolDriverInstance.find({})
+    .exec(function (err, driverInstances) {
+      if (err) {
+        res.status(200).send({ error: err })
+        return
+      }
+      let listNodes = []
+      driverInstances.map(element => {
+        listNodes = listNodes.concat(element.nodeNames)        
+      });
+      res.status(200).send(listNodes)
+    })
+}
+
+exports.createProtocolDriverInstance = async (req, res) => {
+  console.log('createProtocolDriverInstance')
+  const driverInstance = new ProtocolDriverInstance()
+  driverInstance.save(err => {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    res.status(200).send({ error: false })
+  })
+}
+
+exports.listProtocolDriverInstances = (req, res) => {
+  console.log('listProtocolDriverInstances')
+
+  ProtocolDriverInstance.find({})
+    .exec(function (err, driverInstances) {
+      if (err) {
+        res.status(200).send({ error: err })
+        return
+      }
+      res.status(200).send(driverInstances)
+    })
+}
+
+exports.updateProtocolDriverInstance = async (req, res) => {
+  console.log('updateProtocolDriverInstance')
+  await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
+  res.status(200).send({})
+}
 
 exports.listUsers = (req, res) => {
   console.log('listUsers')
@@ -112,7 +167,7 @@ exports.listDisplays = (req, res) => {
 exports.updateRole = async (req, res) => {
   console.log('updateRole')
   await Role.findOneAndUpdate({ _id: req.body._id }, req.body)
-  res.status(200).send()
+  res.status(200).send({})
 }
 
 exports.updateUser = async (req, res) => {
@@ -125,7 +180,7 @@ exports.updateUser = async (req, res) => {
     req.body.password = bcrypt.hashSync(req.body.password, 8)
   else delete req.body['password']
   await User.findOneAndUpdate({ _id: req.body._id }, req.body)
-  res.status(200).send()
+  res.status(200).send({})
 }
 
 exports.createRole = async (req, res) => {
