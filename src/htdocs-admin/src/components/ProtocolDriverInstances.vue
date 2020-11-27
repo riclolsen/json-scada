@@ -45,10 +45,11 @@
             :key="selected.id"
             class="pt-6 mx-auto"
             flat
-            max-width="400"
+            max-width="440"
           >
             <v-row class="pb-8 mx-auto" justify="space-between">
               <v-select
+                prepend-inner-icon="mdi-cogs"
                 :items="driverNameItems"
                 label="Protocol driver"
                 v-model="selected.protocolDriver"
@@ -114,7 +115,7 @@
 
             <v-text-field
               class="pb-8"
-              prepend-inner-icon="mdi-numeric-1-box-outline"
+              prepend-inner-icon="mdi-play-circle"
               type="number"
               outlined
               min="1"
@@ -128,7 +129,7 @@
 
             <v-text-field
               class="pb-8"
-              prepend-inner-icon="mdi-numeric-1-box-outline"
+              prepend-inner-icon="mdi-information"
               type="number"
               outlined
               clearable
