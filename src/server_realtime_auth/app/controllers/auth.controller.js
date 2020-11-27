@@ -179,6 +179,7 @@ exports.updateUser = async (req, res) => {
   )
     req.body.password = bcrypt.hashSync(req.body.password, 8)
   else delete req.body['password']
+  delete req.body['roles']
   await User.findOneAndUpdate({ _id: req.body._id }, req.body)
   res.status(200).send({})
 }

@@ -112,8 +112,8 @@
               v-model="selected.group1List"
               :items="group1ListAll"
               outlined
-              dense
               chips
+              deletable-chips
               small-chips
               label="Can View - Group1 List"
               multiple
@@ -124,8 +124,8 @@
               v-model="selected.group1CommandList"
               :items="group1ListAll"
               outlined
-              dense
               chips
+              deletable-chips
               small-chips
               label="Can Command - Group1 List"
               multiple
@@ -136,8 +136,8 @@
               v-model="selected.displayList"
               :items="displayListAll"
               outlined
-              dense
               chips
+              deletable-chips
               small-chips
               label="Display List"
               multiple
