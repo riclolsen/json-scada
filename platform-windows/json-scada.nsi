@@ -10,7 +10,8 @@ RequestExecutionLevel admin
 
 !include "TextFunc.nsh"
 !include "WordFunc.nsh"
-!include x64.nsh
+!include "x64.nsh"
+!include "LogicLib.nsh"
 
 ;--------------------------------
 
@@ -226,8 +227,22 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
 
+  ; Visual C redist: needed for timescaledb
+  ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
+  ;; Check for version 14
+  ;${If} $0 = "14"
+  ;  DetailPrint "The installed VC redist version is usable"
+  ;${Else}
+  ;  DetailPrint "Must install VC 14 redist"
+  ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+  ;${EndIf}
+  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\ruby-runtime
+  File /a /r "..\platform-windows\ruby-runtime\*.*"
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
@@ -336,9 +351,6 @@ SetRegView 64
   File /a "..\conf-templates\nginx_http.conf"  
   File /a "..\conf-templates\nginx_https.conf"  
   File /a "..\conf-templates\json-scada.json"
-
-; Visual C redist: necessario para executar o timescaledb
-  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
