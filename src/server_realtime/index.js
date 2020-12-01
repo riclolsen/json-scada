@@ -344,7 +344,8 @@ let pool = null
                       {
                         $set: {
                           value: new mongo.Double(0),
-                          valueString: '0'
+                          valueString: '0',
+                          beepType: new mongo.Double(0)
                         }
                       }
                     )

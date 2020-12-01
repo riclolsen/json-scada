@@ -514,7 +514,8 @@ let pool = null
                     {
                       $set: {
                         value: new mongo.Double(0),
-                        valueString: '0'
+                        valueString: '0',
+                        beepType: new mongo.Double(0)
                       }
                     }
                   )
@@ -1026,7 +1027,7 @@ let pool = null
 
                         // check for group1 list in user rights (from token)
                         if (AUTHENTICATION && userRights.group1List.length>0){
-                          if ( !userRights.group1List.includes(pointInfo.group1) ){
+                          if ( ![-1, -2].includes(pointInfo._id) && !userRights.group1List.includes(pointInfo.group1) ){
                             // Access to data denied!
                             break
                           }
