@@ -893,7 +893,8 @@ let pool = null
                   alarmed: 1,
                   type: 1,
                   annotation: 1,
-                  origin: 1
+                  origin: 1,
+                  group1: 1
                 }
               }
 
@@ -1010,7 +1011,7 @@ let pool = null
                 let Results = []
                 if ('NodesToRead' in req.body.Body) {
                   req.body.Body.NodesToRead.map(node => {
-                    let Result = {
+                    let Result = { // will return this if point not found or access denied
                       StatusCode: opc.StatusCode.BadNotFound,
                       NodeId: node.NodeId,
                       Value: null,
@@ -1028,7 +1029,8 @@ let pool = null
                         // check for group1 list in user rights (from token)
                         if (AUTHENTICATION && userRights.group1List.length>0){
                           if ( ![-1, -2].includes(pointInfo._id) && !userRights.group1List.includes(pointInfo.group1) ){
-                            // Access to data denied!
+                            // Access to data denied! (return null value and properties)
+                            Result.StatusCode = opc.StatusCode.BadUserAccessDenied
                             break
                           }
                         }
