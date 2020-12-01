@@ -21,6 +21,7 @@
 const IP_BIND = process.env.JS_SHELLAPI_IP_BIND || "localhost";
 const HTTP_PORT = process.env.JS_SHELLAPI_HTTP_PORT || 51909;
 const API_URL = '/htdocs/shellapi.rjs'
+const SCREEN_LIST_URL = '/svg/screen_list.js'
 const CHECK_PERIOD = 1000
 
 const APP_NAME = 'SHELL-API'
@@ -41,12 +42,18 @@ app.listen(HTTP_PORT, IP_BIND, () => {
   console.log('listening on ' + HTTP_PORT)
 })
 
-// Here we serve up our index page
+// Here we serve beep status
 app.get(API_URL, function (req, res) {
-  console.log("req")
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Content-Type', 'application/json')
   res.send({beep: beepValue})
+})
+
+// Here we serve screen list file
+app.get(SCREEN_LIST_URL, function (req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Content-Type', 'application/json')
+  res.sendFile("../htdocs/svg/screen_list.js")
 })
 
 const args = process.argv.slice(2)
