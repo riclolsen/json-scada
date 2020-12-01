@@ -112,6 +112,8 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
+  nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
+  nsExec::Exec 'net stop JSON_SCADA_shell_api'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
   nsExec::Exec 'net stop JSON_SCADA_iec101client'
@@ -120,10 +122,8 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iec104server'
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
-  nsExec::Exec 'net stop JSON_SCADA_process_hist'
-  nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
-  nsExec::Exec 'net stop JSON_SCADA_process_nginx'
-  nsExec::Exec 'net stop JSON_SCADA_process_php'
+  nsExec::Exec 'net stop JSON_SCADA_nginx'
+  nsExec::Exec 'net stop JSON_SCADA_php'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
   nsExec::Exec '"c:\json-scada\platform-windows\postgresql-runtime\bin\pg_ctl" stop -D c:\json-scada\platform-windows\postgresql-runtime'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
@@ -282,6 +282,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\alarm_beep
   File /a /r "..\src\alarm_beep\*.*"
+
+  SetOutPath $INSTDIR\src\shell-api
+  File /a /r "..\src\shell-api\*.*"
 
   SetOutPath $INSTDIR\src\oshmi2json
   File /a /r "..\src\oshmi2json\*.*"
@@ -549,29 +552,29 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_server_realtime_auth"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_demo_simul"`
+  ExecWait `"${SC}" stop "JSON_SCADA_demo_simul"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_demo_simul"`
+  ExecWait `"${SC}" delete "JSON_SCADA_demo_simul"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_rtdata"`
+  ExecWait `"${SC}" stop "JSON_SCADA_alarm_beep"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_rtdata"`
+  ExecWait `"${SC}" delete "JSON_SCADA_alarm_beep"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_alarm_beep"`
+  ExecWait `"${SC}" stop "JSON_SCADA_shell_api"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_alarm_beep"`
+  ExecWait `"${SC}" delete "JSON_SCADA_shell_api"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_php"`
+  ExecWait `"${SC}" stop "JSON_SCADA_php"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_php"`
+  ExecWait `"${SC}" delete "JSON_SCADA_php"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_nginx"`
+  ExecWait `"${SC}" stop "JSON_SCADA_nginx"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_nginx"`
+  ExecWait `"${SC}" delete "JSON_SCADA_nginx"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_i104m"`
