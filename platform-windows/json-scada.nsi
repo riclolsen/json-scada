@@ -677,6 +677,7 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\platform-windows" 
   RMDir /r "$INSTDIR\conf" 
   RMDir /r "$INSTDIR\docs" 
+  RMDir /r "$INSTDIR\src" 
   RMDir /r "$INSTDIR"
   RMDir /r "$DESKTOP\JSON-SCADA"
 
