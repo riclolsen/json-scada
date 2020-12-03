@@ -11,7 +11,7 @@ var Imgs =
 MOVE_ID:      'images/move.svg', 
 ZOOMIN_ID:    'images/zoom-in.svg', 
 ZOOMOUT_ID:   'images/zoom-out.svg', 
-EMPRESA_ID:   'images/ceee.svg',
+EMPRESA_ID:   'images/json-scada.svg',
 PRODUTO_ID:   'images/json-scada.svg',
 CORFUNDO_ID:  'images/screen2.svg',
 AJUDA_ID:     'images/help2.svg',

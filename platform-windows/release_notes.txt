@@ -120,6 +120,14 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.4: 
+
+ - Role based access control (RBAC) now manages driver instances.
+ - Better install and uninstall.
+ - Various minor enhancements and fixes.
+
+-------------------------------------------------------------------
+
 Notes for version 0.3: 
 
  - Role based access control (RBAC), user authentication (JWT).
