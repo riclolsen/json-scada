@@ -87,6 +87,7 @@ You certify that:
  
 ## Documentation
 
+* [Screenshots](docs/screenshots/)
 * [Docker Demo](demo-docker/README.md)
 * [Config File](conf/README.md)
 * [Calculations](src/calculations/README.md)
