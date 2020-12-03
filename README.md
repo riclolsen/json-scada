@@ -46,21 +46,6 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 ## Architecture
 ![architecture](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_ARCHITECTURE.png "{json:scada} Architecture")
 
-## License
-    {json:scada} A portable SCADA/IoT platform centered on the MongoDB database server.
-    Copyright (C) 2020 Ricardo L. Olsen
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 ## Documentation
 
 * [Screenshots](docs/screenshots/)
