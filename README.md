@@ -43,6 +43,9 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * Extensible Development Platform For Data Acquisition And Processing.
 * Data concentrator for Big Data / ML processing.
 
+## Screenshots
+![screenshots](docs/screenshots/anim-screenshots.gif "{json:scada} Screenshots")
+
 ## Architecture
 ![architecture](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_ARCHITECTURE.png "{json:scada} Architecture")
 
