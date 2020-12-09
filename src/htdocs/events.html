@@ -1004,7 +1004,7 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
         var countstr = "";
         if (typeof node.HistoryData[0].Value.Count === "number")
         if (node.HistoryData[0].Value.Count > 1)
-          countstr = "+" + node.HistoryData[0].Value.Count-1;
+          countstr = "+" + (node.HistoryData[0].Value.Count-1);
 
         var qualif = "" + node._Properties.priority;
         if (node.HistoryData[0].Acknowledge === 0 || node.HistoryData[0].Acknowledge === false)
