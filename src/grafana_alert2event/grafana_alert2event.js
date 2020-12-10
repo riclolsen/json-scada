@@ -120,9 +120,13 @@ app.post(API_URL, function (req, res) {
   switch (req.body?.state) {
     case 'ok':
       eventText = OK_MSG
+      if ("okText" in req.body.tags)
+        eventText = req.body.tags.okText
       break
     case 'alerting':
       eventText = ALERTING_MSG
+      if ("alertingText" in req.body.tags)
+        eventText = req.body.tags.alertingText
       break
   }
 
