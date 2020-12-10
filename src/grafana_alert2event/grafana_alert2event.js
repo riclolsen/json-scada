@@ -30,9 +30,10 @@ const API_URL = '/grafana_alert2event'
 const APP_NAME = 'GRAFANA_ALERT2EVENT'
 const APP_MSG = '{json:scada} - Grafana Alert To Event Listener'
 const VERSION = '0.1.0'
-
 const RealtimeDataCollectionName = 'realtimeData'
 const SoeCollectionName = 'soeData'
+const NO_TAG_TAG_NAME = '_NO_TAG_'
+const beepPointKey = -1
 
 var jsConfigFile = '../../conf/json-scada.json'
 const Queue = require('queue-fifo')
@@ -102,24 +103,26 @@ app.post(API_URL, function (req, res) {
     !['ok', 'alerting'].includes(req.body?.state) ||
     req.body?.tags?.event === '0'
   ) {
-    console.log('Discard event.')
+    console.log('Discard event. State: ' + req.body?.state)
     res.send({ ok: true })
     return
   }
 
   let timeStamp = new Date()
   let tag =
-    req.body?.tags?.tag || req.body?.tags?.evalMatches[0]?.metric || 'NO_TAG'
-  let priority = parseFloat(req.body?.tags?.priority || 3)
+    req.body?.tags?.tag ||
+    req.body?.evalMatches[0]?.metric ||
+    NO_TAG_TAG_NAME
+  let priority = new mongo.Double(parseFloat(req.body?.tags?.priority || 3))
   let group1 = req.body?.tags?.group1 || 'Grafana'
-  let pointKey = parseFloat(req.body?.tags?.pointKey || 0)
-  let description = ''
-  switch (req.body?.message) {
+  let pointKey = new mongo.Double(parseFloat(req.body?.tags?.pointKey || 0))
+  let eventText = ''
+  switch (req.body?.state) {
     case 'ok':
-      description = OK_MSG
+      eventText = OK_MSG
       break
     case 'alerting':
-      description = ALERTING_MSG
+      eventText = ALERTING_MSG
       break
   }
 
@@ -128,14 +131,15 @@ app.post(API_URL, function (req, res) {
     pointKey: pointKey,
     group1: group1,
     description: req.body?.message,
-    eventText: req.body?.state,
+    eventText: eventText,
     invalid: false,
     priority: priority,
     timeTag: timeStamp,
     timeTagAtSource: timeStamp,
     timeTagAtSourceOk: false,
     ack: 0,
-    source: req.body?.ruleUrl
+    source: req.body?.ruleUrl,
+    alertState: req.body?.state
   }
   soeQueue.enqueue(SOE_Event)
   console.log(SOE_Event)
@@ -206,13 +210,65 @@ if (
 
           // check for event queue each 1s, insert into mongo when dequeued
           clearInterval(checkSoeQueueIntervalHandle)
-          checkSoeQueueIntervalHandle = setInterval(function () {
+          checkSoeQueueIntervalHandle = setInterval(async function () {
             if (clientMongo) {
               while (!soeQueue.isEmpty()) {
-                let event = soeQueue.peek()
-                soeQueue.dequeue()
-                const coll_soe = db.collection(SoeCollectionName)
-                coll_soe.insertOne(event)
+                try {
+                  let res
+                  console.log('Insert SOE')
+                  let event = soeQueue.peek()
+                  soeQueue.dequeue()
+                  const coll_soe = db.collection(SoeCollectionName)
+                  res = await coll_soe.insertOne(event)
+                  console.log(
+                    `${res.insertedCount} document(s) inserted`
+                  )
+
+                  const coll_rtData = db.collection(RealtimeDataCollectionName)
+
+                  // update beep if it is alerting state
+                  if (event.eventText === ALERTING_MSG) {
+                    console.log('Update beep')
+                    res = await coll_rtData.updateOne(
+                      // new beep
+                      { _id: beepPointKey },
+                      {
+                        $set: {
+                          value: new mongo.Double(1),
+                          valueString: 'Beep Active',
+                          timeTag: new Date()
+                        }
+                      }
+                    )
+                    console.log(
+                      `${res.matchedCount} document(s) matched the filter, updated ${res.modifiedCount} document(s)`
+                    )
+                  }
+
+                  // if event has a tag, signal alarm in that point (even when alarm is disabled)
+                  // Grafana alerts can not be disabled in JSON-SCADA viewers, only can be disabled in Grafana UI
+                  if (event.tag !== NO_TAG_TAG_NAME) {
+                    console.log('Update alert')
+                    let where = { tag: event.tag }
+                    let upd = {
+                      $set: {
+                        alerted: event.eventText === ALERTING_MSG ? true : false,
+                        alertState: event.alertState,
+                        timeTagAlertState: event.timeTag
+                      }
+                    }
+
+                    res = await coll_rtData.updateOne(where, upd)
+                    console.log(event.eventText)
+                    console.log(where)
+                    console.log(upd)
+                    console.log(
+                      `${res.matchedCount} document(s) matched the filter, updated ${res.modifiedCount} document(s)`
+                    )
+                  }
+                } catch (e) {
+                  console.log(e)
+                }
               }
             }
           }, 1000)
