@@ -1,7 +1,7 @@
 'use strict'
 
 /*
- * A process that beeps when there are new alarms present on the system.
+ * A process that converts Grafana notifications into JSON-SCADA SOE events, alarms and beeps.
  * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
