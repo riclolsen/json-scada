@@ -56,5 +56,5 @@ Check for services running
 
 Apply build instructions from here
 
-* * [Install Guide](../docs/install.md)
+* [Install Guide](../docs/install.md)
 

@@ -109,7 +109,7 @@ Download the code from the online repo
 
 Or do a git clone
 
-    git clone https://github.com/riclolsen/json-scada
+    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 
 Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform, on Mac use --runtime osx-x64)
     
@@ -148,7 +148,7 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     cd ../htdocs-admin
     npm update
     npm run build
-    
+
 
 Configure the conf/json-scada.json file to define the node name and to point to the MongoDB server. Processes will look for the config file on the ../conf/ folder.
 
