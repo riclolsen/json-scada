@@ -162,3 +162,14 @@
 //var Viewers_IDTxtHighlight2    = 'XCBR'; // Text present on ID to identify Type 2 highlighted alarms
 //// and
 //var Viewers_DescrTxtHighlight2 = ':estado'; // Text present on DESCRIPTION to identify Type 2 highlighted alarms
+
+// For Desktop Notifications of SOE Events
+//var Viewers_NotificTagText = 'XCBR'; // Text present on tag of SOE Event for notification
+// and
+//var Viewers_NotificDescrText = ":status"; // Text present on tag of SOE Event for notification
+// and
+//var Viewers_NotificEventText = "OFF"; // Text present on tag of SOE Event for notification
+// and
+//var Viewers_NotificCancelEventText = "ON"; // Text present on tag of SOE Event to cancel notification
+// and
+//var Viewers_AddToNotificEventText = 'OPERATED'; // Text present on event of SOE Event for notification

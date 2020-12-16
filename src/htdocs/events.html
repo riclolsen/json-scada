@@ -1014,6 +1014,9 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
         if (useSourceTime && node.HistoryData[0].SourceTimestampOk !== true)
           qualif = qualif + "T";
 
+        if (descr.indexOf(node._Properties.group1 + '~')===0) // remove group1 from description
+          descr = descr.substring(descr.indexOf('~') + 1 )
+
         L.push(
           date.toLocaleDateString() + WebSAGE.g_split_line_code +
           date.toLocaleTimeString() + WebSAGE.g_split_line_code +
@@ -1373,15 +1376,15 @@ var cria = {};
 
     semod = rw[ WebSAGE.g_COL_SUBEST ] + " - " + (rw[ WebSAGE.g_COL_DESCR ].split('~'))[0]; 
   
-    if (  rw[WebSAGE.g_COL_ID].indexOf( Viewers_IDTxtHighlight2 ) != -1  &&
-          rw[WebSAGE.g_COL_DESCR].indexOf( Viewers_DescrTxtHighlight2 ) != -1 &&
-          rw[WebSAGE.g_COL_QUALIF].indexOf( "K" ) == -1 )
+    if (  rw[WebSAGE.g_COL_ID].indexOf( Viewers_NotificTagText ) !== -1  &&
+          rw[WebSAGE.g_COL_DESCR].indexOf( Viewers_NotificDescrText ) !== -1 &&          
+          rw[WebSAGE.g_COL_QUALIF].indexOf( "K" ) === -1 )
       estdj = 1;
     else
       estdj = 0;
 
     // se encontrou um disj ligou, resseta notificação
-    if ( estdj && rw[WebSAGE.g_COL_FLAGS] == 2 )
+    if ( estdj && rw[WebSAGE.g_COL_EVENTO].indexOf( Viewers_NotificCancelEventText ) !== -1 )
        {
        delete WebSAGE.g_infomod[semod];
        delete WebSAGE.g_infomodtm[semod];
@@ -1392,13 +1395,13 @@ var cria = {};
        }
 
     // se não encontrou qualificado alarmado L, vai para o próximo
-    if ( rw[WebSAGE.g_COL_QUALIF].indexOf( "L" ) == -1 )
+    if ( rw[WebSAGE.g_COL_QUALIF].indexOf( "L" ) === -1 )
        continue;
    
-    if ( ( estdj && ( rw[WebSAGE.g_COL_FLAGS] & 0x03 ) == 1 ) ||
-           rw[WebSAGE.g_COL_EVENTO] == Viewers_AlmTxtHighlight1 )  
+    if ( ( estdj && ( rw[WebSAGE.g_COL_EVENTO].indexOf( Viewers_NotificEventText ) !== -1 )) ||
+           rw[WebSAGE.g_COL_EVENTO] == Viewers_AddToNotificEventText )  
       {
-        if ( typeof( WebSAGE.g_infomod[ semod ] ) == "undefined" ) 
+        if ( typeof( WebSAGE.g_infomod[ semod ] ) === "undefined" ) 
           {
           aux = "";
           }
