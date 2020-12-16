@@ -2,7 +2,7 @@
   <v-card>
     <v-row class="pa-4" justify="space-between">
       <v-col cols="5">
-        <v-treeview
+        <v-treeview style="max-height: 500px" class="overflow-y-auto overflow-x-hidden" 
           :active.sync="active"
           :items="items"
           :load-children="fetchDriverInstances"
