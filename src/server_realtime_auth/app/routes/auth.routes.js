@@ -19,9 +19,15 @@ module.exports = function (app, accessPoint) {
     ],
     controller.signup
   )
-
+  
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
+
+  app.use(
+    accessPoint + 'auth/listProtocolConnections',
+    [authJwt.isAdmin],
+    controller.listProtocolConnections
+  )
   app.use(
     accessPoint + 'auth/listNodes',
     [authJwt.isAdmin],

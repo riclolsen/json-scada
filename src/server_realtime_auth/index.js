@@ -43,7 +43,7 @@ const MongoClient = require('mongodb').MongoClient
 let Server = require('mongodb')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
-const Queue = require('queue-fifo')
+const UserActionsQueue = require('./userActionsQueue')
 
 const config = require('./app/config/auth.config.js')
 if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
@@ -52,8 +52,6 @@ const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const { AsyncLocalStorage } = require('async_hooks')
 const { canSendCommands } = require('./app/middlewares/authJwt.js')
-
-let actionsQueue = new Queue() // queue of user actions to write to mongo collection
 
 // Argument NOAUTH disables user authentication
 var args = process.argv.slice(2)
@@ -355,7 +353,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove All Events',
                     timeTag: new Date()
@@ -370,7 +368,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Events',
                     timeTag: new Date()
@@ -387,7 +385,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove Point Events',
                     tag: node.NodeId.Id,
@@ -403,7 +401,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Events',
                     tag: node.NodeId.Id,
@@ -422,7 +420,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove One Event',
                     tag: node.NodeId.Id,
@@ -442,7 +440,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack One Event',
                     tag: node.NodeId.Id,
@@ -473,7 +471,7 @@ let pool = null
                         }
                       }
                     ])
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Alarms',
                     timeTag: new Date()
@@ -500,7 +498,7 @@ let pool = null
                         }
                       }
                     ])
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Alarm',
                     pointKey: node.NodeId.Id,
@@ -519,7 +517,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Silence Beep',
                     timeTag: new Date()
@@ -737,7 +735,7 @@ let pool = null
                         // updateOne ok
                         OpcResp.Body.Results.push(opc.StatusCode.Good)
                         console.log('update ok id: ' + node.NodeId.Id)
-                        actionsQueue.enqueue({
+                        UserActionsQueue.enqueue({
                           username: username,
                           pointKey: node.NodeId.Id,
                           action: 'Update Properties',
@@ -1752,10 +1750,10 @@ let pool = null
           clientMongo = null
         } else {
           // it is connected: process userActions fifo
-          while (!actionsQueue.isEmpty()) {
-            let ins = actionsQueue.peek()
+          while (!UserActionsQueue.isEmpty()) {
+            let ins = UserActionsQueue.peek()
             db.collection(COLL_ACTIONS).insertOne(ins)
-            actionsQueue.dequeue()
+            UserActionsQueue.dequeue()
           }
         }
       }

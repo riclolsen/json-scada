@@ -6,13 +6,28 @@ const User = db.user
 const Role = db.role
 const Tag = db.tag
 const ProtocolDriverInstance = db.protocolDriverInstance
+const ProtocolConnection = db.protocolConnection
+const UserActionsQueue = require('../../userActionsQueue')
 
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
 const { Recoverable } = require('repl')
 
+exports.listProtocolConnections = (req, res) => {
+  console.log('listProtocolConnections')
+
+  ProtocolConnection.find({}).exec(function (err, protocolConnections) {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    res.status(200).send(protocolConnections)
+  })
+}
+
 exports.deleteProtocolDriverInstance = async (req, res) => {
-  console.log('deleteProtocolDriverInstance')
+  registerUserAction(req, 'deleteProtocolDriverInstance')
+
   await ProtocolDriverInstance.findOneAndDelete({ _id: req.body._id }, req.body)
   res.status(200).send({ error: false })
 }
@@ -20,22 +35,21 @@ exports.deleteProtocolDriverInstance = async (req, res) => {
 exports.listNodes = (req, res) => {
   console.log('listNodes')
 
-  ProtocolDriverInstance.find({})
-    .exec(function (err, driverInstances) {
-      if (err) {
-        res.status(200).send({ error: err })
-        return
-      }
-      let listNodes = []
-      driverInstances.map(element => {
-        listNodes = listNodes.concat(element.nodeNames)        
-      });
-      res.status(200).send(listNodes)
+  ProtocolDriverInstance.find({}).exec(function (err, driverInstances) {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    let listNodes = []
+    driverInstances.map(element => {
+      listNodes = listNodes.concat(element.nodeNames)
     })
+    res.status(200).send(listNodes)
+  })
 }
 
 exports.createProtocolDriverInstance = async (req, res) => {
-  console.log('createProtocolDriverInstance')
+  registerUserAction(req, 'createProtocolDriverInstance')
   const driverInstance = new ProtocolDriverInstance()
   driverInstance.save(err => {
     if (err) {
@@ -49,18 +63,17 @@ exports.createProtocolDriverInstance = async (req, res) => {
 exports.listProtocolDriverInstances = (req, res) => {
   console.log('listProtocolDriverInstances')
 
-  ProtocolDriverInstance.find({})
-    .exec(function (err, driverInstances) {
-      if (err) {
-        res.status(200).send({ error: err })
-        return
-      }
-      res.status(200).send(driverInstances)
-    })
+  ProtocolDriverInstance.find({}).exec(function (err, driverInstances) {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    res.status(200).send(driverInstances)
+  })
 }
 
 exports.updateProtocolDriverInstance = async (req, res) => {
-  console.log('updateProtocolDriverInstance')
+  registerUserAction(req, 'updateProtocolDriverInstance')
   await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
   res.status(200).send({})
 }
@@ -97,7 +110,7 @@ exports.listRoles = (req, res) => {
 }
 
 exports.userAddRole = (req, res) => {
-  console.log('userAddRole')
+  registerUserAction(req, 'userAddRole')
   let role = Role.findOne({ name: req.body.role }).exec(function (err, role) {
     if (err || !role) {
       res.status(200).send({ error: err })
@@ -116,7 +129,8 @@ exports.userAddRole = (req, res) => {
 }
 
 exports.userRemoveRole = (req, res) => {
-  console.log('userRemoveRole')
+  registerUserAction(req, 'userRemoveRole')
+
   let role = Role.findOne({ name: req.body.role }).exec(function (err, role) {
     if (err || !role) {
       res.status(200).send({ error: err })
@@ -165,13 +179,14 @@ exports.listDisplays = (req, res) => {
 }
 
 exports.updateRole = async (req, res) => {
-  console.log('updateRole')
+  registerUserAction(req, 'updateRole')
+
   await Role.findOneAndUpdate({ _id: req.body._id }, req.body)
   res.status(200).send({})
 }
 
 exports.updateUser = async (req, res) => {
-  console.log('updateUser')
+  registerUserAction(req, 'updateUser')
   if (
     'password' in req.body &&
     req.body.password !== '' &&
@@ -185,7 +200,8 @@ exports.updateUser = async (req, res) => {
 }
 
 exports.createRole = async (req, res) => {
-  console.log('createRole')
+  registerUserAction(req, 'createRole')
+
   const role = new Role()
   role.save(err => {
     if (err) {
@@ -197,7 +213,8 @@ exports.createRole = async (req, res) => {
 }
 
 exports.createUser = async (req, res) => {
-  console.log('createUser')
+  registerUserAction(req, 'createUser')
+
   if (req.body.password && req.body.password !== '')
     req.body.password = bcrypt.hashSync(req.body.password, 8)
   const user = new User(req.body)
@@ -211,13 +228,15 @@ exports.createUser = async (req, res) => {
 }
 
 exports.deleteRole = async (req, res) => {
-  console.log('deleteRole')
+  registerUserAction(req, 'deleteRole')
+  
   await Role.findOneAndDelete({ _id: req.body._id }, req.body)
   res.status(200).send({ error: false })
 }
 
 exports.deleteUser = async (req, res) => {
-  console.log('deleteUser')
+  registerUserAction(req, 'deleteUser')
+
   await User.findOneAndDelete({ _id: req.body._id }, req.body)
   res.status(200).send({ error: false })
 }
@@ -229,6 +248,8 @@ exports.signup = (req, res) => {
     email: req.body.email,
     password: bcrypt.hashSync(req.body.password, 8)
   })
+
+  registerUserAction(req, 'signup')
 
   user.save((err, user) => {
     if (err) {
@@ -380,6 +401,9 @@ exports.signin = (req, res) => {
         }
       )
 
+      // register user action
+      registerUserAction(req, 'signin')
+    
       // return the access token in a cookie unaccessible to javascript (http only)
       // also return a cookie with plain user data accessible to the client side scripts
       res
@@ -410,6 +434,9 @@ exports.signin = (req, res) => {
 
 // Sign out: eliminate the cookie with access token
 exports.signout = (req, res) => {
+
+  registerUserAction(req, 'signout')
+
   return res
     .status(200)
     .cookie('x-access-token', null, {
@@ -421,4 +448,52 @@ exports.signout = (req, res) => {
       ok: true,
       message: 'Signed Out!'
     })
+}
+
+// check and decoded token
+checkToken = req => {
+  let res = false
+  let token = req.headers['x-access-token'] || req.cookies['x-access-token']
+  if (!token) {
+    return res
+  }
+  jwt.verify(token, config.secret, (err, decoded) => {
+    if (err) {
+      return res
+    }
+    res = decoded
+  })
+  return res
+}
+
+// enqueue use action for later insertion to mongodb 
+function registerUserAction(req, actionName) {
+  console.log(actionName)
+
+  let body = {}
+  Object.assign(body, req.body);
+
+  let ck = checkToken(req)
+  if (ck !== false) {
+    console.log(actionName + " - " + ck?.username)
+    delete body['password']
+    // register user action
+    UserActionsQueue.enqueue({
+      username: ck?.username,
+      request: body,
+      action: actionName,
+      timeTag: new Date()
+    })
+  }
+  else {
+    console.log(actionName + " - " + req.body?.username)
+    delete body['password']
+    // register user action
+    UserActionsQueue.enqueue({
+      username: req.body?.username,
+      request: body,
+      action: actionName,
+      timeTag: new Date()
+    })
+  }
 }
