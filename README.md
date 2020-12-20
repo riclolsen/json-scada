@@ -1,10 +1,14 @@
-# {json:scada}
+<a href="https://aimeos.org/">
+    <img src="https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg" alt="JSON:SCADA Logo" title="JSON:SCADA" align="right" height="60" />
+</a>
 
-![logo](https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg "{json:scada} Logo")
+{json:scada}
+============
 
 A portable and scalable SCADA/IoT platform centered on the MongoDB database server.
 
 ## Major features and characteristics
+
 * Standard IT tools applied to SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB,Node.js, C#, Golang, Grafana, etc.).
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 * Portability and interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
