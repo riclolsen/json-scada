@@ -11,11 +11,9 @@ Any graphics properties can be animated with live data, such as fill/stroke colo
 
 ## Installers
 
-A Binary Executable for Windows 7/8/10 is included in the OSHMI Project Installer.
+Windows binaries are include in the {json:scada} installer for Windows 64.
 
-* [OSHMI Project](https://sourceforge.net/projects/oshmiopensubstationhmi/)
-
-It can also be acquired here for Windows 10 (Certified Binary).
+It can also be acquired here the standalone Microsoft Store version for Windows 10 (Certified Binary).
 
 * [Microsoft Store Binary](https://www.microsoft.com/store/apps/9P9905HMKZ7X?ocid=periscope)
 
