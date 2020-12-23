@@ -11,7 +11,57 @@ const UserActionsQueue = require('../../userActionsQueue')
 
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
-const { Recoverable } = require('repl')
+
+exports.updateProtocolConnection = async (req, res) => {
+  registerUserAction(req, 'updateProtocolConnection')
+
+  // make default bind address for some protocols
+  if (
+    ['IEC60870-5-104_SERVER', 'DNP3_SERVER'].includes(
+      req?.body?.protocolDriver
+    ) &&
+    ( !('ipAddressLocalBind' in req.body) || req.body.ipAddressLocalBind == '' )
+  ) {
+    req.body.ipAddressLocalBind = '0.0.0.0'
+  }
+
+  await ProtocolConnection.findOneAndUpdate({ _id: req.body._id }, req.body)
+  res.status(200).send({})
+}
+
+exports.deleteProtocolConnection = async (req, res) => {
+  registerUserAction(req, 'deleteProtocolConnection')
+
+  await ProtocolConnection.findOneAndDelete({ _id: req.body._id }, req.body)
+  res.status(200).send({ error: false })
+}
+
+exports.createProtocolConnection = async (req, res) => {
+  // find the biggest connection number and increment for the new connection
+  await ProtocolConnection.find({}).exec(function (err, protocolConnections) {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    let connNumber = 0
+    protocolConnections.forEach(element => {
+      if (element.protocolConnectionNumber > connNumber)
+        connNumber = element.protocolConnectionNumber
+    })
+
+    registerUserAction(req, 'createProtocolConnection')
+    const protocolConnection = new ProtocolConnection()
+    protocolConnection.protocolConnectionNumber = connNumber + 1
+    protocolConnection.DriverInstanceNumber = 1
+    protocolConnection.save(err => {
+      if (err) {
+        res.status(200).send({ error: err })
+        return
+      }
+      res.status(200).send({ error: false })
+    })
+  })
+}
 
 exports.listProtocolConnections = (req, res) => {
   console.log('listProtocolConnections')
@@ -94,8 +144,6 @@ exports.listUsers = (req, res) => {
       res.status(200).send(users)
     })
 }
-
-exports.removeUser = (req, res) => {}
 
 exports.listRoles = (req, res) => {
   console.log('listRoles')
@@ -229,7 +277,7 @@ exports.createUser = async (req, res) => {
 
 exports.deleteRole = async (req, res) => {
   registerUserAction(req, 'deleteRole')
-  
+
   await Role.findOneAndDelete({ _id: req.body._id }, req.body)
   res.status(200).send({ error: false })
 }
@@ -403,7 +451,7 @@ exports.signin = (req, res) => {
 
       // register user action
       registerUserAction(req, 'signin')
-    
+
       // return the access token in a cookie unaccessible to javascript (http only)
       // also return a cookie with plain user data accessible to the client side scripts
       res
@@ -434,7 +482,6 @@ exports.signin = (req, res) => {
 
 // Sign out: eliminate the cookie with access token
 exports.signout = (req, res) => {
-
   registerUserAction(req, 'signout')
 
   return res
@@ -466,16 +513,14 @@ checkToken = req => {
   return res
 }
 
-// enqueue use action for later insertion to mongodb 
-function registerUserAction(req, actionName) {
-  console.log(actionName)
-
+// enqueue use action for later insertion to mongodb
+function registerUserAction (req, actionName) {
   let body = {}
-  Object.assign(body, req.body);
+  Object.assign(body, req.body)
 
   let ck = checkToken(req)
   if (ck !== false) {
-    console.log(actionName + " - " + ck?.username)
+    console.log(actionName + ' - ' + ck?.username)
     delete body['password']
     // register user action
     UserActionsQueue.enqueue({
@@ -484,9 +529,8 @@ function registerUserAction(req, actionName) {
       action: actionName,
       timeTag: new Date()
     })
-  }
-  else {
-    console.log(actionName + " - " + req.body?.username)
+  } else {
+    console.log(actionName + ' - ' + req.body?.username)
     delete body['password']
     // register user action
     UserActionsQueue.enqueue({

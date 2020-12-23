@@ -23,6 +23,21 @@ module.exports = function (app, accessPoint) {
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
 
+  app.post(
+    accessPoint + 'auth/updateProtocolConnection',
+    [authJwt.isAdmin],
+    controller.updateProtocolConnection
+  )
+  app.post(
+    accessPoint + 'auth/deleteProtocolConnection',
+    [authJwt.isAdmin],
+    controller.deleteProtocolConnection
+  )
+  app.use(
+    accessPoint + 'auth/createProtocolConnection',
+    [authJwt.isAdmin],
+    controller.createProtocolConnection
+  )
   app.use(
     accessPoint + 'auth/listProtocolConnections',
     [authJwt.isAdmin],
@@ -33,7 +48,7 @@ module.exports = function (app, accessPoint) {
     [authJwt.isAdmin],
     controller.listNodes
   )  
-  app.use(
+  app.post(
     accessPoint + 'auth/deleteProtocolDriverInstance',
     [authJwt.isAdmin],
     controller.deleteProtocolDriverInstance
@@ -48,7 +63,7 @@ module.exports = function (app, accessPoint) {
     [authJwt.isAdmin],
     controller.listProtocolDriverInstances
   )
-  app.use(
+  app.post(
     accessPoint + 'auth/updateProtocolDriverInstance',
     [authJwt.isAdmin],
     controller.updateProtocolDriverInstance
@@ -62,11 +77,6 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/listRoles',
     [authJwt.isAdmin],
     controller.listRoles
-  )
-  app.post(
-    accessPoint + 'auth/removeUser',
-    [authJwt.isAdmin],
-    controller.removeUser
   )
   app.post(
     accessPoint + 'auth/userAddRole',
