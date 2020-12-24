@@ -17,12 +17,116 @@ exports.updateProtocolConnection = async (req, res) => {
 
   // make default bind address for some protocols
   if (
-    ['IEC60870-5-104_SERVER', 'DNP3_SERVER'].includes(
+    ['IEC60870-5-104_SERVER', 'DNP3_SERVER', 'I104M'].includes(
       req?.body?.protocolDriver
-    ) &&
-    ( !('ipAddressLocalBind' in req.body) || req.body.ipAddressLocalBind == '' )
+    )
   ) {
-    req.body.ipAddressLocalBind = '0.0.0.0'
+    if (
+      !('ipAddressLocalBind' in req.body) ||
+      req.body.ipAddressLocalBind == ''
+    ) {
+      req.body.ipAddressLocalBind = '0.0.0.0'
+      switch (req?.body?.protocolDriver) {
+        case 'IEC60870-5-104_SERVER':
+          req.body.ipAddressLocalBind = '0.0.0.0:2404'
+          break
+        case 'DNP3_SERVER':
+          req.body.ipAddressLocalBind = '0.0.0.0:20000'
+          break
+        case 'I104M':
+          req.body.ipAddressLocalBind = '0.0.0.0:8099'
+          break
+      }
+    }
+  }
+
+  if (
+    [
+      'IEC60870-5-104',
+      'IEC60870-5-104_SERVER',
+      'DNP3',
+      'DNP3_SERVER',
+      'PLCTAG',
+      'I104M'
+    ].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('ipAddresses' in req.body)) {
+      req.body.ipAddresses = []
+    }
+  }
+
+  if (
+    [
+      'IEC60870-5-101',
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-104',
+      'IEC60870-5-104_SERVER',
+      'DNP3',
+      'DNP3_SERVER',
+      'PLCTAG'
+    ].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('localLinkAddress' in req.body)) {
+      req.body.localLinkAddress = 1
+    }
+    if (!('remoteLinkAddress' in req.body)) {
+      req.body.remoteLinkAddress = 1
+    }
+  }
+
+  if (
+    ['IEC60870-5-101', 'IEC60870-5-104'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
+    if (!('testCommandInterval' in req.body)) {
+      req.body.testCommandInterval = 0
+    }
+  }
+
+  if (
+    ['IEC60870-5-101', 'IEC60870-5-104', 'IEC60870-5-101_SERVER', 'IEC60870-5-104_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
+    if (!('sizeOfCOT' in req.body)) {
+      switch (req?.body?.protocolDriver) {
+        case 'IEC60870-5-104':
+        case 'IEC60870-5-104_SERVER':
+          req.body.sizeOfCOT = 2
+          break
+        default:  
+          req.body.sizeOfCOT = 1
+          break
+      }
+    }
+    if (!('sizeOfCA' in req.body)) {
+          req.body.sizeOfCA = 2
+    }
+    if (!('sizeOfIOA' in req.body)) {
+      switch (req?.body?.protocolDriver) {
+        case 'IEC60870-5-104':
+        case 'IEC60870-5-104_SERVER':
+          req.body.sizeOfIOA = 3
+          break
+        default:  
+          req.body.sizeOfIOA = 2
+          break
+      }
+    }
+}
+
+  if (
+    ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
+    if (!('giInterval' in req.body)) {
+      req.body.giInterval = 300
+    }
+    if (!('timeSyncInterval' in req.body)) {
+      req.body.timeSyncInterval = 0
+    }
   }
 
   await ProtocolConnection.findOneAndUpdate({ _id: req.body._id }, req.body)

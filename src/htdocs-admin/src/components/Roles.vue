@@ -440,8 +440,6 @@ export default {
 
   methods: {
     async addRole(evt, roleName) {
-      console.log(roleName);
-
       return await fetch("/Invoke/auth/userAddRole", {
         method: "post",
         headers: {
@@ -461,8 +459,6 @@ export default {
         .catch((err) => console.warn(err));
     },
     async removeRole(evt, roleName) {
-      console.log(roleName);
-
       return await fetch("/Invoke/auth/userRemoveRole", {
         method: "post",
         headers: {

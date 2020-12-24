@@ -256,7 +256,6 @@ export default {
 
   methods: {
     async addRoleToUser(evt, roleName) {
-      console.log(this.selected.roles)
       if (this.selected.roles.some(e => e.name === roleName)) 
         return
  

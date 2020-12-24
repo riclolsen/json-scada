@@ -260,12 +260,10 @@ export default {
 
   methods: {
     async addNewNode() {
-      console.log(this.newNode);
       if (
         this.newNode != "" &&
         !this.selected.nodeNames.includes(this.newNode)
       ) {
-        console.log("Add");
         this.selected.nodeNames.push(this.newNode);
         this.updateProtocolDriverInstance();
         this.newNode = "";
