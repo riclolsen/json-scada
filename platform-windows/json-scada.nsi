@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.4"
-!define VERSION_ "0.4.0.0"
+!define VERSION "v.0.5"
+!define VERSION_ "0.5.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -295,6 +295,9 @@ SetRegView 64
   SetOutPath $INSTDIR\src\demo_simul
   File /a /r "..\src\demo_simul\*.*"
 
+  SetOutPath $INSTDIR\src\grafana_alert2event
+  File /a /r "..\src\grafana_alert2event\*.*"
+
   SetOutPath $INSTDIR\src\alarm_beep
   File /a /r "..\src\alarm_beep\*.*"
 
@@ -344,6 +347,8 @@ SetRegView 64
   SetOverwrite off
 
   SetOutPath $INSTDIR\conf
+  File /a "..\conf-templates\php.ini"
+  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime\php
   File /a "..\conf-templates\php.ini"
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\nginx.conf"
