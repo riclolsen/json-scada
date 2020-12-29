@@ -3,7 +3,7 @@
     <v-row class="pa-4" justify="space-between">
       <v-col cols="5">
         <v-treeview
-          style="max-height: 500px"
+          style="max-height: 500px;min-width: 250px"
           class="overflow-y-auto overflow-x-hidden"
           :active.sync="active"
           :items="items"
@@ -13,6 +13,7 @@
           color="primary"
           open-on-click
           transition
+          open-all
         >
           <template v-slot:prepend="{ item }">
             <v-icon v-if="!item.children"> mdi-swap-horizontal </v-icon>
@@ -50,7 +51,7 @@
           >
             <v-row class="pb-8 mx-auto" justify="space-between">
               <v-text-field
-                prepend-inner-icon="mdi-play-circle"
+                prepend-inner-icon="mdi-swap-horizontal"
                 type="text"
                 outlined
                 clearable
@@ -116,7 +117,7 @@
             </v-row>
 
             <v-text-field
-              prepend-inner-icon="mdi-play-circle"
+              prepend-inner-icon="mdi-swap-horizontal"
               type="number"
               outlined
               min="1"
@@ -125,6 +126,18 @@
               label="Connection Number"
               hide-details="auto"
               v-model="selected.protocolConnectionNumber"
+              @change="updateProtocolConnection"
+              class="pb-6 mx-auto"
+            ></v-text-field>
+
+            <v-text-field
+              type="text"
+              outlined
+              clearable
+              :input-value="active"
+              label="Description"
+              hide-details="auto"
+              v-model="selected.description"
               @change="updateProtocolConnection"
             ></v-text-field>
 
@@ -161,7 +174,7 @@
 
             <v-card class="mx-auto" tile>
               <v-list flat dense shaped subheader>
-                <v-subheader>Connection Parameters</v-subheader>
+                <v-subheader>Protocol Connection Parameters</v-subheader>
 
                 <v-list-item-group multiple active-class="">
                   <v-list-item
@@ -197,7 +210,19 @@
                     </template>
                   </v-list-item>
 
-                  <v-list-item>
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104_SERVER',
+                        'IEC60870-5-104',
+                        'DNP3_SERVER',
+                        'DNP3',
+                        'I104M',
+                        'PLCTAG',
+                        'MODBUS',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
                     <v-autocomplete
                       v-model="selected.ipAddresses"
                       :items="selected.ipAddresses"
@@ -687,6 +712,331 @@
                     </template>
                   </v-list-item>
 
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104_SERVER'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.serverModeMultiActive"
+                        inset
+                        color="primary"
+                        :label="`One data buffer per client (serverModeMultiActive)`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min="1"
+                          :input-value="active"
+                          label="Max client connections"
+                          hide-details="auto"
+                          v-model="selected.maxClientConnections"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Max number of client connections</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >Integer number</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104_SERVER','IEC60870-5-101_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min="1"
+                          :input-value="active"
+                          label="Max queue size"
+                          hide-details="auto"
+                          v-model="selected.maxQueueSize"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Max size of data messages queue</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >Integer number</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Comm port name"
+                          hide-details="auto"
+                          v-model="selected.portName"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Serial port name or IP:address</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >"COM3", "/dev/ttyS0", "192.168.0.1:2410"</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min=150
+                          :input-value="active"
+                          label="Baud rate"
+                          hide-details="auto"
+                          v-model="selected.baudRate"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Baud rate (bps)</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >"9600", "19200"</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="parityItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.parity"
+                        label="Parity"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Parity</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >None, Even, Odd, ...</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="stopBitsItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.stopBits"
+                        label="Stop bits"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Number of stop bits</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >One, One5, Two</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="handshakeItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.handshake"
+                        label="Handshake"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Type of hanshake used</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >None, Xon, Rts, ...</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min=1
+                          :input-value="active"
+                          label="Timeout for ACK"
+                          hide-details="auto"
+                          v-model="selected.timeoutForACK"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Timeout for ack</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >In milliseconds</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min=1
+                          :input-value="active"
+                          label="Timeout for repeat"
+                          hide-details="auto"
+                          v-model="selected.timeoutRepeat"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Timeout for repeat</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >In milliseconds</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="sizeOfLinkAddressItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.sizeOfLinkAddress "
+                        label="Size of link address"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Size of Link Address</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >0, 1, 2</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-101',
+                        'IEC60870-5-101_SERVER'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.useSingleCharACK "
+                        inset
+                        color="primary"
+                        :label="`Use single char ACK`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
                 </v-list-item-group>
               </v-list>
             </v-card>
@@ -736,6 +1086,29 @@ export default {
       "DNP3",
       "PLCTAG",
       "I104M",
+    ],
+    parityItems: [
+      "None",
+      "Even",
+      "Odd",
+      "Mark",
+      "Space",
+    ],
+    stopBitsItems: [
+      "One",
+      "One5",
+      "Two",
+    ],
+    handshakeItems: [
+      "None",
+      "Rts",
+      "Xon",
+      "RtsXon",
+    ],
+    sizeOfLinkAddressItems:[
+      0,
+      1,
+      2,
     ],
     protocolConnections: [],
   }),

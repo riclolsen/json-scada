@@ -75,9 +75,7 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101', 'IEC60870-5-104'].includes(
-      req?.body?.protocolDriver
-    )
+    ['IEC60870-5-101', 'IEC60870-5-104'].includes(req?.body?.protocolDriver)
   ) {
     if (!('testCommandInterval' in req.body)) {
       req.body.testCommandInterval = 0
@@ -85,9 +83,12 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101', 'IEC60870-5-104', 'IEC60870-5-101_SERVER', 'IEC60870-5-104_SERVER'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'IEC60870-5-101',
+      'IEC60870-5-104',
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-104_SERVER'
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (!('sizeOfCOT' in req.body)) {
       switch (req?.body?.protocolDriver) {
@@ -95,13 +96,13 @@ exports.updateProtocolConnection = async (req, res) => {
         case 'IEC60870-5-104_SERVER':
           req.body.sizeOfCOT = 2
           break
-        default:  
+        default:
           req.body.sizeOfCOT = 1
           break
       }
     }
     if (!('sizeOfCA' in req.body)) {
-          req.body.sizeOfCA = 2
+      req.body.sizeOfCA = 2
     }
     if (!('sizeOfIOA' in req.body)) {
       switch (req?.body?.protocolDriver) {
@@ -109,12 +110,12 @@ exports.updateProtocolConnection = async (req, res) => {
         case 'IEC60870-5-104_SERVER':
           req.body.sizeOfIOA = 3
           break
-        default:  
+        default:
           req.body.sizeOfIOA = 2
           break
       }
     }
-}
+  }
 
   if (
     ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG'].includes(
@@ -128,6 +129,58 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.timeSyncInterval = 0
     }
   }
+
+  if (
+    ['IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('serverModeMultiActive' in req.body)) {
+      req.body.serverModeMultiActive = true
+    }
+    if (!('maxClientConnections ' in req.body)) {
+      req.body.maxClientConnections  = 1
+    }
+  }
+
+  if (
+    ['IEC60870-5-101_SERVER', 'IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('maxQueueSize' in req.body)) {
+      req.body.maxQueueSize = 5000
+    }
+  }
+
+  if (
+    ['IEC60870-5-101', 'IEC60870-5-101_SERVER'].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('portName' in req.body)) {
+      req.body.portName = ''
+    }
+    if (!('baudRate ' in req.body)) {
+      req.body.baudRate  = 9600.0
+    }
+    if (!('parity' in req.body)) {
+      req.body.parity = 'Even'
+    }
+    if (!('stopBits' in req.body)) {
+      req.body.stopBits = ''
+    }
+    if (!('handshake ' in req.body)) {
+      req.body.handshake = 'None'
+    }
+    if (!('timeoutForACK' in req.body)) {
+      req.body.timeoutForACK = 1000.0
+    }
+    if (!('timeoutRepeat' in req.body)) {
+      req.body.timeoutRepeat = 1000.0
+    }
+    if (!('useSingleCharACK' in req.body)) {
+      req.body.useSingleCharACK = true
+    }
+    if (!('sizeOfLinkAddress' in req.body)) {
+      req.body.sizeOfLinkAddress = 1.0
+    }
+  }
+
 
   await ProtocolConnection.findOneAndUpdate({ _id: req.body._id }, req.body)
   res.status(200).send({})

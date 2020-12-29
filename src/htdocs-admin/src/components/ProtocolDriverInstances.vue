@@ -11,6 +11,7 @@
           color="primary"
           open-on-click
           transition
+          open-all
         >
           <template v-slot:prepend="{ item }">
             <v-icon v-if="!item.children"> mdi-play-circle </v-icon>
