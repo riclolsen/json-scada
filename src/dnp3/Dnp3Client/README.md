@@ -99,6 +99,7 @@ Each instance for this driver can have many client connection defined that must 
 * _**enableUnsolicited**_ [Boolean] - Enable (true) or disable (false) unsolicited mode. **Mandatory parameter**.
 
 * _**rangeScans**_ [Array of Objects] - Configure range scans. **Mandatory parameter**.
+
     * _**group**_ [Double] - Group for a range scan. **Mandatory parameter**.
     * _**variation**_ [Double] - Variation for a range scan. **Mandatory parameter**.
     * _**startAddress**_ [Double] - Start address for a range scan. **Mandatory parameter**.
@@ -106,7 +107,7 @@ Each instance for this driver can have many client connection defined that must 
     * _**period**_ [Double] - Period in seconds for a range scan. **Mandatory parameter**.
 
 
-* _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
+* _**stats**_ [Object] - Protocol statistics updated by the driver.
 
 For TCP communication.
 * _**ipAddressLocalBind**_ [String] - Not used for TCP option (leave empty). **Optional parameter**.
@@ -132,9 +133,9 @@ For TLS over TCP.
 * _**allowTLSv12**_ [Boolean] - Allow TLS version 1.2 (default true).
 * _**allowTLSv13**_ [Boolean] - Allow TLS version 1.3 (default true).
 * _**cipherList**_ [String] - Openssl format cipher list .
-* _**localCertFilePath**_ [String] - File that contains the certificate (or certificate chain) that will be presented to the remote side of the connection.
-* _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server..
-* _**privateKeyFilePath**_ [String] - File that contains the private key corresponding to the local certificate.
+* _**localCertFilePath**_ [String] - File that contains the certificate (or certificate chain) that will be presented to the remote side of the connection. **Mandatory parameter**.
+* _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server. **Mandatory parameter**.
+* _**privateKeyFilePath**_ [String] - File that contains the private key corresponding to the local certificate. **Mandatory parameter**.
 
 ### Multi-drop 
 
