@@ -130,19 +130,85 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (
-    ['IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)
-  ) {
+  if (['IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('serverModeMultiActive' in req.body)) {
       req.body.serverModeMultiActive = true
     }
-    if (!('maxClientConnections ' in req.body)) {
-      req.body.maxClientConnections  = 1
+    if (!('maxClientConnections' in req.body)) {
+      req.body.maxClientConnections = 1
+    }
+  }
+
+  if (['IEC60870-5-104', 'DNP3'].includes(req?.body?.protocolDriver)) {
+    if (!('localCertFilePath' in req.body)) {
+      req.body.localCertFilePath = ''
+    }
+    if (!('peerCertFilePath' in req.body)) {
+      req.body.peerCertFilePath = ''
+    }
+  }
+
+  if (['IEC60870-5-104'].includes(req?.body?.protocolDriver)) {
+    if (!('rootCertFilePath' in req.body)) {
+      req.body.rootCertFilePath = ''
+    }
+    if (!('allowOnlySpecificCertificates' in req.body)) {
+      req.body.allowOnlySpecificCertificates = false
+    }
+    if (!('chainValidation' in req.body)) {
+      req.body.chainValidation = false
+    }
+  }
+
+  if (['DNP3'].includes(req?.body?.protocolDriver)) {
+    if (!('allowTLSv10' in req.body)) {
+      req.body.allowTLSv10 = false
+    }
+    if (!('allowTLSv11' in req.body)) {
+      req.body.allowTLSv11 = false
+    }
+    if (!('allowTLSv12' in req.body)) {
+      req.body.allowTLSv12 = true
+    }
+    if (!('allowTLSv13' in req.body)) {
+      req.body.allowTLSv13 = true
+    }
+    if (!('cipherList' in req.body)) {
+      req.body.cipherList = ''
+    }
+    if (!('privateKeyFilePath' in req.body)) {
+      req.body.privateKeyFilePath = ''
+    }
+    if (!('asyncOpenDelay' in req.body)) {
+      req.body.asyncOpenDelay = 0.0
+    }
+    if (!('timeSyncMode' in req.body)) {
+      req.body.timeSyncMode = 0.0
+    }
+    if (!('class0ScanInterval' in req.body)) {
+      req.body.class0ScanInterval = 0.0
+    }
+    if (!('class1ScanInterval' in req.body)) {
+      req.body.class1ScanInterval = 0.0
+    }
+    if (!('class2ScanInterval' in req.body)) {
+      req.body.class2ScanInterval = 0.0
+    }
+    if (!('class3ScanInterval' in req.body)) {
+      req.body.class3ScanInterval = 0.0
+    }
+    if (!('enableUnsolicited' in req.body)) {
+      req.body.enableUnsolicited = true
+    }
+    if (!('rangeScans' in req.body)) {
+      req.body.rangeScans = []
     }
   }
 
   if (
-    ['IEC60870-5-101_SERVER', 'IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)
+    ['IEC60870-5-101_SERVER', 'IEC60870-5-104_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
   ) {
     if (!('maxQueueSize' in req.body)) {
       req.body.maxQueueSize = 5000
@@ -150,13 +216,15 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101', 'IEC60870-5-101_SERVER'].includes(req?.body?.protocolDriver)
+    ['IEC60870-5-101', 'IEC60870-5-101_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
   ) {
     if (!('portName' in req.body)) {
       req.body.portName = ''
     }
     if (!('baudRate ' in req.body)) {
-      req.body.baudRate  = 9600.0
+      req.body.baudRate = 9600.0
     }
     if (!('parity' in req.body)) {
       req.body.parity = 'Even'
@@ -164,7 +232,7 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('stopBits' in req.body)) {
       req.body.stopBits = ''
     }
-    if (!('handshake ' in req.body)) {
+    if (!('handshake' in req.body)) {
       req.body.handshake = 'None'
     }
     if (!('timeoutForACK' in req.body)) {
@@ -180,7 +248,6 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.sizeOfLinkAddress = 1.0
     }
   }
-
 
   await ProtocolConnection.findOneAndUpdate({ _id: req.body._id }, req.body)
   res.status(200).send({})

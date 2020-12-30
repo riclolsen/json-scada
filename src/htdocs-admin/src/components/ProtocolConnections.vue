@@ -788,6 +788,124 @@
                     </template>
                   </v-list-item>
 
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104','DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Local certificate file path"
+                          hide-details="auto"
+                          v-model="selected.localCertFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Local certificate file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\localCert.pfx'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104','DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Peer certificate file path"
+                          hide-details="auto"
+                          v-model="selected.peerCertFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Peer certificate file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\peerCert.cer'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Root certificate file path"
+                          hide-details="auto"
+                          v-model="selected.rootCertFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Root certificate file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\rootCert.cer'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.allowOnlySpecificCertificates"
+                        inset
+                        color="primary"
+                        :label="`Allow only specific certificates [TLS]`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.chainValidation"
+                        inset
+                        color="primary"
+                        :label="`Certificate chain validation [TLS]`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
 
                   <v-list-item
                     v-if="
