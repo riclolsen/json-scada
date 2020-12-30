@@ -2,7 +2,7 @@
 
 This driver implements a client for the IEC 101 protocol. It can have multiple connections to IEC-101 servers on multiple computers, if needed.
 
-To configure the driver it is necessary to create one or more driver instances and at least on connection per instance. Also the tags intended to be updated should be configured appropriately.
+To configure the driver it is necessary to create one or more driver instances and at least one connection per instance. Also the tags intended to be updated should be configured appropriately.
 
 ##  Configure a driver instance
 
