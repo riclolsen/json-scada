@@ -114,7 +114,7 @@ For TCP communication.
 * _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for DNP3 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
 
 For UDP communication.
-* _**ipAddressLocalBind**_ [String] - IP address and port of local UCP endpoint. **Mandatory parameter**.
+* _**ipAddressLocalBind**_ [String] - IP address and port of local UDP endpoint. **Mandatory parameter**.
 * _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for DNP3 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
 
 For Serial communication.
