@@ -46,11 +46,11 @@ Each instance for this driver can have many client connection defined that must 
         commandsEnabled: true,
         ipAddressLocalBind: "", 
         ipAddresses: ["192.168.0.31:20000"],
-        portName: "COM3", 
-        baudRate: 9600,
-        parity: "Even",
-        stopBits: "One",
-        handshake: "None",
+        portName: "", 
+        baudRate: 0,
+        parity: "",
+        stopBits: "",
+        handshake: "",
         asyncOpenDelay: 0,
         localLinkAddress: 1,
         remoteLinkAddress: 2,
@@ -91,6 +91,21 @@ Each instance for this driver can have many client connection defined that must 
 * _**remoteLinkAddress**_ [Double] - Remote link address of the server (originator address). **Optional parameter**.
 * _**giInterval**_ [Double] - General station interrogation period in seconds. **Optional parameter**.
 * _**timeSyncMode**_ [Double] - Time sync mode (from client when requested by the RTU server): 0=none, 1=non-lan, 2=lan. Use zero to disable. **Mandatory parameter**.
+
+* _**class0ScanInterval**_ [Double] - Time interval in seconds for class 0 scan. Use zero to disable. **Mandatory parameter**.
+* _**class1ScanInterval**_ [Double] - Time interval in seconds for class 1 scan. Use zero to disable. **Mandatory parameter**.
+* _**class3ScanInterval**_ [Double] - Time interval in seconds for class 2 scan. Use zero to disable. **Mandatory parameter**.
+* _**class4ScanInterval**_ [Double] - Time interval in seconds for class 3 scan. Use zero to disable. **Mandatory parameter**.
+* _**enableUnsolicited**_ [Boolean] - Enable (true) or disable (false) unsolicited mode. **Mandatory parameter**.
+
+* _**rangeScans**_ [Array of Objects] - Configure range scans. **Mandatory parameter**.
+    * _**group**_ [Double] - Group for a range scan. **Mandatory parameter**.
+    * _**variation**_ [Double] - Variation for a range scan. **Mandatory parameter**.
+    * _**startAddress**_ [Double] - Start address for a range scan. **Mandatory parameter**.
+    * _**stopAddress**_ [Double] - Stop address for a range scan. **Mandatory parameter**.
+    * _**period**_ [Double] - Period in seconds for a range scan. **Mandatory parameter**.
+
+
 * _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 For TCP communication.
@@ -102,7 +117,7 @@ For UDP communication.
 * _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for DNP3 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
 
 For Serial communication.
-* _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0", "192.168.0.1:2410" for TCP address:port. **Mandatory parameter**.
+* _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0". **Mandatory parameter**.
 * _**baudRate**_ [Double] - Comm port baud rate. **Mandatory parameter**.
 * _**parity**_ [String] - Comm port parity None|Even|Odd. **Mandatory parameter**.
 * _**stopBits**_ [String] - Comm port number of stop bits One|One5|Two. **Mandatory parameter**.
