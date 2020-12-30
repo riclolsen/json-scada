@@ -177,123 +177,7 @@
                 <v-subheader>Protocol Connection Parameters</v-subheader>
 
                 <v-list-item-group multiple active-class="">
-                  <v-list-item
-                    v-if="
-                      [
-                        'IEC60870-5-104_SERVER',
-                        'DNP3_SERVER',
-                        'I104M',
-                      ].includes(selected.protocolDriver)
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :rules="[rules.required, rules.ipPort]"
-                          :input-value="active"
-                          label="Bind IP address and port"
-                          hide-details="auto"
-                          v-model="selected.ipAddressLocalBind"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
 
-                      <v-list-item-content>
-                        <v-list-item-title
-                          >Bind IP Address and Port</v-list-item-title
-                        >
-                        <v-list-item-subtitle
-                          >Local bind for listening</v-list-item-subtitle
-                        >
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      [
-                        'IEC60870-5-104_SERVER',
-                        'IEC60870-5-104',
-                        'DNP3_SERVER',
-                        'DNP3',
-                        'I104M',
-                        'PLCTAG',
-                        'MODBUS',
-                      ].includes(selected.protocolDriver)
-                    "
-                  >
-                    <v-autocomplete
-                      v-model="selected.ipAddresses"
-                      :items="selected.ipAddresses"
-                      chips
-                      small-chips
-                      deletable-chips
-                      label="Remote IP addresses"
-                      multiple
-                      @change="updateProtocolConnection"
-                    ></v-autocomplete>
-
-                    <v-tooltip bottom>
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-btn
-                          v-bind="attrs"
-                          v-on="on"
-                          class="mx-2"
-                          fab
-                          dark
-                          x-small
-                          color="blue"
-                          @click="dialogAddIP = true"
-                        >
-                          <v-icon dark> mdi-plus </v-icon>
-                        </v-btn>
-                      </template>
-                      <span>Add new IP Address!</span>
-                    </v-tooltip>
-                    <v-dialog
-                      v-model="dialogAddIP"
-                      max-width="290"
-                      class="pa-8"
-                    >
-                      <v-card>
-                        <v-card-title class="headline">
-                          Add a new IP Address!
-                        </v-card-title>
-
-                        <v-card-title class="headline">
-                          <v-text-field
-                            label="New IP"
-                            v-model="newIP"
-                            :rules="[rules.required, rules.ip]"
-                          ></v-text-field>
-                        </v-card-title>
-
-                        <v-card-actions>
-                          <v-spacer></v-spacer>
-
-                          <v-btn
-                            color="green darken-1"
-                            text
-                            @click="dialogAddIP = false"
-                          >
-                            Cancel
-                          </v-btn>
-
-                          <v-btn
-                            color="blue darken-1"
-                            text
-                            @click="
-                              dialogAddIP = false;
-                              addNewIP($event);
-                            "
-                          >
-                            Add IP!
-                          </v-btn>
-                        </v-card-actions>
-                      </v-card>
-                    </v-dialog>
-                  </v-list-item>
 
                   <v-list-item>
                     <template v-slot:default="{ active }">
@@ -790,155 +674,7 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104','DNP3'].includes(
-                        selected.protocolDriver
-                      )
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :input-value="active"
-                          label="Local certificate file path"
-                          hide-details="auto"
-                          v-model="selected.localCertFilePath"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
-                      <v-list-item-content>
-                        <v-list-item-title
-                          >Local certificate file path [TLS]</v-list-item-title
-                        >
-                        <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\localCert.pfx'</v-list-item-subtitle
-                        >
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      ['IEC60870-5-104','DNP3'].includes(
-                        selected.protocolDriver
-                      )
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :input-value="active"
-                          label="Peer certificate file path"
-                          hide-details="auto"
-                          v-model="selected.peerCertFilePath"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
-                      <v-list-item-content>
-                        <v-list-item-title
-                          >Peer certificate file path [TLS]</v-list-item-title
-                        >
-                        <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\peerCert.cer'</v-list-item-subtitle
-                        >
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      ['IEC60870-5-104'].includes(
-                        selected.protocolDriver
-                      )
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :input-value="active"
-                          label="Root certificate file path"
-                          hide-details="auto"
-                          v-model="selected.rootCertFilePath"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
-                      <v-list-item-content>
-                        <v-list-item-title
-                          >Root certificate file path [TLS]</v-list-item-title
-                        >
-                        <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\rootCert.cer'</v-list-item-subtitle
-                        >
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      [
-                        'IEC60870-5-104'
-                      ].includes(selected.protocolDriver)
-                    "
-                  >
-                      <v-switch
-                        v-model="selected.allowOnlySpecificCertificates"
-                        inset
-                        color="primary"
-                        :label="`Allow only specific certificates [TLS]`"
-                        @change="updateProtocolConnection"
-                      ></v-switch>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      [
-                        'IEC60870-5-104'
-                      ].includes(selected.protocolDriver)
-                    "
-                  >
-                      <v-switch
-                        v-model="selected.chainValidation"
-                        inset
-                        color="primary"
-                        :label="`Certificate chain validation [TLS]`"
-                        @change="updateProtocolConnection"
-                      ></v-switch>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
-                        selected.protocolDriver
-                      )
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :input-value="active"
-                          label="Comm port name"
-                          hide-details="auto"
-                          v-model="selected.portName"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
-                      <v-list-item-content>
-                        <v-list-item-title
-                          >Serial port name or IP:address</v-list-item-title
-                        >
-                        <v-list-item-subtitle
-                          >"COM3", "/dev/ttyS0", "192.168.0.1:2410"</v-list-item-subtitle
-                        >
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                      ['DNP3'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -947,20 +683,20 @@
                       <v-list-item-action>
                         <v-text-field
                           type="number"
-                          min=150
+                          min=0
                           :input-value="active"
-                          label="Baud rate"
+                          label="Class 0 scan interval"
                           hide-details="auto"
-                          v-model="selected.baudRate"
+                          v-model="selected.class0ScanInterval"
                           @change="updateProtocolConnection"
                         ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Baud rate (bps)</v-list-item-title
+                          >Class 0 scan interval</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >"9600", "19200"</v-list-item-subtitle
+                          >In seconds</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -968,27 +704,29 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                      ['DNP3'].includes(
                         selected.protocolDriver
                       )
                     "
                   >
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
-                      <v-select
-                        :items="parityItems"
-                        :input-value="active"
-                        hide-details="auto"
-                        v-model="selected.parity"
-                        label="Parity"
-                      ></v-select>
+                        <v-text-field
+                          type="number"
+                          min=0
+                          :input-value="active"
+                          label="Class 1 scan interval"
+                          hide-details="auto"
+                          v-model="selected.class1ScanInterval"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Parity</v-list-item-title
+                          >Class 1 scan interval</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >None, Even, Odd, ...</v-list-item-subtitle
+                          >In seconds</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -996,27 +734,29 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                      ['DNP3'].includes(
                         selected.protocolDriver
                       )
                     "
                   >
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
-                      <v-select
-                        :items="stopBitsItems"
-                        :input-value="active"
-                        hide-details="auto"
-                        v-model="selected.stopBits"
-                        label="Stop bits"
-                      ></v-select>
+                        <v-text-field
+                          type="number"
+                          min=0
+                          :input-value="active"
+                          label="Class 2 scan interval"
+                          hide-details="auto"
+                          v-model="selected.class2ScanInterval"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Number of stop bits</v-list-item-title
+                          >Class 2 scan interval</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >One, One5, Two</v-list-item-subtitle
+                          >In seconds</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1024,31 +764,192 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                      ['DNP3'].includes(
                         selected.protocolDriver
                       )
                     "
                   >
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
-                      <v-select
-                        :items="handshakeItems"
-                        :input-value="active"
-                        hide-details="auto"
-                        v-model="selected.handshake"
-                        label="Handshake"
-                      ></v-select>
+                        <v-text-field
+                          type="number"
+                          min=0
+                          :input-value="active"
+                          label="Class 3 scan interval"
+                          hide-details="auto"
+                          v-model="selected.class3ScanInterval"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Type of hanshake used</v-list-item-title
+                          >Class 3 scan interval</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >None, Xon, Rts, ...</v-list-item-subtitle
+                          >In seconds</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
                   </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min=0
+                          :input-value="active"
+                          label="Time sync mode"
+                          hide-details="auto"
+                          v-model="selected.timeSyncMode"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Time sync mode</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >Integer number: 0, 1 or 2</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'DNP3'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.enableUnsolicited"
+                        inset
+                        color="primary"
+                        :label="`Enable unsolicited`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'DNP3',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <v-autocomplete
+                      v-model="selected.rangeScansStr"
+                      :items="selected.rangeScansStr"
+                      chips
+                      small-chips
+                      deletable-chips
+                      label="Range Scans"
+                      multiple
+                      @change="updateProtocolConnection"
+                    ></v-autocomplete>
+
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          v-bind="attrs"
+                          v-on="on"
+                          class="mx-2"
+                          fab
+                          dark
+                          x-small
+                          color="blue"
+                          @click="dialogAddRangeScan = true"
+                        >
+                          <v-icon dark> mdi-plus </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Add new range scan!</span>
+                    </v-tooltip>
+                    <v-dialog
+                      v-model="dialogAddRangeScan"
+                      max-width="400"
+                      class="pa-8"
+                    >
+                      <v-card>
+                        <v-card-title class="headline">
+                          Add a new range scan!
+                        </v-card-title>
+
+                        <v-card-title class="headline">
+                          <v-text-field
+                            label="Group"
+                            type="number"
+                            min=1
+                            v-model="newRangeScan.group"
+                          ></v-text-field>
+
+                          <v-text-field
+                            label="Variation"
+                            type="number"
+                            min=0
+                            v-model="newRangeScan.variation"
+                          ></v-text-field>
+
+                          <v-text-field
+                            label="Start Address"
+                            type="number"
+                            min=0
+                            v-model="newRangeScan.startAddress"
+                          ></v-text-field>
+
+                          <v-text-field
+                            label="Stop Address"
+                            type="number"
+                            min=0
+                            v-model="newRangeScan.stopAddress"
+                          ></v-text-field>
+
+                          <v-text-field
+                            label="Period (seconds)"
+                            type="number"
+                            min=1
+                            v-model="newRangeScan.period"
+                          ></v-text-field>
+
+                        </v-card-title>
+
+
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+
+                          <v-btn
+                            color="green darken-1"
+                            text
+                            @click="dialogAddRangeScan = false"
+                          >
+                            Cancel
+                          </v-btn>
+
+                          <v-btn
+                            color="blue darken-1"
+                            text
+                            @click="
+                              dialogAddIP = false;
+                              addNewRangeScan($event);
+                            "
+                          >
+                            Add Range Scan!
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+                  </v-list-item>
+
 
                   <v-list-item
                     v-if="
@@ -1158,6 +1059,590 @@
                 </v-list-item-group>
               </v-list>
             </v-card>
+
+            <v-card class="mt-6" tile
+                    v-if="
+                      [
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'DNP3',
+                        'DNP3_SERVER',
+                        'I104M',
+                        'MODBUS',
+                        'PLCTAG'
+                      ].includes(selected.protocolDriver)
+                    "
+            >
+              <v-list flat dense shaped subheader>
+                <v-subheader>TCP Parameters (leave blank for serial connections)</v-subheader>
+                <v-list-item-group>
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104_SERVER',
+                        'DNP3',
+                        'DNP3_SERVER',
+                        'I104M',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :rules="[rules.required, rules.ipPort]"
+                          :input-value="active"
+                          label="Bind IP address and port"
+                          hide-details="auto"
+                          v-model="selected.ipAddressLocalBind"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Bind IP Address and Port</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >Local bind for listening</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104_SERVER',
+                        'IEC60870-5-104',
+                        'DNP3_SERVER',
+                        'DNP3',
+                        'I104M',
+                        'PLCTAG',
+                        'MODBUS',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <v-autocomplete
+                      v-model="selected.ipAddresses"
+                      :items="selected.ipAddresses"
+                      chips
+                      small-chips
+                      deletable-chips
+                      label="Remote IP addresses"
+                      multiple
+                      @change="updateProtocolConnection"
+                    ></v-autocomplete>
+
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          v-bind="attrs"
+                          v-on="on"
+                          class="mx-2"
+                          fab
+                          dark
+                          x-small
+                          color="blue"
+                          @click="dialogAddIP = true"
+                        >
+                          <v-icon dark> mdi-plus </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Add new IP Address!</span>
+                    </v-tooltip>
+                    <v-dialog
+                      v-model="dialogAddIP"
+                      max-width="290"
+                      class="pa-8"
+                    >
+                      <v-card>
+                        <v-card-title class="headline">
+                          Add a new IP Address!
+                        </v-card-title>
+
+                        <v-card-title class="headline">
+                          <v-text-field
+                            label="New IP"
+                            v-model="newIP"
+                            :rules="[rules.required, rules.ip]"
+                          ></v-text-field>
+                        </v-card-title>
+
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+
+                          <v-btn
+                            color="green darken-1"
+                            text
+                            @click="dialogAddIP = false"
+                          >
+                            Cancel
+                          </v-btn>
+
+                          <v-btn
+                            color="blue darken-1"
+                            text
+                            @click="
+                              dialogAddIP = false;
+                              addNewIP($event);
+                            "
+                          >
+                            Add IP!
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-card>
+
+            <v-card class="mt-6" tile
+                                v-if="
+                      [
+                        'IEC60870-5-104',
+                        'DNP3',
+                      ].includes(selected.protocolDriver)
+                    "
+                    >
+              <v-list flat dense shaped subheader>
+                <v-subheader>TLS Parameters (leave blank for unencrypted connections)</v-subheader>
+                <v-list-item-group>
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104','DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Local certificate file path"
+                          hide-details="auto"
+                          v-model="selected.localCertFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Local certificate file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\localCert.pfx'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104','DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Peer certificate file path"
+                          hide-details="auto"
+                          v-model="selected.peerCertFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Peer certificate file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\peerCert.cer'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-104'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Root certificate file path"
+                          hide-details="auto"
+                          v-model="selected.rootCertFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Root certificate file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\rootCert.cer'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Private key file path"
+                          hide-details="auto"
+                          v-model="selected.privateKeyFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Private key file path [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'C:\json-scada\conf\deviceKey.pem'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Openssl Cypher list"
+                          hide-details="auto"
+                          v-model="selected.cipherList"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Openssl format cipher list [TLS]</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. 'AES128, AES256, AES, DES'</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'DNP3'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.allowTLSv10"
+                        inset
+                        color="primary"
+                        :label="`Allow TLS version 1.0`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'DNP3'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.allowTLSv11"
+                        inset
+                        color="primary"
+                        :label="`Allow TLS version 1.1`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'DNP3'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.allowTLSv12"
+                        inset
+                        color="primary"
+                        :label="`Allow TLS version 1.2`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'DNP3'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.allowTLSv13"
+                        inset
+                        color="primary"
+                        :label="`Allow TLS version 1.3`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.allowOnlySpecificCertificates"
+                        inset
+                        color="primary"
+                        :label="`Allow only specific certificates [TLS]`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-104'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.chainValidation"
+                        inset
+                        color="primary"
+                        :label="`Certificate chain validation [TLS]`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-card>
+
+            <v-card class="mt-6" tile
+                    v-if="
+                      [
+                        'IEC60870-5-101',
+                        'IEC60870-5-101_SERVER',
+                        'DNP3',
+                        'DNP3_SERVER',
+                        'MODBUS'
+                      ].includes(selected.protocolDriver)
+                    "
+            >
+              <v-list flat dense shaped subheader>
+                <v-subheader>Serial Parameters (leave blank for network connections)</v-subheader>
+                <v-list-item-group>
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          label="Comm port name"
+                          hide-details="auto"
+                          v-model="selected.portName"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Serial port name or IP:address</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. "COM3", "/dev/ttyS0", "192.168.0.1:2410"</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min=150
+                          :input-value="active"
+                          label="Baud rate"
+                          hide-details="auto"
+                          v-model="selected.baudRate"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Serial baud rate (bps)</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. "9600", "19200"</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="parityItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.parity"
+                        label="Parity"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Serial parity</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. None, Even, Odd, ...</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="stopBitsItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.stopBits"
+                        label="Stop bits"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Serial stop bits</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. One, One5, Two</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['IEC60870-5-101','IEC60870-5-101_SERVER', 'DNP3','DNP3_SERVER', 'MODBUS'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                      <v-select
+                        :items="handshakeItems"
+                        :input-value="active"
+                        hide-details="auto"
+                        v-model="selected.handshake"
+                        label="Handshake"
+                      ></v-select>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Type of serial handshake</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >e.g. None, Xon, Rts, ...</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['DNP3'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          min=0
+                          :input-value="active"
+                          label="Async open delay"
+                          hide-details="auto"
+                          v-model="selected.asyncOpenDelay"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title
+                          >Async open delay (serial)</v-list-item-title
+                        >
+                        <v-list-item-subtitle
+                          >In milliseconds</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-card>
+
           </v-card>
         </v-scroll-y-transition>
       </v-col>
@@ -1176,7 +1661,9 @@ export default {
     itemsSizeOfCA: [1, 2],
     itemsSizeOfIOA: [1, 2, 3],
     dialogAddIP: false,
+    dialogAddRangeScan: false,
     dialogDelConn: false,
+    newRangeScan: {group: 1, variation: 0, startAddress: 0, stopAddress: 0, period: 300},
     newIP: "",
     active: [],
     open: [],
@@ -1223,10 +1710,15 @@ export default {
       "Xon",
       "RtsXon",
     ],
-    sizeOfLinkAddressItems:[
+    sizeOfLinkAddressItems: [
       0,
       1,
       2,
+    ],
+    timeSyncModeItems: [
+      0,
+      1,      
+      2
     ],
     protocolConnections: [],
   }),
@@ -1257,6 +1749,13 @@ export default {
     async updateProtocolConnection() {
       var connDup = Object.assign({}, this.selected);
       delete connDup["id"];
+
+      if ("rangeScans" in connDup) {
+      connDup.rangeScans = [];
+      for (let i=0; i<connDup.rangeScansStr.length; i++)
+        connDup.rangeScans.push(JSON.parse(connDup.rangeScansStr[i]))
+      }
+      delete connDup["rangeScansStr"];
       return await fetch("/Invoke/auth/updateProtocolConnection", {
         method: "post",
         headers: {
@@ -1288,13 +1787,9 @@ export default {
         })
         .catch((err) => console.warn(err));
     },
-    async fetchIPs() {
-      //return await fetch("/Invoke/auth/listNodes")
-      //  .then((res) => res.json())
-      //  .then((json) => {
-      //    this.nodeNames = json;
-      //  })
-      //  .catch((err) => console.warn(err));
+    async addNewRangeScan() {
+        this.selected.rangeScansStr.push(JSON.stringify(this.newRangeScan));
+        this.updateProtocolConnection();
     },
     async addNewIP() {
       if (this.rules.ip(this.newIP) !== true) return;
@@ -1327,12 +1822,16 @@ export default {
         .catch((err) => console.warn(err));
     },
     async fetchProtocolConnections() {
-      this.fetchIPs();
       return await fetch("/Invoke/auth/listProtocolConnections")
         .then((res) => res.json())
         .then((json) => {
           for (let i = 0; i < json.length; i++) {
             json[i].id = i + 1;
+            
+            json[i].rangeScansStr = [];
+            if ('rangeScans' in json[i])
+            for (let j=0; j<json[i].rangeScans.length; j++)
+              json[i].rangeScansStr.push(JSON.stringify(json[i].rangeScans[j]));
           }
           this.protocolConnections.length = 0;
           this.protocolConnections.push(...json);
