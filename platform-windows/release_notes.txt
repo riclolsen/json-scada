@@ -31,6 +31,7 @@ Acknowledgements:
   Chromium - by "The Chromium Authors"
   Chromium x86 binaries - http://chromium.woolyss.com
   NGINX - http://nginx.org
+  Express - https://expressjs.com/pt-br/
   Opendnp3 - https://www.automatak.com/opendnp3/
   Open Sans Fonts by Steve Matteson
   Source Sans Pro by Adobe Systems Incorporated. License - http://scripts.sil.org/OFL
@@ -100,7 +101,7 @@ Recommended Operating Systems:
 Please use an updated OS.
 
 Can also run on:
- - Other Linux distros, x86, x64, ARM 32/64, (no installer provided).
+ - Other Linux distros, Mac OSX, x86, x64, ARM 32/64, (no installer provided).
  - See documentation.
 
 Client user interface can be used on:
@@ -117,6 +118,15 @@ See official repo:
 
 Inkscape+SAGE:
  - See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.5: 
+
+ - Admin panel now manages protocol driver connections.
+ - Enhancements on Admin panel.
+ - Grafana alerting integration with Events Viewer.
+ - Various enhancements and fixes.
 
 -------------------------------------------------------------------
 
