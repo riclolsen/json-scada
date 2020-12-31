@@ -43,6 +43,7 @@ To provide an easy to use, fully-featured, flexible, scalable, and portable SCAD
 * Standard IT tools applied to SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB,Node.js, C#, Golang, Grafana, etc.).
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 * Portability and interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
+* Windows installer available in the [releases section](releases/tag/V0.5-alpha).
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Unlimited tags, servers, and users.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
