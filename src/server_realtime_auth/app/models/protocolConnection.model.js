@@ -26,6 +26,9 @@ const ProtocolConnection = mongoose.model(
     // IEC 104 Server and Client, DNP3, PLCTag, I104M
     ipAddressLocalBind: { type: String },
     ipAddresses: { type: [String], default: [] },
+    
+    // OPC-UA Client
+    endpointURLs: { type: [String], default: [] },
 
     // IEC 104 Server and Client, DNP3, PLCTag, I104M
     localLinkAddress: { type: Double, default: 1.0 },

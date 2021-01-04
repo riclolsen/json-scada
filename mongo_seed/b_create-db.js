@@ -279,6 +279,18 @@ var protocolConnectionsValidator = {
             'IP addresses of servers to connect or clients allowed to connect.'
         }
       },
+      endpointURLs: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        additionalProperties: false,
+        items: {
+          bsonType: 'string',
+          additionalProperties: false,
+          description:
+            'OPC-UA server URLs.'
+        }
+      },
       localLinkAddress: {
         bsonType: ['double', 'long', 'int', 'null'],
         minimum: 0,

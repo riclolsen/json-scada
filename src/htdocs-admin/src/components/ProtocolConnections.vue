@@ -147,6 +147,16 @@
               color="primary"
               :label="`Enabled: ${selected.enabled.toString()}`"
               @change="updateProtocolConnection"
+              class="mb-0"
+            ></v-switch>
+
+            <v-switch
+              v-model="selected.commandsEnabled"
+              inset
+              color="primary"
+              :label="`Commands Enabled: ${selected.commandsEnabled.toString()}`"
+              @change="updateProtocolConnection"
+              class="mt-0"
             ></v-switch>
 
             <v-select
@@ -179,7 +189,21 @@
                 <v-list-item-group multiple active-class="">
 
 
-                  <v-list-item>
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-101',
+                        'IEC60870-5-101_SERVER',
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'PLCTAG',
+                        'MODBUS',
+                        'DNP3',
+                        'DNP3_SERVER',
+                        'I104M',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
                         <v-text-field
@@ -203,7 +227,21 @@
                     </template>
                   </v-list-item>
 
-                  <v-list-item>
+                  <v-list-item
+                    v-if="
+                      [
+                        'IEC60870-5-101',
+                        'IEC60870-5-101_SERVER',
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'PLCTAG',
+                        'MODBUS',
+                        'DNP3',
+                        'DNP3_SERVER',
+                        'I104M',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
                         <v-text-field
@@ -226,6 +264,86 @@
                       </v-list-item-content>
                     </template>
                   </v-list-item>
+
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <v-autocomplete
+                      v-model="selected.endpointURLs"
+                      :items="selected.endpointURLs"
+                      chips
+                      small-chips
+                      deletable-chips
+                      label="Remote Endpoint URLs"
+                      multiple
+                      @change="updateProtocolConnection"
+                    ></v-autocomplete>
+
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          v-bind="attrs"
+                          v-on="on"
+                          class="mx-2"
+                          fab
+                          dark
+                          x-small
+                          color="blue"
+                          @click="dialogAddURL = true"
+                        >
+                          <v-icon dark> mdi-plus </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Add new endpoint URL!</span>
+                    </v-tooltip>
+                    <v-dialog
+                      v-model="dialogAddURL"
+                      max-width="400"
+                      class="pa-8"
+                    >
+                      <v-card>
+                        <v-card-title class="headline">
+                          Add a new OPC-UA URL!
+                        </v-card-title>
+
+                        <v-card-title class="headline">
+                          <v-text-field
+                            label="New URL"
+                            v-model="newURL"
+                            :rules="[rules.required, rules.opcUrl]"
+                          ></v-text-field>
+                        </v-card-title>
+
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+
+                          <v-btn
+                            color="green darken-1"
+                            text
+                            @click="dialogAddURL = false"
+                          >
+                            Cancel
+                          </v-btn>
+
+                          <v-btn
+                            color="blue darken-1"
+                            text
+                            @click="
+                              dialogAddURL = false;
+                              addNewURL($event);
+                            "
+                          >
+                            Add URL!
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+                  </v-list-item>                  
 
                   <v-list-item
                     v-if="
@@ -1194,6 +1312,7 @@
                       </v-card>
                     </v-dialog>
                   </v-list-item>
+
                 </v-list-item-group>
               </v-list>
             </v-card>
@@ -1661,10 +1780,12 @@ export default {
     itemsSizeOfCA: [1, 2],
     itemsSizeOfIOA: [1, 2, 3],
     dialogAddIP: false,
+    dialogAddURL: false,
     dialogAddRangeScan: false,
     dialogDelConn: false,
     newRangeScan: {group: 1, variation: 0, startAddress: 0, stopAddress: 0, period: 300},
     newIP: "",
+    newURL: "",
     active: [],
     open: [],
     rules: {
@@ -1678,6 +1799,10 @@ export default {
         const pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$/;
         return pattern.test(value) || "Invalid IP Address:Port.";
       },
+      opcUrl: (value) => {
+        const pattern = /^opc\.tcp:\/\/[a-zA-Z0-9-_]+[:./\\]+([a-zA-Z0-9 -_./:=&"'?%+@#$!])+$/;
+        return pattern.test(value) || "Invalid OPC-UA URL.";
+      },
       email: (value) => {
         const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         return pattern.test(value) || "Invalid e-mail.";
@@ -1689,6 +1814,7 @@ export default {
       "IEC60870-5-101",
       "IEC60870-5-101_SERVER",
       "DNP3",
+      "OPC-UA",
       "PLCTAG",
       "I104M",
     ],
@@ -1797,6 +1923,14 @@ export default {
         this.selected.ipAddresses.push(this.newIP);
         this.updateProtocolConnection();
         this.newIP = "";
+      }
+    },
+    async addNewURL() {
+      if (this.rules.opcUrl(this.newURL) !== true) return;
+      if (this.newURL != "" && !this.selected.endpointURLs.includes(this.newURL)) {
+        this.selected.endpointURLs.push(this.newURL);
+        this.updateProtocolConnection();
+        this.newURL = "";
       }
     },
     async deleteProtocolConnection() {

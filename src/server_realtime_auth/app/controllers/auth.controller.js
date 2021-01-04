@@ -57,6 +57,16 @@ exports.updateProtocolConnection = async (req, res) => {
 
   if (
     [
+      'OPC-UA'
+    ].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('endpointURLs' in req.body)) {
+      req.body.endpointURLs = []
+    }
+  }
+
+  if (
+    [
       'IEC60870-5-101',
       'IEC60870-5-101_SERVER',
       'IEC60870-5-104',
