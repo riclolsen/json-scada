@@ -252,6 +252,7 @@ getGroup1List : function()
           return;
         }
 
+        if ("Results" in data.Body)
         data.Body.Results.map(element => {
           if (element.Value.Body !== null && element.Value.Body !== "")
             GROUP1_LIST.push(element.Value.Body);
@@ -530,6 +531,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
 
         L = [];
         var prop;
+        if ("Results" in data.Body)
         data.Body.Results.map(element => {
           if (typeof element.StatusCode == "number" && element.StatusCode != 0) // reject a bad result
             return;
@@ -612,11 +614,11 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
             SUBS[pointKey] = prop.group1;
             BAYS[pointKey] = prop.group2;
             DCRS[pointKey] = (prop.ungroupedDescription!="")? prop.ungroupedDescription : prop.description;
-            if (isNaN(prop.hiLimit))
+            if (isNaN(prop.hiLimit) || prop.hiLimit === null)
               LIMSUPS[pointKey] = Infinity;
             else  
               LIMSUPS[pointKey] = prop.hiLimit;
-            if (isNaN(prop.loLimit))
+            if (isNaN(prop.loLimit) || prop.loLimit === null)
               LIMINFS[pointKey] = -Infinity;
             else
               LIMINFS[pointKey] = prop.loLimit;
@@ -712,6 +714,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
       WebSAGE.Pass++;
 
       var prop;
+      if ("Results" in data.Body)
       data.Body.Results.map(element => {
         if (typeof element.StatusCode == "number" && element.StatusCode != 0) // reject a bad result
           return;
@@ -748,11 +751,11 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
           SUBS[pointKey] = prop.group1;
           BAYS[pointKey] = prop.group2;
           DCRS[pointKey] = (prop.ungroupedDescription!="")? prop.ungroupedDescription : prop.description;
-          if (isNaN(prop.hiLimit))
+          if (isNaN(prop.hiLimit) || prop.hiLimit === null)
             LIMSUPS[pointKey] = Infinity;
           else  
             LIMSUPS[pointKey] = prop.hiLimit;
-          if (isNaN(prop.loLimit))
+          if (isNaN(prop.loLimit) || prop.loLimit === null)
             LIMINFS[pointKey] = -Infinity;
           else
             LIMINFS[pointKey] = prop.loLimit;

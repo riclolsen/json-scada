@@ -83,7 +83,7 @@ let pool = null
 
     // if env variables defined use them, if not set local defaults
     let pgopt = {}
-    if ("PGHOST" in process.env)
+    if ("PGHOST" in process.env || "PGHOSTADDR" in process.env)
       pgopt = null;
     else
       pgopt = {
@@ -344,7 +344,8 @@ let pool = null
                       {
                         $set: {
                           value: new mongo.Double(0),
-                          valueString: '0'
+                          valueString: '0',
+                          beepType: new mongo.Double(0)
                         }
                       }
                     )

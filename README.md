@@ -1,37 +1,70 @@
-# {json:scada}
+<a href="https://aimeos.org/">
+    <img src="https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg" alt="JSON:SCADA Logo" title="JSON:SCADA" align="right" height="60" />
+</a>
 
-![logo](https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg "{json:scada} Logo")
+{json:scada}
+============
 
 A portable and scalable SCADA/IoT platform centered on the MongoDB database server.
 
+![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js >= 14")
+![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go >= 1.14")
+![](https://img.shields.io/badge/dotnet-%3E%3D5.0-green "Dotnet >=5.0")
+
+![](https://img.shields.io/badge/mongodb-%3E%3D4.2-green "MongoDB >= 4.2")
+![](https://img.shields.io/badge/postgresql-12-green "PostgreSQL 12")
+![](https://img.shields.io/badge/timescaledb-1.7-green "TimescaleDB 1.7")
+![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana >= 7")
+
+![](https://img.shields.io/badge/linux-x86--64-green "Linux x86-64")
+![](https://img.shields.io/badge/linux-ARM-green "Linux ARM")
+![](https://img.shields.io/badge/windows-x86--64-green "Windows x86-64")
+![](https://img.shields.io/badge/macosx-x86--64-green "Mac OSX x86-64")
+![](https://img.shields.io/badge/macosx-ARM--M1-yellow "Mac ARM M1 x86-64")
+
+![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
+![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
+![](https://img.shields.io/badge/DNP3-yellow "DNP3")
+![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
+
+![](https://img.shields.io/badge/license-GPL-green "License GPL")
+![](https://img.shields.io/badge/contributors-welcome-green "Contributors Welcome")
+
+## Mission Statement
+
+To provide an easy to use, fully-featured, flexible, scalable, and portable SCADA/IoT system built by leveraging mainstream open-source IT tools.
+ 
+## Screenshots
+
+![screenshots](docs/screenshots/anim-screenshots.gif "{json:scada} Screenshots")
+
 ## Major features and characteristics
+
 * Standard IT tools applied to SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB,Node.js, C#, Golang, Grafana, etc.).
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
-* Portability and interoperability over Linux, Windows, x86/64, ARM.
+* Portability and interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
+* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.5-alpha).
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Unlimited tags, servers, and users.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
 * MongoDB Change Streams for realtime async database events processing.
 * HTML5 Web interface. UTF-8/I18N. Mobile access.
 * Inkscape-based SVG synoptic display editor.
-* IEC60870-5-101/104 client and server protocols. IEC60870-5-104 client with TLS support.
-* DNP3 Client (TCP, UDP, Serial and TLS).
-* CIP Ethernet/IP PLCTags client driver (experimental).
 * PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 * Extensibility of data model (MongoDB: NoSQL/schema-less).
 * Development of custom applications with modern stacks like MEAN/MERN, etc.
 * Big data / ML capabilities through MongoDB Spark connector.
-* Access to the MongoDB ecosystem of tools, community, services, etc.
-* Easy to understand system with small code size for each independent module. Extensive use of JSON from bottom up.
-* Possibility of easy integration of new and custom protocol drivers developed with modern programming languages.
+* Access to the huge MongoDB and PostgreSQL ecosystem of tools, community, services, etc.
+* Easy to understand system with small code footprint for each independent module. Extensive use of JSON from bottom up.
+* Possibility of easy integration of new and custom protocol drivers developed with modern programming languages (just read/write to MongoDB).
 * Future-proof, vendor independence, flexibility, extensibility.
 * Reduced human costs for maintenance and development thanks to the employment of widely-used open-source IT technologies.
 * Live point configuration updates.
-* Role-based access control and web-based configuration management (now under development).
-* Planned protocol drivers: OPC-UA, DNP3 Server, MODBUS, MQTT.
-* Planned integrations: InfluxDB/Telegraf, NodeRed, MS Power BI.
+* Role-based access control (RBAC).
+* Web-based configuration management (now under development).
 
 ## Use cases
+
 * Power/Oil/Gas/etc Local Station HMI.
 * Manufacturing Local HMI.
 * SCADA Protocol Gateway.
@@ -40,53 +73,17 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 * Intranet/Internet HTTPS Gateway - Visualization Server.
 * Multilevel Systems Integrator (SCADA/IoT/ERP/MES/PLC).
 * Global-Level SCADA Systems Integration/Centralization.
+* Edge data processor.
 * Extensible Development Platform For Data Acquisition And Processing.
 * Data concentrator for Big Data / ML processing.
 
 ## Architecture
+
 ![architecture](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_ARCHITECTURE.png "{json:scada} Architecture")
 
-## License
-    {json:scada} A portable SCADA/IoT platform centered on the MongoDB database server.
-    Copyright (C) 2020 Ricardo L. Olsen
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-## Contributors License Agreement - CLA
-
-Contributors are welcome. Pull request authors must agree with this CLA.
-
-You, the Contributor, accept and agree to the following terms and conditions for Your present and future Contributions submitted to this project. Except for the license granted herein to this project author, You reserve all right, title, and interest in and to Your Contributions.
-
-Licenses
-
-This project (code, documentation, and any other materials) is released under the terms of the individual licenses as noted in the project's repository, or, if no separate license is specified, under the terms of the GPL3 license.
-
-You certify that:
-
-* (a) Your Contributions are created in whole or in part by You and You have the right to submit it under the designated license; or
-
-* (b) Your Contributions are based upon previous work that, to the best of your knowledge, is covered under an appropriate open source license and You have the right under that license to submit that work with modifications, whether created in whole or in part by You, under the designated license; or
-
-* (c) Your Contributions are provided directly to You by some other person who certified (a) or (b) and You have not modified them.
-
-* (d) You understand and agree that Your Contributions are public and that a record of the Contributions (including all metadata and personal information You submit with them) is maintained indefinitely in the project repositories and all its forks.
-
-* (e) You are granting Your Contributions to this project under the terms of the license as noted in the project's repository.
-
-* (f) Contributors must provide name, email or social network contact and the phrase "I AGREE with the Contributors License Agreement of the project.".
- 
 ## Documentation
 
+* [Screenshots](docs/screenshots/)
 * [Docker Demo](demo-docker/README.md)
 * [Config File](conf/README.md)
 * [Calculations](src/calculations/README.md)
@@ -104,15 +101,58 @@ You certify that:
 * [Schema Documentation](docs/schema.md)
 * [Install Guide](docs/install.md)
 
-## Requirements
+## Protocols Roadmap
 
-* Node.js 14+.
-* Dotnet Core 3.1+.
-* Golang 1.14+.
-* MongoDB 4.2+.
-* PostgreSQL 12+.
-* TimescaleDB 1.7+.
-* Grafana 7.0+.
+- [x] IEC 60870-5-104 Server TCP
+- [ ] IEC 60870-5-104 Server TLS
+- [x] IEC 60870-5-104 Client TCP/TLS
+- [x] IEC 60870-5-101 Server (Serial, TCP)
+- [x] IEC 60870-5-101 Client (Serial, TCP)
+- [x] DNP3 Client (TCP, UDP, TLS, Serial)
+- [ ] DNP3 Server (TCP, UDP, TLS, Serial)
+- [x] I104M (adapter for OSHMI driver)
+- [x] ICCP Client (via I104M)
+- [ ] Secure ICCP Client
+- [ ] OPC UA Client
+- [ ] OPC UA Server
+- [ ] OPC DA Client
+- [ ] OPC DA Server
+- [ ] Modbus Client
+- [ ] MQTT
+- [ ] IEC 61850 MMS
+- [ ] IEC 61850 GOOSE
+- [x] CIP Ethernet/IP (libplctag)
+- [ ] Siemens S7
+- [ ] BACNET
+- [ ] IEC 60870-5-103 Client
+- [ ] OPC UA Historical Data Server
+
+## Features Roadmap
+
+- [x] Web-based Viewers
+- [x] Inkscape-based SVG Synoptic Editor
+- [x] Compiled Calculations Engine
+- [x] Basic Alarms Processor
+- [ ] Advanced Alarms Processor 
+- [x] PostgreSQL/TimescaleDB Historian
+- [x] Grafana Integration 
+- [x] Grafana Alerting Integration (Events Viewer)
+- [x] Docker Demo
+- [x] Windows Installer
+- [ ] Linux Image / VM / Container
+- [x] User auth/RBAC with web-based config tool
+- [x] Supervisor (Linux process manager) examples
+- [ ] Web-based Configuration Manager (now under development)
+- [ ] Low-latency calculations
+- [ ] InfluxDB Integration
+- [ ] Telegraf Integration
+- [ ] Kafka Integration
+- [x] PowerBI Integration (through PostgreSQL connector)
+- [ ] PowerBI Direct Integration
+- [ ] NodeRed Integration
+- [x] Metabase Integration (through PostgreSQL connector)
+- [ ] Alerta Integration (https://alerta.io/)
+- [ ] Command Line Manager
 
 ## Contact
 

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Double = require('@mongoosejs/double');
 
 const Role = mongoose.model(
   "Role",
@@ -18,7 +19,7 @@ const Role = mongoose.model(
     group1List: {type: [String], default: []},
     group1CommandList: {type: [String], default: []},
     displayList: {type: [String], default: []},
-    maxSessionDays: {type: Number, default: 3.0}
+    maxSessionDays: {type: Double, default: 3.0}
   }),
   "roles"
 );

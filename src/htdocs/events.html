@@ -829,11 +829,11 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
           SUBS[pointKey] = prop.group1;
           BAYS[pointKey] = prop.group2;
           DCRS[pointKey] = prop.description;
-          if (isNaN(prop.hiLimit))
+          if (isNaN(prop.hiLimit) || prop.hiLimit === null)
             LIMSUPS[pointKey] = Infinity;
           else  
             LIMSUPS[pointKey] = prop.hiLimit;
-          if (isNaN(prop.loLimit))
+          if (isNaN(prop.loLimit) || prop.loLimit === null)
             LIMINFS[pointKey] = -Infinity;
           else
             LIMINFS[pointKey] = prop.loLimit;
@@ -1004,7 +1004,7 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
         var countstr = "";
         if (typeof node.HistoryData[0].Value.Count === "number")
         if (node.HistoryData[0].Value.Count > 1)
-          countstr = "+" + node.HistoryData[0].Value.Count;
+          countstr = "+" + (node.HistoryData[0].Value.Count-1);
 
         var qualif = "" + node._Properties.priority;
         if (node.HistoryData[0].Acknowledge === 0 || node.HistoryData[0].Acknowledge === false)
@@ -1013,6 +1013,9 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
           qualif = qualif + "F";
         if (useSourceTime && node.HistoryData[0].SourceTimestampOk !== true)
           qualif = qualif + "T";
+
+        if (descr.indexOf(node._Properties.group1 + '~')===0) // remove group1 from description
+          descr = descr.substring(descr.indexOf('~') + 1 )
 
         L.push(
           date.toLocaleDateString() + WebSAGE.g_split_line_code +
@@ -1373,15 +1376,15 @@ var cria = {};
 
     semod = rw[ WebSAGE.g_COL_SUBEST ] + " - " + (rw[ WebSAGE.g_COL_DESCR ].split('~'))[0]; 
   
-    if (  rw[WebSAGE.g_COL_ID].indexOf( Viewers_IDTxtHighlight2 ) != -1  &&
-          rw[WebSAGE.g_COL_DESCR].indexOf( Viewers_DescrTxtHighlight2 ) != -1 &&
-          rw[WebSAGE.g_COL_QUALIF].indexOf( "K" ) == -1 )
+    if (  rw[WebSAGE.g_COL_ID].indexOf( Viewers_NotificTagText ) !== -1  &&
+          rw[WebSAGE.g_COL_DESCR].indexOf( Viewers_NotificDescrText ) !== -1 &&          
+          rw[WebSAGE.g_COL_QUALIF].indexOf( "K" ) === -1 )
       estdj = 1;
     else
       estdj = 0;
 
     // se encontrou um disj ligou, resseta notificação
-    if ( estdj && rw[WebSAGE.g_COL_FLAGS] == 2 )
+    if ( estdj && rw[WebSAGE.g_COL_EVENTO].indexOf( Viewers_NotificCancelEventText ) !== -1 )
        {
        delete WebSAGE.g_infomod[semod];
        delete WebSAGE.g_infomodtm[semod];
@@ -1392,13 +1395,13 @@ var cria = {};
        }
 
     // se não encontrou qualificado alarmado L, vai para o próximo
-    if ( rw[WebSAGE.g_COL_QUALIF].indexOf( "L" ) == -1 )
+    if ( rw[WebSAGE.g_COL_QUALIF].indexOf( "L" ) === -1 )
        continue;
    
-    if ( ( estdj && ( rw[WebSAGE.g_COL_FLAGS] & 0x03 ) == 1 ) ||
-           rw[WebSAGE.g_COL_EVENTO] == Viewers_AlmTxtHighlight1 )  
+    if ( ( estdj && ( rw[WebSAGE.g_COL_EVENTO].indexOf( Viewers_NotificEventText ) !== -1 )) ||
+           rw[WebSAGE.g_COL_EVENTO] == Viewers_AddToNotificEventText )  
       {
-        if ( typeof( WebSAGE.g_infomod[ semod ] ) == "undefined" ) 
+        if ( typeof( WebSAGE.g_infomod[ semod ] ) === "undefined" ) 
           {
           aux = "";
           }
@@ -2264,7 +2267,7 @@ init: function()
     // acerta a posição do box de filtros para ficar ao lado do ícone do funil
     $('#DIVFILT').css( 'left', document.getElementById('imgFilter').getBoundingClientRect().right + 5 );
 
-    var gridstyle = "outline:none;cursor:pointer;font-weight:normal;border:0px;white;padding:0px;margin-left:5px;";
+    var gridstyle = "border-collapse:collapse;outline:none;cursor:pointer;font-weight:normal;border:0px;white;padding:0px;margin-left:5px;";
     gridstyle = gridstyle + 'table-layout:fixed;white-space:nowrap;overflow:hidden;';
     gridstyle = gridstyle + 'color:' + EventsViewer_AlmTxtColor + ';'; 
     gridstyle = gridstyle + 'font-family:' + EventsViewer_Font + ';'; 

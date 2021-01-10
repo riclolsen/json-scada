@@ -4,13 +4,15 @@ To install JSON-SCADA, it is required to install all the requirements first. The
 
 ## Supported Hardware/OS Platforms
 
-* Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2.
+* Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2, Oracle Linux 8 or equivalent.
 
 * Windows 10 or Server x86-64 bits.
 
 * Linux ARM 32 bits (tested at least for protocol drivers on Raspberry Pi 3/Raspbian OS).
 
-It can possibly work also on MacOS and Linux ARM-64.
+* Mac OSX (x64 Intel or M1 under Rosetta).
+
+It can also possibly work on Linux ARM-64.
 
 A full system can run on a single commodity x86 computer but for high performance and high availability on big systems (> 10.000 tags) it is strongly recommended the following hardware
 
@@ -32,7 +34,7 @@ For large systems (like with more than 200.000 tags), a MongoDB sharded cluster 
 
 ### 1. MongoDB Server
 
-Version 4.2.8 - Lower versions are not supported and not recommended. Newer versions can work but were not tested.
+Version 4.2.8 or 4.4.1 - Lower versions are not supported and not recommended. Newer versions can work but were not tested.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
@@ -68,7 +70,7 @@ Replication to a Standby server is recommended for high availability.
 
 ### 3. Grafana
 
-Grafana version 7.1.x. Previous versions can work but are not recommended.
+Grafana version 7.x.x. Previous versions can work but are not recommended.
 
 * https://grafana.com/grafana/download
 * https://grafana.com/docs/grafana/latest/installation/
@@ -87,7 +89,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 6. DotNet Core
 
-* DotNet Core version 3.1. Previous versions are not tested or supported.
+* DotNet Core version 3.1 or 5.x. Previous versions are not tested or supported.
 * https://dotnet.microsoft.com/download
 
 ### 7. Other recommended software tools
@@ -107,9 +109,9 @@ Download the code from the online repo
 
 Or do a git clone
 
-    git clone https://github.com/riclolsen/json-scada
+    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 
-Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform)
+Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform, on Mac use --runtime osx-x64)
     
     cd json-scada
     mkdir bin
@@ -121,7 +123,7 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
     export GOBIN=~/json-scada/bin
-    cd ../calculations
+    cd ../../calculations
     go get ./... 
     go build 
     cp calculations ../../bin/
@@ -133,10 +135,20 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
 
     cd ../cs_data_processor
     npm update
+    cd ../grafana_alert2event
+    npm update
+    cd ../demo_simul
+    npm update
     cd ../server_realtime
+    npm update
+    cd ../server_realtime_auth
     npm update
     cd ../oshmi2json
     npm update
+    cd ../htdocs-admin
+    npm update
+    npm run build
+
 
 Configure the conf/json-scada.json file to define the node name and to point to the MongoDB server. Processes will look for the config file on the ../conf/ folder.
 

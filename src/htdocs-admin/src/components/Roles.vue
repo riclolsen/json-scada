@@ -2,7 +2,7 @@
   <v-card>
     <v-row class="pa-4" justify="space-between">
       <v-col cols="5">
-        <v-treeview
+        <v-treeview style="max-height: 500px" class="overflow-y-auto overflow-x-hidden"
           :active.sync="active"
           :items="items"
           :load-children="fetchRoles"
@@ -11,6 +11,7 @@
           color="primary"
           open-on-click
           transition
+          open-all
         >
           <template v-slot:prepend="{ item }">
             <v-icon v-if="!item.children"> mdi-security </v-icon>
@@ -112,8 +113,8 @@
               v-model="selected.group1List"
               :items="group1ListAll"
               outlined
-              dense
               chips
+              deletable-chips
               small-chips
               label="Can View - Group1 List"
               multiple
@@ -124,8 +125,8 @@
               v-model="selected.group1CommandList"
               :items="group1ListAll"
               outlined
-              dense
               chips
+              deletable-chips
               small-chips
               label="Can Command - Group1 List"
               multiple
@@ -136,8 +137,8 @@
               v-model="selected.displayList"
               :items="displayListAll"
               outlined
-              dense
               chips
+              deletable-chips
               small-chips
               label="Display List"
               multiple
@@ -440,8 +441,6 @@ export default {
 
   methods: {
     async addRole(evt, roleName) {
-      console.log(roleName);
-
       return await fetch("/Invoke/auth/userAddRole", {
         method: "post",
         headers: {
@@ -461,8 +460,6 @@ export default {
         .catch((err) => console.warn(err));
     },
     async removeRole(evt, roleName) {
-      console.log(roleName);
-
       return await fetch("/Invoke/auth/userRemoveRole", {
         method: "post",
         headers: {

@@ -19,9 +19,55 @@ module.exports = function (app, accessPoint) {
     ],
     controller.signup
   )
-
+  
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
+
+  app.post(
+    accessPoint + 'auth/updateProtocolConnection',
+    [authJwt.isAdmin],
+    controller.updateProtocolConnection
+  )
+  app.post(
+    accessPoint + 'auth/deleteProtocolConnection',
+    [authJwt.isAdmin],
+    controller.deleteProtocolConnection
+  )
+  app.use(
+    accessPoint + 'auth/createProtocolConnection',
+    [authJwt.isAdmin],
+    controller.createProtocolConnection
+  )
+  app.use(
+    accessPoint + 'auth/listProtocolConnections',
+    [authJwt.isAdmin],
+    controller.listProtocolConnections
+  )
+  app.use(
+    accessPoint + 'auth/listNodes',
+    [authJwt.isAdmin],
+    controller.listNodes
+  )  
+  app.post(
+    accessPoint + 'auth/deleteProtocolDriverInstance',
+    [authJwt.isAdmin],
+    controller.deleteProtocolDriverInstance
+  )
+  app.use(
+    accessPoint + 'auth/createProtocolDriverInstance',
+    [authJwt.isAdmin],
+    controller.createProtocolDriverInstance
+  )
+  app.use(
+    accessPoint + 'auth/listProtocolDriverInstances',
+    [authJwt.isAdmin],
+    controller.listProtocolDriverInstances
+  )
+  app.post(
+    accessPoint + 'auth/updateProtocolDriverInstance',
+    [authJwt.isAdmin],
+    controller.updateProtocolDriverInstance
+  )
   app.use(
     accessPoint + 'auth/listUsers',
     [authJwt.isAdmin],
@@ -31,11 +77,6 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/listRoles',
     [authJwt.isAdmin],
     controller.listRoles
-  )
-  app.post(
-    accessPoint + 'auth/removeUser',
-    [authJwt.isAdmin],
-    controller.removeUser
   )
   app.post(
     accessPoint + 'auth/userAddRole',

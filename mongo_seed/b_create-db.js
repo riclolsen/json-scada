@@ -24,7 +24,9 @@ var protocolDriverNames = [
           'S7',
           'SPA-BUS',
           'BACNET',
-          'ICCP']
+          'ICCP',
+          'UNDEFINED'
+          ]
 
 var protocolDriverInstancesValidator = {
   $jsonSchema: {
@@ -275,6 +277,18 @@ var protocolConnectionsValidator = {
           additionalProperties: false,
           description:
             'IP addresses of servers to connect or clients allowed to connect.'
+        }
+      },
+      endpointURLs: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        additionalProperties: false,
+        items: {
+          bsonType: 'string',
+          additionalProperties: false,
+          description:
+            'OPC-UA server URLs.'
         }
       },
       localLinkAddress: {

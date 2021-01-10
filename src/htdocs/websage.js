@@ -721,12 +721,6 @@ else
     WebSAGE.g_tminfoID = setTimeout("WebSAGE.g_win_cmd.close()", 6000);
     WebSAGE.g_wait_win = 0; // contador para esperar abrir a janela
 
-    // on closing ingo window, cancel point and hide object highlight
-    $(WebSAGE.g_win_cmd).on("beforeunload", function() { 
-      WebSAGE.escondeDestaqPonto(NPTO);
-      NPTO = 0;
-    })
-
     // showValsInfo2 será chamado pela própria nova janela aberta em onload
   },
 
@@ -739,10 +733,17 @@ else
         typeof WebSAGE.g_win_cmd.window !== "object" ||
         WebSAGE.g_win_cmd.window === null ||
         typeof WebSAGE.g_win_cmd.window.closed === "undefined" ||
-        WebSAGE.g_win_cmd.window.closed
+        WebSAGE.g_win_cmd.window.closed ||
+        !WebSAGE.g_win_cmd.document.getElementById("TABULAR")
        ) {
          return; // give up
       }
+
+      // on closing info window, cancel point and hide object highlight
+      WebSAGE.g_win_cmd.addEventListener("unload", function() { 
+        WebSAGE.escondeDestaqPonto(NPTO);
+        NPTO = 0;
+      })
 
       // janela carregada
       var se = ESTACAO;
@@ -1105,12 +1106,6 @@ else
     setTimeout(
       function(){
         WebSAGE.g_win_cmd=window.open('dlgcomando.html','wscomando','dependent=yes,height=450,width=400,toolbar=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,modal=yes');
-        // on closing ingo window, cancel point and hide object highlight
-        $(WebSAGE.g_win_cmd).on("beforeunload", function() { 
-          WebSAGE.escondeDestaqPonto(NPTO);
-          NPTO = 0;
-          CNPTO= 0;
-        });
       },
       500
     );
@@ -1126,6 +1121,13 @@ else
       // Interlocked command?
       WebSAGE.g_win_cmd.close();
     }
+
+    // on closing ingo window, cancel point and hide object highlight
+    WebSAGE.g_win_cmd.addEventListener("unload", function() { 
+      WebSAGE.escondeDestaqPonto(NPTO);
+      NPTO = 0;
+      CNPTO= 0;
+    });
 
     WebSAGE.mostraDestaqPonto(NPTO);
 
@@ -3479,11 +3481,11 @@ getHistoricalData: function (i, pnt, timeBegin) {
             SUBS[pointKey] = prop.group1;
             BAYS[pointKey] = prop.group2;
             DCRS[pointKey] = (prop.ungroupedDescription!="")? prop.ungroupedDescription : prop.description;
-            if (isNaN(prop.hiLimit))
+            if (isNaN(prop.hiLimit) || prop.hiLimit === null)
               LIMSUPS[pointKey] = Infinity;
             else  
               LIMSUPS[pointKey] = prop.hiLimit;
-            if (isNaN(prop.loLimit))
+            if (isNaN(prop.loLimit) || prop.loLimit === null)
               LIMINFS[pointKey] = -Infinity;
             else
               LIMINFS[pointKey] = prop.loLimit;
@@ -5047,21 +5049,28 @@ getHistoricalData: function (i, pnt, timeBegin) {
   },
 
   mostraDestaqPonto: function(nponto) {
+    if (!nponto)
+      return;
     var elem = SVGDoc.getElementById("DESTAQ" + nponto);
-    if (elem == null) elem = SVGDoc.getElementById("DESTAQ" + TAGS[nponto]);
-    if (elem != null) {
+    if (!elem) elem = SVGDoc.getElementById("DESTAQ" + TAGS[nponto]);
+    if (elem) {
       elem.setAttributeNS(null, "display", "inline");
-      if (typeof elem.anim.beginElement != "undefined") {
+      if (typeof elem.anim.beginElement !== "undefined") {
+        elem.anim.endElement();
+        setTimeout( function() {
         elem.anim.endElement();
         elem.anim.beginElement();
+        }, 100);
       }
     }
   },
 
   escondeDestaqPonto: function(nponto) {
+    if (!nponto)
+      return;
     var elem = SVGDoc.getElementById("DESTAQ" + nponto);
-    if (elem == null) elem = SVGDoc.getElementById("DESTAQ" + TAGS[nponto]);
-    if (elem !== null) {
+    if (!elem) elem = SVGDoc.getElementById("DESTAQ" + TAGS[nponto]);
+    if (elem) {
       elem.setAttributeNS(null, "display", "none");
       if (typeof elem.anim !== "undefined")
         if (elem.anim.endElement) {

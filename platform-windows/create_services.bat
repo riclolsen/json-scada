@@ -34,11 +34,14 @@ REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token
 REM nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
 REM nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
 REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
+rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
+rem nssm set JSON_SCADA_server_realtime AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_server_realtime_auth  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime_auth\index.js" 
 nssm set JSON_SCADA_server_realtime_auth AppDirectory "C:\json-scada\src\server_realtime_auth"
 nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
-
+rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
+rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
 nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
@@ -48,19 +51,28 @@ nssm install JSON_SCADA_alarm_beep  "C:\json-scada\platform-windows\nodejs-runti
 nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
 nssm set JSON_SCADA_alarm_beep Start SERVICE_AUTO_START
 
+rem For use with OSHMI HMI Shell
+rem nssm install JSON_SCADA_shell_api  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\shell-api\shell-api.js" 
+rem nssm set JSON_SCADA_shell_api AppDirectory "C:\json-scada\src\shell-api"
+rem nssm set JSON_SCADA_shell_api Start SERVICE_AUTO_START
+
 nssm install JSON_SCADA_process_rtdata "C:\json-scada\sql\process_pg_rtdata.bat"
 nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\sql"
 nssm set JSON_SCADA_process_rtdata Start SERVICE_AUTO_START
+rem Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
+rem nssm set JSON_SCADA_process_rtdata AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_process_hist "C:\json-scada\sql\process_pg_hist.bat"
 nssm set JSON_SCADA_process_hist AppDirectory "C:\json-scada\sql"
 nssm set JSON_SCADA_process_hist Start SERVICE_AUTO_START
+rem Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
+rem nssm set JSON_SCADA_process_hist AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_php "c:\json-scada\platform-windows\nginx_php-runtime\php\php-cgi.exe" -b 127.0.0.1:9000 -c c:\json-scada\conf\php.ini
 nssm set JSON_SCADA_php Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_nginx "c:\json-scada\platform-windows\nginx_php-runtime\nginx.exe" -c c:\json-scada\conf\nginx.conf
-nssm set JSON_SCADA_php Start SERVICE_AUTO_START
+nssm set JSON_SCADA_nginx Start SERVICE_AUTO_START
 
 REM SELECT THE DESIRED PROTOCOL DRIVERS (service startup options: SERVICE_AUTO_START, SERVICE_DELAYED_START, SERVICE_DEMAND_START, SERVICE_DISABLED)
 
@@ -84,3 +96,4 @@ nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
 nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
+
