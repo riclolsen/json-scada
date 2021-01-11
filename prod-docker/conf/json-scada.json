@@ -1,5 +1,5 @@
 {
   "nodeName"  : "mainNode",
-  "mongoConnectionString": "mongodb://jsdemo_mongorsn1:27017/json_scada?replicaSet=rs1",
+  "mongoConnectionString": "mongodb://js_mongorsn1:27017/json_scada?replicaSet=rs1",
   "mongoDatabaseName": "json_scada"
 }
