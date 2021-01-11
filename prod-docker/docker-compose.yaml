@@ -125,7 +125,7 @@ services:
   iec104client:
     image: mcr.microsoft.com/dotnet/runtime:5.0
     #image: mcr.microsoft.com/dotnet/core/runtime:3.1
-    container_name: jsdemo_iec104client
+    container_name: js_iec104client
     command: sh -c "sleep 20 && /jsonscada_bin/iec104client"
     restart: unless-stopped
     volumes:
@@ -140,7 +140,7 @@ services:
   iec104server:
     image: mcr.microsoft.com/dotnet/runtime:5.0
     #image: mcr.microsoft.com/dotnet/core/runtime:3.1
-    container_name:  jsdemo_iec104server
+    container_name:  js_iec104server
     command: sh -c "sleep 20 && /jsonscada_bin/iec104server"
     restart: unless-stopped
     volumes:
@@ -159,7 +159,7 @@ services:
   # process incoming data 
   cs_data_processor:
     image: node:current-alpine3.12
-    container_name: jsdemo_cs_data_processor
+    container_name: js_cs_data_processor
     command:  sh -c "cd /cs_data_processor && sleep 10 && node cs_data_processor.js"
     restart: unless-stopped
     volumes:
@@ -174,7 +174,7 @@ services:
   # realtime web server, will listen on some HTTP port
   server_realtime:
     image: node:current-alpine3.12
-    container_name: jsdemo_server_realtime
+    container_name: js_server_realtime
     command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
     restart: unless-stopped
     environment:
@@ -204,7 +204,7 @@ services:
   # calculation process
   calculations:
     image: node:current-alpine3.12
-    container_name: jsdemo_calculations
+    container_name: js_calculations
     command:  sh -c "sleep 15 && cd /jsonscada_bin/ && ./calculations"
     restart: unless-stopped
     volumes:
@@ -218,7 +218,7 @@ services:
 ## Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
 #  metabase:
 #    image: metabase/metabase:latest
-#    container_name: jsdemo_metabase
+#    container_name: js_metabase
 #    restart: unless-stopped
 #    ports:
 #      - 3001:3000
