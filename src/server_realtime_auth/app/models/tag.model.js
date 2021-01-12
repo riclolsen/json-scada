@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Double = require('@mongoosejs/double');
 
 const Tag = mongoose.model(
   "Tag",  
@@ -6,7 +7,7 @@ const Tag = mongoose.model(
     _id: {type: Number},
     tag: {type: String},
     group1: {type: String},
-    value: {type: Number}
+    value: {type: Double}
   }),
   "realtimeData"
 );

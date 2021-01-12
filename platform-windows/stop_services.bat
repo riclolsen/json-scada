@@ -12,7 +12,9 @@ REM FIRST STOP USERS
 nssm stop JSON_SCADA_nginx
 nssm stop JSON_SCADA_php
 nssm stop JSON_SCADA_server_realtime
+nssm stop JSON_SCADA_server_realtime_auth
 nssm stop JSON_SCADA_alarm_beep
+nssm stop JSON_SCADA_shell_api
 ping -n 2
 
 REM STOP PROTOCOL CLIENTS

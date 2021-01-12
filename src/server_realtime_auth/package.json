@@ -4,6 +4,7 @@
   "description": "Realtime tag data server for JSON SCADA.",
   "main": "index.js",
   "dependencies": {
+    "@mongoosejs/double": "^0.2.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
@@ -12,8 +13,8 @@
     "express-http-proxy": "^1.6.2",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.6.3",
-    "mongoose": "^5.10.13",
-    "pg": "^8.5.0",
+    "mongoose": "^5.11.8",
+    "pg": "^8.5.1",
     "queue-fifo": "^0.2.6"
   },
   "devDependencies": {},

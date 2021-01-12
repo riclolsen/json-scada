@@ -279,6 +279,10 @@ To each user can be attributed a set of roles. Each right in each user role are 
 * _**JS_AUTHENTICATION**_ [String] - Control of user Authentication/Authorization. Leave empty or do not define to enable user authentication. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
 * _**JS_JWT_SECRET**_ [String] - Encryption key for the JWT token. **Default=value defined in ./app/config/auth.config.js**.
 
+For connection to the PostgreSQL historian, it is possible to use the standard _Libpq_ environment variables. 
+
+* https://www.postgresql.org/docs/current/libpq-envars.html
+
 ## Command line arguments
 
 * _**1st Argument**_ [String] - Control of user Authentication/Authorization. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.

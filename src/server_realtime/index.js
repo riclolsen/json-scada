@@ -83,7 +83,7 @@ let pool = null
 
     // if env variables defined use them, if not set local defaults
     let pgopt = {}
-    if ("PGHOST" in process.env)
+    if ("PGHOST" in process.env || "PGHOSTADDR" in process.env)
       pgopt = null;
     else
       pgopt = {
@@ -344,7 +344,8 @@ let pool = null
                       {
                         $set: {
                           value: new mongo.Double(0),
-                          valueString: '0'
+                          valueString: '0',
+                          beepType: new mongo.Double(0)
                         }
                       }
                     )
@@ -1121,14 +1122,14 @@ let pool = null
               let filterDateLte = {
                 timeTag: { $lte: new Date(endDateTime) }
               }
-              let sort = { timeTag: -1 }
+              let sort = { timeTag: -1, timeTagAtSource: -1, tag: -1 }
               if (endDateTime !== null && endDateTime !== null)
-                sort = { timeTag: 1 }
+                sort = { timeTag: 1, timeTagAtSource: 1, tag: 1 }
 
               if (!returnServerTimestamp) {
-                sort = { timeTagAtSource: -1 }
+                sort = { timeTagAtSource: -1, timeTag: -1, tag: -1 }
                 if (endDateTime !== null && endDateTime !== null)
-                  sort = { timeTagAtSource: 1 }
+                  sort = { timeTagAtSource: 1, timeTag: 1, tag: 1 }
                 filterDateGte = {
                   timeTagAtSource: { $gte: new Date(startDateTime) }
                 }

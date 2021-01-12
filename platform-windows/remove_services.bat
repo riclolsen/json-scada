@@ -27,10 +27,12 @@ nssm remove JSON_SCADA_grafana confirm
 nssm remove JSON_SCADA_mongodb confirm 
 nssm remove JSON_SCADA_cs_data_processor confirm
 nssm remove JSON_SCADA_server_realtime confirm
+nssm remove JSON_SCADA_server_realtime_auth confirm
 nssm remove JSON_SCADA_calculations confirm
 nssm remove JSON_SCADA_process_rtdata confirm
 nssm remove JSON_SCADA_process_hist confirm
 nssm remove JSON_SCADA_alarm_beep confirm
+nssm remove JSON_SCADA_shell_api confirm
 nssm remove JSON_SCADA_demo_simul confirm
 
 nssm remove JSON_SCADA_nginx confirm

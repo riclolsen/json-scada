@@ -43,7 +43,7 @@ const MongoClient = require('mongodb').MongoClient
 let Server = require('mongodb')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
-const Queue = require('queue-fifo')
+const UserActionsQueue = require('./userActionsQueue')
 
 const config = require('./app/config/auth.config.js')
 if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
@@ -52,8 +52,6 @@ const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const { AsyncLocalStorage } = require('async_hooks')
 const { canSendCommands } = require('./app/middlewares/authJwt.js')
-
-let actionsQueue = new Queue() // queue of user actions to write to mongo collection
 
 // Argument NOAUTH disables user authentication
 var args = process.argv.slice(2)
@@ -129,7 +127,8 @@ let pool = null
 
   // if env variables defined use them, if not set local defaults
   let pgopt = {}
-  if ('PGHOST' in process.env) pgopt = null
+  if ("PGHOST" in process.env || "PGHOSTADDR" in process.env)
+    pgopt = null
   else
     pgopt = {
       host: '127.0.0.1',
@@ -354,7 +353,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove All Events',
                     timeTag: new Date()
@@ -369,7 +368,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Events',
                     timeTag: new Date()
@@ -386,7 +385,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove Point Events',
                     tag: node.NodeId.Id,
@@ -402,7 +401,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Events',
                     tag: node.NodeId.Id,
@@ -421,7 +420,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove One Event',
                     tag: node.NodeId.Id,
@@ -441,7 +440,7 @@ let pool = null
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack One Event',
                     tag: node.NodeId.Id,
@@ -472,7 +471,7 @@ let pool = null
                         }
                       }
                     ])
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Alarms',
                     timeTag: new Date()
@@ -499,7 +498,7 @@ let pool = null
                         }
                       }
                     ])
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Alarm',
                     pointKey: node.NodeId.Id,
@@ -513,11 +512,12 @@ let pool = null
                     {
                       $set: {
                         value: new mongo.Double(0),
-                        valueString: '0'
+                        valueString: '0',
+                        beepType: new mongo.Double(0)
                       }
                     }
                   )
-                  actionsQueue.enqueue({
+                  UserActionsQueue.enqueue({
                     username: username,
                     action: 'Silence Beep',
                     timeTag: new Date()
@@ -735,7 +735,7 @@ let pool = null
                         // updateOne ok
                         OpcResp.Body.Results.push(opc.StatusCode.Good)
                         console.log('update ok id: ' + node.NodeId.Id)
-                        actionsQueue.enqueue({
+                        UserActionsQueue.enqueue({
                           username: username,
                           pointKey: node.NodeId.Id,
                           action: 'Update Properties',
@@ -891,7 +891,8 @@ let pool = null
                   alarmed: 1,
                   type: 1,
                   annotation: 1,
-                  origin: 1
+                  origin: 1,
+                  group1: 1
                 }
               }
 
@@ -1008,7 +1009,7 @@ let pool = null
                 let Results = []
                 if ('NodesToRead' in req.body.Body) {
                   req.body.Body.NodesToRead.map(node => {
-                    let Result = {
+                    let Result = { // will return this if point not found or access denied
                       StatusCode: opc.StatusCode.BadNotFound,
                       NodeId: node.NodeId,
                       Value: null,
@@ -1025,8 +1026,9 @@ let pool = null
 
                         // check for group1 list in user rights (from token)
                         if (AUTHENTICATION && userRights.group1List.length>0){
-                          if ( !userRights.group1List.includes(pointInfo.group1) ){
-                            // Access to data denied!
+                          if ( ![-1, -2].includes(pointInfo._id) && !userRights.group1List.includes(pointInfo.group1) ){
+                            // Access to data denied! (return null value and properties)
+                            Result.StatusCode = opc.StatusCode.BadUserAccessDenied
                             break
                           }
                         }
@@ -1362,14 +1364,14 @@ let pool = null
             let filterDateLte = {
               timeTag: { $lte: new Date(endDateTime) }
             }
-            let sort = { timeTag: -1 }
+            let sort = { timeTag: -1, timeTagAtSource: -1, tag: -1 }
             if (endDateTime !== null && endDateTime !== null)
-              sort = { timeTag: 1 }
+              sort = { timeTag: 1, timeTagAtSource: 1, tag: 1 }
 
             if (!returnServerTimestamp) {
-              sort = { timeTagAtSource: -1 }
+              sort = { timeTagAtSource: -1, timeTag: -1, tag: -1 }
               if (endDateTime !== null && endDateTime !== null)
-                sort = { timeTagAtSource: 1 }
+                sort = { timeTagAtSource: 1, timeTag: 1, tag: 1 }
               filterDateGte = {
                 timeTagAtSource: { $gte: new Date(startDateTime) }
               }
@@ -1748,10 +1750,10 @@ let pool = null
           clientMongo = null
         } else {
           // it is connected: process userActions fifo
-          while (!actionsQueue.isEmpty()) {
-            let ins = actionsQueue.peek()
+          while (!UserActionsQueue.isEmpty()) {
+            let ins = UserActionsQueue.peek()
             db.collection(COLL_ACTIONS).insertOne(ins)
-            actionsQueue.dequeue()
+            UserActionsQueue.dequeue()
           }
         }
       }

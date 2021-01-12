@@ -15,7 +15,7 @@ This driver eventually will also support the Modbus TCP protocol.
 This driver is based on the [libplctag/libplctag.NET](https://github.com/libplctag/libplctag.NET) project.
 
 The driver can have multiple connections to PLC servers on multiple computers, if needed.
-To configure the driver it is necessary to create one or more driver instances and at least on connection per instance. Also the tags intended to be updated should be configured appropriately.
+To configure the driver it is necessary to create one or more driver instances and at least one connection per instance. Also the tags intended to be updated should be configured appropriately.
 
 ##  Configure a driver instance
 

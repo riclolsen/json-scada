@@ -2,7 +2,7 @@
   <v-card>
     <v-row class="pa-4" justify="space-between">
       <v-col cols="5">
-        <v-treeview
+        <v-treeview style="max-height: 500px" class="overflow-y-auto overflow-x-hidden"
           :active.sync="active"
           :items="items"
           :load-children="fetchUsers"
@@ -11,6 +11,7 @@
           color="primary"
           open-on-click
           transition
+          open-all
         >
           <template v-slot:prepend="{ item }">
             <v-icon v-if="!item.children"> mdi-account </v-icon>
@@ -64,7 +65,7 @@
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn
-                    v-if="!(selected.name === 'admin')"
+                    v-if="selected.username !== 'admin'"
                     v-bind="attrs"
                     v-on="on"
                     class="mx-2"
@@ -256,7 +257,6 @@ export default {
 
   methods: {
     async addRoleToUser(evt, roleName) {
-      console.log(this.selected.roles)
       if (this.selected.roles.some(e => e.name === roleName)) 
         return
  

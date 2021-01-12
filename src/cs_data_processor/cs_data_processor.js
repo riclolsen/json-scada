@@ -744,12 +744,21 @@ const pipeline = [
                       ) {
                         // a new alarm, then update beep var
                         console.log('NEW BEEP-------------------')
-                        sqlRtDataQueueMongo.enqueue({
-                          _id: beepPointKey,
-                          value: new mongo.Double(1),
-                          valueString: 'Beep Active',
-                          timeTag: dt
-                        })
+                        if ( change.fullDocument.priority === 0 ) // signal an important beep (for alarm of priority 0)
+                          sqlRtDataQueueMongo.enqueue({
+                            _id: beepPointKey,
+                            beepType: new mongo.Double(2), // this is an important beep
+                            value: new mongo.Double(1),
+                            valueString: 'Beep Active',
+                            timeTag: dt
+                          })
+                        else
+                          sqlRtDataQueueMongo.enqueue({
+                            _id: beepPointKey,
+                            value: new mongo.Double(1),
+                            valueString: 'Beep Active',
+                            timeTag: dt
+                          })
                       }
                       if (change.fullDocument.type === 'digital') {
                         digitalUpdatesCount++

@@ -10,12 +10,13 @@ RequestExecutionLevel admin
 
 !include "TextFunc.nsh"
 !include "WordFunc.nsh"
-!include x64.nsh
+!include "x64.nsh"
+!include "LogicLib.nsh"
 
 ;--------------------------------
 
-!define VERSION "v.0.2"
-!define VERSION_ "0.2.0.0"
+!define VERSION "v.0.5"
+!define VERSION_ "0.5.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -111,6 +112,9 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
+  nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
+  nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
+  nsExec::Exec 'net stop JSON_SCADA_shell_api'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
   nsExec::Exec 'net stop JSON_SCADA_iec101client'
@@ -119,10 +123,8 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iec104server'
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
-  nsExec::Exec 'net stop JSON_SCADA_process_hist'
-  nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
-  nsExec::Exec 'net stop JSON_SCADA_process_nginx'
-  nsExec::Exec 'net stop JSON_SCADA_process_php'
+  nsExec::Exec 'net stop JSON_SCADA_nginx'
+  nsExec::Exec 'net stop JSON_SCADA_php'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
   nsExec::Exec '"c:\json-scada\platform-windows\postgresql-runtime\bin\pg_ctl" stop -D c:\json-scada\platform-windows\postgresql-runtime'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
@@ -225,8 +227,22 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
 
+  ; Visual C redist: needed for timescaledb
+  ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
+  ;; Check for version 14
+  ;${If} $0 = "14"
+  ;  DetailPrint "The installed VC redist version is usable"
+  ;${Else}
+  ;  DetailPrint "Must install VC 14 redist"
+  ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+  ;${EndIf}
+  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\ruby-runtime
+  File /a /r "..\platform-windows\ruby-runtime\*.*"
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
@@ -266,6 +282,9 @@ SetRegView 64
   SetOutPath $INSTDIR\conf-templates
   File /a "..\conf-templates\*.*"
 
+  ; preserve previous screen_list 
+  Rename $INSTDIR\src\htdocs\svg\screen_list.js $INSTDIR\src\htdocs\svg\screen_list.js.bak
+
   SetOutPath $INSTDIR\src\htdocs
   File /a /r "..\src\htdocs\*.*"
   SetOutPath $INSTDIR\src\htdocs-admin
@@ -276,8 +295,14 @@ SetRegView 64
   SetOutPath $INSTDIR\src\demo_simul
   File /a /r "..\src\demo_simul\*.*"
 
+  SetOutPath $INSTDIR\src\grafana_alert2event
+  File /a /r "..\src\grafana_alert2event\*.*"
+
   SetOutPath $INSTDIR\src\alarm_beep
   File /a /r "..\src\alarm_beep\*.*"
+
+  SetOutPath $INSTDIR\src\shell-api
+  File /a /r "..\src\shell-api\*.*"
 
   SetOutPath $INSTDIR\src\oshmi2json
   File /a /r "..\src\oshmi2json\*.*"
@@ -287,7 +312,10 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\server_realtime
   File /a /r "..\src\server_realtime\*.*"
-    
+
+  SetOutPath $INSTDIR\src\server_realtime_auth
+  File /a /r "..\src\server_realtime_auth\*.*"
+
   ;SetOutPath $INSTDIR\extprogs
   ;File /a "..\extprogs\vcredist_x86.exe"
   ;File /a "..\extprogs\vcredist_x86-2012.exe"
@@ -320,22 +348,14 @@ SetRegView 64
 
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\php.ini"
+  SetOutPath $INSTDIR\platform-windows\nginx_php-runtime\php
+  File /a "..\conf-templates\php.ini"
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\nginx.conf"
   File /a "..\conf-templates\nginx_access_control.conf"
   File /a "..\conf-templates\nginx_http.conf"  
   File /a "..\conf-templates\nginx_https.conf"  
   File /a "..\conf-templates\json-scada.json"
-
-  SetOutPath "$INSTDIR\svg"
-  File /a "..\src\htdocs\svg\kaw2.svg"
-  File /a "..\src\htdocs\svg\kik3.svg"
-  File /a "..\src\htdocs\svg\knh2.svg"
-  File /a "..\src\htdocs\svg\kor1.svg"
-  File /a "..\conf-templates\screen_list.js"
-
-; Visual C redist: necessario para executar o timescaledb
-  nsExec::Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
@@ -539,29 +559,39 @@ Section "Uninstall"
 
   !define SC  `$SYSDIR\sc.exe`
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_demo_simul"`
+  ExecWait `"${SC}" stop "JSON_SCADA_server_realtime"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_demo_simul"`
+  ExecWait `"${SC}" delete "JSON_SCADA_server_realtime"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_rtdata"`
+  ExecWait `"${SC}" stop "JSON_SCADA_server_realtime_auth"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_rtdata"`
+  ExecWait `"${SC}" delete "JSON_SCADA_server_realtime_auth"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_alarm_beep"`
+  ExecWait `"${SC}" stop "JSON_SCADA_demo_simul"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_alarm_beep"`
+  ExecWait `"${SC}" delete "JSON_SCADA_demo_simul"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_php"`
+  ExecWait `"${SC}" stop "JSON_SCADA_alarm_beep"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_php"`
+  ExecWait `"${SC}" delete "JSON_SCADA_alarm_beep"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_process_nginx"`
+  ExecWait `"${SC}" stop "JSON_SCADA_shell_api"`
   Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_process_nginx"`
+  ExecWait `"${SC}" delete "JSON_SCADA_shell_api"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_php"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_php"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_nginx"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_nginx"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_i104m"`
@@ -664,6 +694,7 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\platform-windows" 
   RMDir /r "$INSTDIR\conf" 
   RMDir /r "$INSTDIR\docs" 
+  RMDir /r "$INSTDIR\src" 
   RMDir /r "$INSTDIR"
   RMDir /r "$DESKTOP\JSON-SCADA"
 

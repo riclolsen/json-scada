@@ -3,7 +3,7 @@
 This driver implements a server for the IEC 104 protocol. It can distribute data over multiple connections on multiple computers, if needed. It can have multiple clients connected on each TCP server opened port.
 The driver listen for relevant data changes on a MongoDB database change stream, sending data changes upwards by exception. General interrogation and group interrogations are supported for integrity poll by the clients.
 
-To configure the driver it is necessary to create one or more driver instances and at least on connection per instance. Also the tags intended to be sent on connections should be configured appropriately.
+To configure the driver it is necessary to create one or more driver instances and at least one connection per instance. Also the tags intended to be sent on connections should be configured appropriately.
 
 ##  Configure a driver instance
 

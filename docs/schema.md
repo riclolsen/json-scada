@@ -24,6 +24,8 @@ Example document.
         "alarmDisabled": false,
         "alarmState": -1,
         "alarmed": false,
+        "alerted": false,
+        "alertState": "ok",
         "annotation": "",
         "commandBlocked": false,
         "commandOfSupervised": 0,
@@ -84,6 +86,7 @@ Example document.
         "tag": "KAW2AL-21MTWT",
         "timeTag": { "$date": "2020-08-10T19:04:59.785Z" },
         "timeTagAlarm": { "$date": "2020-07-13T20:24:54.126Z" },
+        "timeTagAlertState": { "$date": "2020-08-10T19:04:60.000Z" },
         "timeTagAtSource": null,
         "timeTagAtSourceOk": null,
         "transient": false,
@@ -171,6 +174,8 @@ Example document.
 ### Fields updated by the system.
 
 * _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
+* _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
+* _**_alertedState_**_ [Boolean] - Grafana alert state name. **Optional parameter**.
 * _**_invalid_**_ [Boolean] - When true value is considered old or not trusted. **Mandatory parameter**.
 * _**_overflow_**_ [Boolean] - Overflow detected for _type=analog_ value. **Mandatory parameter**.
 * _**_transient_**_ [Boolean] - Flags a transient value. **Mandatory parameter**.
@@ -180,6 +185,7 @@ Example document.
 * _**_valueString_**_ [String] - Current value as a string. **Mandatory parameter**.
 * _**_timeTag_**_ [Date] - Last update time. **Mandatory parameter**.
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.
+* _**_timeTagAlertState_**_ [Date] - Time of last Grafana alert state update. **Optional parameter**.
 * _**_timeTagAtSource_**_ [Date] - Timestamp from the source. **Mandatory parameter**.
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true, the source timestamp is * considered ok. **Mandatory parameter**.
 * _**_updatesCnt_**_ [Double] - Count of updates. **Mandatory parameter**.

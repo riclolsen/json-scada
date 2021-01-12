@@ -5,7 +5,7 @@
 
       <v-tab href="#tab-1">
         USERS
-        <v-icon>mdi-account-box</v-icon>
+        <v-icon>mdi-account-multiple</v-icon>
       </v-tab>
 
       <v-tab href="#tab-2">
@@ -14,16 +14,16 @@
       </v-tab>
 
       <v-tab href="#tab-3">
-        TAGS
-        <v-icon>mdi-tag-multiple</v-icon>
-      </v-tab>
-      <v-tab href="#tab-4">
         DRIVER INSTANCES
         <v-icon>mdi-cogs</v-icon>
       </v-tab>
-      <v-tab href="#tab-5">
+      <v-tab href="#tab-4">
         CONNECTIONS
         <v-icon>mdi-file-tree</v-icon>
+      </v-tab>
+      <v-tab href="#tab-5">
+        TAGS
+        <v-icon>mdi-tag-multiple</v-icon>
       </v-tab>
 
       <v-tab-item :value="'tab-' + 1">
@@ -35,11 +35,11 @@
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 3">
-        <v-card-text>Under Construction...</v-card-text>
+        <ProtocolDriverInstances />
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 4">
-        <v-card-text>Under Construction...</v-card-text>
+        <ProtocolConnections />
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 5">
@@ -68,6 +68,8 @@
 <script>
 import Users from "@/components/Users";
 import Roles from "@/components/Roles";
+import ProtocolDriverInstances from "@/components/ProtocolDriverInstances";
+import ProtocolConnections from "@/components/ProtocolConnections";
 
 export default {
   name: "TabbedOptions",
@@ -80,7 +82,9 @@ export default {
   },
   components: {
     Users,
-    Roles
+    Roles,
+    ProtocolDriverInstances,
+    ProtocolConnections
   },
 };
 </script>
