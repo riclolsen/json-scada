@@ -4,6 +4,29 @@
 
 Портативна і масштабуюча платформа SCADA/IoT, згуртована навкруги сервера баз даних MongoDB.
 
+![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js >= 14")
+![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go >= 1.14")
+![](https://img.shields.io/badge/dotnet-%3E%3D5.0-green "Dotnet >=5.0")
+
+![](https://img.shields.io/badge/mongodb-%3E%3D4.2-green "MongoDB >= 4.2")
+![](https://img.shields.io/badge/postgresql-12-green "PostgreSQL 12")
+![](https://img.shields.io/badge/timescaledb-1.7-green "TimescaleDB 1.7")
+![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana >= 7")
+
+![](https://img.shields.io/badge/linux-x86--64-green "Linux x86-64")
+![](https://img.shields.io/badge/linux-ARM-green "Linux ARM")
+![](https://img.shields.io/badge/windows-x86--64-green "Windows x86-64")
+![](https://img.shields.io/badge/macosx-x86--64-green "Mac OSX x86-64")
+![](https://img.shields.io/badge/macosx-ARM--M1-yellow "Mac ARM M1 x86-64")
+
+![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
+![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
+![](https://img.shields.io/badge/DNP3-yellow "DNP3")
+![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
+
+![](https://img.shields.io/badge/license-GPL-green "License GPL")
+![](https://img.shields.io/badge/contributors-welcome-green "Contributors Welcome")
+
 ## Основні особливості та характеристики
 
 - Стандартні додатки ІТ, згуртовані навкруги SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB, Node.js, C #, Golang, Grafana тощо).
