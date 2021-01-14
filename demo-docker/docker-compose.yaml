@@ -219,6 +219,7 @@ services:
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
       - ../src/htdocs:/htdocs
+      - ../src/htdocs-login:/htdocs-admin
       - ../src/htdocs-login:/htdocs-login
       - ./conf:/conf
     links:
