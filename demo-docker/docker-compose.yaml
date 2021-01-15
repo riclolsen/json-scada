@@ -190,25 +190,56 @@ services:
     networks:
       - jsdemo_net
 
-  # realtime web server, will listen on some HTTP port
+  # realtime web server, will listen on some HTTP port NO AUTH/RBAC
+  #server_realtime:
+  #  image: node:current-alpine3.12
+  #  container_name: jsdemo_server_realtime
+  #  command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
+  #  restart: unless-stopped
+  #  environment:
+  #    - JS_IP_BIND=0.0.0.0
+  #    - JS_HTTP_PORT=8080
+  #    - JS_GRAFANA_SERVER=http://jsdemo_grafana:3000
+  #    - JS_AUTHENTICATION=NOAUTH
+  #    - PGPORT=5432
+  #    - PGHOST=jsdemo_timescaledb
+  #    - PGDATABASE=json_scada
+  #    - PGUSER=json_scada
+  #    - PGPASSWORD=
+  #  volumes:
+  #    - ../src/server_realtime:/server_realtime
+  #    - ../src/htdocs:/htdocs
+  #    - ./conf:/conf
+  #  links:
+  #    - jsdemo_mongorsn1
+  #  # exports the HTTP port to the main host
+  #  ports:
+  #    - 8080:8080
+  #  expose:
+  #    - "8080"
+  #  networks:
+  #    - jsdemo_net
+
+  # realtime web server, will listen on some HTTP port with auth, RBAC management UI
   server_realtime:
     image: node:current-alpine3.12
-    container_name: jsdemo_server_realtime
-    command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
+    container_name: jsdemo_server_realtime_auth
+    command:  sh -c "cd /server_realtime_auth && sleep 10 && node index.js"
     restart: unless-stopped
     environment:
       - JS_IP_BIND=0.0.0.0
       - JS_HTTP_PORT=8080
       - JS_GRAFANA_SERVER=http://jsdemo_grafana:3000
-      - JS_AUTHENTICATION=NOAUTH
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
       - PGUSER=json_scada
       - PGPASSWORD=
     volumes:
-      - ../src/server_realtime:/server_realtime
+      - ../src/server_realtime_auth:/server_realtime_auth
       - ../src/htdocs:/htdocs
+      - ../src/htdocs-admin:/htdocs-admin
+      - ../src/htdocs-login:/htdocs-login
       - ./conf:/conf
     links:
       - jsdemo_mongorsn1
