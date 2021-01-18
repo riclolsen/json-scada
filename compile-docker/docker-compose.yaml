@@ -33,7 +33,7 @@ services:
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/dnp3:/src/dnp3
       - ../src/libplctag:/src/libplctag
-      - ../demo-docker/bin:/publish_bin
+      - ../prod-docker/bin:/publish_bin
  
   calculations_compile:
     image: golang:alpine
@@ -45,7 +45,7 @@ services:
                     cp calculations /publish_bin/"
     volumes:
       - ../src/calculations:/go/src/calculations
-      - ../demo-docker/bin:/publish_bin
+      - ../prod-docker/bin:/publish_bin
 
   i104m_compile:
     image: golang:alpine
@@ -57,7 +57,7 @@ services:
                     cp i104m /publish_bin/"
     volumes:
       - ../src/i104m:/go/src/i104m
-      - ../demo-docker/bin:/publish_bin
+      - ../prod-docker/bin:/publish_bin
 
   cs_data_processor_update:
     image: node:current-alpine3.12
