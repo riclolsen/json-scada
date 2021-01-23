@@ -1,12 +1,10 @@
 # Installing JSON-SCADA
 
-To install JSON-SCADA, it is required to install all the requirements first. There is no point reproducing original installation instructions for each upstream project. Here are links and relevant information specific to JSON-SCADA.
-
 ## Supported Hardware/OS Platforms
 
 * Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2, Oracle Linux 8 or equivalent.
 
-* Windows 10 or Server x86-64 bits.
+* Windows 10 or Server x86-64 bits (installer available).
 
 * Linux ARM 32 bits (tested at least for protocol drivers on Raspberry Pi 3/Raspbian OS).
 
@@ -30,16 +28,28 @@ A full system can run on a single commodity x86 computer but for high performanc
 
 For large systems (like with more than 200.000 tags), a MongoDB sharded cluster may be needed.
 
-## Software Requirements
+## Windows Installer
+
+The Windows Installer has everything needed to run the system (MongoDB, PostgreSQL, Grafana, etc.). It is available in the [releases section](https://github.com/riclolsen/json-scada/releases/).
+
+### Requirements
+
+* Windows 10 or Server 2016 (x86-64 bits).
+* Windows PowerShell.
+* DotNet Core 3.1 x64 Runtime.
+
+## Software Requirements for Manual Installation
+
+To install JSON-SCADA manually, it is required to install all the requirements first. There is no point reproducing original installation instructions for each upstream project. Here are links and relevant information specific to JSON-SCADA.
 
 ### 1. MongoDB Server
 
-Version 4.2.8 or 4.4.1 - Lower versions are not supported and not recommended. Newer versions can work but were not tested.
+Version 4.2.8 or 4.4.1 - Lower versions are not supported.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
 
-The _MongoDB Atlas_ cloud service is also supported.
+The _MongoDB Atlas_ cloud service is also supported (4.2 or 4.4 versions).
 
 The _Replica Set_ feature must be enabled, even when just one server is used because this is necessary for Change Streams to work.
 
@@ -47,7 +57,7 @@ MongoDB supports many architectures, it is very flexible. You can deploy on just
 
 * https://docs.mongodb.com/manual/core/sharded-cluster-components/
 
-For not trusted or open to Internet networks it is important to use TLS over MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates.
+For not trusted or open to Internet networks it is important to use TLS for MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates.
 
 * https://docs.mongodb.com/manual/tutorial/configure-ssl/
 
