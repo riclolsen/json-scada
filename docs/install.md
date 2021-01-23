@@ -128,6 +128,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 7. Other recommended software tools
 
+* Nginx or some other web server - https://nginx.org/.
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://sourceforge.net/projects/oshmiopensubstationhmi/ or https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
 * MongoDB Compass - https://www.mongodb.com/products/compass
 * Git - https://git-scm.com/
