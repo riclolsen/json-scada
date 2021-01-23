@@ -32,11 +32,35 @@ For large systems (like with more than 200.000 tags), a MongoDB sharded cluster 
 
 The Windows Installer has everything needed to run the system (MongoDB, PostgreSQL, Grafana, etc.). It is available in the [releases section](https://github.com/riclolsen/json-scada/releases/).
 
-### Requirements
+### REQUIREMENTS
 
-* Windows 10 or Server 2016 (x86-64 bits).
+* Windows 10 or Server 2016/2019 (x86-64 bits), 8GB+ RAM.
+* Admin privileges.
 * Windows PowerShell.
 * DotNet Core 3.1 x64 Runtime.
+
+### QUICKSTART
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+  - On the JSON-SCADA desktop folder: execute "_Start_Services".
+  - On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+
+The default credentials are user=admin, password=jsonscada.
+
+The system is preconfigured to connect to a online demo simulation via IEC60870-5-104 protocol with an example point list and some displays.
+
+To issue a command, open the Display Viewer, click on a breaker and push the "Command" button then choose   an action like "open" or "close" and push the action button.
+
+The SVG display files are in "c:\json-scada\src\htdocs\svg\". The configuration files are in "c:\json-scada\conf\".
+
+To edit and create new SVG displays, use the Inkscape+SAGE (shortcut in the JSON-SCADA folder). 
+
+By default, the system is configured to allow HTTP access only by the local machine.
+To allow other IP addresses edit the "c:\json-scada\conf\nginx_access_control.conf" file.
+To configure safe remote client access, configure IP address access control, HTTPS, client certificates and user authentication directly in the Nginx configuration files.
+
+For more info about configuration please read the documentation.
 
 ## Software Requirements for Manual Installation
 
