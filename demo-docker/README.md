@@ -13,6 +13,23 @@ It includes
 * Change stream realtime data processor.
 * A Node/Express webserver app for user interface.
 
+## Method 1 (json-scada dedicated containers)
+
+To run this demo, a docker runtime is needed with docker-compose command available. 
+
+There is no need to extract the full JSON-SCADA repository, just download the (docker compose)[https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml].
+
+    mkdir json-scada-demo
+	cd json-scada-demo
+	  wget https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml
+	     or 
+	  curl -O https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml
+	     or 
+      Download using browser and save https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml 
+	docker-compose up
+
+## Method 2 (mainstream containers)
+
 To run this demo, a docker runtime is needed with docker-compose command available. Git is also needed to extract the repository.
 
 It can run on any Linux x64 or Windows 10 x64 (use Docker/WSL2 on Windows 10 version 2004 for best performance on this platform).
@@ -24,14 +41,14 @@ Clone the whole repository on the host computer.
 Go to the compile-docker folder to create binaries.
 
 	cd json-scada/compile-docker
-	docker-compose up
+	docker-compose up 
 
 Wait until the compilation process finishes.
 
 Go to the demo-docker folder and run the system.
 	
 	cd ../demo-docker
-	docker-compose up
+	docker-compose up -f docker-compose-method2.yaml
 
 Wait until images are pulled, the databases are seeded and the protocol communication begins.
 
