@@ -1,10 +1,10 @@
 version: '3.8'
 
-# {json:scada} Demo - (c) 2020 - Ricardo L. Olsen 
+# {json:scada} Demo - (c) 2021 - Ricardo L. Olsen 
 
 # ACCESS VIA WEB BROWSER AT http://127.0.0.1:8080
-# Grafana access http://127.0.0.1:3000, user=admin password=jsonscada
-# Must be online to connect to IEC60870-5-104 live demo server at 207.180.242.96:2404. 
+# Credentials for JSON-SCADA and Grafana: user=admin password=jsonscada
+# Must be online to connect to the IEC60870-5-104 live demo server at 207.180.242.96:2404. 
 
 services:
 
@@ -12,16 +12,13 @@ services:
 
   # must create a mongodb instance or cluster with a replica set
   jsdemo_mongorsn1:
-    image: mongo:4.2.8
+    image: ricardolo/json-scada-mongodb
     container_name: jsdemo_mongors1
     hostname: jsdemo_mongorsn1
     restart: unless-stopped
     command: "mongod --bind_ip_all --replSet rs1 --wiredTigerCacheSizeGB 2 --dbpath /data/db --port 27017"    
     extra_hosts:
       - "jsdemo_mongorsn1:127.0.0.1"
-    volumes:
-      - ./mongors1/files:/files
-      - ./mongo_seed/files:/docker-entrypoint-initdb.d
     environment:
       - MONGO_INITDB_DATABASE=json_scada
     # to export mongodb port on main host!
@@ -35,7 +32,7 @@ services:
   
   # Postgresql/TimescaleDB historian. Without auth! 
   timescaledb:
-    image: timescale/timescaledb:latest-pg12
+    image: ricardolo/json-scada-timescaledb
     container_name: jsdemo_timescaledb
     restart: unless-stopped
     command: postgres -c shared_preload_libraries=timescaledb
@@ -43,9 +40,6 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_USER=postgres
       #- POSTGRES_PASSWORD=passw0rd
-    volumes:
-      - ./postgres_seed:/docker-entrypoint-initdb.d/
-      #- ./timescale:/var/lib/postgresql
     # to export postgresql port on main host!
     ports:
       - 5432:5432
@@ -57,6 +51,7 @@ services:
     networks:
       - jsdemo_net
 
+<<<<<<< HEAD
   # Postgresql/TimescaleDB Process SQL hist files 
   process_pg_hist:
     image: timescale/timescaledb:latest-pg12
@@ -100,12 +95,12 @@ services:
       - timescaledb
     networks:
       - jsdemo_net
+=======
+>>>>>>> 936bb26... Docker demo updated. New method added with dedicated containers provided by the project.
   grafana:
-    image: grafana/grafana
+    image: ricardolo/json-scada-grafana
     container_name: jsdemo_grafana
     restart: unless-stopped
-    volumes: 
-      - ./grafana_data:/var/lib/grafana
     environment: 
       - GF_SERVER_DOMAIN=127.0.0.1
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/
@@ -142,14 +137,10 @@ services:
   
   # IEC6079-5-104 CLIENT, will connect to a demo server on 207.180.242.96:2404
   iec104client:
-    image: mcr.microsoft.com/dotnet/runtime:5.0
-    #image: mcr.microsoft.com/dotnet/core/runtime:3.1
+    image: ricardolo/json-scada
     container_name: jsdemo_iec104client
-    command: sh -c "sleep 20 && /jsonscada_bin/iec104client"
+    command: sh -c "sleep 20 && cd /json-scada/bin/ && ./iec104client"
     restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
     links:
       - jsdemo_mongorsn1
     networks:
@@ -157,14 +148,10 @@ services:
 
   # IEC6079-5-104 SERVER, accepts connection on 127.0.0.1:2404 (originator address 1)
   iec104server:
-    image: mcr.microsoft.com/dotnet/runtime:5.0
-    #image: mcr.microsoft.com/dotnet/core/runtime:3.1
+    image: ricardolo/json-scada
     container_name:  jsdemo_iec104server
-    command: sh -c "sleep 20 && /jsonscada_bin/iec104server"
+    command: sh -c "sleep 20 && cd /json-scada/bin/ && ./iec104server"
     restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
     links:
       - jsdemo_mongorsn1
     # exports the iec 104 server port to the host
@@ -175,26 +162,56 @@ services:
     networks:
       - jsdemo_net
 
-  # process incoming data 
+  # process incoming data and forward historical data to postgresql
   cs_data_processor:
-    image: node:current-alpine3.12
+    image: ricardolo/json-scada
     container_name: jsdemo_cs_data_processor
-    command:  sh -c "cd /cs_data_processor && sleep 10 && node cs_data_processor.js"
+    command:  sh -c "cd /json-scada/sql/ && /json-scada/sql/process_pg_hist.sh & /json-scada/sql/process_pg_rtdata.sh & cd /json-scada/src/cs_data_processor && sleep 10 && node cs_data_processor.js"
     restart: unless-stopped
-    volumes:
-      - ../src/cs_data_processor:/cs_data_processor
-      - ./sql:/sql
-      - ./conf:/conf
+    environment:
+      - PSQL_PATH=/usr/bin
+      - PGPORT=5432
+      - PGHOST=jsdemo_timescaledb
+      - PGDATABASE=json_scada
+      - PGUSER=json_scada
+      - PGPASSWORD=
     links:
       - jsdemo_mongorsn1
+      - timescaledb
     networks:
       - jsdemo_net
 
-  # realtime web server, will listen on some HTTP port
+  # realtime web server, will listen on some HTTP port NO AUTH/RBAC
+  #server_realtime:
+  #  image: ricardolo/json-scada
+  #  container_name: jsdemo_server_realtime
+  #  command:  sh -c "cd /json-scada/src/server_realtime && sleep 10 && node index.js"
+  #  restart: unless-stopped
+  #  environment:
+  #    - JS_IP_BIND=0.0.0.0
+  #    - JS_HTTP_PORT=8080
+  #    - JS_GRAFANA_SERVER=http://jsdemo_grafana:3000
+  #    - JS_AUTHENTICATION=NOAUTH
+  #    - PGPORT=5432
+  #    - PGHOST=jsdemo_timescaledb
+  #    - PGDATABASE=json_scada
+  #    - PGUSER=json_scada
+  #    - PGPASSWORD=
+  #  links:
+  #    - jsdemo_mongorsn1
+  #  # exports the HTTP port to the main host
+  #  ports:
+  #    - 8080:8080
+  #  expose:
+  #    - "8080"
+  #  networks:
+  #    - jsdemo_net
+
+  # realtime web server, will listen on some HTTP port with auth, RBAC management UI
   server_realtime:
-    image: node:current-alpine3.12
-    container_name: jsdemo_server_realtime
-    command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
+    image: ricardolo/json-scada
+    container_name: jsdemo_server_realtime_auth
+    command:  sh -c "cd /json-scada/src/server_realtime_auth && sleep 10 && node index.js"
     restart: unless-stopped
     environment:
       - JS_IP_BIND=0.0.0.0
@@ -206,10 +223,13 @@ services:
       - PGDATABASE=json_scada
       - PGUSER=json_scada
       - PGPASSWORD=
+<<<<<<< HEAD
     volumes:
       - ../src/server_realtime:/server_realtime
       - ../src/htdocs:/htdocs
       - ./conf:/conf
+=======
+>>>>>>> 936bb26... Docker demo updated. New method added with dedicated containers provided by the project.
     links:
       - jsdemo_mongorsn1
     # exports the HTTP port to the main host
@@ -222,13 +242,10 @@ services:
     
   # calculation process
   calculations:
-    image: node:current-alpine3.12
+    image: ricardolo/json-scada
     container_name: jsdemo_calculations
-    command:  sh -c "sleep 15 && cd /jsonscada_bin/ && ./calculations"
+    command:  sh -c "sleep 15 && cd /json-scada/bin/ && ./calculations"
     restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
     links:
       - jsdemo_mongorsn1
     networks:
