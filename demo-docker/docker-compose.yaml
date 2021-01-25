@@ -52,6 +52,7 @@ services:
       - jsdemo_net
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   # Postgresql/TimescaleDB Process SQL hist files 
   process_pg_hist:
     image: timescale/timescaledb:latest-pg12
@@ -95,6 +96,8 @@ services:
       - timescaledb
     networks:
       - jsdemo_net
+=======
+>>>>>>> 936bb26... Docker demo updated. New method added with dedicated containers provided by the project.
 =======
 >>>>>>> 936bb26... Docker demo updated. New method added with dedicated containers provided by the project.
   grafana:
@@ -224,10 +227,13 @@ services:
       - PGUSER=json_scada
       - PGPASSWORD=
 <<<<<<< HEAD
+<<<<<<< HEAD
     volumes:
       - ../src/server_realtime:/server_realtime
       - ../src/htdocs:/htdocs
       - ./conf:/conf
+=======
+>>>>>>> 936bb26... Docker demo updated. New method added with dedicated containers provided by the project.
 =======
 >>>>>>> 936bb26... Docker demo updated. New method added with dedicated containers provided by the project.
     links:
