@@ -1,12 +1,10 @@
 # Installing JSON-SCADA
 
-To install JSON-SCADA, it is required to install all the requirements first. There is no point reproducing original installation instructions for each upstream project. Here are links and relevant information specific to JSON-SCADA.
-
 ## Supported Hardware/OS Platforms
 
 * Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2, Oracle Linux 8 or equivalent.
 
-* Windows 10 or Server x86-64 bits.
+* Windows 10 or Server x86-64 bits (installer available).
 
 * Linux ARM 32 bits (tested at least for protocol drivers on Raspberry Pi 3/Raspbian OS).
 
@@ -30,16 +28,52 @@ A full system can run on a single commodity x86 computer but for high performanc
 
 For large systems (like with more than 200.000 tags), a MongoDB sharded cluster may be needed.
 
-## Software Requirements
+## Windows Installer
+
+The Windows Installer has everything needed to run the system (MongoDB, PostgreSQL, Grafana, etc.). It is available in the [releases section](https://github.com/riclolsen/json-scada/releases/).
+
+### REQUIREMENTS
+
+* Windows 10 or Server 2016/2019 (x86-64 bits), 8GB+ RAM.
+* Admin privileges.
+* Windows PowerShell.
+* DotNet Core 3.1 x64 Runtime.
+
+### QUICKSTART
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+  - On the JSON-SCADA desktop folder: execute "_Start_Services".
+  - On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+
+The default credentials are user=admin, password=jsonscada.
+
+The system is preconfigured to connect to a online demo simulation via IEC60870-5-104 protocol with an example point list and some displays.
+
+To issue a command, open the Display Viewer, click on a breaker and push the "Command" button then choose   an action like "open" or "close" and push the action button.
+
+The SVG display files are in "c:\json-scada\src\htdocs\svg\". The configuration files are in "c:\json-scada\conf\".
+
+To edit and create new SVG displays, use the Inkscape+SAGE (shortcut in the JSON-SCADA folder). 
+
+By default, the system is configured to allow HTTP access only by the local machine.
+To allow other IP addresses edit the "c:\json-scada\conf\nginx_access_control.conf" file.
+To configure safe remote client access, configure IP address access control, HTTPS, client certificates and user authentication directly in the Nginx configuration files.
+
+For more info about configuration please read the documentation.
+
+## Manual Installation
+
+To install JSON-SCADA manually, it is required to install all the requirements first. There is no point reproducing original installation instructions for each upstream project. Here are links and relevant information specific to JSON-SCADA.
 
 ### 1. MongoDB Server
 
-Version 4.2.8 or 4.4.1 - Lower versions are not supported and not recommended. Newer versions can work but were not tested.
+Version 4.2.8 or 4.4.1 - Lower versions are not supported.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
 
-The _MongoDB Atlas_ cloud service is also supported.
+The _MongoDB Atlas_ cloud service is also supported (4.2 or 4.4 versions).
 
 The _Replica Set_ feature must be enabled, even when just one server is used because this is necessary for Change Streams to work.
 
@@ -47,7 +81,7 @@ MongoDB supports many architectures, it is very flexible. You can deploy on just
 
 * https://docs.mongodb.com/manual/core/sharded-cluster-components/
 
-For not trusted or open to Internet networks it is important to use TLS over MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates.
+For not trusted or open to Internet networks it is important to use TLS for MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates.
 
 * https://docs.mongodb.com/manual/tutorial/configure-ssl/
 
@@ -94,6 +128,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 7. Other recommended software tools
 
+* Nginx or some other web server - https://nginx.org/.
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://sourceforge.net/projects/oshmiopensubstationhmi/ or https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
 * MongoDB Compass - https://www.mongodb.com/products/compass
 * Git - https://git-scm.com/
