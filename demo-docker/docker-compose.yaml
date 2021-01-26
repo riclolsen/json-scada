@@ -69,6 +69,33 @@ services:
     networks:
       - jsdemo_net
 
+  # Create a new Netdata Agent container
+  netdata:
+    image: netdata/netdata
+    container_name: netdata
+    hostname: example.com # set to fqdn of host, by example - localhost
+    ports:
+      - 19999:19999
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - ./netdataconfig/netdata:/etc/netdata:ro
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    environment:
+      - VIRTUALIZATION=${VIRTUALIZATION}
+volumes:
+  netdatalib:
+  netdatacache:
+
 #  grafana:
 #    image: grafana/grafana
 #    container_name: jsdemo_grafana
