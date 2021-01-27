@@ -1,0 +1,43 @@
+
+    {
+        "_id": {
+            "$oid": "5f6640587c0983837b6d07a1"
+        },
+        "name": "admin",
+        "isAdmin": true,
+        "changePassword": true,
+        "sendCommands": true,
+        "enterAnnotations": true,
+        "enterNotes": true,
+        "enterManuals": true,
+        "enterLimits": true,
+        "substituteValues": true,
+        "ackEvents": true,
+        "ackAlarms": true,
+        "disableAlarms": true,
+        "group1List": [],
+        "displayList": [],
+        "maxSessionDays": 3,
+        "group1CommandList": []
+    }
+    {
+        "_id": {
+            "$oid": "5f6640587c0983837b6d07a2"
+        },
+        "name": "user",
+        "isAdmin": false,
+        "changePassword": true,
+        "sendCommands": true,
+        "enterAnnotations": true,
+        "enterNotes": true,
+        "enterManuals": true,
+        "enterLimits": true,
+        "substituteValues": true,
+        "ackEvents": true,
+        "ackAlarms": true,
+        "disableAlarms": true,
+        "group1List": [],
+        "displayList": [],
+        "maxSessionDays": 3,
+        "group1CommandList": []
+    }
