@@ -50,7 +50,7 @@ Each instance for this driver can have many client connection defined that must 
         enabled: true,
         commandsEnabled: true,
         endpointURLs: ["opc.tcp://opcuaserver.com:48010"],
-        configSectionName: "../conf/Opc.Ua.DefaultClient.Config.xml",
+        configFileName: "../conf/Opc.Ua.DefaultClient.Config.xml",
         stats: {}
     });
 
