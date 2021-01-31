@@ -36,7 +36,7 @@ To create a new OPC-UA client instance, insert a new document in the _protocolDr
 
 Changes in the _protocolDriverInstances_ config requires that the driver instances processes be restarted to be effective.
 
-## Configure client connections to PLCs
+## Configure client connections to OPC-UA servers
 
 Each instance for this driver can have many client connection defined that must be described in the _protocolConnections_ collection.
 
@@ -50,10 +50,11 @@ Each instance for this driver can have many client connection defined that must 
         enabled: true,
         commandsEnabled: true,
         endpointURLs: ["opc.tcp://opcuaserver.com:48010"],
+        configSectionName: "../conf/Opc.Ua.DefaultClient.Config.xml",
         stats: {}
     });
 
-Common parameters for _CIP Ethernet/IP_ and _Modbus TCP_ communication.
+Parameters for communication with OPC-UA servers.
 * _**protocolDriver**_ [String] - Name of the protocol driver, must be  "DNP3". **Mandatory parameter**.
 * _**protocolDriverInstanceNumber**_ [Double] - Number of the instance. Use 1 to N to number instances. For the same driver instance numbers should be unique. The instance number makes possible to run use multiple processes of the driver, each one with a distinct configuration. **Mandatory parameter**.
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. This must be unique for all connections over all drivers on a system. This number is be used to define the connection that can update a tag. **Mandatory parameter**.
@@ -62,6 +63,7 @@ Common parameters for _CIP Ethernet/IP_ and _Modbus TCP_ communication.
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**endpointURLs**_ [Array of Strings] - Array of server endpoints URLs (only the first server is currently supported). **Mandatory parameter**.
+* _**configFileName**_ [String] - Name of the config file (with absolute path or relative to the bin folder). Default="../conf/Opc.Ua.DefaultClient.Config.xml". Use this file or crete new files to configure certificates and other OPC-UA parameters for a connection. **Optional parameter**.
 * _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 ## Configure JSON-SCADA tags for update (read from OPC-UA Server)
