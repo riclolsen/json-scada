@@ -146,7 +146,7 @@ Or do a git clone
 
     git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 
-Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform, on Mac use --runtime osx-x64)
+Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform (e.g. win-x64), on Mac use --runtime osx-x64)
     
     cd json-scada
     mkdir bin
@@ -155,7 +155,7 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
     cd ../dnp3/Dnp3Client
-    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
+    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin/
 
     export GOBIN=~/json-scada/bin
     cd ../../calculations
