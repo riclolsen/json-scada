@@ -123,6 +123,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iec104server'
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
+  nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
   nsExec::Exec 'net stop JSON_SCADA_nginx'
   nsExec::Exec 'net stop JSON_SCADA_php'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
@@ -617,6 +618,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_dnp3client"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_dnp3client"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_opcuaclient"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_opcuaclient"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_iec101server"`

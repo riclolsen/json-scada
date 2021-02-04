@@ -22,6 +22,8 @@ services:
                     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/dnp3/Dnp3Client/ && 
                     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/OPC-UA-Client/ && 
+                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/libplctag/PLCTagsClient &&
@@ -32,6 +34,7 @@ services:
     volumes:
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/dnp3:/src/dnp3
+      - ../src/OPC-UA-Client:/src/OPC-UA-Client
       - ../src/libplctag:/src/libplctag
       - ../demo-docker/bin:/publish_bin
  

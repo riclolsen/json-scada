@@ -154,6 +154,9 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     cd src/lib60870.netcore
     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
+    cd ../OPC-UA-Client
+    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
+	
     cd ../dnp3/Dnp3Client
     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin/
 

@@ -25,6 +25,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 ![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
 ![](https://img.shields.io/badge/DNP3-yellow "DNP3")
+![](https://img.shields.io/badge/DNP3-yellow "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
 ![](https://img.shields.io/badge/license-GPL-green "License GPL")
@@ -32,7 +33,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 
 ## Mission Statement
 
-To provide an easy to use, fully-featured, flexible, scalable, and portable SCADA/IoT system built by leveraging mainstream open-source IT tools.
+To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT system built by leveraging mainstream open-source IT tools.
  
 ## Screenshots
 
@@ -49,6 +50,10 @@ To provide an easy to use, fully-featured, flexible, scalable, and portable SCAD
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
 * MongoDB Change Streams for realtime async database events processing.
 * HTML5 Web interface. UTF-8/I18N. Mobile access.
+* Web-based configuration management.
+* Role-based access control (RBAC).
+* Various high-quality protocol drivers.
+* Live point configuration updates.
 * Inkscape-based SVG synoptic display editor.
 * PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 * Extensibility of data model (MongoDB: NoSQL/schema-less).
@@ -59,9 +64,6 @@ To provide an easy to use, fully-featured, flexible, scalable, and portable SCAD
 * Possibility of easy integration of new and custom protocol drivers developed with modern programming languages (just read/write to MongoDB).
 * Future-proof, vendor independence, flexibility, extensibility.
 * Reduced human costs for maintenance and development thanks to the employment of widely-used open-source IT technologies.
-* Live point configuration updates.
-* Role-based access control (RBAC).
-* Web-based configuration management (now under development).
 
 ## Use cases
 
@@ -92,6 +94,7 @@ To provide an easy to use, fully-featured, flexible, scalable, and portable SCAD
 * [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
 * [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
 * [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
+* [OPC-UA Client Driver](src/OPC-UA-Client/README.md)
 * [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](src/i104m/README.md)
 * [Change Stream Data Processor](src/cs_data_processor/README.md)
@@ -108,51 +111,53 @@ To provide an easy to use, fully-featured, flexible, scalable, and portable SCAD
 - [x] IEC 60870-5-104 Client TCP/TLS
 - [x] IEC 60870-5-101 Server (Serial, TCP)
 - [x] IEC 60870-5-101 Client (Serial, TCP)
+- [ ] IEC 60870-5-103 Client
 - [x] DNP3 Client (TCP, UDP, TLS, Serial)
 - [ ] DNP3 Server (TCP, UDP, TLS, Serial)
-- [x] I104M (adapter for OSHMI driver)
+- [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [ ] Secure ICCP Client
-- [ ] OPC UA Client
+- [X] OPC UA Client (experimental)
 - [ ] OPC UA Server
 - [ ] OPC DA Client
 - [ ] OPC DA Server
 - [ ] Modbus Client
 - [ ] MQTT
-- [ ] IEC 61850 MMS
-- [ ] IEC 61850 GOOSE
-- [x] CIP Ethernet/IP (libplctag)
+- [ ] IEC 61850 MMS Client
+- [ ] IEC 61850 GOOSE Client
+- [x] CIP Ethernet/IP (libplctag, experimental)
 - [ ] Siemens S7
 - [ ] BACNET
-- [ ] IEC 60870-5-103 Client
 - [ ] OPC UA Historical Data Server
 
 ## Features Roadmap
 
 - [x] Web-based Viewers
+- [x] Web-based Configuration Manager
+- [x] User auth/Role-based Access Control (RBAC)
 - [x] Inkscape-based SVG Synoptic Editor
 - [x] Compiled Calculations Engine
+- [ ] Low-latency/Interpreted Calculations Engine
 - [x] Basic Alarms Processor
 - [ ] Advanced Alarms Processor 
 - [x] PostgreSQL/TimescaleDB Historian
 - [x] Grafana Integration 
-- [x] Grafana Alerting Integration (Events Viewer)
-- [x] Docker Demo
+- [x] Grafana Alerting Integration (w/ Events Viewer)
 - [x] Windows Installer
-- [ ] Linux Image / VM / Container
-- [x] User auth/RBAC with web-based config tool
+- [x] Online Demo
+- [x] Docker Demo (docker-compose.yaml scripts)
+- [x] Dedicated Docker Containers
+- [ ] Linux Image / VM
 - [x] Supervisor (Linux process manager) examples
-- [ ] Web-based Configuration Manager (now under development)
-- [ ] Low-latency calculations
 - [ ] InfluxDB Integration
 - [ ] Telegraf Integration
 - [ ] Kafka Integration
-- [x] PowerBI Integration (through PostgreSQL connector)
+- [x] PowerBI Integration (via PostgreSQL connector)
 - [ ] PowerBI Direct Integration
 - [ ] NodeRed Integration
-- [x] Metabase Integration (through PostgreSQL connector)
+- [x] Metabase Integration (via PostgreSQL connector)
 - [ ] Alerta Integration (https://alerta.io/)
-- [ ] Command Line Manager
+- [ ] Managed Cloud Service
 
 ## Contact
 

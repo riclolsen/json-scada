@@ -1,6 +1,6 @@
 echo This script builds JSON-SCADA Windows x64 binaries and restores NodeJS NPM modules.
 echo Required tools:
-echo - Dotnet Core SDK 3.1
+echo - Dotnet Core SDK 5.0
 echo - Golang 1.14+
 echo - Node.js 14+
 
@@ -10,16 +10,18 @@ mkdir bin
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
-dotnet build --runtime win-x64 -c Release -o ..\..\bin\ 
+dotnet build --runtime win-x64 -c Release -o ..\..\..\bin\ 
 cd \json-scada\src\lib60870.netcore\iec101client\
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\ 
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ 
 cd \json-scada\src\lib60870.netcore\iec101server\
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 cd \json-scada\src\lib60870.netcore\iec104client\ 
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 cd \json-scada\src\lib60870.netcore\iec104server\ 
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 cd \json-scada\src\dnp3\Dnp3Client\ 
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
+cd \json-scada\src\OPC-UA-Client\ 
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
 cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
 dotnet build --runtime win-x64 -c Release -o ..\..\bin\
