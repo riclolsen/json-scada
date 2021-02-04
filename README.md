@@ -25,7 +25,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 ![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
 ![](https://img.shields.io/badge/DNP3-yellow "DNP3")
-![](https://img.shields.io/badge/DNP3-yellow "OPC-UA")
+![](https://img.shields.io/badge/OPC--UA-yellow "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
 ![](https://img.shields.io/badge/license-GPL-green "License GPL")
