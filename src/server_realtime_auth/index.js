@@ -1365,12 +1365,12 @@ let pool = null
               timeTag: { $lte: new Date(endDateTime) }
             }
             let sort = { timeTag: -1, timeTagAtSource: -1, tag: -1 }
-            if (endDateTime !== null && endDateTime !== null)
+            if (endDateTime !== null && startDateTime !== null)
               sort = { timeTag: 1, timeTagAtSource: 1, tag: 1 }
 
             if (!returnServerTimestamp) {
               sort = { timeTagAtSource: -1, timeTag: -1, tag: -1 }
-              if (endDateTime !== null && endDateTime !== null)
+              if (endDateTime !== null && startDateTime !== null)
                 sort = { timeTagAtSource: 1, timeTag: 1, tag: 1 }
               filterDateGte = {
                 timeTagAtSource: { $gte: new Date(startDateTime) }
@@ -1456,7 +1456,7 @@ let pool = null
                       filterDateLte,
                       filterGroup,
                       filterPriority,
-                      { ack: { $lte: 1 } }
+                      { ack: { $lte: (endDateTime!==null)?2:1 } } // when realtime query (endDate=null) filter out eliminated (ack=2) events
                     ]
                   },
                   {}
