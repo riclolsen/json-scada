@@ -48,12 +48,12 @@ $db->exec ( "PRAGMA locking_mode=NORMAL" );
 $db->exec ( "PRAGMA cache_size=5000" );
 $db->exec ( "PRAGMA temp_store=MEMORY" );
 
-$qry = "select ID as NPONTO, content from notes where erased=0";
+$qry = "select POINTNUM as NPONTO, content from notes where erased=0";
 $ret = $db->query($qry);
 
 // echo json_encode($ret);
 $o = $ret->fetchAll(PDO::FETCH_ASSOC);
-// array_walk_recursive($o, 'walkrec');
+array_walk_recursive($o, 'walkrec');
 print_r($o);
 foreach ($o as $row)
 {
@@ -81,7 +81,7 @@ $ret = $db->query($qry);
 
 // echo json_encode($ret);
 $o = $ret->fetchAll(PDO::FETCH_ASSOC);
-// array_walk_recursive($o, 'walkrec');
+array_walk_recursive($o, 'walkrec');
 // print_r($o);
 foreach ($o as $row)
 {
@@ -119,9 +119,7 @@ catch(PDOException $Exception)
 // converte para UTF-8 e faz outras conversões de tipo (para json_encode)
 function walkrec(&$item, $key)
   {
-  if ($key == "nponto" || $key == "prioridade" || $key == "tempo" || $key == "unixts") // campos numéricos
-    $item = floatval($item);
-  //else
-  //  $item = mb_convert_encoding($item, "UTF-8", "ISO-8859-1"); // converte para UTF-8
+  if (!mb_check_encoding($item, "UTF-8"))
+    $item = mb_convert_encoding($item, "UTF-8", "ISO-8859-1"); // converte para UTF-8
   }
 ?>
