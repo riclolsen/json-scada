@@ -121,6 +121,18 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.6: 
+
+ - DotNet 5.0.3 runtime added to installer.
+ - Nodejs updated to 14.15.5.
+ - Mongodb updated to 4.4.3.
+ - Mongodb Compass updated to 1.25.
+ - Grafana updated to 7.4.1.
+ - Chromium updated to 88.0.4324.150.
+ - Various enhancements and fixes.
+
+-------------------------------------------------------------------
+
 Notes for version 0.5: 
 
  - Admin panel now manages protocol driver connections.

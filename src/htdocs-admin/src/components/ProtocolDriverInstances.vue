@@ -221,8 +221,6 @@ export default {
     dialogDelInst: false,
     active: [],
     open: [],
-    users: [],
-    roles: [],
     newNode: "",
     driverNameItems: [
       "IEC60870-5-104",
@@ -230,6 +228,7 @@ export default {
       "IEC60870-5-101",
       "IEC60870-5-101_SERVER",
       "DNP3",
+      "OPC-UA",
       "PLCTAG",
       "I104M",
     ],
@@ -241,8 +240,7 @@ export default {
       return [
         {
           name: "Driver Instances",
-          children: this.driverInstances,
-          roles: this.roles,
+          children: this.driverInstances
         },
       ];
     },
@@ -300,7 +298,7 @@ export default {
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
-          this.fetchDriverInstances(); // refreshes roles
+          this.fetchDriverInstances(); // refreshes instances
         })
         .catch((err) => console.warn(err));
     },

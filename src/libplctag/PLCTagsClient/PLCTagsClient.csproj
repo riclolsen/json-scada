@@ -6,10 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="libplctag" Version="1.0.1" />
-    <PackageReference Include="libplctag.NativeImport" Version="1.0.1" />
-    <PackageReference Include="MongoDB.Bson" Version="2.12.0-beta1" />
-    <PackageReference Include="MongoDB.Driver" Version="2.12.0-beta1" />
+    <PackageReference Include="libplctag" Version="1.0.3" />
+    <PackageReference Include="libplctag.NativeImport" Version="1.0.6" />
+    <PackageReference Include="MongoDB.Bson" Version="2.11.6" />
+    <PackageReference Include="MongoDB.Driver" Version="2.11.6" />
   </ItemGroup>
 
 </Project>
