@@ -37,7 +37,8 @@ The Windows Installer has everything needed to run the system (MongoDB, PostgreS
 * Windows 10 or Server 2016/2019 (x86-64 bits), 8GB+ RAM.
 * Admin privileges.
 * Windows PowerShell.
-* DotNet Core 3.1 x64 Runtime.
+* DotNet Core 5.0.3 x64 Runtime.
+* Open SSL binaries for 64-bit Windows: https://slproweb.com/products/Win32OpenSSL.html.
 
 ### QUICKSTART
 
@@ -68,7 +69,7 @@ To install JSON-SCADA manually, it is required to install all the requirements f
 
 ### 1. MongoDB Server
 
-Version 4.2.8 or 4.4.1 - Lower versions are not supported.
+Version 4.2.x or 4.4.x - Lower versions are not supported.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
@@ -123,7 +124,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 6. DotNet Core
 
-* DotNet Core version 3.1 or 5.x. Previous versions are not tested or supported.
+* DotNet Core version 3.x or 5.x. Previous versions are not tested or supported.
 * https://dotnet.microsoft.com/download
 
 ### 7. Other recommended software tools

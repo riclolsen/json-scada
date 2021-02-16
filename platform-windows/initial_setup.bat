@@ -9,13 +9,13 @@ copy /Y ..\conf-templates\pg_hba.conf postgresql-data\
 copy /Y ..\conf-templates\postgresql.conf postgresql-data\
 call postgresql-create_service.bat
 call postgresql-start.bat
-ping -n 4 127.0.0.1
+ping -n 12 127.0.0.1
 postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\create_tables.sql template1
 
 call create_services.bat
-ping -n 4 127.0.0.1
+ping -n 8 127.0.0.1
 call mongodb-start.bat
-ping -n 4 127.0.0.1
+ping -n 8 127.0.0.1
 mongodb-runtime\bin\mongo json_scada < ..\mongo_seed_demo\a_rs-init.js
 mongodb-runtime\bin\mongo json_scada < ..\mongo_seed_demo\b_create-db.js
 mongodb-runtime\bin\mongoimport --db json_scada --collection protocolDriverInstances --type json --file ..\mongo_seed_demo\demo_instances.json 
