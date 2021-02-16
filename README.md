@@ -157,6 +157,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [ ] NodeRed Integration
 - [x] Metabase Integration (via PostgreSQL connector)
 - [ ] Alerta Integration (https://alerta.io/)
+- [ ] PLC4X Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
 
 ## Contact
