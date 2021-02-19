@@ -167,6 +167,8 @@ namespace OPCUAClientDriver
                 Thread.Yield();
                 Thread.Sleep(50);
                 session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
+                // Log("" + session.KeepAliveInterval); // default is 5000
+                session.KeepAliveInterval = 20000;
 
                 // register keep alive handler
                 session.KeepAlive += Client_KeepAlive;
@@ -297,6 +299,8 @@ namespace OPCUAClientDriver
                 exitCode = ExitCode.ErrorAddSubscription;
                 session.AddSubscription(subscription);
                 subscription.Create();
+
+                subscription.ApplyChanges();
 
                 Log(conn_name + " - " + "Running...");
                 exitCode = ExitCode.ErrorRunning;
@@ -498,22 +502,26 @@ namespace OPCUAClientDriver
                                     };
                                 OPCDataQueue.Enqueue(iv);
                             }
-
                         }
                         catch (Exception excpt)
                         {
-
                             Log(conn_name + " - " + excpt.Message);
                             Log(conn_name + " - " + "TYPE:" + tp);
                             Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode);
-
                         }
                     }
                     else
                     {
                         Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " NULL VALUE!", LogLevelDetailed);
                     }
+                    
+                    Thread.Yield();
+                    if (OPCDataQueue.Count > 50)
+                    {
+                        Thread.Sleep(100);
+                    }
                 }
+
             }
 
             private void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)

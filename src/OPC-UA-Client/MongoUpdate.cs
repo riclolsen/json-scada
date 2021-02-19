@@ -63,6 +63,7 @@ namespace OPCUAClientDriver
                             throw new Exception("Error on MongoDB connection ");
 
                         IEC_CmdAck ia;
+                        if (OPCCmdAckQueue.Count > 0)
                         while (OPCCmdAckQueue.TryDequeue(out ia))
                         {
                             var filter1 =
@@ -100,6 +101,7 @@ namespace OPCUAClientDriver
                         }
 
                         OPC_Value iv;
+                        if (OPCDataQueue.Count > 0)
                         while (OPCDataQueue.TryDequeue(out iv))
                         {
                             DateTime tt = DateTime.MinValue;
@@ -255,7 +257,7 @@ namespace OPCUAClientDriver
                                 break;
 
                             // give time to breath each 250 dequeues
-                            if (!System.Convert.ToBoolean(listWrites.Count % 250))
+                            if ((listWrites.Count % 250)==0)
                             {
                                 Thread.Yield();
                                 Thread.Sleep(1);
@@ -269,9 +271,14 @@ namespace OPCUAClientDriver
                                 await collection.BulkWriteAsync(listWrites);
                             listWrites.Clear();
                             Thread.Yield();
-                            Thread.Sleep(1);
-                            //if (LogLevel >= LogLevelBasic && OPCDataQueue.Count > 0)
-                            //    Log("MongoDB - Data queue size: " + OPCDataQueue.Count, LogLevelBasic);
+                            if (OPCDataQueue.Count > 0)
+                            {
+                                Thread.Sleep(1);
+                            }
+                            else
+                            {
+                                Thread.Sleep(100);
+                            }
                         }
                         else
                         {

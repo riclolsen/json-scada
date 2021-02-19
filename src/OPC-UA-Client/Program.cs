@@ -20,6 +20,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace OPCUAClientDriver
@@ -195,23 +196,24 @@ namespace OPCUAClientDriver
             }
 
             // start thread to process redundancy control
-            Thread thrMongoRedundacy =
+            var thrMongoRedundacy =
                 new Thread(() =>
                         ProcessRedundancyMongo(JSConfig));
             thrMongoRedundacy.Start();
 
             // start thread to update acquired data to database
-            Thread thrMongo =
+            var thrMongo =
                 new Thread(() =>
                         ProcessMongo(JSConfig));
             thrMongo.Start();
 
+            // thrMongo.Priority = ThreadPriority.AboveNormal;
+
             // start thread to watch for commands in the database using a change stream
-            //Thread thrMongoCmd =
+            //var thrMongoCmd =
             //    new Thread(() =>
             //            ProcessMongoCmd(JSConfig));
             //thrMongoCmd.Start();
-
 
             Log("Setting up OPC-UA Connections & ASDU handlers...");
             foreach (OPCUA_connection srv in OPCUAconns)
@@ -244,7 +246,6 @@ namespace OPCUAClientDriver
                     }
 
             } while (true);
-
 
             return (int)OPCUAClient.ExitCode;
         }

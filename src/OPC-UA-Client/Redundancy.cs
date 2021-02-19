@@ -100,6 +100,7 @@ namespace OPCUAClientDriver
                                     Log("Redundancy - DEACTIVATING this Node (other node active)!");
                                     countKeepAliveUpdates = 0;
                                     Random rnd = new Random();
+                                    Thread.Yield();
                                     Thread.Sleep(rnd.Next(1000, 5000));
                                 }
                                 Active = false;
@@ -112,11 +113,13 @@ namespace OPCUAClientDriver
                                 { // time exceeded, be active
                                     Log("Redundancy - ACTIVATING this Node!");
                                     Active = true;
+                                    Thread.Yield();
                                 }
                             }
 
                             if (Active)
                             {
+                                Thread.Yield();
                                 Log("Redundancy - This node is active.");
 
                                 // update keep alive time 
@@ -186,11 +189,13 @@ namespace OPCUAClientDriver
                                 Log("Redundancy - DEACTIVATING this Node (no instance found)!");
                                 countKeepAliveUpdates = 0;
                                 Random rnd = new Random();
+                                Thread.Yield();
                                 Thread.Sleep(rnd.Next(1000, 5000));
                             }
                             Active = false;
                         }
 
+                        Thread.Yield();
                         Thread.Sleep(5000);
                     }
                     while (true);
