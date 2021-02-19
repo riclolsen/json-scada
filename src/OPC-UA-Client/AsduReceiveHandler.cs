@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace OPCUAClientDriver
 {
@@ -55,10 +56,13 @@ namespace OPCUAClientDriver
             string endpointURL;
             string configFileName;
             int clientRunTime = Timeout.Infinite;
+            bool use_security = false;
             static bool autoAccept = false;
             static ExitCode exitCode;
+            List<MonitoredItem> ListMon = new List<MonitoredItem>();
+            HashSet<string> NodeIds = new HashSet<string>();
 
-            public OPCUAClient(string _conn_name, int _conn_number, string _endpointURL, string _configFileName, bool _autoAccept, int _stopTimeout)
+            public OPCUAClient(string _conn_name, int _conn_number, string _endpointURL, string _configFileName, bool _autoAccept, int _stopTimeout, bool _use_security)
             {
                 conn_name = _conn_name;
                 conn_number = _conn_number;
@@ -66,6 +70,7 @@ namespace OPCUAClientDriver
                 configFileName = _configFileName;
                 autoAccept = _autoAccept;
                 clientRunTime = _stopTimeout <= 0 ? Timeout.Infinite : _stopTimeout * 1000;
+                use_security = _use_security;
             }
 
             public void Run()
@@ -76,12 +81,13 @@ namespace OPCUAClientDriver
                 }
                 catch (Exception ex)
                 {
-                    Utils.Trace("ServiceResultException:" + ex.Message);
-                    Console.WriteLine("Exception: {0}", ex.Message);
+                    // Utils.Trace("ServiceResultException:" + ex.Message);
+                    Log(conn_name + " - " + "Exception: " + ex.Message);
                     return;
                 }
 
                 ManualResetEvent quitEvent = new ManualResetEvent(false);
+
                 try
                 {
                     Console.CancelKeyPress += (sender, eArgs) =>
@@ -111,12 +117,12 @@ namespace OPCUAClientDriver
 
             private async Task ConsoleClient()
             {
-                Console.WriteLine("1 - Create an Application Configuration.");
+                Log(conn_name + " - " + "Create an Application Configuration.");
                 exitCode = ExitCode.ErrorCreateApplication;
 
                 ApplicationInstance application = new ApplicationInstance
                 {
-                    ApplicationName = "JSON-SCADA OPC UA Client",
+                    ApplicationName = "JSON-SCADA OPC-UA Client",
                     ApplicationType = ApplicationType.Client,
                     ConfigSectionName = ""
                 };
@@ -144,33 +150,45 @@ namespace OPCUAClientDriver
                 }
                 else
                 {
-                    Console.WriteLine("    WARN: missing application certificate, using unsecure connection.");
+                    Log(conn_name + " - " + "WARN: missing application certificate, using unsecure connection.");
                 }
 
-
-                Console.WriteLine("2 - Discover endpoints of {0}.", endpointURL);
+                Log(conn_name + " - " + "Discover endpoints of " + endpointURL);
                 exitCode = ExitCode.ErrorDiscoverEndpoints;
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(endpointURL, haveAppCertificate, 15000);
-                Console.WriteLine("    Selected endpoint uses: {0}",
+                var selectedEndpoint = CoreClientUtils.SelectEndpoint(endpointURL, haveAppCertificate && use_security, 15000);
+                Log(conn_name + " - " + "Selected endpoint uses: " +
                     selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
 
-                Console.WriteLine("3 - Create a session with OPC UA server.");
+                Log(conn_name + " - " + "Create a session with OPC UA server.");
                 exitCode = ExitCode.ErrorCreateSession;
                 var endpointConfiguration = EndpointConfiguration.Create(config);
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
-
+                Thread.Yield();
+                Thread.Sleep(50);
                 session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
 
                 // register keep alive handler
                 session.KeepAlive += Client_KeepAlive;
 
-                Console.WriteLine("4 - Browse the OPC UA server namespace.");
+                Log(conn_name + " - " + "Browse the OPC UA server namespace.");
                 exitCode = ExitCode.ErrorBrowseNamespace;
+
+                FindObjects(session, ObjectIds.ObjectsFolder);
+
+                int publishingInterval = OPCDefaultPublishingInterval;
+                int samplingInterval = OPCDefaultSamplingInterval;
+                if (ListMon.Count > 1000)
+                {
+                    publishingInterval = System.Convert.ToInt32(OPCDefaultSamplingInterval * ListMon.Count / 1000.0);
+                    samplingInterval = System.Convert.ToInt32(OPCDefaultSamplingInterval * ListMon.Count / 1000.0);
+                }
+
+                /*
                 ReferenceDescriptionCollection references;
                 Byte[] continuationPoint;
 
-                references = session.FetchReferences(ObjectIds.ObjectsFolder);
+                // references = session.FetchReferences(ObjectIds.ObjectsFolder);
 
                 session.Browse(
                     null,
@@ -180,19 +198,13 @@ namespace OPCUAClientDriver
                     BrowseDirection.Forward,
                     ReferenceTypeIds.HierarchicalReferences,
                     true,
-                    (uint)NodeClass.Variable | (uint)NodeClass.Object | (uint)NodeClass.Method,
+                    (uint)NodeClass.Variable | (uint)NodeClass.Object,
                     out continuationPoint,
                     out references);
-
-                var list = new List<MonitoredItem>();
-                Console.WriteLine("5 - Create a subscription with publishing interval of x second.");
-                exitCode = ExitCode.ErrorCreateSubscription;
-                var subscription = new Subscription(session.DefaultSubscription) { PublishingInterval = OPCDefaultPublishingInterval, PublishingEnabled = true };
-
-                Console.WriteLine(" DisplayName, BrowseName, NodeClass");
+                Log(conn_name + " - " + "DisplayName, BrowseName, NodeClass");
                 foreach (var rd in references)
                 {
-                    Console.WriteLine(" {0}, {1}, {2}", rd.DisplayName, rd.BrowseName, rd.NodeClass);
+                    Log(conn_name + " - " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
                     ReferenceDescriptionCollection nextRefs;
                     byte[] nextCp;
                     session.Browse(
@@ -209,9 +221,8 @@ namespace OPCUAClientDriver
 
                     foreach (var nextRd in nextRefs)
                     {
-                        Log(conn_name + " - " + conn_number);
-                        Console.WriteLine("   + {0}, {1}, {2}", nextRd.DisplayName, nextRd.BrowseName, nextRd.NodeClass);
-                        Console.WriteLine(nextRd);
+                        Log(conn_name + " - " + nextRd.DisplayName + ", " + nextRd.BrowseName + ", " + nextRd.NodeClass);
+                        // Log(conn_name + " - " + nextRd);
                         if (nextRd.NodeClass == NodeClass.Variable)
                             list.Add(
                             new MonitoredItem(subscription.DefaultItem)
@@ -241,8 +252,7 @@ namespace OPCUAClientDriver
 
                         foreach (var nextRd_ in nextRefs_)
                         {
-                            Console.WriteLine("   + {0}, {1}, {2}", nextRd_.DisplayName, nextRd_.BrowseName, nextRd_.NodeClass);
-                            Console.WriteLine(nextRd_.NodeClass);
+                            Log(conn_name + " - " + nextRd_.DisplayName + ", " + nextRd_.BrowseName + ", " + nextRd_.NodeClass);
 
                             if (nextRd_.NodeClass==NodeClass.Variable)
                             list.Add(
@@ -260,48 +270,98 @@ namespace OPCUAClientDriver
                         }
                     }
                 }
-
-                Console.WriteLine("6 - Add a list of items (server current time and status) to the subscription.");
-                exitCode = ExitCode.ErrorMonitoredItem;
-                /*
-                list.Add(
-                    new MonitoredItem(subscription.DefaultItem)
-                    {
-                        DisplayName = "ServerStatusCurrentTime", StartNodeId = "i=" + Variables.Server_ServerStatus_CurrentTime.ToString()
-                    });
-                list.Add(
-                    new MonitoredItem(subscription.DefaultItem)
-                    {
-                        DisplayName = "Demo.Dynamic.Scalar.StatusCode", StartNodeId = "ns=2;s=Demo.Dynamic.Scalar.StatusCode"
-                    });
-                list.Add(
-                    new MonitoredItem(subscription.DefaultItem)
-                    {
-                        DisplayName = "Demo.Dynamic.Scalar.String", StartNodeId = "ns=2;s=Demo.Dynamic.Scalar.String"
-                    });
                 */
-                list.ForEach(i => i.Notification += OnNotification);
-                list.ForEach(i => Console.WriteLine(i.DisplayName));
-                subscription.AddItems(list);
 
-                Console.WriteLine("7 - Add the subscription to the session.");
+                Thread.Yield();
+                Thread.Sleep(50);
+                Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
+                exitCode = ExitCode.ErrorMonitoredItem;
+                ListMon.ForEach(i => i.Notification += OnNotification);
+                ListMon.ForEach(i => i.SamplingInterval = samplingInterval);
+                // ListMon.ForEach(i => Log(conn_name + " - " + i.DisplayName));
+                Log(conn_name + " - " + ListMon.Count + " Objects found");
+
+                Log(conn_name + " - " + "Create a subscription with publishing interval of " + publishingInterval + "milliseconds");
+                exitCode = ExitCode.ErrorCreateSubscription;
+                var subscription = new Subscription(session.DefaultSubscription) { PublishingInterval = publishingInterval, PublishingEnabled = true };
+
+                Thread.Yield();
+                Thread.Sleep(50);
+                subscription.AddItems(ListMon);
+
+                Thread.Yield();
+                Thread.Sleep(50);
+
+                Log(conn_name + " - " + "Add the subscription to the session.");
+                Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items"); 
                 exitCode = ExitCode.ErrorAddSubscription;
                 session.AddSubscription(subscription);
                 subscription.Create();
 
-                Console.WriteLine("8 - Running...Press Ctrl-C to exit...");
+                Log(conn_name + " - " + "Running...");
                 exitCode = ExitCode.ErrorRunning;
             }
+            private void FindObjects(Opc.Ua.Client.Session session, NodeId nodeid)
+            {
+                try
+                {
+                ReferenceDescriptionCollection references;
+                Byte[] continuationPoint;
 
+                session.Browse(
+                    null,
+                    null,
+                    nodeid,
+                    0u,
+                    BrowseDirection.Forward,
+                    ReferenceTypeIds.HierarchicalReferences,
+                    true,
+                    (uint)NodeClass.Variable | (uint)NodeClass.Object,
+                    out continuationPoint,
+                    out references);
+
+                foreach (var rd in references)
+                {
+                    
+                    Log(conn_name + " - "  + rd.NodeId + ", " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
+                    if (rd.NodeClass == NodeClass.Variable && !NodeIds.Contains(rd.NodeId.ToString()))
+                    {
+                        NodeIds.Add(rd.NodeId.ToString());
+                        ListMon.Add(
+                        new MonitoredItem()
+                        {
+                            DisplayName = rd.DisplayName.ToString(),
+                            StartNodeId = rd.NodeId.ToString(),
+                            SamplingInterval = OPCDefaultSamplingInterval,
+                            QueueSize = OPCDefaultQueueSize,
+                            MonitoringMode = MonitoringMode.Reporting,
+                            DiscardOldest = true,
+                            AttributeId = Attributes.Value
+                        });
+                    }
+                    else
+                    if (rd.NodeClass == NodeClass.Object)
+                        {
+                            FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
+                            Thread.Yield();
+                            Thread.Sleep(1);
+                        }                            
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log(conn_name + " - " + ex.Message);
+                }
+            }
             private void Client_KeepAlive(Session sender, KeepAliveEventArgs e)
             {
                 if (e.Status != null && ServiceResult.IsNotGood(e.Status))
                 {
-                    Console.WriteLine("{0} {1}/{2}", e.Status, sender.OutstandingRequestCount, sender.DefunctRequestCount);
+                    Log(conn_name + " - " + e.Status + "," + sender.OutstandingRequestCount + ", " + sender.DefunctRequestCount);
 
                     if (reconnectHandler == null)
                     {
-                        Console.WriteLine("--- RECONNECTING ---");
+                        Log(conn_name + " - " + "--- RECONNECTING ---");
                         reconnectHandler = new SessionReconnectHandler();
                         reconnectHandler.BeginReconnect(sender, ReconnectPeriod * 1000, Client_ReconnectComplete);
                     }
@@ -320,7 +380,7 @@ namespace OPCUAClientDriver
                 reconnectHandler.Dispose();
                 reconnectHandler = null;
 
-                Console.WriteLine("--- RECONNECTED ---");
+                Log(conn_name + " - " + "--- RECONNECTED ---");
             }
 
             private void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
@@ -328,7 +388,6 @@ namespace OPCUAClientDriver
 
                 //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
                 //Console.WriteLine("Notification Received for Variable \"{0}\" and Value = {1} type {2}.", item.DisplayName, notification.Value, notification.TypeId);
-
 
                 foreach (var value in item.DequeueValues())
                 {
@@ -342,25 +401,62 @@ namespace OPCUAClientDriver
                             if (value.WrappedValue.TypeInfo != null)
                             {
                                 tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
-                                // Log("TYPE: " + tp);
+                                // Log(conn_name + " - " + item.ResolvedNodeId + "TYPE: " + tp, LogLevelDetailed);
                             }
                             else
                             {
-                                Log("TYPE: ?????");
+                                Log(conn_name + " - " + item.ResolvedNodeId + " TYPE: ?????", LogLevelDetailed);
                             }
 
                             Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode, LogLevelDetailed);
-                            // Console.WriteLine("{0}: {1}, {2}, {3}, {4}", item.ResolvedNodeId, item.DisplayName, value.Value, value.SourceTimestamp, value.StatusCode);
 
                             if (value.Value != null)
                             {
                                 Double dblValue = 0.0;
                                 string strValue = "";
+
                                 try
                                 {
-                                if (tp == "DateTime") 
+                                  if (tp == "Variant")
                                     {
-                                    
+                                        try
+                                        {
+                                            dblValue = System.Convert.ToDouble(value.Value);
+                                        }
+                                        catch
+                                        {
+                                            try
+                                            {
+                                                dblValue = System.Convert.ToInt64(value.Value);
+                                            }
+                                            catch
+                                            {
+                                                try
+                                                {
+                                                    dblValue = System.Convert.ToInt32(value.Value);
+                                                }
+                                                catch
+                                                {
+                                                    dblValue = 0;
+                                                    try
+                                                    {
+                                                        var opt = new JsonSerializerOptions
+                                                        {
+                                                            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
+                                                        };
+                                                        strValue = JsonSerializer.Serialize(value.Value, opt);
+                                                    }
+                                                    catch
+                                                    {
+                                                        strValue = value.Value.ToString();
+                                                    }                                                        
+                                                }
+                                            }                                            
+                                        }
+                                    }
+                                  else                                        
+                                  if (tp == "DateTime") 
+                                    {                                    
                                     dblValue = ((DateTimeOffset)System.Convert.ToDateTime(value.Value)).ToUnixTimeMilliseconds();
                                     strValue = System.Convert.ToDateTime(value.Value).ToString("o");
                                     }
@@ -375,17 +471,22 @@ namespace OPCUAClientDriver
                                 strValue = value.Value.ToString();
                                 }
 
+                                var options = new JsonSerializerOptions
+                                {
+                                    NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
+                                };
+
                                 OPC_Value iv =
                                     new OPC_Value()
                                     {
-                                        valueJson = JsonSerializer.Serialize(value),
+                                        valueJson = JsonSerializer.Serialize(value, options),
                                         selfPublish = true,
                                         address = item.ResolvedNodeId.ToString(),
                                         asdu = tp,
                                         isDigital = true,
                                         value = dblValue,
                                         valueString = strValue,
-                                        hasSourceTimestamp = value.SourceTimestamp!=null,
+                                        hasSourceTimestamp = value.SourceTimestamp!=DateTime.MinValue,
                                         sourceTimestamp = value.SourceTimestamp,
                                         serverTimestamp = DateTime.Now,
                                         quality = StatusCode.IsGood(value.StatusCode),
@@ -402,17 +503,16 @@ namespace OPCUAClientDriver
                         catch (Exception excpt)
                         {
 
-                            Log("TYPE:" + tp);
+                            Log(conn_name + " - " + excpt.Message);
+                            Log(conn_name + " - " + "TYPE:" + tp);
                             Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode);
 
                         }
-
                     }
                     else
                     {
                         Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " NULL VALUE!", LogLevelDetailed);
                     }
-
                 }
             }
 
@@ -423,11 +523,11 @@ namespace OPCUAClientDriver
                     e.Accept = autoAccept;
                     if (autoAccept)
                     {
-                        Console.WriteLine("Accepted Certificate: {0}", e.Certificate.Subject);
+                        Log(conn_name + " - " + "Accepted Certificate: " + e.Certificate.Subject);
                     }
                     else
                     {
-                        Console.WriteLine("Rejected Certificate: {0}", e.Certificate.Subject);
+                        Log(conn_name + " - " + "Rejected Certificate: " + e.Certificate.Subject);
                     }
                 }
             }

@@ -51,6 +51,8 @@ Each instance for this driver can have many client connection defined that must 
         commandsEnabled: true,
         endpointURLs: ["opc.tcp://opcuaserver.com:48010"],
         configFileName: "../conf/Opc.Ua.DefaultClient.Config.xml",
+        autoCreateTags: true,
+        useSecurity: false,
         stats: {}
     });
 
@@ -64,6 +66,8 @@ Parameters for communication with OPC-UA servers.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**endpointURLs**_ [Array of Strings] - Array of server endpoints URLs (only the first server is currently supported). **Mandatory parameter**.
 * _**configFileName**_ [String] - Name of the config file (with absolute path or relative to the bin folder). Default="../conf/Opc.Ua.DefaultClient.Config.xml". Use this file or crete new files to configure certificates and other OPC-UA parameters for a connection. **Optional parameter**.
+* _**autoCreateTags**_ [Boolean] - When true the driver will create tags for every data point found in the server, all point will be subscribed. When false, only preconfigured tags will be updated. **Mandatory parameter**.
+* _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
 * _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 ## Configure JSON-SCADA tags for update (read from OPC-UA Server)

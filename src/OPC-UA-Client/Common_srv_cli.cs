@@ -75,7 +75,7 @@ namespace OPCUAClientDriver
         }
         [BsonIgnoreExtraElements]
         public class
-        OPCUA_connection // IEC 104 connection to RTU
+        OPCUA_connection // protocol connection to RTU
         {
             public ObjectId Id { get; set; }
             [BsonDefaultValue("")]
@@ -95,6 +95,10 @@ namespace OPCUAClientDriver
             public string[] endpointURLs { get; set; }
             [BsonDefaultValue("../conf/Opc.Ua.DefaultClient.Config.xml")]
             public string configFileName { get; set; }
+            [BsonDefaultValue(true)]
+            public bool autoCreateTags { get; set; }
+            [BsonDefaultValue(false)]
+            public bool useSecurity { get; set; }
             public OPCUAClient connection;
             public OPCUAClient conn1;
             public OPCUAClient conn2;
@@ -148,139 +152,6 @@ namespace OPCUAClientDriver
             public int protocolSourceConnectionNumber;
             public string protocolSourceCommonAddress;
             public string protocolSourceObjectAddress;
-        }
-        [BsonIgnoreExtraElements]
-        public class rtData
-        {
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble _id;
-            [BsonDefaultValue(false)]
-            public BsonBoolean alarmDisabled { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble alarmState;
-            [BsonDefaultValue(false)]
-            public BsonBoolean alarmed { get; set; }
-            [BsonDefaultValue(false)]
-            public BsonBoolean alerted { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString alertedState { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString annotation { get; set; }
-            [BsonDefaultValue(false)]
-            public BsonBoolean commandBlocked { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble commandOfSupervised;
-            [BsonDefaultValue("")]
-            public BsonString commissioningRemarks { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString description { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString eventTextFalse { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString eventTextTrue { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble formula;
-            [BsonDefaultValue(false)]
-            public BsonBoolean frozen { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble frozenDetectTimeout;
-            [BsonDefaultValue("")]
-            public BsonString group1 { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString group2 { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString group3 { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(Double.MaxValue)]
-            public BsonDouble hiLimit;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(Double.MaxValue)]
-            public BsonDouble hihiLimit;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(Double.MaxValue)]
-            public BsonDouble hihihiLimit;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble historianDeadBand;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble historianPeriod;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble hysteresis;
-            [BsonDefaultValue(true)]
-            public BsonBoolean invalid { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(60000.0)]
-            public BsonDouble invalidDetectTimeout;
-            [BsonDefaultValue(false)]
-            public BsonBoolean isEvent { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(1.0)]
-            public BsonDouble kconv1;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble kconv2;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(-Double.MaxValue)]
-            public BsonDouble loLimit;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(-Double.MaxValue)]
-            public BsonDouble loloLimit;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(-Double.MaxValue)]
-            public BsonDouble lololoLimit;
-            [BsonDefaultValue(null)]
-            public BsonValue location;
-            [BsonDefaultValue("")]
-            public BsonString notes { get; set; }
-            [BsonDefaultValue("supervised")]
-            public BsonString origin { get; set; }
-            [BsonDefaultValue(false)]
-            public BsonBoolean overflow { get; set; }
-            [BsonDefaultValue(null)]
-            public BsonValue parcels;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble priority;
-            [BsonDefaultValue(null)]
-            public BsonValue protocolDestinations;
-            [BsonDefaultValue("")]
-            public BsonString protocolSourceASDU { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble protocolSourceCommandDuration;
-            [BsonDefaultValue(false)]
-            public BsonBoolean protocolSourceCommandUseSBO { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString protocolSourceCommonAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble protocolSourceConnectionNumber;
-            [BsonDefaultValue("")]
-            public BsonString protocolSourceObjectAddress { get; set; }
-            [BsonDefaultValue(null)]
-            public BsonValue sourceDataUpdate { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString stateTextFalse { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString stateTextTrue { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble supervisedOfCommand;
-            [BsonDefaultValue("")]
-            public BsonString tag { get; set; }
-            [BsonDefaultValue(null)]
-            public BsonValue timeTag { get; set; }
-            [BsonDefaultValue(null)]
-            public BsonValue timeTagAlarm { get; set; }
-            [BsonDefaultValue(null)]
-            public BsonValue timeTagAtSource { get; set; }
-            [BsonDefaultValue(false)]
-            public BsonBoolean timeTagAtSourceOk { get; set; }
-            [BsonDefaultValue(false)]
-            public BsonBoolean transient { get; set; }
-            [BsonDefaultValue("digital")]
-            public BsonString type { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString ungroupedDescription { get; set; }
-            [BsonDefaultValue("")]
-            public BsonString unit { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble updatesCnt;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble valueDefault;
-            [BsonDefaultValue("")]
-            public BsonString valueString { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble value;
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble zeroDeadband;
-
         }
         [BsonIgnoreExtraElements]
         public class rtCommand

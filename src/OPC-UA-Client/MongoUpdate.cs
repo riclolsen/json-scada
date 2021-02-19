@@ -46,11 +46,14 @@ namespace OPCUAClientDriver
                             .GetCollection
                             <rtCommand>(CommandsQueueCollectionName);
 
-                    Log("MongoDB Update Thread Started...");
+                    Log("MongoDB Update ThreadThread Started...");
 
                     var listWrites = new List<WriteModel<rtData>>();
                     do
                     {
+                        //if (LogLevel >= LogLevelBasic && OPCDataQueue.Count > 0)
+                        //  Log("MongoDB - Data queue size: " +  OPCDataQueue.Count, LogLevelBasic);
+
                         bool isMongoLive =
                             DB
                                 .RunCommandAsync((Command<BsonDocument>)
@@ -114,6 +117,15 @@ namespace OPCUAClientDriver
                                 bsontt = BsonNull.Value;
                             }
 
+                            BsonDocument valJSON = new BsonDocument();
+                            try
+                            {
+                                valJSON = BsonDocument.Parse(iv.valueJson);
+                            }
+                            catch (Exception e)
+                            {
+                                Log(iv.conn_name + " - " + e.Message);
+                            }                           
 
                             if (iv.selfPublish)
                             {
@@ -127,7 +139,8 @@ namespace OPCUAClientDriver
                                         }
                                     });
                                     List<rtData> list = await task.ToListAsync();
-                                    //var list = collection.FindSync<rtData>(new BsonDocument {{"tag", tag}}).ToList();
+                                    Thread.Yield();
+                                    Thread.Sleep(1);
 
                                     if (list.Count == 0)
                                     {
@@ -138,7 +151,6 @@ namespace OPCUAClientDriver
                                         var insert = newRealtimeDoc(iv, id);
                                         listWrites
                                             .Add(new InsertOneModel<rtData>(insert));
-
                                     }
                                 }
                             }
@@ -153,28 +165,26 @@ namespace OPCUAClientDriver
                                                 "sourceDataUpdate",
                                                 new BsonDocument {
                                                     {
-                                                        "valueBsonAtSource",
-                                                        BsonDocument
-                                                            .Parse(iv.valueJson)
+                                                        "valueBsonAtSource", valJSON
                                                     },
                                                     {
                                                         "valueAtSource",
-                                                        BsonValue
+                                                        BsonDouble
                                                             .Create(iv.value)
                                                     },
                                                     {
                                                         "valueStringAtSource",
-                                                        BsonValue
+                                                        BsonString
                                                             .Create(iv.valueString)
                                                     },
                                                     {
                                                         "asduAtSource",
-                                                        BsonValue
+                                                        BsonString
                                                             .Create(iv.asdu.ToString())
                                                     },
                                                     {
                                                         "causeOfTransmissionAtSource",
-                                                        BsonValue.Create(iv.cot.ToString())
+                                                        BsonString.Create(iv.cot.ToString())
                                                     },
                                                     {
                                                         "timeTagAtSource",
@@ -182,7 +192,7 @@ namespace OPCUAClientDriver
                                                     },
                                                     {
                                                         "timeTagAtSourceOk",
-                                                        BsonValue
+                                                        BsonBoolean
                                                             .Create(iv.hasSourceTimestamp)
                                                     },
                                                     {
@@ -193,29 +203,29 @@ namespace OPCUAClientDriver
                                                     },
                                                     {
                                                         "notTopicalAtSource",
-                                                        BsonValue
+                                                        BsonBoolean
                                                             .Create(false)
                                                     },
                                                     {
                                                         "invalidAtSource",
-                                                        BsonValue
+                                                        BsonBoolean
                                                             .Create(!iv
                                                                 .quality
                                                                 )
                                                     },
                                                     {
                                                         "overflowAtSource",
-                                                        BsonValue
+                                                        BsonBoolean
                                                             .Create(false)
                                                     },
                                                     {
                                                         "blockedAtSource",
-                                                        BsonValue
+                                                        BsonBoolean
                                                             .Create(false)
                                                     },
                                                     {
                                                         "substitutedAtSource",
-                                                        BsonValue
+                                                        BsonBoolean
                                                             .Create(false)
                                                     }
                                                 }
@@ -234,7 +244,7 @@ namespace OPCUAClientDriver
                                     protocolSourceObjectAddress = iv.address
                                 };
                             Log("MongoDB - ADD " + iv.address + " " + iv.value,
-                            LogLevelDetailed);
+                            LogLevelDebug);
 
                             listWrites
                                 .Add(new UpdateOneModel<rtData>(filt
@@ -243,6 +253,13 @@ namespace OPCUAClientDriver
 
                             if (listWrites.Count >= BulkWriteLimit)
                                 break;
+
+                            // give time to breath each 250 dequeues
+                            if (!System.Convert.ToBoolean(listWrites.Count % 250))
+                            {
+                                Thread.Yield();
+                                Thread.Sleep(1);
+                            }
                         }
 
                         if (listWrites.Count > 0)
@@ -251,9 +268,15 @@ namespace OPCUAClientDriver
                             var bulkWriteResult =
                                 await collection.BulkWriteAsync(listWrites);
                             listWrites.Clear();
+                            Thread.Yield();
+                            Thread.Sleep(1);
+                            //if (LogLevel >= LogLevelBasic && OPCDataQueue.Count > 0)
+                            //    Log("MongoDB - Data queue size: " + OPCDataQueue.Count, LogLevelBasic);
                         }
                         else
                         {
+                            // Log("MongoDB - Sleep");
+                            Thread.Yield();
                             Thread.Sleep(100);
                         }
                     }
@@ -267,229 +290,18 @@ namespace OPCUAClientDriver
                         .ToString()
                         .Substring(0,
                         e.ToString().IndexOf(Environment.NewLine)));
-                    System.Threading.Thread.Sleep(3000);
+                    System.Threading.Thread.Sleep(1000);
 
                     while (OPCDataQueue.Count > DataBufferLimit // do not let data queue grow more than a limit
                     )
                     {
-                        Log("Dequeue Data", LogLevelDetailed);
+                        Log("MongoDB - Dequeue Data", LogLevelDetailed);
                         OPC_Value iv;
                         OPCDataQueue.TryDequeue(out iv);
                     }
                 }
             }
             while (true);
-        }
-
-        public static rtData newRealtimeDoc(OPC_Value iv, double _id)
-        {
-            if (iv.asdu == "boolean")
-                return new rtData()
-                {
-                    _id = _id,
-                    protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
-                    protocolSourceConnectionNumber = iv.conn_number,
-                    protocolSourceObjectAddress = iv.address,
-                    protocolSourceCommandUseSBO = false,
-                    protocolSourceCommandDuration = 0.0,
-                    alarmState = 2.0,
-                    description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
-                    stateTextFalse = "FALSE",
-                    stateTextTrue = "TRUE",
-                    eventTextFalse = "FALSE",
-                    eventTextTrue = "TRUE",
-                    origin = "supervised",
-                    tag = TagFromOPCParameters(iv),
-                    type = "digital",
-                    value = iv.value,
-                    valueString = "????",
-                    alarmDisabled = false,
-                    alerted = false,
-                    alarmed = false,
-                    alertedState = "",
-                    annotation = "",
-                    commandBlocked = false,
-                    commandOfSupervised = 0.0,
-                    commissioningRemarks = "",
-                    formula = 0.0,
-                    frozen = false,
-                    frozenDetectTimeout = 0.0,
-                    hiLimit = Double.MaxValue,
-                    hihiLimit = Double.MaxValue,
-                    hihihiLimit = Double.MaxValue,
-                    historianDeadBand = 0.0,
-                    historianPeriod = 0.0,
-                    hysteresis = 0.0,
-                    invalid = true,
-                    invalidDetectTimeout = 60000,
-                    isEvent = false,
-                    kconv1 = 1.0,
-                    kconv2 = 0.0,
-                    location = BsonNull.Value,
-                    loLimit = -Double.MaxValue,
-                    loloLimit = -Double.MaxValue,
-                    lololoLimit = -Double.MaxValue,
-                    notes = "",
-                    overflow = false,
-                    parcels = BsonNull.Value,
-                    priority = 0.0,
-                    protocolDestinations = BsonNull.Value,
-                    sourceDataUpdate = BsonNull.Value,
-                    supervisedOfCommand = 0.0,
-                    timeTag = BsonNull.Value,
-                    timeTagAlarm = BsonNull.Value,
-                    timeTagAtSource = BsonNull.Value,
-                    timeTagAtSourceOk = false,
-                    transient = false,
-                    unit = "",
-                    updatesCnt = 0,
-                    valueDefault = 0.0,
-                    zeroDeadband = 0.0
-                };
-            else
-            if (iv.asdu == "string")
-                return new rtData()
-                {
-                    _id = _id,
-                    protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
-                    protocolSourceConnectionNumber = iv.conn_number,
-                    protocolSourceObjectAddress = iv.address,
-                    protocolSourceCommandUseSBO = false,
-                    protocolSourceCommandDuration = 0.0,
-                    alarmState = -1.0,
-                    description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
-                    stateTextFalse = "",
-                    stateTextTrue = "",
-                    eventTextFalse = "",
-                    eventTextTrue = "",
-                    origin = "supervised",
-                    tag = TagFromOPCParameters(iv),
-                    type = "string",
-                    value = 0.0,
-                    valueString = iv.valueString,
-
-                    alarmDisabled = false,
-                    alerted = false,
-                    alarmed = false,
-                    alertedState = "",
-                    annotation = "",
-                    commandBlocked = false,
-                    commandOfSupervised = 0.0,
-                    commissioningRemarks = "",
-                    formula = 0.0,
-                    frozen = false,
-                    frozenDetectTimeout = 0.0,
-                    hiLimit = Double.MaxValue,
-                    hihiLimit = Double.MaxValue,
-                    hihihiLimit = Double.MaxValue,
-                    historianDeadBand = 0.0,
-                    historianPeriod = 0.0,
-                    hysteresis = 0.0,
-                    invalid = true,
-                    invalidDetectTimeout = 60000,
-                    isEvent = false,
-                    kconv1 = 1.0,
-                    kconv2 = 0.0,
-                    location = BsonNull.Value,
-                    loLimit = -Double.MaxValue,
-                    loloLimit = -Double.MaxValue,
-                    lololoLimit = -Double.MaxValue,
-                    notes = "",
-                    overflow = false,
-                    parcels = BsonNull.Value,
-                    priority = 0.0,
-                    protocolDestinations = BsonNull.Value,
-                    sourceDataUpdate = BsonNull.Value,
-                    supervisedOfCommand = 0.0,
-                    timeTag = BsonNull.Value,
-                    timeTagAlarm = BsonNull.Value,
-                    timeTagAtSource = BsonNull.Value,
-                    timeTagAtSourceOk = false,
-                    transient = false,
-                    unit = "",
-                    updatesCnt = 0,
-                    valueDefault = 0.0,
-                    zeroDeadband = 0.0,
-                };
-
-            return new rtData()
-            {
-                _id = _id,
-                protocolSourceASDU = iv.asdu,
-                protocolSourceCommonAddress = iv.common_address,
-                protocolSourceConnectionNumber = iv.conn_number,
-                protocolSourceObjectAddress = iv.address,
-                protocolSourceCommandUseSBO = false,
-                protocolSourceCommandDuration = 0.0,
-                alarmState = -1.0,
-                description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
-                ungroupedDescription = iv.display_name,
-                group1 = iv.conn_name,
-                group2 = iv.common_address,
-                group3 = "",
-                stateTextFalse = "",
-                stateTextTrue = "",
-                eventTextFalse = "",
-                eventTextTrue = "",
-                origin = "supervised",
-                tag = TagFromOPCParameters(iv),
-                type = "analog",
-                value = iv.value,
-                valueString = "????",
-
-                alarmDisabled = false,
-                alerted = false,
-                alarmed = false,
-                alertedState = "",
-                annotation = "",
-                commandBlocked = false,
-                commandOfSupervised = 0.0,
-                commissioningRemarks = "",
-                formula = 0.0,
-                frozen = false,
-                frozenDetectTimeout = 0.0,
-                hiLimit = Double.MaxValue,
-                hihiLimit = Double.MaxValue,
-                hihihiLimit = Double.MaxValue,
-                historianDeadBand = 0.0,
-                historianPeriod = 0.0,
-                hysteresis = 0.0,
-                invalid = true,
-                invalidDetectTimeout = 60000,
-                isEvent = false,
-                kconv1 = 1.0,
-                kconv2 = 0.0,
-                location = BsonNull.Value,
-                loLimit = -Double.MaxValue,
-                loloLimit = -Double.MaxValue,
-                lololoLimit = -Double.MaxValue,
-                notes = "",
-                overflow = false,
-                parcels = BsonNull.Value,
-                priority = 0.0,
-                protocolDestinations = BsonNull.Value,
-                sourceDataUpdate = BsonNull.Value,
-                supervisedOfCommand = 0.0,
-                timeTag = BsonNull.Value,
-                timeTagAlarm = BsonNull.Value,
-                timeTagAtSource = BsonNull.Value,
-                timeTagAtSourceOk = false,
-                transient = false,
-                unit = "",
-                updatesCnt = 0,
-                valueDefault = 0.0,
-                zeroDeadband = 0.0
-            };
         }
 
         static Int64 HashStringToInt(string str)

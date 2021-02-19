@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -29,7 +29,7 @@ namespace OPCUAClientDriver
         public static String ProtocolDriverName = "OPC-UA";
         public static String DriverVersion = "0.1.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
-        public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
+        public static Int32 DataBufferLimit = 1000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static Int32 BulkWriteLimit = 1000; // limit of each bulk write to mongodb
         public static int OPCDefaultPublishingInterval = 2500;
         public static int OPCDefaultSamplingInterval = 1000;
@@ -216,8 +216,8 @@ namespace OPCUAClientDriver
             Log("Setting up OPC-UA Connections & ASDU handlers...");
             foreach (OPCUA_connection srv in OPCUAconns)
             {
-                srv.connection = new OPCUAClient(srv.name, srv.protocolConnectionNumber, srv.endpointURLs[0], srv.configFileName, true, Timeout.Infinite);
-                srv.connection.Run(); 
+                srv.connection = new OPCUAClient(srv.name, srv.protocolConnectionNumber, srv.endpointURLs[0], srv.configFileName, true, Timeout.Infinite, srv.useSecurity);
+                srv.connection.Run();
             }
 
             Thread.Sleep(1000);
@@ -228,6 +228,7 @@ namespace OPCUAClientDriver
                 {
                 }
 
+                Thread.Yield();
                 Thread.Sleep(500);
 
                 if (!Console.IsInputRedirected)
@@ -249,4 +250,4 @@ namespace OPCUAClientDriver
         }
     }
 
-   }
+}
