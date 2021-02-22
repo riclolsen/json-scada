@@ -164,8 +164,9 @@ namespace OPCUAClientDriver
                 var endpointConfiguration = EndpointConfiguration.Create(config);
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
-                Thread.Yield();
-                Thread.Sleep(50);
+                //Thread.Yield();
+                //Thread.Sleep(50);
+                await Task.Delay(50);
                 session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
                 // Log("" + session.KeepAliveInterval); // default is 5000
                 session.KeepAliveInterval = 20000;
@@ -176,7 +177,7 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "Browse the OPC UA server namespace.");
                 exitCode = ExitCode.ErrorBrowseNamespace;
 
-                FindObjects(session, ObjectIds.ObjectsFolder);
+                await FindObjects(session, ObjectIds.ObjectsFolder);
 
                 int publishingInterval = OPCDefaultPublishingInterval;
                 int samplingInterval = OPCDefaultSamplingInterval;
@@ -274,8 +275,9 @@ namespace OPCUAClientDriver
                 }
                 */
 
-                Thread.Yield();
-                Thread.Sleep(50);
+                //Thread.Yield();
+                //Thread.Sleep(50);
+                await Task.Delay(50);
                 Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
                 exitCode = ExitCode.ErrorMonitoredItem;
                 ListMon.ForEach(i => i.Notification += OnNotification);
@@ -287,13 +289,14 @@ namespace OPCUAClientDriver
                 exitCode = ExitCode.ErrorCreateSubscription;
                 var subscription = new Subscription(session.DefaultSubscription) { PublishingInterval = publishingInterval, PublishingEnabled = true };
 
-                Thread.Yield();
-                Thread.Sleep(50);
+                //Thread.Yield();
+                //Thread.Sleep(50);
+                await Task.Delay(50);
                 subscription.AddItems(ListMon);
 
-                Thread.Yield();
-                Thread.Sleep(50);
-
+                //Thread.Yield();
+                //Thread.Sleep(50);
+                await Task.Delay(50);
                 Log(conn_name + " - " + "Add the subscription to the session.");
                 Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items"); 
                 exitCode = ExitCode.ErrorAddSubscription;
@@ -305,7 +308,7 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "Running...");
                 exitCode = ExitCode.ErrorRunning;
             }
-            private void FindObjects(Opc.Ua.Client.Session session, NodeId nodeid)
+            private async Task FindObjects(Opc.Ua.Client.Session session, NodeId nodeid)
             {
                 try
                 {
@@ -346,9 +349,10 @@ namespace OPCUAClientDriver
                     else
                     if (rd.NodeClass == NodeClass.Object)
                         {
-                            FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
-                            Thread.Yield();
-                            Thread.Sleep(1);
+                            await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
+                            //Thread.Yield();
+                            //Thread.Sleep(1);
+                            await Task.Delay(1);
                         }                            
                     }
                 }
@@ -387,7 +391,7 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "--- RECONNECTED ---");
             }
 
-            private void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
+            private async void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
             {
 
                 //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
@@ -516,9 +520,10 @@ namespace OPCUAClientDriver
                     }
                     
                     Thread.Yield();
-                    if (OPCDataQueue.Count > 50)
+                    Thread.Sleep(1);
+                    if ((OPCDataQueue.Count % 50) == 0)
                     {
-                        Thread.Sleep(100);
+                        await Task.Delay(200);
                     }
                 }
 

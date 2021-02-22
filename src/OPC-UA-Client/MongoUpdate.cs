@@ -18,11 +18,13 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
-using MongoDB.Bson;
-using MongoDB.Driver;
 using System.Security.Cryptography;
 using System.Text;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using System.Diagnostics;
 
 namespace OPCUAClientDriver
 {
@@ -31,7 +33,7 @@ namespace OPCUAClientDriver
         static public SortedSet<string>InsertedTags = new SortedSet<string>();
 
         // This process updates acquired values in the mongodb collection for realtime data
-        static async void ProcessMongo(JSONSCADAConfig jsConfig)
+        static public async void ProcessMongo(JSONSCADAConfig jsConfig)
         {
             do
             {
@@ -54,6 +56,8 @@ namespace OPCUAClientDriver
                         //if (LogLevel >= LogLevelBasic && OPCDataQueue.Count > 0)
                         //  Log("MongoDB - Data queue size: " +  OPCDataQueue.Count, LogLevelBasic);
 
+                        // Log("1");
+
                         bool isMongoLive =
                             DB
                                 .RunCommandAsync((Command<BsonDocument>)
@@ -62,6 +66,7 @@ namespace OPCUAClientDriver
                         if (!isMongoLive)
                             throw new Exception("Error on MongoDB connection ");
 
+                        // Log("2");
                         IEC_CmdAck ia;
                         if (OPCCmdAckQueue.Count > 0)
                         while (OPCCmdAckQueue.TryDequeue(out ia))
@@ -99,11 +104,15 @@ namespace OPCUAClientDriver
                             await collection_cmd
                                 .FindOneAndUpdateAsync(filter, update, options);
                         }
+                        // Log("3");
+
+                        Stopwatch stopWatch = new Stopwatch();
+                        stopWatch.Start();
 
                         OPC_Value iv;
-                        if (OPCDataQueue.Count > 0)
-                        while (OPCDataQueue.TryDequeue(out iv))
+                        while (!OPCDataQueue.IsEmpty && OPCDataQueue.TryPeek(out iv) && OPCDataQueue.TryDequeue(out iv))
                         {
+                            Log("3.1");
                             DateTime tt = DateTime.MinValue;
                             BsonValue bsontt = BsonNull.Value;
                             try
@@ -127,7 +136,9 @@ namespace OPCUAClientDriver
                             catch (Exception e)
                             {
                                 Log(iv.conn_name + " - " + e.Message);
-                            }                           
+                            }
+
+                            Log("3.2");
 
                             if (iv.selfPublish)
                             {
@@ -141,12 +152,13 @@ namespace OPCUAClientDriver
                                         }
                                     });
                                     List<rtData> list = await task.ToListAsync();
-                                    Thread.Yield();
-                                    Thread.Sleep(1);
+                                    // await Task.Delay(10);
+                                    //Thread.Yield();
+                                    //Thread.Sleep(1);
 
+                                    InsertedTags.Add(tag);
                                     if (list.Count == 0)
                                     {
-                                        InsertedTags.Add(tag);
                                         Log(iv.conn_name + " - INSERT - " + iv.address);
                                         // hash to create keys
                                         var id = HashStringToInt(iv.address);
@@ -247,6 +259,7 @@ namespace OPCUAClientDriver
                                 };
                             Log("MongoDB - ADD " + iv.address + " " + iv.value,
                             LogLevelDebug);
+                            Log("3.3");
 
                             listWrites
                                 .Add(new UpdateOneModel<rtData>(filt
@@ -256,36 +269,44 @@ namespace OPCUAClientDriver
                             if (listWrites.Count >= BulkWriteLimit)
                                 break;
 
+                            if (stopWatch.ElapsedMilliseconds > 250)
+                              break;
+
+                            Log("3.4 - Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
+
                             // give time to breath each 250 dequeues
-                            if ((listWrites.Count % 250)==0)
-                            {
-                                Thread.Yield();
-                                Thread.Sleep(1);
-                            }
+                            //if ((listWrites.Count % 250)==0)
+                            //{
+                            //   await Task.Delay(10);
+                            //Thread.Yield();
+                            //Thread.Sleep(1);
+                            //}
                         }
 
+                        // Log("4");
                         if (listWrites.Count > 0)
                         {
                             Log("MongoDB - Bulk write " + listWrites.Count);
                             var bulkWriteResult =
                                 await collection.BulkWriteAsync(listWrites);
                             listWrites.Clear();
-                            Thread.Yield();
-                            if (OPCDataQueue.Count > 0)
+                            // Thread.Yield();
+                            
+                            if (OPCDataQueue.IsEmpty)
                             {
-                                Thread.Sleep(1);
-                            }
-                            else
-                            {
-                                Thread.Sleep(100);
+                                await Task.Delay(125);
+                                // Thread.Sleep(1);
+                                // await Task.Delay(10);
                             }
                         }
                         else
                         {
-                            // Log("MongoDB - Sleep");
-                            Thread.Yield();
-                            Thread.Sleep(100);
+                            //Thread.Yield();
+                            //Thread.Sleep(100);
+                            //Log("5");
+                            await Task.Delay(250);
                         }
+                        // Log("6");
                     }
                     while (true);
                 }
@@ -297,7 +318,7 @@ namespace OPCUAClientDriver
                         .ToString()
                         .Substring(0,
                         e.ToString().IndexOf(Environment.NewLine)));
-                    System.Threading.Thread.Sleep(1000);
+                    Thread.Sleep(1000);
 
                     while (OPCDataQueue.Count > DataBufferLimit // do not let data queue grow more than a limit
                     )

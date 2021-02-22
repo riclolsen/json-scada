@@ -30,7 +30,7 @@ namespace OPCUAClientDriver
         public static String ProtocolDriverName = "OPC-UA";
         public static String DriverVersion = "0.1.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
-        public static Int32 DataBufferLimit = 1000; // limit to start dequeuing and discarding data from the acquisition buffer
+        public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static Int32 BulkWriteLimit = 1000; // limit of each bulk write to mongodb
         public static int OPCDefaultPublishingInterval = 2500;
         public static int OPCDefaultSamplingInterval = 1000;
@@ -197,13 +197,13 @@ namespace OPCUAClientDriver
 
             // start thread to process redundancy control
             var thrMongoRedundacy =
-                new Thread(() =>
+                new Task(() =>
                         ProcessRedundancyMongo(JSConfig));
             thrMongoRedundacy.Start();
 
             // start thread to update acquired data to database
             var thrMongo =
-                new Thread(() =>
+                new Task(() =>
                         ProcessMongo(JSConfig));
             thrMongo.Start();
 
@@ -230,8 +230,9 @@ namespace OPCUAClientDriver
                 {
                 }
 
-                Thread.Yield();
-                Thread.Sleep(500);
+                // Thread.Yield();
+                // Thread.Sleep(500);
+                WaitAsync(500);
 
                 if (!Console.IsInputRedirected)
                     if (Console.KeyAvailable)
@@ -248,6 +249,11 @@ namespace OPCUAClientDriver
             } while (true);
 
             return (int)OPCUAClient.ExitCode;
+        }
+
+        public static async void WaitAsync(int delay)
+        {
+            await Task.Delay(delay);
         }
     }
 
