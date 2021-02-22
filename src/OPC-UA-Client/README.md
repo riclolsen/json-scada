@@ -55,6 +55,7 @@ Each instance for this driver can have many client connection defined that must 
         autoCreateTagPublishingInterval: 2.5,
         autoCreateTagSamplingInterval: 0.0,
         autoCreateTagQueueSize: 5.0,
+        timeoutMs: 20000,
         useSecurity: false,
         stats: {}
     });
@@ -73,6 +74,7 @@ Parameters for communication with OPC-UA servers.
 * _**autoCreateTagPublishingInterval**_ [Double] - Default publishing interval in seconds for subscription of auto created tags. **Mandatory parameter**.
 * _**autoCreateTagSamplingInterval**_ [Double] - Default sampling interval in seconds for subscription of auto created tags. **Mandatory parameter**.
 * _**autoCreateTagQueueSize**_ [Double] - Default queue size for subscription of auto created tags. **Mandatory parameter**.
+* _**timeoutMs**_ [Double] - Timeout for keepalive messages. **Mandatory parameter**.
 * _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
 * _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 

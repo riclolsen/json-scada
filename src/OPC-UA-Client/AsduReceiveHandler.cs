@@ -51,33 +51,19 @@ namespace OPCUAClientDriver
             SessionReconnectHandler reconnectHandler;
             int conn_number = 0;
             string conn_name;
-            string endpointURL;
-            string configFileName;
             int clientRunTime = Timeout.Infinite;
-            bool use_security = false;
-            static bool autoAccept = false;
+            bool autoAccept = true;
             static ExitCode exitCode;
             List<MonitoredItem> ListMon = new List<MonitoredItem>();
             HashSet<string> NodeIds = new HashSet<string>();
+            HashSet<string> NodeIdsFromObjects = new HashSet<string>();
             OPCUA_connection OPCUA_conn;
 
-            public OPCUAClient(OPCUA_connection _OPCUA_conn,
-                               string _conn_name, 
-                               int _conn_number, 
-                               string _endpointURL, 
-                               string _configFileName, 
-                               bool _autoAccept, 
-                               int _stopTimeout, 
-                               bool _use_security)
+            public OPCUAClient(OPCUA_connection _OPCUA_conn)
             {
                 OPCUA_conn = _OPCUA_conn;
-                conn_name = _conn_name;
-                conn_number = _conn_number;
-                endpointURL = _endpointURL;
-                configFileName = _configFileName;
-                autoAccept = _autoAccept;
-                clientRunTime = _stopTimeout <= 0 ? Timeout.Infinite : _stopTimeout * 1000;
-                use_security = _use_security;
+                conn_name = OPCUA_conn.name;
+                conn_number = OPCUA_conn.protocolConnectionNumber;
             }
 
             public void Run()
@@ -135,7 +121,7 @@ namespace OPCUAClientDriver
                 };
 
                 // load the application configuration.
-                ApplicationConfiguration config = await application.LoadApplicationConfiguration(configFileName, false);
+                ApplicationConfiguration config = await application.LoadApplicationConfiguration(OPCUA_conn.configFileName, false);
                 config.SecurityConfiguration.AutoAcceptUntrustedCertificates = true;
 
                 // check the application certificate.
@@ -160,9 +146,9 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - " + "WARN: missing application certificate, using unsecure connection.");
                 }
 
-                Log(conn_name + " - " + "Discover endpoints of " + endpointURL);
+                Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
                 exitCode = ExitCode.ErrorDiscoverEndpoints;
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(endpointURL, haveAppCertificate && use_security, 15000);
+                var selectedEndpoint = CoreClientUtils.SelectEndpoint(OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
                 Log(conn_name + " - " + "Selected endpoint uses: " +
                     selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
 
@@ -171,111 +157,19 @@ namespace OPCUAClientDriver
                 var endpointConfiguration = EndpointConfiguration.Create(config);
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
-                //Thread.Yield();
-                //Thread.Sleep(50);
                 await Task.Delay(50);
                 session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
                 // Log("" + session.KeepAliveInterval); // default is 5000
-                session.KeepAliveInterval = 20000;
+                session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
 
                 // register keep alive handler
                 session.KeepAlive += Client_KeepAlive;
 
-                Log(conn_name + " - " + "Browse the OPC UA server namespace.");
+                Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
                 exitCode = ExitCode.ErrorBrowseNamespace;
 
                 await FindObjects(session, ObjectIds.ObjectsFolder);
 
-                /*
-                ReferenceDescriptionCollection references;
-                Byte[] continuationPoint;
-
-                // references = session.FetchReferences(ObjectIds.ObjectsFolder);
-
-                session.Browse(
-                    null,
-                    null,
-                    ObjectIds.ObjectsFolder,
-                    0u,
-                    BrowseDirection.Forward,
-                    ReferenceTypeIds.HierarchicalReferences,
-                    true,
-                    (uint)NodeClass.Variable | (uint)NodeClass.Object,
-                    out continuationPoint,
-                    out references);
-                Log(conn_name + " - " + "DisplayName, BrowseName, NodeClass");
-                foreach (var rd in references)
-                {
-                    Log(conn_name + " - " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
-                    ReferenceDescriptionCollection nextRefs;
-                    byte[] nextCp;
-                    session.Browse(
-                        null,
-                        null,
-                        ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris),
-                        0u,
-                        BrowseDirection.Forward,
-                        ReferenceTypeIds.HierarchicalReferences,
-                        true,
-                        (uint)NodeClass.Variable | (uint)NodeClass.Object | (uint)NodeClass.Method,
-                        out nextCp,
-                        out nextRefs);
-
-                    foreach (var nextRd in nextRefs)
-                    {
-                        Log(conn_name + " - " + nextRd.DisplayName + ", " + nextRd.BrowseName + ", " + nextRd.NodeClass);
-                        // Log(conn_name + " - " + nextRd);
-                        if (nextRd.NodeClass == NodeClass.Variable)
-                            list.Add(
-                            new MonitoredItem(subscription.DefaultItem)
-                            {
-                                DisplayName = nextRd.DisplayName.ToString(),
-                                StartNodeId = nextRd.NodeId.ToString(),
-                                SamplingInterval = OPCDefaultSamplingInterval,
-                                QueueSize = OPCDefaultQueueSize,
-                                MonitoringMode = MonitoringMode.Reporting,
-                                DiscardOldest = true,
-                                AttributeId = Attributes.Value
-                            });
-
-                        ReferenceDescriptionCollection nextRefs_;
-                        byte[] nextCp_;
-                        session.Browse(
-                            null,
-                            null,
-                            ExpandedNodeId.ToNodeId(nextRd.NodeId, session.NamespaceUris),
-                            0u,
-                            BrowseDirection.Forward,
-                            ReferenceTypeIds.HierarchicalReferences,
-                            true,
-                            (uint)NodeClass.Variable | (uint)NodeClass.Object | (uint)NodeClass.Method,
-                            out nextCp_,
-                            out nextRefs_);                        
-
-                        foreach (var nextRd_ in nextRefs_)
-                        {
-                            Log(conn_name + " - " + nextRd_.DisplayName + ", " + nextRd_.BrowseName + ", " + nextRd_.NodeClass);
-
-                            if (nextRd_.NodeClass==NodeClass.Variable)
-                            list.Add(
-                                new MonitoredItem(subscription.DefaultItem)
-                                {
-                                    DisplayName = nextRd_.DisplayName.ToString(),
-                                    StartNodeId = nextRd_.NodeId.ToString(),
-                                    SamplingInterval = OPCDefaultSamplingInterval,
-                                    QueueSize = OPCDefaultQueueSize,
-                                    MonitoringMode = MonitoringMode.Reporting,
-                                    DiscardOldest = true,
-                                    AttributeId = Attributes.Value
-                                }); ;
-
-                        }
-                    }
-                }
-                */
-
-                //Thread.Yield();
-                //Thread.Sleep(50);
                 await Task.Delay(50);
                 Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
                 exitCode = ExitCode.ErrorMonitoredItem;
@@ -293,13 +187,9 @@ namespace OPCUAClientDriver
                         PublishingEnabled = true 
                     };
 
-                //Thread.Yield();
-                //Thread.Sleep(50);
                 await Task.Delay(50);
                 subscription.AddItems(ListMon);
 
-                //Thread.Yield();
-                //Thread.Sleep(50);
                 await Task.Delay(50);
                 Log(conn_name + " - " + "Add the subscription to the session.");
                 Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items"); 
@@ -318,6 +208,9 @@ namespace OPCUAClientDriver
                 {
                 ReferenceDescriptionCollection references;
                 Byte[] continuationPoint;
+
+                if (NodeIdsFromObjects.Contains(nodeid.ToString()))
+                     return;
 
                 session.Browse(
                     null,
@@ -353,6 +246,7 @@ namespace OPCUAClientDriver
                     else
                     if (rd.NodeClass == NodeClass.Object)
                         {
+                            NodeIdsFromObjects.Add(nodeid.ToString());
                             await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
                             Thread.Yield();
                             //Thread.Sleep(1);
@@ -523,12 +417,12 @@ namespace OPCUAClientDriver
                         Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " NULL VALUE!", LogLevelDetailed);
                     }
                     
-                    Thread.Yield();
-                    Thread.Sleep(1);
-                    if ((OPCDataQueue.Count % 50) == 0)
-                    {
-                        await Task.Delay(200);
-                    }
+                    //Thread.Yield();
+                    //Thread.Sleep(1);
+                    //if ((OPCDataQueue.Count % 50) == 0)
+                    //{
+                    //    await Task.Delay(200);
+                    //}
                 }
 
             }

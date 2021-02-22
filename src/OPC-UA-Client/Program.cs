@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -216,13 +217,16 @@ namespace OPCUAClientDriver
             //thrMongoCmd.Start();
 
             Log("Setting up OPC-UA Connections & ASDU handlers...");
+            var thrSrvs = new List<Thread>();
             foreach (OPCUA_connection srv in OPCUAconns)
             {
-                srv.connection = new OPCUAClient(srv, srv.name, System.Convert.ToInt32(srv.protocolConnectionNumber), srv.endpointURLs[0], srv.configFileName, true, Timeout.Infinite, srv.useSecurity);
-                srv.connection.Run();
+                srv.connection = new OPCUAClient(srv);
+                // srv.connection.Run();
+                srv.thrOPCStack = new Thread(() => srv.connection.Run());
+                srv.thrOPCStack.Start();
             }
 
-            Thread.Sleep(1000);
+            WaitAsync(1000);
 
             do
             {

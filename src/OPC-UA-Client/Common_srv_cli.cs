@@ -103,13 +103,15 @@ namespace OPCUAClientDriver
             public double autoCreateTagSamplingInterval { get; set; }
             [BsonDefaultValue(5.0)]
             public double autoCreateTagQueueSize { get; set; }
-
+            [BsonDefaultValue(20000.0)]
+            public double timeoutMs { get; set; }
             [BsonDefaultValue(false)]
             public bool useSecurity { get; set; }
             public OPCUAClient connection;
             public OPCUAClient conn1;
             public OPCUAClient conn2;
             public System.Timers.Timer TimerCnt;
+            public Thread thrOPCStack;
         }
         [BsonIgnoreExtraElements]
         public class protocolDriverInstancesClass

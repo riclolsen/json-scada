@@ -48,7 +48,7 @@ namespace OPCUAClientDriver
                             .GetCollection
                             <rtCommand>(CommandsQueueCollectionName);
 
-                    Log("MongoDB Update ThreadThread Started...");
+                    Log("MongoDB Update Thread Started...");
 
                     var listWrites = new List<WriteModel<rtData>>();
                     do
@@ -279,7 +279,7 @@ namespace OPCUAClientDriver
                             if (listWrites.Count >= BulkWriteLimit)
                                 break;
 
-                            if (stopWatch.ElapsedMilliseconds > 250)
+                            if (stopWatch.ElapsedMilliseconds > 400)
                               break;
 
                             // Log("3.4 - Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
@@ -301,20 +301,12 @@ namespace OPCUAClientDriver
                                 await collection.BulkWriteAsync(listWrites);
                             listWrites.Clear();
 
-                            if (OPCDataQueue.IsEmpty)
-                            {
-                                await Task.Delay(125);
-                                // Thread.Sleep(1);
-                                // await Task.Delay(10);
-                            }
-                            else
-                                Thread.Yield();
-                        }
-                        else
-                        {
                             //Thread.Yield();
-                            //Thread.Sleep(100);
-                            //Log("5");
+                            //Thread.Sleep(1);
+                        }
+
+                        if (OPCDataQueue.IsEmpty)
+                        {
                             await Task.Delay(250);
                         }
                         // Log("6");
