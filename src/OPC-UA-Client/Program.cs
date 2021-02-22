@@ -32,9 +32,9 @@ namespace OPCUAClientDriver
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static Int32 BulkWriteLimit = 1000; // limit of each bulk write to mongodb
-        public static int OPCDefaultPublishingInterval = 2500;
-        public static int OPCDefaultSamplingInterval = 1000;
-        public static uint OPCDefaultQueueSize = 10;
+        //public static int OPCDefaultPublishingInterval = 2500;
+        //public static int OPCDefaultSamplingInterval = 1000;
+        //public static uint OPCDefaultQueueSize = 10;
 
         public static int Main(string[] args)
         {
@@ -165,7 +165,7 @@ namespace OPCUAClientDriver
                 "] not found in configuration!");
                 Environment.Exit(-1);
             }
-
+             
             // read and process connections configuration for this driver instance
             var collconns =
                 DB
@@ -197,13 +197,13 @@ namespace OPCUAClientDriver
 
             // start thread to process redundancy control
             var thrMongoRedundacy =
-                new Task(() =>
+                new Thread(() =>
                         ProcessRedundancyMongo(JSConfig));
             thrMongoRedundacy.Start();
 
             // start thread to update acquired data to database
             var thrMongo =
-                new Task(() =>
+                new Thread(() =>
                         ProcessMongo(JSConfig));
             thrMongo.Start();
 
@@ -218,7 +218,7 @@ namespace OPCUAClientDriver
             Log("Setting up OPC-UA Connections & ASDU handlers...");
             foreach (OPCUA_connection srv in OPCUAconns)
             {
-                srv.connection = new OPCUAClient(srv.name, srv.protocolConnectionNumber, srv.endpointURLs[0], srv.configFileName, true, Timeout.Infinite, srv.useSecurity);
+                srv.connection = new OPCUAClient(srv, srv.name, System.Convert.ToInt32(srv.protocolConnectionNumber), srv.endpointURLs[0], srv.configFileName, true, Timeout.Infinite, srv.useSecurity);
                 srv.connection.Run();
             }
 

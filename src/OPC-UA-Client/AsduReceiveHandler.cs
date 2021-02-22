@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -44,8 +44,6 @@ namespace OPCUAClientDriver
             ErrorNoKeepAlive = 0x30,
             ErrorInvalidCommandLine = 0x100
         };
-
-
         public class OPCUAClient
         {
             const int ReconnectPeriod = 10;
@@ -61,9 +59,18 @@ namespace OPCUAClientDriver
             static ExitCode exitCode;
             List<MonitoredItem> ListMon = new List<MonitoredItem>();
             HashSet<string> NodeIds = new HashSet<string>();
+            OPCUA_connection OPCUA_conn;
 
-            public OPCUAClient(string _conn_name, int _conn_number, string _endpointURL, string _configFileName, bool _autoAccept, int _stopTimeout, bool _use_security)
+            public OPCUAClient(OPCUA_connection _OPCUA_conn,
+                               string _conn_name, 
+                               int _conn_number, 
+                               string _endpointURL, 
+                               string _configFileName, 
+                               bool _autoAccept, 
+                               int _stopTimeout, 
+                               bool _use_security)
             {
+                OPCUA_conn = _OPCUA_conn;
                 conn_name = _conn_name;
                 conn_number = _conn_number;
                 endpointURL = _endpointURL;
@@ -179,14 +186,6 @@ namespace OPCUAClientDriver
 
                 await FindObjects(session, ObjectIds.ObjectsFolder);
 
-                int publishingInterval = OPCDefaultPublishingInterval;
-                int samplingInterval = OPCDefaultSamplingInterval;
-                if (ListMon.Count > 1000)
-                {
-                    publishingInterval = System.Convert.ToInt32(OPCDefaultSamplingInterval * ListMon.Count / 1000.0);
-                    samplingInterval = System.Convert.ToInt32(OPCDefaultSamplingInterval * ListMon.Count / 1000.0);
-                }
-
                 /*
                 ReferenceDescriptionCollection references;
                 Byte[] continuationPoint;
@@ -281,13 +280,18 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
                 exitCode = ExitCode.ErrorMonitoredItem;
                 ListMon.ForEach(i => i.Notification += OnNotification);
-                ListMon.ForEach(i => i.SamplingInterval = samplingInterval);
+                //ListMon.ForEach(i => i.SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000);
                 // ListMon.ForEach(i => Log(conn_name + " - " + i.DisplayName));
                 Log(conn_name + " - " + ListMon.Count + " Objects found");
 
-                Log(conn_name + " - " + "Create a subscription with publishing interval of " + publishingInterval + "milliseconds");
+                Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + "seconds");
                 exitCode = ExitCode.ErrorCreateSubscription;
-                var subscription = new Subscription(session.DefaultSubscription) { PublishingInterval = publishingInterval, PublishingEnabled = true };
+                var subscription = 
+                    new Subscription(session.DefaultSubscription) 
+                    { 
+                        PublishingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) *1000), 
+                        PublishingEnabled = true 
+                    };
 
                 //Thread.Yield();
                 //Thread.Sleep(50);
@@ -339,8 +343,8 @@ namespace OPCUAClientDriver
                         {
                             DisplayName = rd.DisplayName.ToString(),
                             StartNodeId = rd.NodeId.ToString(),
-                            SamplingInterval = OPCDefaultSamplingInterval,
-                            QueueSize = OPCDefaultQueueSize,
+                            SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
+                            QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value
@@ -350,9 +354,9 @@ namespace OPCUAClientDriver
                     if (rd.NodeClass == NodeClass.Object)
                         {
                             await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
-                            //Thread.Yield();
+                            Thread.Yield();
                             //Thread.Sleep(1);
-                            await Task.Delay(1);
+                            //await Task.Delay(1);
                         }                            
                     }
                 }

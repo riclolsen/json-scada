@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -97,6 +97,13 @@ namespace OPCUAClientDriver
             public string configFileName { get; set; }
             [BsonDefaultValue(true)]
             public bool autoCreateTags { get; set; }
+            [BsonDefaultValue(2.5)]
+            public double autoCreateTagPublishingInterval { get; set; }
+            [BsonDefaultValue(0.0)]
+            public double autoCreateTagSamplingInterval { get; set; }
+            [BsonDefaultValue(5.0)]
+            public double autoCreateTagQueueSize { get; set; }
+
             [BsonDefaultValue(false)]
             public bool useSecurity { get; set; }
             public OPCUAClient connection;
