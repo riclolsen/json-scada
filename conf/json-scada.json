@@ -1,5 +1,7 @@
 {
   "nodeName"  : "mainNode",
   "mongoConnectionString": "mongodb://localhost:27017/json_scada?replicaSet=rs1&readPreference=primary&ssl=false",
-  "mongoDatabaseName": "json_scada"
+  "mongoDatabaseName": "json_scada",
+  
+  "mongoConnectionString2": "mongodb://192.168.0.10:17017,192.168.0.15:17017/json_scada?replicaSet=rs1&readPreference=primary&ssl=false"
 }

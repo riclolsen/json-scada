@@ -417,8 +417,8 @@ namespace OPCUAClientDriver
                         Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " NULL VALUE!", LogLevelDetailed);
                     }
                     
-                    //Thread.Yield();
-                    //Thread.Sleep(1);
+                    Thread.Yield();
+                    Thread.Sleep(1);
                     //if ((OPCDataQueue.Count % 50) == 0)
                     //{
                     //    await Task.Delay(200);

@@ -226,7 +226,7 @@ namespace OPCUAClientDriver
                 srv.thrOPCStack.Start();
             }
 
-            WaitAsync(1000);
+            Thread.Sleep(1000);
 
             do
             {
@@ -234,9 +234,7 @@ namespace OPCUAClientDriver
                 {
                 }
 
-                // Thread.Yield();
-                // Thread.Sleep(500);
-                WaitAsync(500);
+                Thread.Sleep(1000);
 
                 if (!Console.IsInputRedirected)
                     if (Console.KeyAvailable)
@@ -254,11 +252,5 @@ namespace OPCUAClientDriver
 
             return (int)OPCUAClient.ExitCode;
         }
-
-        public static async void WaitAsync(int delay)
-        {
-            await Task.Delay(delay);
-        }
     }
-
 }

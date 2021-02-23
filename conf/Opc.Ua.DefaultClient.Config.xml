@@ -5,7 +5,7 @@
   schemaLocation="./Schema/ApplicationConfiguration.xsd"
 >
   <ApplicationName>JSON-SCADA OPC-UA Client</ApplicationName>
-  <ApplicationUri>urn:localhost:json-scada:OPCUAClient</ApplicationUri>
+  <ApplicationUri>urn:localhost:OPCUA:JSON_SCADA_OPCUAClient</ApplicationUri>
   <ProductUri>http://json-scada.org/UA/ClientDriver</ProductUri>
   <ApplicationType>Client_1</ApplicationType>
 
@@ -40,8 +40,13 @@
     for easy debugging purposes ONLY and turned off for production deployments! -->
     <AutoAcceptUntrustedCertificates>true</AutoAcceptUntrustedCertificates>
 
-  </SecurityConfiguration>
+    <!-- WARNING: SHA1 signed certficates are by default rejected and should be phased out.-->
+    <RejectSHA1SignedCertificates>false</RejectSHA1SignedCertificates>
+    <MinimumCertificateKeySize>1024</MinimumCertificateKeySize>
 
+  </SecurityConfiguration>
+  
+   
   <TransportConfigurations/>
 
   <TransportQuotas>

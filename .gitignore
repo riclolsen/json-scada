@@ -24,6 +24,8 @@ platform-windows/grafana-runtime/
 platform-windows/nodejs-runtime/
 platform-windows/nginx_php-runtime/
 
+src/htdocs/htdocs
+
 src/calculations/calculations
 src/i104m/i104m
 src/dnp3/opendnp3-3.0.4/
@@ -36,7 +38,7 @@ pg_hist_*.sql
 pg_rtdata_*.sql
 
 obj/
-
+vendor/
 node_modules/
 src/lib60870.netcore/.vs/
 src/lib60870.netcore/iec101client/bin/
