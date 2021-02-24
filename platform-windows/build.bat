@@ -40,16 +40,22 @@ go build
 copy /Y i104m ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
-npm update
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\oshmi2json
-npm update
+call \json-scada\platform-windows\nodejs-runtime\npm update
+cd \json-scada\src\oshmi-sync
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\alarm_beep
-npm update
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\server_realtime
-npm update
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\server_realtime_auth
-npm update
+call \json-scada\platform-windows\nodejs-runtime\npm update
+cd \json-scada\src\shell-api
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\htdocs-admin
-npm update
-npm run build
+call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm run build
+cd \json-scada\src\grafana_alert2event
+call \json-scada\platform-windows\nodejs-runtime\npm update
 
