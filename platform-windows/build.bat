@@ -43,7 +43,7 @@ cd \json-scada\src\cs_data_processor
 call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\oshmi2json
 call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\oshmi-sync
+cd \json-scada\src\oshmi_sync
 call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\alarm_beep
 call \json-scada\platform-windows\nodejs-runtime\npm update
@@ -58,4 +58,6 @@ call \json-scada\platform-windows\nodejs-runtime\npm update
 call \json-scada\platform-windows\nodejs-runtime\npm run build
 cd \json-scada\src\grafana_alert2event
 call \json-scada\platform-windows\nodejs-runtime\npm update
+
+cd ..\..\platform-windows
 
