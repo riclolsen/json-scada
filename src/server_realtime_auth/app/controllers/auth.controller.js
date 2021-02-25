@@ -11,6 +11,39 @@ const UserActionsQueue = require('../../userActionsQueue')
 
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
+const { response } = require('express')
+
+exports.listTags = async (req, res) => {
+  console.log('listTags')
+  console.log(req.body)
+
+  let skip = 0
+  if ("page" in req.body && "itemsPerPage" in req.body)
+    skip = req.body.itemsPerPage * (req.body.page-1)
+  let filter = {}
+  let limit = req.body.itemsPerPage || 10
+  let orderby = {}
+  if ("sortBy" in req.body && "sortDesc" in req.body) {
+    for(let i=0; i<req.body.sortBy.length; i++) 
+      orderby[req.body.sortBy[i]] = req.body.sortDesc[i]? -1:1
+    if (req.body.sortBy.length === 0)
+      orderby = { tag: 1 }
+    }
+  else
+    orderby = { tag: 1 }
+
+  console.log(orderby)
+
+  let count = await Tag.count(filter)  
+  Tag.find(filter).skip(skip).limit(limit).sort(orderby).exec(function (err, tags) {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    let ret = { tags: tags, countTotal: count }
+    res.status(200).send(ret)
+  })
+}
 
 exports.updateProtocolConnection = async (req, res) => {
   registerUserAction(req, 'updateProtocolConnection')

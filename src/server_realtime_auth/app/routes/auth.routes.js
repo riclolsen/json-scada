@@ -23,6 +23,11 @@ module.exports = function (app, accessPoint) {
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
 
+  app.use(
+    accessPoint + 'auth/listTags',
+    [authJwt.isAdmin],
+    controller.listTags
+  )  
   app.post(
     accessPoint + 'auth/updateProtocolConnection',
     [authJwt.isAdmin],

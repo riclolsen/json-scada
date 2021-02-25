@@ -7,6 +7,9 @@ const Tag = mongoose.model(
     _id: {type: Number},
     tag: {type: String},
     group1: {type: String},
+    group2: {type: String},
+    group3: {type: String},
+    description: {type: String},
     value: {type: Double}
   }),
   "realtimeData"

@@ -43,7 +43,7 @@
       </v-tab-item>
 
       <v-tab-item :value="'tab-' + 5">
-        <v-card-text>Under Construction...</v-card-text>
+        <Tags />
       </v-tab-item>
 
     </v-tabs>
@@ -70,6 +70,7 @@ import Users from "@/components/Users";
 import Roles from "@/components/Roles";
 import ProtocolDriverInstances from "@/components/ProtocolDriverInstances";
 import ProtocolConnections from "@/components/ProtocolConnections";
+import Tags from "@/components/Tags";
 
 export default {
   name: "TabbedOptions",
@@ -84,7 +85,8 @@ export default {
     Users,
     Roles,
     ProtocolDriverInstances,
-    ProtocolConnections
+    ProtocolConnections,
+    Tags
   },
 };
 </script>
