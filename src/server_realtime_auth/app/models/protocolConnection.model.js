@@ -29,10 +29,17 @@ const ProtocolConnection = mongoose.model(
     
     // OPC-UA Client
     endpointURLs: { type: [String], default: [] },
+    configFileName: { type: String, default: "../conf/Opc.Ua.DefaultClient.Config.xml" },
+    useSecurity: { type: Boolean, default: false },
+    autoCreateTags: { type: Boolean, default: true },
+    autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
+    autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
+    autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
+    timeoutMs: { type: Double, min: 0, default: 20000 },
 
     // IEC 104 Server and Client, DNP3, PLCTag, I104M
-    localLinkAddress: { type: Double, default: 1.0 },
-    remoteLinkAddress: { type: Double, default: 1.0 },
+    localLinkAddress: { type: Double, min: 0, default: 1.0 },
+    remoteLinkAddress: { type: Double, min: 0, default: 1.0 },
     giInterval: { type: Double, min: 0, default: 300.0 },
 
     // IEC 101/104 Client

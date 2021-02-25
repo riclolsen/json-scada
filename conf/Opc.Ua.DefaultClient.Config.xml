@@ -12,12 +12,13 @@
   <SecurityConfiguration>
 
     <!-- Where the application instance certificate is stored (MachineDefault) -->
-    <ApplicationCertificate>
-      <StoreType>X509Store</StoreType>
-      <StorePath>CurrentUser\My</StorePath>
-      <SubjectName>CN=UA Core Sample Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
-    </ApplicationCertificate>
-
+    
+  <ApplicationCertificate>
+    <StoreType>Directory</StoreType>
+    <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+    <SubjectName>CN=JSON-SCADA OPC-UA Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
+  </ApplicationCertificate>
+  
     <!-- Where the issuer certificate are stored (certificate authorities) -->
     <TrustedIssuerCertificates>
       <StoreType>Directory</StoreType>

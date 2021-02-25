@@ -9,8 +9,8 @@
   "author": "Ricardo Lastra Olsen",
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "express": "^4.17.1",
     "fs": "0.0.1-security",
-    "mongodb": "^3.6.3",
-    "express": "^4.17.1"
+    "mongodb": "^3.6.4"
   }
 }

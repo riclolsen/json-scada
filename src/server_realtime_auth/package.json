@@ -12,8 +12,8 @@
     "express": "^4.17.1",
     "express-http-proxy": "^1.6.2",
     "jsonwebtoken": "^8.5.1",
-    "mongodb": "^3.6.3",
-    "mongoose": "^5.11.8",
+    "mongodb": "^3.6.4",
+    "mongoose": "^5.11.18",
     "pg": "^8.5.1",
     "queue-fifo": "^0.2.6"
   },

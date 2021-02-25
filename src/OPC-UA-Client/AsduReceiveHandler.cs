@@ -110,60 +110,92 @@ namespace OPCUAClientDriver
 
             private async Task ConsoleClient()
             {
-                Log(conn_name + " - " + "Create an Application Configuration.");
+                Log(conn_name + " - " + "Create an Application Configuration...");
                 exitCode = ExitCode.ErrorCreateApplication;
 
                 ApplicationInstance application = new ApplicationInstance
                 {
                     ApplicationName = "JSON-SCADA OPC-UA Client",
                     ApplicationType = ApplicationType.Client,
-                    ConfigSectionName = ""
+                    ConfigSectionName = "",                    
                 };
 
-                // load the application configuration.
-                ApplicationConfiguration config = await application.LoadApplicationConfiguration(OPCUA_conn.configFileName, false);
-                config.SecurityConfiguration.AutoAcceptUntrustedCertificates = true;
+                bool haveAppCertificate = false;
+                ApplicationConfiguration config = null;
 
-                // check the application certificate.
-                bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, 0);
-
-                if (!haveAppCertificate)
+                try
                 {
-                    throw new Exception("Application instance certificate invalid!");
-                }
+                    // load the application configuration.
+                    Log(conn_name + " - " + "Load config from " + OPCUA_conn.configFileName);
+                    config = await application.LoadApplicationConfiguration(OPCUA_conn.configFileName, false);
+                    // config.SecurityConfiguration.AutoAcceptUntrustedCertificates = true;
 
-                if (haveAppCertificate)
-                {
-                    config.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(config.SecurityConfiguration.ApplicationCertificate.Certificate);
-                    if (config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
+                    // check the application certificate.
+                    haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, 0);
+
+                    if (!haveAppCertificate)
                     {
-                        autoAccept = true;
+                        Log(conn_name + " - " + "FATAL: Application instance certificate invalid!", LogLevelNoLog);
+                        Environment.Exit(1);
                     }
-                    config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+
+                    if (haveAppCertificate)
+                    {
+                        config.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(config.SecurityConfiguration.ApplicationCertificate.Certificate);
+                        if (config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
+                        {
+                            autoAccept = true;
+                        }
+                        config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                    }
+                    else
+                    {
+                        Log(conn_name + " - " + "WARN: missing application certificate, using unsecure connection.");
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    Log(conn_name + " - " + "WARN: missing application certificate, using unsecure connection.");
+                    Log(conn_name + " - WARN: " + e.Message);
                 }
 
-                Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
-                exitCode = ExitCode.ErrorDiscoverEndpoints;
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
-                Log(conn_name + " - " + "Selected endpoint uses: " +
-                    selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
+                if (config == null)
+                {
+                    Log(conn_name + " - " + "FATAL: error in XML config file!", LogLevelNoLog);
+                    Environment.Exit(1);
+                }
 
-                Log(conn_name + " - " + "Create a session with OPC UA server.");
-                exitCode = ExitCode.ErrorCreateSession;
-                var endpointConfiguration = EndpointConfiguration.Create(config);
-                var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
+                try 
+                {
+                    Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
+                    exitCode = ExitCode.ErrorDiscoverEndpoints;
+                    var selectedEndpoint = CoreClientUtils.SelectEndpoint(OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
+                    Log(conn_name + " - " + "Selected endpoint uses: " +
+                        selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
 
-                await Task.Delay(50);
-                session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
-                // Log("" + session.KeepAliveInterval); // default is 5000
-                session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
+                    Log(conn_name + " - " + "Create a session with OPC UA server.");
+                    exitCode = ExitCode.ErrorCreateSession;
+                    var endpointConfiguration = EndpointConfiguration.Create(config);
+                    var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
-                // register keep alive handler
-                session.KeepAlive += Client_KeepAlive;
+                    await Task.Delay(50);
+                    session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
+
+                    // Log("" + session.KeepAliveInterval); // default is 5000
+                    session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
+
+                    // register keep alive handler
+                    session.KeepAlive += Client_KeepAlive;
+                }
+                catch (Exception e)
+                {
+                    Log(conn_name + " - WARN: " + e.Message);
+                }
+
+                if (session == null)
+                {
+                    Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
+                    Environment.Exit(1);
+                }
 
                 Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
                 exitCode = ExitCode.ErrorBrowseNamespace;
@@ -204,6 +236,9 @@ namespace OPCUAClientDriver
             }
             private async Task FindObjects(Opc.Ua.Client.Session session, NodeId nodeid)
             {
+                if (session == null)
+                    return;
+
                 try
                 {
                 ReferenceDescriptionCollection references;

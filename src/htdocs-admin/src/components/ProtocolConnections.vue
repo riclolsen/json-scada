@@ -348,6 +348,175 @@
                   <v-list-item
                     v-if="
                       [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.useSecurity"
+                        inset
+                        color="primary"
+                        :label="`Use security (certificates, encryption)`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                    <v-list-item                    
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver) 
+                      && selected.useSecurity
+                    ">
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="string"
+                          :input-value="active"
+                          label="Publishing interval"
+                          hide-details="auto"
+                          v-model="selected.configFileName"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+
+                      <v-list-item-content>
+                        <v-list-item-title>Config file name</v-list-item-title>
+                        <v-list-item-subtitle
+                          >XML config file name with path.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                    </v-list-item>
+
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.autoCreateTags"
+                        inset
+                        color="primary"
+                        :label="`Auto create tags (server browse)`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
+
+                    <v-list-item                    
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver) 
+                      && selected.autoCreateTags
+                    ">
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          label="Publishing interval"
+                          hide-details="auto"
+                          v-model="selected.autoCreateTagPublishingInterval"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+
+                      <v-list-item-content>
+                        <v-list-item-title>Default publishing interval</v-list-item-title>
+                        <v-list-item-subtitle
+                          >In seconds (for auto created tags).</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                    </v-list-item>
+
+                    <v-list-item                    
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                      && selected.autoCreateTags
+                    ">
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          label="Sampling interval"
+                          hide-details="auto"
+                          v-model="selected.autoCreateTagSamplingInterval"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>Default sampling interval on server</v-list-item-title>
+                        <v-list-item-subtitle
+                          >In seconds (0=auto adjusted by the OPC server).</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                    <v-list-item                    
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                      && selected.autoCreateTags
+                    ">
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          label="Queue size"
+                          hide-details="auto"
+                          v-model="selected.autoCreateTagQueueSize"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>Default sampling queue size on server</v-list-item-title>
+                        <v-list-item-subtitle
+                          >Use zero to avoid buffering on the OPC server.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                    <v-list-item                    
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                    ">
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          label="Timeout keep-alive"
+                          hide-details="auto"
+                          v-model="selected.timeoutMs"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>Timeout interval for keep-alive messages</v-list-item-title>
+                        <v-list-item-subtitle
+                          >In milliseconds.</v-list-item-subtitle
+                        >
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
                         'IEC60870-5-101',
                         'IEC60870-5-104',
                         'DNP3',
@@ -940,7 +1109,6 @@
                     </template>
                   </v-list-item>
 
-
                   <v-list-item
                     v-if="
                       [
@@ -956,7 +1124,6 @@
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
-
 
                   <v-list-item
                     v-if="
@@ -1041,7 +1208,6 @@
 
                         </v-card-title>
 
-
                         <v-card-actions>
                           <v-spacer></v-spacer>
 
@@ -1067,7 +1233,6 @@
                       </v-card>
                     </v-dialog>
                   </v-list-item>
-
 
                   <v-list-item
                     v-if="

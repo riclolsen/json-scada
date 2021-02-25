@@ -8,8 +8,8 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-http-proxy": "^1.6.2",
-    "mongodb": "^3.6.3",
-    "pg": "^8.5.0"
+    "mongodb": "^3.6.4",
+    "pg": "^8.5.1"
   },
   "devDependencies": {},
   "scripts": {

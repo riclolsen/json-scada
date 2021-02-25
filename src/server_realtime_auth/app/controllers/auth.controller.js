@@ -63,6 +63,28 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('endpointURLs' in req.body)) {
       req.body.endpointURLs = []
     }
+    if (!('configFileName' in req.body)) {
+      req.body.configFileName = "../conf/Opc.Ua.DefaultClient.Config.xml"
+    }
+    if (!('autoCreateTags' in req.body)) {
+      req.body.autoCreateTags = true
+    }
+    if (!('autoCreateTagPublishingInterval' in req.body)) {
+      req.body.autoCreateTagPublishingInterval = 2.5
+    }
+    if (!('autoCreateTagSamplingInterval' in req.body)) {
+      req.body.autoCreateTagSamplingInterval = 0.0
+    }
+    if (!('autoCreateTagQueueSize' in req.body)) {
+      req.body.autoCreateTagQueueSize = 0.0
+    }
+    if (!('timeoutMs' in req.body)) {
+      req.body.timeoutMs = 20000.0
+    }
+    if (!('useSecurity' in req.body)) {
+      req.body.useSecurity = false
+    }
+    
   }
 
   if (

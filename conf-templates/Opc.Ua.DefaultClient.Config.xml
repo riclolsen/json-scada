@@ -5,19 +5,20 @@
   schemaLocation="./Schema/ApplicationConfiguration.xsd"
 >
   <ApplicationName>JSON-SCADA OPC-UA Client</ApplicationName>
-  <ApplicationUri>urn:localhost:json-scada:OPCUAClient</ApplicationUri>
+  <ApplicationUri>urn:localhost:OPCUA:JSON_SCADA_OPCUAClient</ApplicationUri>
   <ProductUri>http://json-scada.org/UA/ClientDriver</ProductUri>
   <ApplicationType>Client_1</ApplicationType>
 
   <SecurityConfiguration>
 
     <!-- Where the application instance certificate is stored (MachineDefault) -->
-    <ApplicationCertificate>
-      <StoreType>X509Store</StoreType>
-      <StorePath>CurrentUser\My</StorePath>
-      <SubjectName>CN=UA Core Sample Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
-    </ApplicationCertificate>
-
+    
+  <ApplicationCertificate>
+    <StoreType>Directory</StoreType>
+    <StorePath>%LocalApplicationData%/OPC Foundation/pki/own</StorePath>
+    <SubjectName>CN=JSON-SCADA OPC-UA Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost</SubjectName>
+  </ApplicationCertificate>
+  
     <!-- Where the issuer certificate are stored (certificate authorities) -->
     <TrustedIssuerCertificates>
       <StoreType>Directory</StoreType>
@@ -40,8 +41,13 @@
     for easy debugging purposes ONLY and turned off for production deployments! -->
     <AutoAcceptUntrustedCertificates>true</AutoAcceptUntrustedCertificates>
 
-  </SecurityConfiguration>
+    <!-- WARNING: SHA1 signed certficates are by default rejected and should be phased out.-->
+    <RejectSHA1SignedCertificates>false</RejectSHA1SignedCertificates>
+    <MinimumCertificateKeySize>1024</MinimumCertificateKeySize>
 
+  </SecurityConfiguration>
+  
+   
   <TransportConfigurations/>
 
   <TransportQuotas>
