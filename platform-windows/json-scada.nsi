@@ -1,6 +1,6 @@
 ; json-scada.nsi
 ; {json:scada} installer script
-; Copyright 2020 - Ricardo L. Olsen
+; Copyright 2020-2021 - Ricardo L. Olsen
 
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.6"
-!define VERSION_ "0.6.0.0"
+!define VERSION "v.0.7"
+!define VERSION_ "0.7.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -310,6 +310,9 @@ SetRegView 64
   SetOutPath $INSTDIR\src\oshmi2json
   File /a /r "..\src\oshmi2json\*.*"
 
+  SetOutPath $INSTDIR\src\oshmi_sync
+  File /a /r "..\src\oshmi_sync\*.*"
+
   SetOutPath $INSTDIR\src\cs_data_processor
   File /a /r "..\src\cs_data_processor\*.*"
 
@@ -359,6 +362,7 @@ SetRegView 64
   File /a "..\conf-templates\nginx_http.conf"  
   File /a "..\conf-templates\nginx_https.conf"  
   File /a "..\conf-templates\json-scada.json"
+  File /a "..\conf-templates\Opc.Ua.DefaultClient.Config.xml"
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"

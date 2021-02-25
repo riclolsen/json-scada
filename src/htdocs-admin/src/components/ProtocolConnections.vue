@@ -345,28 +345,11 @@
                     </v-dialog>
                   </v-list-item>                  
 
-                  <v-list-item
-                    v-if="
-                      [
-                        'OPC-UA'
-                      ].includes(selected.protocolDriver)
-                    "
-                  >
-                      <v-switch
-                        v-model="selected.useSecurity"
-                        inset
-                        color="primary"
-                        :label="`Use security (certificates, encryption)`"
-                        @change="updateProtocolConnection"
-                      ></v-switch>
-                  </v-list-item>
-
-                    <v-list-item                    
+                  <v-list-item                    
                     v-if="
                       [
                         'OPC-UA'
                       ].includes(selected.protocolDriver) 
-                      && selected.useSecurity
                     ">
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
@@ -387,8 +370,23 @@
                         >
                       </v-list-item-content>
                     </template>
-                    </v-list-item>
+                  </v-list-item>
 
+                  <v-list-item
+                    v-if="
+                      [
+                        'OPC-UA'
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                      <v-switch
+                        v-model="selected.useSecurity"
+                        inset
+                        color="primary"
+                        :label="`Use security (certificates, encryption)`"
+                        @change="updateProtocolConnection"
+                      ></v-switch>
+                  </v-list-item>
 
                   <v-list-item
                     v-if="

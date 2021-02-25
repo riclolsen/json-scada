@@ -121,6 +121,19 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.7: 
+
+ - PostgreSQL updated to 12.6.
+ - TimescaleDB updated to 2.0.1.
+ - Experimental OPC UA client driver.
+ 
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+ - Open SSL binaries for 64-bit Windows, https://slproweb.com/products/Win32OpenSSL.html.
+
+-------------------------------------------------------------------
+
 Notes for version 0.6: 
 
  - DotNet 5.0.3 runtime added to installer.
