@@ -21,6 +21,9 @@ exports.listTags = async (req, res) => {
   if ("page" in req.body && "itemsPerPage" in req.body)
     skip = req.body.itemsPerPage * (req.body.page-1)
   let filter = {}
+  if ("filter" in req.body)
+     filter = req.body.filter
+
   let limit = req.body.itemsPerPage || 10
   let orderby = {}
   if ("sortBy" in req.body && "sortDesc" in req.body) {
