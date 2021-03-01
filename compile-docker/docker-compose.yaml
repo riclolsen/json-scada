@@ -65,41 +65,41 @@ services:
   cs_data_processor_update:
     image: node:current-alpine3.12
     container_name: js_cs_data_processor_update
-    command:  sh -c "cd /cs_data_processor && npm update"
+    command:  sh -c "npm install -g npm && cd /cs_data_processor && npm update"
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
 
   server_realtime_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_update
-    command:  sh -c "cd /server_realtime && npm update"
+    command:  sh -c "npm install -g npm && cd /server_realtime && npm update"
     volumes:
       - ../src/server_realtime:/server_realtime
 
   server_realtime_auth_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_auth_update
-    command:  sh -c "cd /server_realtime_auth && npm update"
+    command:  sh -c "npm install -g npm && cd /server_realtime_auth && npm update"
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
 
   htdocs_admin_update:
     image: node:current-alpine3.12
     container_name: js_htdocs_admin_update
-    command:  sh -c "cd /htdocs-admin && npm update && npm run build"
+    command:  sh -c "npm install -g npm && cd /htdocs-admin && npm update && npm run build"
     volumes:
       - ../src/htdocs-admin:/htdocs-admin
 
   alarm_beep_update:
     image: node:current-alpine3.12
     container_name: js_alarm_beep_update
-    command:  sh -c "cd /alarm_beep && npm update"
+    command:  sh -c "npm install -g npm && cd /alarm_beep && npm update"
     volumes:
       - ../src/alarm_beep:/alarm_beep
 
   oshmi2json_update:
     image: node:current-alpine3.12
     container_name: js_oshmi2json_update
-    command:  sh -c "cd /oshmi2json && npm update"
+    command:  sh -c "npm install -g npm && cd /oshmi2json && npm update"
     volumes:
       - ../src/oshmi2json:/oshmi2json

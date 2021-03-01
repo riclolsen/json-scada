@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@mdi/font": "^3.6.95",
-    "core-js": "^3.9.0",
+    "core-js": "^3.9.1",
     "roboto-fontface": "*",
     "vue": "^2.6.11",
     "vue-router": "^3.5.1",
@@ -25,7 +25,7 @@
     "eslint-plugin-vue": "^6.2.2",
     "sass": "^1.32.8",
     "sass-loader": "^8.0.0",
-    "vue-cli-plugin-vuetify": "^2.1.0",
+    "vue-cli-plugin-vuetify": "^2.2.0",
     "vue-template-compiler": "^2.6.11",
     "vuetify-loader": "^1.7.2"
   },
