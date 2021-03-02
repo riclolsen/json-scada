@@ -1,7 +1,7 @@
 <template>
   <v-card>
     <v-row class="pa-4" justify="space-between">
-      <v-col cols="5">
+      <v-col>
         <v-treeview
           style="max-height: 500px;min-width: 250px"
           class="overflow-y-auto overflow-x-hidden"
@@ -1933,12 +1933,13 @@
 </template>
 
 <script>
-// const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import i18n from "@/i18n/i18n-current";
 
 export default {
   name: "ProtocolConnections",
 
   data: () => ({
+    msg: { ...i18n },
     itemsSizeOfCOT: [1, 2],
     itemsSizeOfCA: [1, 2],
     itemsSizeOfIOA: [1, 2, 3],

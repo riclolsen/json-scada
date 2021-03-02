@@ -566,7 +566,7 @@ exports.updateUser = async (req, res) => {
 exports.createRole = async (req, res) => {
   registerUserAction(req, 'createRole')
 
-  const role = new Role()
+  const role = new Role(req.body)
   role.save(err => {
     if (err) {
       res.status(200).send({ error: err })

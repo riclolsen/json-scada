@@ -1,8 +1,8 @@
 <template>
   <v-card>
     <v-row class="pa-4" justify="space-between">
-      <v-col cols="5">
-        <v-treeview style="max-height: 500px" class="overflow-y-auto overflow-x-hidden" 
+      <v-col>
+        <v-treeview style="max-height: 500px;min-width: 250px" class="overflow-y-auto overflow-x-hidden" 
           :active.sync="active"
           :items="items"
           :load-children="fetchDriverInstances"
@@ -45,10 +45,9 @@
             v-else
             :key="selected.id"
             class="pt-6 mx-auto"
-            flat
-            max-width="440"
+            flat            
           >
-            <v-row class="pb-8 mx-auto" justify="space-between">
+            <v-row min-width="500px" class="mx-auto" justify="space-between">
               <v-select
                 prepend-inner-icon="mdi-cogs"
                 :items="driverNameItems"
@@ -56,6 +55,7 @@
                 v-model="selected.protocolDriver"
                 outlined
                 @change="updateProtocolDriverInstance"
+                full-width
               ></v-select>
 
               <v-tooltip bottom>
@@ -75,13 +75,7 @@
                 </template>
                 <span>Delete driver instance!</span>
               </v-tooltip>
-              <v-switch
-                v-model="selected.enabled"
-                inset
-                color="primary"
-                :label="`Enabled: ${selected.enabled.toString()}`"
-                @change="updateProtocolDriverInstance"
-              ></v-switch>
+
               <v-dialog v-model="dialogDelInst" max-width="290">
                 <v-card>
                   <v-card-title class="headline">
@@ -113,6 +107,14 @@
                 </v-card>
               </v-dialog>
             </v-row>
+
+            <v-switch
+              v-model="selected.enabled"
+              inset
+              color="primary"
+              :label="`Enabled: ${selected.enabled.toString()}`"
+              @change="updateProtocolDriverInstance"
+            ></v-switch>
 
             <v-text-field
               class="pb-8"
@@ -211,12 +213,13 @@
 </template>
 
 <script>
-// const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import i18n from "@/i18n/i18n-current";
 
 export default {
   name: "ProtocolDriversInstances",
 
   data: () => ({
+    msg: { ...i18n },
     dialogAddNode: false,
     dialogDelInst: false,
     active: [],

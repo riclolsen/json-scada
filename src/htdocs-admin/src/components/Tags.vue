@@ -284,7 +284,7 @@
         </v-toolbar>
       </template>
 
-      <template v-slot:item.Actions="{ item }">
+      <template>
         <v-icon small class="mr-2" @click="editTag(item)"> mdi-pencil </v-icon>
         <v-icon small @click="deleteTagOpenDialog(item)"> mdi-delete </v-icon>
       </template>
@@ -292,12 +292,13 @@
   </div>
 </template>
 <script>
-// const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import i18n from "@/i18n/i18n-current";
 
 export default {
   name: "Tags",
 
   data: () => ({
+    msg: { ...i18n },
     dialog: false,
     dialogDelete: false,
     active: [],

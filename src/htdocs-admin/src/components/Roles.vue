@@ -1,7 +1,7 @@
 <template>
   <v-card>
     <v-row class="pa-4" justify="space-between">
-      <v-col cols="5">
+      <v-col>
         <v-treeview style="max-height: 500px" class="overflow-y-auto overflow-x-hidden"
           :active.sync="active"
           :items="items"
@@ -25,11 +25,12 @@
           @click="createRole($event)"
         >
           <v-icon dark> mdi-plus </v-icon>
-          New Role
+          {{msg.newRole}}
         </v-btn>
       </v-col>
 
       <v-divider vertical></v-divider>
+
       <v-col class="d-flex text-left">
         <v-scroll-y-transition mode="out-in">
           <div
@@ -37,7 +38,7 @@
             class="title grey--text text--lighten-1 font-weight-light text-center"
             style="align-self: center"
           >
-            Select a Role
+            {{msg.selectRole}}
           </div>
           <v-card
             v-else
@@ -76,22 +77,22 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>Delete role!</span>
+                <span>{{msg.deleteRole}}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialog" max-width="290">
                 <v-card>
-                  <v-card-title class="headline"> Delete Role! </v-card-title>
+                  <v-card-title class="headline">{{msg.deleteRole}}</v-card-title>
 
                   <v-card-text>
-                    Removing a role can affect many users! Please confirm.
+                    {{msg.confirmDeleteRole}}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
                     <v-btn color="green darken-1" text @click="dialog = false">
-                      Cancel
+                      {{msg.deleteRoleCancel}}
                     </v-btn>
 
                     <v-btn
@@ -102,7 +103,7 @@
                         deleteRole($event);
                       "
                     >
-                      Delete Role!
+                      {{msg.deleteRoleExecute}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -116,7 +117,7 @@
               chips
               deletable-chips
               small-chips
-              label="Can View - Group1 List"
+              :label="msg.roleCanViewGroup1List"
               multiple
               @change="roleChange"
             ></v-autocomplete>
@@ -128,7 +129,7 @@
               chips
               deletable-chips
               small-chips
-              label="Can Command - Group1 List"
+              :label="msg.roleCanCommandGroup1List"
               multiple
               @change="roleChange"
             ></v-autocomplete>
@@ -140,14 +141,14 @@
               chips
               deletable-chips
               small-chips
-              label="Display List"
+              :label="msg.roleCanAccessDisplayList"
               multiple
               @change="roleChange"
             ></v-autocomplete>
 
             <v-card class="mx-auto" tile>
               <v-list flat dense shaped subheader>
-                <v-subheader>Rights</v-subheader>
+                <v-subheader>{{msg.roleRights}}</v-subheader>
 
                 <v-list-item-group multiple active-class="">
                   <v-list-item>
@@ -163,10 +164,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Is Admin</v-list-item-title>
+                        <v-list-item-title>{{msg.roleIsAdmin}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >Add/remove/edit users and
-                          roles.</v-list-item-subtitle
+                          >{{msg.roleIsAdminHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -184,9 +184,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Change Password</v-list-item-title>
+                        <v-list-item-title>{{msg.roleChangePassword}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >Can change its own password.</v-list-item-subtitle
+                          >{{msg.roleChangePasswordHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -203,9 +203,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Send Commands</v-list-item-title>
+                        <v-list-item-title>{{msg.roleSendCommands}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >Can send commands (controls).</v-list-item-subtitle
+                          >{{msg.roleSendCommandsHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -222,11 +222,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Enter Annotations</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can create/edit blocking
-                          annotations.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleEnterAnnotations}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleEnterAnnotationsHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -242,11 +239,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Enter Notes</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can edit/create documental
-                          notes.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleEnterNotes}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleEnterNotesHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -262,11 +256,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Enter Manuals</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can change state of manual
-                          points.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleEnterManuals}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleEnterManualsHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -282,11 +273,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Enter Limits</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can change limits for analog
-                          points.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleEnterLimits}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleEnterLimitsHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -302,11 +290,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Substitute Values</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can replace (impose) supervised
-                          values.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleSubstituteValues}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleSubstituteValuesHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -322,10 +307,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Ack Events</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can acknowledge events.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleAckEvents}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleAckEventsHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -341,10 +324,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Ack Alarms</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can acknowledge alarms.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleAckAlarms}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleAckAlarmsHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -360,10 +341,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Disable Alarms</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Can disable/enable alarms.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleDisableAlarms}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleDisableAlarmsHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -374,7 +353,7 @@
                         <v-text-field
                           type="number"
                           :input-value="active"
-                          label="Number of days..."
+                          :label="msg.roleNumberOfDaysSession"
                           hide-details="auto"
                           v-model="selected.maxSessionDays"
                           @change="roleChange"
@@ -382,10 +361,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Max Session Days</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Maximum days of session period.</v-list-item-subtitle
-                        >
+                        <v-list-item-title>{{msg.roleMaxSessionDays}}</v-list-item-title>
+                        <v-list-item-subtitle>{{msg.roleMaxSessionDaysHint}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -400,12 +377,13 @@
 </template>
 
 <script>
-// const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import i18n from "@/i18n/i18n-current";
 
 export default {
   name: "Roles",
 
   data: () => ({
+    msg: { ...i18n },
     dialog: false,
     active: [],
     open: [],
@@ -420,7 +398,7 @@ export default {
     items() {
       return [
         {
-          name: "Roles",
+          name: this.msg.roles,
           children: this.roles,
           roles: this.roles,
         },
@@ -554,7 +532,7 @@ export default {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({name: this.msg.newRoleName}),
       })
         .then((res) => res.json())
         .then((json) => {
