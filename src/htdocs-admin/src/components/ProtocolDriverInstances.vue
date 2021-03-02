@@ -345,7 +345,7 @@ export default {
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
-          this.fetchDriverInstances(); // refreshes users
+          this.fetchDriverInstances(); // refreshes instances
         })
         .catch((err) => console.warn(err));
     },

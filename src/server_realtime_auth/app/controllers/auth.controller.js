@@ -13,6 +13,30 @@ var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
 const { response } = require('express')
 
+exports.updateTag = async (req, res) => {
+  registerUserAction(req, 'updateTag')
+
+  if ("_id" in req.body){
+    let _id = req.body._id
+    delete req.body._id
+    await Tag.findOneAndUpdate({ _id: _id }, req.body)
+    res.status(200).send({ error: false })
+  }
+  else
+    res.status(200).send({ error: "No _id in update request." })
+}
+
+exports.deleteTag = async (req, res) => {
+  registerUserAction(req, 'deleteTag')
+
+  if ("_id" in req.body){
+  await Tag.findOneAndDelete({ _id: req.body._id })
+  res.status(200).send({ error: false })
+  }
+  else
+    res.status(200).send({ error: "No _id in delete request." })
+}
+
 exports.listTags = async (req, res) => {
   console.log('listTags')
   console.log(req.body)
@@ -324,7 +348,7 @@ exports.updateProtocolConnection = async (req, res) => {
 exports.deleteProtocolConnection = async (req, res) => {
   registerUserAction(req, 'deleteProtocolConnection')
 
-  await ProtocolConnection.findOneAndDelete({ _id: req.body._id }, req.body)
+  await ProtocolConnection.findOneAndDelete({ _id: req.body._id })
   res.status(200).send({ error: false })
 }
 
@@ -370,7 +394,7 @@ exports.listProtocolConnections = (req, res) => {
 exports.deleteProtocolDriverInstance = async (req, res) => {
   registerUserAction(req, 'deleteProtocolDriverInstance')
 
-  await ProtocolDriverInstance.findOneAndDelete({ _id: req.body._id }, req.body)
+  await ProtocolDriverInstance.findOneAndDelete({ _id: req.body._id })
   res.status(200).send({ error: false })
 }
 
@@ -570,14 +594,14 @@ exports.createUser = async (req, res) => {
 exports.deleteRole = async (req, res) => {
   registerUserAction(req, 'deleteRole')
 
-  await Role.findOneAndDelete({ _id: req.body._id }, req.body)
+  await Role.findOneAndDelete({ _id: req.body._id })
   res.status(200).send({ error: false })
 }
 
 exports.deleteUser = async (req, res) => {
   registerUserAction(req, 'deleteUser')
 
-  await User.findOneAndDelete({ _id: req.body._id }, req.body)
+  await User.findOneAndDelete({ _id: req.body._id })
   res.status(200).send({ error: false })
 }
 

@@ -2056,7 +2056,7 @@ export default {
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
-          this.fetchProtocolConnections(); // refreshes driver instances
+          this.fetchProtocolConnections(); // refreshes connections
         })
         .catch((err) => console.warn(err));
     },
@@ -2072,7 +2072,7 @@ export default {
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
-          this.fetchProtocolConnections(); // refreshes roles
+          this.fetchProtocolConnections(); // refreshes connections
         })
         .catch((err) => console.warn(err));
     },
@@ -2114,7 +2114,7 @@ export default {
         .then((res) => res.json())
         .then((json) => {
           if (json.error) console.log(json);
-          this.fetchProtocolConnections(); // refreshes users
+          this.fetchProtocolConnections(); // refreshes connections
         })
         .catch((err) => console.warn(err));
     },
