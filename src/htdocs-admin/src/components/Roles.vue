@@ -25,7 +25,7 @@
           @click="createRole($event)"
         >
           <v-icon dark> mdi-plus </v-icon>
-          {{msg.newRole}}
+          {{msg.roleNewRole}}
         </v-btn>
       </v-col>
 
@@ -38,7 +38,7 @@
             class="title grey--text text--lighten-1 font-weight-light text-center"
             style="align-self: center"
           >
-            {{msg.selectRole}}
+            {{msg.roleSelectRole}}
           </div>
           <v-card
             v-else
@@ -55,7 +55,7 @@
                 outlined
                 clearable
                 :input-value="active"
-                label="Role name"
+                :label="msg.roleRoleName"
                 hide-details="auto"
                 v-model="selected.name"
                 @change="roleChange"
@@ -77,22 +77,22 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>{{msg.deleteRole}}</span>
+                <span>{{msg.roleDeleteRole}}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialog" max-width="290">
                 <v-card>
-                  <v-card-title class="headline">{{msg.deleteRole}}</v-card-title>
+                  <v-card-title class="headline">{{msg.roleDeleteRole}}</v-card-title>
 
                   <v-card-text>
-                    {{msg.confirmDeleteRole}}
+                    {{msg.roleConfirmDeleteRole}}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
                     <v-btn color="green darken-1" text @click="dialog = false">
-                      {{msg.deleteRoleCancel}}
+                      {{msg.roleDeleteRoleCancel}}
                     </v-btn>
 
                     <v-btn
@@ -103,7 +103,7 @@
                         deleteRole($event);
                       "
                     >
-                      {{msg.deleteRoleExecute}}
+                      {{msg.roleDeleteRoleExecute}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -532,7 +532,7 @@ export default {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({name: this.msg.newRoleName}),
+        body: JSON.stringify({name: this.msg.roleNewRoleName}),
       })
         .then((res) => res.json())
         .then((json) => {

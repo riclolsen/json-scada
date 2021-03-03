@@ -27,7 +27,7 @@
           @click="createProtocolConnection($event)"
         >
           <v-icon dark> mdi-plus </v-icon>
-          New Connection
+          {{msg.connNewConnection}}
         </v-btn>
       </v-col>
 
@@ -40,7 +40,7 @@
             class="title grey--text text--lighten-1 font-weight-light"
             style="align-self: center"
           >
-            Select a Connection
+            {{msg.connSelectConnection}}
           </div>
           <v-card
             v-else
@@ -56,7 +56,7 @@
                 outlined
                 clearable
                 :input-value="active"
-                label="Name"
+                :label="msg.connConnectionName"
                 hide-details="auto"
                 v-model="selected.name"
                 @change="updateProtocolConnection"
@@ -77,17 +77,17 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>Delete protocol connection!</span>
+                <span>{{msg.connDeleteConnection}}</span>
               </v-tooltip>
 
-              <v-dialog v-model="dialogDelConn" max-width="290">
+              <v-dialog v-model="dialogDelConn" max-width="400">
                 <v-card>
                   <v-card-title class="headline">
-                    Delete connection!
+                    {{msg.connDeleteConnection}}
                   </v-card-title>
 
                   <v-card-text>
-                    Please confirm removal of protocol connection.
+                    {{msg.connDeleteConnectionConfirm}}
                   </v-card-text>
 
                   <v-card-actions>
@@ -98,7 +98,7 @@
                       text
                       @click="dialogDelConn = false"
                     >
-                      Cancel
+                      {{msg.connDeleteConnectionCancel}}
                     </v-btn>
 
                     <v-btn
@@ -109,7 +109,7 @@
                         deleteProtocolConnection($event);
                       "
                     >
-                      Delete Connection!
+                      {{msg.connDeleteConnectionExecute}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -123,7 +123,7 @@
               min="1"
               clearable
               :input-value="active"
-              label="Connection Number"
+              :label="msg.connConnectionNumber"
               hide-details="auto"
               v-model="selected.protocolConnectionNumber"
               @change="updateProtocolConnection"
@@ -135,7 +135,7 @@
               outlined
               clearable
               :input-value="active"
-              label="Description"
+              :label="msg.connDescription"
               hide-details="auto"
               v-model="selected.description"
               @change="updateProtocolConnection"
@@ -145,7 +145,7 @@
               v-model="selected.enabled"
               inset
               color="primary"
-              :label="`Enabled: ${selected.enabled.toString()}`"
+              :label="`${msg.connEnabled}${selected.enabled?msg.connEnabledTrue:msg.connEnabledFalse}`"
               @change="updateProtocolConnection"
               class="mb-0"
             ></v-switch>
@@ -154,7 +154,7 @@
               v-model="selected.commandsEnabled"
               inset
               color="primary"
-              :label="`Commands Enabled: ${selected.commandsEnabled.toString()}`"
+              :label="`${msg.connCmdEnabled}${selected.commandsEnabled?msg.connCmdEnabledTrue:msg.connCmdEnabledFalse}`"
               @change="updateProtocolConnection"
               class="mt-0"
             ></v-switch>
@@ -162,7 +162,7 @@
             <v-select
               prepend-inner-icon="mdi-cogs"
               :items="driverNameItems"
-              label="Protocol driver"
+              :label="msg.connProtocolDriver"
               v-model="selected.protocolDriver"
               outlined
               @change="updateProtocolConnection"
@@ -176,7 +176,7 @@
               min="1"
               clearable
               :input-value="active"
-              label="Instance Number"
+              :label="msg.connInstanceNumber"
               hide-details="auto"
               v-model="selected.protocolDriverInstanceNumber"
               @change="updateProtocolConnection"
@@ -184,10 +184,9 @@
 
             <v-card class="mx-auto" tile>
               <v-list flat dense shaped subheader>
-                <v-subheader>Protocol Connection Parameters</v-subheader>
+                <v-subheader>{{msg.connProtocolConnectionParameters}}</v-subheader>
 
                 <v-list-item-group multiple active-class="">
-
 
                   <v-list-item
                     v-if="
@@ -210,7 +209,7 @@
                           type="number"
                           min="0"
                           :input-value="active"
-                          label="Local link address"
+                          :label="msg.connLocalLinkAddress"
                           hide-details="auto"
                           v-model="selected.localLinkAddress"
                           @change="updateProtocolConnection"
@@ -218,10 +217,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Local Link Address</v-list-item-title
+                          >{{msg.connLocalLinkAddressTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number</v-list-item-subtitle
+                          >{{msg.connLocalLinkAddressHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -248,7 +247,7 @@
                           type="number"
                           min="0"
                           :input-value="active"
-                          label="Remote link address"
+                          :label="msg.connRemoteLinkAddress"
                           hide-details="auto"
                           v-model="selected.remoteLinkAddress"
                           @change="updateProtocolConnection"
@@ -256,10 +255,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Remote Link Address</v-list-item-title
+                          >{{msg.connRemoteLinkAddressTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number</v-list-item-subtitle
+                          >{{msg.connRemoteLinkAddressHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -279,7 +278,7 @@
                       chips
                       small-chips
                       deletable-chips
-                      label="Remote Endpoint URLs"
+                      :label="msg.connRemoteEndpointsUrls"
                       multiple
                       @change="updateProtocolConnection"
                     ></v-autocomplete>
@@ -299,7 +298,7 @@
                           <v-icon dark> mdi-plus </v-icon>
                         </v-btn>
                       </template>
-                      <span>Add new endpoint URL!</span>
+                      <span>{{msg.connRemoteEndpointsAddNew}}</span>
                     </v-tooltip>
                     <v-dialog
                       v-model="dialogAddURL"
@@ -308,12 +307,12 @@
                     >
                       <v-card>
                         <v-card-title class="headline">
-                          Add a new OPC-UA URL!
+                          {{msg.connRemoteEndpointsAddNew}}
                         </v-card-title>
 
                         <v-card-title class="headline">
                           <v-text-field
-                            label="New URL"
+                            :label="msg.connRemoteEndpointsNewUrl"
                             v-model="newURL"
                             :rules="[rules.required, rules.opcUrl]"
                           ></v-text-field>
@@ -327,7 +326,7 @@
                             text
                             @click="dialogAddURL = false"
                           >
-                            Cancel
+                            {{msg.connRemoteEndpointsNewUrlCancel}}
                           </v-btn>
 
                           <v-btn
@@ -338,7 +337,7 @@
                               addNewURL($event);
                             "
                           >
-                            Add URL!
+                            {{msg.connRemoteEndpointsNewUrlExecute}}
                           </v-btn>
                         </v-card-actions>
                       </v-card>
@@ -356,7 +355,7 @@
                         <v-text-field
                           type="string"
                           :input-value="active"
-                          label="Publishing interval"
+                          :label="msg.connConfigFileName"
                           hide-details="auto"
                           v-model="selected.configFileName"
                           @change="updateProtocolConnection"
@@ -364,42 +363,42 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Config file name</v-list-item-title>
+                        <v-list-item-title>{{msg.connConfigFileNameTitle}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >XML config file name with path.</v-list-item-subtitle
+                          >{{msg.connConfigFileNameHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
                   </v-list-item>
 
-                  <v-list-item
+                  <v-list-item class="ma-0"
                     v-if="
                       [
                         'OPC-UA'
                       ].includes(selected.protocolDriver)
                     "
                   >
-                      <v-switch
+                      <v-switch class="ma-0"
                         v-model="selected.useSecurity"
                         inset
                         color="primary"
-                        :label="`Use security (certificates, encryption)`"
+                        :label="`${msg.connUseSecurity}${selected.useSecurity?msg.connUseSecurityTrue:msg.connUseSecurityFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
 
-                  <v-list-item
+                  <v-list-item class="ma-0"
                     v-if="
                       [
                         'OPC-UA'
                       ].includes(selected.protocolDriver)
                     "
                   >
-                      <v-switch
+                      <v-switch class="ma-0"
                         v-model="selected.autoCreateTags"
                         inset
                         color="primary"
-                        :label="`Auto create tags (server browse)`"
+                        :label="`${msg.connAutoCreateTags}${selected.autoCreateTags?msg.connAutoCreateTagsTrue:msg.connAutoCreateTagsFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -416,7 +415,7 @@
                         <v-text-field
                           type="number"
                           :input-value="active"
-                          label="Publishing interval"
+                          :label="msg.connPublishingInterval"
                           hide-details="auto"
                           v-model="selected.autoCreateTagPublishingInterval"
                           @change="updateProtocolConnection"
@@ -424,9 +423,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>Default publishing interval</v-list-item-title>
+                        <v-list-item-title>{{msg.connPublishingIntervalTitle}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >In seconds (for auto created tags).</v-list-item-subtitle
+                          >{{msg.connPublishingIntervalHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -444,16 +443,16 @@
                         <v-text-field
                           type="number"
                           :input-value="active"
-                          label="Sampling interval"
+                          :label="msg.connSamplingInterval"
                           hide-details="auto"
                           v-model="selected.autoCreateTagSamplingInterval"
                           @change="updateProtocolConnection"
                         ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
-                        <v-list-item-title>Default sampling interval on server</v-list-item-title>
+                        <v-list-item-title>{{msg.connSamplingIntervalTitle}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >In seconds (0=auto adjusted by the OPC server).</v-list-item-subtitle
+                          >{{msg.connSamplingIntervalHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -471,16 +470,16 @@
                         <v-text-field
                           type="number"
                           :input-value="active"
-                          label="Queue size"
+                          :label="msg.connServerQueueSize"
                           hide-details="auto"
                           v-model="selected.autoCreateTagQueueSize"
                           @change="updateProtocolConnection"
                         ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
-                        <v-list-item-title>Default sampling queue size on server</v-list-item-title>
+                        <v-list-item-title>{{msg.connServerQueueSizeTitle}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >Use zero to avoid buffering on the OPC server.</v-list-item-subtitle
+                          >{{msg.connServerQueueSizeHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -497,16 +496,16 @@
                         <v-text-field
                           type="number"
                           :input-value="active"
-                          label="Timeout keep-alive"
+                          :label="msg.connTimeoutKeepalive"
                           hide-details="auto"
                           v-model="selected.timeoutMs"
                           @change="updateProtocolConnection"
                         ></v-text-field>
                       </v-list-item-action>
                       <v-list-item-content>
-                        <v-list-item-title>Timeout interval for keep-alive messages</v-list-item-title>
+                        <v-list-item-title>{{msg.connTimeoutKeepaliveTitle}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >In milliseconds.</v-list-item-subtitle
+                          >{{msg.connTimeoutKeepaliveHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>

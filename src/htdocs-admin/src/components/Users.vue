@@ -26,7 +26,7 @@
               @click="createUser($event)"
             >
               <v-icon dark> mdi-plus </v-icon>
-              {{msg.newUser}}
+              {{msg.userNewUser}}
             </v-btn>
       </v-col>
 
@@ -39,7 +39,7 @@
             class="title grey--text text--lighten-1 font-weight-light"
             style="align-self: center"
           >
-            {{msg.selectUser}}
+            {{msg.userSelectUser}}
           </div>
           <v-card
             v-else
@@ -56,7 +56,7 @@
                 outlined
                 clearable
                 :input-value="active"
-                :label="msg.username"
+                :label="msg.userUsername"
                 hide-details="auto"
                 v-model="selected.username"
                 @change="updateUser"
@@ -78,22 +78,22 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>{{msg.deleteUser}}</span>
+                <span>{{msg.userDeleteUser}}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialog" max-width="290">
                 <v-card>
-                  <v-card-title class="headline"> {{msg.deleteUser}} </v-card-title>
+                  <v-card-title class="headline"> {{msg.userDeleteUser}} </v-card-title>
 
                   <v-card-text>
-                    {{msg.confirmDeleteUser}}
+                    {{msg.userConfirmDeleteUser}}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
                     <v-btn color="green darken-1" text @click="dialog = false">
-                      {{msg.deleteUserCancel}}
+                      {{msg.userDeleteUserCancel}}
                     </v-btn>
 
                     <v-btn
@@ -104,7 +104,7 @@
                         deleteUser($event);
                       "
                     >
-                      {{msg.deleteUserExecute}}
+                      {{msg.userDeleteUserExecute}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -119,7 +119,7 @@
               outlined
               clearable
               :input-value="active"
-              :label="msg.email"
+              :label="msg.userEmail"
               hide-details="auto"
               v-model="selected.email"
               @change="updateUser"
@@ -131,7 +131,7 @@
               outlined
               clearable
               :input-value="active"
-              :label="msg.password"
+              :label="msg.userPassword"
               hide-details="auto"
               v-model="selected.password"
               @change="updateUser"
@@ -157,7 +157,7 @@
                           <v-icon dark> mdi-plus </v-icon>
                         </v-btn>
                       </template>
-                      <span>{{msg.addUserRole}}</span>
+                      <span>{{msg.userAddUserRole}}</span>
                     </v-tooltip>
                   </template>
                   <v-list>
@@ -201,7 +201,7 @@
                               <v-icon dark> mdi-minus </v-icon>
                             </v-btn>
                           </template>
-                          <span>{{msg.removeUserRole}}</span>
+                          <span>{{msg.userRemoveUserRole}}</span>
                         </v-tooltip>
                       </v-list-item-action>
                     </v-list-item>
@@ -368,7 +368,7 @@ export default {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({username: this.msg.newUserUsername}),
+        body: JSON.stringify({username: this.msg.userNewUserUsername}),
       })
         .then((res) => res.json())
         .then((json) => {
