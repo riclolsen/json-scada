@@ -527,7 +527,7 @@
                           type="number"
                           min="0"
                           :input-value="active"
-                          label="GI interval"
+                          :label="msg.connGiInterval"
                           hide-details="auto"
                           v-model="selected.giInterval"
                           @change="updateProtocolConnection"
@@ -535,10 +535,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >General interrogation</v-list-item-title
+                        >{{msg.connGiIntervalTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Interval in seconds</v-list-item-subtitle
+                        >{{msg.connGiIntervalHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -557,7 +557,7 @@
                           type="number"
                           min="0"
                           :input-value="active"
-                          label="Test command interval"
+                          :label="msg.connTestCmdInterval"
                           hide-details="auto"
                           v-model="selected.testCommandInterval"
                           @change="updateProtocolConnection"
@@ -565,10 +565,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Test command interval</v-list-item-title
+                          >{{msg.connTestCmdIntervalTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Interval in seconds</v-list-item-subtitle
+                          >{{msg.connTestCmdIntervalHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -587,7 +587,7 @@
                           type="number"
                           min="0"
                           :input-value="active"
-                          label="Time sync interval"
+                          :label="msg.connTimeSyncInterval"
                           hide-details="auto"
                           v-model="selected.timeSyncInterval"
                           @change="updateProtocolConnection"
@@ -595,10 +595,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Time sync interval</v-list-item-title
+                          >{{msg.connTimeSyncIntervalTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Interval in seconds</v-list-item-subtitle
+                          >{{msg.connTimeSyncIntervalHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -617,7 +617,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="k"
+                          :label="msg.connK"
                           hide-details="auto"
                           v-model="selected.k"
                           @change="updateProtocolConnection"
@@ -625,10 +625,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >'k' protocol parameter</v-list-item-title
+                          >{{msg.connKTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number</v-list-item-subtitle
+                          >{{msg.connKHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -647,7 +647,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="w"
+                          :label="msg.connW"
                           hide-details="auto"
                           v-model="selected.w"
                           @change="updateProtocolConnection"
@@ -655,10 +655,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >'w' protocol parameter</v-list-item-title
+                          >{{msg.connWTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number</v-list-item-subtitle
+                          >{{msg.connWHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -677,7 +677,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="t0"
+                          :label="msg.connT0"
                           hide-details="auto"
                           v-model="selected.t0"
                           @change="updateProtocolConnection"
@@ -685,10 +685,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >'t0' protocol parameter</v-list-item-title
+                          >{{msg.connT0Title}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connT0Hint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -707,7 +707,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="t1"
+                          :label="msg.connT1"
                           hide-details="auto"
                           v-model="selected.t1"
                           @change="updateProtocolConnection"
@@ -715,10 +715,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >'t1' protocol parameter</v-list-item-title
+                          >{{msg.connT1Title}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connT1Hint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -737,7 +737,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="t2"
+                          :label="msg.connT2"
                           hide-details="auto"
                           v-model="selected.t2"
                           @change="updateProtocolConnection"
@@ -745,10 +745,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >'t2' protocol parameter</v-list-item-title
+                          >{{msg.connT2Title}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connT2Hint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -767,7 +767,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="t3"
+                          :label="msg.connT3"
                           hide-details="auto"
                           v-model="selected.t3"
                           @change="updateProtocolConnection"
@@ -775,10 +775,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >'t3' protocol parameter</v-list-item-title
+                          >{{msg.connT3Title}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connT3Hint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -801,15 +801,15 @@
                         :input-value="active"
                         hide-details="auto"
                         v-model="selected.sizeOfCOT"
-                        label="Size of COT"
+                        :label="msg.connSizeOfCot"
                       ></v-select>
                       </v-list-item-action>
-                                            <v-list-item-content>
+                      <v-list-item-content>
                         <v-list-item-title
-                          >Size Of COT</v-list-item-title
+                          >{{msg.connSizeOfCotTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >(Cause of Transmission)</v-list-item-subtitle
+                          >{{msg.connSizeOfCotHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
 
@@ -833,15 +833,15 @@
                         :input-value="active"
                         hide-details="auto"
                         v-model="selected.sizeOfCA"
-                        label="Size of CA"
+                        :label="msg.connSizeOfCa"
                       ></v-select>
                       </v-list-item-action>
                                             <v-list-item-content>
                         <v-list-item-title
-                          >Size Of CA</v-list-item-title
+                          >{{msg.connSizeOfCaTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >(Common Address)</v-list-item-subtitle
+                          >{{msg.connSizeOfCaHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
 
@@ -868,12 +868,12 @@
                         label="Size of IOA"
                       ></v-select>
                       </v-list-item-action>
-                                            <v-list-item-content>
+                      <v-list-item-content>
                         <v-list-item-title
-                          >Size Of IOA</v-list-item-title
+                          >{{msg.connSizeOfIoaTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >(Information Object Address)</v-list-item-subtitle
+                          >{{msg.connSizeOfIoaHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
 
@@ -891,7 +891,7 @@
                         v-model="selected.serverModeMultiActive"
                         inset
                         color="primary"
-                        :label="`One data buffer per client (serverModeMultiActive)`"
+                        :label="`${msg.connModeMultiActive}${selected.serverModeMultiActive?msg.connModeMultiActiveTrue:msg.connModeMultiActiveFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -909,7 +909,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="Max client connections"
+                          :label="msg.connMaxClientConnections"
                           hide-details="auto"
                           v-model="selected.maxClientConnections"
                           @change="updateProtocolConnection"
@@ -917,10 +917,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Max number of client connections</v-list-item-title
+                          >{{msg.connMaxClientConnectionsTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number</v-list-item-subtitle
+                          >{{msg.connMaxClientConnectionsHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -939,7 +939,7 @@
                           type="number"
                           min="1"
                           :input-value="active"
-                          label="Max queue size"
+                          :label="msg.connMaxQueueSize"
                           hide-details="auto"
                           v-model="selected.maxQueueSize"
                           @change="updateProtocolConnection"
@@ -947,10 +947,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Max size of data messages queue</v-list-item-title
+                          >{{msg.connMaxQueueSizeTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number</v-list-item-subtitle
+                          >{{msg.connMaxQueueSizeHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -969,7 +969,7 @@
                           type="number"
                           min=0
                           :input-value="active"
-                          label="Class 0 scan interval"
+                          :label="msg.connClass0Scan"
                           hide-details="auto"
                           v-model="selected.class0ScanInterval"
                           @change="updateProtocolConnection"
@@ -977,10 +977,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Class 0 scan interval</v-list-item-title
+                          >{{msg.connClass0ScanTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connClass0ScanHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -999,7 +999,7 @@
                           type="number"
                           min=0
                           :input-value="active"
-                          label="Class 1 scan interval"
+                          :label="msg.connClass1Scan"
                           hide-details="auto"
                           v-model="selected.class1ScanInterval"
                           @change="updateProtocolConnection"
@@ -1007,10 +1007,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Class 1 scan interval</v-list-item-title
+                          >{{msg.connClass1ScanTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connClass1ScanHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1029,7 +1029,7 @@
                           type="number"
                           min=0
                           :input-value="active"
-                          label="Class 2 scan interval"
+                          :label="msg.connClass2Scan"
                           hide-details="auto"
                           v-model="selected.class2ScanInterval"
                           @change="updateProtocolConnection"
@@ -1037,10 +1037,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Class 2 scan interval</v-list-item-title
+                          >{{msg.connClass2ScanTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connClass2ScanHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1059,7 +1059,7 @@
                           type="number"
                           min=0
                           :input-value="active"
-                          label="Class 3 scan interval"
+                          :label="msg.connClass3Scan"
                           hide-details="auto"
                           v-model="selected.class3ScanInterval"
                           @change="updateProtocolConnection"
@@ -1067,10 +1067,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Class 3 scan interval</v-list-item-title
+                          >{{msg.connClass3ScanTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In seconds</v-list-item-subtitle
+                          >{{msg.connClass3ScanHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1089,7 +1089,7 @@
                           type="number"
                           min=0
                           :input-value="active"
-                          label="Time sync mode"
+                          :label="msg.connTimeSyncMode"
                           hide-details="auto"
                           v-model="selected.timeSyncMode"
                           @change="updateProtocolConnection"
@@ -1097,10 +1097,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Time sync mode</v-list-item-title
+                          >{{msg.connTimeSyncModeTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Integer number: 0, 1 or 2</v-list-item-subtitle
+                          >{{msg.connTimeSyncModeHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1117,7 +1117,7 @@
                         v-model="selected.enableUnsolicited"
                         inset
                         color="primary"
-                        :label="`Enable unsolicited`"
+                        :label="`${msg.connEnableUnsolicited}${selected.enableUnsolicited?msg.connEnableUnsolicitedTrue:msg.connEnableUnsolicitedFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1135,7 +1135,7 @@
                       chips
                       small-chips
                       deletable-chips
-                      label="Range Scans"
+                      :label="msg.connRangeScans"
                       multiple
                       @change="updateProtocolConnection"
                     ></v-autocomplete>
@@ -1155,7 +1155,7 @@
                           <v-icon dark> mdi-plus </v-icon>
                         </v-btn>
                       </template>
-                      <span>Add new range scan!</span>
+                      <span>{{msg.connRangeScanAddNew}}</span>
                     </v-tooltip>
                     <v-dialog
                       v-model="dialogAddRangeScan"
@@ -1164,40 +1164,40 @@
                     >
                       <v-card>
                         <v-card-title class="headline">
-                          Add a new range scan!
+                          {{msg.connRangeScanAddNew}}
                         </v-card-title>
 
                         <v-card-title class="headline">
                           <v-text-field
-                            label="Group"
+                            :label="msg.connRangeScanGroup"
                             type="number"
                             min=1
                             v-model="newRangeScan.group"
                           ></v-text-field>
 
                           <v-text-field
-                            label="Variation"
+                            :label="msg.connRangeScanVariation"
                             type="number"
                             min=0
                             v-model="newRangeScan.variation"
                           ></v-text-field>
 
                           <v-text-field
-                            label="Start Address"
+                            :label="msg.connRangeScanStart"
                             type="number"
                             min=0
                             v-model="newRangeScan.startAddress"
                           ></v-text-field>
 
                           <v-text-field
-                            label="Stop Address"
+                            :label="msg.connRangeScanStop"
                             type="number"
                             min=0
                             v-model="newRangeScan.stopAddress"
                           ></v-text-field>
 
                           <v-text-field
-                            label="Period (seconds)"
+                            :label="msg.connRangeScanPeriod"
                             type="number"
                             min=1
                             v-model="newRangeScan.period"
@@ -1213,7 +1213,7 @@
                             text
                             @click="dialogAddRangeScan = false"
                           >
-                            Cancel
+                            {{msg.connRangeScanAddCancel}}
                           </v-btn>
 
                           <v-btn
@@ -1224,7 +1224,7 @@
                               addNewRangeScan($event);
                             "
                           >
-                            Add Range Scan!
+                            {{msg.connRangeScanAddExecute}}
                           </v-btn>
                         </v-card-actions>
                       </v-card>
@@ -1244,7 +1244,7 @@
                           type="number"
                           min=1
                           :input-value="active"
-                          label="Timeout for ACK"
+                          :label="msg.connTimeoutAck"
                           hide-details="auto"
                           v-model="selected.timeoutForACK"
                           @change="updateProtocolConnection"
@@ -1252,10 +1252,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Timeout for ack</v-list-item-title
+                          >{{msg.connTimeoutAckTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In milliseconds</v-list-item-subtitle
+                          >{{msg.connTimeoutAckHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1274,7 +1274,7 @@
                           type="number"
                           min=1
                           :input-value="active"
-                          label="Timeout for repeat"
+                          :label="msg.connTimeoutRepeat"
                           hide-details="auto"
                           v-model="selected.timeoutRepeat"
                           @change="updateProtocolConnection"
@@ -1282,10 +1282,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Timeout for repeat</v-list-item-title
+                          >{{msg.connTimeoutRepeatTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In milliseconds</v-list-item-subtitle
+                          >{{msg.connTimeoutRepeatHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1305,15 +1305,15 @@
                         :input-value="active"
                         hide-details="auto"
                         v-model="selected.sizeOfLinkAddress "
-                        label="Size of link address"
+                        :label="msg.connSizeOfLinkAddress"
                       ></v-select>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Size of Link Address</v-list-item-title
+                          >{{msg.connSizeOfLinkAddressTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >0, 1, 2</v-list-item-subtitle
+                          >{{msg.connSizeOfLinkAddressHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1331,7 +1331,7 @@
                         v-model="selected.useSingleCharACK "
                         inset
                         color="primary"
-                        :label="`Use single char ACK`"
+                        :label="`${msg.connSingleCharAck}${selected.useSingleCharACK?msg.connSingleCharAckTrue:msg.connSingleCharAckFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1354,7 +1354,7 @@
                     "
             >
               <v-list flat dense shaped subheader>
-                <v-subheader>TCP Parameters (leave blank for serial connections)</v-subheader>
+                <v-subheader>{{msg.connTcpParameters}}</v-subheader>
                 <v-list-item-group>
                   <v-list-item
                     v-if="
@@ -1372,7 +1372,7 @@
                           type="text"
                           :rules="[rules.required, rules.ipPort]"
                           :input-value="active"
-                          label="Bind IP address and port"
+                          :label="msg.connBindIpPort"
                           hide-details="auto"
                           v-model="selected.ipAddressLocalBind"
                           @change="updateProtocolConnection"
@@ -1381,10 +1381,10 @@
 
                       <v-list-item-content>
                         <v-list-item-title
-                          >Bind IP Address and Port</v-list-item-title
+                          >{{msg.connBindIpPortTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >Local bind for listening</v-list-item-subtitle
+                          >{{msg.connBindIpPortHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1409,7 +1409,7 @@
                       chips
                       small-chips
                       deletable-chips
-                      label="Remote IP addresses"
+                      :label="msg.connRemoteIpAddresses"
                       multiple
                       @change="updateProtocolConnection"
                     ></v-autocomplete>
@@ -1429,7 +1429,7 @@
                           <v-icon dark> mdi-plus </v-icon>
                         </v-btn>
                       </template>
-                      <span>Add new IP Address!</span>
+                      <span>{{msg.connRemoteIpAddressAdd}}</span>
                     </v-tooltip>
                     <v-dialog
                       v-model="dialogAddIP"
@@ -1438,7 +1438,7 @@
                     >
                       <v-card>
                         <v-card-title class="headline">
-                          Add a new IP Address!
+                          {{msg.connRemoteIpAddressAdd}}
                         </v-card-title>
 
                         <v-card-title class="headline">
@@ -1457,7 +1457,7 @@
                             text
                             @click="dialogAddIP = false"
                           >
-                            Cancel
+                            {{msg.connRemoteIpAddressAddCancel}}
                           </v-btn>
 
                           <v-btn
@@ -1468,7 +1468,7 @@
                               addNewIP($event);
                             "
                           >
-                            Add IP!
+                            {{msg.connRemoteIpAddressAddExecute}}
                           </v-btn>
                         </v-card-actions>
                       </v-card>
@@ -1502,7 +1502,7 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
-                          label="Local certificate file path"
+                          :label="msg.connLocalCertificateFile"
                           hide-details="auto"
                           v-model="selected.localCertFilePath"
                           @change="updateProtocolConnection"
@@ -1510,10 +1510,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Local certificate file path [TLS]</v-list-item-title
+                          >{{msg.connLocalCertificateFileTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\localCert.pfx'</v-list-item-subtitle
+                          >{{msg.connLocalCertificateFileHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1531,7 +1531,7 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
-                          label="Peer certificate file path"
+                          :label="msg.connPeerCertificateFile"
                           hide-details="auto"
                           v-model="selected.peerCertFilePath"
                           @change="updateProtocolConnection"
@@ -1539,10 +1539,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Peer certificate file path [TLS]</v-list-item-title
+                          >{{msg.connPeerCertificateFileTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\peerCert.cer'</v-list-item-subtitle
+                          >{{msg.connPeerCertificateFileHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1560,7 +1560,7 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
-                          label="Root certificate file path"
+                          :label="msg.connRootCertificateFile"
                           hide-details="auto"
                           v-model="selected.rootCertFilePath"
                           @change="updateProtocolConnection"
@@ -1568,10 +1568,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Root certificate file path [TLS]</v-list-item-title
+                          >{{msg.connRootCertificateFileTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\rootCert.cer'</v-list-item-subtitle
+                          >{{msg.connRootCertificateFileHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1589,7 +1589,7 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
-                          label="Private key file path"
+                          :label="msg.connPrivateCertificateFile"
                           hide-details="auto"
                           v-model="selected.privateKeyFilePath"
                           @change="updateProtocolConnection"
@@ -1597,10 +1597,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Private key file path [TLS]</v-list-item-title
+                          >{{msg.connPrivateCertificateFileTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. 'C:\json-scada\conf\deviceKey.pem'</v-list-item-subtitle
+                          >{{msg.connPrivateCertificateFileHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
