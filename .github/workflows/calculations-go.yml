@@ -25,6 +25,7 @@ jobs:
     - name: Get dependencies
       working-directory: src/calculations
       run: |
+        go env -w GO111MODULE=auto
         go get -v -t -d ./...
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
