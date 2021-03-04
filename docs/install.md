@@ -162,6 +162,8 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin/
 
     export GOBIN=~/json-scada/bin
+    go env -w GO111MODULE=auto
+    
     cd ../../calculations
     go get ./... 
     go build 

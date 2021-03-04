@@ -28,6 +28,7 @@ dotnet build --runtime win-x64 -c Release -o ..\..\bin\
 cd \json-scada\src\libplctag\PLCTagsClient
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 
+go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
 cd \json-scada\src\calculations
 go get ./... 

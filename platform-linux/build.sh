@@ -13,6 +13,8 @@ cd ../dnp3/Dnp3Client
 dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin/
 
 export GOBIN=~/json-scada/bin
+go env -w GO111MODULE=auto
+
 cd ../../calculations
 go get ./...
 go build

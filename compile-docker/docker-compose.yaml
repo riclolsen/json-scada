@@ -42,6 +42,7 @@ services:
     image: golang:alpine
     container_name: js_calculations_compile
     command: sh -c "apk add --no-cache git && 
+                    go env -w GO111MODULE=auto &&
                     cd /go/src/calculations/ && 
                     go get ./... && 
                     go build && 
@@ -54,6 +55,7 @@ services:
     image: golang:alpine
     container_name: js_i104m_compile
     command: sh -c "apk add --no-cache git && 
+                    go env -w GO111MODULE=auto &&
                     cd /go/src/i104m/ &&
                     go get ./... && 
                     go build && 
