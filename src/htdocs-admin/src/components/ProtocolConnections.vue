@@ -1618,7 +1618,7 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
-                          label="Openssl Cypher list"
+                          :label="msg.connOpensslCypherList"
                           hide-details="auto"
                           v-model="selected.cipherList"
                           @change="updateProtocolConnection"
@@ -1626,10 +1626,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Openssl format cipher list [TLS]</v-list-item-title
+                          >{{msg.connOpensslCypherListTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. 'AES128, AES256, AES, DES'</v-list-item-subtitle
+                          >{{msg.connOpensslCypherListHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1646,7 +1646,7 @@
                         v-model="selected.allowTLSv10"
                         inset
                         color="primary"
-                        :label="`Allow TLS version 1.0`"
+                        :label="`${msg.connAllowTls10}${selected.allowTLSv10?msg.connAllowTls10True:msg.connAllowTls10False}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1662,7 +1662,7 @@
                         v-model="selected.allowTLSv11"
                         inset
                         color="primary"
-                        :label="`Allow TLS version 1.1`"
+                        :label="`${msg.connAllowTls11}${selected.allowTLSv11?msg.connAllowTls11True:msg.connAllowTls11False}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1678,7 +1678,7 @@
                         v-model="selected.allowTLSv12"
                         inset
                         color="primary"
-                        :label="`Allow TLS version 1.2`"
+                        :label="`${msg.connAllowTls12}${selected.allowTLSv12?msg.connAllowTls12True:msg.connAllowTls12False}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1694,7 +1694,7 @@
                         v-model="selected.allowTLSv13"
                         inset
                         color="primary"
-                        :label="`Allow TLS version 1.3`"
+                        :label="`${msg.connAllowTls13}${selected.allowTLSv13?msg.connAllowTls13True:msg.connAllowTls13False}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1710,7 +1710,7 @@
                         v-model="selected.allowOnlySpecificCertificates"
                         inset
                         color="primary"
-                        :label="`Allow only specific certificates [TLS]`"
+                        :label="`${msg.connAllowSpecificCerts}${selected.allowOnlySpecificCertificates?msg.connAllowSpecificCertsTrue:msg.connAllowSpecificCertsFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1726,7 +1726,7 @@
                         v-model="selected.chainValidation"
                         inset
                         color="primary"
-                        :label="`Certificate chain validation [TLS]`"
+                        :label="`${msg.connCertChainValidation}${selected.chainValidation?msg.connCertChainValidationTrue:msg.connCertChainValidationFalse}`"
                         @change="updateProtocolConnection"
                       ></v-switch>
                   </v-list-item>
@@ -1760,7 +1760,7 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
-                          label="Comm port name"
+                          :label="msg.connCommPortName"
                           hide-details="auto"
                           v-model="selected.portName"
                           @change="updateProtocolConnection"
@@ -1768,10 +1768,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Serial port name or IP:address</v-list-item-title
+                          >{{msg.connCommPortNameTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. "COM3", "/dev/ttyS0", "192.168.0.1:2410"</v-list-item-subtitle
+                          >{{msg.connCommPortNameHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1790,7 +1790,7 @@
                           type="number"
                           min=150
                           :input-value="active"
-                          label="Baud rate"
+                          :label="msg.connBaudRate"
                           hide-details="auto"
                           v-model="selected.baudRate"
                           @change="updateProtocolConnection"
@@ -1798,10 +1798,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Serial baud rate (bps)</v-list-item-title
+                          >{{msg.connBaudRateTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. "9600", "19200"</v-list-item-subtitle
+                          >{{msg.connBaudRateHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1821,15 +1821,15 @@
                         :input-value="active"
                         hide-details="auto"
                         v-model="selected.parity"
-                        label="Parity"
+                        :label="msg.connParity"
                       ></v-select>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Serial parity</v-list-item-title
+                          >{{msg.connParityTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. None, Even, Odd, ...</v-list-item-subtitle
+                          >{{msg.connParityHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1849,15 +1849,15 @@
                         :input-value="active"
                         hide-details="auto"
                         v-model="selected.stopBits"
-                        label="Stop bits"
+                        :label="msg.connStopBits"
                       ></v-select>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Serial stop bits</v-list-item-title
+                          >{{msg.connStopBitsTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. One, One5, Two</v-list-item-subtitle
+                          >{{msg.connStopBitsHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1877,15 +1877,15 @@
                         :input-value="active"
                         hide-details="auto"
                         v-model="selected.handshake"
-                        label="Handshake"
+                        :label="msg.connHandshake"
                       ></v-select>
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Type of serial handshake</v-list-item-title
+                          >{{msg.connHandshakeTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >e.g. None, Xon, Rts, ...</v-list-item-subtitle
+                          >{{msg.connHandshakeHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -1904,7 +1904,7 @@
                           type="number"
                           min=0
                           :input-value="active"
-                          label="Async open delay"
+                          :label="msg.connAsyncOpenDelay"
                           hide-details="auto"
                           v-model="selected.asyncOpenDelay"
                           @change="updateProtocolConnection"
@@ -1912,10 +1912,10 @@
                       </v-list-item-action>
                       <v-list-item-content>
                         <v-list-item-title
-                          >Async open delay (serial)</v-list-item-title
+                          >{{msg.connAsyncOpenDelayTitle}}</v-list-item-title
                         >
                         <v-list-item-subtitle
-                          >In milliseconds</v-list-item-subtitle
+                          >{{msg.connAsyncOpenDelayHint}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
