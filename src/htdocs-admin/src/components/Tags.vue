@@ -13,14 +13,14 @@
     >
       <template v-slot:top>
         <v-toolbar flat>
-          <v-toolbar-title>Tags</v-toolbar-title>
+          <v-toolbar-title>{{msg.tags}}</v-toolbar-title>
           <v-divider class="mx-4" inset vertical></v-divider>
           <v-text-field
             dense
             @change="fetchTags"
             v-model="searchTag"
             append-icon="mdi-magnify"
-            label="Search Tag"
+            :label="msg.tagSearchTag"
             hide-details
           ></v-text-field>
           <v-spacer></v-spacer>
@@ -30,21 +30,21 @@
             @change="fetchTags"
             v-model="searchDescription"
             append-icon="mdi-magnify"
-            label="Description"
+            :label="msg.tagSearchDescription"
             hide-details
           ></v-text-field>
           <v-spacer></v-spacer>
           <v-divider class="mx-4" inset vertical></v-divider>
           <v-dialog v-model="dialogDelete" max-width="500px">
             <v-card>
-              <v-card-title class="headline">Confirm tag erase?</v-card-title>
+              <v-card-title class="headline">{{msg.tagConfirmErase}}</v-card-title>
               <v-card-text>
                 <v-text-field
                   dense
                   readonly
                   filled
                   v-model="editedItem._id"
-                  label="Tag _id"
+                  :label="msg.tagEraseId"
                 ></v-text-field>
                 <v-spacer></v-spacer>
                 <v-text-field
@@ -52,28 +52,31 @@
                   readonly
                   filled
                   v-model="editedItem.tag"
-                  label="Tag name"
+                  :label="msg.tagEraseName"
                 ></v-text-field>
               </v-card-text>
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn color="blue darken-1" text @click="closeDelete"
-                  >Cancel</v-btn
-                >
-                <v-btn color="blue darken-1" text @click="deleteTag">OK</v-btn>
+                  >{{msg.tagEraseCancel}}</v-btn>
+                <v-btn color="blue darken-1" text @click="deleteTag">{{msg.tagEraseExecute}}</v-btn>
                 <v-spacer></v-spacer>
               </v-card-actions>
             </v-card>
           </v-dialog>
           <v-dialog v-model="dialog" max-width="500px">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on" @click="newTag()">
-                New Tag
+              <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" @click="fetchTags()">
+                <v-icon dark> mdi-refresh </v-icon>
               </v-btn>
+              <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" v-on="on" @click="newTag()">
+                <v-icon dark> mdi-plus </v-icon>
+                {{msg.tagNewTag}}
+              </v-btn>              
             </template>
             <v-card>
               <v-card-title>
-                <span class="headline">Edit Tag</span>
+                <span class="headline">{{msg.tagEditTag}}</span>
               </v-card-title>
 
               <v-card-text>
@@ -83,32 +86,32 @@
                       <v-text-field
                         dense
                         v-model="editedItem._id"
-                        label="Tag _id"
+                        :label="msg.tagEditId"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-model="editedItem.tag"
-                        label="Tag name"
+                        :label="msg.tagEditName"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-model="editedItem.description"
-                        label="Description"
+                        :label="msg.tagEditDescription"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-model="editedItem.group1"
-                        label="Group 1 (e.g.Installation/Plant)"
+                        :label="msg.tagEditGroup1"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-model="editedItem.group2"
-                        label="Group 2 (e.g.Area/Bay)"
+                        :label="msg.tagEditGroup2"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-model="editedItem.group3"
-                        label="Group 3 (e.g.Equipment/Device)"
+                        :label="msg.tagEditGroup3"
                       ></v-text-field>
                       <v-select
                         :items="[
@@ -117,13 +120,13 @@
                           'calculated',
                           'manual',
                         ]"
-                        label="Origin"
+                        :label="msg.tagEditOrigin"
                         v-model="editedItem.origin"
                         class="ma-0"
                       ></v-select>
                       <v-select
                         :items="['digital', 'analog', 'string']"
-                        label="Type"
+                        :label="msg.tagEditType"
                         v-model="editedItem.type"
                         class="ma-0"
                       ></v-select>
@@ -131,31 +134,31 @@
                         dense
                         v-if="editedItem.type == 'digital'"
                         v-model="editedItem.stateTextFalse"
-                        label="State Text False"
+                        :label="msg.tagEditStateTextFalse"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-if="editedItem.type == 'digital'"
                         v-model="editedItem.stateTextTrue"
-                        label="State Text True"
+                        :label="msg.tagEditStateTextTrue"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-if="editedItem.type == 'digital'"
                         v-model="editedItem.eventTextFalse"
-                        label="Event Text False"
+                        :label="msg.tagEditEventTextFalse"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-if="editedItem.type == 'digital'"
                         v-model="editedItem.eventTextTrue"
-                        label="Event Text True"
+                        :label="msg.tagEditEventTextTrue"
                       ></v-text-field>
                       <v-text-field
                         dense
                         v-if="editedItem.type == 'analog'"
                         v-model="editedItem.unit"
-                        label="Unit"
+                        :label="msg.tagEditUnit"
                       ></v-text-field>
 
                       <v-text-field
@@ -163,14 +166,14 @@
                         type="number"
                         v-if="['supervised'].includes(editedItem.origin)"
                         v-model="editedItem.commandOfSupervised"
-                        label="Command point of supervised (use zero for none)"
+                        :label="msg.tagEditCommandOfSupervised"
                       ></v-text-field>
                       <v-text-field
                         dense
                         type="number"
                         v-if="['command'].includes(editedItem.origin)"
                         v-model="editedItem.supervisedOfCommand"
-                        label="Supervised point of command (use zero for none)"
+                        :label="msg.tagEditSupervisedOfCommand"
                       ></v-text-field>
                       <v-text-field
                         dense
@@ -179,7 +182,7 @@
                           ['supervised'].includes(editedItem.origin)
                         "
                         v-model="editedItem.invalidDetectTimeout"
-                        label="Invalid detect timeout (seconds)"
+                        :label="msg.tagEditInvalidDetectTimeout"
                       ></v-text-field>
 
                       <v-text-field
@@ -189,7 +192,7 @@
                           ['supervised', 'command'].includes(editedItem.origin)
                         "
                         v-model="editedItem.protocolSourceConnectionNumber"
-                        label="Protocol Source Connection Number"
+                        :label="msg.tagEditProtocolSourceConnectionNumber"
                       ></v-text-field>
                       <v-text-field
                         dense
@@ -197,7 +200,7 @@
                           ['supervised', 'command'].includes(editedItem.origin)
                         "
                         v-model="editedItem.protocolSourceASDU"
-                        label="protocolSourceASDU"
+                        :label="msg.tagEditProtocolSourceASDU"
                       ></v-text-field>
                       <v-text-field
                         dense
@@ -205,7 +208,7 @@
                           ['supervised', 'command'].includes(editedItem.origin)
                         "
                         v-model="editedItem.protocolSourceCommonAddress"
-                        label="protocolSourceCommonAddress"
+                        :label="msg.tagEditProtocolSourceCommonAddress"
                       ></v-text-field>
                       <v-text-field
                         dense
@@ -213,14 +216,14 @@
                           ['supervised', 'command'].includes(editedItem.origin)
                         "
                         v-model="editedItem.protocolSourceObjectAddress"
-                        label="protocolSourceObjectAddress"
+                        :label="msg.tagEditProtocolSourceObjectAddress"
                       ></v-text-field>
 
                       <v-text-field
                         dense
                         v-if="['command'].includes(editedItem.origin)"
                         v-model="editedItem.protocolSourceCommandDuration"
-                        label="protocolSourceCommandDuration"
+                        :label="msg.tagEditProtocolSourceCommandDuration"
                       ></v-text-field>
 
                       <v-text-field
@@ -230,7 +233,7 @@
                           ['supervised', 'command'].includes(editedItem.origin)
                         "
                         v-model="editedItem.kconv1"
-                        label="Convertion factor multiplier (kconv1)"
+                        :label="msg.tagEditKconv1"
                       ></v-text-field>
                       <v-text-field
                         dense
@@ -239,7 +242,7 @@
                           ['supervised', 'command'].includes(editedItem.origin)
                         "
                         v-model="editedItem.kconv2"
-                        label="Convertion factor adder (kconv2)"
+                        :label="msg.tagEditKconv2"
                       ></v-text-field>
 
                       <v-switch
@@ -248,10 +251,10 @@
                         v-model="editedItem.protocolSourceCommandUseSBO"
                         inset
                         color="primary"
-                        :label="`Use SBO: ${
+                        :label="`${msg.tagEditProtocolSourceCommandUseSBO}${
                           editedItem.protocolSourceCommandUseSBO
-                            ? 'true'
-                            : 'false'
+                            ? msg.tagEditProtocolSourceCommandUseSBOTrue
+                            : msg.tagEditProtocolSourceCommandUseSBOFalse
                         }`"
                         class="mt-0"
                       ></v-switch>
@@ -262,8 +265,8 @@
                         v-model="editedItem.isEvent"
                         inset
                         color="primary"
-                        :label="`Is event: ${
-                          editedItem.isEvent ? 'true' : 'false'
+                        :label="`${msg.tagEditIsEvent}${
+                          editedItem.isEvent ? msg.tagEditIsEventTrue : msg.tagEditIsEventFalse
                         }`"
                         class="mt-0"
                       ></v-switch>
@@ -275,16 +278,16 @@
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn color="blue darken-1" text @click="close">
-                  Cancel
+                  {{msg.tagEditCancel}}
                 </v-btn>
-                <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                <v-btn color="blue darken-1" text @click="save"> {{msg.tagEditExecute}} </v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
         </v-toolbar>
       </template>
 
-      <template>
+      <template v-slot:item.Actions="{ item }">  
         <v-icon small class="mr-2" @click="editTag(item)"> mdi-pencil </v-icon>
         <v-icon small @click="deleteTagOpenDialog(item)"> mdi-delete </v-icon>
       </template>
