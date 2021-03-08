@@ -4,7 +4,7 @@ const Double = require('@mongoosejs/double');
 const Tag = mongoose.model(
   "Tag",  
   new mongoose.Schema({
-    _id: {type: Number},
+    _id: {type: Double},
     tag: {type: String},
     group1: {type: String, default: ""},
     group2: {type: String, default: ""},

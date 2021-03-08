@@ -7,11 +7,45 @@ const Role = db.role
 const Tag = db.tag
 const ProtocolDriverInstance = db.protocolDriverInstance
 const ProtocolConnection = db.protocolConnection
+const UserAction = db.userAction
 const UserActionsQueue = require('../../userActionsQueue')
 
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
 const { response } = require('express')
+
+exports.listUserActions = async (req, res) => {
+  console.log('listUserActions')
+
+  let skip = 0
+  if ("page" in req.body && "itemsPerPage" in req.body)
+    skip = req.body.itemsPerPage * (req.body.page-1)
+  let filter = {}
+  if ("filter" in req.body)
+     filter = req.body.filter
+
+  let limit = req.body.itemsPerPage || 10
+  let orderby = {}
+  if ("sortBy" in req.body && "sortDesc" in req.body) {
+    for(let i=0; i<req.body.sortBy.length; i++) 
+      orderby[req.body.sortBy[i]] = req.body.sortDesc[i]? -1:1
+    if (req.body.sortBy.length === 0)
+      orderby = { timeTag: 1 }
+    }
+  else
+    orderby = { timeTag: 1 }
+
+  let count = await UserAction.count(filter)  
+  console.log(count)
+  UserAction.find(filter).skip(skip).limit(limit).sort(orderby).exec(function (err, userActions) {
+    if (err) {
+      res.status(200).send({ error: err })
+      return
+    }
+    let ret = { userActions: userActions, countTotal: count }
+    res.status(200).send(ret)
+  })
+}
 
 exports.updateTag = async (req, res) => {
   registerUserAction(req, 'updateTag')
@@ -39,7 +73,6 @@ exports.deleteTag = async (req, res) => {
 
 exports.listTags = async (req, res) => {
   console.log('listTags')
-  console.log(req.body)
 
   let skip = 0
   if ("page" in req.body && "itemsPerPage" in req.body)
@@ -58,8 +91,6 @@ exports.listTags = async (req, res) => {
     }
   else
     orderby = { tag: 1 }
-
-  console.log(orderby)
 
   let count = await Tag.count(filter)  
   Tag.find(filter).skip(skip).limit(limit).sort(orderby).exec(function (err, tags) {
