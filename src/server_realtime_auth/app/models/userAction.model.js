@@ -7,7 +7,7 @@ const UserAction = mongoose.model(
     username: {type: String},
     pointKey: {type: Double},
     tag: {type: String},
-    request: {type: Object},
+    properties: {type: Object},
     action: {type: String},
     timeTag: {type: Date}
   }),

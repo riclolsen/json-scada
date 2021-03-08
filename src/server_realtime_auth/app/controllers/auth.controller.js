@@ -872,7 +872,7 @@ function registerUserAction (req, actionName) {
     // register user action
     UserActionsQueue.enqueue({
       username: ck?.username,
-      request: body,
+      properties: body,
       action: actionName,
       timeTag: new Date()
     })
@@ -882,7 +882,7 @@ function registerUserAction (req, actionName) {
     // register user action
     UserActionsQueue.enqueue({
       username: req.body?.username,
-      request: body,
+      properties: body,
       action: actionName,
       timeTag: new Date()
     })

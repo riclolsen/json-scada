@@ -23,13 +23,20 @@
         {{ msg.driverInstances }}
         <v-icon>mdi-cogs</v-icon>
       </v-tab>
+
       <v-tab href="#tab-4">
         {{ msg.connections }}
         <v-icon>mdi-file-tree</v-icon>
       </v-tab>
+
       <v-tab href="#tab-5">
         {{ msg.tags }}
         <v-icon>mdi-tag-multiple</v-icon>
+      </v-tab>
+
+      <v-tab href="#tab-6">
+        {{ msg.userActions }}
+        <v-icon>mdi-clipboard-account</v-icon>
       </v-tab>
 
       <v-tab-item :value="'tab-' + 1">
@@ -51,6 +58,11 @@
       <v-tab-item :value="'tab-' + 5">
         <Tags />
       </v-tab-item>
+
+      <v-tab-item :value="'tab-' + 6">
+        <UserActions />
+      </v-tab-item>
+
     </v-tabs>
 
     <!--
@@ -76,6 +88,7 @@ import Roles from "@/components/Roles";
 import ProtocolDriverInstances from "@/components/ProtocolDriverInstances";
 import ProtocolConnections from "@/components/ProtocolConnections";
 import Tags from "@/components/Tags";
+import UserActions from "@/components/UserActions";
 import i18n from "@/i18n/i18n-current";
 
 export default {
@@ -85,7 +98,7 @@ export default {
       msg: { ...i18n },
       tab: null,
       text:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        "",
     };
   },
   components: {
@@ -94,6 +107,7 @@ export default {
     ProtocolDriverInstances,
     ProtocolConnections,
     Tags,
+    UserActions
   },
 };
 </script>

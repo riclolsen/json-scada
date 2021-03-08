@@ -7,6 +7,7 @@ const i18n = {
     driverInstances: "Driver Instances",
     connections: "Connections",
     tags: "Tags",
+    userActions: "User Actions",
     userNewUser: "New User",
     userNewUserUsername: "new_user",
     userSelectUser: "Select a User",
@@ -307,5 +308,8 @@ const i18n = {
     tagEditIsEventFalse: "False",
     tagEditCancel: "Cancel",
     tagEditExecute: "Save",
+    actionSearchUsername: "Search Username",
+    actionSearchAction: "Search Action",
+    actionSearchDateRange: "Date Range",
 }
 export default i18n

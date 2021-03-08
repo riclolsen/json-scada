@@ -379,7 +379,6 @@ export default {
     },
     editTag(item) {      
       this.editedIndex = this.tags.indexOf(item);
-      console.log(this.editedIndex);
       this.editedItem = Object.assign({}, item);
       this.dialog = true;
     },
