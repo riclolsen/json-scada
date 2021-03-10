@@ -103,7 +103,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 * [OSHMI2JSON Tool](src/oshmi2json/README.md)
 * [Schema Documentation](docs/schema.md)
 * [Install Guide](docs/install.md)
-* [Report Generators](docs/report_generatos.md)
+* [Report Generators](docs/report_generators.md)
 
 ## Protocols Roadmap
 
