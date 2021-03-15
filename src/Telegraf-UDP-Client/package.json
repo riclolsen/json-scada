@@ -1,0 +1,16 @@
+{
+  "name": "telegraf-udp-json",
+  "version": "0.1.1",
+  "description": "Telegraf UDP JSON Client Driver for JSON-SCADA",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^3.6.4",
+    "queue-fifo": "^0.2.6",
+    "timers": "^0.1.1"
+  }
+}
