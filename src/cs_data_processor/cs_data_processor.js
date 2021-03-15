@@ -33,7 +33,6 @@ const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
 const args = process.argv.slice(2)
-console.log(args)
 var inst = null
 if (args.length > 0)
   inst = parseInt(args[0])
@@ -258,7 +257,7 @@ const pipeline = [
                         console.log("Instance config not found, creating one...")
                         db.collection(ProcessInstancesCollectionName).insertOne({
                           processName: APP_NAME,
-                          processInstanceNumber: new mongo.Double(1),
+                          processInstanceNumber: new mongo.Double(Instance),
                           enabled: true,
                           logLevel: new mongo.Double(1),
                           nodeNames: [],
@@ -308,7 +307,7 @@ const pipeline = [
                         if (ProcessActive) { // process active, then update keep alive
                           db.collection(ProcessInstancesCollectionName).updateOne({
                             processName: APP_NAME,
-                            processInstanceNumber: 1
+                            processInstanceNumber: new mongo.Double(Instance),
                           }, {
                             $set: {
                               activeNodeName: jsConfig.nodeName,

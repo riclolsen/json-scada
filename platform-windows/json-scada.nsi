@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.7"
-!define VERSION_ "0.7.0.0"
+!define VERSION "v.0.8"
+!define VERSION_ "0.8.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -205,6 +205,7 @@ SetRegView 64
   CreateDirectory "$INSTDIR\platform-windows\postgresql-data"
   CreateDirectory "$INSTDIR\platform-windows\postgresql-runtime"
   CreateDirectory "$INSTDIR\platform-windows\nginx_php-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\telegraf-runtime"
 
   ; This is to try to avoid this Postgresql error:
   ; https://edwin.baculsoft.com/2014/05/fixing-postgresql-error-initdb-could-not-change-permissions-of-directory-permission-denied/
@@ -246,6 +247,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\platform-windows\ruby-runtime
   File /a /r "..\platform-windows\ruby-runtime\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\telegraf-runtime
+  File /a /r "..\platform-windows\telegraf-runtime\*.*"
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
