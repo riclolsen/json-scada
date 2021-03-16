@@ -36,10 +36,21 @@ const server = dgram.createSocket('udp4')
 const grpSep = '~'
 const port = 51920
 
+const LogLevelMin = 0,
+  LogLevelNormal = 1,
+  LogLevelDetailed = 2,
+  LogLevelDebug = 3
+
+let ListCreatedTags = []
+let ValuesQueue = new Queue() // queue of values to update
+
 const args = process.argv.slice(2)
 var inst = null
 if (args.length > 0) inst = parseInt(args[0])
 const Instance = inst || process.env.JS_TELEGRAFUDPCLIENT_INSTANCE || 1
+let ConnectionNumber = 0
+const AutoKeyMultiplier = 1000000
+let AutoKeyId = 0
 
 var logLevel = null
 if (args.length > 1) logLevel = parseInt(args[1])
@@ -85,7 +96,8 @@ server.on('listening', () => {
 })
 
 server.on('message', (msg, rinfo) => {
-  console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`)
+  if (LogLevel >= LogLevelDebug)
+    console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`)
   let data = {}
 
   try {
@@ -97,21 +109,33 @@ server.on('message', (msg, rinfo) => {
 })
 
 const processMessageJSON = function (data) {
-  let grouping = ''
-
+  let grouping = '',
+    group1 = '',
+    group2 = '',
+    group3 = '',
+    ungroupedDescription = ''
+    
   // add group1 or measurement name
   if (notEmpty(data.tags?.group1)) {
     grouping += addGrpIfNotEmpty(data.tags.group1)
+    group1 = data.tags.group1
   } else {
     grouping += addGrpIfNotEmpty(data?.name)
+    group1 = data?.name
   }
 
   // add group2 or object name and host
   if (notEmpty(data.tags?.group2)) {
     grouping += addGrpIfNotEmpty(data.tags?.group2)
+    group2 = data.tags.group2
   } else {
-    grouping += addGrpIfNotEmpty(data.tags?.objectname)
+    // grouping += addGrpIfNotEmpty(data.tags?.objectname)
     grouping += addGrpIfNotEmpty(data.tags?.host)
+    group2 = data.tags?.host
+  }
+
+  if (notEmpty(data.tags?.group3)) {
+    group3 = data.tags.group3
   }
 
   // add group3 if exists
@@ -122,14 +146,17 @@ const processMessageJSON = function (data) {
     if (
       ![
         'instance',
-        'objectname',
+        // 'objectname',
         'host',
         'group1',
         'group2',
         'group3'
       ].includes(key)
     )
-      if (value !== '') grouping += `${value}${grpSep}`
+      if (value !== '') { 
+        grouping += `${value}${grpSep}` 
+        ungroupedDescription += `${value}${grpSep}` 
+      }
   }
 
   // add instance if exists
@@ -139,27 +166,53 @@ const processMessageJSON = function (data) {
 
   let tags = []
   for (var [key, value] of Object.entries(data.fields)) {
-    tags[`${grouping}${key}`] = value
+    let tag
+    if (key === 'value') {
+      // remove the ~ at the end
+      tag = grouping.replace(/~\s*$/, '')
+    } else {
+      tag = `${grouping}${key}`
+      ungroupedDescription = key
+    }
+
+    tags[tag] = value
+
+    ValuesQueue.enqueue({
+      tag: tag,
+      value: value,
+      group1: group1,
+      group2: group2,
+      group3: group3,
+      description: tag,
+      ungroupedDescription: ungroupedDescription
+    })
   }
 
-  console.log(tags)
-  console.log(new Date(1000 * data.timestamp))
+  if (LogLevel >= LogLevelDetailed) {
+    console.log(new Date(1000 * data.timestamp))
+    console.log(tags)
+  }
 }
 
 const rtData = function (measurement) {
-  let _id = 10000
+  if (AutoKeyId === 0) {
+    AutoKeyId = ConnectionNumber * AutoKeyMultiplier + 1
+  } else {
+    AutoKeyId++
+  }
+
   return {
-    _id: _id,
+    _id: new mongo.Double(AutoKeyId),
     protocolSourceASDU: '',
     protocolSourceCommonAddress: '',
-    protocolSourceConnectionNumber: measurement.connNumber,
-    protocolSourceObjectAddress: measurement.tag,
+    protocolSourceConnectionNumber: new mongo.Double(ConnectionNumber),
+    protocolSourceObjectAddress: measurement?.tag,
     alarmState: new mongo.Double(-1.0),
-    description: measurement.description,
-    ungroupedDescription: measurement.ungroupedDescription,
-    group1: iv.conn_name,
-    group2: iv.common_address,
-    group3: '',
+    description: measurement?.description,
+    ungroupedDescription: measurement?.ungroupedDescription,
+    group1: measurement?.group1,
+    group2: measurement?.group2,
+    group3: measurement?.group3,
     stateTextFalse: '',
     stateTextTrue: '',
     eventTextFalse: '',
@@ -169,7 +222,6 @@ const rtData = function (measurement) {
     type: 'analog',
     value: new mongo.Double(measurement.value),
     valueString: measurement.value.toString(),
-
     alarmDisabled: false,
     alerted: false,
     alarmed: false,
@@ -177,7 +229,7 @@ const rtData = function (measurement) {
     annotation: '',
     commandBlocked: false,
     commandOfSupervised: new mongo.Double(0.0),
-    commissioningRemarks: '',
+    commissioningRemarks: 'Auto created by Telegraf Client Driver',
     formula: new mongo.Double(0.0),
     frozen: false,
     frozenDetectTimeout: new mongo.Double(0.0),
@@ -230,23 +282,56 @@ server.bind(port)
 console.log('Connecting to MongoDB server...')
 ;(async () => {
   let collection = null
-  let valuesQueue = new Queue() // queue of values to update
 
   setInterval(async function () {
     let cnt = 0
-    if (collection)
-      while (!valuesQueue.isEmpty()) {
-        let upd = valuesQueue.peek()
+    if (clientMongo && collection)
+      while (!ValuesQueue.isEmpty()) {
+        let data = ValuesQueue.peek()
+        console.log(data)
+
+        // const db = clientMongo.db(jsConfig.mongoDatabaseName)
+
+        // if not sure taf is created, try to find, if not found create it
+        if (!ListCreatedTags.includes(data.tag)) {
+          let res = await collection
+            .find({
+              protocolSourceConnectionNumber: ConnectionNumber,
+              protocolSourceObjectAddress: data.tag
+            })
+            .toArray()
+
+          if (res.length === 0) {
+            // not found, then create
+
+            let newTag = rtData(data)
+
+            console.log(newTag)
+
+            // create
+            // collection.insertOne(newTag)
+
+            ListCreatedTags.push(data.tag)
+          } else {
+            // found
+            ListCreatedTags.push(data.tag)
+          }
+        }
+
+        /*
+        let upd = ValuesQueue.peek()
         let where = { _id: upd._id }
         delete upd._id // remove _id for update
         collection.updateOne(where, {
           $set: upd
         })
-        valuesQueue.dequeue()
+*/
+
+        ValuesQueue.dequeue()
         cnt++
       }
     if (cnt) console.log('Mongo Updates ' + cnt)
-  }, 150)
+  }, 500)
 
   let connOptions = {
     useNewUrlParser: true,
@@ -289,11 +374,38 @@ console.log('Connecting to MongoDB server...')
         const db = client.db(jsConfig.mongoDatabaseName)
         collection = db.collection(RealtimeDataCollectionName)
 
+        // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
+        db.collection(ProtocolConnectionsCollectionName)
+          .find({
+            protocolDriver: APP_NAME,
+            protocolDriverInstanceNumber: Instance
+          })
+          .toArray(function (err, results) {
+            if (err) console.log(err)
+            else if (results) {
+              if (results.length == 0) {
+                console.log('No protocol connection found!')
+                process.exit(1)
+              } else {
+                if (!('protocolConnectionNumber' in results[0])) {
+                  console.log('No protocol connection found on record!')
+                  process.exit(2)
+                }
+                ConnectionNumber = results[0]?.protocolConnectionNumber
+                console.log('Connection - ' + ConnectionNumber)
+              }
+            }
+          })
+
         let lastActiveNodeKeepAliveTimeTag = null
         let countKeepAliveNotUpdated = 0
         let countKeepAliveUpdatesLimit = 4
         async function ProcessRedundancy () {
           if (!clientMongo) return
+
+          if (LogLevel >= LogLevelNormal)
+            console.log('Redundancy - Process Active: ' + ProcessActive)
+
           // look for process instance entry, if not found create a new entry
           db.collection(ProtocolDriverInstancesCollectionName)
             .find({
