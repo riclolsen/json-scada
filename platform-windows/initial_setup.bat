@@ -24,3 +24,4 @@ mongodb-runtime\bin\mongoimport --db json_scada --collection realtimeData --type
 mongodb-runtime\bin\mongoimport --db json_scada --collection processInstances --type json --file ..\mongo_seed_demo\demo_process_instances.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection users --type json --file ..\mongo_seed_demo\demo_users.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection roles --type json --file ..\mongo_seed_demo\demo_roles.json 
+mongodb-runtime\bin\mongo json_scada --eval "db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:'demo'}})"
