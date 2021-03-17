@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const APP_NAME = 'TELEGRAF-UDP-JSON'
+const APP_NAME = 'TELEGRAF-LISTENER'
 const APP_MSG = '{json:scada} - Telegraf UDP JSON Client Driver'
 const VERSION = '0.1.1'
 let ProcessActive = false // for redundancy control
@@ -48,7 +48,7 @@ var inst = null
 if (args.length > 0) inst = parseInt(args[0])
 const Instance = inst || process.env.JS_TELEGRAFUDPCLIENT_INSTANCE || 1
 let ConnectionNumber = 0
-const AutoKeyMultiplier = 1000000
+const AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
 let AutoKeyId = 0
 
 var logLevel = null
@@ -91,16 +91,18 @@ server.on('error', err => {
 
 server.on('listening', () => {
   const address = server.address()
-  console.log(`server listening ${address.address}:${address.port}`)
+  if (LogLevel > LogLevelMin)
+    console.log(`server listening ${address.address}:${address.port}`)
 })
 
 server.on('message', (msg, rinfo) => {
-  if (LogLevel >= LogLevelDebug)
-    console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`)
   let data = {}
-
+  
   try {
     data = JSON.parse(msg)
+    if (LogLevel >= LogLevelDebug)
+      console.log("Message - " + JSON.stringify(data) + ` - from ${rinfo.address}:${rinfo.port}`
+    )
     processMessageJSON(data)
   } catch (e) {
     console.log(e)
@@ -123,14 +125,28 @@ const processMessageJSON = function (data) {
     group1 = data?.name
   }
 
-  // add group2 or object name and host
+  // add group2 or topic or and host name as group2
   if (notEmpty(data.tags?.group2)) {
-    grouping += addGrpIfNotEmpty(data.tags?.group2)
+    grouping += addGrpIfNotEmpty(data.tags.group2)
     group2 = data.tags.group2
   } else {
     // grouping += addGrpIfNotEmpty(data.tags?.objectname)
-    grouping += addGrpIfNotEmpty(data.tags?.host)
-    group2 = data.tags?.host
+    if (notEmpty(data.tags?.topic)) {
+      let pos = data.tags.topic.lastIndexOf('/')
+      if (pos === -1) {
+        group2 = data.tags.topic
+        ungroupedDescription = data.tags.topic
+      } else {
+        group2 = data.tags.topic.substring(0, pos)
+        ungroupedDescription = data.tags.topic.substring(pos + 1)
+      }
+      grouping += group2 + grpSep
+    } else {
+      if (notEmpty(data.tags?.host)) {
+        grouping += addGrpIfNotEmpty(data.tags.host)
+        group2 = data.tags.host
+      }
+    }
   }
 
   if (notEmpty(data.tags?.group3)) {
@@ -141,20 +157,21 @@ const processMessageJSON = function (data) {
   grouping += addGrpIfNotEmpty(data.tags?.group3)
 
   // add other tags to grouping
-  for (var [key, value] of Object.entries(data.tags)) {
+  for (var [key, val] of Object.entries(data.tags)) {
     if (
       ![
         'instance',
         // 'objectname',
         'host',
+        'topic',
         'group1',
         'group2',
         'group3'
       ].includes(key)
     )
-      if (value !== '') { 
-        grouping += `${value}${grpSep}` 
-        ungroupedDescription += `${value}${grpSep}` 
+      if (val !== '') {
+        grouping += `${val}${grpSep}`
+        // ungroupedDescription += `${value}${grpSep}`
       }
   }
 
@@ -163,42 +180,43 @@ const processMessageJSON = function (data) {
     grouping += addGrpIfNotEmpty(data.tags?.instance)
   }
 
-  let tags = []
+  let isOpc = false
+  let invalid = false
+  if ('Quality' in data.fields) isOpc = true
   for (var [key, value] of Object.entries(data.fields)) {
     let tag
-    if (key === 'value') {
-      // remove the ~ at the end
-      tag = grouping.replace(/~\s*$/, '')
+    if (key === 'Quality') {
+      if (value.toString().indexOf('OK') === -1) invalid = true
     } else {
-      tag = `${grouping}${key}`
-      ungroupedDescription = key
+      if (key === 'value') {
+        // remove the ~ at the end
+        if (ungroupedDescription === '') tag = grouping.replace(/~\s*$/, '')
+        else tag = grouping + ungroupedDescription
+      } else {
+        tag = `${grouping}${key}`
+        ungroupedDescription = key
+      }
+
+      let entry = {
+        tag: tag,
+        value: value,
+        group1: group1,
+        group2: group2,
+        group3: group3,
+        description: tag,
+        ungroupedDescription: ungroupedDescription,
+        invalidAtSource: invalid,
+        timeTagAtSource: new Date(1000 * data.timestamp)
+      }
+      if (LogLevel >= LogLevelDebug)
+        console.log('Tag - ' + JSON.stringify(entry))
+      ValuesQueue.enqueue(entry)
     }
-
-    tags[tag] = value
-
-    ValuesQueue.enqueue({
-      tag: tag,
-      value: value,
-      group1: group1,
-      group2: group2,
-      group3: group3,
-      description: tag,
-      ungroupedDescription: ungroupedDescription
-    })
-  }
-
-  if (LogLevel >= LogLevelDetailed) {
-    console.log(new Date(1000 * data.timestamp))
-    console.log(tags)
   }
 }
 
 const rtData = function (measurement) {
-  if (AutoKeyId === 0) {
-    AutoKeyId = ConnectionNumber * AutoKeyMultiplier + 1
-  } else {
-    AutoKeyId++
-  }
+  AutoKeyId++
 
   return {
     _id: new mongo.Double(AutoKeyId),
@@ -228,7 +246,7 @@ const rtData = function (measurement) {
     annotation: '',
     commandBlocked: false,
     commandOfSupervised: new mongo.Double(0.0),
-    commissioningRemarks: 'Auto created by Telegraf Client Driver',
+    commissioningRemarks: 'Auto created by ' + APP_NAME,
     formula: new mongo.Double(0.0),
     frozen: false,
     frozenDetectTimeout: new mongo.Double(0.0),
@@ -238,7 +256,7 @@ const rtData = function (measurement) {
     historianDeadBand: new mongo.Double(0.0),
     historianPeriod: new mongo.Double(0.0),
     hysteresis: new mongo.Double(0.0),
-    invalid: true,
+    invalid: (measurement?.invalidAtSource)?true:false,
     invalidDetectTimeout: new mongo.Double(60000.0),
     isEvent: false,
     kconv1: new mongo.Double(1.0),
@@ -256,7 +274,7 @@ const rtData = function (measurement) {
     supervisedOfCommand: new mongo.Double(0.0),
     timeTag: null,
     timeTagAlarm: null,
-    timeTagAtSource: null,
+    timeTagAtSource: measurement.timeTagAtSource,
     timeTagAtSourceOk: false,
     transient: false,
     unit: '',
@@ -278,7 +296,7 @@ if (
 
 server.bind(port)
 
-console.log('Connecting to MongoDB server...')
+if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
 ;(async () => {
   let collection = null
 
@@ -287,12 +305,11 @@ console.log('Connecting to MongoDB server...')
     if (clientMongo && collection)
       while (!ValuesQueue.isEmpty()) {
         let data = ValuesQueue.peek()
-        console.log(data)
-
         // const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
         // if not sure taf is created, try to find, if not found create it
         if (!ListCreatedTags.includes(data.tag)) {
+          // possibly not create tag, must check
           let res = await collection
             .find({
               protocolSourceConnectionNumber: ConnectionNumber,
@@ -302,34 +319,64 @@ console.log('Connecting to MongoDB server...')
 
           if (res.length === 0) {
             // not found, then create
-
             let newTag = rtData(data)
-
-            console.log(newTag)
-
-            // create
-            // collection.insertOne(newTag)
-
-            ListCreatedTags.push(data.tag)
+            if (logLevel >= LogLevelDetailed)
+              console.log('Tag not found, will create: ' + data.tag)
+            let resIns = await collection.insertOne(newTag)
+            if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
           } else {
-            // found
+            // found (already exists, no need to create), just list as created
             ListCreatedTags.push(data.tag)
           }
         }
 
-        /*
-        let upd = ValuesQueue.peek()
-        let where = { _id: upd._id }
-        delete upd._id // remove _id for update
-        collection.updateOne(where, {
-          $set: upd
-        })
-*/
+        // now update tag
+
+        // try to parse value as JSON
+        let valueJson = null
+        try {
+          valueJson = JSON.parse(data.value)
+        } catch (e) {}
+
+        if (LogLevel >= LogLevelDetailed)
+          console.log(
+            'Update - ' +
+              data.timeTagAtSource +
+              ' : ' +
+              data.tag +
+              ' : ' +
+              data.value
+          )
+
+        let updTag = {
+          valueAtSource: parseFloat(data.value),
+          valueStringAtSource: data.value.toString(),
+          valueJsonAtSource: valueJson,
+          asduAtSource: '',
+          causeOfTransmissionAtSource: '3',
+          timeTagAtSource: data.timeTagAtSource,
+          timeTagAtSourceOk: false, // signal that it is not really from field time
+          timeTag: new Date(),
+          originator: APP_NAME,
+          notTopicalAtSource: false,
+          invalidAtSource: data.invalidAtSource,
+          overflowAtSource: false,
+          blockedAtSource: false,
+          substitutedAtSource: false
+        }
+        collection.updateOne(
+          {
+            protocolSourceConnectionNumber: ConnectionNumber,
+            protocolSourceObjectAddress: data.tag
+          },
+          { $set: { sourceDataUpdate: updTag } }
+        )
 
         ValuesQueue.dequeue()
         cnt++
       }
-    if (cnt) console.log('Mongo Updates ' + cnt)
+    if (cnt)
+      if (LogLevel >= LogLevelNormal) console.log('Mongo - Updates: ' + cnt)
   }, 500)
 
   let connOptions = {
@@ -367,7 +414,9 @@ console.log('Connecting to MongoDB server...')
         connOptions
       ).then(async client => {
         clientMongo = client
-        console.log('Connected correctly to MongoDB server')
+
+        if (LogLevel > LogLevelMin)
+          console.log('Connected correctly to MongoDB server')
 
         // specify db and collections
         const db = client.db(jsConfig.mongoDatabaseName)
@@ -379,7 +428,7 @@ console.log('Connecting to MongoDB server...')
             protocolDriver: APP_NAME,
             protocolDriverInstanceNumber: Instance
           })
-          .toArray(function (err, results) {
+          .toArray(async function (err, results) {
             if (err) console.log(err)
             else if (results) {
               if (results.length == 0) {
@@ -392,6 +441,18 @@ console.log('Connecting to MongoDB server...')
                 }
                 ConnectionNumber = results[0]?.protocolConnectionNumber
                 console.log('Connection - ' + ConnectionNumber)
+
+                // find biggest point key (_id) and ajdust automatic key
+                AutoKeyId = ConnectionNumber * AutoKeyMultiplier
+                let resLastKey = await collection
+                  .find()
+                  .sort({ _id: -1 })
+                  .limit(1)
+                  .toArray()
+                if (resLastKey.length > 0 && '_id' in resLastKey[0]) {
+                  if (parseInt(resLastKey[0]._id) >= AutoKeyId)
+                    AutoKeyId = parseInt(resLastKey[0]._id)
+                }
               }
             }
           })
@@ -417,7 +478,9 @@ console.log('Connecting to MongoDB server...')
                 if (results.length == 0) {
                   // not found, then create
                   ProcessActive = true
-                  console.log('Instance config not found, creating one...')
+                  console.log(
+                    'Redundancy - Instance config not found, creating one...'
+                  )
                   db.collection(
                     ProtocolDriverInstancesCollectionName
                   ).insertOne({
@@ -433,7 +496,7 @@ console.log('Connecting to MongoDB server...')
                   // check for disabled or node not allowed
                   let instance = results[0]
                   if (instance?.enabled === false) {
-                    console.log('Instance disabled, exiting...')
+                    console.log('Redundancy - Instance disabled, exiting...')
                     process.exit()
                   }
                   if (
@@ -441,18 +504,21 @@ console.log('Connecting to MongoDB server...')
                     instance.nodeNames.length > 0
                   ) {
                     if (!instance.nodeNames.includes(jsConfig.nodeName)) {
-                      console.log('Node name not allowed, exiting...')
+                      console.log(
+                        'Redundancy - Node name not allowed, exiting...'
+                      )
                       process.exit()
                     }
                   }
                   if (instance?.activeNodeName === jsConfig.nodeName) {
-                    if (!ProcessActive) console.log('Node activated!')
+                    if (!ProcessActive)
+                      console.log('Redundancy - Node activated!')
                     countKeepAliveNotUpdated = 0
                     ProcessActive = true
                   } else {
                     // other node active
                     if (ProcessActive) {
-                      console.log('Node deactivated!')
+                      console.log('Redundancy - Node deactivated!')
                       countKeepAliveNotUpdated = 0
                     }
                     ProcessActive = false
@@ -462,20 +528,20 @@ console.log('Connecting to MongoDB server...')
                     ) {
                       countKeepAliveNotUpdated++
                       console.log(
-                        'Keep-alive from active node not updated. ' +
+                        'Redundancy - Keep-alive from active node not updated. ' +
                           countKeepAliveNotUpdated
                       )
                     } else {
                       countKeepAliveNotUpdated = 0
                       console.log(
-                        'Keep-alive updated by active node. Staying inactive.'
+                        'Redundancy - Keep-alive updated by active node. Staying inactive.'
                       )
                     }
                     lastActiveNodeKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
                     if (countKeepAliveNotUpdated > countKeepAliveUpdatesLimit) {
                       // cnt exceeded, be active
                       countKeepAliveNotUpdated = 0
-                      console.log('Node activated!')
+                      console.log('Redundancy - Node activated!')
                       ProcessActive = true
                     }
                   }
