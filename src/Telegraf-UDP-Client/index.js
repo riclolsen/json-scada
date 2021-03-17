@@ -28,7 +28,6 @@ let jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
 const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
-let Server = require('mongodb').Server
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
@@ -114,7 +113,7 @@ const processMessageJSON = function (data) {
     group2 = '',
     group3 = '',
     ungroupedDescription = ''
-    
+
   // add group1 or measurement name
   if (notEmpty(data.tags?.group1)) {
     grouping += addGrpIfNotEmpty(data.tags.group1)
@@ -338,7 +337,7 @@ console.log('Connecting to MongoDB server...')
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     poolSize: 20,
-    readPreference: Server.READ_PRIMARY
+    readPreference: MongoClient.READ_PRIMARY
   }
 
   if (

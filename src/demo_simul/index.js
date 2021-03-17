@@ -147,6 +147,7 @@ if (
                 overflowAtSource: false,
                 blockedAtSource: false,
                 notTopicalAtSource: false,
+                test: true,
                 originator: APP_NAME,
                 CntUpd: cntUpd,                
               }
@@ -225,6 +226,7 @@ if (
                 overflowAtSource: false,
                 blockedAtSource: false,
                 notTopicalAtSource: false,
+                test: true,
                 originator: APP_NAME,
                 CntUpd: cntUpd
               }
@@ -326,6 +328,7 @@ if (
                         overflowAtSource: false,
                         blockedAtSource: false,
                         notTopicalAtSource: false,
+                        test: true,
                         originator: APP_NAME,
                         CntUpd: cntUpd
                       }

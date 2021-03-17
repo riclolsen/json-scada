@@ -2,7 +2,7 @@
 
 /*
  * A realtime point data HTTP web server for JSON SCADA.
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -40,7 +40,6 @@ var cookieParser = require('cookie-parser')
 const fs = require('fs')
 const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
-let Server = require('mongodb')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 const UserActionsQueue = require('./userActionsQueue')
@@ -1888,7 +1887,7 @@ let pool = null
           useUnifiedTopology: true,
           appname: APP_NAME,
           poolSize: 20,
-          readPreference: Server.READ_PRIMARY
+          readPreference: MongoClient.READ_PRIMARY
         }
 
         if (

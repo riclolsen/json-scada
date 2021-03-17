@@ -2,7 +2,7 @@
 
 /*
  * A process that converts Grafana notifications into JSON-SCADA SOE events, alarms and beeps.
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -40,7 +40,6 @@ const Queue = require('queue-fifo')
 const fs = require('fs')
 const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
-let Server = require('mongodb')
 const { setInterval } = require('timers')
 const express = require('express')
 const app = express()
@@ -180,7 +179,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION,
     poolSize: 20,
-    readPreference: Server.READ_PRIMARY
+    readPreference: MongoClient.READ_PRIMARY
   }
 
   if (
