@@ -94,6 +94,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 * [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
 * [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
 * [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
+* [Telegraf Listener Driver](src/telegraf-listener/README.md)
 * [OPC-UA Client Driver](src/OPC-UA-Client/README.md)
 * [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](src/i104m/README.md)
@@ -118,7 +119,8 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [ ] Secure ICCP Client
-- [X] OPC UA Client (experimental)
+- [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
+- [x] OPC UA Client (experimental)
 - [ ] OPC UA Server
 - [ ] OPC DA Client
 - [ ] OPC DA Server
@@ -151,7 +153,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [ ] Linux Image / VM
 - [x] Supervisor (Linux process manager) examples
 - [ ] InfluxDB Integration
-- [ ] Telegraf Integration
+- [x] Telegraf Integration
 - [ ] Kafka Integration
 - [x] PowerBI Integration (via PostgreSQL connector)
 - [ ] PowerBI Direct Integration
