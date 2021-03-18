@@ -23,18 +23,20 @@ const ProtocolConnection = mongoose.model(
     commandsEnabled: { type: Boolean, required: true, default: true },
     stats: { type: Object, default: null },
 
-    // IEC 104 Server and Client, DNP3, PLCTag, I104M
+    // IEC 104 Server and Client, DNP3, PLCTag, I104M, TELEGRAF_LISTENER
     ipAddressLocalBind: { type: String },
     ipAddresses: { type: [String], default: [] },
+
+    // OPC-UA Client, TELEGRAF_LISTENER
+    autoCreateTags: { type: Boolean, default: true },
     
     // OPC-UA Client
-    endpointURLs: { type: [String], default: [] },
-    configFileName: { type: String, default: "../conf/Opc.Ua.DefaultClient.Config.xml" },
-    useSecurity: { type: Boolean, default: false },
-    autoCreateTags: { type: Boolean, default: true },
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
     autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
     autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
+    endpointURLs: { type: [String], default: [] },
+    configFileName: { type: String, default: "../conf/Opc.Ua.DefaultClient.Config.xml" },
+    useSecurity: { type: Boolean, default: false },
     timeoutMs: { type: Double, min: 0, default: 20000 },
 
     // IEC 104 Server and Client, DNP3, PLCTag, I104M

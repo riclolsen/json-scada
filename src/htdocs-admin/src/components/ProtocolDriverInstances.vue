@@ -233,6 +233,7 @@ export default {
       "OPC-UA",
       "PLCTAG",
       "I104M",
+      "TELEGRAF-LISTENER",
     ],
     driverInstances: [],
   }),

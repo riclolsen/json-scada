@@ -18,89 +18,85 @@ exports.listUserActions = async (req, res) => {
   console.log('listUserActions')
 
   let skip = 0
-  if ("page" in req.body && "itemsPerPage" in req.body)
-    skip = req.body.itemsPerPage * (req.body.page-1)
+  if ('page' in req.body && 'itemsPerPage' in req.body)
+    skip = req.body.itemsPerPage * (req.body.page - 1)
   let filter = {}
-  if ("filter" in req.body)
-     filter = req.body.filter
+  if ('filter' in req.body) filter = req.body.filter
 
   let limit = req.body.itemsPerPage || 10
   let orderby = {}
-  if ("sortBy" in req.body && "sortDesc" in req.body) {
-    for(let i=0; i<req.body.sortBy.length; i++) 
-      orderby[req.body.sortBy[i]] = req.body.sortDesc[i]? -1:1
-    if (req.body.sortBy.length === 0)
-      orderby = { timeTag: 1 }
-    }
-  else
-    orderby = { timeTag: 1 }
+  if ('sortBy' in req.body && 'sortDesc' in req.body) {
+    for (let i = 0; i < req.body.sortBy.length; i++)
+      orderby[req.body.sortBy[i]] = req.body.sortDesc[i] ? -1 : 1
+    if (req.body.sortBy.length === 0) orderby = { timeTag: 1 }
+  } else orderby = { timeTag: 1 }
 
-  let count = await UserAction.count(filter)  
+  let count = await UserAction.count(filter)
   console.log(count)
-  UserAction.find(filter).skip(skip).limit(limit).sort(orderby).exec(function (err, userActions) {
-    if (err) {
-      res.status(200).send({ error: err })
-      return
-    }
-    let ret = { userActions: userActions, countTotal: count }
-    res.status(200).send(ret)
-  })
+  UserAction.find(filter)
+    .skip(skip)
+    .limit(limit)
+    .sort(orderby)
+    .exec(function (err, userActions) {
+      if (err) {
+        res.status(200).send({ error: err })
+        return
+      }
+      let ret = { userActions: userActions, countTotal: count }
+      res.status(200).send(ret)
+    })
 }
 
 exports.updateTag = async (req, res) => {
   registerUserAction(req, 'updateTag')
 
-  if ("_id" in req.body){
+  if ('_id' in req.body) {
     let _id = req.body._id
     delete req.body._id
     await Tag.findOneAndUpdate({ _id: _id }, req.body)
     res.status(200).send({ error: false })
-  }
-  else
-    res.status(200).send({ error: "No _id in update request." })
+  } else res.status(200).send({ error: 'No _id in update request.' })
 }
 
 exports.deleteTag = async (req, res) => {
   registerUserAction(req, 'deleteTag')
 
-  if ("_id" in req.body){
-  await Tag.findOneAndDelete({ _id: req.body._id })
-  res.status(200).send({ error: false })
-  }
-  else
-    res.status(200).send({ error: "No _id in delete request." })
+  if ('_id' in req.body) {
+    await Tag.findOneAndDelete({ _id: req.body._id })
+    res.status(200).send({ error: false })
+  } else res.status(200).send({ error: 'No _id in delete request.' })
 }
 
 exports.listTags = async (req, res) => {
   console.log('listTags')
 
   let skip = 0
-  if ("page" in req.body && "itemsPerPage" in req.body)
-    skip = req.body.itemsPerPage * (req.body.page-1)
+  if ('page' in req.body && 'itemsPerPage' in req.body)
+    skip = req.body.itemsPerPage * (req.body.page - 1)
   let filter = {}
-  if ("filter" in req.body)
-     filter = req.body.filter
+  if ('filter' in req.body) filter = req.body.filter
 
   let limit = req.body.itemsPerPage || 10
   let orderby = {}
-  if ("sortBy" in req.body && "sortDesc" in req.body) {
-    for(let i=0; i<req.body.sortBy.length; i++) 
-      orderby[req.body.sortBy[i]] = req.body.sortDesc[i]? -1:1
-    if (req.body.sortBy.length === 0)
-      orderby = { tag: 1 }
-    }
-  else
-    orderby = { tag: 1 }
+  if ('sortBy' in req.body && 'sortDesc' in req.body) {
+    for (let i = 0; i < req.body.sortBy.length; i++)
+      orderby[req.body.sortBy[i]] = req.body.sortDesc[i] ? -1 : 1
+    if (req.body.sortBy.length === 0) orderby = { tag: 1 }
+  } else orderby = { tag: 1 }
 
-  let count = await Tag.count(filter)  
-  Tag.find(filter).skip(skip).limit(limit).sort(orderby).exec(function (err, tags) {
-    if (err) {
-      res.status(200).send({ error: err })
-      return
-    }
-    let ret = { tags: tags, countTotal: count }
-    res.status(200).send(ret)
-  })
+  let count = await Tag.count(filter)
+  Tag.find(filter)
+    .skip(skip)
+    .limit(limit)
+    .sort(orderby)
+    .exec(function (err, tags) {
+      if (err) {
+        res.status(200).send({ error: err })
+        return
+      }
+      let ret = { tags: tags, countTotal: count }
+      res.status(200).send(ret)
+    })
 }
 
 exports.updateProtocolConnection = async (req, res) => {
@@ -108,9 +104,12 @@ exports.updateProtocolConnection = async (req, res) => {
 
   // make default bind address for some protocols
   if (
-    ['IEC60870-5-104_SERVER', 'DNP3_SERVER', 'I104M'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'IEC60870-5-104_SERVER',
+      'DNP3_SERVER',
+      'I104M',
+      'TELEGRAF-LISTENER'
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (
       !('ipAddressLocalBind' in req.body) ||
@@ -127,6 +126,9 @@ exports.updateProtocolConnection = async (req, res) => {
         case 'I104M':
           req.body.ipAddressLocalBind = '0.0.0.0:8099'
           break
+        case 'TELEGRAF-LISTENER':
+          req.body.ipAddressLocalBind = '0.0.0.0:51920'
+          break
       }
     }
   }
@@ -138,7 +140,8 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3',
       'DNP3_SERVER',
       'PLCTAG',
-      'I104M'
+      'I104M',
+      'TELEGRAF-LISTENER'
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('ipAddresses' in req.body)) {
@@ -146,19 +149,18 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (
-    [
-      'OPC-UA'
-    ].includes(req?.body?.protocolDriver)
-  ) {
+  if (['OPC-UA', 'TELEGRAF-LISTENER'].includes(req?.body?.protocolDriver)) {
+    if (!('autoCreateTags' in req.body)) {
+      req.body.autoCreateTags = true
+    }
+  }
+
+  if (['OPC-UA'].includes(req?.body?.protocolDriver)) {
     if (!('endpointURLs' in req.body)) {
       req.body.endpointURLs = []
     }
     if (!('configFileName' in req.body)) {
-      req.body.configFileName = "../conf/Opc.Ua.DefaultClient.Config.xml"
-    }
-    if (!('autoCreateTags' in req.body)) {
-      req.body.autoCreateTags = true
+      req.body.configFileName = '../conf/Opc.Ua.DefaultClient.Config.xml'
     }
     if (!('autoCreateTagPublishingInterval' in req.body)) {
       req.body.autoCreateTagPublishingInterval = 2.5
@@ -175,7 +177,6 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('useSecurity' in req.body)) {
       req.body.useSecurity = false
     }
-    
   }
 
   if (

@@ -24,6 +24,12 @@ const APP_MSG = '{json:scada} - Telegraf UDP JSON Client Driver'
 const VERSION = '0.1.1'
 let ProcessActive = false // for redundancy control
 let jsConfigFile = '../../conf/json-scada.json'
+let UdpBindPort = process.env.JS_TELEGRAF_LISTENER_BIND_PORT || 51920
+let UdpBindAddress = process.env.JS_TELEGRAF_LISTENER_BIND_ADDRESS || '0.0.0.0'
+const LogLevelMin = 0,
+  LogLevelNormal = 1,
+  LogLevelDetailed = 2,
+  LogLevelDebug = 3
 
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -33,12 +39,6 @@ const { setInterval } = require('timers')
 const dgram = require('dgram')
 const server = dgram.createSocket('udp4')
 const grpSep = '~'
-const port = 51920
-
-const LogLevelMin = 0,
-  LogLevelNormal = 1,
-  LogLevelDetailed = 2,
-  LogLevelDebug = 3
 
 let ListCreatedTags = []
 let ValuesQueue = new Queue() // queue of values to update
@@ -46,14 +46,15 @@ let ValuesQueue = new Queue() // queue of values to update
 const args = process.argv.slice(2)
 var inst = null
 if (args.length > 0) inst = parseInt(args[0])
-const Instance = inst || process.env.JS_TELEGRAFUDPCLIENT_INSTANCE || 1
+const Instance = inst || process.env.JS_TELEGRAF_LISTENER_INSTANCE || 1
 let ConnectionNumber = 0
+let AutoCreateTags = true
 const AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
 let AutoKeyId = 0
 
 var logLevel = null
 if (args.length > 1) logLevel = parseInt(args[1])
-const LogLevel = logLevel || process.env.JS_TELEGRAFUDPCLIENT_LOGLEVEL || 1
+const LogLevel = logLevel || process.env.JS_TELEGRAF_LISTENER_LOGLEVEL || 1
 
 var confFile = null
 if (args.length > 2) confFile = args[2]
@@ -97,13 +98,17 @@ server.on('listening', () => {
 
 server.on('message', (msg, rinfo) => {
   let data = {}
-  
+
   try {
     data = JSON.parse(msg)
     if (LogLevel >= LogLevelDebug)
-      console.log("Message - " + JSON.stringify(data) + ` - from ${rinfo.address}:${rinfo.port}`
-    )
-    processMessageJSON(data)
+      console.log(
+        'Message - ' +
+          JSON.stringify(data) +
+          ` - from ${rinfo.address}:${rinfo.port}`
+      )
+    if (ProcessActive)
+      processMessageJSON(data)
   } catch (e) {
     console.log(e)
   }
@@ -163,13 +168,16 @@ const processMessageJSON = function (data) {
         'instance',
         // 'objectname',
         'host',
+        'hostname',
+        'node_type',
+        'rs_name',
         'topic',
         'group1',
         'group2',
         'group3'
       ].includes(key)
     )
-      if (val !== '') {
+      if (val !== '' && grouping.indexOf(val)===-1) {
         grouping += `${val}${grpSep}`
         // ungroupedDescription += `${value}${grpSep}`
       }
@@ -236,7 +244,7 @@ const rtData = function (measurement) {
     eventTextTrue: '',
     origin: 'supervised',
     tag: measurement.tag,
-    type: 'analog',
+    type: (typeof measurement.value === 'number' && !isNaN(parseFloat(measurement.value)))? 'analog':'string',
     value: new mongo.Double(measurement.value),
     valueString: measurement.value.toString(),
     alarmDisabled: false,
@@ -256,7 +264,7 @@ const rtData = function (measurement) {
     historianDeadBand: new mongo.Double(0.0),
     historianPeriod: new mongo.Double(0.0),
     hysteresis: new mongo.Double(0.0),
-    invalid: (measurement?.invalidAtSource)?true:false,
+    invalid: measurement?.invalidAtSource ? true : false,
     invalidDetectTimeout: new mongo.Double(60000.0),
     isEvent: false,
     kconv1: new mongo.Double(1.0),
@@ -294,8 +302,6 @@ if (
   process.exit()
 }
 
-server.bind(port)
-
 if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
 ;(async () => {
   let collection = null
@@ -307,28 +313,29 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
         let data = ValuesQueue.peek()
         // const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
-        // if not sure taf is created, try to find, if not found create it
-        if (!ListCreatedTags.includes(data.tag)) {
-          // possibly not create tag, must check
-          let res = await collection
-            .find({
-              protocolSourceConnectionNumber: ConnectionNumber,
-              protocolSourceObjectAddress: data.tag
-            })
-            .toArray()
+        // if not sure tag is created, try to find, if not found create it
+        if (AutoCreateTags)
+          if (!ListCreatedTags.includes(data.tag)) {
+            // possibly not created tag, must check
+            let res = await collection
+              .find({
+                protocolSourceConnectionNumber: ConnectionNumber,
+                protocolSourceObjectAddress: data.tag
+              })
+              .toArray()
 
-          if (res.length === 0) {
-            // not found, then create
-            let newTag = rtData(data)
-            if (logLevel >= LogLevelDetailed)
-              console.log('Tag not found, will create: ' + data.tag)
-            let resIns = await collection.insertOne(newTag)
-            if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
-          } else {
-            // found (already exists, no need to create), just list as created
-            ListCreatedTags.push(data.tag)
+            if (res.length === 0) {
+              // not found, then create
+              let newTag = rtData(data)
+              if (logLevel >= LogLevelDetailed)
+                console.log('Tag not found, will create: ' + data.tag)
+              let resIns = await collection.insertOne(newTag)
+              if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
+            } else {
+              // found (already exists, no need to create), just list as created
+              ListCreatedTags.push(data.tag)
+            }
           }
-        }
 
         // now update tag
 
@@ -357,7 +364,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
           timeTagAtSource: data.timeTagAtSource,
           timeTagAtSourceOk: false, // signal that it is not really from field time
           timeTag: new Date(),
-          originator: APP_NAME,
+          originator: APP_NAME + "|" + ConnectionNumber,
           notTopicalAtSource: false,
           invalidAtSource: data.invalidAtSource,
           overflowAtSource: false,
@@ -439,13 +446,32 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
                   console.log('No protocol connection found on record!')
                   process.exit(2)
                 }
+                if ('autoCreateTags' in results[0]) {
+                  AutoCreateTags = results[0].autoCreateTags ? true : false
+                }
+                if ('ipAddressLocalBind' in results[0]) {
+                  if (results[0].ipAddressLocalBind.trim() !== '') {
+                    let aux = results[0].ipAddressLocalBind.split(':')
+                    UdpBindAddress = aux[0]
+                    if (aux.length > 1 && !isNaN(parseInt(aux[1])))
+                      UdpBindPort = parseInt(aux[1])
+                  }
+                }
+                console.log('Binding to ' + UdpBindAddress + ':' + UdpBindPort)
+                server.bind(UdpBindPort, UdpBindAddress)
+
                 ConnectionNumber = results[0]?.protocolConnectionNumber
                 console.log('Connection - ' + ConnectionNumber)
 
-                // find biggest point key (_id) and ajdust automatic key
+                // find biggest point key (_id) on range and ajdust automatic key
                 AutoKeyId = ConnectionNumber * AutoKeyMultiplier
                 let resLastKey = await collection
-                  .find()
+                  .find({
+                    _id: {
+                      $gt: AutoKeyId,
+                      $lt: (ConnectionNumber + 1) * AutoKeyMultiplier
+                    }
+                  })
                   .sort({ _id: -1 })
                   .limit(1)
                   .toArray()
@@ -495,6 +521,12 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
                 } else {
                   // check for disabled or node not allowed
                   let instance = results[0]
+
+                  let instKeepAliveTimeTag = null
+
+                  if ('activeNodeKeepAliveTimeTag' in instance)
+                    instKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
+
                   if (instance?.enabled === false) {
                     console.log('Redundancy - Instance disabled, exiting...')
                     process.exit()
@@ -523,8 +555,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
                     }
                     ProcessActive = false
                     if (
-                      lastActiveNodeKeepAliveTimeTag ===
-                      instance.activeNodeKeepAliveTimeTag.toISOString()
+                      lastActiveNodeKeepAliveTimeTag === instKeepAliveTimeTag
                     ) {
                       countKeepAliveNotUpdated++
                       console.log(
@@ -537,7 +568,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
                         'Redundancy - Keep-alive updated by active node. Staying inactive.'
                       )
                     }
-                    lastActiveNodeKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
+                    lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
                     if (countKeepAliveNotUpdated > countKeepAliveUpdatesLimit) {
                       // cnt exceeded, be active
                       countKeepAliveNotUpdated = 0

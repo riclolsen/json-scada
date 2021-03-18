@@ -390,7 +390,8 @@
                   <v-list-item class="ma-0"
                     v-if="
                       [
-                        'OPC-UA'
+                        'OPC-UA',
+                        'TELEGRAF-LISTENER'
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1349,7 +1350,8 @@
                         'DNP3_SERVER',
                         'I104M',
                         'MODBUS',
-                        'PLCTAG'
+                        'PLCTAG',
+                        'TELEGRAF-LISTENER'
                       ].includes(selected.protocolDriver)
                     "
             >
@@ -1363,6 +1365,7 @@
                         'DNP3',
                         'DNP3_SERVER',
                         'I104M',
+                        'TELEGRAF-LISTENER'
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1400,6 +1403,7 @@
                         'I104M',
                         'PLCTAG',
                         'MODBUS',
+                        'TELEGRAF-LISTENER'
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1980,6 +1984,7 @@ export default {
       "OPC-UA",
       "PLCTAG",
       "I104M",
+      "TELEGRAF-LISTENER",
     ],
     parityItems: [
       "None",
