@@ -1192,21 +1192,30 @@ let pool = null
                             origin: pointInfo.origin
                           }
                         }
-                        Result.Value = {
-                          Type:
-                            pointInfo.type === 'digital'
-                              ? opc.DataType.Boolean
-                              : opc.DataType.Double,
-                          Body:
-                            pointInfo.type === 'digital'
-                              ? pointInfo.value !== 0
-                                ? true
-                                : false
-                              : parseFloat(pointInfo.value),
-                          Quality: pointInfo.invalid
-                            ? opc.StatusCode.Bad
-                            : opc.StatusCode.Good
-                        }
+                        if (pointInfo.type === 'string')
+                          Result.Value = {
+                            Type: opc.DataType.String,
+                            Body: pointInfo.valueString,
+                            Quality: pointInfo.invalid
+                              ? opc.StatusCode.Bad
+                              : opc.StatusCode.Good
+                          } 
+                        else
+                          Result.Value = {
+                            Type:
+                              pointInfo.type === 'digital'
+                                ? opc.DataType.Boolean
+                                : opc.DataType.Double,
+                            Body:
+                              pointInfo.type === 'digital'
+                                ? pointInfo.value !== 0
+                                  ? true
+                                  : false
+                                : parseFloat(pointInfo.value),
+                            Quality: pointInfo.invalid
+                              ? opc.StatusCode.Bad
+                              : opc.StatusCode.Good
+                          }
                         Result.NodeId = {
                           IdType: opcIdTypeString,
                           Id: pointInfo.tag,
@@ -1221,13 +1230,18 @@ let pool = null
                 } else {
                   // no NodesToRead so it is a filtered query
                   results.map(node => {
-                    let Result = {
-                      StatusCode: opc.StatusCode.Good,
-                      NodeId: {
-                        IdType: opcIdTypeString,
-                        Id: node.tag
-                      },
-                      Value: {
+
+                    let Value = {}
+                    if (node.type === 'string')
+                      Value = {
+                        Type: opc.DataType.String,
+                        Body: node.valueString,
+                        Quality: node.invalid
+                        ? opc.StatusCode.Bad
+                        : opc.StatusCode.Good
+                      }
+                    else
+                      Value = {
                         Type:
                           node.type === 'digital'
                             ? opc.DataType.Boolean
@@ -1241,7 +1255,15 @@ let pool = null
                         Quality: node.invalid
                           ? opc.StatusCode.Bad
                           : opc.StatusCode.Good
+                      }
+
+                    let Result = {
+                      StatusCode: opc.StatusCode.Good,
+                      NodeId: {
+                        IdType: opcIdTypeString,
+                        Id: node.tag
                       },
+                      Value: Value,
                       _Properties: {
                         _id: node._id,
                         valueString: node.valueString,
