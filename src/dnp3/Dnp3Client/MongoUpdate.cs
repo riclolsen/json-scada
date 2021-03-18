@@ -156,6 +156,11 @@ namespace Dnp3Driver
                                                         "transientAtSource",
                                                         BsonValue
                                                             .Create(iv.qTransient)
+                                                    },
+                                                    {
+                                                        "originator",
+                                                        BsonValue
+                                                            .Create(ProtocolDriverName + "|" + iv.conn_number)
                                                     }
                                                 }
                                             }

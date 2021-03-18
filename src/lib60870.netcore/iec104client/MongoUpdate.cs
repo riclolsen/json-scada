@@ -216,6 +216,11 @@ namespace Iec10XDriver
                                                             .Create(iv
                                                                 .quality
                                                                 .Substituted)
+                                                    },
+                                                    {
+                                                        "originator",
+                                                        BsonValue
+                                                            .Create(ProtocolDriverName + "|" + iv.conn_number )
                                                     }
                                                 }
                                             }
