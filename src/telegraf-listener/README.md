@@ -65,3 +65,8 @@ Each instance for this driver can have just one connection defined that must be 
 * _**autoCreateTags**_ [Boolean] - Enables automatic creation of all discovered tags. **Mandatory parameter**.
 * _**ipAddressLocalBind**_ [String] - Address and port to bind for listening UDP messages. **Mandatory parameter**.
 * _**ipAddresses**_ [Array of Strings] - Restrict IP address sources of data allowed. **Mandatory parameter**.
+
+
+## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
+
+![Driver instances and connections](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_Connections.png "Driver Instances and Connections Numbering")
