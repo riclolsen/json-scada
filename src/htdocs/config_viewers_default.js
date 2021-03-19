@@ -2,7 +2,7 @@
 
 // list of colors representing priorities for the alarms/tabular/events viewers
 var ColorOfPriority = [ "red", "yellow", "goldenrod", "plum", "silver", "silver", "silver", "silver", "silver", "silver", "silver" ];
-// list of colors representing the first up to last substation for the alarms/tabular/events viewers
+// list of colors representing the first up to last group1/substation for the alarms/tabular/events viewers
 var ColorOfSubstation = [ "cadetblue", "brown", "green", "magenta", "orange", "darkcyan", "goldenrod", "deepskyblue", "indigo", "lightseagreen" ];
 
 // Events Viewer --------------------------------------------------------------------------------
@@ -17,10 +17,6 @@ var EventsViewer_AlmTxtColor = 'mediumblue'; // alarmed color
 var EventsViewer_FailTxtColor = 'white'; // failed value color
 var EventsViewer_AckTxtColor = '#606060'; // acknowledged event color
 var EventsViewer_ElimTxtColor = '#B0B0B0'; // eliminated event color (until removed)
-
-var EventsViewer_LineColor = '#E0E0E0'; // line color
-var EventsViewer_LineColorHighight1 = 'gray'; // Type 1 highlighted alarms color (operated protection)
-var EventsViewer_LineColorHighight2 = 'black'; // Type 2 highlighted alarms color (circuit breakers state)
 
 var EventsViewer_RefreshTime = 15; // refresh time in seconds (digital changes triggers a faster refresh)
 
@@ -57,8 +53,6 @@ var TabularViewer_FailTxtColor = 'white'; // failed value color
 var TabularViewer_AckTxtColor = '484848'; // acknowledged alarm color
 
 var TabularViewer_LineColor = '#DCDCEE'; // line color
-var TabularViewer_LineColorDestaq1 = 'gray'; // Type 1 highlighted alarms color (operated protection)
-var TabularViewer_LineColorDestaq2 = 'black'; //  Type 2 highlighted alarms color (circuit breakers state)
 
 var TabularViewer_RefreshTime = 5; // refresh time (seconds)
 
