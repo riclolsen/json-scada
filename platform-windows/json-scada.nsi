@@ -124,6 +124,8 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
+  nsExec::Exec 'net stop JSON_SCADA_telegraf_runtime'
+  nsExec::Exec 'net stop JSON_SCADA_telegraf_listener'
   nsExec::Exec 'net stop JSON_SCADA_nginx'
   nsExec::Exec 'net stop JSON_SCADA_php'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
@@ -228,7 +230,7 @@ SetRegView 64
   File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-5.0.3-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-5.0.4-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -240,7 +242,7 @@ SetRegView 64
   ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
   ;${EndIf}
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.3-win-x64.exe" /install /quiet'
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.4-win-x64.exe" /install /quiet'
 
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
@@ -249,7 +251,7 @@ SetRegView 64
   File /a /r "..\platform-windows\ruby-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\telegraf-runtime
-  File /a /r "..\platform-windows\telegraf-runtime\*.*"
+  File /a "..\platform-windows\telegraf-runtime\telegraf.exe"
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
@@ -367,6 +369,7 @@ SetRegView 64
   File /a "..\conf-templates\nginx_https.conf"  
   File /a "..\conf-templates\json-scada.json"
   File /a "..\conf-templates\Opc.Ua.DefaultClient.Config.xml"
+  File /a "..\conf-templates\telegraf.conf"
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
@@ -565,6 +568,16 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_opcuaclient"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_opcuaclient"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_telegraf_runtime"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_telegraf_runtime"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_telegraf_listener"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_telegraf_listener"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_iec101server"`

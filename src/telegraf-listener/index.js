@@ -324,7 +324,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
               })
               .toArray()
 
-            if (res.length === 0) {
+            if ('length' in res && res.length === 0) {
               // not found, then create
               let newTag = rtData(data)
               if (logLevel >= LogLevelDetailed)
@@ -446,6 +446,10 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
                   console.log('No protocol connection found on record!')
                   process.exit(2)
                 }
+                if (results[0].enabled === false) {
+                  console.log('Connection disabled, exiting! (connection:' + results[0].protocolConnectionNumber + ")")
+                  process.exit(3)
+                }
                 if ('autoCreateTags' in results[0]) {
                   AutoCreateTags = results[0].autoCreateTags ? true : false
                 }
@@ -501,7 +505,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
             .toArray(function (err, results) {
               if (err) console.log(err)
               else if (results) {
-                if (results.length == 0) {
+                if (results.length === 0) {
                   // not found, then create
                   ProcessActive = true
                   console.log(

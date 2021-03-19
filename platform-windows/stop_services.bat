@@ -24,6 +24,8 @@ nssm stop JSON_SCADA_dnp3client
 nssm stop JSON_SCADA_opcuaclient
 nssm stop JSON_SCADA_i104m
 nssm stop JSON_SCADA_plctags
+net stop JSON_SCADA_telegraf_runtime
+nssm stop JSON_SCADA_telegraf_listener
 ping -n 3
 
 REM STOP PROTOCOL SERVERS
@@ -43,3 +45,4 @@ REM STOP GRAFANA AND DATABASE SERVERS
 nssm stop JSON_SCADA_grafana
 nssm stop JSON_SCADA_mongodb 
 net stop JSON_SCADA_postgresql 
+

@@ -2306,28 +2306,6 @@ try
             stl = 'color: ' + TabularViewer_FailTxtColor + ';';
           }
 
-/*
-      if ( WebSAGE.g_tbl.cellsx( id, WebSAGE.g_COL_ID ).indexOf(Viewers_IDTxtHighlight2) != -1 && 
-           WebSAGE.g_tbl.cellsx( id, WebSAGE.g_COL_DESCR ).indexOf(Viewers_DescrTxtHighlight2) != -1 )
-          { // coloca fundo nas linhas de disjuntor
-            // stl = stl + 'background-color: ' + TabularViewer_LineColorDestaq2 + ';';
-            WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_DESCR].style.borderLeft = TabularViewer_LineColorDestaq2 + " 3px solid";
-            WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_EVENTO].style.borderLeft = TabularViewer_LineColorDestaq2 + " 3px solid";
-          }
-      else
-      if ( WebSAGE.g_tbl.cellsx( id, WebSAGE.g_COL_EVENTO ) == Viewers_AlmTxtHighlight1 )
-          { // coloca fundo nas linhas de operação de proteção
-            // stl = stl + 'background-color: ' + TabularViewer_LineColorDestaq1 + ';';
-            WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_DESCR].style.borderLeft = TabularViewer_LineColorDestaq1 + " 3px solid";
-            WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_EVENTO].style.borderLeft = TabularViewer_LineColorDestaq1 + " 3px solid";
-          }
-      else
-          {
-            stl = stl + 'background-color: ;';
-            WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_DESCR].style.borderLeft = "";
-            WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_EVENTO].style.borderLeft = "";
-          }
-*/
       WebSAGE.g_tbl.setRowTextStyle( id, stl );
 
       WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_DATA].style.fontSize = "smaller";

@@ -13,7 +13,7 @@
     "express-http-proxy": "^1.6.2",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.6.4",
-    "mongoose": "^5.11.18",
+    "mongoose": "^5.12.1",
     "pg": "^8.5.1",
     "queue-fifo": "^0.2.6"
   },
