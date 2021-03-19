@@ -26,6 +26,7 @@ let ProcessActive = false // for redundancy control
 let jsConfigFile = '../../conf/json-scada.json'
 let UdpBindPort = process.env.JS_TELEGRAF_LISTENER_BIND_PORT || 51920
 let UdpBindAddress = process.env.JS_TELEGRAF_LISTENER_BIND_ADDRESS || '0.0.0.0'
+let RestrictIPOrigins = []
 const LogLevelMin = 0,
   LogLevelNormal = 1,
   LogLevelDetailed = 2,
@@ -97,6 +98,13 @@ server.on('listening', () => {
 })
 
 server.on('message', (msg, rinfo) => {
+
+  if (RestrictIPOrigins.length>0 && !RestrictIPOrigins.includes(rinfo.address)){
+    if (LogLevel >= LogLevelDetailed)
+      console.log("Message - Source of message not allowed, discarding message from " + rinfo.address)
+    return
+  }
+
   let data = {}
 
   try {
@@ -460,6 +468,9 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
                     if (aux.length > 1 && !isNaN(parseInt(aux[1])))
                       UdpBindPort = parseInt(aux[1])
                   }
+                }
+                if ('ipAddresses' in results[0]) {
+                  RestrictIPOrigins = results[0].ipAddresses
                 }
                 console.log('Binding to ' + UdpBindAddress + ':' + UdpBindPort)
                 server.bind(UdpBindPort, UdpBindAddress)
