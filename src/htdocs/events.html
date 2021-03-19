@@ -35,7 +35,7 @@
 
 // This Viewer shows Sequence Of Events (SOE) data from the SCADA System.
 
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2021 - Ricardo L. Olsen
 // Derived from: OSHMI/Open Substation HMI - Copyright 2008-2020 - Ricardo L. Olsen
 
 var L = []; // Event list
@@ -54,28 +54,28 @@ var STONS = []; // On status texts
 var STOFS = []; // Off status texts
 var LIMSUPS = []; // Analog superior limits for points
 var LIMINFS = []; // Analog inferior limits for points
-var NUM_VAR = 0;        // aqui o servidor informa o número de variações digitais
-var NUM_VAR_ANT = 0;    // estado anterior da variável NUM_VAR
+var NUM_VAR = 0;        // number of digital values changes on server
+var NUM_VAR_ANT = 0;    // previous value of NUM_VAR
 var ALARMBEEP = 0; // alarm beep status
 var GROUP1_LIST = []; // list of possible group1 values
 var BEEP_POINTKEY = -1;
 var CNTUPDATES_POINTKEY = -2;
 
-// variáveis para o diálogo de comando
+// for command dialog
 var NPTO, ID, ESTACAO, MODULO, DESC, ST_ON, ST_OFF, VAL_STR, CNPTO, CID, CDESC, CST_ON, CST_OFF;
 var LIMS, LIMI, HISTER, ALRIN, ANOT, VLNOR, ESTALM, UNIDADE, SIMULACAO = 0;
 var ComandoAck = ''; // texto para confirmação do comando 
 
-var cbf_F; // para receber função de callback
-var WSCons; // estado de escrita na lista de eventos ajustado pelo servidor: 1=início, 2=fim
+var cbf_F; // to receive a callback function name
+// var WSCons; // write status of event list: 1=begin, 2=end
 
 var WebSAGE =
 {
-g_nummaxevehist: 2500, // número máximo de eventos buscados do histórico
-g_nummaxevetr: 500, // número máximo de eventos em tempo real
+g_nummaxevehist: EventsViewer_MaxHistoricalEvents, // max number of historical events
+g_nummaxevetr: EventsViewer_MaxRealtimeEvents, // max number of realtime events
 g_timeOutRefresh: 1000 * EventsViewer_RefreshTime, // tempo de refresh dos dados
-g_timeOutReconhece: 4000, // tempo de refresh após reconhecimento total dos alarmes
-g_timeOutFalha: 30000,    // tempo para falha dos dados, caso servidor não responda
+g_timeOutReconhece: 4000, // refresh timeout after full ack/del of events
+g_timeOutFalha: 30000,    // server failure timeout
 g_timeOutServerStatus: 2000, // time to test server for status
 g_toutID: 0,
 g_timerID: 0,
@@ -104,10 +104,10 @@ g_agreg_ant: false,
 g_cbagreg_ant: false,
 g_modo: 0,
 g_waitingServer: 0,
-g_fontsize: 16,  // tamanho das fontes
+g_fontsize: 16,  // font size on grid
 g_tbl: {},
 g_tblhead: {},
-g_gpstime: 1, // 1=hora do GPS, 0=hora local
+g_gpstime: 1, // 1=field GPS, 0=local time
 g_titulo_janela: "",
 g_filtro_se: "",
 g_loadtime: 0,
@@ -1357,11 +1357,9 @@ if (evtid === undefined)
 
 },
 
-// Notifica quando
-// não está reconhecido
-// abriu o disjuntor do módulo (notifica com a hora da abertura do DJ)
-// agrega proteções (operação) até ligar novamente o módulo
-// quando clica a notificação, reconhece o alarme do ponto
+// Desktop notifications
+// Create a notificatiion when a bay circuit breaker opens (with this time) and this event in not acked
+// aggregate protecions on this bay until circuit breaker closes
 processaNotific: function()
 {
 var i, rw, semod, aux, acr, info, estdj;
@@ -1514,7 +1512,7 @@ doOnRowSelected: function( evt )
 
     if ( rec )
     {
-        // RECONHECE EVENTO
+        // ACKNOWLEDGE EVENT
 
         var agregar = 0;
         if ( document.getElementById("idAgregar").checked == true || WebSAGE.g_gpstime == 0 )
@@ -1564,14 +1562,14 @@ try
   var pri = parseInt( WebSAGE.g_tbl.cellsx( id, WebSAGE.g_COL_QUALIF ).charAt(0) );      
 
   if ( rec == 2 )
-    { // eliminado
+    { // eliminated
     stl='color: ' + EventsViewer_ElimTxtColor + ';';
     WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_DESCR].style.color = 'inherit';
     WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_EVENTO].style.color = 'inherit';
     }
   else      
   if ( WebSAGE.g_tbl.cellsx( id, WebSAGE.g_COL_QUALIF ).indexOf("L") == -1 || rec )
-    { // reconhecido
+    { // acked
     stl = 'color: ' + EventsViewer_AckTxtColor + ';';
     WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_QUALIF].style.backgroundColor = ColorOfPriority[ pri ];
     WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_QUALIF].style.borderRadius = "10px";
@@ -1582,7 +1580,7 @@ try
     WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_EVENTO].style.color = 'inherit';
     }
   else    
-    { // não reconhecido (alarmado)
+    { // not acked (alarmed)
     if ( pri === 0 )
       {
       stl = '';
@@ -1628,9 +1626,9 @@ try
   timeant = WebSAGE.g_tbl.cellsx( id-1, WebSAGE.g_COL_TIMEDIF );
   } catch(e) {};
   var px = (WebSAGE.g_tbl.cellsx( id, WebSAGE.g_COL_TIMEDIF ) - timeant ) / 60;
-  if ( px > 60 ) px = 60;
+  if ( px > 30 ) px = 30;
   if ( px < 1 )  px = 0;
-  stl = stl + "border-top:" + px + "px solid " + EventsViewer_GridColor + ";";
+  stl += "border-top:" + px + "px solid " + EventsViewer_GridColor + ";margin-top:" + px + "px;";
   WebSAGE.g_tbl.setRowTextStyle( id, stl );
   // WebSAGE.g_tbl.rows[id+1].style.float = "left";
   WebSAGE.g_tbl.rows[id+1].cells[WebSAGE.g_COL_DATA].style.fontSize = "smaller";
@@ -1880,6 +1878,7 @@ tbl_prepare: function()
            WebSAGE.g_tbl.rows[line].insertCell(i);
            WebSAGE.g_tbl.rows[line].cells[i].innerHTML = varr[i];
            WebSAGE.g_tbl.rows[line].cells[i].style.boxSizing = "border-box";
+           // WebSAGE.g_tbl.rows[line].cells[i].style.verticalAlign = "bottom";
            // WebSAGE.g_tbl.rows[line].cells[i].style.borderBottom = '1px solid ' + EventsViewer_GridColor;
            WebSAGE.g_tbl.rows[line].cells[i].style.padding = "1px 0px 1px 0px";
            if ( WebSAGE.g_tbl.larguraCol[i] == 0 )
@@ -2176,7 +2175,7 @@ getGroup1List : function()
 
 },
 
-// mostra lista de estações
+// show group1 (substation) list
 mostraSEs : function() 
 {
 var Lista = GROUP1_LIST;
@@ -2201,16 +2200,17 @@ if ( i > 30 )
 document.getElementById("DIVFILT").style.height = ( 20 * i ) + "px";
 },
 
-// recarrega a página 1x por dia para contornar leak de memória
+// reload page
 reload: function( whattodo )
 {
   if ( whattodo === "init" )
     {
-    var dt =  new Date ( (new Date()).getTime() + 1000 * 60 * 60 * 24 ); // próximo dia
-    dt.setHours( 4 ); // fixa 4 horas
-    dt.setMinutes( Math.random() * 60 ); // minuto aleatório
-    var dif = dt - (new Date()); // quanto falta para chegar às 4:xx h do dia seguinte
-    setTimeout( WebSAGE.reload, dif ); // vai chamar às 4 h
+    //// setup timeout to liberate browser memory
+    // var dt =  new Date ( (new Date()).getTime() + 1000 * 60 * 60 * 24 ); // próximo dia
+    // dt.setHours( 4 ); // fixa 4 horas
+    // dt.setMinutes( Math.random() * 60 ); // minuto aleatório
+    // var dif = dt - (new Date()); // quanto falta para chegar às 4:xx h do dia seguinte
+    // setTimeout( WebSAGE.reload, dif ); // vai chamar às 4 h
     return;
     }
 
@@ -2246,7 +2246,7 @@ init: function()
        $('#imgFilter').css('display', "" );
     $('#imgFilter').bind( 'click', function(){ if (! document.getElementById("idHistorico").checked ) $('#DIVFILT').css('display', $('#DIVFILT').css('display')=="none" ? "" : "none"); } );
 
-    $('#TOOLBAR_ID').css('display', ''); // shows toolbar
+    $('#TOOLBAR_ID').css('display', ''); // show toolbar
     
     WebSAGE.gpsTimeInit( EventsViewer_TimeGPSorLocal );
 
@@ -2254,7 +2254,7 @@ init: function()
 
     WebSAGE.g_tbl.setColAlign("center,center,center,center,left,center,left,center,left,center");
 
-    // busca tamanho da fonte em cookie
+    // looks for font size on cookie
     var fs = readCookie( "eve_fontsize" );
     if ( isInt ( fs ) )
       WebSAGE.g_fontsize = parseInt( fs );
@@ -2298,13 +2298,13 @@ init: function()
   
     WebSAGE.dataAtual();
     
-    shortcut.add( "F2", // elimina tudo
+    shortcut.add( "F2", // delete all events
                   function() { WebSAGE.doReconheceTudo(1); },
                   { 'type':'keydown', 'propagate':true,	'target':document } );
-    shortcut.add( "F8", // reconhece tudo
+    shortcut.add( "F8", // ack all events
                   function() { WebSAGE.doReconheceTudo(0); },
                   { 'type':'keydown', 'propagate':true,	'target':document } );
-    shortcut.add( "F9",
+    shortcut.add( "F9", // silence beep
                   function() { WebSAGE.doSilenceBeep(); },
                   { 'type':'keydown', 'propagate':true,	'target':document } );
     shortcut.add( "1",
@@ -2334,11 +2334,11 @@ init: function()
     shortcut.add( "0",
                   function() { WebSAGE.doOnRowSelected(0); },
                   { 'type':'keydown', 'propagate':true,	'disable_in_input':true, 'target':document } );
-    // teclas de atalho para tamanho da fonte
-    shortcut.add( "", // Num[+] : Aumenta
+    // font size keyboard shortcuts
+    shortcut.add( "", // Num[+] : Bigger font size
                   function() { WebSAGE.fontSize(1); },
                   { 'type':'keydown', 'propagate':false,	'target':document, 'keycode':107 } );
-    shortcut.add( "", // Num[-] : Diminnui
+    shortcut.add( "", // Num[-] : Smaller font size
                   function() { WebSAGE.fontSize(0); },
                   { 'type':'keydown', 'propagate':false,	'target':document, 'keycode':109 } );
 
@@ -2363,7 +2363,7 @@ init: function()
                   {'type':'keydown', 'propagate':true,	'target':document} );
 
     shortcut.add( "esc",
-                  function() { if ( typeof(WebSAGE.g_win_cmd.window) == 'object' ) // fecha janela info
+                  function() { if ( typeof(WebSAGE.g_win_cmd.window) == 'object' ) // close faceplate info window
                                if ( WebSAGE.g_win_cmd.window ) 
                                  WebSAGE.g_win_cmd.window.close(); },
                   {'type':'keydown', 'propagate':false, 'target':document} );           

@@ -24,11 +24,14 @@
 //
 //var EventsViewer_RefreshTime = 15; // refresh time in seconds (digital changes triggers a faster refresh)
 //
+// var EventsViewer_MaxRealtimeEvents = 750; // maximum number of realtime events to show 
+//var EventsViewer_MaxHistoricalEvents = 2500; // maximum number of historical events to query from server at each request
+//
 //// Event time tag configuration
 //// 0 = GPS (field time)
 //// 1 = local time (time when HMI detected the event)
-//// 2 = chosen by operador (defaults to GPS time)
-//// 3 = chosen by operador (defaults to local)
+//// 2 = chosen by the operator (defaults to GPS time)
+//// 3 = chosen by  the operator (defaults to local)
 //var EventsViewer_TimeGPSorLocal = 2;
 //
 //var EventsViewer_AllowFilter = 1;  // 0: no filters, 1=operator can set filter by substation
@@ -36,9 +39,9 @@
 //var EventsViewer_Notific = 1;  // 0: disable desktop notifications, 1=enable desktop notifications
 //
 // defines how to handle notification click 
-// defaults to open a screen with the substation name
-//function EventsViewer_NotificationClick( nponto, id, subest ) {
-//    window.open('screen.html?SELTELA=../svg/'+subest+'.svg','screen','dependent=no,height=1000,width=800,toolbar=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,modal=no');
+// defaults to open a screen with the group1 (substation) name, adjust for your display naming standard
+//function EventsViewer_NotificationClick( nponto, id, group1 ) {
+//    window.open('display.html?SELTELA=../svg/'+group1+'.svg','screen','dependent=no,height=1000,width=800,toolbar=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,modal=no');
 //    }
 //
 //// Tabular Viewer ----------------------------------------------------------------------------------
