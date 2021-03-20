@@ -1,6 +1,6 @@
 version: '3.8'
 
-# {json:scada} Demo - (c) 2020 - Ricardo L. Olsen 
+# {json:scada} Demo - (c) 2020-2021 - Ricardo L. Olsen 
 
 # ACCESS VIA WEB BROWSER AT http://127.0.0.1:8080
 # Grafana access http://127.0.0.1:3000, user=admin password=jsonscada

@@ -105,3 +105,10 @@ services:
     command:  sh -c "npm install -g npm && cd /oshmi2json && npm update"
     volumes:
       - ../src/oshmi2json:/oshmi2json
+
+  telegraf_listener_update:
+    image: node:current-alpine3.12
+    container_name: js_telegraf_listener_update
+    command:  sh -c "npm install -g npm && cd /telegraf-listener && npm update"
+    volumes:
+      - ../src/telegraf-listener:/telegraf-listener

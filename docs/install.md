@@ -186,6 +186,8 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     npm update
     cd ../oshmi2json
     npm update
+    cd ../telegraf-listener
+    npm update
     cd ../htdocs-admin
     npm update
     npm run build

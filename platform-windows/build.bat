@@ -59,6 +59,8 @@ call \json-scada\platform-windows\nodejs-runtime\npm update
 call \json-scada\platform-windows\nodejs-runtime\npm run build
 cd \json-scada\src\grafana_alert2event
 call \json-scada\platform-windows\nodejs-runtime\npm update
+cd \json-scada\src\telegraf-listener
+call \json-scada\platform-windows\nodejs-runtime\npm update
 
 cd ..\..\platform-windows
 

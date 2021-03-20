@@ -46,4 +46,6 @@ cd ../shell_api
 npm update
 cd ../alarm_beep
 npm update
+cd ../telegraf-listener
+npm update
 

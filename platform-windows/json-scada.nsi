@@ -328,6 +328,9 @@ SetRegView 64
   SetOutPath $INSTDIR\src\server_realtime_auth
   File /a /r "..\src\server_realtime_auth\*.*"
 
+  SetOutPath $INSTDIR\src\telegraf-listener
+  File /a /r "..\src\telegraf-listener\*.*"
+
   ;SetOutPath $INSTDIR\extprogs
   ;File /a "..\extprogs\vcredist_x86.exe"
   ;File /a "..\extprogs\vcredist_x86-2012.exe"
