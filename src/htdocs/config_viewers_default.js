@@ -34,6 +34,18 @@ var EventsViewer_AllowFilter = 1;  // 0: no filters, 1=operator can set filter b
 
 var EventsViewer_Notific = 1;  // 0: disable desktop notifications, 1=enable desktop notifications
 
+// locale and time zone for date/time formatting (leave empty for browser defaults)
+// see https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
+var EventsViewer_LocaleTime = ""; // locale for time format e.g "en-US"
+var EventsViewer_LocaleDate = ""; // locale for date format e.g "en-US"
+// for options to work, a locale must be set
+var EventsViewer_LocaleTimeOptions = {
+    // timeZone: 'America/New_York'
+}; 
+var EventsViewer_LocaleDateOptions = {
+    // weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York'
+}; 
+
 // defines how to handle notification click 
 // defaults to open a screen with the group1 (substation) name, adjust for your display naming standard
 function EventsViewer_NotificationClick( nponto, id, group1 ) {
@@ -55,6 +67,14 @@ var TabularViewer_AckTxtColor = '484848'; // acknowledged alarm color
 var TabularViewer_LineColor = '#DCDCEE'; // line color
 
 var TabularViewer_RefreshTime = 5; // refresh time (seconds)
+
+// locale and time zone for date/time formatting (leave empty for browser defaults)
+// see https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
+var TabularViewer_LocaleDateTime = ""; // locale for time format e.g "en-US"
+// for options to work, a locale must be set
+var TabularViewer_LocaleDateTimeOptions = {
+    // weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3, timeZone: 'America/New_York'
+}; 
 
 // Screen Viewer ---------------------------------------------------------------------------------
 

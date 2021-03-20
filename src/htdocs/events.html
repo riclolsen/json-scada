@@ -36,7 +36,7 @@
 // This Viewer shows Sequence Of Events (SOE) data from the SCADA System.
 
 // {json:scada} - Copyright 2020-2021 - Ricardo L. Olsen
-// Derived from: OSHMI/Open Substation HMI - Copyright 2008-2020 - Ricardo L. Olsen
+// Derived from: OSHMI/Open Substation HMI - Copyright 2008-2021 - Ricardo L. Olsen
 
 var L = []; // Event list
 var V = []; // Point values
@@ -923,7 +923,7 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
  }
 
  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
- var ServiceId = OpcServiceCode.HistoryReadRequest // read data service
+ var ServiceId = OpcServiceCode.HistoryReadRequest // history read service
  var RequestHandle = Math.floor(Math.random() * 100000000)
  var req = {
    ServiceId: ServiceId,
@@ -1015,11 +1015,21 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
           qualif = qualif + "T";
 
         if (descr.indexOf(node._Properties.group1 + '~')===0) // remove group1 from description
-          descr = descr.substring(descr.indexOf('~') + 1 )
+          descr = descr.substring(descr.indexOf('~') + 1 );
+
+        var dtFmt = "", tmFmt = "";
+        try{
+          dtFmt = date.toLocaleDateString(EventsViewer_LocaleDate, EventsViewer_LocaleDateOptions);
+          tmFmt = date.toLocaleTimeString(EventsViewer_LocaleTime, EventsViewer_LocaleTimeOptions);
+        }
+        catch(e){
+          dtFmt = date.toLocaleDateString();
+          tmFmt = date.toLocaleTimeString();
+        }
 
         L.push(
-          date.toLocaleDateString() + WebSAGE.g_split_line_code +
-          date.toLocaleTimeString() + WebSAGE.g_split_line_code +
+          dtFmt + WebSAGE.g_split_line_code +
+          tmFmt + WebSAGE.g_split_line_code +
           ("00" + date.getUTCMilliseconds()).slice (-3) + WebSAGE.g_split_line_code +
           node._Properties.pointKey + WebSAGE.g_split_line_code +
           node.NodeId.Id + WebSAGE.g_split_line_code +

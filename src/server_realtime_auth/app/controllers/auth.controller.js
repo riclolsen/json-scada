@@ -31,8 +31,7 @@ exports.listUserActions = async (req, res) => {
     if (req.body.sortBy.length === 0) orderby = { timeTag: 1 }
   } else orderby = { timeTag: 1 }
 
-  let count = await UserAction.count(filter)
-  console.log(count)
+  let count = await UserAction.countDocuments(filter)
   UserAction.find(filter)
     .skip(skip)
     .limit(limit)
@@ -84,7 +83,7 @@ exports.listTags = async (req, res) => {
     if (req.body.sortBy.length === 0) orderby = { tag: 1 }
   } else orderby = { tag: 1 }
 
-  let count = await Tag.count(filter)
+  let count = await Tag.countDocuments(filter)
   Tag.find(filter)
     .skip(skip)
     .limit(limit)

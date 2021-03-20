@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=850, user-scalable=no" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Visor Tabular</title>
+<title>Tabular/Alarms Viewer</title>
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />    
 <link rel="apple-touch-icon" href="images/tabular.png" />
 <style>
@@ -37,8 +37,8 @@
 
 // This Viewer presents data in a grid, it also acts as Alarms Viewer.
 //
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
-// Derived from: OSHMI/Open Substation HMI - Copyright 2008-2020 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2021 - Ricardo L. Olsen
+// Derived from: OSHMI/Open Substation HMI - Copyright 2008-2021 - Ricardo L. Olsen
 
 var L = []; // Event list
 var V = []; // Point values
@@ -1517,12 +1517,25 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
 
           var dateAlarm = "";
           if (prop.alarmed && prop.timeTagAlarm!==null)
-          if ((new Date(prop.timeTagAlarm)).getFullYear()>1980)
-            dateAlarm = (new Date(prop.timeTagAlarm)).toLocaleString();
+          if ((new Date(prop.timeTagAlarm)).getFullYear()>1980){
+              try{
+                dateAlarm = (new Date(prop.timeTagAlarm)).toLocaleString(TabularViewer_LocaleDateTime, TabularViewer_LocaleDateTimeOptions);
+              }
+              catch(e){
+                dateAlarm = (new Date(prop.timeTagAlarm)).toLocaleString();
+              }
+          }
           var dateField = "";
           if ("SourceTimestamp" in element && element.SourceTimestamp!==null){
             var dt = new Date(element.SourceTimestamp);
-            dateField = dt.toLocaleString() + "." + ("00" + dt.getUTCMilliseconds()).slice(-3);
+            try{
+                dateField = dt.toLocaleString(TabularViewer_LocaleDateTime, TabularViewer_LocaleDateTimeOptions);
+              }
+            catch(e){
+                dateField = dt.toLocaleString();
+              }
+              if (!('fractionalSecondDigits' in TabularViewer_LocaleDateTimeOptions))
+                dateField += "." + ("00" + dt.getUTCMilliseconds()).slice(-3);
           }
 
           var flags = (element.Value.Quality!==OpcStatusCodes.Good?0x80:0x00);
@@ -2149,7 +2162,14 @@ showVals: function()
     if ( WebSAGE.g_muda_mod == 1 )      
       setTimeout( WebSAGE.mostraMods, 100 ); // atualiza opções de módulo
     
-    $('#ATUALIZACAO').text( (new Date()).toLocaleString() );
+    var dtFmt = "";
+    try{
+      dtFmt = (new Date()).toLocaleString(TabularViewer_LocaleDateTime, TabularViewer_LocaleDateTimeOptions);
+    }
+    catch(e){
+      dtFmt = (new Date()).toLocaleString();
+    }
+    $('#ATUALIZACAO').text( dtFmt );
     $('#NUMREGS').text( WebSAGE.g_tbl.getRowsNum() + " Tot - " );
   
     if ( gup("SOCMD") == 1 && document.getElementById("cbMostraCmd").checked != true && WebSAGE.g_firstdraw )
