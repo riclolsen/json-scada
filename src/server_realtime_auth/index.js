@@ -685,6 +685,18 @@ let pool = null
                       return
                     }
 
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      pointKey: node.NodeId.Id,
+                      tag: data.tag,
+                      action: 'Command',
+                      properties: {
+                        value: new mongo.Double(cmd_val),
+                        valueString: parseFloat(cmd_val).toString(),
+                      },
+                      timeTag: new Date()
+                    })
+
                     OpcResp.Body.Results.push(opc.StatusCode.Good) // write ok
                     // a way for the client to find this inserted command
                     OpcResp.Body._CommandHandles.push(result.insertedId)
