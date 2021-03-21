@@ -27,6 +27,8 @@ cp i104m ../../bin/
 
 cd ../cs_data_processor
 npm update
+cd ../cs_custom_processor
+npm update
 cd ../grafana_alert2event
 npm update
 cd ../demo_simul

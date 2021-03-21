@@ -111,6 +111,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_mongodb'
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
+  nsExec::Exec 'net stop JSON_SCADA_cs_custom_processor'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
   nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
@@ -321,6 +322,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\cs_data_processor
   File /a /r "..\src\cs_data_processor\*.*"
+
+  SetOutPath $INSTDIR\src\cs_custom_processor
+  File /a /r "..\src\cs_custom_processor\*.*"
 
   SetOutPath $INSTDIR\src\server_realtime
   File /a /r "..\src\server_realtime\*.*"
@@ -596,6 +600,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_cs_data_processor"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_cs_data_processor"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_cs_custom_processor"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_cs_custom_processor"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_calculations"`

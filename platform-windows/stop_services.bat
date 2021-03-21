@@ -36,6 +36,7 @@ ping -n 2
 REM STOP OTHER PROCESSES
 nssm stop JSON_SCADA_calculations 
 nssm stop JSON_SCADA_cs_data_processor
+nssm stop JSON_SCADA_cs_custom_processor
 ping -n 2
 nssm stop JSON_SCADA_process_rtdata
 nssm stop JSON_SCADA_process_hist 

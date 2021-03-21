@@ -42,6 +42,8 @@ copy /Y i104m ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
 call \json-scada\platform-windows\nodejs-runtime\npm update
+cd \json-scada\src\cs_custom_processor
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\oshmi2json
 call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\oshmi_sync

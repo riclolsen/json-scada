@@ -29,6 +29,11 @@ nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs
 nssm set JSON_SCADA_cs_data_processor AppDirectory  "C:\json-scada\src\cs_data_processor"
 nssm set JSON_SCADA_cd_data_processor Start SERVICE_AUTO_START
 
+nssm install JSON_SCADA_cs_custom_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_custom_processor\cs_custom_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_cs_custom_processor AppDirectory  "C:\json-scada\src\cs_custom_processor"
+nssm set JSON_SCADA_cd_custom_processor Start SERVICE_AUTO_START
+
+
 REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token based auth and RBAC)
 
 REM nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
@@ -103,7 +108,7 @@ nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
 cd \json-scada\platform-windows\telegraf-listener
 
 REM service for telegraf runtime
-C:\json-scada\platform-windows\telegraf-runtime\telegraf --service install --service-name="JSON_SCADA_telegraf_runtime" --config "C:\jsons-scada\conf\telegraf.conf"
+C:\json-scada\platform-windows\telegraf-runtime\telegraf --service install --service-name="JSON_SCADA_telegraf_runtime" --service-display-name="JSON_SCADA_telegraf_runtime" --config "C:\json-scada\conf\telegraf.conf"
 
 REM service for telegraf listener
 nssm install JSON_SCADA_telegraf_listener "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\telegraf-listener\index.js" 

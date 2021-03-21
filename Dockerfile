@@ -48,6 +48,7 @@ COPY --from=golangProgs /json-scada/bin /json-scada/bin
 COPY sql /json-scada/sql
 COPY demo-docker/conf/json-scada.json /json-scada/conf/json-scada.json
 COPY src/cs_data_processor /json-scada/src/cs_data_processor
+COPY src/cs_custom_processor /json-scada/src/cs_custom_processor
 COPY src/server_realtime /json-scada/src/server_realtime
 COPY src/server_realtime_auth /json-scada/src/server_realtime_auth
 COPY src/htdocs-admin /json-scada/src/htdocs-admin
@@ -55,12 +56,15 @@ COPY src/htdocs-login /json-scada/src/htdocs-login
 COPY src/htdocs /json-scada/src/htdocs
 COPY src/alarm_beep /json-scada/src/alarm_beep
 COPY src/oshmi2json /json-scada/src/oshmi2json
+COPY src/telegraf-listener /json-scada/src/telegraf-listener
 RUN sh -c "cd /json-scada/src/cs_data_processor && npm update"
+RUN sh -c "cd /json-scada/src/cs_custom_processor && npm update"
 RUN sh -c "cd /json-scada/src/server_realtime && npm update"
 RUN sh -c "cd /json-scada/src/server_realtime_auth && npm update"
 RUN sh -c "cd /json-scada/src/htdocs-admin && npm update && npm run build"
 RUN sh -c "cd /json-scada/src/alarm_beep && npm update"
 RUN sh -c "cd /json-scada/src/oshmi2json && npm update"
+RUN sh -c "cd /json-scada/src/telegraf-listener && npm update"
 
 # Dotnet runtime deps
 #  from https://github.com/dotnet/dotnet-docker/blob/master/src/runtime-deps/3.1/alpine3.12/amd64/Dockerfile

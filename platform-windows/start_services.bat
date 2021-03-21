@@ -12,6 +12,7 @@ net start JSON_SCADA_postgresql
 nssm start JSON_SCADA_grafana
 nssm start JSON_SCADA_mongodb 
 nssm start JSON_SCADA_cs_data_processor
+nssm start JSON_SCADA_cs_custom_processor
 rem nssm start JSON_SCADA_server_realtime
 nssm start JSON_SCADA_server_realtime_auth
 nssm start JSON_SCADA_calculations 

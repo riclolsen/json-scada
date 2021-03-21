@@ -71,6 +71,13 @@ services:
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
 
+  cs_custom_processor_update:
+    image: node:current-alpine3.12
+    container_name: js_cs_custom_processor_update
+    command:  sh -c "npm install -g npm && cd /cs_custom_processor && npm update"
+    volumes:
+      - ../src/cs_custom_processor:/cs_custom_processor
+
   server_realtime_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_update

@@ -175,6 +175,20 @@ services:
     networks:
       - jsdemo_net
 
+  # custom script processor
+  cs_custom_processor:
+    image: node:current-alpine3.12
+    container_name: jsdemo_cs_custom_processor
+    command:  sh -c "cd /cs_custom_processor && sleep 10 && node cs_custom_processor.js"
+    restart: unless-stopped
+    volumes:
+      - ../src/cs_custom_processor:/cs_custom_processor
+      - ./conf:/conf
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
   # realtime web server, will listen on some HTTP port NO AUTH/RBAC
   #server_realtime:
   #  image: node:current-alpine3.12

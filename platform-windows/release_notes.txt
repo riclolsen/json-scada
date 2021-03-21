@@ -124,6 +124,7 @@ Inkscape+SAGE:
 Notes for version 0.8: 
 
  - Telegraf data sources integration.
+ - Added a custom script processor.
  - Experimental OPC UA client driver.
  - DotNet 5.0.4 runtime added to installer.
  - Various enhancements on Admin panel, Tags and User Actions tabs.
