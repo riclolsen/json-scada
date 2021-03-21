@@ -67,6 +67,10 @@
             >
             </v-date-picker>
           </v-menu>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" @click="fetchUserActions()">
+            <v-icon dark> mdi-refresh </v-icon>
+          </v-btn>
         </v-toolbar>
       </template>
     </v-data-table>
