@@ -125,6 +125,7 @@ Notes for version 0.8:
 
  - Telegraf data sources integration.
  - Added a custom script processor.
+ - Windows Installer do not wrongly overwrite some config files anymore.
  - Experimental OPC UA client driver.
  - DotNet 5.0.4 runtime added to installer.
  - Various enhancements on Admin panel, Tags and User Actions tabs.

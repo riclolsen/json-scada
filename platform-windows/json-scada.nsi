@@ -226,6 +226,9 @@ SetRegView 64
   File /a /r "..\bin\*.*"
   File /a "..\platform-windows\nssm.exe"
 
+  ; preserve previous start_services.bat
+  Rename $INSTDIR\platform-windows\start_services.bat $INSTDIR\platform-windows\start_services.bat.bak
+
   SetOutPath $INSTDIR\platform-windows
   File /a "..\platform-windows\*.bat"
   File /a "..\platform-windows\*.ps1"
@@ -293,10 +296,19 @@ SetRegView 64
   File /a "..\conf-templates\*.*"
 
   ; preserve previous screen_list 
-  Rename $INSTDIR\src\htdocs\svg\screen_list.js $INSTDIR\src\htdocs\svg\screen_list.js.bak
+  ; Rename $INSTDIR\src\htdocs\svg\screen_list.js $INSTDIR\src\htdocs\svg\screen_list.js.bak
 
   SetOutPath $INSTDIR\src\htdocs
-  File /a /r "..\src\htdocs\*.*"
+  File /a "..\src\htdocs\*.*"
+  SetOutPath $INSTDIR\src\htdocs\images
+  File /a /r "..\src\htdocs\images\*.*"
+  SetOutPath $INSTDIR\src\htdocs\charts
+  File /a /r "..\src\htdocs\charts\*.*"
+  SetOutPath $INSTDIR\src\htdocs\lib
+  File /a /r "..\src\htdocs\lib\*.*"
+  SetOutPath $INSTDIR\src\htdocs\i18n
+  File /a /r "..\src\htdocs\i18n\*.*"
+
   SetOutPath $INSTDIR\src\htdocs-admin
   File /a /r "..\src\htdocs-admin\*.*"
   SetOutPath $INSTDIR\src\htdocs-login
@@ -324,7 +336,12 @@ SetRegView 64
   File /a /r "..\src\cs_data_processor\*.*"
 
   SetOutPath $INSTDIR\src\cs_custom_processor
-  File /a /r "..\src\cs_custom_processor\*.*"
+  File /a "..\src\cs_custom_processor\README.md"
+  File /a "..\src\cs_custom_processor\cs_custom_processor.js"
+  File /a "..\src\cs_custom_processor\package.json"
+  File /a "..\src\cs_custom_processor\package-lock.json"
+  SetOutPath $INSTDIR\src\cs_custom_processor\node_modules
+  File /a /r "..\src\cs_custom_processor\node_modules\*.*"
 
   SetOutPath $INSTDIR\src\server_realtime
   File /a /r "..\src\server_realtime\*.*"
@@ -364,6 +381,15 @@ SetRegView 64
   File /a "..\conf-templates\*.*"  
 
   SetOverwrite off
+
+  SetOutPath $INSTDIR\src\htdocs\conf
+  File /a /r "..\src\htdocs\conf\*.*"
+
+  SetOutPath $INSTDIR\src\htdocs\svg
+  File /a /r "..\src\htdocs\svg\*.*"
+
+  SetOutPath $INSTDIR\src\cs_custom_processor
+  File /a "..\src\cs_custom_processor\customized_module.js"
 
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\php.ini"
