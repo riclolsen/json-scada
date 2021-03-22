@@ -1,6 +1,6 @@
     {json:scada} 
     
-    © 2008-2020 - Ricardo L. Olsen 
+    © 2008-2021 - Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify
