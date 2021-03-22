@@ -76,15 +76,16 @@ Radar chart | Set (#radar)
 Generic charts | Set (#vega4, #vega4-json #vega-lite)
 Control transparency | Opacity, Color
 Rotate objects | Rotate
-Create tooltips | Tooltips
+Create tooltips (on mouse over text) | Tooltips
 Move objects linearly | Slider
-Zoom | Zoom
-Create indirect variables | Faceplate
+Zoom to area when object clicked | Zoom
 Control action when object is clicked | Popup
-Clone object properties | Set (#copy_xsac_from)
 Create Trend Plot | Open
 Open New Display | Open
 Preview Displays (on mouse over) | Open
+Create indirect variables | Faceplate
+Clone object properties | Set (#copy_xsac_from)
+Object models | Faceplate (group), Set (#copy_xsac_from)
 
 ### Get Tab
 
