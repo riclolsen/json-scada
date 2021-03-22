@@ -25,12 +25,11 @@ It can also be acquired here the standalone Microsoft Store version for Windows 
 
 To create a new display
 
-1. Create the SVG graphics using the Synoptic Editor. It is possible to use other editors (Illustrator, Corel, etc.) to create graphics that can be imported in the Synoptic Editor to later markup. The editor can import graphics from a great number of formats. There are on the web many sources of vector graphics clipart (free and paid) that can be useful.
+1. Create the SVG graphics using the Synoptic Editor. It is possible to use other editors (Illustrator, Corel, etc.) to create graphics that can be imported in the Synoptic Editor to later markup. The editor can import graphics from a great number of formats. There are on the web many sources of vector graphics clipart (free and paid) that can be useful. It is recommended to configure each new display file with a size of 2400 x 1500 pixels (File | Document Properties | Page | Page Size | Custom Size). This is a reference size, the actual drawing can be larger.
 
 2. Markup the animations you want in the graphics using the Synoptic Editor. For this, select the object you want to animate and click the mouse right button and select “Object Properties”. Then choose from the menu the properties you want to animate. Follow the documentation below to understand the parameters of animations. Always use JSON-SCADA TAGs as identifiers of values to animate the graphics at runtime in the web browser. Finally, save the file always using the default native Inkscape SVG format. 
 
 3. If you are editing on the JSON-SCADA server, save the file to "C:\json-scada\src\htdocs\svg" or equivalent folder. Add the file to display lists in the "C:\json-scada\src\htdocs\svg\screen_list.js" file. Open the Display Viewer web browser. The viewer can be also directly opened with a URL like this "http://127.0.0.1:8080/display?SVGFILE=filename.svg".
-
 
 ## Tag naming
 
@@ -63,7 +62,9 @@ Script  Text  Faceplate  Popup  Set  Open  Special Codes
 
 ### Get Tab
 
-Available for: SVG text objects only.
+**Purpose**: retrieve and show formatted values for tags.
+
+**Available for**: SVG text objects only.
 
 In the Tag field, put the tag to be retrieved its value. The fields _Alignment_ and _Type_ are ignored. To align text use the Inkscape “Text and Font” menu.
 
@@ -133,5 +134,83 @@ format           | presented value
 off\|on          | on
 stopped\|running | running
 
+### Color Tab
 
+**Purpose**: change the fill/stroke color of objects according to limits for the value of points. It is also possible to change attributes, trigger SMIL animations and run small scripts.
+
+**Available for**: all SVG drawing object types (not available for groups).
+
+Each line in the list of limits contains the following fields:
+
+* **Tag**: tag identifier.
+* **Limit**: value limit, the color defined in the same row will be used for values equal to or greater than this limit.
+* **Color Name/Code**: desired color (SVG named color or #RRGGBB value).
+
+The last true condition of the list will be effective and the others are ignored.
+
+The field “Limit” can have also some special coded values:
+
+* 'a' - for alarmed value (the point has a not yet acknowledged alarm state)
+* 'f' - for a failed (invalid quality) value
+
+For digital (boolean) points the following special values for conditions apply:
+
+* 0 – invalid state
+* 1 – false (off) state
+* 2 – true (on) state
+* 3 - transit state
+* 130 – invalid state and bad quality
+* 129 – false (off) state and bad quality
+* 130 – true (on) state and bad quality
+* 131 - transit state and bad quality
+
+The colors are the SVG colors (named or #RRGGBB value). “none” is the transparent color.
+
+A single color value will be used as fill and stroke colors. To specify different fill and stroke separate 2 color values by a “|” (pipe) character. Example: “red|green” = red for fill and green for stroke.
+
+A void fill color like in “|yellow” affects only the stroke while keeping the fill unaltered.
+A void stroke color like in “black|” affects only the fill while keeping the stroke unaltered (recommended for text objects).
+
+To interpolate colors between 2 values, use @color in the color field (fill or stroke) in the final line. Example: To make fill colors that varies continuously between white and red proportionally to values between 0 and 10 for the tag “TAG1”.
+
+Tag  | Value | Color
+---- | ----- | -------
+TAG1 | 0     | white\|
+TAG1 | 10    | @red\|
+
+In the field “Color Name/Code” it's possible to change a SVG attribute instead of the color with the “attrib:” prefix. There must be a space after “attrib:”. 
+
+    Examples:
+
+    attrib: opacity=0.5
+    attrib: style=fill:red;text-decoration:underline;
+
+In the field “Color Name/Code” it's also possible to run a Javascript short script with the “script:” option. There must be a space after “script:”.
+
+The function _$W.Animate_ can be used to animate objects with SMIL (SMIL is not implement in old IE/Edge browsers). The first parameter is the object to be animated (“thisobj” represents the current object); the second is the animation type ('animate', 'set', 'animateTransform',  'animateColor' or 'animateMotion'); the third is the animation options. 
+
+    Examples:
+
+    script: $W.Animate( thisobj, 'animate', {'attributeName': 'x', 'from': 0, 'to': 10, 'fill': 'freeze', 'repeatCount': 5, 'dur': 5 } ); // animates on axis x, from 0 to 10 seconds, during 5 seconds, repeats 5 times.
+    
+    script: $W.Animate( thisobj, 'animate', {'attributeName': 'width', 'from': 45, 'to': 55, 'repeatCount':5,'dur': 1 } ); // animates width between 45 and 55, 5 times in 1 second.
+    
+    script: $W.Animate( thisobj, 'animate', {'attributeName': 'width', 'values': '45;55;45', 'repeatCount':5,'dur': 1 } ); // animates width for the values 45, 55 and  45, 5 times in 1 second.
+
+It's recommended to use _$W.RemoveAnimate(thisobj)_ before creating a new animation to avoid cumulative animations.
+
+See SVG attributes animation documentation, in: http://www.w3.org/TR/SVG/animate.html
+
+For image objects: to load and change images dynamically use the “$W.LoadImage” function as this
+    
+    script: $W.LoadImage(thisobj, 'clipart/modem.png');
+
+Special color shortcuts can be changed in _src/htdocs/conf/config_viewers.js_. This can be used to theme whole drawings provided the codes below are used instead of direct color names.
+
+* "-clr-bgd" – shortcut for the background color (ScreenViewer_Background);
+* "-clr-tbr" – shortcut for the toolbar color (ScreenViewer_ToolbarColor);
+* "-clr-01" – first user defined shortcut (ScreenViewer_ColorTable[1]);
+* "-clr-02" – second user defined shortcut (ScreenViewer_ColorTable[2]);
+* …
+* … up to 99 user defined color shortcuts.
 
