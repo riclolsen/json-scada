@@ -1,8 +1,6 @@
 # SVG Synoptic Display Editor
 
-This is a separate project. This SVG editor is based on the Inkscape vector editor.
-
-This editor is based on the popular open-source Inkscape editor, it was modified to allow markup SCADA-like animations in the SVG file with links to data that can be later provided at runtime.
+This is a separate project. This editor is based on the popular open-source Inkscape editor, it was modified to allow markup SCADA-like animations in the SVG file with links to data that can be later provided at runtime.
 Any graphics properties can be animated with live data, such as fill/stroke colors, size, position, rotation, etc.
 
 ## Source Code
@@ -11,15 +9,11 @@ Any graphics properties can be animated with live data, such as fill/stroke colo
 
 ## Installers
 
-Windows binaries are include in the {json:scada} installer for Windows 64.
+Windows binaries are include in the {json:scada} installer for Windows 64 bits.
 
 It can also be acquired here the standalone Microsoft Store version for Windows 10 (Certified Binary).
 
 * [Microsoft Store Binary](https://www.microsoft.com/store/apps/9P9905HMKZ7X?ocid=periscope)
-
-# Documentation 
-
-* [Editor documentation](https://scadavis.io/scadaviseditor.docx.html)
 
 ## Creating Displays
 
@@ -47,6 +41,15 @@ To learn how to use the Inkscape SVG graphics editor there is plenty of material
 	https://inkscape.org/en/learn/ 
 
 An interactive tutorial is available inside the editor in many languages (menu Help | Tutorials).
+
+Other interesting related resources.
+
+* https://www.opto22.com/support/resources-tools/demos/svg-image-library
+* https://github.com/willianjusten/awesome-svg
+* https://github.com/PanderMusubi/inkscape-open-symbols
+* https://sourceforge.net/projects/oshmiopensubstationhmi/files/svg-clipart.zip/download
+* https://www.svgrepo.com
+* https://www.vecteezy.com
 
 ## SCADA Animations
 
@@ -85,7 +88,7 @@ Open New Display | Open
 Preview Displays (on mouse over) | Open
 Create indirect variables | Faceplate
 Clone object properties | Set (#copy_xsac_from)
-Object models | Faceplate (group), Set (#copy_xsac_from)
+Object models | Faceplate (group) + Set (#copy_xsac_from)
 
 ### Get Tab
 
