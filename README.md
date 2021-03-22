@@ -99,6 +99,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 * [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](src/i104m/README.md)
 * [Change Stream Data Processor](src/cs_data_processor/README.md)
+* [Custom Data Processor](src/cs_custom_processor/README.md)
 * [Realtime Data Server](src/server_realtime/README.md)
 * [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
 * [OSHMI2JSON Tool](src/oshmi2json/README.md)
