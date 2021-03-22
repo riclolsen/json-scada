@@ -60,6 +60,32 @@ Follow below a list of attributes that can be utilized to animate graphics.
 Get  Color  Bar  Opacity  Rotate  Tooltips  Slider  Zoom 
 Script  Text  Faceplate  Popup  Set  Open  Special Codes
 
+Desired Action | Tab
+-------------- | ---
+Show formatted values as text | Get
+Define texts for specified values | Text
+Change color of drawing objects | Color
+Change SVG attributes of drawing objects | Color
+Load images | Color
+Run animations | Color
+Execute scripts | Color, Script, Set
+Associate mouse/keyboard events | Script
+Bar graph | Bar
+Arc, Donut | Set (#arc)
+Radar chart | Set (#radar)
+Generic charts | Set (#vega4, #vega4-json #vega-lite)
+Control transparency | Opacity, Color
+Rotate objects | Rotate
+Create tooltips | Tooltips
+Move objects linearly | Slider
+Zoom | Zoom
+Create indirect variables | Faceplate
+Control action when object is clicked | Popup
+Clone object properties | Set (#copy_xsac_from)
+Create Trend Plot | Open
+Open New Display | Open
+Preview Displays (on mouse over) | Open
+
 ### Get Tab
 
 **Purpose**: retrieve and show formatted values for tags.
@@ -136,7 +162,7 @@ stopped\|running | running
 
 ### Color Tab
 
-**Purpose**: change the fill/stroke color of objects according to limits for the value of points. It is also possible to change attributes, trigger SMIL animations and run small scripts.
+**Purpose**: change the fill/stroke color of objects according to limits for the value of points. It is also possible to change attributes, trigger SMIL animations, load images and run small scripts.
 
 **Available for**: all SVG drawing object types (not available for groups).
 
@@ -173,23 +199,26 @@ A void stroke color like in “black|” affects only the fill while keeping the
 
 To interpolate colors between 2 values, use @color in the color field (fill or stroke) in the final line. Example: To make fill colors that varies continuously between white and red proportionally to values between 0 and 10 for the tag “TAG1”.
 
-Tag  | Value | Color
----- | ----- | -------
+Tag  | Limit | Color Name/Code
+---- | ----- | ---------------
 TAG1 | 0     | white\|
 TAG1 | 10    | @red\|
 
 In the field “Color Name/Code” it's possible to change a SVG attribute instead of the color with the “attrib:” prefix. There must be a space after “attrib:”. 
 
-    Examples:
+Example of changing attributes
 
-    attrib: opacity=0.5
-    attrib: style=fill:red;text-decoration:underline;
-
+Tag  | Limit | Color Name/Code
+---- | ----- | ---------------
+TAG1 | 0     | attrib: opacity=0.5
+TAG1 | 10    | attrib: opacity=1.0
+TAG1 | f     | attrib: style=fill:red;text-decoration:underline;    
+    
 In the field “Color Name/Code” it's also possible to run a Javascript short script with the “script:” option. There must be a space after “script:”.
 
 The function _$W.Animate_ can be used to animate objects with SMIL (SMIL is not implement in old IE/Edge browsers). The first parameter is the object to be animated (“thisobj” represents the current object); the second is the animation type ('animate', 'set', 'animateTransform',  'animateColor' or 'animateMotion'); the third is the animation options. 
 
-    Examples:
+    Examples (Color Name/Code field):
 
     script: $W.Animate( thisobj, 'animate', {'attributeName': 'x', 'from': 0, 'to': 10, 'fill': 'freeze', 'repeatCount': 5, 'dur': 5 } ); // animates on axis x, from 0 to 10 seconds, during 5 seconds, repeats 5 times.
     
@@ -205,7 +234,7 @@ For image objects: to load and change images dynamically use the “$W.LoadImage
     
     script: $W.LoadImage(thisobj, 'clipart/modem.png');
 
-Special color shortcuts can be changed in _src/htdocs/conf/config_viewers.js_. This can be used to theme whole drawings provided the codes below are used instead of direct color names.
+Special color shortcuts can be changed in _src/htdocs/conf/config_viewers.js_. This file can be used to theme whole drawings provided the codes below are used instead of direct color names.
 
 * "-clr-bgd" – shortcut for the background color (ScreenViewer_Background);
 * "-clr-tbr" – shortcut for the toolbar color (ScreenViewer_ToolbarColor);
@@ -213,4 +242,6 @@ Special color shortcuts can be changed in _src/htdocs/conf/config_viewers.js_. T
 * "-clr-02" – second user defined shortcut (ScreenViewer_ColorTable[2]);
 * …
 * … up to 99 user defined color shortcuts.
+
+### Bar tab
 
