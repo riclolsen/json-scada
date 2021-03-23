@@ -285,13 +285,13 @@ To adjust the center of rotation point of the object, click the object twice unt
 
 The fields “Line 1” to “Line 5” can be filled with the lines of text to be presented. “Size” and “Style” fields are ignored.
 
-The tooltips can contain Javascript code between “!EVAL” and “!END” marks. Use “$V('TAG')” to obtain point values inside the Javascript expression. The expression will be evaluated and the resulting value of it will be shown. What is out of the “!EVAL” and “!END” marks will be presented as text. Clone object can receive the “$V(%n)” to obtain the point value of the cloned object (see the “Clone” attribute).
+The tooltips can contain Javascript code between “!EVAL” and “!END” marks. Use “$V('TAG')” to obtain point values inside the Javascript expression. The expression will be evaluated and the resulting value of it will be shown. What is out of the “!EVAL” and “!END” marks will be presented as text. Indirect variables can be used in the form “$V(%n)” to obtain the point value of a tag defined as variable at the higher level group.
 
 Example: Consider a tag “TAG1” with a value of 22.1 and a point “TAG2” with a value of 10.5.
 
-    Line 1: AL11+AL12 = !EVAL $V('TAG1') + $V('TAG2') !END MW
+    Line 1: TAG1+TAG2 = !EVAL $V('TAG1') + $V('TAG2') !END MW
 
-This will present this text (when mouse over): “AL11+AL12 = 32.6 MW”.
+This will present this text (when mouse over): “TAG1+TAG2 = 32.6 MW”.
 
 ### Slider Tab
 
@@ -303,6 +303,86 @@ In the “Tag” field, put the desired tag name. The fields “Max” and “Mi
 
 The SVG object must be cloned (Edit | Clone | Create Clone or ALT+D). The original object defines the initial position (this position will be reached when the value is equal to “Min”). The clone object must be positioned at the desired final position (the position to be reached when the value is equal to “Max”). 
 
-Movement in the reverse direction can be obtained switching the values of Min and Max.
+Movement in the reverse direction can be obtained by switching the values of “Min” and “Max”.
 
+### Zoom Tab
+
+**Purpose**: define a zoom region that is extended to the full viewer when clicked. 
+
+**Available for**: all types of SVG objects, except text.
+
+The object must be placed on the top of other objects and have an opacity greater than zero (like “0.1”).
+
+### Script Tab
+
+**Purpose**: associate Javascript code to an event and create charts using the Vega specification.
+
+**Available for**: all types of SVG objects.
+
+
+Available scriptable events:
+
+* **mouseup**: release the mouse button.
+* **mousedown**: mouse click.
+* **mouseover**: mouse cursor entering the object.
+* **mousemove**:  mouse cursor moving over the object.
+* **mouseout**: mouse cursor leaving the object.
+* **exec_once**: execute a script one time only after the screen is loaded and parsed.
+* **exec_on_update**: execute a script when data is updated
+
+Use “$V('TAG')” to obtain point values inside the script. 
+
+The function $W.Animate and thisobj can be used to animate objects in scripts, example
+
+    var obj = thisobj; // get the current object (the object that hosts the script)
+
+    // Use a call like below to get references to other objects from the SVG file by the id property
+    // var obj = SVGDoc.getElementById("rect1");
+
+    $W.RemoveAnimate(obj); // remove previous animations
+    // animate on axis x
+    $W.Animate(obj, "animate", {"attributeName": "x", "from": 208 ,"to": 300, "repeatCount": 5, "dur": 5});
+    // animate on axis y
+    $W.Animate(obj, "animate", {"attributeName": "y", "from": -301 ,"to":-400, "repeatCount": 5, "dur": 5});
+
+It's recommended to use $W.RemoveAnimate(thisobj) before creating a new animation to avoid cumulative animations.
+Other useful function can toggle the visibility of an object and also apply a translation to it:
+$W.ShowHideTranslate( 'id_of_object', x, y );
+
+The function $W.makeDraggable(obj) can be used to make an object draggable.
+
+Vega specification markup options:
+
+* **vega**: old style Vega 1/2 specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char. DEPRECATED, use vega4!
+* **vega4**: new style Vega 3/4/5 specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char.
+* **vega-lite**: vega-lite specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char. 
+* **vega-json**: old style Vega 1/2 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data. DEPRECATED, use vega4-json!
+* **vega4-json**: new style Vega 3/4/5 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data.
+
+See Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. 
+
+In the Vega file (“data” / “values” section), use the following markup to refer to the tag list:
+
+	"PNT#1" to retrieve the current value of the first tag in the tag list
+	"TAG#1" to retrieve the first tag in the tag list
+	"LMI#1" to retrieve the inferior limit of the fist point in the point list
+	"LMS#1" to retrieve the superior limit of the fist point in the point list
+	"FLG#1" to retrieve the qualifier flags of the first tag in the tag list
+	"FLR#1" to retrieve the failure of the first tag in the tag list
+	“SUB#1” to retrieve the group1 name (location/station name) of the fist point in the point list
+	“BAY#1” to retrieve the group2 name (bay/area name) of the fist point in the point list
+	“DCR#1” to retrieve the description of the fist point in the point list
+	“HIS#1” to retrieve the historical curve of the first tag in the tag list
+
+### Text Tab
+
+**Purpose**: display predefined texts associated with ranges of values.
+
+**Available for**: text objects.
+
+The “Tag” field must be filled with the desired tag name.
+
+The list of _Tag Values_ and associated _Tag Texts_ should be created with an ascending order of value. The value of the point will be tested against the list of Tag Value's to be greater than or equal to each of it. The last true condition will cause the associated text to be presented.
+Use a Tag Value of “f” to test for invalid values and “a” for alarmed.
+For digital points consider the values (0-3,128-131) as shown previously for the _Color_ tab.
 
