@@ -328,7 +328,7 @@ Available scriptable events:
 * **mousemove**:  mouse cursor moving over the object.
 * **mouseout**: mouse cursor leaving the object.
 * **exec_once**: execute a script one time only after the screen is loaded and parsed.
-* **exec_on_update**: execute a script when data is updated
+* **exec_on_update**: execute a script every time data is updated.
 
 Use “$V('TAG')” to obtain point values inside the script. 
 
@@ -349,7 +349,7 @@ It's recommended to use $W.RemoveAnimate(thisobj) before creating a new animatio
 Other useful function can toggle the visibility of an object and also apply a translation to it:
 $W.ShowHideTranslate( 'id_of_object', x, y );
 
-The function $W.makeDraggable(obj) can be used to make an object draggable.
+The function $W.makeDraggable(obj) can be used to make an object draggable by the mouse.
 
 Vega specification markup options:
 
@@ -382,7 +382,79 @@ In the Vega file (“data” / “values” section), use the following markup t
 
 The “Tag” field must be filled with the desired tag name.
 
-The list of _Tag Values_ and associated _Tag Texts_ should be created with an ascending order of value. The value of the point will be tested against the list of Tag Value's to be greater than or equal to each of it. The last true condition will cause the associated text to be presented.
+The list of _Tag Values_ and associated _Tag Texts_ should be created with an ascending order of value. The value of the point will be tested against the list of _Tag Values_ to be greater than or equal to each of it. The last true condition will cause the associated text to be presented.
+
 Use a Tag Value of “f” to test for invalid values and “a” for alarmed.
+
 For digital points consider the values (0-3,128-131) as shown previously for the _Color_ tab.
 
+### Faceplate Tab
+
+**Purpose**: this powerful concept allows to replicate groups of animated objects associating each replica to a different tag (or to a different set of tags).
+
+**Available for**: groups of objects.
+
+A model group of objects can be created associating all the animations of an object(s) to an indirection like “%n” (use “%m”, “%p”, etc. to use more tag indirections in the same model). Next, group all related objects that will compose the model. Then use the Faceplate attribute to resolve the indirections in the object with the list of Variables and Values. Variable is the indirection variable like “n” (here you must not put a “%”, just the character of the variable) and Value is the tag associated with it. So, all animations in the grouped objects will be related to the values of the resolved tag. Copy and paste the grouped object and change the tags of the variable(s) to obtain new objects with the same animations linked to other tags.
+
+See examples of this concept in the demo displays included with the installation or in the Github repo.
+
+### Popup Tab
+
+**Purpose**: control the action when the object is clicked.
+
+**Available for**: all types of SVG objects including groups.
+
+The field “Source” can be:
+
+* A tag – set the tag to opened in the point info dialog when the object is clicked.
+* “block” – block any action when object clicked.
+* “notrace” – allow point info dialog when object is clicked but do not highlight the object when accessed.
+* “preview:URL”: presents a preview of the URL when the mouse is over the object. The width and height parameters define the preview window size.
+
+### Open Tab
+
+**Purpose**: plot trends, open new pages, preview pages.
+
+**Available for**: all types of SVG objects including groups.
+
+* For field “Source Type” = URL
+    
+    * Field Source = "new:URL" - open new page with URL contents.
+    * Field Source = "preview:URL" - open preview box with URL contents.
+
+* For rectangle objects and “Source Type” = “Tag”: draw a line with a trend plot inside the rectangle with the rectangle's stroke width and color. Parameters:
+    * Field Source = desired tag to plot.
+    * Field X-position = must be 0.
+    * Field Y-position = vertical offset value.
+    * Field Width = horizontal (X) range in seconds, plot time window continuously moved, current value plotted to the right edge. If negative, plot from the last round time (for the range), current value plotted from left to right, restart plot when current date is bigger than final time for the last range (can be used to plot values ahead of time, like forecasts).
+    * Field Height = vertical (Y) range for point values.
+
+### Set Tab
+
+**Purpose**: configure the special functions.
+**Available for**: all types of SVG objects.
+
+Functions available:
+
+* #exec or #exec_once in the field “Tag” - executes once the script entered in the field “Source”.
+* #exec_on_update in the field “Tag” - executes the script entered in the field “Source” each time the screen is refreshed with new data.
+* #copy_xsac_from in the field “Tag” - copies the XSAC attributes from another model object(s) to the current object. Use the field “Source” to indicate the ID of the model object. Multiple ID's of model objects can be entered in the field “Source” separating them with commas. The other fields are ignored. This can be used to create models of actions that control the behavior of many other derived objects changing just the model object. This can be combined with the Faceplate attribute to replicate modeled objects.
+* #set_filter in the field “Tag” – reserved behavior.
+* #arc in the field Tag – draws a doughnut chart. The tag must be in the “Source” field. In the “Prompt” field there must be set three parameters separated by commas: the minimum value (normally zero), the maximum value (for a 360-degree arc) and the inner circle radius.
+* #radar in the field “Tag” – (for a rectangle object) defines a radar (spider web) graphic. List the points in the “Source” field separated by commas. The field “Prompt” can be used to change the configuration of the chart, by applying conventions from https://github.com/alangrafu/radar-chart-d3. Write the attribute names using double quotes. Ex:
+{ “levels”:5, “maxValue”:200, “axisText”: false }
+
+* #vega4, #vega4-json or #vega-lite in the field “Tag” - defines a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (ex.: “38038|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
+
+See the Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. In the Vega file (“data” / “values” section), use the markup below to refer to the tag list (from the “Source” field)
+
+	"PNT#1" to retrieve the current value of the first tag in the tag list
+	"TAG#1" to retrieve the first tag in the tag list
+	"LMI#1" to retrieve the inferior limit of the fist point in the point list
+	"LMS#1" to retrieve the superior limit of the fist point in the point list
+	"FLG#1" to retrieve the qualifier flags of the first tag in the tag list
+	"FLR#1" to retrieve the failure of the first tag in the tag list
+	“SUB#1” to retrieve the group1 name (location/station name) of the fist point in the point list
+	“BAY#1” to retrieve the group2 name (bay/area name) of the fist point in the point list
+	“DCR#1” to retrieve the description of the fist point in the point list
+	“HIS#1” to retrieve the historical curve of the first tag in the tag list
