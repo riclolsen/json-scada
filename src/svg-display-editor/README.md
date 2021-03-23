@@ -247,5 +247,62 @@ Special color shortcuts can be changed in _src/htdocs/conf/config_viewers.js_. T
 * …
 * … up to 99 user defined color shortcuts.
 
-### Bar tab
+### Bar Tab
+
+**Purpose**: change the height of a rectangle according to a value.
+
+**Available for**: only for SVG rectangles.
+
+In the “Tag” field, put the desired tag name. The fields “Min” and “Max” represents the expected range of values. The height of the object will be 100% of its original size when the value of the point is equal to the “Max” value and 0% when equal to the value defined in the “Min” field.
+
+Changes in different directions can be obtained by just rotating the object.
+
+### Opacity Tab
+
+**Purpose**: change the opacity (opposite of transparency) of SVG objects according to a value.
+
+**Available for**: all types SVG objects including groups.
+
+In the “Tag” field, put the desired tag name. The fields “Min” and “Max” represent the expected spread of point values. The opacity of the object will be 100% (totally solid) when the value of the point is equal to the Max value and 0% (totally transparent) when equal to the value defined in the Min field.
+
+For digital points consider the value 0 for the ON (true) state and 1 for the OFF (false) state. For Min=0 and Max=1 the object will be solid for the OFF (false) state and will disappear for the ON (true) state. With Min=1 and Max=0 the reverse effect will be obtained.
+
+### Rotate Tab
+
+**Purpose**: rotate the object.
+
+**Available for**: all types of SVG objects including groups.
+
+In the “Tag” field, put the desired tag name. Fill the fields “Max” and “Min” according to the value range of point. When the point reaches the value of “Max” the object will rotate 360 degrees. The object will not rotate when the point has the value of “Min”. The rotation is clockwise when Max > Min, to invert the rotation direction, let Min be greater than Max.
+
+To adjust the center of rotation point of the object, click the object twice until shown the rotation guides (a cross mark is the center of rotation), then press shift and drag the cross at the center of the object.
+
+### Tooltips Tab
+
+**Purpose**: show text when the mouse cursor is over a object. 
+
+**Available for**: all types of SVG objects including groups.
+
+The fields “Line 1” to “Line 5” can be filled with the lines of text to be presented. “Size” and “Style” fields are ignored.
+
+The tooltips can contain Javascript code between “!EVAL” and “!END” marks. Use “$V('TAG')” to obtain point values inside the Javascript expression. The expression will be evaluated and the resulting value of it will be shown. What is out of the “!EVAL” and “!END” marks will be presented as text. Clone object can receive the “$V(%n)” to obtain the point value of the cloned object (see the “Clone” attribute).
+
+Example: Consider a tag “TAG1” with a value of 22.1 and a point “TAG2” with a value of 10.5.
+
+    Line 1: AL11+AL12 = !EVAL $V('TAG1') + $V('TAG2') !END MW
+
+This will present this text (when mouse over): “AL11+AL12 = 32.6 MW”.
+
+### Slider Tab
+
+**Purpose**: move the object in a straight line.
+
+**Available for**: all types of SVG objects including groups.
+
+In the “Tag” field, put the desired tag name. The fields “Max” and “Min” must be filled with the desired range of variation for the point. 
+
+The SVG object must be cloned (Edit | Clone | Create Clone or ALT+D). The original object defines the initial position (this position will be reached when the value is equal to “Min”). The clone object must be positioned at the desired final position (the position to be reached when the value is equal to “Max”). 
+
+Movement in the reverse direction can be obtained switching the values of Min and Max.
+
 
