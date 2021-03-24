@@ -32,7 +32,7 @@ Point numbers (_id field of _realtimeData_ collection) also can be used to ident
 
 ## Standard Inkscape Usage
 
-To learn how to use the Inkscape SVG graphics editor there is plenty of material available throughout the web. We just point some useful resources here.
+There is plenty of material available throughout the web to help learn how to use the Inkscape SVG graphics editor. We just point here some useful resources.
 
 * Inkscape official manual 
 	http://tavmjong.free.fr/INKSCAPE/MANUAL/html/
@@ -42,7 +42,7 @@ To learn how to use the Inkscape SVG graphics editor there is plenty of material
 
 An interactive tutorial is available inside the editor in many languages (menu Help | Tutorials).
 
-Other interesting related resources.
+Other useful related resources.
 
 * https://www.opto22.com/support/resources-tools/demos/svg-image-library
 * https://github.com/willianjusten/awesome-svg
