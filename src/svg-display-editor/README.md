@@ -58,37 +58,36 @@ To edit SCADA animation properties of an SVG object, right-click the mouse and c
 ![SVG Editor](../../docs/screenshots/editor.png "{json:scada} SVG Editor")
 Editor interface showing the “Object Properties” dialog.
 
-Follow below a list of attributes that can be utilized to animate graphics.
-
-Get  Color  Bar  Opacity  Rotate  Tooltips  Slider  Zoom 
-Script  Text  Faceplate  Popup  Set  Open  Special Codes
+Follow below a list of attributes (“Object Properties|Tab”) that can be utilized to animate graphics.
 
 Desired Action | Tab
 -------------- | ---
 Show formatted values as text | [Get](#get-tab)
-Define texts for specified values | Text
-Change color of drawing objects | Color
-Change SVG attributes of drawing objects | Color
-Load images | Color
-Run animations | Color
-Execute scripts | Color, Script, Set
-Associate mouse/keyboard events | Script
-Bar graph | Bar
-Arc, Donut | Set (#arc)
-Radar chart | Set (#radar)
-Generic charts | Set (#vega4, #vega4-json #vega-lite)
-Control transparency | Opacity, Color
-Rotate objects | Rotate
-Create tooltips (on mouse over text) | Tooltips
-Move objects linearly | Slider
-Zoom to area when object clicked | Zoom
-Control action when object is clicked | Popup
-Create Trend Plot | Open
-Open New Display | Open
-Preview Displays (on mouse over) | Open
-Create indirect variables | Faceplate
-Clone object properties | Set (#copy_xsac_from)
-Object models | Faceplate (group) + Set (#copy_xsac_from)
+Define texts for ranges of values | [Text](#text-tab)
+Change color of drawing objects | [Color](#color-tab)
+Change SVG attributes of drawing objects | [Color](#color-tab)
+Load images | [Color](#color-tab) \| [Script](#script-tab)
+Run animations | [Color](#color-tab) \| [Script](#script-tab)
+Execute scripts | [Color](#color-tab) \| [Script](#script-tab) \| [Set (#exec_once #exec_on_update)](#set-tab)
+Associate mouse/keyboard events | [Script](#script-tab)
+Bar graph | [Bar](#bar-tab)
+Arc, Donut | [Set (#arc)](#set-tab) 
+Radar chart | [Set (#radar)](#set-tab) 
+Generic charts | [Script](#script-tab) \| [Set (#vega4 #vega4-json #vega-lite)](#set-tab)
+Control transparency | [Opacity](#opacity-tab), [Color](#color-tab)
+Rotate objects | [Rotate](#rotate-tab)
+Create tooltips (on mouse over text) | [Tooltips](#tooltips-tab)
+Move objects linearly | [Slider](#slider-tab)
+Zoom to area when object clicked | [Zoom](#zoom-tab)
+Control action when object is clicked | [Popup](#popup-tab) \| [Open](#open-tab)
+Create Trend Plot | [Open](#open-tab)
+Open New Display | [Open](#open-tab)
+Open URL on new Window | [Open](#open-tab) \| [Popup](#popup-tab)
+Preview Displays (on mouse over) | [Open](#open-tab) \|  [Popup](#popup-tab)
+Create indirect variables | [Faceplate (group)](#faceplate-tab)
+Clone object properties/behavior | [Set (#copy_xsac_from)](#set-tab)
+Object models | [Faceplate (group)](#faceplate-tab) + [Set (#copy_xsac_from)](#set-tab)
+Define filter for Alarm Box | [Set (#set_filter)](#set-tab)
 
 ### Get Tab
 
@@ -446,7 +445,7 @@ Functions available:
 * **#exec** or **#exec_once** in the field “Tag” - execute once the script entered in the field “Source”.
 * **#exec_on_update** in the field “Tag” - execute the script entered in the field “Source” each time the screen is refreshed with new data.
 * **#copy_xsac_from** in the field “Tag” - copy the XSAC attributes from another model object(s) to the current object. Use the field “Source” to indicate the ID of the model object. Multiple ID's of model objects can be entered in the field “Source” separating them with commas. The other fields are ignored. This can be used to create models of actions that control the behavior of many other derived objects changing just the model object. This can be combined with the Faceplate attribute to replicate modeled objects.
-* **#set_filter** in the field “Tag” – reserved behavior.
+* **#set_filter** in the field “Tag” – define a filter (by the point ID) for the data presented in the Alarm Box. Use the field "Source" to enter the text of the filter. The other fields are ignored.
 * **#arc** in the field Tag – draw a doughnut chart. The tag must be in the “Source” field. In the “Prompt” field there must be set three parameters separated by commas: the minimum value (normally zero), the maximum value (for a 360-degree arc) and the inner circle radius.
 * **#radar** in the field “Tag” – (for a rectangle object) define a radar (spider web) graphic. List the points in the “Source” field separated by commas. The field “Prompt” can be used to change the configuration of the chart, by applying conventions from https://github.com/alangrafu/radar-chart-d3. Write the attribute names using double quotes. E.g: { "levels":5, "maxValue":200, "axisText": false }
 
