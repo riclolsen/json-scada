@@ -2667,9 +2667,13 @@ else
                       item,
                       "?SELTELA=../svg/" +
                         idtela +
-                        "&ZPX=0&ZPY=0&ZPW=5280&ZPH=3300&HIDETB=1",
-                      700,
-                      480
+                        "&ZPX=0&ZPY=0&ZPW="+
+                        parseInt(ScreenViewer_SVGMaxWidth/ScreenViewer_DisplayPreviewZoom)
+                        +"&ZPH="+
+                        parseInt(ScreenViewer_SVGMaxHeight/ScreenViewer_DisplayPreviewZoom)
+                        +"&HIDETB=1",
+                      (inksage_labelvec[lbv].type==="_blank"?inksage_labelvec[lbv].width : ScreenViewer_DefaultDisplayPreviewWidth),
+                      (inksage_labelvec[lbv].type==="_blank"?inksage_labelvec[lbv].height : ScreenViewer_DefaultDisplayPreviewHeight)
                     );
                   }
                 }

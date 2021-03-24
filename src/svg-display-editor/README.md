@@ -363,12 +363,12 @@ See Vega project site for tools and documentation of syntax: https://vega.github
 
 In the Vega file (“data” / “values” section), use the following markup to refer to the tag list:
 
-	"PNT#1" to retrieve the current value of the first tag in the tag list
-	"TAG#1" to retrieve the first tag in the tag list
-	"LMI#1" to retrieve the inferior limit of the fist point in the point list
-	"LMS#1" to retrieve the superior limit of the fist point in the point list
-	"FLG#1" to retrieve the qualifier flags of the first tag in the tag list
-	"FLR#1" to retrieve the failure of the first tag in the tag list
+	“PNT#1” to retrieve the current value of the first tag in the tag list
+	“TAG#1” to retrieve the first tag in the tag list
+	“LMI#1” to retrieve the inferior limit of the fist point in the point list
+	“LMS#1” to retrieve the superior limit of the fist point in the point list
+	“FLG#1” to retrieve the qualifier flags of the first tag in the tag list
+	“FLR#1” to retrieve the failure of the first tag in the tag list
 	“SUB#1” to retrieve the group1 name (location/station name) of the fist point in the point list
 	“BAY#1” to retrieve the group2 name (bay/area name) of the fist point in the point list
 	“DCR#1” to retrieve the description of the fist point in the point list
@@ -419,10 +419,17 @@ The field “Source” can be:
 
 * For field “Source Type” = URL
     
-    * Field Source = "new:URL" - open new page with URL contents.
-    * Field Source = "preview:URL" - open preview box with URL contents.
+    * Field Source = "new:URL" - link to open new page with URL contents when clicked.
+    * Field Source = "preview:URL" - show preview box with URL contents (when mouse over the object).
+    * Field Source = "filename.svg" - link to and show preview box (mouse over) with display file contents.
+    
+    Select field "Dest.Type" = "New exclusive window" to set width and height of the preview window. Fields "X-position" and "Y-position" are ignored (new windows or preview windows are auto positioned).
 
-* For rectangle objects and “Source Type” = “Tag”: draw a line with a trend plot inside the rectangle with the rectangle's stroke width and color. Parameters:
+    If a preview window exceeds the available space inside the Display Viewer window it will not be shown.
+
+* For rectangle objects and “Source Type” = “Tag”: draw a line with a trend plot inside the rectangle with the rectangle's stroke width and color. 
+    
+    Parameters:
     * Field Source = desired tag to plot.
     * Field X-position = must be 0.
     * Field Y-position = vertical offset value.
@@ -436,24 +443,25 @@ The field “Source” can be:
 
 Functions available:
 
-* #exec or #exec_once in the field “Tag” - executes once the script entered in the field “Source”.
-* #exec_on_update in the field “Tag” - executes the script entered in the field “Source” each time the screen is refreshed with new data.
-* #copy_xsac_from in the field “Tag” - copies the XSAC attributes from another model object(s) to the current object. Use the field “Source” to indicate the ID of the model object. Multiple ID's of model objects can be entered in the field “Source” separating them with commas. The other fields are ignored. This can be used to create models of actions that control the behavior of many other derived objects changing just the model object. This can be combined with the Faceplate attribute to replicate modeled objects.
-* #set_filter in the field “Tag” – reserved behavior.
-* #arc in the field Tag – draws a doughnut chart. The tag must be in the “Source” field. In the “Prompt” field there must be set three parameters separated by commas: the minimum value (normally zero), the maximum value (for a 360-degree arc) and the inner circle radius.
-* #radar in the field “Tag” – (for a rectangle object) defines a radar (spider web) graphic. List the points in the “Source” field separated by commas. The field “Prompt” can be used to change the configuration of the chart, by applying conventions from https://github.com/alangrafu/radar-chart-d3. Write the attribute names using double quotes. Ex:
-{ “levels”:5, “maxValue”:200, “axisText”: false }
+* **#exec** or **#exec_once** in the field “Tag” - execute once the script entered in the field “Source”.
+* **#exec_on_update** in the field “Tag” - execute the script entered in the field “Source” each time the screen is refreshed with new data.
+* **#copy_xsac_from** in the field “Tag” - copy the XSAC attributes from another model object(s) to the current object. Use the field “Source” to indicate the ID of the model object. Multiple ID's of model objects can be entered in the field “Source” separating them with commas. The other fields are ignored. This can be used to create models of actions that control the behavior of many other derived objects changing just the model object. This can be combined with the Faceplate attribute to replicate modeled objects.
+* **#set_filter** in the field “Tag” – reserved behavior.
+* **#arc** in the field Tag – draw a doughnut chart. The tag must be in the “Source” field. In the “Prompt” field there must be set three parameters separated by commas: the minimum value (normally zero), the maximum value (for a 360-degree arc) and the inner circle radius.
+* **#radar** in the field “Tag” – (for a rectangle object) define a radar (spider web) graphic. List the points in the “Source” field separated by commas. The field “Prompt” can be used to change the configuration of the chart, by applying conventions from https://github.com/alangrafu/radar-chart-d3. Write the attribute names using double quotes. E.g: { "levels":5, "maxValue":200, "axisText": false }
 
-* #vega4, #vega4-json or #vega-lite in the field “Tag” - defines a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (ex.: “38038|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
+* **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
 
-See the Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. In the Vega file (“data” / “values” section), use the markup below to refer to the tag list (from the “Source” field)
+See the Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. 
 
-	"PNT#1" to retrieve the current value of the first tag in the tag list
-	"TAG#1" to retrieve the first tag in the tag list
-	"LMI#1" to retrieve the inferior limit of the fist point in the point list
-	"LMS#1" to retrieve the superior limit of the fist point in the point list
-	"FLG#1" to retrieve the qualifier flags of the first tag in the tag list
-	"FLR#1" to retrieve the failure of the first tag in the tag list
+In the Vega file (“data” / “values” section), use the markup below to refer to the tag list (from the “Source” field).
+
+	“PNT#1” to retrieve the current value of the first tag in the tag list
+	“TAG#1” to retrieve the first tag in the tag list
+	“LMI#1” to retrieve the inferior limit of the fist point in the point list
+	“LMS#1” to retrieve the superior limit of the fist point in the point list
+	“FLG#1” to retrieve the qualifier flags of the first tag in the tag list
+	“FLR#1” to retrieve the failure of the first tag in the tag list
 	“SUB#1” to retrieve the group1 name (location/station name) of the fist point in the point list
 	“BAY#1” to retrieve the group2 name (bay/area name) of the fist point in the point list
 	“DCR#1” to retrieve the description of the fist point in the point list

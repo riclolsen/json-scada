@@ -100,6 +100,17 @@
 //var ScreenViewer_BarBreakerSwColor = "steelblue"; // color for DJ, SC and bars
 //var ScreenViewer_ShowScreenNameTB = 1; // show screen name on toolbar
 //
+//// parameters for display preview 
+//var ScreenViewer_DefaultDisplayPreviewWidth = 700;
+//var ScreenViewer_DefaultDisplayPreviewHeight = 480;
+//var ScreenViewer_DisplayPreviewZoom = 0.5;
+//
+//var ScreenViewer_PinnedAnnotationsBGColor = "slategray"; // background color of pinned annotations
+//var ScreenViewer_PinnedAnnotationsTextColor = "white"; // text color of pinned annotations
+//var ScreenViewer_PinnedAnnotationsWidth = "300px"; // width of pinned annotations
+//var ScreenViewer_PinnedAnnotationsBorder = "1px solid black"; // border for pinned annotations
+//var ScreenViewer_PinnedAnnotationsFont = "calibri"; // font for pinned annotations
+//var ScreenViewer_PinnedAnnotationsFontSize = "12px"; // font size for pinned annotations
 //
 //// user color palette (use in Inkscape+SAGE color fields as "-cor-05" or "-cor-49")
 //var ScreenViewer_ColorTable = new Array();
