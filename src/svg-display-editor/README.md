@@ -65,7 +65,7 @@ Script  Text  Faceplate  Popup  Set  Open  Special Codes
 
 Desired Action | Tab
 -------------- | ---
-Show formatted values as text | Get
+Show formatted values as text | [Get](#get-tab)
 Define texts for specified values | Text
 Change color of drawing objects | Color
 Change SVG attributes of drawing objects | Color
@@ -466,3 +466,30 @@ In the Vega file (“data” / “values” section), use the markup below to re
 	“BAY#1” to retrieve the group2 name (bay/area name) of the fist point in the point list
 	“DCR#1” to retrieve the description of the fist point in the point list
 	“HIS#1” to retrieve the historical curve of the first tag in the tag list
+
+### Special Codes
+
+Obs.: Special codes to obtain other point attributes instead of the tag value in SCADA animations, "xxx" represents the tag name.
+
+* !ALMxxx = returns “1” for the unacknowledged alarm or abnormal state and “0” for the acknowledged and normal state.
+* !ALRxxx = returns “1” for the unacknowledged alarm and “0” for acknowledged or not alarmed state.
+* !TMPxxx = returns the time of the last alarm for the point.
+* !SLIMxxx = returns the upper analog limit.
+* !ILIMxxx = returns the lower analog limit.
+* !TAGxxx = returns the point tag name.
+* !DCRxxx = returns the point description.
+* !STONxxx = returns the text for the ON state of digital points.
+* !STOFFxxx = returns the text for the OFF state of digital points.
+* !STVALxxx = returns the text for current state of digital points.
+* !EVAL expression = evaluates a Javascript expression, use $V("xxx") to obtain point values in the expression.
+
+### Debugging Scripts is Displays
+
+To debug scripts in a SVG display file, do the following:
+
+* include the keyword “debugger;” at the beginning of the script. This will work as a breakpoint.
+* open the display in the Display Viewer.
+* press F12 to open the browser Developer Tools and then F5 to reload.
+* The Chromium browser will stop execution when found the introduced breakpoint. Use the execution control keys F10, F11, F9, F8 to forward execution.
+
+
