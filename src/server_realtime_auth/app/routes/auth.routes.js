@@ -29,6 +29,11 @@ module.exports = function (app, accessPoint) {
     controller.listUserActions
   )  
   app.use(
+    accessPoint + 'auth/createTag',
+    [authJwt.isAdmin],
+    controller.createTag
+  )  
+  app.use(
     accessPoint + 'auth/updateTag',
     [authJwt.isAdmin],
     controller.updateTag

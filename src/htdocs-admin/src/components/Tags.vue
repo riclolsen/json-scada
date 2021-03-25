@@ -69,7 +69,7 @@
               <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" @click="fetchTags()">
                 <v-icon dark> mdi-refresh </v-icon>
               </v-btn>
-              <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" v-on="on" @click="newTag()">
+              <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" @click="newTag()">
                 <v-icon dark> mdi-plus </v-icon>
                 {{msg.tagNewTag}}
               </v-btn>              
@@ -370,12 +370,29 @@ export default {
   },
 
   methods: {
-    newTag() {
-      this.editedItem = Object.assign({}, {
-        _id: 0.0,
-        tag: "a_new_tag"
-      });
-      this.dialog = true;
+    async newTag() {
+      await fetch("/Invoke/auth/createTag", {
+        method: "post",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({tag: "a_new_tag"}),
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.error) console.log(json);
+          else { // success
+          }
+        })
+        .catch((err) => console.warn(err));
+      
+      // sort by _id descending to be shown at the top
+      this.options.sortBy = ["_id"]
+      this.options.sortDesc = [true]
+      await this.fetchTags(); // refreshes tags
+      //this.editedItem = Object.assign({}, newTagItem);
+      //this.dialog = true;
     },
     editTag(item) {      
       this.editedIndex = this.tags.indexOf(item);
