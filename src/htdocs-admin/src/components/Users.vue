@@ -26,7 +26,7 @@
               @click="createUser($event)"
             >
               <v-icon dark> mdi-plus </v-icon>
-              {{msg.userNewUser}}
+              {{$t("src\\components\\users.newUser")}}
             </v-btn>
       </v-col>
 
@@ -39,7 +39,7 @@
             class="title grey--text text--lighten-1 font-weight-light"
             style="align-self: center"
           >
-            {{msg.userSelectUser}}
+            {{$t("src\\components\\users.selectUser")}}
           </div>
           <v-card
             v-else
@@ -56,7 +56,7 @@
                 outlined
                 clearable
                 :input-value="active"
-                :label="msg.userUsername"
+                :label="$t('src\\components\\users.username')"
                 hide-details="auto"
                 v-model="selected.username"
                 @change="updateUser"
@@ -78,22 +78,22 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>{{msg.userDeleteUser}}</span>
+                <span>{{$t("src\\components\\users.deleteUser")}}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialog" max-width="290">
                 <v-card>
-                  <v-card-title class="headline"> {{msg.userDeleteUser}} </v-card-title>
+                  <v-card-title class="headline"> {{$t("src\\components\\users.deleteUser")}} </v-card-title>
 
                   <v-card-text>
-                    {{msg.userConfirmDeleteUser}}
+                    {{$t("src\\components\\users.confirmDeleteUser")}}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
                     <v-btn color="green darken-1" text @click="dialog = false">
-                      {{msg.userDeleteUserCancel}}
+                      {{$t("src\\components\\users.deleteUserCancel")}}
                     </v-btn>
 
                     <v-btn
@@ -104,7 +104,7 @@
                         deleteUser($event);
                       "
                     >
-                      {{msg.userDeleteUserExecute}}
+                    {{$t("src\\components\\users.deleteUserExecute")}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -119,7 +119,7 @@
               outlined
               clearable
               :input-value="active"
-              :label="msg.userEmail"
+              :label="$t('src\\components\\users.email')"
               hide-details="auto"
               v-model="selected.email"
               @change="updateUser"
@@ -131,7 +131,7 @@
               outlined
               clearable
               :input-value="active"
-              :label="msg.userPassword"
+              :label="$t('src\\components\\users.password')"
               hide-details="auto"
               v-model="selected.password"
               @change="updateUser"
@@ -140,7 +140,7 @@
             <v-card class="my-4" tile>
               <v-card-text>
                 <v-icon x-large color="primary darken-2">mdi-security</v-icon>
-                <h3 class="headline mb-2">{{msg.userRoles}}</h3>
+                <h3 class="headline mb-2">{{$t("src\\components\\users.roles")}}</h3>
                 <v-menu :load-children="fetchRoles">
                   <template v-slot:activator="{ on: menu, attrs }">
                     <v-tooltip bottom>
@@ -157,7 +157,7 @@
                           <v-icon dark> mdi-plus </v-icon>
                         </v-btn>
                       </template>
-                      <span>{{msg.userAddUserRole}}</span>
+                      <span>{{$t("src\\components\\users.addUserRole")}}</span>
                     </v-tooltip>
                   </template>
                   <v-list>
@@ -201,7 +201,7 @@
                               <v-icon dark> mdi-minus </v-icon>
                             </v-btn>
                           </template>
-                          <span>{{msg.userRemoveUserRole}}</span>
+                          <span>{{$t("src\\components\\users.removeUserRole")}}</span>
                         </v-tooltip>
                       </v-list-item-action>
                     </v-list-item>
@@ -217,13 +217,12 @@
 </template>
 
 <script>
-import i18n from "@/i18n/i18n-current";
+import i18n from "../i18n.js";
 
 export default {
   name: "Users",
 
   data: () => ({
-    msg: { ...i18n },
     dialog: false,
     active: [],
     open: [],
@@ -235,7 +234,7 @@ export default {
     items() {
       return [
         {
-          name: this.msg.users,
+          name: i18n.t("src\\components\\users.users"),
           children: this.users,
           roles: this.roles,
         },
@@ -368,7 +367,7 @@ export default {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({username: this.msg.userNewUserUsername}),
+        body: JSON.stringify({username: i18n.t("src\\components\\users.newUserUsername")}),
       })
         .then((res) => res.json())
         .then((json) => {

@@ -13,14 +13,16 @@
     >
       <template v-slot:top>
         <v-toolbar flat>
-          <v-toolbar-title>{{ msg.userActions }}</v-toolbar-title>
+          <v-toolbar-title>{{
+            $t("src\\components\\useractions.userActions")
+          }}</v-toolbar-title>
           <v-divider class="mx-4" inset vertical></v-divider>
           <v-text-field
             dense
             @change="fetchUserActions"
             append-icon="mdi-magnify"
             v-model="searchUsername"
-            :label="msg.actionSearchUsername"
+            :label="$t('src\\components\\useractions.searchUsername')"
             hide-details
           ></v-text-field>
           <v-spacer></v-spacer>
@@ -30,7 +32,7 @@
             @change="fetchUserActions"
             append-icon="mdi-magnify"
             v-model="searchAction"
-            :label="msg.actionSearchAction"
+            :label="$t('src\\components\\useractions.searchAction')"
             hide-details
           ></v-text-field>
           <v-spacer></v-spacer>
@@ -48,7 +50,7 @@
               <v-text-field
                 class="mt-4 mx-auto"
                 v-model="dateRangeText"
-                :label="msg.actionSearchDateRange"
+                :label="$t('src\\components\\useractions.searchDateRange')"
                 prepend-icon="mdi-calendar"
                 readonly
                 v-bind="attrs"
@@ -58,6 +60,7 @@
 
             <v-date-picker
               v-model="dates"
+              :locale="$i18n.locale"
               no-title
               scrollable
               show-current
@@ -68,7 +71,13 @@
             </v-date-picker>
           </v-menu>
           <v-spacer></v-spacer>
-          <v-btn color="primary" dark class="mb-2 mr-2" v-bind="attrs" @click="fetchUserActions()">
+          <v-btn
+            color="primary"
+            dark
+            class="mb-2 mr-2"
+            v-bind="attrs"
+            @click="fetchUserActions()"
+          >
             <v-icon dark> mdi-refresh </v-icon>
           </v-btn>
         </v-toolbar>
@@ -86,14 +95,14 @@ td {
 }
 </style>
 <script>
-import i18n from "@/i18n/i18n-current";
+import i18n from "../i18n.js";
 
 export default {
   name: "UserActions",
 
   data: () => ({
-    msg: { ...i18n },
     menu: false,
+    attrs: {},
     active: [],
     open: [],
     userActions: [],
@@ -108,18 +117,49 @@ export default {
     loading: true,
     options: {},
     headers: [
-      // { text: "_id", sortable: true, value: "_id", width: "15%" },
-      { text: "Username", sortable: true, value: "username", width: "8%" },
-      { text: "Action", sortable: true, value: "action", width: "8%" },
-      { text: "Tag", sortable: true, value: "tag", width: "8%" },
-      { text: "Point Key", sortable: true, value: "pointKey", width: "8%" },
+      //{
+      //  text: i18n.t("src\\components\\useractions.colId"),
+      //  sortable: true,
+      //  value: "_id",
+      //  width: "15%",
+      //  hidden: true
+      //},
       {
-        text: "Properties",
+        text: i18n.t("src\\components\\useractions.colUsername"),
+        sortable: true,
+        value: "username",
+        width: "8%",
+      },
+      {
+        text: i18n.t("src\\components\\useractions.colAction"),
+        sortable: true,
+        value: "action",
+        width: "8%",
+      },
+      {
+        text: i18n.t("src\\components\\useractions.colTag"),
+        sortable: true,
+        value: "tag",
+        width: "8%",
+      },
+      {
+        text: i18n.t("src\\components\\useractions.colPointKey"),
+        sortable: true,
+        value: "pointKey",
+        width: "8%",
+      },
+      {
+        text: i18n.t("src\\components\\useractions.colProperties"),
         sortable: false,
         value: "propertiesString",
         width: "35%",
       },
-      { text: "Time", sortable: true, value: "timeTag", width: "15%" },
+      {
+        text: i18n.t("src\\components\\useractions.colTime"),
+        sortable: true,
+        value: "timeTag",
+        width: "15%",
+      },
     ],
     editedIndex: -1,
     editedItem: {

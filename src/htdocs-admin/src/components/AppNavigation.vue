@@ -26,24 +26,23 @@
       <v-spacer class="hidden-md-and-up"></v-spacer>
       <img alt="{json-scada}" height="36px" src="../assets/json-scada.svg" />
       <v-spacer></v-spacer>
-      <v-toolbar-title>{{ msg.appTitle }}</v-toolbar-title>
+      <v-toolbar-title>{{ $t('src\\components\\appnavigation.appTitle') }}</v-toolbar-title>
       <v-spacer class="hidden-sm-and-down"></v-spacer>
       <v-btn text class="hidden-sm-and-down" @click="logout($event)"
-        >{{ msg.logout }} <v-icon>mdi-logout</v-icon>
+        >{{ $t('src\\components\\appnavigation.logout') }} <v-icon>mdi-logout</v-icon>
       </v-btn>
     </v-app-bar>
   </span>
 </template>
 
 <script>
-import i18n from "@/i18n/i18n-current";
+import i18n from "../i18n.js";
 
 export default {
   name: "AppNavigation",
   data() {
     return {
-      msg: { ...i18n },
-      items: [{ title: i18n.logout }],
+      items: [{ title: i18n.t('src\\components\\appnavigation.appTitle') }],
       drawer: false,
     };
   },

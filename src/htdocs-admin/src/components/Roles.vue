@@ -25,7 +25,7 @@
           @click="createRole($event)"
         >
           <v-icon dark> mdi-plus </v-icon>
-          {{msg.roleNewRole}}
+          {{$t("src\\components\\roles.newRole")}}
         </v-btn>
       </v-col>
 
@@ -38,7 +38,7 @@
             class="title grey--text text--lighten-1 font-weight-light text-center"
             style="align-self: center"
           >
-            {{msg.roleSelectRole}}
+            {{$t("src\\components\\roles.selectRole")}}
           </div>
           <v-card
             v-else
@@ -55,7 +55,7 @@
                 outlined
                 clearable
                 :input-value="active"
-                :label="msg.roleRoleName"
+                :label="$t('src\\components\\roles.roleName')"
                 hide-details="auto"
                 v-model="selected.name"
                 @change="roleChange"
@@ -77,22 +77,22 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>{{msg.roleDeleteRole}}</span>
+                <span>{{$t("src\\components\\roles.deleteRole")}}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialog" max-width="290">
                 <v-card>
-                  <v-card-title class="headline">{{msg.roleDeleteRole}}</v-card-title>
+                  <v-card-title class="headline">{{$t("src\\components\\roles.deleteRole")}}</v-card-title>
 
                   <v-card-text>
-                    {{msg.roleConfirmDeleteRole}}
+                    {{$t("src\\components\\roles.confirmDeleteRole")}}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
                     <v-btn color="green darken-1" text @click="dialog = false">
-                      {{msg.roleDeleteRoleCancel}}
+                      {{$t("src\\components\\roles.deleteRoleCancel")}}
                     </v-btn>
 
                     <v-btn
@@ -103,7 +103,7 @@
                         deleteRole($event);
                       "
                     >
-                      {{msg.roleDeleteRoleExecute}}
+                      {{$t("src\\components\\roles.deleteRoleExecute")}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -117,7 +117,7 @@
               chips
               deletable-chips
               small-chips
-              :label="msg.roleCanViewGroup1List"
+              :label="$t('src\\components\\roles.canViewGroup1List')"
               multiple
               @change="roleChange"
             ></v-autocomplete>
@@ -129,7 +129,7 @@
               chips
               deletable-chips
               small-chips
-              :label="msg.roleCanCommandGroup1List"
+              :label="$t('src\\components\\roles.canCommandGroup1List')"
               multiple
               @change="roleChange"
             ></v-autocomplete>
@@ -141,14 +141,14 @@
               chips
               deletable-chips
               small-chips
-              :label="msg.roleCanAccessDisplayList"
+              :label="$t('src\\components\\roles.canAccessDisplayList')"
               multiple
               @change="roleChange"
             ></v-autocomplete>
 
             <v-card class="mx-auto" tile>
               <v-list flat dense shaped subheader>
-                <v-subheader>{{msg.roleRights}}</v-subheader>
+                <v-subheader>{{$t("src\\components\\roles.rights")}}</v-subheader>
 
                 <v-list-item-group multiple active-class="">
                   <v-list-item>
@@ -164,9 +164,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleIsAdmin}}</v-list-item-title>
+                        <v-list-item-title>{{$t("src\\components\\roles.isAdmin")}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >{{msg.roleIsAdminHint}}</v-list-item-subtitle
+                          >{{$t("src\\components\\roles.isAdminHint")}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -184,9 +184,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleChangePassword}}</v-list-item-title>
+                        <v-list-item-title>{{$t("src\\components\\roles.changePassword")}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >{{msg.roleChangePasswordHint}}</v-list-item-subtitle
+                          >{{$t("src\\components\\roles.changePasswordHint")}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -203,9 +203,9 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleSendCommands}}</v-list-item-title>
+                        <v-list-item-title>{{$t("src\\components\\roles.sendCommands")}}</v-list-item-title>
                         <v-list-item-subtitle
-                          >{{msg.roleSendCommandsHint}}</v-list-item-subtitle
+                          >{{$t("src\\components\\roles.sendCommandsHint")}}</v-list-item-subtitle
                         >
                       </v-list-item-content>
                     </template>
@@ -222,8 +222,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleEnterAnnotations}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleEnterAnnotationsHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.enterAnnotations")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.enterAnnotationsHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -239,8 +239,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleEnterNotes}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleEnterNotesHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.enterNotes")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.enterNotesHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -256,8 +256,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleEnterManuals}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleEnterManualsHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.enterManuals")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.enterManualsHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -273,8 +273,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleEnterLimits}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleEnterLimitsHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.enterLimits")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.enterLimitsHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -290,8 +290,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleSubstituteValues}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleSubstituteValuesHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.substituteValues")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.substituteValuesHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -307,8 +307,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleAckEvents}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleAckEventsHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.ackEvents")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.ackEventsHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -324,8 +324,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleAckAlarms}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleAckAlarmsHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.ackAlarms")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.ackAlarmsHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -341,8 +341,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleDisableAlarms}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleDisableAlarmsHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.disableAlarms")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.disableAlarmsHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -353,7 +353,7 @@
                         <v-text-field
                           type="number"
                           :input-value="active"
-                          :label="msg.roleNumberOfDaysSession"
+                          :label="$t('src\\components\\roles.numberOfDaysSession')"
                           hide-details="auto"
                           v-model="selected.maxSessionDays"
                           @change="roleChange"
@@ -361,8 +361,8 @@
                       </v-list-item-action>
 
                       <v-list-item-content>
-                        <v-list-item-title>{{msg.roleMaxSessionDays}}</v-list-item-title>
-                        <v-list-item-subtitle>{{msg.roleMaxSessionDaysHint}}</v-list-item-subtitle>
+                        <v-list-item-title>{{$t("src\\components\\roles.maxSessionDays")}}</v-list-item-title>
+                        <v-list-item-subtitle>{{$t("src\\components\\roles.maxSessionDaysHint")}}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
                   </v-list-item>
@@ -377,13 +377,12 @@
 </template>
 
 <script>
-import i18n from "@/i18n/i18n-current";
+import i18n from "../i18n.js";
 
 export default {
   name: "Roles",
 
   data: () => ({
-    msg: { ...i18n },
     dialog: false,
     active: [],
     open: [],
@@ -398,7 +397,7 @@ export default {
     items() {
       return [
         {
-          name: this.msg.roles,
+          name: i18n.t("src\\components\\roles.roles"),
           children: this.roles,
           roles: this.roles,
         },
@@ -532,7 +531,7 @@ export default {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({name: this.msg.roleNewRoleName}),
+        body: JSON.stringify({name: i18n.t("src\\components\\roles.newRoleName")}),
       })
         .then((res) => res.json())
         .then((json) => {

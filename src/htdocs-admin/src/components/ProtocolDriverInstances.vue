@@ -26,7 +26,7 @@
           @click="createDriverInstance($event)"
         >
           <v-icon dark> mdi-plus </v-icon>
-          {{msg.instNewDriverInstance}}
+          {{$t("src\\components\\driverInstances.newDriverInstance")}}
         </v-btn>
       </v-col>
 
@@ -39,7 +39,7 @@
             class="title grey--text text--lighten-1 font-weight-light"
             style="align-self: center"
           >
-            {{msg.instSelectDriverInstance}}
+            {{$t("src\\components\\driverInstances.selectDriverInstance")}}
           </div>
           <v-card
             v-else
@@ -51,7 +51,7 @@
               <v-select
                 prepend-inner-icon="mdi-cogs"
                 :items="driverNameItems"
-                :label="msg.instProtocolDriver"
+                :label="$t('src\\components\\driverInstances.protocolDriver')"
                 v-model="selected.protocolDriver"
                 outlined
                 @change="updateProtocolDriverInstance"                
@@ -72,24 +72,24 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>{{msg.instDeleteDriverInstance}}</span>
+                <span>{{$t("src\\components\\driverInstances.deleteDriverInstance")}}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialogDelInst" max-width="290">
                 <v-card>
                   <v-card-title class="headline">
-                    {{msg.instDeleteDriverInstance}}
+                    {{$t("src\\components\\driverInstances.deleteDriverInstance")}}
                   </v-card-title>
 
                   <v-card-text>
-                    {{msg.instDeleteDriverInstanceConfirm}}
+                    {{$t("src\\components\\driverInstances.deleteDriverInstanceConfirm")}}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
                     <v-btn color="green darken-1" text @click="dialogDelInst = false">
-                      {{msg.instDeleteDriverInstanceCancel}}
+                      {{$t("src\\components\\driverInstances.deleteDriverInstanceCancel")}}
                     </v-btn>
 
                     <v-btn
@@ -100,7 +100,7 @@
                         deleteDriverInstance($event);
                       "
                     >
-                      {{msg.instDeleteDriverInstanceExecute}}
+                    {{$t("src\\components\\driverInstances.deleteDriverInstanceExecute")}}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -111,7 +111,7 @@
               v-model="selected.enabled"
               inset
               color="primary"
-              :label="`${msg.instEnabled}${selected.enabled?msg.instEnabledTrue:msg.instEnabledFalse}`"
+              :label="`${$t('src\\components\\driverInstances.enabled')}${selected.enabled?$t('src\\components\\driverInstances.enabledTrue'):$t('src\\components\\driverInstances.enabledFalse')}`"
               @change="updateProtocolDriverInstance"
             ></v-switch>
 
@@ -123,7 +123,7 @@
               min="1"
               clearable
               :input-value="active"
-              :label="msg.instInstanceNumber"
+              :label="$t('src\\components\\driverInstances.instanceNumber')"
               hide-details="auto"
               v-model="selected.protocolDriverInstanceNumber"
               @change="updateProtocolDriverInstance"
@@ -136,7 +136,7 @@
               outlined
               clearable
               :input-value="active"
-              :label="msg.instLogLevel"
+              :label="$t('src\\components\\driverInstances.logLevel')"
               min="0"
               max="3"
               hide-details="auto"
@@ -151,7 +151,7 @@
               chips
               small-chips
               deletable-chips
-              :label="msg.instAllowedNodesList"
+              :label="$t('src\\components\\driverInstances.allowedNodesList')"
               multiple
               @change="updateProtocolDriverInstance"
             ></v-autocomplete>
@@ -171,15 +171,15 @@
                   <v-icon dark> mdi-plus </v-icon>
                 </v-btn>
               </template>
-              <span>{{msg.instAddNewNode}}</span>
+              <span>{{$t("src\\components\\driverInstances.addNewNode")}}</span>
             </v-tooltip>
             <v-dialog v-model="dialogAddNode" max-width="400" class="pa-8">
               <v-card>
-                <v-card-title class="headline">{{msg.instAddNewNode}}</v-card-title>
+                <v-card-title class="headline">{{$t("src\\components\\driverInstances.addNewNode")}}</v-card-title>
 
                 <v-card-title class="headline">
                   <v-text-field
-                    :label="msg.instNewNodeName"
+                    :label="$t('src\\components\\driverInstances.newNodeName')"
                     v-model="newNode"
                   ></v-text-field>
                 </v-card-title>
@@ -188,7 +188,7 @@
                   <v-spacer></v-spacer>
 
                   <v-btn color="green darken-1" text @click="dialogAddNode = false">
-                    {{msg.instAddNewNodeCancel}}
+                    {{$t("src\\components\\driverInstances.addNewNodeCancel")}}
                   </v-btn>
 
                   <v-btn
@@ -199,7 +199,7 @@
                       addNewNode($event);
                     "
                   >
-                    {{msg.instAddNewNodeExecute}}
+                  {{$t("src\\components\\driverInstances.addNewNodeCancel")}}
                   </v-btn>
                 </v-card-actions>
               </v-card>
@@ -212,13 +212,12 @@
 </template>
 
 <script>
-import i18n from "@/i18n/i18n-current";
+import i18n from "../i18n.js";
 
 export default {
   name: "ProtocolDriversInstances",
 
   data: () => ({
-    msg: { ...i18n },
     dialogAddNode: false,
     dialogDelInst: false,
     active: [],
@@ -242,7 +241,7 @@ export default {
     items() {
       return [
         {
-          name: this.msg.driverInstances,
+          name: i18n.t("src\\components\\driverInstances.driverInstances"),
           children: this.driverInstances
         },
       ];
