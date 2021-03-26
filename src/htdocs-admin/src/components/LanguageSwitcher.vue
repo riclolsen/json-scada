@@ -1,5 +1,14 @@
 <template>
   <div class="langPosition">
+      <img ref="flag_ar.svg" src="../assets/flag_ar.svg" alt="arabic"     style="display:none" >
+      <img ref="flag_de.svg" src="../assets/flag_de.svg" alt="german"     style="display:none" >
+      <img ref="flag_en.svg" src="../assets/flag_en.svg" alt="english"    style="display:none" >
+      <img ref="flag_es.svg" src="../assets/flag_es.svg" alt="spanish"    style="display:none" >
+      <img ref="flag_fa.svg" src="../assets/flag_fa.svg" alt="persian"    style="display:none" >
+      <img ref="flag_pt.svg" src="../assets/flag_pt.svg" alt="portuguese" style="display:none" >
+      <img ref="flag_ru.svg" src="../assets/flag_ru.svg" alt="russian"    style="display:none" >
+      <img ref="flag_uk.svg" src="../assets/flag_uk.svg" alt="ukrainian"  style="display:none" >
+      <img ref="flag_zh.svg" src="../assets/flag_zh.svg" alt="chinese"    style="display:none" >
     <button
       href="#"
       class="flex items-center langDropdownButton"
@@ -10,7 +19,7 @@
       @keydown.up.exact.prevent="startArrowKeys"
       @keydown.down.exact.prevent="startArrowKeys"
     >
-      <img :src="`/flag_${$i18n.locale}.svg`" alt="flag" class="flagShadow" />
+      <img ref="currentFlag" alt="flag" class="flagShadow" :key="componentKey" />
     </button>
     <transition name="dropdown-fade">
       <ul
@@ -29,7 +38,7 @@
             @keydown.down.exact.prevent="focusNext(true)"
             @keydown.esc.exact="hideDropdown"
           >
-            <img :src="lang.flag" :alt="lang.longName" class="flag" />
+            <img :src="$refs[lang.flag].src" :alt="lang.longName" class="flag" />
             <span class="localLang">{{ lang.localName }}</span>
           </a>
         </li>
@@ -45,63 +54,67 @@ export default {
     return {
       isVisible: false,
       focusedIndex: 0,
+      componentKey: 0,
       langs: [
         {
           shortName: "en",
           longName: "English",
           localName: "English",
-          flag: "/flag_en.svg"
+          flag: "flag_en.svg"
         },
         {
           shortName: "pt",
           longName: "Portuguese",
           localName: "Português",
-          flag: "/flag_pt.svg"
+          flag: "flag_pt.svg"
         },
         {
           shortName: "fa",
           longName: "Persian",
           localName: "Persian",
-          flag: "/flag_fa.svg"
+          flag: "flag_fa.svg"
         },
         {
           shortName: "ar",
           longName: "Arabian",
           localName: "Arabian",
-          flag: "/flag_ar.svg"
+          flag: "flag_ar.svg"
         },
         {
           shortName: "uk",
           longName: "Ukranian",
           localName: "Ukranian",
-          flag: "/flag_uk.svg"
+          flag: "flag_uk.svg"
         },
         {
           shortName: "es",
           longName: "Spanish",
           localName: "Español",
-          flag: "/flag_es.svg"
+          flag: "flag_es.svg"
         },
         {
           shortName: "ru",
           longName: "Russian",
           localName: "русский",
-          flag: "/flag_ru.svg"
+          flag: "flag_ru.svg"
         },
         {
           shortName: "de",
           longName: "German",
           localName: "Deutsch",
-          flag: "/flag_de.svg"
+          flag: "flag_de.svg"
         },
         {
           shortName: "zh",
           longName: "Chinese",
           localName: "中文",
-          flag: "/flag_zh.svg"
+          flag: "flag_zh.svg"
         }
       ]
     };
+  },
+  mounted() {
+     this.$refs.currentFlag.src = this.$refs[`flag_${this.$i18n.locale}.svg`].src;
   },
   methods: {
     toggleVisibility() {
@@ -134,6 +147,7 @@ export default {
     setLocale(locale) {
       this.$i18n.locale = locale;
       localStorage.setItem("lang", locale);
+      this.$refs.currentFlag.src = this.$refs[`flag_${this.$i18n.locale}.svg`].src;
 
       // Uncomment the below lines if you need language prefixes to be shown in the URL
       // example: en.website.com (additional router configuration required)
