@@ -12,6 +12,7 @@
     "core-js": "^3.9.1",
     "roboto-fontface": "*",
     "vue": "^2.6.11",
+    "vue-clickaway": "^2.2.2",
     "vue-i18n": "^8.24.2",
     "vue-router": "^3.5.1",
     "vue-translation-manager": "^1.2.0",

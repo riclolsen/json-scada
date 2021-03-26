@@ -1,49 +1,33 @@
 <template>
   <span>
-       <v-navigation-drawer
-      app
-      v-model="drawer"
-      class="primary lighten-2"
-      dark
-      disable-resize-watcher
-    >
-      <v-list>
-        <template v-for="(item, index) in items">
-          <v-list-item :key="index">
-            <v-list-item-content>
-              {{ item.title }}
-            </v-list-item-content>
-          </v-list-item>
-          <v-divider :key="`divider-${index}`"></v-divider>
-        </template>
-      </v-list>
-    </v-navigation-drawer>
     <v-app-bar color="primary darken-4" dark dense>
-      <v-app-bar-nav-icon
-        class="hidden-md-and-up"
-        @click="drawer = !drawer"
-      ></v-app-bar-nav-icon>
-      <v-spacer class="hidden-md-and-up"></v-spacer>
       <img alt="{json-scada}" height="36px" src="../assets/json-scada.svg" />
       <v-spacer></v-spacer>
       <v-toolbar-title>{{ $t('src\\components\\appnavigation.appTitle') }}</v-toolbar-title>
-      <v-spacer class="hidden-sm-and-down"></v-spacer>
-      <v-btn text class="hidden-sm-and-down" @click="logout($event)"
+      <v-spacer ></v-spacer>
+      <v-btn text @click="logout($event)"
         >{{ $t('src\\components\\appnavigation.logout') }} <v-icon>mdi-logout</v-icon>
-      </v-btn>
+      </v-btn>      
+      <img alt="" height="16px" src="../assets/admin.png" />
     </v-app-bar>
+
+    <LanguageSwitcher />
+
   </span>
 </template>
 
 <script>
 import i18n from "../i18n.js";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 
 export default {
   name: "AppNavigation",
+    components: {
+    LanguageSwitcher
+  },
   data() {
     return {
       items: [{ title: i18n.t('src\\components\\appnavigation.appTitle') }],
-      drawer: false,
     };
   },
   methods: {
