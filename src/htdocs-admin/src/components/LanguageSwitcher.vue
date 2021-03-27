@@ -71,19 +71,19 @@ export default {
         {
           shortName: "fa",
           longName: "Persian",
-          localName: "Persian",
+          localName: "فارسی",
           flag: "flag_fa.svg"
         },
         {
           shortName: "ar",
           longName: "Arabian",
-          localName: "Arabian",
+          localName: "عربي",
           flag: "flag_ar.svg"
         },
         {
           shortName: "uk",
-          longName: "Ukranian",
-          localName: "Ukranian",
+          longName: "Ukrainian",
+          localName: "Український",
           flag: "flag_uk.svg"
         },
         {
