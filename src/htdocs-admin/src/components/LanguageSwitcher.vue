@@ -95,7 +95,7 @@ export default {
         {
           shortName: "ru",
           longName: "Russian",
-          localName: "русский",
+          localName: "Pусский",
           flag: "flag_ru.svg"
         },
         {
