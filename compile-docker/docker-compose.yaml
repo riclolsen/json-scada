@@ -95,7 +95,7 @@ services:
   htdocs_admin_update:
     image: node:current-alpine3.12
     container_name: js_htdocs_admin_update
-    command:  sh -c "npm install -g npm && cd /htdocs-admin && npm update && npm run build"
+    command:  sh -c "npm install -g npm && cd /htdocs-admin && npm install && npm run build"
     volumes:
       - ../src/htdocs-admin:/htdocs-admin
 

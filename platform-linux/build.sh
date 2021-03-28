@@ -42,7 +42,7 @@ npm update
 cd ../oshmi_sync
 npm update
 cd ../htdocs-admin
-npm update
+npm install
 npm run build
 cd ../shell_api
 npm update

@@ -191,7 +191,7 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     cd ../telegraf-listener
     npm update
     cd ../htdocs-admin
-    npm update
+    npm install
     npm run build
 
 

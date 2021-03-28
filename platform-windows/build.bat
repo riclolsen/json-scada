@@ -57,7 +57,7 @@ call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\shell-api
 call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\htdocs-admin
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 call \json-scada\platform-windows\nodejs-runtime\npm run build
 cd \json-scada\src\grafana_alert2event
 call \json-scada\platform-windows\nodejs-runtime\npm update
