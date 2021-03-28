@@ -14,6 +14,7 @@ var protocolDriverNames = [
           'OPC-UA_SERVER',
           'OPC-DA',
           'OPC-DA_SERVER',
+          'TELEGRAF-LISTENER',
           'MODBUS',
           'MODBUS_SERVER',
           'MQTT',
@@ -524,6 +525,21 @@ var protocolConnectionsValidator = {
       privateKeyFilePath: {
         bsonType: ['string', 'null']
       },
+      autoCreateTags: {
+        bsonType: ['bool', 'null']
+      },
+      autoCreateTagPublishingInterval: {
+        bsonType: ['double', 'null']
+       },
+      autoCreateTagSamplingInterval: {
+        bsonType: ['double', 'null']
+       },
+      autoCreateTagQueueSize: {
+        bsonType: ['double', 'null']
+       },
+      configFileName: {
+        bsonType: ['string', 'null']
+      },
       stats: {
         bsonType: ['object', 'null'],
         description: 'Driver specific statistics.'
@@ -570,7 +586,10 @@ db.realtimeData.createIndex({
   protocolSourceCommonAddress: 1,
   protocolSourceObjectAddress: 1
 })
-db.createCollection('soeData', { capped: true, size: 500000 })
+
+// soeData is defined as a capped collection (limited size 2GB, circular buffer)
+// remove the parameters to create as a normal collection to overcome the size restriction
+db.createCollection('soeData', { capped: true, size: 2000000 })
 db.soeData.createIndex({ timeTag: 1 })
 db.soeData.createIndex({ timeTagAtSource: 1 })
 db.soeData.createIndex({ group1: 1 })
