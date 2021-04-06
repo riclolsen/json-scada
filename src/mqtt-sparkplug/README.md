@@ -41,7 +41,7 @@ Each instance for this driver can have just one connection defined that must be 
         autoCreateTags: true,
         endpointURLs: ["mqtt://broker.hivemq.com:1883"],
         topics: ["spBv1.0/#"],
-        groupId: "Sparkplug B Devices/",
+        groupId: "Sparkplug B Devices",
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
         scadaHostId : "Primary Application",
@@ -57,11 +57,11 @@ Each instance for this driver can have just one connection defined that must be 
         allowTLSv10: false,
         allowTLSv11: false,
         allowTLSv12: true,
-        allowTLSv13: false,
+        allowTLSv13: true,
         cipherList: "",
     });
 
-* _**protocolDriver**_ [String] - Name of the protocol driver, must be  "DNP3". **Mandatory parameter**.
+* _**protocolDriver**_ [String] - Name of the protocol driver, must be "MQTT-SPARKPLUG-B". **Mandatory parameter**.
 * _**protocolDriverInstanceNumber**_ [Double] - Number of the instance. Use 1 to N to number instances. For the same driver instance numbers should be unique. The instance number makes possible to run use multiple processes of the driver, each one with a distinct configuration. **Mandatory parameter**.
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. This must be unique for all connections over all drivers on a system. This number is be used to define the connection that can update a tag. **Mandatory parameter**.
 * _**name**_ [String] - Name for a connection. Will be used for logging. **Mandatory parameter**.
