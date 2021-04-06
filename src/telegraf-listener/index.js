@@ -1,8 +1,8 @@
 'use strict'
 
 /*
- * A process that watches for raw data updates from protocols using a MongoDB change stream.
- * Convert raw values and update realtime values and statuses.
+ * Telegraf listener driver.
+ * 
  * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
