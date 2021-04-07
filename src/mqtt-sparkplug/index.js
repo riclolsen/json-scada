@@ -19,107 +19,79 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const APP_NAME = 'MQTT-SPARKPLUG-B'
-const APP_MSG = '{json:scada} - MQTT-Sparkplug-B Client Driver'
-const VERSION = '0.1.1'
-const hwVersion = 'Generic Server Hardware'
-const swVersion = 'JSON-SCADA MQTT v' + VERSION
-let ProcessActive = false // for redundancy control
-let jsConfigFile = '../../conf/json-scada.json'
-const LogLevelMin = 0,
-  LogLevelNormal = 1,
-  LogLevelDetailed = 2,
-  LogLevelDebug = 3
-
 const SparkplugClient = require('./sparkplug-client')
 const fs = require('fs')
 const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
-// const { time } = require('console')
-const grpSep = '~'
-const csPipeline = [
-  {
-    $project: { documentKey: false }
+
+const Log = {
+  // simple message logger
+  levelMin: 0,
+  levelNormal: 1,
+  levelDetailed: 2,
+  levelDebug: 3,
+  levelCurrent: 1,
+  dtOptions: {
+    year: '2-digit',
+    month: '2-digit',
+    day: '2-digit',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
   },
-  {
-    $match: {
-      $or: [
-        {
-          $and: [
-            {
-              'updateDescription.updatedFields.sourceDataUpdate': {
-                $exists: false
-              }
-            },
-            {
-              'fullDocument._id': {
-                $ne: -2
-              }
-            },
-            {
-              'fullDocument._id': {
-                $ne: -1
-              }
-            },
-            { operationType: 'update' }
-          ]
-        },
-        { operationType: 'replace' }
-      ]
-    }
+  log: function (msg, level = 1) {
+    if (level <= this.levelCurrent)
+      console.log(
+        new Date().toLocaleDateString('en-US', this.dtOptions) + ' - ' + msg
+      )
   }
-]
+}
 
-let ListCreatedTags = []
 let ValuesQueue = new Queue() // queue of values to update acquisition
-let PublishQueue = new Queue() // queue of values to publish
-
-const args = process.argv.slice(2)
-var inst = null
-if (args.length > 0) inst = parseInt(args[0])
-const Instance = inst || process.env.JS_MQTTSPB_LISTENER_INSTANCE || 1
-let ConnectionNumber = 0
 let AutoCreateTags = true
-const AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
 let AutoKeyId = 0
 
-var logLevel = null
-if (args.length > 1) logLevel = parseInt(args[1])
-const LogLevel = logLevel || process.env.JS_MQTTSPB_LISTENER_LOGLEVEL || 1
-
-var confFile = null
-if (args.length > 2) confFile = args[2]
-jsConfigFile = confFile || process.env.JS_CONFIG_FILE || jsConfigFile
-
-console.log(APP_MSG + ' Version ' + VERSION)
-console.log('Instance: ' + Instance)
-console.log('Log level: ' + LogLevel)
-console.log('Config File: ' + jsConfigFile)
-
-if (!fs.existsSync(jsConfigFile)) {
-  console.log('Error: config file not found!')
-  process.exit()
-}
-
-const RealtimeDataCollectionName = 'realtimeData'
-const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
-const ProtocolConnectionsCollectionName = 'protocolConnections'
-
-let rawFileContents = fs.readFileSync(jsConfigFile)
-let jsConfig = JSON.parse(rawFileContents)
-if (
-  typeof jsConfig.mongoConnectionString != 'string' ||
-  jsConfig.mongoConnectionString === ''
-) {
-  console.log('Error reading config file.')
-  process.exit()
-}
-
-if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server...')
 ;(async () => {
+  const jsConfig = loadConfig()
+  const csPipeline = [
+    {
+      $project: { documentKey: false }
+    },
+    {
+      $match: {
+        $or: [
+          {
+            $and: [
+              {
+                'updateDescription.updatedFields.sourceDataUpdate': {
+                  $exists: false
+                }
+              },
+              {
+                'fullDocument._id': {
+                  $ne: -2
+                }
+              },
+              {
+                'fullDocument._id': {
+                  $ne: -1
+                }
+              },
+              { operationType: 'update' }
+            ]
+          },
+          { operationType: 'replace' }
+        ]
+      }
+    }
+  ]
+  
+  let PublishQueue = new Queue() // queue of values to publish
   let collection = null
+  let clientMongo = null
 
   setInterval(async function () {
     let cnt = 0,
@@ -136,146 +108,47 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
         timestamp: new Date().getTime(),
         metrics: metrics
       }
-      console.log(JSON.stringify(payload))
-      if (LogLevel >= LogLevelNormal) console.log('Sparkplug - Updates: ' + cnt)
+      Log.log(JSON.stringify(payload))
+      Log.log('Sparkplug - Updates: ' + cnt, Log.levelNormal)
     }
   }, 1127)
 
   setInterval(async function () {
-    let cnt = 0
-    if (clientMongo && collection)
-      while (!ValuesQueue.isEmpty()) {
-        let data = ValuesQueue.peek()
-        // const db = clientMongo.db(jsConfig.mongoDatabaseName)
-
-        // if not sure tag is created, try to find, if not found create it
-        if (AutoCreateTags)
-          if (!ListCreatedTags.includes(data.tag)) {
-            // possibly not created tag, must check
-            let res = await collection
-              .find({
-                protocolSourceConnectionNumber: ConnectionNumber,
-                protocolSourceObjectAddress: data.tag
-              })
-              .toArray()
-
-            if ('length' in res && res.length === 0) {
-              // not found, then create
-              let newTag = rtData(data)
-              if (logLevel >= LogLevelDetailed)
-                console.log('Auto Key - Tag not found, will create: ' + data.tag)
-              let resIns = await collection.insertOne(newTag)
-              if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
-            } else {
-              // found (already exists, no need to create), just list as created
-              ListCreatedTags.push(data.tag)
-            }
-          }
-
-        // now update tag
-
-        // try to parse value as JSON
-        let valueJson = null
-        try {
-          valueJson = JSON.parse(data.value)
-        } catch (e) {}
-
-        if (LogLevel >= LogLevelDetailed)
-          console.log(
-            'Data Update - ' +
-              data.timeTagAtSource +
-              ' : ' +
-              data.tag +
-              ' : ' +
-              data.value
-          )
-
-        let updTag = {
-          valueAtSource: parseFloat(data.value),
-          valueStringAtSource: data.value.toString(),
-          valueJsonAtSource: valueJson,
-          asduAtSource: '',
-          causeOfTransmissionAtSource: '3',
-          timeTagAtSource: data.timeTagAtSource,
-          timeTagAtSourceOk: false, // signal that it is not really from field time
-          timeTag: new Date(),
-          originator: APP_NAME + '|' + ConnectionNumber,
-          notTopicalAtSource: false,
-          invalidAtSource: data.invalidAtSource,
-          overflowAtSource: false,
-          blockedAtSource: false,
-          substitutedAtSource: false
-        }
-        collection.updateOne(
-          {
-            protocolSourceConnectionNumber: ConnectionNumber,
-            protocolSourceObjectAddress: data.tag
-          },
-          { $set: { sourceDataUpdate: updTag } }
-        )
-
-        ValuesQueue.dequeue()
-        cnt++
-      }
-    if (cnt)
-      if (LogLevel >= LogLevelNormal) console.log('MongoDB - Updates: ' + cnt)
+    processMongoUpdates(clientMongo, collection, jsConfig)
   }, 500)
 
-  let connOptions = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
-    poolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
-  }
+  Log.log('MongoDB - Connecting to MongoDB server...', Log.levelMin)
 
-  if (
-    typeof jsConfig.tlsCaPemFile === 'string' &&
-    jsConfig.tlsCaPemFile.trim() !== ''
-  ) {
-    jsConfig.tlsClientKeyPassword = jsConfig.tlsClientKeyPassword || ''
-    jsConfig.tlsAllowInvalidHostnames =
-      jsConfig.tlsAllowInvalidHostnames || false
-    jsConfig.tlsAllowChainErrors = jsConfig.tlsAllowChainErrors || false
-    jsConfig.tlsInsecure = jsConfig.tlsInsecure || false
-
-    connOptions.tls = true
-    connOptions.tlsCAFile = jsConfig.tlsCaPemFile
-    connOptions.tlsCertificateKeyFile = jsConfig.tlsClientPemFile
-    connOptions.tlsCertificateKeyFilePassword = jsConfig.tlsClientKeyPassword
-    connOptions.tlsAllowInvalidHostnames = jsConfig.tlsAllowInvalidHostnames
-    connOptions.tlsInsecure = jsConfig.tlsInsecure
-  }
-
-  let clientMongo = null
   let redundancyIntervalHandle = null
   while (true) {
-    if (clientMongo === null)
-      await MongoClient.connect(
+    // repeat every 5 seconds
+
+    if (clientMongo === null) // if disconnected
+      await MongoClient.connect( // try to (re)connect
         jsConfig.mongoConnectionString,
-        connOptions
-      ).then(async client => {
+        getMongoConnectionOptions(jsConfig)
+      ).then(async client => { // connected
         clientMongo = client
 
-        if (LogLevel > LogLevelMin)
-          console.log('MongoDB - Connected correctly to MongoDB server')
+        Log.log('MongoDB - Connected correctly to MongoDB server', Log.levelMin)
 
         // specify db and collections
         const db = client.db(jsConfig.mongoDatabaseName)
-        collection = db.collection(RealtimeDataCollectionName)
+        collection = db.collection(jsConfig.RealtimeDataCollectionName)
 
         // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
         let connection = await getConnection(
-          db.collection(ProtocolConnectionsCollectionName)
+          db.collection(jsConfig.ProtocolConnectionsCollectionName),
+          jsConfig
         )
-        ConnectionNumber = connection.protocolConnectionNumber
-        console.log('Connection - ' + ConnectionNumber)
+        jsConfig.ConnectionNumber = connection.protocolConnectionNumber
+        Log.log('Connection - Connection Number: ' + jsConfig.ConnectionNumber)
         if ('autoCreateTags' in connection) {
           AutoCreateTags = connection.autoCreateTags ? true : false
         }
 
-        AutoKeyId = await getAutoKeyInitialValue(collection)
-        console.log('Auto Key - ' + AutoKeyId)
+        AutoKeyId = await getAutoKeyInitialValue(collection, jsConfig)
+        Log.log('Auto Key - Initial value: ' + AutoKeyId)
 
         let redundancy = {
           lastActiveNodeKeepAliveTimeTag: null,
@@ -286,9 +159,11 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
         }
 
         // check and update redundancy control
-        ProcessRedundancy(redundancy)
+        ProcessRedundancy(redundancy, jsConfig)
         clearInterval(redundancyIntervalHandle)
-        redundancyIntervalHandle = setInterval(function(){ProcessRedundancy(redundancy)}, 5000)
+        redundancyIntervalHandle = setInterval(function () {
+          ProcessRedundancy(redundancy, jsConfig)
+        }, 5000)
 
         // Create the SparkplugClient
         let config = getSparkplugConfig(connection)
@@ -296,15 +171,15 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
         const sparkplugClient = SparkplugClient.newClient(config)
 
         sparkplugClient.on('error', function (error) {
-          console.log("Sparkplug - Can't connect" + error)
+          Log.log("Sparkplug - Can't connect" + error)
         })
 
         // process MQTT messages
         sparkplugClient.on('message', function (topic, payload, topicInfo) {
-          console.log('message')
-          console.log(topic)
-          // console.log(topicInfo);
-          console.log(payload)
+          Log.log('message')
+          Log.log(topic)
+          // Log.log(topicInfo);
+          Log.log(payload)
         })
 
         // Subscribe topics
@@ -312,8 +187,8 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
           qos: 1,
           properties: { subscriptionIdentifier: 1 },
           function (err, granted) {
-            console.log("Sparkplug - Error: " + err)
-            console.log(granted)
+            Log.log('Sparkplug - Error: ' + err)
+            Log.log(granted)
             return
           }
         })
@@ -327,17 +202,17 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
           changeStream.on('error', change => {
             if (clientMongo) clientMongo.close()
             clientMongo = null
-            console.log('MongoDB - Error on ChangeStream!')
+            Log.log('MongoDB - Error on ChangeStream!')
           })
           changeStream.on('close', change => {
             if (clientMongo) clientMongo.close()
             clientMongo = null
-            console.log('MongoDB - Closed ChangeStream!')
+            Log.log('MongoDB - Closed ChangeStream!')
           })
           changeStream.on('end', change => {
             if (clientMongo) clientMongo.close()
             clientMongo = null
-            console.log('MongoDB - Ended ChangeStream!')
+            Log.log('MongoDB - Ended ChangeStream!')
           })
 
           // start listen to changes
@@ -346,7 +221,7 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
             if (data !== null) PublishQueue.enqueue(data)
           })
         } catch (e) {
-          console.log("MongoDB - Error: " + e)
+          Log.log('MongoDB - Error: ' + e)
         }
       })
 
@@ -355,13 +230,13 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
 
     // detect connection problems, if error will null the client to later reconnect
     if (clientMongo === undefined) {
-      console.log('MongoDB - Disconnected Mongodb!')
+      Log.log('MongoDB - Disconnected Mongodb!')
       clientMongo = null
     }
     if (clientMongo)
       if (!clientMongo.isConnected()) {
         // not anymore connected, will retry
-        console.log('MongoDB - Disconnected Mongodb!')
+        Log.log('MongoDB - Disconnected Mongodb!')
         clientMongo.close()
         clientMongo = null
       }
@@ -369,7 +244,10 @@ if (LogLevel > LogLevelMin) console.log('MongoDB - Connecting to MongoDB server.
 })()
 
 // Get BIRTH payload for the edge node
-function getNodeBirthPayload() {
+function getNodeBirthPayload (configObj) {
+  const hwVersion = 'Generic Server Hardware'
+  const swVersion = 'JSON-SCADA MQTT v' + configObj?.VERSION
+
   return {
     timestamp: new Date().getTime(),
     metrics: [
@@ -398,7 +276,7 @@ function getNodeBirthPayload() {
 }
 
 // Get BIRTH payload for the device
-async function getDeviceBirthPayload(rtCollection) {
+async function getDeviceBirthPayload (rtCollection) {
   let res = await rtCollection
     .find(
       {
@@ -478,8 +356,8 @@ async function getDeviceBirthPayload(rtCollection) {
           : { timestampQualityGood: timestampQualityGood })
       }
     }
-    // console.log(element)
-    // console.log(ret)
+    // Log.log(element)
+    // Log.log(ret)
     return ret
   })
 
@@ -490,7 +368,7 @@ async function getDeviceBirthPayload(rtCollection) {
 }
 
 // Get data payload
-function getMetricPayload(element) {
+function getMetricPayload (element) {
   if (element.origin === 'command' || element._id < 1) {
     return null
   }
@@ -544,26 +422,25 @@ function getMetricPayload(element) {
 }
 
 // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
-async function getConnection (connsCollection) {
+async function getConnection (connsCollection, configObj) {
   let results = await connsCollection
     .find({
-      protocolDriver: APP_NAME,
-      protocolDriverInstanceNumber: Instance
+      protocolDriver: configObj.APP_NAME,
+      protocolDriverInstanceNumber: configObj.Instance
     })
     .toArray()
 
   if (!results || !('length' in results) || results.length == 0) {
-    console.log('Connection - No protocol connection found!')
+    Log.log('Connection - No protocol connection found!')
     process.exit(1)
   }
   const connection = results[0]
   if (!('protocolConnectionNumber' in connection)) {
-    console.log('Connection - No protocol connection found on record!')
+    Log.log('Connection - No protocol connection found on record!')
     process.exit(2)
   }
-  console.log('Connection - Connection Number:' + connection.protocolConnectionNumber)
   if (connection.enabled === false) {
-    console.log(
+    Log.log(
       'Connection - Connection disabled, exiting! (connection:' +
         connection.protocolConnectionNumber +
         ')'
@@ -574,13 +451,13 @@ async function getConnection (connsCollection) {
 }
 
 // find biggest point key (_id) on range and adjust automatic key
-async function getAutoKeyInitialValue (rtCollection) {
-  let autoKeyId = ConnectionNumber * AutoKeyMultiplier
+async function getAutoKeyInitialValue (rtCollection, configObj) {
+  let autoKeyId = configObj.ConnectionNumber * configObj.AutoKeyMultiplier
   let resLastKey = await rtCollection
     .find({
       _id: {
         $gt: autoKeyId,
-        $lt: (ConnectionNumber + 1) * AutoKeyMultiplier
+        $lt: (configObj.ConnectionNumber + 1) * configObj.AutoKeyMultiplier
       }
     })
     .sort({ _id: -1 })
@@ -593,7 +470,7 @@ async function getAutoKeyInitialValue (rtCollection) {
   return autoKeyId
 }
 
-function rtData(measurement) {
+function rtData (measurement) {
   AutoKeyId++
 
   return {
@@ -628,7 +505,7 @@ function rtData(measurement) {
     annotation: '',
     commandBlocked: false,
     commandOfSupervised: new mongo.Double(0.0),
-    commissioningRemarks: 'Auto created by ' + APP_NAME,
+    commissioningRemarks: 'Auto created by Sparkplug B driver.',
     formula: new mongo.Double(0.0),
     frozen: false,
     frozenDetectTimeout: new mongo.Double(0.0),
@@ -666,7 +543,7 @@ function rtData(measurement) {
   }
 }
 
-function getSparkplugConfig(connection){
+function getSparkplugConfig (connection) {
   return {
     serverUrl: 'mqtt://127.0.0.1:1883',
     //'serverUrl' :'mqtt://broker.hivemq.com',
@@ -692,36 +569,34 @@ function getSparkplugConfig(connection){
   }
 }
 
-async function ProcessRedundancy (redundancy) {
+async function ProcessRedundancy (redundancy, configObj) {
   if (!redundancy || !redundancy.clientMongo) return
 
-  if (LogLevel >= LogLevelNormal)
-    console.log('Redundancy - Process Active: ' + ProcessActive)
+  Log.log('Redundancy - Process Active: ' + configObj.ProcessActive)
 
   // look for process instance entry, if not found create a new entry
-  redundancy.db.collection(ProtocolDriverInstancesCollectionName)
+  redundancy.db
+    .collection(configObj.ProtocolDriverInstancesCollectionName)
     .find({
-      protocolDriver: APP_NAME,
-      protocolDriverInstanceNumber: Instance
+      protocolDriver: configObj.APP_NAME,
+      protocolDriverInstanceNumber: configObj.Instance
     })
     .toArray(function (err, results) {
-      if (err) console.log("MongoDB - " + err)
+      if (err) Log.log('MongoDB - ' + err)
       else if (results) {
         if (results.length === 0) {
           // not found, then create
-          ProcessActive = true
-          console.log(
-            'Redundancy - Instance config not found, creating one...'
-          )
+          configObj.ProcessActive = true
+          Log.log('Redundancy - Instance config not found, creating one...')
           db.collection(
-            ProtocolDriverInstancesCollectionName
+            configObj.ProtocolDriverInstancesCollectionName
           ).insertOne({
-            protocolDriver: APP_NAME,
+            protocolDriver: configObj.APP_NAME,
             protocolDriverInstanceNumber: new mongo.Double(1),
             enabled: true,
             logLevel: new mongo.Double(1),
             nodeNames: [],
-            activeNodeName: jsConfig.nodeName,
+            activeNodeName: configObj.nodeName,
             activeNodeKeepAliveTimeTag: new Date()
           })
         } else {
@@ -734,75 +609,245 @@ async function ProcessRedundancy (redundancy) {
             instKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
 
           if (instance?.enabled === false) {
-            console.log('Redundancy - Instance disabled, exiting...')
+            Log.log('Redundancy - Instance disabled, exiting...')
             process.exit()
           }
-          if (
-            instance?.nodeNames !== null &&
-            instance.nodeNames.length > 0
-          ) {
-            if (!instance.nodeNames.includes(jsConfig.nodeName)) {
-              console.log(
-                'Redundancy - Node name not allowed, exiting...'
-              )
+          if (instance?.nodeNames !== null && instance.nodeNames.length > 0) {
+            if (!instance.nodeNames.includes(configObj.nodeName)) {
+              Log.log('Redundancy - Node name not allowed, exiting...')
               process.exit()
             }
           }
-          if (instance?.activeNodeName === jsConfig.nodeName) {
-            if (!ProcessActive)
-              console.log('Redundancy - Node activated!')
+          if (instance?.activeNodeName === configObj.nodeName) {
+            if (!configObj.ProcessActive)
+              Log.log('Redundancy - Node activated!')
             redundancy.countKeepAliveNotUpdated = 0
-            ProcessActive = true
+            configObj.ProcessActive = true
           } else {
             // other node active
-            if (ProcessActive) {
-              console.log('Redundancy - Node deactivated!')
+            if (configObj.ProcessActive) {
+              Log.log('Redundancy - Node deactivated!')
               redundancy.countKeepAliveNotUpdated = 0
             }
-            ProcessActive = false
+            configObj.ProcessActive = false
             if (
               redundancy.lastActiveNodeKeepAliveTimeTag === instKeepAliveTimeTag
             ) {
               redundancy.countKeepAliveNotUpdated++
-              console.log(
+              Log.log(
                 'Redundancy - Keep-alive from active node not updated. ' +
                   redundancy.countKeepAliveNotUpdated
               )
             } else {
               redundancy.countKeepAliveNotUpdated = 0
-              console.log(
+              Log.log(
                 'Redundancy - Keep-alive updated by active node. Staying inactive.'
               )
             }
             redundancy.lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
-            if (redundancy.countKeepAliveNotUpdated > redundancy.countKeepAliveUpdatesLimit) {
+            if (
+              redundancy.countKeepAliveNotUpdated >
+              redundancy.countKeepAliveUpdatesLimit
+            ) {
               // cnt exceeded, be active
               redundancy.countKeepAliveNotUpdated = 0
-              console.log('Redundancy - Node activated!')
-              ProcessActive = true
+              Log.log('Redundancy - Node activated!')
+              configObj.ProcessActive = true
             }
           }
 
-          if (ProcessActive) {
+          if (configObj.ProcessActive) {
             // process active, then update keep alive
-            redundancy.db.collection(
-              ProtocolDriverInstancesCollectionName
-            ).updateOne(
-              {
-                protocolDriver: APP_NAME,
-                protocolDriverInstanceNumber: new mongo.Double(Instance)
-              },
-              {
-                $set: {
-                  activeNodeName: jsConfig.nodeName,
-                  activeNodeKeepAliveTimeTag: new Date(),
-                  softwareVersion: VERSION,
-                  stats: {}
+            redundancy.db
+              .collection(configObj.ProtocolDriverInstancesCollectionName)
+              .updateOne(
+                {
+                  protocolDriver: configObj.APP_NAME,
+                  protocolDriverInstanceNumber: new mongo.Double(
+                    configObj.Instance
+                  )
+                },
+                {
+                  $set: {
+                    activeNodeName: configObj.nodeName,
+                    activeNodeKeepAliveTimeTag: new Date(),
+                    softwareVersion: configObj.VERSION,
+                    stats: {}
+                  }
                 }
-              }
-            )
+              )
           }
         }
       }
     })
+}
+
+// load and parse config file
+function loadConfig () {
+  const args = process.argv.slice(2)
+
+  var logLevelArg = null
+  if (args.length > 1) logLevelArg = parseInt(args[1])
+  Log.levelCurrent = logLevelArg || process.env.JS_MQTTSPB_LISTENER_LOGLEVEL || 1
+  
+  var confFileArg = null
+  if (args.length > 2) confFileArg = args[2]
+
+  let configFile =
+    confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
+  Log.log('Config - Config File: ' + configFile)
+
+  if (!fs.existsSync(configFile)) {
+    Log.log('Config - Error: config file not found!')
+    process.exit()
+  }
+
+  let rawFileContents = fs.readFileSync(configFile)
+  let configObj = JSON.parse(rawFileContents)
+  if (
+    typeof configObj.mongoConnectionString != 'string' ||
+    configObj.mongoConnectionString === ''
+  ) {
+    Log.log('Error reading config file.')
+    process.exit()
+  }
+
+  var instArg = null
+  if (args.length > 0) instArg = parseInt(args[0])
+  configObj.Instance = instArg || process.env.JS_MQTTSPB_LISTENER_INSTANCE || 1
+
+  configObj.APP_NAME = 'MQTT-SPARKPLUG-B'
+  configObj.APP_MSG = '{json:scada} - MQTT-Sparkplug-B Client Driver'
+  configObj.VERSION = '0.1.1'
+
+  configObj.RealtimeDataCollectionName = 'realtimeData'
+  configObj.ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
+  configObj.ProtocolConnectionsCollectionName = 'protocolConnections'
+  configObj.grpSep = '~'
+  configObj.ProcessActive = false // for redundancy control
+  configObj.AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
+  configObj.ConnectionNumber = 0
+
+  Log.log('Config - ' + configObj.APP_MSG + ' Version ' + configObj.VERSION)
+  Log.log('Config - Instance: ' + configObj.Instance)
+  Log.log('Config - Log level: ' + Log.levelCurrent)
+
+  return configObj
+}
+
+function getMongoConnectionOptions (configObj) {
+  let connOptions = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    appname:
+      configObj.APP_NAME +
+      ' Version:' +
+      configObj.VERSION +
+      ' Instance:' +
+      configObj.Instance,
+    poolSize: 20,
+    readPreference: MongoClient.READ_PRIMARY
+  }
+
+  if (
+    typeof configObj.tlsCaPemFile === 'string' &&
+    configObj.tlsCaPemFile.trim() !== ''
+  ) {
+    configObj.tlsClientKeyPassword = configObj.tlsClientKeyPassword || ''
+    configObj.tlsAllowInvalidHostnames =
+      configObj.tlsAllowInvalidHostnames || false
+    configObj.tlsAllowChainErrors = configObj.tlsAllowChainErrors || false
+    configObj.tlsInsecure = configObj.tlsInsecure || false
+
+    connOptions.tls = true
+    connOptions.tlsCAFile = configObj.tlsCaPemFile
+    connOptions.tlsCertificateKeyFile = configObj.tlsClientPemFile
+    connOptions.tlsCertificateKeyFilePassword = configObj.tlsClientKeyPassword
+    connOptions.tlsAllowInvalidHostnames = configObj.tlsAllowInvalidHostnames
+    connOptions.tlsInsecure = configObj.tlsInsecure
+  }
+
+  return connOptions
+}
+
+let ListCreatedTags = []
+async function processMongoUpdates(clientMongo, collection, jsConfig){
+  let cnt = 0
+  if (clientMongo && collection)
+    while (!ValuesQueue.isEmpty()) {
+      let data = ValuesQueue.peek()
+      // const db = clientMongo.db(jsConfig.mongoDatabaseName)
+
+      // if not sure tag is created, try to find, if not found create it
+      if (AutoCreateTags)
+        if (!ListCreatedTags.includes(data.tag)) {
+          // possibly not created tag, must check
+          let res = await collection
+            .find({
+              protocolSourceConnectionNumber: jsConfig.ConnectionNumber,
+              protocolSourceObjectAddress: data.tag
+            })
+            .toArray()
+
+          if ('length' in res && res.length === 0) {
+            // not found, then create
+            let newTag = rtData(data)
+            Log.log(
+              'Auto Key - Tag not found, will create: ' + data.tag,
+              Log.levelDetailed
+            )
+            let resIns = await collection.insertOne(newTag)
+            if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
+          } else {
+            // found (already exists, no need to create), just list as created
+            ListCreatedTags.push(data.tag)
+          }
+        }
+
+      // now update tag
+
+      // try to parse value as JSON
+      let valueJson = null
+      try {
+        valueJson = JSON.parse(data.value)
+      } catch (e) {}
+
+      Log.log(
+        'Data Update - ' +
+          data.timeTagAtSource +
+          ' : ' +
+          data.tag +
+          ' : ' +
+          data.value,
+        Log.levelDetailed
+      )
+
+      let updTag = {
+        valueAtSource: parseFloat(data.value),
+        valueStringAtSource: data.value.toString(),
+        valueJsonAtSource: valueJson,
+        asduAtSource: '',
+        causeOfTransmissionAtSource: '3',
+        timeTagAtSource: data.timeTagAtSource,
+        timeTagAtSourceOk: false, // signal that it is not really from field time
+        timeTag: new Date(),
+        originator: jsConfig.APP_NAME + '|' +jsConfig. ConnectionNumber,
+        notTopicalAtSource: false,
+        invalidAtSource: data.invalidAtSource,
+        overflowAtSource: false,
+        blockedAtSource: false,
+        substitutedAtSource: false
+      }
+      collection.updateOne(
+        {
+          protocolSourceConnectionNumber: jsConfig.ConnectionNumber,
+          protocolSourceObjectAddress: data.tag
+        },
+        { $set: { sourceDataUpdate: updTag } }
+      )
+
+      ValuesQueue.dequeue()
+      cnt++
+    }
+  if (cnt) Log.log('MongoDB - Updates: ' + cnt)
 }
