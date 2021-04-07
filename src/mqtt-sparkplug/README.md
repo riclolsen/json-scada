@@ -25,7 +25,7 @@ To create a new _MQTT-SPARKPLUG-B_ driver instance, use the Admin UI or insert a
 * _**activeNodeName**_ [String] - Name of the protocol driver that is currently active. This is updated by the drivers for redundancy control.**Optional**.
 * _**activeNodeKeepAliveTimeTag**_ [Date] - This is updated regularly  by the active driver. **Optional**.
 
-## Configure client connections to DNP3 servers
+## Configure client connections to MQTT brokers
 
 Each instance for this driver can have just one connection defined that must be described in the _protocolConnections_ collection.
 

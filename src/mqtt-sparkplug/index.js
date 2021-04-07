@@ -174,6 +174,10 @@ let AutoKeyId = 0
           Log.log("Sparkplug - Can't connect" + error)
         })
 
+        sparkplugClient.on('connect', function () {
+          Log.log("Sparkplug - Connected to broker")
+        })
+
         // process MQTT messages
         sparkplugClient.on('message', function (topic, payload, topicInfo) {
           Log.log('message')
@@ -543,32 +547,7 @@ function rtData (measurement) {
   }
 }
 
-function getSparkplugConfig (connection) {
-  return {
-    serverUrl: 'mqtt://127.0.0.1:1883',
-    //'serverUrl' :'mqtt://broker.hivemq.com',
-    //'serverUrl' : 'mqtts://dbb220030c79405695f35740dab40eb0.s1.eu.hivemq.cloud:8883',
-    username: 'admin',
-    password: 'changeme',
-    groupId: 'JSON-SCADA',
-    edgeNode: 'mainNode',
-    clientId: 'JsonScadaMainNode',
-    version: 'spBv1.0',
-    scadaHostId: connection.scadaHostId // only if a primary application
-
-    //'pfx': Fs.readFileSync('certificate.pfx'),
-    //'passphrase': 'test',
-    //'ca': Fs.readFileSync('root.key'),
-    //'key': Fs.readFileSync('client.key'),
-    //'cert':  Fs.readFileSync('client.pem'),
-    //'secureProtocol': 'TLSv1_2_method',
-    //'rejectUnauthorized': false,
-    // 'minVersion': 'TLSv1',
-    // 'maxVersion': 'TLSv1.3'
-    // 'ciphers': 'TLSv1.3'
-  }
-}
-
+// process JSON-SCADA redundancy state for this driver module
 async function ProcessRedundancy (redundancy, configObj) {
   if (!redundancy || !redundancy.clientMongo) return
 
@@ -735,6 +714,7 @@ function loadConfig () {
   return configObj
 }
 
+// prepare mongo connection options
 function getMongoConnectionOptions (configObj) {
   let connOptions = {
     useNewUrlParser: true,
@@ -770,6 +750,7 @@ function getMongoConnectionOptions (configObj) {
   return connOptions
 }
 
+// update queued data to mongodb
 let ListCreatedTags = []
 async function processMongoUpdates(clientMongo, collection, jsConfig){
   let cnt = 0
@@ -851,3 +832,61 @@ async function processMongoUpdates(clientMongo, collection, jsConfig){
     }
   if (cnt) Log.log('MongoDB - Updates: ' + cnt)
 }
+
+// sparkplug-client configuration options based on JSON-SCADA connection settings
+function getSparkplugConfig (connection) {
+  let minVersion = 'TLSv1', maxVersion = 'TLSv1.3'  
+  if(!connection.allowTLSv10)
+    minVersion = 'TLSv1.1'
+  if(connection.allowTLSv11)
+    maxVersion = 'TLSv1.1' 
+  else
+    minVersion = 'TLSv1.2'
+  if(connection.allowTLSv12)
+    maxVersion = 'TLSv1.2' 
+  else
+    minVersion = 'TLSv1.3'
+  if(connection.allowTLSv13)
+    maxVersion = 'TLSv1.3' 
+
+  let secOpts = {}
+  if (connection.useSecurity){
+    certOpts = {}
+    if (connection.pfxFilePath!==""){
+      certOpts = {
+        pfx: Fs.readFileSync(connection.pfxFilePath),
+        passphrase: connection.passphrase,
+      }
+    }
+    else{
+      certOpts = {
+        ca: Fs.readFileSync(connection.rootCertFilePath),
+        key: Fs.readFileSync(connection.privateKeyFilePath),
+        cert:  Fs.readFileSync(connection.localCertFilePath),
+        passphrase: connection.passphrase,
+      }
+    }
+
+    secOpts = {
+    secureProtocol: 'TLSv1_2_method',
+    rejectUnauthorized: connection.chainValidation,
+    minVersion: minVersion,
+    maxVersion: maxVersion,
+    ciphers: connection.cipherList,
+    ... certOpts,
+    }
+  }
+
+  return {
+    serverUrl: connection.endpointURLs[0],
+    username: connection.username,
+    password: connection.password,
+    groupId: connection.groupId,
+    edgeNode: connection.edgeNodeId,
+    clientId: "JSON-SCADA",
+    version: 'spBv1.0',
+    scadaHostId: connection.scadaHostId, // only if a primary application
+    ... secOpts,
+  }
+}
+
