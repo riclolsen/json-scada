@@ -25,6 +25,7 @@ const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
+const { connect } = require('http2')
 
 const Log = {
   // simple message logger
@@ -43,14 +44,18 @@ const Log = {
     second: '2-digit'
   },
   log: function (msg, level = 1) {
-    if (level <= this.levelCurrent)
+    if (level <= this.levelCurrent) {
+      let dt = new Date()
       console.log(
-        new Date().toLocaleDateString('en-US', this.dtOptions) + ' - ' + msg
+        dt.toISOString() + 
+          ' - ' +
+          msg
       )
+    }
   }
 }
 
-let ValuesQueue = new Queue() // queue of values to update acquisition
+const ValuesQueue = new Queue() // queue of values to update acquisition
 let AutoCreateTags = true
 let AutoKeyId = 0
 
@@ -88,10 +93,12 @@ let AutoKeyId = 0
       }
     }
   ]
-  
-  let PublishQueue = new Queue() // queue of values to publish
+
+  const PublishQueue = new Queue() // queue of values to publish
+  const sparkplugClient = { handle: null } // points to sparkplug-client object
   let collection = null
   let clientMongo = null
+  let connection = null
 
   setInterval(async function () {
     let cnt = 0,
@@ -108,7 +115,7 @@ let AutoKeyId = 0
         timestamp: new Date().getTime(),
         metrics: metrics
       }
-      Log.log(JSON.stringify(payload))
+      // Log.log(JSON.stringify(payload))
       Log.log('Sparkplug - Updates: ' + cnt, Log.levelNormal)
     }
   }, 1127)
@@ -123,11 +130,17 @@ let AutoKeyId = 0
   while (true) {
     // repeat every 5 seconds
 
-    if (clientMongo === null) // if disconnected
-      await MongoClient.connect( // try to (re)connect
+    // manages MQTT connection
+    sparkplugProcess(sparkplugClient, connection, jsConfig)
+
+    if (clientMongo === null)
+      // if disconnected
+      await MongoClient.connect(
+        // try to (re)connect
         jsConfig.mongoConnectionString,
         getMongoConnectionOptions(jsConfig)
-      ).then(async client => { // connected
+      ).then(async client => {
+        // connected
         clientMongo = client
 
         Log.log('MongoDB - Connected correctly to MongoDB server', Log.levelMin)
@@ -137,7 +150,7 @@ let AutoKeyId = 0
         collection = db.collection(jsConfig.RealtimeDataCollectionName)
 
         // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
-        let connection = await getConnection(
+        connection = await getConnection(
           db.collection(jsConfig.ProtocolConnectionsCollectionName),
           jsConfig
         )
@@ -153,7 +166,7 @@ let AutoKeyId = 0
         let redundancy = {
           lastActiveNodeKeepAliveTimeTag: null,
           countKeepAliveNotUpdated: 0,
-          countKeepAliveUpdatesLimit: 0,
+          countKeepAliveUpdatesLimit: 4,
           clientMongo: clientMongo,
           db: db
         }
@@ -165,39 +178,6 @@ let AutoKeyId = 0
           ProcessRedundancy(redundancy, jsConfig)
         }, 5000)
 
-        // Create the SparkplugClient
-        let config = getSparkplugConfig(connection)
-
-        const sparkplugClient = SparkplugClient.newClient(config)
-
-        sparkplugClient.on('error', function (error) {
-          Log.log("Sparkplug - Can't connect" + error)
-        })
-
-        sparkplugClient.on('connect', function () {
-          Log.log("Sparkplug - Connected to broker")
-        })
-
-        // process MQTT messages
-        sparkplugClient.on('message', function (topic, payload, topicInfo) {
-          Log.log('message')
-          Log.log(topic)
-          // Log.log(topicInfo);
-          Log.log(payload)
-        })
-
-        // Subscribe topics
-        sparkplugClient.client.subscribe('spBv1.0/#', {
-          qos: 1,
-          properties: { subscriptionIdentifier: 1 },
-          function (err, granted) {
-            Log.log('Sparkplug - Error: ' + err)
-            Log.log(granted)
-            return
-          }
-        })
-
-        // getDeviceBirthPayload(collection)
         const changeStream = collection.watch(csPipeline, {
           fullDocument: 'updateLookup'
         })
@@ -225,7 +205,7 @@ let AutoKeyId = 0
             if (data !== null) PublishQueue.enqueue(data)
           })
         } catch (e) {
-          Log.log('MongoDB - Error: ' + e)
+          Log.log('MongoDB - Error: ' + e, Log.levelMin)
         }
       })
 
@@ -551,7 +531,9 @@ function rtData (measurement) {
 async function ProcessRedundancy (redundancy, configObj) {
   if (!redundancy || !redundancy.clientMongo) return
 
-  Log.log('Redundancy - Process Active: ' + configObj.ProcessActive)
+  Log.log(
+    'Redundancy - Process ' + (configObj.ProcessActive ? 'Active' : 'Inactive')
+  )
 
   // look for process instance entry, if not found create a new entry
   redundancy.db
@@ -667,8 +649,9 @@ function loadConfig () {
 
   var logLevelArg = null
   if (args.length > 1) logLevelArg = parseInt(args[1])
-  Log.levelCurrent = logLevelArg || process.env.JS_MQTTSPB_LISTENER_LOGLEVEL || 1
-  
+  Log.levelCurrent =
+    logLevelArg || process.env.JS_MQTTSPB_LISTENER_LOGLEVEL || 1
+
   var confFileArg = null
   if (args.length > 2) confFileArg = args[2]
 
@@ -752,7 +735,7 @@ function getMongoConnectionOptions (configObj) {
 
 // update queued data to mongodb
 let ListCreatedTags = []
-async function processMongoUpdates(clientMongo, collection, jsConfig){
+async function processMongoUpdates (clientMongo, collection, jsConfig) {
   let cnt = 0
   if (clientMongo && collection)
     while (!ValuesQueue.isEmpty()) {
@@ -812,7 +795,7 @@ async function processMongoUpdates(clientMongo, collection, jsConfig){
         timeTagAtSource: data.timeTagAtSource,
         timeTagAtSourceOk: false, // signal that it is not really from field time
         timeTag: new Date(),
-        originator: jsConfig.APP_NAME + '|' +jsConfig. ConnectionNumber,
+        originator: jsConfig.APP_NAME + '|' + jsConfig.ConnectionNumber,
         notTopicalAtSource: false,
         invalidAtSource: data.invalidAtSource,
         overflowAtSource: false,
@@ -835,45 +818,39 @@ async function processMongoUpdates(clientMongo, collection, jsConfig){
 
 // sparkplug-client configuration options based on JSON-SCADA connection settings
 function getSparkplugConfig (connection) {
-  let minVersion = 'TLSv1', maxVersion = 'TLSv1.3'  
-  if(!connection.allowTLSv10)
-    minVersion = 'TLSv1.1'
-  if(connection.allowTLSv11)
-    maxVersion = 'TLSv1.1' 
-  else
-    minVersion = 'TLSv1.2'
-  if(connection.allowTLSv12)
-    maxVersion = 'TLSv1.2' 
-  else
-    minVersion = 'TLSv1.3'
-  if(connection.allowTLSv13)
-    maxVersion = 'TLSv1.3' 
+  let minVersion = 'TLSv1',
+    maxVersion = 'TLSv1.3'
+  if (!connection.allowTLSv10) minVersion = 'TLSv1.1'
+  if (connection.allowTLSv11) maxVersion = 'TLSv1.1'
+  else minVersion = 'TLSv1.2'
+  if (connection.allowTLSv12) maxVersion = 'TLSv1.2'
+  else minVersion = 'TLSv1.3'
+  if (connection.allowTLSv13) maxVersion = 'TLSv1.3'
 
   let secOpts = {}
-  if (connection.useSecurity){
+  if (connection.useSecurity) {
     certOpts = {}
-    if (connection.pfxFilePath!==""){
+    if (connection.pfxFilePath !== '') {
       certOpts = {
         pfx: Fs.readFileSync(connection.pfxFilePath),
-        passphrase: connection.passphrase,
+        passphrase: connection.passphrase
       }
-    }
-    else{
+    } else {
       certOpts = {
         ca: Fs.readFileSync(connection.rootCertFilePath),
         key: Fs.readFileSync(connection.privateKeyFilePath),
-        cert:  Fs.readFileSync(connection.localCertFilePath),
-        passphrase: connection.passphrase,
+        cert: Fs.readFileSync(connection.localCertFilePath),
+        passphrase: connection.passphrase
       }
     }
 
     secOpts = {
-    secureProtocol: 'TLSv1_2_method',
-    rejectUnauthorized: connection.chainValidation,
-    minVersion: minVersion,
-    maxVersion: maxVersion,
-    ciphers: connection.cipherList,
-    ... certOpts,
+      secureProtocol: 'TLSv1_2_method',
+      rejectUnauthorized: connection.chainValidation,
+      minVersion: minVersion,
+      maxVersion: maxVersion,
+      ciphers: connection.cipherList,
+      ...certOpts
     }
   }
 
@@ -883,10 +860,101 @@ function getSparkplugConfig (connection) {
     password: connection.password,
     groupId: connection.groupId,
     edgeNode: connection.edgeNodeId,
-    clientId: "JSON-SCADA",
+    clientId: 'JSON-SCADA',
     version: 'spBv1.0',
     scadaHostId: connection.scadaHostId, // only if a primary application
-    ... secOpts,
+    ...secOpts
   }
 }
 
+// manage Sparkplug B Client connection, subscriptions, messages, events
+function sparkplugProcess (spClient, jscadaConnection, configObj) {
+  if (jscadaConnection === null) return
+  const logMod = 'MQTT Client - '
+
+  if (spClient.handle === null) {
+    if (!configObj.ProcessActive)
+      // do not connect MQTT while process not active
+      return
+
+    try {
+      // Create the SparkplugClient
+      Log.log(logMod + 'Creating client...')
+      let config = getSparkplugConfig(jscadaConnection)
+
+      spClient.handle = SparkplugClient.newClient(config)
+
+      if (Log.levelCurrent === Log.levelDebug)
+        spClient.handle.logger.level = 'debug';
+
+      spClient.handle.on('error', function (error) {
+        Log.log(logMod + "Event: Can't connect" + error)
+      })
+
+      spClient.handle.on('close', function () {
+        Log.log(logMod + "Event: Connection Closed")
+      })
+
+      spClient.handle.on('offline', function () {
+        Log.log(logMod + "Event: Connection Offline...")
+      })
+
+      spClient.handle.on('connect', function () {
+        Log.log(logMod + 'Event: Connected to broker')
+      })
+
+      spClient.handle.on('reconnect', function () {
+        Log.log(logMod + 'Event: Trying to reconnect to broker...')
+      })
+
+      // process MQTT messages
+      spClient.handle.on('message', function (topic, payload, topicInfo) {
+        Log.log(logMod + 'Event: message')
+        Log.log(logMod + topic)
+        // Log.log(topicInfo);
+        Log.log(logMod + payload)
+      })
+
+      // default subscription to all topics from Sparkplug-B
+      if (
+        !('topics' in jscadaConnection) ||
+        jscadaConnection.topics.length === 0
+      ) {
+        jscadaConnection.topics = ['spBv1.0/#']
+      }
+
+      // Subscribe topics
+      jscadaConnection.topics.forEach(elem => {
+        spClient.handle.client.subscribe(elem, {
+          qos: 1,
+          properties: { subscriptionIdentifier: 1 },
+          function (err, granted) {
+            Log.log(logMod + 'Subscribe Error: ' + err)
+            // Log.log(granted)
+            return
+          }
+        })
+      })
+    } catch (e) {
+      Log.log(logMod + "Error: " + e.message, Log.levelMin)
+    }
+  } else {
+    // MQTT client is already created
+
+    if (configObj.ProcessActive) {
+
+      // test connection is established
+
+      Log.log(logMod + (spClient.handle.connected?"Currently Connected":"Currently Disconnected"))
+
+    } else {
+      // if process not active, stop mqtt
+      Log.log(logMod + 'Stopping client...')
+      spClient.handle.stop()
+      spClient.handle = null
+    }
+  }
+
+  return
+  // getDeviceBirthPayload(collection)
+}
