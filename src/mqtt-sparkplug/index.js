@@ -25,7 +25,6 @@ const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
-const { connect } = require('http2')
 
 const Log = {
   // simple message logger
@@ -34,23 +33,10 @@ const Log = {
   levelDetailed: 2,
   levelDebug: 3,
   levelCurrent: 1,
-  dtOptions: {
-    year: '2-digit',
-    month: '2-digit',
-    day: '2-digit',
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  },
   log: function (msg, level = 1) {
     if (level <= this.levelCurrent) {
       let dt = new Date()
-      console.log(
-        dt.toISOString() + 
-          ' - ' +
-          msg
-      )
+      console.log(dt.toISOString() + ' - ' + msg)
     }
   }
 }
@@ -131,7 +117,7 @@ let AutoKeyId = 0
     // repeat every 5 seconds
 
     // manages MQTT connection
-    sparkplugProcess(sparkplugClient, connection, jsConfig)
+    await sparkplugProcess(sparkplugClient, connection, jsConfig, clientMongo)
 
     if (clientMongo === null)
       // if disconnected
@@ -163,19 +149,11 @@ let AutoKeyId = 0
         AutoKeyId = await getAutoKeyInitialValue(collection, jsConfig)
         Log.log('Auto Key - Initial value: ' + AutoKeyId)
 
-        let redundancy = {
-          lastActiveNodeKeepAliveTimeTag: null,
-          countKeepAliveNotUpdated: 0,
-          countKeepAliveUpdatesLimit: 4,
-          clientMongo: clientMongo,
-          db: db
-        }
-
         // check and update redundancy control
-        ProcessRedundancy(redundancy, jsConfig)
+        ProcessRedundancy(clientMongo, db, jsConfig)
         clearInterval(redundancyIntervalHandle)
         redundancyIntervalHandle = setInterval(function () {
-          ProcessRedundancy(redundancy, jsConfig)
+          ProcessRedundancy(clientMongo, db, jsConfig)
         }, 5000)
 
         const changeStream = collection.watch(csPipeline, {
@@ -278,6 +256,7 @@ async function getDeviceBirthPayload (rtCollection) {
           valueString: 1,
           timeTag: 1,
           timeTagAtSource: 1,
+          timeTagAtSourceOk: 1,
           invalid: 1,
           isEvent: 1,
           description: 1,
@@ -287,6 +266,7 @@ async function getDeviceBirthPayload (rtCollection) {
     )
     .toArray()
 
+  let metrics = []
   res.map(function (element) {
     if (element.origin === 'command' || element._id < 1) {
       return
@@ -318,7 +298,8 @@ async function getDeviceBirthPayload (rtCollection) {
     let timestampQualityGood = false
     if ('timeTagAtSource' in element && element.timeTagAtSource !== null) {
       timestamp = new Date(element.timeTagAtSource).getTime()
-      timestampQualityGood = element.timeTagAtSourceOk
+      if ('timeTagAtSourceOk' in element)
+        timestampQualityGood = element.timeTagAtSourceOk
     }
     //else if ("timeTag" in element && element.timeTag !== null){
     //  timestamp = new Date(element.timeTag).getTime()
@@ -326,28 +307,31 @@ async function getDeviceBirthPayload (rtCollection) {
     //  timestamp = new Date().getTime()
     //}
 
-    let ret = {
+    let metric = {
       name: element.tag,
       alias: element._id,
       value: value,
       type: type,
       ...(timestamp === false ? {} : { timestamp: timestamp }),
+      
       properties: {
-        description: element.description,
-        qualityGood: element.invalid ? false : true,
+        description: { type: "string", value: element.description },
+        qualityGood: { type: "boolean", value: (element.invalid ? false : true) },
         ...(timestamp === false
           ? {}
-          : { timestampQualityGood: timestampQualityGood })
+          : { timestampQualityGood: { type: "boolean", value: timestampQualityGood } })
       }
+      
     }
+    metrics.push(metric)
     // Log.log(element)
     // Log.log(ret)
-    return ret
+    return element
   })
 
   return {
     timestamp: new Date().getTime(),
-    metrics: res
+    metrics: metrics
   }
 }
 
@@ -528,16 +512,23 @@ function rtData (measurement) {
 }
 
 // process JSON-SCADA redundancy state for this driver module
-async function ProcessRedundancy (redundancy, configObj) {
-  if (!redundancy || !redundancy.clientMongo) return
+async function ProcessRedundancy (clientMongo, db, configObj) {
+  if (!clientMongo || !db) return
+
+  const countKeepAliveUpdatesLimit = 4
+
+  // poor man's local static variables
+  if (typeof ProcessRedundancy.countKeepAliveNotUpdated === 'undefined') {
+    ProcessRedundancy.lastActiveNodeKeepAliveTimeTag = null
+    ProcessRedundancy.countKeepAliveNotUpdated = 0
+  }
 
   Log.log(
     'Redundancy - Process ' + (configObj.ProcessActive ? 'Active' : 'Inactive')
   )
 
   // look for process instance entry, if not found create a new entry
-  redundancy.db
-    .collection(configObj.ProtocolDriverInstancesCollectionName)
+  db.collection(configObj.ProtocolDriverInstancesCollectionName)
     .find({
       protocolDriver: configObj.APP_NAME,
       protocolDriverInstanceNumber: configObj.Instance
@@ -582,36 +573,37 @@ async function ProcessRedundancy (redundancy, configObj) {
           if (instance?.activeNodeName === configObj.nodeName) {
             if (!configObj.ProcessActive)
               Log.log('Redundancy - Node activated!')
-            redundancy.countKeepAliveNotUpdated = 0
+            ProcessRedundancy.countKeepAliveNotUpdated = 0
             configObj.ProcessActive = true
           } else {
             // other node active
             if (configObj.ProcessActive) {
               Log.log('Redundancy - Node deactivated!')
-              redundancy.countKeepAliveNotUpdated = 0
+              ProcessRedundancy.countKeepAliveNotUpdated = 0
             }
             configObj.ProcessActive = false
             if (
-              redundancy.lastActiveNodeKeepAliveTimeTag === instKeepAliveTimeTag
+              ProcessRedundancy.lastActiveNodeKeepAliveTimeTag ===
+              instKeepAliveTimeTag
             ) {
-              redundancy.countKeepAliveNotUpdated++
+              ProcessRedundancy.countKeepAliveNotUpdated++
               Log.log(
                 'Redundancy - Keep-alive from active node not updated. ' +
-                  redundancy.countKeepAliveNotUpdated
+                  ProcessRedundancy.countKeepAliveNotUpdated
               )
             } else {
-              redundancy.countKeepAliveNotUpdated = 0
+              ProcessRedundancy.countKeepAliveNotUpdated = 0
               Log.log(
                 'Redundancy - Keep-alive updated by active node. Staying inactive.'
               )
             }
-            redundancy.lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
+            ProcessRedundancy.lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
             if (
-              redundancy.countKeepAliveNotUpdated >
-              redundancy.countKeepAliveUpdatesLimit
+              ProcessRedundancy.countKeepAliveNotUpdated >
+              countKeepAliveUpdatesLimit
             ) {
               // cnt exceeded, be active
-              redundancy.countKeepAliveNotUpdated = 0
+              ProcessRedundancy.countKeepAliveNotUpdated = 0
               Log.log('Redundancy - Node activated!')
               configObj.ProcessActive = true
             }
@@ -619,24 +611,24 @@ async function ProcessRedundancy (redundancy, configObj) {
 
           if (configObj.ProcessActive) {
             // process active, then update keep alive
-            redundancy.db
-              .collection(configObj.ProtocolDriverInstancesCollectionName)
-              .updateOne(
-                {
-                  protocolDriver: configObj.APP_NAME,
-                  protocolDriverInstanceNumber: new mongo.Double(
-                    configObj.Instance
-                  )
-                },
-                {
-                  $set: {
-                    activeNodeName: configObj.nodeName,
-                    activeNodeKeepAliveTimeTag: new Date(),
-                    softwareVersion: configObj.VERSION,
-                    stats: {}
-                  }
+            db.collection(
+              configObj.ProtocolDriverInstancesCollectionName
+            ).updateOne(
+              {
+                protocolDriver: configObj.APP_NAME,
+                protocolDriverInstanceNumber: new mongo.Double(
+                  configObj.Instance
+                )
+              },
+              {
+                $set: {
+                  activeNodeName: configObj.nodeName,
+                  activeNodeKeepAliveTimeTag: new Date(),
+                  softwareVersion: configObj.VERSION,
+                  stats: {}
                 }
-              )
+              }
+            )
           }
         }
       }
@@ -868,9 +860,22 @@ function getSparkplugConfig (connection) {
 }
 
 // manage Sparkplug B Client connection, subscriptions, messages, events
-function sparkplugProcess (spClient, jscadaConnection, configObj) {
-  if (jscadaConnection === null) return
+async function sparkplugProcess (
+  spClient,
+  jscadaConnection,
+  configObj,
+  mongoClient
+) {
+  if (jscadaConnection === null || mongoClient === null) return
   const logMod = 'MQTT Client - '
+  const connectionRetriesLimit = 20
+
+  // poor man's local static variables
+  if (typeof sparkplugProcess.currentBroker === 'undefined') {
+    sparkplugProcess.currentBroker = 0
+    sparkplugProcess.connectionRetries = 0
+    sparkplugProcess.deviceBirthPayload = null
+  }
 
   if (spClient.handle === null) {
     if (!configObj.ProcessActive)
@@ -878,42 +883,20 @@ function sparkplugProcess (spClient, jscadaConnection, configObj) {
       return
 
     try {
+      // obtain device birth payload
+      const db = mongoClient.db(configObj.mongoDatabaseName)
+      sparkplugProcess.deviceBirthPayload = await getDeviceBirthPayload(
+        db.collection(configObj.RealtimeDataCollectionName)
+      )
+      // Log.log(sparkplugProcess.deviceBirthPayload, Log.levelDebug)
+
       // Create the SparkplugClient
       Log.log(logMod + 'Creating client...')
       let config = getSparkplugConfig(jscadaConnection)
 
-      spClient.handle = SparkplugClient.newClient(config)
-
-      if (Log.levelCurrent === Log.levelDebug)
-        spClient.handle.logger.level = 'debug';
-
-      spClient.handle.on('error', function (error) {
-        Log.log(logMod + "Event: Can't connect" + error)
-      })
-
-      spClient.handle.on('close', function () {
-        Log.log(logMod + "Event: Connection Closed")
-      })
-
-      spClient.handle.on('offline', function () {
-        Log.log(logMod + "Event: Connection Offline...")
-      })
-
-      spClient.handle.on('connect', function () {
-        Log.log(logMod + 'Event: Connected to broker')
-      })
-
-      spClient.handle.on('reconnect', function () {
-        Log.log(logMod + 'Event: Trying to reconnect to broker...')
-      })
-
-      // process MQTT messages
-      spClient.handle.on('message', function (topic, payload, topicInfo) {
-        Log.log(logMod + 'Event: message')
-        Log.log(logMod + topic)
-        // Log.log(topicInfo);
-        Log.log(logMod + payload)
-      })
+      config.serverUrl =
+        jscadaConnection.endpointURLs[sparkplugProcess.currentBroker]
+      Log.log(logMod + 'Try connecting to ' + config.serverUrl)
 
       // default subscription to all topics from Sparkplug-B
       if (
@@ -923,30 +906,121 @@ function sparkplugProcess (spClient, jscadaConnection, configObj) {
         jscadaConnection.topics = ['spBv1.0/#']
       }
 
-      // Subscribe topics
-      jscadaConnection.topics.forEach(elem => {
-        spClient.handle.client.subscribe(elem, {
-          qos: 1,
-          properties: { subscriptionIdentifier: 1 },
-          function (err, granted) {
-            Log.log(logMod + 'Subscribe Error: ' + err)
-            // Log.log(granted)
-            return
-          }
+      if (
+        !'deviceId' in jscadaConnection ||
+        jscadaConnection.deviceId.trim() === ''
+      ) {
+        jscadaConnection.deviceId = 'Primary Application'
+      }
+
+      spClient.handle = SparkplugClient.newClient(config)
+
+      if (Log.levelCurrent === Log.levelDebug)
+        spClient.handle.logger.level = 'debug'
+
+      spClient.handle.on('error', function (error) {
+        Log.log(logMod + "Event: Can't connect" + error)
+      })
+
+      spClient.handle.on('close', function () {
+        Log.log(logMod + 'Event: Connection Closed')
+      })
+
+      spClient.handle.on('offline', function () {
+        Log.log(logMod + 'Event: Connection Offline...')
+      })
+
+      // Create 'birth' handler
+      spClient.handle.on('birth', function () {
+        // Publish SCADA HOST BIRTH certificate
+        spClient.handle.publishScadaHostBirth()
+        // Publish Node BIRTH certificate
+        spClient.handle.publishNodeBirth(getNodeBirthPayload(configObj))
+
+        // Publish Device BIRTH certificate
+        spClient.handle.publishDeviceBirth(
+          jscadaConnection.deviceId,
+          sparkplugProcess.deviceBirthPayload
+        )
+      })
+
+      spClient.handle.on('connect', function () {
+        sparkplugProcess.connectionRetries = 0
+        Log.log(logMod + 'Event: Connected to broker')
+        // Subscribe topics
+        jscadaConnection.topics.forEach(elem => {
+          Log.log(logMod + 'Subscribing topic: ' + elem)
+
+          spClient.handle.client.subscribe(elem, {
+            qos: 1,
+            properties: { subscriptionIdentifier: 1 },
+            function (err, granted) {
+              if (err)
+                Log.log(
+                  logMod + 'Subscribe error on topic: ' + elem + ' : ' + err
+                )
+              if (granted)
+                Log.log(
+                  logMod +
+                    'Subscription granted for topic: ' +
+                    elem +
+                    ' : ' +
+                    granted
+                )
+              return
+            }
+          })
         })
       })
+
+      spClient.handle.on('reconnect', function () {
+        sparkplugProcess.connectionRetries++
+        Log.log(
+          logMod +
+            'Event: Trying to reconnect to broker...' +
+            sparkplugProcess.connectionRetries
+        )
+        // when retires various times it will try to recreate the client to connect other broker (if available)
+        if (
+          jscadaConnection.endpointURLs.length > 1 &&
+          sparkplugProcess.connectionRetries >= connectionRetriesLimit
+        ) {
+          Log.log(logMod + 'Too many retries will try another broker...')
+          sparkplugProcess.currentBroker =
+            (sparkplugProcess.currentBroker + 1) %
+            jscadaConnection.endpointURLs.length
+          // stop and destroy current client
+          spClient.handle.stop()
+          spClient.handle = null
+          sparkplugProcess.connectionRetries = 0
+        }
+      })
+
+      // process MQTT messages
+      spClient.handle.on('message', function (topic, payload, topicInfo) {
+        Log.log(logMod + 'Event: message')
+        Log.log(logMod + topic)
+        // Log.log(topicInfo);
+        Log.log(logMod + payload)
+      })
     } catch (e) {
-      Log.log(logMod + "Error: " + e.message, Log.levelMin)
+      Log.log(logMod + 'Error: ' + e.message, Log.levelMin)
     }
   } else {
     // MQTT client is already created
 
     if (configObj.ProcessActive) {
-
       // test connection is established
 
-      Log.log(logMod + (spClient.handle.connected?"Currently Connected":"Currently Disconnected"))
-
+      Log.log(
+        logMod +
+          (spClient.handle.connected
+            ? 'Currently Connected'
+            : 'Currently Disconnected')
+      )
+      if (spClient.handle.connected) {
+        sparkplugProcess.connectionRetries = 0
+      }
     } else {
       // if process not active, stop mqtt
       Log.log(logMod + 'Stopping client...')
@@ -956,5 +1030,4 @@ function sparkplugProcess (spClient, jscadaConnection, configObj) {
   }
 
   return
-  // getDeviceBirthPayload(collection)
 }
