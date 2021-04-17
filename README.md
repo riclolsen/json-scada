@@ -87,7 +87,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 ## Documentation
 
 * [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
-* [Windows installer](https://github.com/riclolsen/json-scada/blob/master/releases/tag/V0.8-alpha)
+* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.8-alpha)
 * [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
 * [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
 * [IEC60870-5-104 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104server/README.md)
