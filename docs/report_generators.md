@@ -10,6 +10,13 @@ Independent opinions/testimonies/reviews of any reporting tool for MongoDB or Po
 This is a powerful open source BI tool that can work with MongoDB and PostgreSQL.
 https://github.com/metabase/metabase
 
+### Grafana 
+Free Grafana plugin to generate reports from dashboards.
+https://grafana.com/grafana/dashboards/11365
+
+Grafana paid options (Enterprise or Cloud) can do reporting.
+https://grafana.com/docs/grafana/latest/enterprise/reporting/
+
 ### Apache superset
 Java-based BI tool.
 https://github.com/apache/superset
