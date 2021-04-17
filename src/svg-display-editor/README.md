@@ -35,27 +35,27 @@ Point numbers (_id field of _realtimeData_ collection) also can be used to ident
 There is plenty of material available throughout the web to help learn how to use the Inkscape SVG graphics editor. We just point here some useful resources.
 
 * Inkscape official manual 
-	http://tavmjong.free.fr/INKSCAPE/MANUAL/html/
+	[http://tavmjong.free.fr/INKSCAPE/MANUAL/html/](http://tavmjong.free.fr/INKSCAPE/MANUAL/html/)
 
 * Inkscape tutorials, books, videos, etc. 
-	https://inkscape.org/en/learn/ 
+	[https://inkscape.org/en/learn/](https://inkscape.org/en/learn/)
 
 An interactive tutorial is available inside the editor in many languages (menu Help \| Tutorials).
 
 Other useful related resources.
 
-* https://www.opto22.com/support/resources-tools/demos/svg-image-library
-* https://github.com/willianjusten/awesome-svg
-* https://github.com/PanderMusubi/inkscape-open-symbols
-* https://sourceforge.net/projects/oshmiopensubstationhmi/files/svg-clipart.zip/download
-* https://www.svgrepo.com
-* https://www.vecteezy.com
+* [https://www.opto22.com/support/resources-tools/demos/svg-image-library](https://www.opto22.com/support/resources-tools/demos/svg-image-library)
+* [https://github.com/willianjusten/awesome-svg](https://github.com/willianjusten/awesome-svg)
+* [https://github.com/PanderMusubi/inkscape-open-symbols](https://github.com/PanderMusubi/inkscape-open-symbols)
+* [https://sourceforge.net/projects/oshmiopensubstationhmi/files/svg-clipart.zip/download](https://sourceforge.net/projects/oshmiopensubstationhmi/files/svg-clipart.zip/download)
+* [https://www.svgrepo.com](https://www.svgrepo.com)
+* [https://www.vecteezy.com](https://www.vecteezy.com)
 
 ## SCADA Animations
 
 To edit SCADA animation properties of an SVG object, right-click the mouse and choose Object Properties (please notice that albeit the Inkscape software interface is localized in many languages, the Object Properties menu is only available in English).
 
-![SVG Editor](../../docs/screenshots/editor.png "{json:scada} SVG Editor")
+![SVG Editor](https://scadavis.io/images/image2.png "SVG Editor")
 Editor interface showing the “Object Properties” dialog.
 
 Follow below a list of attributes (“Object Properties\|Tab”) that can be utilized to animate graphics.
@@ -107,9 +107,9 @@ When the text of the object contains the “\|” (pipe) character, it is used t
     
     For a complete _printf_ convention reference, see 
 
-    * http://www.cplusplus.com/reference/cstdio/printf/
+    * [http://www.cplusplus.com/reference/cstdio/printf/](http://www.cplusplus.com/reference/cstdio/printf/)
 
-    * https://alvinalexander.com/programming/printf-format-cheat-sheet
+    * [https://alvinalexander.com/programming/printf-format-cheat-sheet](https://alvinalexander.com/programming/printf-format-cheat-sheet)
 
     This convention can be used to format number and string values.
 
@@ -122,9 +122,9 @@ When the text of the object contains the “\|” (pipe) character, it is used t
 
     For a reference see
 
-    * https://github.com/d3/d3-format
+    * [https://github.com/d3/d3-format](https://github.com/d3/d3-format)
 
-    * http://bl.ocks.org/zanarmstrong/05c1e95bf7aa16c4768e
+    * [http://bl.ocks.org/zanarmstrong/05c1e95bf7aa16c4768e](http://bl.ocks.org/zanarmstrong/05c1e95bf7aa16c4768e)
 
 * **Boolean** convention.
 
@@ -358,7 +358,7 @@ Vega specification markup options:
 * **vega-json**: old style Vega 1/2 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data. DEPRECATED, use vega4-json!
 * **vega4-json**: new style Vega 3/4/5 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data.
 
-See Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. 
+See Vega project site for tools and documentation of syntax: [https://vega.github.io/vega/docs/](https://vega.github.io/vega/docs/). 
 
 In the Vega file (“data” / “values” section), use the following markup to refer to the tag list:
 
@@ -451,7 +451,7 @@ Functions available:
 
 * **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038\|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
 
-See the Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. 
+See the Vega project site for tools and documentation of syntax: [https://vega.github.io/vega/docs/](https://vega.github.io/vega/docs/). 
 
 In the Vega file (“data” / “values” section), use the markup below to refer to the tag list (from the “Source” field).
 
@@ -490,5 +490,4 @@ To debug scripts in a SVG display file, do the following:
 * open the display in the Display Viewer.
 * press F12 to open the browser Developer Tools and then F5 to reload.
 * The Chromium browser will stop execution when found the introduced breakpoint. Use the execution control keys F10, F11, F9, F8 to forward execution.
-
 
