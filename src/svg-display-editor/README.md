@@ -19,7 +19,7 @@ It can also be acquired here the standalone Microsoft Store version for Windows 
 
 To create a new display
 
-1. Create the SVG graphics using the Synoptic Editor. It is possible to use other editors (Illustrator, Corel, etc.) to create graphics that can be imported in the Synoptic Editor to later markup. The editor can import graphics from a great number of formats. There are on the web many sources of vector graphics clipart (free and paid) that can be useful. It is recommended to configure each new display file with a size of 2400 x 1500 pixels (File | Document Properties | Page | Page Size | Custom Size). This is a reference size, the actual drawing can be larger.
+1. Create the SVG graphics using the Synoptic Editor. It is possible to use other editors (Illustrator, Corel, etc.) to create graphics that can be imported in the Synoptic Editor to later markup. The editor can import graphics from a great number of formats. There are on the web many sources of vector graphics clipart (free and paid) that can be useful. It is recommended to configure each new display file with a size of 2400 x 1500 pixels (File \| Document Properties \| Page \| Page Size \| Custom Size). This is a reference size, the actual drawing can be larger.
 
 2. Markup the animations you want in the graphics using the Synoptic Editor. For this, select the object you want to animate and click the mouse right button and select “Object Properties”. Then choose from the menu the properties you want to animate. Follow the documentation below to understand the parameters of animations. Always use JSON-SCADA TAGs as identifiers of values to animate the graphics at runtime in the web browser. Finally, save the file always using the default native Inkscape SVG format. 
 
@@ -40,7 +40,7 @@ There is plenty of material available throughout the web to help learn how to us
 * Inkscape tutorials, books, videos, etc. 
 	https://inkscape.org/en/learn/ 
 
-An interactive tutorial is available inside the editor in many languages (menu Help | Tutorials).
+An interactive tutorial is available inside the editor in many languages (menu Help \| Tutorials).
 
 Other useful related resources.
 
@@ -58,7 +58,7 @@ To edit SCADA animation properties of an SVG object, right-click the mouse and c
 ![SVG Editor](../../docs/screenshots/editor.png "{json:scada} SVG Editor")
 Editor interface showing the “Object Properties” dialog.
 
-Follow below a list of attributes (“Object Properties|Tab”) that can be utilized to animate graphics.
+Follow below a list of attributes (“Object Properties\|Tab”) that can be utilized to animate graphics.
 
 Desired Action | Tab
 -------------- | ---
@@ -99,7 +99,7 @@ In the Tag field, put the tag to be retrieved its value. The fields _Alignment_ 
 
 There are 3 ways to format values obtained by the “Get” directive. 
 
-When the text of the object contains the “|” (pipe) character, it is used the **Boolean** convention. When the text contains the “%” character, it is be used the  **Printf** convention. In all other cases it is used the **d3** convention.
+When the text of the object contains the “\|” (pipe) character, it is used the **Boolean** convention. When the text contains the “%” character, it is be used the  **Printf** convention. In all other cases it is used the **d3** convention.
 
 * **Printf** convention.
 
@@ -128,7 +128,7 @@ When the text of the object contains the “|” (pipe) character, it is used th
 
 * **Boolean** convention.
 
-    For boolean values, use “off_text|on_text|failed_text”, to show custom texts based on the tag value and quality.
+    For boolean values, use “off_text\|on_text\|failed_text”, to show custom texts based on the tag value and quality.
 
 
 It's possible to represent flow direction for analog values with an arrow in place of the value signal using the following codes (positioned where you want the arrow to be shown):
@@ -195,10 +195,10 @@ For digital (boolean) points the following special values for conditions apply:
 
 The colors are the SVG colors (named or #RRGGBB value). “none” is the transparent color.
 
-A single color value will be used as fill and stroke colors. To specify different fill and stroke separate 2 color values by a “|” (pipe) character. Example: “red|green” = red for fill and green for stroke.
+A single color value will be used as fill and stroke colors. To specify different fill and stroke separate 2 color values by a “\|” (pipe) character. Example: “red\|green” = red for fill and green for stroke.
 
-A void fill color like in “|yellow” affects only the stroke while keeping the fill unaltered.
-A void stroke color like in “black|” affects only the fill while keeping the stroke unaltered (recommended for text objects).
+A void fill color like in “\|yellow” affects only the stroke while keeping the fill unaltered.
+A void stroke color like in “black\|” affects only the fill while keeping the stroke unaltered (recommended for text objects).
 
 To interpolate colors between 2 values, use @color in the color field (fill or stroke) in the final line. Example: To make fill colors that varies continuously between white and red proportionally to values between 0 and 10 for the tag “TAG1”.
 
@@ -300,7 +300,7 @@ This will present this text (when mouse over): “TAG1+TAG2 = 32.6 MW”.
 
 In the “Tag” field, put the desired tag name. The fields “Max” and “Min” must be filled with the desired range of variation for the point. 
 
-The SVG object must be cloned (Edit | Clone | Create Clone or ALT+D). The original object defines the initial position (this position will be reached when the value is equal to “Min”). The clone object must be positioned at the desired final position (the position to be reached when the value is equal to “Max”). 
+The SVG object must be cloned (Edit \| Clone \| Create Clone or ALT+D). The original object defines the initial position (this position will be reached when the value is equal to “Min”). The clone object must be positioned at the desired final position (the position to be reached when the value is equal to “Max”). 
 
 Movement in the reverse direction can be obtained by switching the values of “Min” and “Max”.
 
@@ -449,7 +449,7 @@ Functions available:
 * **#arc** in the field Tag – draw a doughnut chart. The tag must be in the “Source” field. In the “Prompt” field there must be set three parameters separated by commas: the minimum value (normally zero), the maximum value (for a 360-degree arc) and the inner circle radius.
 * **#radar** in the field “Tag” – (for a rectangle object) define a radar (spider web) graphic. List the points in the “Source” field separated by commas. The field “Prompt” can be used to change the configuration of the chart, by applying conventions from https://github.com/alangrafu/radar-chart-d3. Write the attribute names using double quotes. E.g: { "levels":5, "maxValue":200, "axisText": false }
 
-* **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
+* **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038\|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
 
 See the Vega project site for tools and documentation of syntax: https://vega.github.io/vega/. 
 
