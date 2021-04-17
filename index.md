@@ -13,7 +13,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 
 ![](https://img.shields.io/badge/mongodb-%3E%3D4.2-green "MongoDB >= 4.2")
 ![](https://img.shields.io/badge/postgresql-12-green "PostgreSQL 12")
-![](https://img.shields.io/badge/timescaledb-1.7-green "TimescaleDB 1.7")
+![](https://img.shields.io/badge/timescaledb-2.0-green "TimescaleDB 2.0")
 ![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana >= 7")
 
 ![](https://img.shields.io/badge/linux-x86--64-green "Linux x86-64")
@@ -25,6 +25,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 ![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
 ![](https://img.shields.io/badge/DNP3-yellow "DNP3")
+![](https://img.shields.io/badge/MQTT-yellow "MQTT")
 ![](https://img.shields.io/badge/OPC--UA-yellow "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
@@ -51,7 +52,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 * MongoDB Change Streams for realtime async database events processing.
 * HTML5 Web interface. UTF-8/I18N. Mobile access.
 * Web-based configuration management.
-* Role-based access control (RBAC).
+* Role-based access control (RBAC). 
 * Various high-quality protocol drivers.
 * Live point configuration updates.
 * Inkscape-based SVG synoptic display editor.
@@ -85,27 +86,28 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 
 ## Documentation
 
-* [Screenshots](docs/screenshots/)
-* [Docker Demo](demo-docker/README.md)
-* [Config File](conf/README.md)
-* [Calculations](src/calculations/README.md)
-* [IEC60870-5-104 Server Driver](src/lib60870.netcore/iec104server/README.md)
-* [IEC60870-5-104 Client Driver](src/lib60870.netcore/iec104client/README.md)
-* [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
-* [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
-* [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
-* [Telegraf Listener Driver](src/telegraf-listener/README.md)
-* [OPC-UA Client Driver](src/OPC-UA-Client/README.md)
-* [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
-* [I104M Client Driver](src/i104m/README.md)
-* [Change Stream Data Processor](src/cs_data_processor/README.md)
-* [Custom Data Processor](src/cs_custom_processor/README.md)
-* [Realtime Data Server](src/server_realtime/README.md)
-* [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
-* [OSHMI2JSON Tool](src/oshmi2json/README.md)
-* [Schema Documentation](docs/schema.md)
-* [Install Guide](docs/install.md)
-* [Report Generators](docs/report_generators.md)
+* [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
+* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.8-alpha)
+* [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
+* [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
+* [IEC60870-5-104 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104server/README.md)
+* [IEC60870-5-104 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104client/README.md)
+* [IEC60870-5-101 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec101server/README.md)
+* [IEC60870-5-101 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec101client/README.md)
+* [DNP3 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/dnp3/Dnp3Client/README.md)
+* [Telegraf Listener Driver](https://github.com/riclolsen/json-scada/blob/master/src/telegraf-listener/README.md)
+* [MQTT Sparkplug-B Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/mqtt-sparkplug/README.md)
+* [OPC-UA Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-UA-Client/README.md)
+* [CIP Ethernet/IP PLCTags Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/libplctag/PLCTagsClient/README.md)
+* [I104M Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/i104m/README.md)
+* [Change Stream Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_data_processor/README.md)
+* [Custom Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_custom_processor/README.md)
+* [Realtime Data Server](https://github.com/riclolsen/json-scada/blob/master/src/server_realtime/README.md)
+* [SVG Synoptic Display Editor](https://github.com/riclolsen/json-scada/blob/master/src/svg-display-editor/README.md)
+* [OSHMI2JSON Tool](https://github.com/riclolsen/json-scada/blob/master/src/oshmi2json/README.md)
+* [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
+* [Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
+* [Report Generators](https://github.com/riclolsen/json-scada/blob/master/docs/report_generators.md)
 
 ## Protocols Roadmap
 
@@ -125,8 +127,8 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [ ] OPC UA Server
 - [ ] OPC DA Client
 - [ ] OPC DA Server
+- [x] MQTT Client
 - [ ] Modbus Client
-- [ ] MQTT
 - [ ] IEC 61850 MMS Client
 - [ ] IEC 61850 GOOSE Client
 - [x] CIP Ethernet/IP (libplctag, experimental)
