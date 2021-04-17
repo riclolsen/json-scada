@@ -96,7 +96,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 * [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
 * [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
 * [Telegraf Listener Driver](src/telegraf-listener/README.md)
-* [MQTT Sparkplug-B Client Driver](src/dnp3/mqtt-sparkplug/README.md)
+* [MQTT Sparkplug-B Client Driver](src/mqtt-sparkplug/README.md)
 * [OPC-UA Client Driver](src/OPC-UA-Client/README.md)
 * [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](src/i104m/README.md)
