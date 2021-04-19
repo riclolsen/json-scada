@@ -25,28 +25,18 @@ const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
-
-const Log = {
-  // simple message logger
-  levelMin: 0,
-  levelNormal: 1,
-  levelDetailed: 2,
-  levelDebug: 3,
-  levelCurrent: 1,
-  log: function (msg, level = 1) {
-    if (level <= this.levelCurrent) {
-      let dt = new Date()
-      console.log(dt.toISOString() + ' - ' + msg)
-    }
-  }
-}
+const Log = require('./simple-logger')
+const AppDefs = require('./app-defs')
+const LoadConfig = require('./load-config')
+const Redundancy = require('./redundancy')
+const AutoTag = require('./auto-tag')
 
 const ValuesQueue = new Queue() // queue of values to update acquisition
 let AutoCreateTags = true
-let AutoKeyId = 0
 
 ;(async () => {
-  const jsConfig = loadConfig()
+  const jsConfig = LoadConfig() // load and parse config file
+  Log.logLevelCurrent = jsConfig.LogLevel
   const csPipeline = [
     {
       $project: { documentKey: false }
@@ -146,15 +136,10 @@ let AutoKeyId = 0
           AutoCreateTags = connection.autoCreateTags ? true : false
         }
 
-        AutoKeyId = await getAutoKeyInitialValue(collection, jsConfig)
-        Log.log('Auto Key - Initial value: ' + AutoKeyId)
+        let autoKeyId = await AutoTag.GetAutoKeyInitialValue(collection, jsConfig)
+        Log.log('Auto Key - Initial value: ' + autoKeyId)
 
-        // check and update redundancy control
-        ProcessRedundancy(clientMongo, db, jsConfig)
-        clearInterval(redundancyIntervalHandle)
-        redundancyIntervalHandle = setInterval(function () {
-          ProcessRedundancy(clientMongo, db, jsConfig)
-        }, 5000)
+        Redundancy.Start(5000, clientMongo, db, jsConfig)
 
         const changeStream = collection.watch(csPipeline, {
           fullDocument: 'updateLookup'
@@ -208,7 +193,7 @@ let AutoKeyId = 0
 // Get BIRTH payload for the edge node
 function getNodeBirthPayload (configObj) {
   const hwVersion = 'Generic Server Hardware'
-  const swVersion = 'JSON-SCADA MQTT v' + configObj?.VERSION
+  const swVersion = 'JSON-SCADA MQTT v' + AppDefs.VERSION
 
   return {
     timestamp: new Date().getTime(),
@@ -313,15 +298,19 @@ async function getDeviceBirthPayload (rtCollection) {
       value: value,
       type: type,
       ...(timestamp === false ? {} : { timestamp: timestamp }),
-      
+
       properties: {
-        description: { type: "string", value: element.description },
-        qualityGood: { type: "boolean", value: (element.invalid ? false : true) },
+        description: { type: 'string', value: element.description },
+        qualityGood: { type: 'boolean', value: element.invalid ? false : true },
         ...(timestamp === false
           ? {}
-          : { timestampQualityGood: { type: "boolean", value: timestampQualityGood } })
+          : {
+              timestampQualityGood: {
+                type: 'boolean',
+                value: timestampQualityGood
+              }
+            })
       }
-      
     }
     metrics.push(metric)
     // Log.log(element)
@@ -393,7 +382,7 @@ function getMetricPayload (element) {
 async function getConnection (connsCollection, configObj) {
   let results = await connsCollection
     .find({
-      protocolDriver: configObj.APP_NAME,
+      protocolDriver: AppDefs.NAME,
       protocolDriverInstanceNumber: configObj.Instance
     })
     .toArray()
@@ -418,286 +407,15 @@ async function getConnection (connsCollection, configObj) {
   return connection
 }
 
-// find biggest point key (_id) on range and adjust automatic key
-async function getAutoKeyInitialValue (rtCollection, configObj) {
-  let autoKeyId = configObj.ConnectionNumber * configObj.AutoKeyMultiplier
-  let resLastKey = await rtCollection
-    .find({
-      _id: {
-        $gt: autoKeyId,
-        $lt: (configObj.ConnectionNumber + 1) * configObj.AutoKeyMultiplier
-      }
-    })
-    .sort({ _id: -1 })
-    .limit(1)
-    .toArray()
-  if (resLastKey.length > 0 && '_id' in resLastKey[0]) {
-    if (parseInt(resLastKey[0]._id) >= autoKeyId)
-      autoKeyId = parseInt(resLastKey[0]._id)
-  }
-  return autoKeyId
-}
-
-function rtData (measurement) {
-  AutoKeyId++
-
-  return {
-    _id: new mongo.Double(AutoKeyId),
-    protocolSourceASDU: '',
-    protocolSourceCommonAddress: '',
-    protocolSourceConnectionNumber: new mongo.Double(ConnectionNumber),
-    protocolSourceObjectAddress: measurement?.tag,
-    alarmState: new mongo.Double(-1.0),
-    description: measurement?.description,
-    ungroupedDescription: measurement?.ungroupedDescription,
-    group1: measurement?.group1,
-    group2: measurement?.group2,
-    group3: measurement?.group3,
-    stateTextFalse: '',
-    stateTextTrue: '',
-    eventTextFalse: '',
-    eventTextTrue: '',
-    origin: 'supervised',
-    tag: measurement.tag,
-    type:
-      typeof measurement.value === 'number' &&
-      !isNaN(parseFloat(measurement.value))
-        ? 'analog'
-        : 'string',
-    value: new mongo.Double(measurement.value),
-    valueString: measurement.value.toString(),
-    alarmDisabled: false,
-    alerted: false,
-    alarmed: false,
-    alertedState: '',
-    annotation: '',
-    commandBlocked: false,
-    commandOfSupervised: new mongo.Double(0.0),
-    commissioningRemarks: 'Auto created by Sparkplug B driver.',
-    formula: new mongo.Double(0.0),
-    frozen: false,
-    frozenDetectTimeout: new mongo.Double(0.0),
-    hiLimit: new mongo.Double(Number.MAX_VALUE),
-    hihiLimit: new mongo.Double(Number.MAX_VALUE),
-    hihihiLimit: new mongo.Double(Number.MAX_VALUE),
-    historianDeadBand: new mongo.Double(0.0),
-    historianPeriod: new mongo.Double(0.0),
-    hysteresis: new mongo.Double(0.0),
-    invalid: measurement?.invalidAtSource ? true : false,
-    invalidDetectTimeout: new mongo.Double(60000.0),
-    isEvent: false,
-    kconv1: new mongo.Double(1.0),
-    kconv2: new mongo.Double(0.0),
-    location: null,
-    loLimit: new mongo.Double(-Number.MAX_VALUE),
-    loloLimit: new mongo.Double(-Number.MAX_VALUE),
-    lololoLimit: new mongo.Double(-Number.MAX_VALUE),
-    notes: '',
-    overflow: false,
-    parcels: null,
-    priority: new mongo.Double(0.0),
-    protocolDestinations: null,
-    sourceDataUpdate: null,
-    supervisedOfCommand: new mongo.Double(0.0),
-    timeTag: null,
-    timeTagAlarm: null,
-    timeTagAtSource: measurement.timeTagAtSource,
-    timeTagAtSourceOk: false,
-    transient: false,
-    unit: '',
-    updatesCnt: new mongo.Double(0.0),
-    valueDefault: new mongo.Double(0.0),
-    zeroDeadband: new mongo.Double(0.0)
-  }
-}
-
-// process JSON-SCADA redundancy state for this driver module
-async function ProcessRedundancy (clientMongo, db, configObj) {
-  if (!clientMongo || !db) return
-
-  const countKeepAliveUpdatesLimit = 4
-
-  // poor man's local static variables
-  if (typeof ProcessRedundancy.countKeepAliveNotUpdated === 'undefined') {
-    ProcessRedundancy.lastActiveNodeKeepAliveTimeTag = null
-    ProcessRedundancy.countKeepAliveNotUpdated = 0
-  }
-
-  Log.log(
-    'Redundancy - Process ' + (configObj.ProcessActive ? 'Active' : 'Inactive')
-  )
-
-  // look for process instance entry, if not found create a new entry
-  db.collection(configObj.ProtocolDriverInstancesCollectionName)
-    .find({
-      protocolDriver: configObj.APP_NAME,
-      protocolDriverInstanceNumber: configObj.Instance
-    })
-    .toArray(function (err, results) {
-      if (err) Log.log('MongoDB - ' + err)
-      else if (results) {
-        if (results.length === 0) {
-          // not found, then create
-          configObj.ProcessActive = true
-          Log.log('Redundancy - Instance config not found, creating one...')
-          db.collection(
-            configObj.ProtocolDriverInstancesCollectionName
-          ).insertOne({
-            protocolDriver: configObj.APP_NAME,
-            protocolDriverInstanceNumber: new mongo.Double(1),
-            enabled: true,
-            logLevel: new mongo.Double(1),
-            nodeNames: [],
-            activeNodeName: configObj.nodeName,
-            activeNodeKeepAliveTimeTag: new Date()
-          })
-        } else {
-          // check for disabled or node not allowed
-          let instance = results[0]
-
-          let instKeepAliveTimeTag = null
-
-          if ('activeNodeKeepAliveTimeTag' in instance)
-            instKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
-
-          if (instance?.enabled === false) {
-            Log.log('Redundancy - Instance disabled, exiting...')
-            process.exit()
-          }
-          if (instance?.nodeNames !== null && instance.nodeNames.length > 0) {
-            if (!instance.nodeNames.includes(configObj.nodeName)) {
-              Log.log('Redundancy - Node name not allowed, exiting...')
-              process.exit()
-            }
-          }
-          if (instance?.activeNodeName === configObj.nodeName) {
-            if (!configObj.ProcessActive)
-              Log.log('Redundancy - Node activated!')
-            ProcessRedundancy.countKeepAliveNotUpdated = 0
-            configObj.ProcessActive = true
-          } else {
-            // other node active
-            if (configObj.ProcessActive) {
-              Log.log('Redundancy - Node deactivated!')
-              ProcessRedundancy.countKeepAliveNotUpdated = 0
-            }
-            configObj.ProcessActive = false
-            if (
-              ProcessRedundancy.lastActiveNodeKeepAliveTimeTag ===
-              instKeepAliveTimeTag
-            ) {
-              ProcessRedundancy.countKeepAliveNotUpdated++
-              Log.log(
-                'Redundancy - Keep-alive from active node not updated. ' +
-                  ProcessRedundancy.countKeepAliveNotUpdated
-              )
-            } else {
-              ProcessRedundancy.countKeepAliveNotUpdated = 0
-              Log.log(
-                'Redundancy - Keep-alive updated by active node. Staying inactive.'
-              )
-            }
-            ProcessRedundancy.lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
-            if (
-              ProcessRedundancy.countKeepAliveNotUpdated >
-              countKeepAliveUpdatesLimit
-            ) {
-              // cnt exceeded, be active
-              ProcessRedundancy.countKeepAliveNotUpdated = 0
-              Log.log('Redundancy - Node activated!')
-              configObj.ProcessActive = true
-            }
-          }
-
-          if (configObj.ProcessActive) {
-            // process active, then update keep alive
-            db.collection(
-              configObj.ProtocolDriverInstancesCollectionName
-            ).updateOne(
-              {
-                protocolDriver: configObj.APP_NAME,
-                protocolDriverInstanceNumber: new mongo.Double(
-                  configObj.Instance
-                )
-              },
-              {
-                $set: {
-                  activeNodeName: configObj.nodeName,
-                  activeNodeKeepAliveTimeTag: new Date(),
-                  softwareVersion: configObj.VERSION,
-                  stats: {}
-                }
-              }
-            )
-          }
-        }
-      }
-    })
-}
-
-// load and parse config file
-function loadConfig () {
-  const args = process.argv.slice(2)
-
-  var logLevelArg = null
-  if (args.length > 1) logLevelArg = parseInt(args[1])
-  Log.levelCurrent =
-    logLevelArg || process.env.JS_MQTTSPB_LISTENER_LOGLEVEL || 1
-
-  var confFileArg = null
-  if (args.length > 2) confFileArg = args[2]
-
-  let configFile =
-    confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
-  Log.log('Config - Config File: ' + configFile)
-
-  if (!fs.existsSync(configFile)) {
-    Log.log('Config - Error: config file not found!')
-    process.exit()
-  }
-
-  let rawFileContents = fs.readFileSync(configFile)
-  let configObj = JSON.parse(rawFileContents)
-  if (
-    typeof configObj.mongoConnectionString != 'string' ||
-    configObj.mongoConnectionString === ''
-  ) {
-    Log.log('Error reading config file.')
-    process.exit()
-  }
-
-  var instArg = null
-  if (args.length > 0) instArg = parseInt(args[0])
-  configObj.Instance = instArg || process.env.JS_MQTTSPB_LISTENER_INSTANCE || 1
-
-  configObj.APP_NAME = 'MQTT-SPARKPLUG-B'
-  configObj.APP_MSG = '{json:scada} - MQTT-Sparkplug-B Client Driver'
-  configObj.VERSION = '0.1.1'
-
-  configObj.RealtimeDataCollectionName = 'realtimeData'
-  configObj.ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
-  configObj.ProtocolConnectionsCollectionName = 'protocolConnections'
-  configObj.grpSep = '~'
-  configObj.ProcessActive = false // for redundancy control
-  configObj.AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
-  configObj.ConnectionNumber = 0
-
-  Log.log('Config - ' + configObj.APP_MSG + ' Version ' + configObj.VERSION)
-  Log.log('Config - Instance: ' + configObj.Instance)
-  Log.log('Config - Log level: ' + Log.levelCurrent)
-
-  return configObj
-}
-
 // prepare mongo connection options
 function getMongoConnectionOptions (configObj) {
   let connOptions = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     appname:
-      configObj.APP_NAME +
+      AppDefs.NAME +
       ' Version:' +
-      configObj.VERSION +
+      AppDefs.VERSION +
       ' Instance:' +
       configObj.Instance,
     poolSize: 20,
@@ -726,7 +444,6 @@ function getMongoConnectionOptions (configObj) {
 }
 
 // update queued data to mongodb
-let ListCreatedTags = []
 async function processMongoUpdates (clientMongo, collection, jsConfig) {
   let cnt = 0
   if (clientMongo && collection)
@@ -734,31 +451,10 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
       let data = ValuesQueue.peek()
       // const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
-      // if not sure tag is created, try to find, if not found create it
-      if (AutoCreateTags)
-        if (!ListCreatedTags.includes(data.tag)) {
-          // possibly not created tag, must check
-          let res = await collection
-            .find({
-              protocolSourceConnectionNumber: jsConfig.ConnectionNumber,
-              protocolSourceObjectAddress: data.tag
-            })
-            .toArray()
-
-          if ('length' in res && res.length === 0) {
-            // not found, then create
-            let newTag = rtData(data)
-            Log.log(
-              'Auto Key - Tag not found, will create: ' + data.tag,
-              Log.levelDetailed
-            )
-            let resIns = await collection.insertOne(newTag)
-            if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
-          } else {
-            // found (already exists, no need to create), just list as created
-            ListCreatedTags.push(data.tag)
-          }
-        }
+      // check tag is created, if not found create it
+      if (AutoCreateTags){
+         await AutoTag.AutoCreateTag(data, jsConfig.ConnectionNumber, collection)
+      }
 
       // now update tag
 
@@ -787,7 +483,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
         timeTagAtSource: data.timeTagAtSource,
         timeTagAtSourceOk: false, // signal that it is not really from field time
         timeTag: new Date(),
-        originator: jsConfig.APP_NAME + '|' + jsConfig.ConnectionNumber,
+        originator: AppDefs.NAME + '|' + jsConfig.ConnectionNumber,
         notTopicalAtSource: false,
         invalidAtSource: data.invalidAtSource,
         overflowAtSource: false,
@@ -878,7 +574,7 @@ async function sparkplugProcess (
   }
 
   if (spClient.handle === null) {
-    if (!configObj.ProcessActive)
+    if (!Redundancy.ProcessStateIsActive())
       // do not connect MQTT while process not active
       return
 
@@ -1009,7 +705,7 @@ async function sparkplugProcess (
   } else {
     // MQTT client is already created
 
-    if (configObj.ProcessActive) {
+    if (Redundancy.ProcessStateIsActive()) {
       // test connection is established
 
       Log.log(

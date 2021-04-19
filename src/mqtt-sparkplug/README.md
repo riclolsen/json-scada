@@ -25,7 +25,7 @@ To create a new _MQTT-SPARKPLUG-B_ driver instance, use the Admin UI or insert a
 * _**activeNodeName**_ [String] - Name of the protocol driver that is currently active. This is updated by the drivers for redundancy control.**Optional**.
 * _**activeNodeKeepAliveTimeTag**_ [Date] - This is updated regularly  by the active driver. **Optional**.
 
-## Configure client connections to MQTT brokers
+## Configure client connection to MQTT broker
 
 Each instance for this driver can have just one connection defined that must be described in the _protocolConnections_ collection.
 
@@ -69,7 +69,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (publishing messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**autoCreateTags**_ [Boolean] - Enables automatic creation of all discovered tags. **Mandatory parameter**.
-* _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. **Mandatory parameter**.
+* _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. **Mandatory parameter**.
 * _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. **Mandatory parameter**.
 * _**groupId**_ [String] - Group Id for publishing. **Mandatory parameter**.
 * _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.

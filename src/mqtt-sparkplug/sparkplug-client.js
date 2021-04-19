@@ -25,13 +25,23 @@ var mqtt = require('mqtt'),
     sparkplugbpayload = sparkplug.get("spBv1.0"),
     events = require('events'),
     util = require("util"),
-    pako = require('pako'),
-    logger = require('winston');
+    pako = require('pako');
 
 var compressed = "SPBV1.0_COMPRESSED";
 
-const console = new logger.transports.Console();
-logger.add(console)
+const {transports, createLogger, format} = require('winston');
+const logger = createLogger({
+    format: format.combine(
+        //format.json(),
+        format.printf(info => `${new Date().toISOString()} - SparkplugClientLib - ${info.message}`),
+    ),
+    transports: [
+        new transports.Console(),
+        //new transports.File({filename: 'logs/error/error.log', level: 'error'}),
+        //new transports.File({filename: 'logs/activity/activity.log', level:'info'})
+    ]
+});
+
 logger.level = 'warn';
 
 var getRequiredProperty = function(config, propName) {
@@ -321,7 +331,7 @@ function SparkplugClient(config) {
     // Publishes SCADA HOST BIRTH certificates
     this.publishScadaHostBirth = function() {
  
-        if (scadaHostId === ""){
+        if (scadaHostId.trim() === ""){
             logger.info("Can not publish SCADA Host Birth as scadaHostId is not defined.");
             return;
         }
