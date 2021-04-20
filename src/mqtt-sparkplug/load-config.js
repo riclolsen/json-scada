@@ -63,8 +63,6 @@ function LoadConfig () {
     configObj.ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
     configObj.ProtocolConnectionsCollectionName = 'protocolConnections'
     configObj.GroupSep = '~'
-    // configObj.ProcessActive = false // for redundancy control
-    // configObj.AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
     configObj.ConnectionNumber = 0
   
     Log.log('Config - ' + AppDefs.MSG + ' Version ' + AppDefs.VERSION)

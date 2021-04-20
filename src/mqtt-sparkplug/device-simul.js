@@ -108,17 +108,17 @@
          return {
              "timestamp" : new Date().getTime(),
              "metrics" : [
-                 { "name" : "my_boolean", "value" : Math.random() > 0.5, "type" : "boolean" },
-                 { "name" : "my_double", "value" : Math.random() * 0.123456789, "type" : "double" },
-                 { "name" : "my_float", "value" : Math.random() * 0.123, "type" : "float" },
-                 { "name" : "my_int", "value" : randomInt(), "type" : "int" },
-                 { "name" : "my_long", "value" : randomInt() * 214748364700, "type" : "long" },
-                 { "name" : "Inputs/0", "value" :  true, "type" : "boolean" },
-                 { "name" : "Inputs/1", "value" :  0, "type" : "int" },
-                 { "name" : "Inputs/2", "value" :  1.23, "type" : "float" },
-                 { "name" : "Outputs/0", "value" :  true, "type" : "boolean" },
-                 { "name" : "Outputs/1", "value" :  0, "type" : "int" },
-                 { "name" : "Outputs/2", "value" :  1.23, "type" : "float" },
+                 { "name" : "my_boolean", "value" : true, "type" : "boolean", "alias": 1 },
+                 { "name" : "my_double", "value" : 1234567890.123456789, "type" : "double", "alias": 2 },
+                 { "name" : "my_float", "value" : 12345.123456789, "type" : "float", "alias": 3 },
+                 { "name" : "my_int", "value" : 1234567890, "type" : "int", "alias": 4 },
+                 { "name" : "my_long", "value" : 123456789012345, "type" : "long","alias": 5 },
+                 { "name" : "Inputs/0", "value" :  true, "type" : "boolean", "alias": 6 },
+                 { "name" : "Inputs/1", "value" :  0, "type" : "int", "alias": 7 },
+                 { "name" : "Inputs/2", "value" :  1.23, "type" : "float", "alias": 8 },
+                 { "name" : "Outputs/0", "value" :  true, "type" : "boolean", "alias": 9 },
+                 { "name" : "Outputs/1", "value" :  0, "type" : "int", "alias": 10 },
+                 { "name" : "Outputs/2", "value" :  1.23, "type" : "float", "alias": 11 },
                  { "name" : "Properties/hw_version", "value" :  hwVersion, "type" : "string" },
                  { "name" : "Properties/sw_version", "value" :  swVersion, "type" : "string" },
                  { 
@@ -162,11 +162,11 @@
          return {
              "timestamp" : new Date().getTime(),
              "metrics" : [
-                 { "name" : "my_boolean", "value" : Math.random() > 0.5, "type" : "boolean" },
-                 { "name" : "my_double", "value" : Math.random() * 0.123456789, "type" : "double" },
-                 { "name" : "my_float", "value" : Math.random() * 0.123, "type" : "float" },
-                 { "name" : "my_int", "value" : randomInt(), "type" : "int" },
-                 { "name" : "my_long", "value" : randomInt() * 214748364700, "type" : "long" }
+                 { /*"name" : "my_boolean",*/ "alias": 1, "value" : Math.random() > 0.5, "type" : "boolean" },
+                 { /*"name" : "my_double",*/ "alias": 2, "value" : Math.random() * 0.123456789, "type" : "double" },
+                 { /*"name" : "my_float",*/ "alias": 3, "value" : Math.random() * 0.123, "type" : "float" },
+                 { /*"name" : "my_int",*/ "alias": 4, "value" : randomInt(), "type" : "int" },
+                 { /*"name" : "my_long",*/ "alias": 5, "value" : randomInt() * 214748364700, "type" : "long" }
              ]
          };
      },
@@ -264,7 +264,7 @@
                  sparkplugClient.publishDeviceData(deviceId, getDataPayload());
                  
                  // End the client connection after the last publish
-                 if (i === 100) {
+                 if (i === 5000) {
                      sparkplugClient.stop();
                  }
              }, i*publishPeriod);

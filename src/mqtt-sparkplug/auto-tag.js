@@ -18,6 +18,7 @@
  */
 
 const Mongo = require('mongodb')
+const Log = require('./simple-logger')
 
 let AutoKeyId = 0
 let AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
@@ -54,7 +55,7 @@ function NewTag () {
     commandBlocked: false,
     commandOfSupervised: new Mongo.Double(0.0),
     commissioningRemarks: '',
-    formula: new mongo.Double(0.0),
+    formula: new Mongo.Double(0.0),
     frozen: false,
     frozenDetectTimeout: new Mongo.Double(0.0),
     hiLimit: new Mongo.Double(Number.MAX_VALUE),
@@ -93,22 +94,22 @@ function NewTag () {
 
 // find biggest point key (_id) on range and adjust automatic key
 async function GetAutoKeyInitialValue (rtCollection, configObj) {
-  let autoKeyId = configObj.ConnectionNumber * configObj.AutoKeyMultiplier
+  AutoKeyId = configObj.ConnectionNumber * AutoKeyMultiplier
   let resLastKey = await rtCollection
     .find({
       _id: {
-        $gt: autoKeyId,
-        $lt: (configObj.ConnectionNumber + 1) * configObj.AutoKeyMultiplier
+        $gt: AutoKeyId,
+        $lt: (configObj.ConnectionNumber + 1) * AutoKeyMultiplier
       }
     })
     .sort({ _id: -1 })
     .limit(1)
     .toArray()
   if (resLastKey.length > 0 && '_id' in resLastKey[0]) {
-    if (parseInt(resLastKey[0]._id) >= autoKeyId)
-      autoKeyId = parseInt(resLastKey[0]._id)
+    if (parseInt(resLastKey[0]._id) >= AutoKeyId)
+      AutoKeyId = parseInt(resLastKey[0]._id)
   }
-  return autoKeyId
+  return AutoKeyId
 }
 
 let ListCreatedTags = []
@@ -118,7 +119,7 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
     // possibly not created tag, must check
     let res = await rtDataCollection
       .find({
-        protocolSourceConnectionNumber: ConnectionNumber,
+        protocolSourceConnectionNumber: connectionNumber,
         protocolSourceObjectAddress: data.tag
       })
       .toArray()
@@ -131,13 +132,13 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       )
       let newTag = NewTag(data)
       newTag.protocolSourceConnectionNumber = new Mongo.Double(
-        jsConfig.ConnectionNumber
+        connectionNumber
       )
       newTag.protocolSourceObjectAddress = data.tag
       newTag.tag = data.tag
-      newTag.description = measurement?.description
-      newTag.ungroupedDescription = measurement?.ungroupedDescription
-      newTag.group1 = measurement?.group1
+      newTag.description = data?.description
+      newTag.ungroupedDescription = data?.ungroupedDescription
+      newTag.group1 = data?.group1
       newTag.group2 = data?.group2
       newTag.group3 = data?.group3
       newTag.type =
@@ -145,12 +146,14 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
           ? 'analog'
           : 'string'
       newTag.value = new Mongo.Double(data.value)
-      newTag.valueString = data.value.toString()
-      newTa.invalid = data?.invalidAtSource ? true : false
-      newTag.timeTagAtSource = data.timeTagAtSource
-      newTag.commissioningRemarks = 'Auto created by Sparkplug B driver.'
+      newTag.valueString = data?.valueString
+      newTag.valueJson = data?.valueJson
+      newTag.transient = data?.transient === true
+      newTag.invalid = data?.invalidAtSource === false ? false : true
+      newTag.timeTagAtSource = data?.timeTagAtSource
+      newTag.commissioningRemarks = data?.commissioningRemarks 
 
-      let resIns = await rtData.insertOne(newTag)
+      let resIns = await rtDataCollection.insertOne(newTag)
       if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
     } else {
       // found (already exists, no need to create), just list as created

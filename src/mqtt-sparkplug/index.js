@@ -19,6 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+const ProtoBuf = require('protobufjs')
 const SparkplugClient = require('./sparkplug-client')
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -30,6 +31,8 @@ const AppDefs = require('./app-defs')
 const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
+
+const SparkplugNS = 'spBv1.0'
 
 const ValuesQueue = new Queue() // queue of values to update acquisition
 let AutoCreateTags = true
@@ -136,7 +139,10 @@ let AutoCreateTags = true
           AutoCreateTags = connection.autoCreateTags ? true : false
         }
 
-        let autoKeyId = await AutoTag.GetAutoKeyInitialValue(collection, jsConfig)
+        let autoKeyId = await AutoTag.GetAutoKeyInitialValue(
+          collection,
+          jsConfig
+        )
         Log.log('Auto Key - Initial value: ' + autoKeyId)
 
         Redundancy.Start(5000, clientMongo, db, jsConfig)
@@ -287,9 +293,9 @@ async function getDeviceBirthPayload (rtCollection) {
         timestampQualityGood = element.timeTagAtSourceOk
     }
     //else if ("timeTag" in element && element.timeTag !== null){
-    //  timestamp = new Date(element.timeTag).getTime()
+    //  timestamp = (new Date(element.timeTag)).getTime()
     //} else {
-    //  timestamp = new Date().getTime()
+    //  timestamp = (new Date()).getTime()
     //}
 
     let metric = {
@@ -301,11 +307,14 @@ async function getDeviceBirthPayload (rtCollection) {
 
       properties: {
         description: { type: 'string', value: element.description },
-        qualityGood: { type: 'boolean', value: element.invalid ? false : true },
+        qualityIsGood: {
+          type: 'boolean',
+          value: element.invalid ? false : true
+        },
         ...(timestamp === false
           ? {}
           : {
-              timestampQualityGood: {
+              timestampQualityIsGood: {
                 type: 'boolean',
                 value: timestampQualityGood
               }
@@ -358,9 +367,9 @@ function getMetricPayload (element) {
     timestampQualityGood = element.timeTagAtSourceOk
   }
   //else if ("timeTag" in element && element.timeTag !== null){
-  //  timestamp = new Date(element.timeTag).getTime()
+  //  timestamp = (new Date(element.timeTag)).getTime()
   //} else {
-  //  timestamp = new Date().getTime()
+  //  timestamp = (new Date()).getTime()
   //}
 
   return {
@@ -452,17 +461,19 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
       // const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
       // check tag is created, if not found create it
-      if (AutoCreateTags){
-         await AutoTag.AutoCreateTag(data, jsConfig.ConnectionNumber, collection)
+      if (AutoCreateTags) {
+        await AutoTag.AutoCreateTag(data, jsConfig.ConnectionNumber, collection)
       }
 
       // now update tag
 
       // try to parse value as JSON
       let valueJson = null
-      try {
-        valueJson = JSON.parse(data.value)
-      } catch (e) {}
+      if (!'valueJson' in data) {
+        try {
+          valueJson = JSON.parse(data.value)
+        } catch (e) {}
+      }
 
       Log.log(
         'Data Update - ' +
@@ -476,7 +487,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
 
       let updTag = {
         valueAtSource: parseFloat(data.value),
-        valueStringAtSource: data.value.toString(),
+        valueStringAtSource: data.valueString,
         valueJsonAtSource: valueJson,
         asduAtSource: '',
         causeOfTransmissionAtSource: '3',
@@ -549,11 +560,13 @@ function getSparkplugConfig (connection) {
     groupId: connection.groupId,
     edgeNode: connection.edgeNodeId,
     clientId: 'JSON-SCADA',
-    version: 'spBv1.0',
+    version: SparkplugNS,
     scadaHostId: connection.scadaHostId, // only if a primary application
     ...secOpts
   }
 }
+
+let DevicesList = []
 
 // manage Sparkplug B Client connection, subscriptions, messages, events
 async function sparkplugProcess (
@@ -599,7 +612,7 @@ async function sparkplugProcess (
         !('topics' in jscadaConnection) ||
         jscadaConnection.topics.length === 0
       ) {
-        jscadaConnection.topics = ['spBv1.0/#']
+        jscadaConnection.topics = [SparkplugNS + '/#']
       }
 
       if (
@@ -695,9 +708,132 @@ async function sparkplugProcess (
       // process MQTT messages
       spClient.handle.on('message', function (topic, payload, topicInfo) {
         Log.log(logMod + 'Event: message')
-        Log.log(logMod + topic)
+        Log.log(logMod + 'Topic: ' + topic)
         // Log.log(topicInfo);
-        Log.log(logMod + payload)
+        Log.log(logMod + JSON.stringify(payload))
+
+        // sparkplug-b message?
+        if (topic.indexOf(SparkplugNS + '/') === 0) {
+          let splTopic = topic.split('/')
+
+          let deviceLocator =
+            splTopic[1] + '/' + splTopic[3] + '/' + splTopic[4]
+
+          if (splTopic[2] === 'NBIRTH') {
+            Log.log(logMod + 'Node BIRTH')
+          } else if (splTopic[2] === 'DBIRTH') {
+            Log.log(logMod + 'Device BIRTH: ' + deviceLocator)
+
+            payload.metrics.map(metric => {
+              if (metric?.is_historical === true) return metric
+
+              let value = null
+              let valueString = ''
+              let valueJson = {}
+              let type = 'digital'
+              let invalid = true
+              let timestamp
+              let timestampQualityGood = true
+              if ('timestamp' in metric) {
+                timestamp = metric.timestamp
+              } else {
+                timestamp = new Date().getTime()
+                timestampQualityGood = false
+              }
+
+              if (metric?.is_transient === true) transient = true
+
+              if (metric?.is_null === true) {
+                value = 0
+                valueString = 'null'
+              } else {
+                switch (metric.type.toLowerCase()) {
+                  case 'dataset':
+                    value = 0
+                    valueJson = metric.value
+                    valueString = JSON.stringify(metric.value)
+                    return metric
+                  case 'boolean':
+                    value = metric.value === false ? 0 : true
+                    valueString = metric.value.toString()
+                    type = 'digital'
+                    break
+                  case 'string':
+                    value = parseFloat(metric.value)
+                    if (isNaN(value)) value = 0
+                    valueString = metric.value
+                    type = 'string'
+                    break
+                  case 'int32':
+                  case 'uint32':
+                  case 'float':
+                  case 'double':
+                    value = metric.value
+                    valueString = value.toString()
+                    type = 'analog'
+                    break
+                  case 'int64':
+                  case 'uint64':
+                    value =
+                      (metric.value.low >>> 0) +
+                      (metric.value.high >>> 0) * Math.pow(2, 32)
+                    valueString = value.toString()
+                    type = 'analog'
+                    break
+                }
+              }
+
+              let description = ''
+              let ungroupedDescription = ''
+              if ('metadata' in metric) {
+                if ('description' in metric.metadata) {
+                  description = metric.metadata.description
+                }
+              }
+              if ('properties' in metric) {
+                if ('qualityIsGood' in metric.properties) {
+                  invalid = !metric.properties.qualityIsGood.value
+                }
+                if ('timestampQualityIsGood' in metric.properties) {
+                  timestampQualityGood = !metric.properties
+                    .timestampQualityIsGood.value
+                }
+                if ('description' in metric.properties) {
+                  description = metric.properties.description.value
+                }
+                if ('ungroupedDescription' in metric.properties) {
+                  ungroupedDescription =
+                    metric.properties.ungroupedDescription.value
+                }
+              }
+
+              ValuesQueue.enqueue({
+                tag: deviceLocator + '/' + metric.name,
+                type: type,
+                value: value,
+                valueString: valueString,
+                valueJson: valueJson,
+                description: metric?.metadata?.description,
+                invalid: invalid,
+                transient: metric?.is_transient === true,
+                description: description,
+                ungroupedDescription: ungroupedDescription,
+                group1: metric?.properties?.group1?.value,
+                group2: metric?.properties?.group2?.value,
+                group3: metric?.properties?.group3?.value,
+                commissioningRemarks: 'Auto created by Sparkplug B driver.',
+                timeTagAtSource: timestamp,
+                timeTagAtSourceOk: timestampQualityGood
+              })
+              return metric
+            })
+
+            DevicesList[deviceLocator] = {
+              birth: true,
+              metrics: payload.metrics
+            }
+          }
+        }
       })
     } catch (e) {
       Log.log(logMod + 'Error: ' + e.message, Log.levelMin)
