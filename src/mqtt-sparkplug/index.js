@@ -34,6 +34,9 @@ const AutoTag = require('./auto-tag')
 
 const SparkplugNS = 'spBv1.0'
 
+const DevicesList = []
+const MapAliasToObjectAddress = []
+
 const ValuesQueue = new Queue() // queue of values to update acquisition
 let AutoCreateTags = true
 
@@ -105,7 +108,6 @@ let AutoCreateTags = true
 
   Log.log('MongoDB - Connecting to MongoDB server...', Log.levelMin)
 
-  let redundancyIntervalHandle = null
   while (true) {
     // repeat every 5 seconds
 
@@ -234,7 +236,7 @@ async function getDeviceBirthPayload (rtCollection) {
     .find(
       {
         // protocolSourceConnectionNumber: ConnectionNumber,
-        // protocolSourceObjectAddress: data.tag
+        // protocolSourceObjectAddress: data.protocolSourceObjectAddress
         origin: { $ne: 'command' },
         _id: { $gt: 0 }
       },
@@ -258,7 +260,7 @@ async function getDeviceBirthPayload (rtCollection) {
     .toArray()
 
   let metrics = []
-  res.map(function (element) {
+  res.forEach(element => {
     if (element.origin === 'command' || element._id < 1) {
       return
     }
@@ -324,7 +326,7 @@ async function getDeviceBirthPayload (rtCollection) {
     metrics.push(metric)
     // Log.log(element)
     // Log.log(ret)
-    return element
+    return
   })
 
   return {
@@ -467,19 +469,11 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
 
       // now update tag
 
-      // try to parse value as JSON
-      let valueJson = null
-      if (!'valueJson' in data) {
-        try {
-          valueJson = JSON.parse(data.value)
-        } catch (e) {}
-      }
-
       Log.log(
         'Data Update - ' +
           data.timeTagAtSource +
           ' : ' +
-          data.tag +
+          data.protocolSourceObjectAddress +
           ' : ' +
           data.value,
         Log.levelDetailed
@@ -488,15 +482,16 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
       let updTag = {
         valueAtSource: parseFloat(data.value),
         valueStringAtSource: data.valueString,
-        valueJsonAtSource: valueJson,
-        asduAtSource: '',
-        causeOfTransmissionAtSource: '3',
+        valueJsonAtSource: data?.valueJson,
+        asduAtSource: data?.asduAtSource,
+        causeOfTransmissionAtSource: data?.causeOfTransmissionAtSource,
         timeTagAtSource: data.timeTagAtSource,
-        timeTagAtSourceOk: false, // signal that it is not really from field time
+        timeTagAtSourceOk: data.timeTagAtSourceOk, 
         timeTag: new Date(),
         originator: AppDefs.NAME + '|' + jsConfig.ConnectionNumber,
+        invalidAtSource: data.invalid,
+        transientAtSource: data.transient,
         notTopicalAtSource: false,
-        invalidAtSource: data.invalidAtSource,
         overflowAtSource: false,
         blockedAtSource: false,
         substitutedAtSource: false
@@ -504,7 +499,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
       collection.updateOne(
         {
           protocolSourceConnectionNumber: jsConfig.ConnectionNumber,
-          protocolSourceObjectAddress: data.tag
+          protocolSourceObjectAddress: data.protocolSourceObjectAddress
         },
         { $set: { sourceDataUpdate: updTag } }
       )
@@ -565,8 +560,6 @@ function getSparkplugConfig (connection) {
     ...secOpts
   }
 }
-
-let DevicesList = []
 
 // manage Sparkplug B Client connection, subscriptions, messages, events
 async function sparkplugProcess (
@@ -719,119 +712,30 @@ async function sparkplugProcess (
           let deviceLocator =
             splTopic[1] + '/' + splTopic[3] + '/' + splTopic[4]
 
-          if (splTopic[2] === 'NBIRTH') {
-            Log.log(logMod + 'Node BIRTH')
-          } else if (splTopic[2] === 'DBIRTH') {
-            Log.log(logMod + 'Device BIRTH: ' + deviceLocator)
-
-            payload.metrics.map(metric => {
-              if (metric?.is_historical === true) return metric
-
-              let value = null
-              let valueString = ''
-              let valueJson = {}
-              let type = 'digital'
-              let invalid = true
-              let timestamp
-              let timestampQualityGood = true
-              if ('timestamp' in metric) {
-                timestamp = metric.timestamp
-              } else {
-                timestamp = new Date().getTime()
-                timestampQualityGood = false
-              }
-
-              if (metric?.is_transient === true) transient = true
-
-              if (metric?.is_null === true) {
-                value = 0
-                valueString = 'null'
-              } else {
-                switch (metric.type.toLowerCase()) {
-                  case 'dataset':
-                    value = 0
-                    valueJson = metric.value
-                    valueString = JSON.stringify(metric.value)
-                    return metric
-                  case 'boolean':
-                    value = metric.value === false ? 0 : true
-                    valueString = metric.value.toString()
-                    type = 'digital'
-                    break
-                  case 'string':
-                    value = parseFloat(metric.value)
-                    if (isNaN(value)) value = 0
-                    valueString = metric.value
-                    type = 'string'
-                    break
-                  case 'int32':
-                  case 'uint32':
-                  case 'float':
-                  case 'double':
-                    value = metric.value
-                    valueString = value.toString()
-                    type = 'analog'
-                    break
-                  case 'int64':
-                  case 'uint64':
-                    value =
-                      (metric.value.low >>> 0) +
-                      (metric.value.high >>> 0) * Math.pow(2, 32)
-                    valueString = value.toString()
-                    type = 'analog'
-                    break
-                }
-              }
-
-              let description = ''
-              let ungroupedDescription = ''
-              if ('metadata' in metric) {
-                if ('description' in metric.metadata) {
-                  description = metric.metadata.description
-                }
-              }
-              if ('properties' in metric) {
-                if ('qualityIsGood' in metric.properties) {
-                  invalid = !metric.properties.qualityIsGood.value
-                }
-                if ('timestampQualityIsGood' in metric.properties) {
-                  timestampQualityGood = !metric.properties
-                    .timestampQualityIsGood.value
-                }
-                if ('description' in metric.properties) {
-                  description = metric.properties.description.value
-                }
-                if ('ungroupedDescription' in metric.properties) {
-                  ungroupedDescription =
-                    metric.properties.ungroupedDescription.value
-                }
-              }
-
-              ValuesQueue.enqueue({
-                tag: deviceLocator + '/' + metric.name,
-                type: type,
-                value: value,
-                valueString: valueString,
-                valueJson: valueJson,
-                description: metric?.metadata?.description,
-                invalid: invalid,
-                transient: metric?.is_transient === true,
-                description: description,
-                ungroupedDescription: ungroupedDescription,
-                group1: metric?.properties?.group1?.value,
-                group2: metric?.properties?.group2?.value,
-                group3: metric?.properties?.group3?.value,
-                commissioningRemarks: 'Auto created by Sparkplug B driver.',
-                timeTagAtSource: timestamp,
-                timeTagAtSourceOk: timestampQualityGood
-              })
-              return metric
-            })
-
-            DevicesList[deviceLocator] = {
-              birth: true,
-              metrics: payload.metrics
-            }
+          switch (splTopic[2]) {
+            case 'DDATA':
+              Log.log(
+                logMod + 'Device DATA: ' + deviceLocator,
+                Log.levelDetailed
+              )
+              ProcessDeviceBirthOrData(deviceLocator, payload, false)
+              break
+            case 'NBIRTH':
+              Log.log(logMod + 'Node BIRTH', Log.levelDetailed)
+              break
+            case 'DBIRTH':
+              Log.log(
+                logMod + 'Device BIRTH: ' + deviceLocator,
+                Log.levelDetailed
+              )
+              ProcessDeviceBirthOrData(deviceLocator, payload, true)
+              break
+            case 'DDEATH':
+              Log.log(logMod + 'Device DEATH', Log.levelDetailed)
+              break
+            case 'NDEATH':
+              Log.log(logMod + 'Node DEATH', Log.levelDetailed)
+              break
           }
         }
       })
@@ -862,4 +766,165 @@ async function sparkplugProcess (
   }
 
   return
+}
+
+function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
+  if (!'metrics' in payload) return
+  payload.metrics.forEach(metric => {
+    if (metric?.is_historical === true) return
+
+    let objectAddress = null
+
+    if ('name' in metric && metric.name.trim() !== '')
+      objectAddress = deviceLocator + '/' + metric.name
+    else if ('alias' in metric) {
+      let alias =
+        (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
+      objectAddress = MapAliasToObjectAddress[alias.toString()]
+      if (!objectAddress) {
+        // alias not mapped
+        Log.log(
+          'Sparkplug - Unmapped metric alias: ' + alias,
+          Log.levelDetailed
+        )
+        return
+      }
+    } else {
+      Log.log(
+        'Sparkplug - Invalid metric (missing name and alias)!',
+        Log.levelDetailed
+      )
+      return
+    }
+
+    let value = null
+    let valueString = ''
+    let valueJson = {}
+    let type = 'digital'
+    let invalid = true
+    let timestamp
+    let timestampQualityGood = true
+    if ('timestamp' in metric) {
+      timestamp = metric.timestamp
+    } else {
+      timestamp = new Date().getTime()
+      timestampQualityGood = false
+    }
+
+    if (metric?.is_transient === true) transient = true
+
+    if (metric?.is_null === true) {
+      value = 0
+      valueString = 'null'
+    } else {
+      switch (metric.type.toLowerCase()) {
+        case 'template':
+          return
+        case 'dataset':
+          value = 0
+          valueJson = metric.value
+          valueString = JSON.stringify(metric.value)
+          return
+        case 'boolean':
+          value = metric.value === false ? 0 : 1
+          valueString = metric.value.toString()
+          valueJson = metric
+          type = 'digital'
+          break
+        case 'string':
+          value = parseFloat(metric.value)
+          if (isNaN(value)) value = 0
+          valueString = metric.value
+          valueJson = metric
+          // try to parse value as JSON
+          try {
+            valueJson = JSON.parse(metric.value)
+          } catch (e) {}
+          type = 'string'
+          break
+        case 'int32':
+        case 'uint32':
+        case 'float':
+        case 'double':
+          value = metric.value
+          valueString = value.toString()
+          valueJson = metric
+          type = 'analog'
+          break
+        case 'int64':
+        case 'uint64':
+          value =
+            (metric.value.low >>> 0) +
+            (metric.value.high >>> 0) * Math.pow(2, 32)
+          valueString = value.toString()
+          valueJson = metric
+          type = 'analog'
+          break
+      }
+    }
+
+    if ('properties' in metric) {
+      if ('qualityIsGood' in metric.properties) {
+        invalid = !metric.properties.qualityIsGood.value
+      }
+      if ('timestampQualityIsGood' in metric.properties) {
+        timestampQualityGood = !metric.properties.timestampQualityIsGood.value
+      }
+    }
+
+    let catalogProperties = {}
+    if (isBirth) {
+      DevicesList[deviceLocator] = {
+        birth: true,
+        metrics: payload.metrics
+      }
+
+      // map alias to object address for later query
+      if ('alias' in metric) {
+        let alias =
+          (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
+        MapAliasToObjectAddress[alias.toString()] = objectAddress
+      }
+
+      let description = ''
+      let ungroupedDescription = ''
+      if ('metadata' in metric) {
+        if ('description' in metric.metadata) {
+          description = metric.metadata.description
+        }
+      }
+      if ('properties' in metric) {
+        if ('description' in metric.properties) {
+          description = metric.properties.description.value
+        }
+        if ('ungroupedDescription' in metric.properties) {
+          ungroupedDescription = metric.properties.ungroupedDescription.value
+        }
+      }
+
+      catalogProperties = {
+        type: type,
+        description: description,
+        ungroupedDescription: ungroupedDescription,
+        group1: metric?.properties?.group1?.value,
+        group2: metric?.properties?.group2?.value,
+        group3: metric?.properties?.group3?.value,
+        commissioningRemarks:
+          'Auto created by Sparkplug B driver - ' + new Date().toISOString()
+      }
+    }
+    ValuesQueue.enqueue({
+      protocolSourceObjectAddress: objectAddress,
+      value: value,
+      valueString: valueString,
+      valueJson: valueJson,
+      invalid: invalid,
+      transient: metric?.is_transient === true,
+      causeOfTransmissionAtSource: isBirth?'20':'3',
+      timeTagAtSource: new Date(timestamp),
+      timeTagAtSourceOk: timestampQualityGood,
+      asduAtSource: metric.type,
+      ...catalogProperties
+    })
+  })
 }

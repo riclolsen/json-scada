@@ -162,11 +162,11 @@
          return {
              "timestamp" : new Date().getTime(),
              "metrics" : [
-                 { /*"name" : "my_boolean",*/ "alias": 1, "value" : Math.random() > 0.5, "type" : "boolean" },
+                 { /*"name" : "my_boolean",*/ "alias": 1, "value" : Math.random() > 0.5, "type" : "boolean", "timestamp" : new Date().getTime() },
                  { /*"name" : "my_double",*/ "alias": 2, "value" : Math.random() * 0.123456789, "type" : "double" },
                  { /*"name" : "my_float",*/ "alias": 3, "value" : Math.random() * 0.123, "type" : "float" },
                  { /*"name" : "my_int",*/ "alias": 4, "value" : randomInt(), "type" : "int" },
-                 { /*"name" : "my_long",*/ "alias": 5, "value" : randomInt() * 214748364700, "type" : "long" }
+                 { /*"name" : "my_long",*/ "alias": 5, "value" : randomInt() * 214748364700, "type" : "long", "timestamp" : new Date().getTime() }
              ]
          };
      },

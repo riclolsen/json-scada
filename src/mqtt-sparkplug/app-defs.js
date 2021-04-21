@@ -20,6 +20,7 @@
 module.exports = {
 NAME: 'MQTT-SPARKPLUG-B',
 ENV_PREFIX: 'JS_MQTTSPB_',
+AUTOTAG_PREFIX: 'MQTT',
 MSG: '{json:scada} - MQTT-Sparkplug-B Client Driver',
 VERSION: '0.1.1',
 }

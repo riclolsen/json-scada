@@ -19,6 +19,7 @@
 
 const Mongo = require('mongodb')
 const Log = require('./simple-logger')
+const AppDefs = require('./app-defs')
 
 let AutoKeyId = 0
 let AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
@@ -115,36 +116,38 @@ async function GetAutoKeyInitialValue (rtCollection, configObj) {
 let ListCreatedTags = []
 
 async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
-  if (!ListCreatedTags.includes(data.tag)) {
+
+  let tag = AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber + ':' + data.protocolSourceObjectAddress
+
+  if (!ListCreatedTags.includes(tag)) {
     // possibly not created tag, must check
     let res = await rtDataCollection
       .find({
         protocolSourceConnectionNumber: connectionNumber,
-        protocolSourceObjectAddress: data.tag
+        protocolSourceObjectAddress: data.protocolSourceObjectAddress
       })
       .toArray()
 
     if ('length' in res && res.length === 0) {
       // not found, then create
       Log.log(
-        'Auto Key - Tag not found, will create: ' + data.tag,
+        'Auto Key - Tag not found, will create: ' + tag,
         Log.levelDetailed
       )
       let newTag = NewTag(data)
       newTag.protocolSourceConnectionNumber = new Mongo.Double(
         connectionNumber
       )
-      newTag.protocolSourceObjectAddress = data.tag
-      newTag.tag = data.tag
+
+      newTag.protocolSourceObjectAddress = data.protocolSourceObjectAddress
+      newTag.tag = tag
+      if ('type' in data)
+        newTag.type = data.type
       newTag.description = data?.description
       newTag.ungroupedDescription = data?.ungroupedDescription
       newTag.group1 = data?.group1
       newTag.group2 = data?.group2
       newTag.group3 = data?.group3
-      newTag.type =
-        typeof data.value === 'number' && !isNaN(parseFloat(data.value))
-          ? 'analog'
-          : 'string'
       newTag.value = new Mongo.Double(data.value)
       newTag.valueString = data?.valueString
       newTag.valueJson = data?.valueJson
@@ -154,10 +157,10 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.commissioningRemarks = data?.commissioningRemarks 
 
       let resIns = await rtDataCollection.insertOne(newTag)
-      if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
+      if (resIns.insertedCount === 1) ListCreatedTags.push(tag)
     } else {
       // found (already exists, no need to create), just list as created
-      ListCreatedTags.push(data.tag)
+      ListCreatedTags.push(tag)
     }
   }
 }
