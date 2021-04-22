@@ -38,6 +38,9 @@ const DevicesList = []
 const MapAliasToObjectAddress = []
 
 const ValuesQueue = new Queue() // queue of values to update acquisition
+const SparkplugPublishQueue = new Queue() // queue of values to publish as Sparkplug-B
+const MqttPublishQueue = new Queue() // queue of values to publish as standard MQTT topics
+let SparkplugDeviceBirthed = false
 let AutoCreateTags = true
 
 ;(async () => {
@@ -76,31 +79,85 @@ let AutoCreateTags = true
     }
   ]
 
-  const PublishQueue = new Queue() // queue of values to publish
-  const sparkplugClient = { handle: null } // points to sparkplug-client object
+  const SparkplugClientObj = { handle: null } // points to sparkplug-client object
   let collection = null
   let clientMongo = null
   let connection = null
 
+  // process sparkplug queue
   setInterval(async function () {
-    let cnt = 0,
-      metrics = []
-    if (clientMongo && collection)
-      while (!PublishQueue.isEmpty()) {
-        let data = PublishQueue.peek()
+    if (
+      SparkplugClientObj.handle &&
+      SparkplugClientObj.handle.connected &&
+      connection
+    ) {
+      let cnt = 0,
+        metrics = []
+      while (!SparkplugPublishQueue.isEmpty()) {
+        let data = SparkplugPublishQueue.peek()
+
+        // publish as normal topics
+        if (connection.publishTopicRoot && 'properties' in data) {
+          // publish value under root/group1/group2/group3/name
+          SparkplugClientObj.handle.client.publish(
+            data.properties.topic.value,
+            data.value.toString()
+          )
+          // publish under root/group1/tag: value(v), timestamp(t), quality(q)
+          SparkplugClientObj.handle.client.publish(
+            data.properties.topicAsTag.value + '/v',
+            data.value.toString(),
+            { retain: true }
+          )
+          if ('timestamp' in data)
+            SparkplugClientObj.handle.client.publish(
+              data.properties.topicAsTag.value + '/t',
+              data.timestamp.toString(),
+              { retain: true }
+            )
+          if ('qualityIsGood' in data.properties)
+            SparkplugClientObj.handle.client.publish(
+              data.properties.topicAsTag.value + '/q',
+              data.properties.qualityIsGood.value.toString(),
+              { retain: true }
+            )
+
+          // remove (static) properties to avoid publishing to sparkplug
+          delete data.properties.topic
+          delete data.properties.topicAsTag
+        }
+
+        // aggregate for sparkplug publishing
         metrics.push(data)
-        PublishQueue.dequeue()
+        SparkplugPublishQueue.dequeue()
         cnt++
       }
-    if (cnt) {
-      let payload = {
-        timestamp: new Date().getTime(),
-        metrics: metrics
+
+      // publish metrics as sparkplug b device data
+      if (cnt) {
+        let payload = {
+          timestamp: new Date().getTime(),
+          metrics: metrics
+        }
+        if (Log.logLevelCurrent >= Log.levelDetailed)
+          Log.log(JSON.stringify(payload), Log.levelDetailed)
+        SparkplugClientObj.handle.publishDeviceData(
+          connection.deviceId,
+          payload
+        )
+        Log.log('Sparkplug - Updates: ' + cnt, Log.levelNormal)
       }
-      // Log.log(JSON.stringify(payload))
-      Log.log('Sparkplug - Updates: ' + cnt, Log.levelNormal)
+    } else {
+      if (SparkplugPublishQueue.size() > AppDefs.MAX_QUEUEDMETRICS)
+        Log.log(
+          'Sparkplug - Publish queue exceeded limit, discarding updates...',
+          Log.levelDetailed
+        )
+      while (SparkplugPublishQueue.size() > AppDefs.MAX_QUEUEDMETRICS) {
+        SparkplugPublishQueue.dequeue()
+      }
     }
-  }, 1127)
+  }, AppDefs.SPARKPLUG_PUBLISH_INTERVAL)
 
   setInterval(async function () {
     processMongoUpdates(clientMongo, collection, jsConfig)
@@ -112,7 +169,12 @@ let AutoCreateTags = true
     // repeat every 5 seconds
 
     // manages MQTT connection
-    await sparkplugProcess(sparkplugClient, connection, jsConfig, clientMongo)
+    await sparkplugProcess(
+      SparkplugClientObj,
+      connection,
+      jsConfig,
+      clientMongo
+    )
 
     if (clientMongo === null)
       // if disconnected
@@ -172,8 +234,12 @@ let AutoCreateTags = true
 
           // start listen to changes
           changeStream.on('change', change => {
-            let data = getMetricPayload(change.fullDocument)
-            if (data !== null) PublishQueue.enqueue(data)
+            // do not queue data changes until device connected and birthed
+            if (!SparkplugDeviceBirthed || !SparkplugClientObj.handle.connected)
+              return
+
+            let data = getMetricPayload(change.fullDocument, connection)
+            if (data) SparkplugPublishQueue.enqueue(data)
           })
         } catch (e) {
           Log.log('MongoDB - Error: ' + e, Log.levelMin)
@@ -336,7 +402,7 @@ async function getDeviceBirthPayload (rtCollection) {
 }
 
 // Get data payload
-function getMetricPayload (element) {
+function getMetricPayload (element, jscadaConnection) {
   if (element.origin === 'command' || element._id < 1) {
     return null
   }
@@ -374,6 +440,39 @@ function getMetricPayload (element) {
   //  timestamp = (new Date()).getTime()
   //}
 
+  let topic = {}
+  let topicAsTag = {}
+  if (
+    'publishTopicRoot' in jscadaConnection &&
+    jscadaConnection.publishTopicRoot.trim() !== ''
+  ) {
+    let topicName = jscadaConnection.publishTopicRoot.trim() + '/'
+    if (element.group1.trim() !== '')
+      topicName += element.group1.trim().replace('/', '-') + '/'
+    if (element.group2.trim() !== '')
+      topicName += element.group2.trim().replace('/', '-') + '/'
+    if (element.ungroupedDescription.trim() !== '')
+      topicName += element.ungroupedDescription.trim().replace('/', '-')
+    // topicName += '/' + element.tag
+    topic = {
+      topic: {
+        type: 'string',
+        value: topicName
+      }
+    }
+
+    topicName = jscadaConnection.publishTopicRoot.trim() + '/'
+    if (element.group1.trim() !== '')
+      topicName += element.group1.trim().replace('/', '-') + '/'
+    topicName += element.tag
+    topicAsTag = {
+      topicAsTag: {
+        type: 'string',
+        value: topicName
+      }
+    }
+  }
+
   return {
     // name: element.tag,
     alias: element._id,
@@ -381,10 +480,20 @@ function getMetricPayload (element) {
     type: type,
     ...(timestamp === false ? {} : { timestamp: timestamp }),
     properties: {
-      qualityGood: element.invalid ? false : true,
+      qualityIsGood: {
+        type: 'boolean',
+        value: element.invalid ? false : true
+      },
+      ...topic,
+      ...topicAsTag,
       ...(timestamp === false
         ? {}
-        : { timestampQualityGood: timestampQualityGood })
+        : {
+            timestampQualityIsGood: {
+              type: 'boolean',
+              value: timestampQualityGood
+            }
+          })
     }
   }
 }
@@ -486,7 +595,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
         asduAtSource: data?.asduAtSource,
         causeOfTransmissionAtSource: data?.causeOfTransmissionAtSource,
         timeTagAtSource: data.timeTagAtSource,
-        timeTagAtSourceOk: data.timeTagAtSourceOk, 
+        timeTagAtSourceOk: data.timeTagAtSourceOk,
         timeTag: new Date(),
         originator: AppDefs.NAME + '|' + jsConfig.ConnectionNumber,
         invalidAtSource: data.invalid,
@@ -625,15 +734,20 @@ async function sparkplugProcess (
       })
 
       spClient.handle.on('close', function () {
+        SparkplugDeviceBirthed = false
         Log.log(logMod + 'Event: Connection Closed')
       })
 
       spClient.handle.on('offline', function () {
+        SparkplugDeviceBirthed = false
         Log.log(logMod + 'Event: Connection Offline...')
       })
 
       // Create 'birth' handler
       spClient.handle.on('birth', function () {
+        SparkplugPublishQueue.clear() // clear old data
+        MqttPublishQueue.clear() // clear old data
+
         // Publish SCADA HOST BIRTH certificate
         spClient.handle.publishScadaHostBirth()
         // Publish Node BIRTH certificate
@@ -644,6 +758,7 @@ async function sparkplugProcess (
           jscadaConnection.deviceId,
           sparkplugProcess.deviceBirthPayload
         )
+        SparkplugDeviceBirthed = true
       })
 
       spClient.handle.on('connect', function () {
@@ -920,7 +1035,7 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
       valueJson: valueJson,
       invalid: invalid,
       transient: metric?.is_transient === true,
-      causeOfTransmissionAtSource: isBirth?'20':'3',
+      causeOfTransmissionAtSource: isBirth ? '20' : '3',
       timeTagAtSource: new Date(timestamp),
       timeTagAtSourceOk: timestampQualityGood,
       asduAtSource: metric.type,

@@ -45,6 +45,7 @@ Each instance for this driver can have just one connection defined that must be 
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
         scadaHostId : "Primary Application",
+        publishTopicRoot: "EnterpriseName",
         username: "",
         password: "",
         useSecurity: false,
@@ -75,6 +76,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.
 * _**deviceId**_ [String] - Device Id for publishing. **Optional parameter**.
 * _**scadaHostId**_ [String] - Scada host Id for Primary Application STATE publishing. Leave empty if not a primary application. **Mandatory parameter**.
+* _**publishTopicRoot**_ [String] - Non-Sparkplug MQTT topic root for publishing tags. Leave empty to not publish tags as normal topics. **Mandatory parameter**.
 * _**username**_ [String] - The username for the MQTT broker connection. **Optional parameter**.
 * _**password**_ [String] - The password for the MQTT broker connection. **Optional parameter**.
 * _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.

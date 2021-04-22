@@ -141,6 +141,8 @@ function SparkplugClient(config) {
 
     // Logs a message alert to the console
     messageAlert = function(alert, topic, payload) {
+        if (logger.level !== 'debug')
+          return;
         logger.debug("Message " + alert);
         logger.debug(" topic: " + topic);
         logger.debug(" payload: " + JSON.stringify(payload));
@@ -283,13 +285,15 @@ function SparkplugClient(config) {
     };
 
     // Publishes device data
-    this.publishDeviceData = function(deviceId, payload, options) {
+    this.publishDeviceData = function(deviceId, payload, options, pubOptions) {
+        //if (!pubOptions)
+        //  pubOptions = {"qos" : 1, "retain": true};
         var topic = version + "/" + groupId + "/DDATA/" + edgeNode + "/" + deviceId;
         // Add seq number
         addSeqNumber(payload);
         // Publish
         logger.info("Publishing DDATA for device " + deviceId);
-        client.publish(topic, encodePayload(maybeCompressPayload(payload, options)));
+        client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), pubOptions);
         messageAlert("published", topic, payload);
     };
 
@@ -447,7 +451,7 @@ function SparkplugClient(config) {
         });
 
         /*
-         * 'reconnect' handler
+         * 'offline' handler
          */
         client.on("offline", function() {
             sparkplugClient.emit("offline");
