@@ -97,7 +97,7 @@ namespace Dnp3Driver
                                                             .Create(valueString)
                                                     },
                                                     {
-                                                        "valueJSONAtSource", iv.valueBSON                                                        
+                                                        "valueJsonAtSource", iv.valueBSON                                                        
                                                     },
                                                     {
                                                         "asduAtSource",

@@ -68,6 +68,7 @@ Example document.
         "sourceDataUpdate": {
             "valueAtSource": 2.9959075450897217,
             "valueStringAtSource": "2.9959075450897217",
+            "valueJsonAtSource": {},
             "asduAtSource": "M_ME_NC_1",
             "causeOfTransmissionAtSource": "3",
             "timeTagAtSource": null,
@@ -96,6 +97,7 @@ Example document.
         "updatesCnt": 86580,
         "valueDefault": 3.1,
         "valueString": "2.9959 MW",
+        "valueJson": {},
         "protocolDestinations": [
             {
             "protocolDestinationConnectionNumber": 1001,
@@ -181,7 +183,7 @@ Example document.
 * _**_transient_**_ [Boolean] - Flags a transient value. **Mandatory parameter**.
 * _**_frozen_**_ [Boolean] - When true, value is considered frozen (not changing). **Mandatory parameter**.
 * _**_value_**_ [Double] - Current value as a number. **Mandatory parameter**.
-* _**_valueJSON_**_ [Object] - Current value as JSON (future use). **Optional parameter**.
+* _**_valueJson_**_ [Object] - Current value as JSON (future use). **Optional parameter**.
 * _**_valueString_**_ [String] - Current value as a string. **Mandatory parameter**.
 * _**_timeTag_**_ [Date] - Last update time. **Mandatory parameter**.
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.
@@ -204,7 +206,7 @@ Example document.
 * _**_sourceDataUpdate.transientAtSource_**_ [Boolean] - Flags a transient value at source.
 * _**_sourceDataUpdate.valueAtSource_**_ [Double] - Current numeric value at source.
 * _**_sourceDataUpdate.valueStringAtSource_**_ [Double] - Current string value at source.
-* _**_sourceDataUpdate.valueJSONAtSource_**_ [Double] - Current JSON value at source.
+* _**_sourceDataUpdate.valueJsonAtSource_**_ [Double] - Current JSON value at source.
 * _**_sourceDataUpdate.timeTagAtSource_**_ [Date] - Source timestamp.
 * _**_sourceDataUpdate.timeTagAtSourceOk_**_ [Boolean] - Source timestamp ok.
 * _**_sourceDataUpdate.timeTag_**_ [Date] - Local update time.
