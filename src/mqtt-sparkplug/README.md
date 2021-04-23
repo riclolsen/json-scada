@@ -1,12 +1,20 @@
 # MQTT Sparkplug-B Driver
 
-This client driver connects to a MQTT Broker and subscribe to "spBv1.0/#" topic.
+This client driver connects to a MQTT Broker and can
+
+* Act as a Sparkplug Primary (or non-primary) SCADA host.
+* Subscribe to Sparkplug B devices.
+* Publish tags as a Sparkplug B device.
+* Subscribe to regular MQTT topics.
+* Publish tags as regular MQTT topics.
 
 ##  Configure a driver instance
 
 To create a new _MQTT-SPARKPLUG-B_ driver instance, use the Admin UI or insert a new document in the _protocolDriverInstances_ collection using a command like this:
 
-    use json_scada_db_name
+    // be sure to be in the right database, normally json_scada
+    // uncomment and adjust the next line as necessary
+    // use json_scada
     db.protocolDriverInstances.insert({
             protocolDriver: "MQTT-SPARKPLUG-B",
             protocolDriverInstanceNumber: 1,
@@ -29,7 +37,9 @@ To create a new _MQTT-SPARKPLUG-B_ driver instance, use the Admin UI or insert a
 
 Each instance for this driver can have just one connection defined that must be described in the _protocolConnections_ collection.
 
-    use json_scada_db_name
+    // be sure to be in the right database, normally json_scada
+    // uncomment and adjust the next line as necessary
+    // use json_scada
     db.protocolConnections.insert({
         protocolDriver: "MQTT-SPARKPLUG-B",
         protocolDriverInstanceNumber: 1,

@@ -48,6 +48,7 @@ function NewTag () {
     type: 'analog',
     value: new Mongo.Double(0),
     valueString: '',
+    valueJson: {},
     alarmDisabled: false,
     alerted: false,
     alarmed: false,
