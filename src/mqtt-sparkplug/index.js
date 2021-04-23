@@ -35,7 +35,6 @@ const AutoTag = require('./auto-tag')
 const SparkplugNS = 'spBv1.0'
 
 const DevicesList = []
-const MapAliasToObjectAddress = []
 
 const ValuesQueue = new Queue() // queue of values to update acquisition
 const SparkplugPublishQueue = new Queue() // queue of values to publish as Sparkplug-B
@@ -145,7 +144,7 @@ let AutoCreateTags = true
           connection.deviceId,
           payload
         )
-        Log.log('Sparkplug - Updates: ' + cnt, Log.levelNormal)
+        Log.log('Sparkplug - Publish updates: ' + cnt, Log.levelNormal)
       }
     } else {
       if (SparkplugPublishQueue.size() > AppDefs.MAX_QUEUEDMETRICS)
@@ -447,18 +446,20 @@ function getMetricPayload (element, jscadaConnection) {
     jscadaConnection.publishTopicRoot.trim() !== ''
   ) {
     let topicName = jscadaConnection.publishTopicRoot.trim() + '/'
-  
+
     if ('group1' in element && element.group1.trim() !== '')
-      topicName += element.group1.trim().replace('/', '-').replace('+', '-') + '/'
+      topicName += topicStr(element.group1) + '/'
     if ('group2' in element && element.group2.trim() !== '')
-      topicName += element.group2.trim().replace('/', '-').replace('+', '-') + '/'
+      topicName += topicStr(element.group2) + '/'
     if ('group3' in element && element.group3.trim() !== '')
-      topicName += element.group3.trim().replace('/', '-').replace('+', '-') + '/'
-    if ('ungroupedDescription' in element && element.ungroupedDescription.trim() !== '')
-      topicName += element.ungroupedDescription.trim().replace('/', '-')
-    else  
-      topicName += element.tag.trim().replace('/', '-').replace('+', '-')
-    // topicName += '/' + element.tag
+      topicName += topicStr(element.group3) + '/'
+    if (
+      'ungroupedDescription' in element &&
+      element.ungroupedDescription.trim() !== ''
+    )
+      topicName += topicStr(element.ungroupedDescription)
+    else
+      topicName += topicStr(element.tag)
     topic = {
       topic: {
         type: 'string',
@@ -468,8 +469,8 @@ function getMetricPayload (element, jscadaConnection) {
 
     topicName = jscadaConnection.publishTopicRoot.trim() + '/'
     if (element.group1.trim() !== '')
-      topicName += element.group1.trim().replace('/', '-').replace('+', '-') + '/'
-    topicName += element.tag.replace('/', '-').replace('+', '-')
+      topicName += topicStr(element.group1) + '/'
+    topicName += topicStr(element.tag)
     topicAsTag = {
       topicAsTag: {
         type: 'string',
@@ -903,8 +904,8 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
   payload.metrics.forEach(metric => {
     if (metric?.is_historical === true) return
 
-    let m = getMetricInfo(metric, deviceLocator, isBirth)
-
+    let m = queueMetric(metric, deviceLocator, isBirth)
+    /*
     if (!m) return
 
     ValuesQueue.enqueue({
@@ -920,11 +921,12 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
       asduAtSource: m.type,
       ...m.catalogProperties
     })
+    */
   })
 }
 
 // obtain information from sparkplug-b decoded payload
-function getMetricInfo (metric, deviceLocator, isBirth) {
+function queueMetric (metric, deviceLocator, isBirth, templateName) {
   let value = 0,
     valueString = '',
     valueJson = {},
@@ -936,12 +938,22 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
     catalogProperties = {},
     objectAddress = ''
 
-  if ('name' in metric && metric.name.trim() !== '')
-    objectAddress = deviceLocator + '/' + metric.name
-  else if ('alias' in metric) {
+    if (typeof queueMetric.MapAliasToObjectAddress === 'undefined')
+    queueMetric.MapAliasToObjectAddress = []
+
+    if ('name' in metric && metric.name.trim() !== '') {
+    if (templateName && templateName.trim() !== '')
+      objectAddress =
+        deviceLocator +
+        '/' +
+        topicStr(templateName) +
+        '/' +
+        metric.name
+    else objectAddress = deviceLocator + '/' + topicStr(metric.name)
+  } else if ('alias' in metric) {
     let alias =
       (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
-    objectAddress = MapAliasToObjectAddress[alias.toString()]
+    objectAddress = queueMetric.MapAliasToObjectAddress[alias.toString()]
     if (!objectAddress) {
       // alias not mapped
       Log.log('Sparkplug - Unmapped metric alias: ' + alias, Log.levelDetailed)
@@ -969,15 +981,46 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
       case 'template':
         type = 'json'
         if ('value' in metric) {
-          valueJson = metric.value
-          valueString = JSON.stringify(metric.value)
+          console.log(JSON.stringify(metric))
+          // recurse to publish more metrics
+          if ('metrics' in metric.value) {
+            metric.value.metrics.forEach(m => {
+              queueMetric(m, deviceLocator, isBirth, metric.name)
+            })
+          } else {
+            valueJson = metric.value
+            valueString = JSON.stringify(metric.value)
+          }
         }
         break
       case 'dataset':
+        // transform data set in a simpler array of objects with named properties
         type = 'json'
         if ('value' in metric) {
-          valueJson = metric.value
-          valueString = JSON.stringify(metric.value)
+          if ('numOfColumns' in metric.value) {
+            let v = []
+            for (let j = 0; j < metric.value.rows.length; j++) {
+              let r = {}
+              for (let i = 0; i < metric.value.numOfColumns; i++) {
+                let mv = metric.value.rows[j][i]
+                switch (metric.value.types[i].toLowerCase()) {
+                  case 'int64':
+                  case 'uint64':
+                    mv = (mv.low >>> 0) + (mv.high >>> 0) * Math.pow(2, 32)
+                    break
+                  default:
+                    break
+                }
+                r[metric.value.columns[i]] = mv
+              }
+              v.push(r)
+            }
+            valueJson = v
+            valueString = JSON.stringify(v)
+          } else {
+            valueJson = metric.value
+            valueString = JSON.stringify(metric.value)
+          }
         }
         break
       case 'boolean':
@@ -1041,7 +1084,7 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
     if ('alias' in metric) {
       let alias =
         (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
-      MapAliasToObjectAddress[alias.toString()] = objectAddress
+        queueMetric.MapAliasToObjectAddress[alias.toString()] = objectAddress
     }
 
     if ('metadata' in metric && 'description' in metric.metadata)
@@ -1061,6 +1104,21 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
       'Auto created by Sparkplug B driver - ' + new Date().toISOString()
   }
 
+  ValuesQueue.enqueue({
+    protocolSourceObjectAddress: objectAddress,
+    value: value,
+    valueString: valueString,
+    valueJson: valueJson,
+    invalid: invalid,
+    transient: transient,
+    causeOfTransmissionAtSource: isBirth ? '20' : '3',
+    timeTagAtSource: new Date(timestamp),
+    timeTagAtSourceOk: timestampQualityGood,
+    asduAtSource: type,
+    ...catalogProperties
+  })
+
+  /*
   return {
     objectAddress: objectAddress,
     value: value,
@@ -1073,4 +1131,16 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
     timestampQualityGood: timestampQualityGood,
     catalogProperties: catalogProperties
   }
+  */
+}
+
+// replace invalid topic name chars
+function topicStr (s) {
+  if (typeof s === 'string')
+    return s
+      .trim()
+      .replace('/', '-')
+      .replace('+', '-')
+      .replace('#', '-')
+  return ''
 }
