@@ -967,24 +967,27 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
   } else
     switch (metric.type.toLowerCase()) {
       case 'template':
+        type = 'json'
         if ('value' in metric) {
           valueJson = metric.value
           valueString = JSON.stringify(metric.value)
         }
-        return
+        break
       case 'dataset':
+        type = 'json'
         if ('value' in metric) {
           valueJson = metric.value
           valueString = JSON.stringify(metric.value)
         }
-        return
+        break
       case 'boolean':
+        type = 'digital'
         value = metric.value === false ? 0 : 1
         valueString = metric.value.toString()
         valueJson = metric
-        type = 'digital'
         break
       case 'string':
+        type = 'string'
         value = parseFloat(metric.value)
         if (isNaN(value)) value = 0
         valueString = metric.value
@@ -993,24 +996,23 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
         try {
           valueJson = JSON.parse(metric.value)
         } catch (e) {}
-        type = 'string'
         break
       case 'int32':
       case 'uint32':
       case 'float':
       case 'double':
+        type = 'analog'
         value = metric.value
         valueString = value.toString()
         valueJson = metric
-        type = 'analog'
         break
       case 'int64':
       case 'uint64':
+        type = 'analog'
         value =
           (metric.value.low >>> 0) + (metric.value.high >>> 0) * Math.pow(2, 32)
         valueString = value.toString()
         valueJson = metric
-        type = 'analog'
         break
     }
 
@@ -1031,7 +1033,8 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
       ungroupedDescription: '',
       group1: '',
       group2: '',
-      group3: ''
+      group3: '',
+      type: type
     }
 
     // map alias to object address for later query
@@ -1045,7 +1048,6 @@ function getMetricInfo (metric, deviceLocator, isBirth) {
       catalogProperties.description = metric.metadata.description
 
     if ('properties' in metric) {
-      catalogProperties.type = type
       if ('description' in metric.properties) {
         catalogProperties.description = metric.properties.description.value
       }
