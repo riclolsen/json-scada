@@ -19,11 +19,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const ProtoBuf = require('protobufjs')
+const RJSON = require('relaxed-json')
+const Streamifier = require('streamifier')
 const SparkplugClient = require('./sparkplug-client')
-const fs = require('fs')
-const mongo = require('mongodb')
+const Fs = require('fs')
+const Mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
+const Grid = require('gridfs-stream')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const Log = require('./simple-logger')
@@ -144,7 +146,7 @@ let AutoCreateTags = true
           connection.deviceId,
           payload
         )
-        Log.log('Sparkplug - Publish updates: ' + cnt, Log.levelNormal)
+        Log.log('Sparkplug - Publish metrics updates: ' + cnt, Log.levelNormal)
       }
     } else {
       if (SparkplugPublishQueue.size() > AppDefs.MAX_QUEUEDMETRICS)
@@ -447,19 +449,18 @@ function getMetricPayload (element, jscadaConnection) {
   ) {
     let topicName = jscadaConnection.publishTopicRoot.trim() + '/'
 
-    if ('group1' in element && element.group1.trim() !== '')
+    if (element.group1 && element.group1.trim() !== '')
       topicName += topicStr(element.group1) + '/'
-    if ('group2' in element && element.group2.trim() !== '')
+    if (element.group2 && element.group2.trim() !== '')
       topicName += topicStr(element.group2) + '/'
-    if ('group3' in element && element.group3.trim() !== '')
+    if (element.group3 && element.group3.trim() !== '')
       topicName += topicStr(element.group3) + '/'
     if (
-      'ungroupedDescription' in element &&
+      element.ungroupedDescription &&
       element.ungroupedDescription.trim() !== ''
     )
       topicName += topicStr(element.ungroupedDescription)
-    else
-      topicName += topicStr(element.tag)
+    else topicName += topicStr(element.tag)
     topic = {
       topic: {
         type: 'string',
@@ -468,7 +469,7 @@ function getMetricPayload (element, jscadaConnection) {
     }
 
     topicName = jscadaConnection.publishTopicRoot.trim() + '/'
-    if (element.group1.trim() !== '')
+    if (element.group1 && element.group1.trim() !== '')
       topicName += topicStr(element.group1) + '/'
     topicName += topicStr(element.tag)
     topicAsTag = {
@@ -575,6 +576,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
   if (clientMongo && collection)
     while (!ValuesQueue.isEmpty()) {
       let data = ValuesQueue.peek()
+      ValuesQueue.dequeue()
       // const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
       // check tag is created, if not found create it
@@ -619,7 +621,6 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
         { $set: { sourceDataUpdate: updTag } }
       )
 
-      ValuesQueue.dequeue()
       cnt++
     }
   if (cnt) Log.log('MongoDB - Updates: ' + cnt)
@@ -715,13 +716,13 @@ async function sparkplugProcess (
         jscadaConnection.endpointURLs[sparkplugProcess.currentBroker]
       Log.log(logMod + 'Try connecting to ' + config.serverUrl)
 
-      // default subscription to all topics from Sparkplug-B
-      if (
-        !('topics' in jscadaConnection) ||
-        jscadaConnection.topics.length === 0
-      ) {
-        jscadaConnection.topics = [SparkplugNS + '/#']
-      }
+      //// default subscription to all topics from Sparkplug-B
+      //if (
+      //  !('topics' in jscadaConnection) ||
+      //  jscadaConnection.topics.length === 0
+      //) {
+      //  jscadaConnection.topics = [SparkplugNS + '/#']
+      //}
 
       if (
         !'deviceId' in jscadaConnection ||
@@ -771,29 +772,31 @@ async function sparkplugProcess (
         sparkplugProcess.connectionRetries = 0
         Log.log(logMod + 'Event: Connected to broker')
         // Subscribe topics
-        jscadaConnection.topics.forEach(elem => {
-          Log.log(logMod + 'Subscribing topic: ' + elem)
+        jscadaConnection.topics
+          .concat(jscadaConnection.topicsAsFiles)
+          .forEach(elem => {
+            Log.log(logMod + 'Subscribing topic: ' + elem)
 
-          spClient.handle.client.subscribe(elem, {
-            qos: 1,
-            properties: { subscriptionIdentifier: 1 },
-            function (err, granted) {
-              if (err)
-                Log.log(
-                  logMod + 'Subscribe error on topic: ' + elem + ' : ' + err
-                )
-              if (granted)
-                Log.log(
-                  logMod +
-                    'Subscription granted for topic: ' +
-                    elem +
-                    ' : ' +
-                    granted
-                )
-              return
-            }
+            spClient.handle.client.subscribe(elem, {
+              qos: 1,
+              properties: { subscriptionIdentifier: 1 },
+              function (err, granted) {
+                if (err)
+                  Log.log(
+                    logMod + 'Subscribe error on topic: ' + elem + ' : ' + err
+                  )
+                if (granted)
+                  Log.log(
+                    logMod +
+                      'Subscription granted for topic: ' +
+                      elem +
+                      ' : ' +
+                      granted
+                  )
+                return
+              }
+            })
           })
-        })
       })
 
       spClient.handle.on('reconnect', function () {
@@ -819,46 +822,141 @@ async function sparkplugProcess (
         }
       })
 
-      // process MQTT messages
+      // test for topic matches subscription
+      const topicMatchSub = t => s =>
+        new RegExp(s.split`+`.join`[^/]+`.split`#`.join`.+`).test(t)
+
+      // process non sparkplug b messages
+      spClient.handle.on('nonSparkplugMessage', function (topic, payload) {
+        Log.log(logMod + 'Event: Regular MQTT message')
+        Log.log(logMod + 'Topic: ' + topic + ' Size: ' + payload.length)
+
+        let match = false
+        // check for match of some topic subscription to be saved as files
+        jscadaConnection.topicsAsFiles.forEach(async tp => {
+          if (topicMatchSub(topic)(tp)) {
+            match = true
+            try {
+              // save as file on Mongodb Gridfs
+              let gfs = new Mongo.GridFSBucket(db)
+
+              // delete older files with same name
+              let f = await gfs.find({ filename: topic }).toArray()
+              f.forEach(async elem => {
+                await gfs.delete(elem._id)
+              })
+
+              let writestream = gfs.openUploadStream(topic)
+              Streamifier.createReadStream(payload).pipe(writestream)
+            } catch (e) {
+              Log.log(logMod + 'Error saving file. ' + e.message)
+            }
+            return
+          }
+        })
+
+        if (match) return
+
+        // try to detect payload as JSON or RJSON
+
+        if (payload.length > 10000) {
+          Log.log(logMod + 'Payload too big!')
+          return
+        }
+
+        let payloadStr = ''
+        let JsonValue = null
+        try {
+          payloadStr = payload.toString()
+          // try to parse as regular JSON
+          JsonValue = JSON.parse(payloadStr)
+        } catch (e) {
+          // NOT STRICT JSON, try RJSON
+          try {
+            JsonValue = RJSON.parse(payloadStr)
+          } catch (e) {
+            // NOT JSON NOR RJSON, consider as string
+            JsonValue = payloadStr
+          }
+        }
+
+        console.log(typeof JsonValue + ' - ' + JsonValue)
+        let value = 0,
+          valueString = '',
+          type = 'json'
+        switch (typeof JsonValue) {
+          case 'boolean':
+            type = 'digital'
+            value = JsonValue ? 1 : 0
+            valueString = JsonValue.toString()
+            break
+          case 'number':
+            type = 'analog'
+            value = JsonValue
+            valueString = JsonValue.toString()
+            break
+          case 'string':
+            type = 'string'
+            value = parseFloat(JsonValue)
+            valueString = JsonValue
+            break
+          default:
+            if (JsonValue === null) JsonValue = {}
+            else valueString = JSON.stringify(JsonValue)
+            break
+        }
+
+        if (isNaN(value)) value = 0
+        if (JsonValue === null) JsonValue = {}
+        
+        ValuesQueue.enqueue({
+          protocolSourceObjectAddress: topic,
+          value: value,
+          valueString: valueString,
+          valueJson: JsonValue,
+          invalid: false,
+          transient: false,
+          causeOfTransmissionAtSource: '3',
+          timeTagAtSource: new Date(),
+          timeTagAtSourceOk: false,
+          asduAtSource: typeof JsonValue,
+          type: type
+        })
+      })
+
+      // process MQTT Sparkplug B messages
       spClient.handle.on('message', function (topic, payload, topicInfo) {
-        Log.log(logMod + 'Event: message')
+        Log.log(logMod + 'Event: Sparkplug B message')
         Log.log(logMod + 'Topic: ' + topic)
         // Log.log(topicInfo);
         if (Log.logLevelCurrent >= Log.levelDetailed)
           Log.log(logMod + JSON.stringify(payload), Log.levelDetailed)
 
-        // sparkplug-b message?
-        if (topic.indexOf(SparkplugNS + '/') === 0) {
-          let splTopic = topic.split('/')
+        let splTopic = topic.split('/')
 
-          let deviceLocator =
-            splTopic[1] + '/' + splTopic[3] + '/' + splTopic[4]
+        let deviceLocator = splTopic[1] + '/' + splTopic[3] + '/' + splTopic[4]
 
-          switch (splTopic[2]) {
-            case 'DDATA':
-              Log.log(
-                logMod + 'Device DATA: ' + deviceLocator,
-                Log.levelDetailed
-              )
-              ProcessDeviceBirthOrData(deviceLocator, payload, false)
-              break
-            case 'NBIRTH':
-              Log.log(logMod + 'Node BIRTH', Log.levelDetailed)
-              break
-            case 'DBIRTH':
-              Log.log(
-                logMod + 'Device BIRTH: ' + deviceLocator,
-                Log.levelDetailed
-              )
-              ProcessDeviceBirthOrData(deviceLocator, payload, true)
-              break
-            case 'DDEATH':
-              Log.log(logMod + 'Device DEATH', Log.levelDetailed)
-              break
-            case 'NDEATH':
-              Log.log(logMod + 'Node DEATH', Log.levelDetailed)
-              break
-          }
+        switch (splTopic[2]) {
+          case 'DDATA':
+            Log.log(logMod + 'Device DATA: ' + deviceLocator, Log.levelDetailed)
+            ProcessDeviceBirthOrData(deviceLocator, payload, false)
+            break
+          case 'NBIRTH':
+            Log.log(logMod + 'Node BIRTH', Log.levelDetailed)
+            break
+          case 'DBIRTH':
+            Log.log(
+              logMod + 'Device BIRTH: ' + deviceLocator,
+              Log.levelDetailed
+            )
+            ProcessDeviceBirthOrData(deviceLocator, payload, true)
+            break
+          case 'DDEATH':
+            Log.log(logMod + 'Device DEATH', Log.levelDetailed)
+            break
+          case 'NDEATH':
+            Log.log(logMod + 'Node DEATH', Log.levelDetailed)
+            break
         }
       })
     } catch (e) {
@@ -901,32 +999,16 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
     }
   }
 
+  // extract metrics info and queue for tags updates on mongodb
   payload.metrics.forEach(metric => {
-    if (metric?.is_historical === true) return
-
-    let m = queueMetric(metric, deviceLocator, isBirth)
-    /*
-    if (!m) return
-
-    ValuesQueue.enqueue({
-      protocolSourceObjectAddress: m.objectAddress,
-      value: m.value,
-      valueString: m.valueString,
-      valueJson: m.valueJson,
-      invalid: m.invalid,
-      transient: m.transient,
-      causeOfTransmissionAtSource: isBirth ? '20' : '3',
-      timeTagAtSource: new Date(m.timestamp),
-      timeTagAtSourceOk: m.timestampQualityGood,
-      asduAtSource: m.type,
-      ...m.catalogProperties
-    })
-    */
+    queueMetric(metric, deviceLocator, isBirth)
   })
 }
 
-// obtain information from sparkplug-b decoded payload
+// obtain information from sparkplug-b decoded payload and queue for mongo tag updates
 function queueMetric (metric, deviceLocator, isBirth, templateName) {
+  if (metric?.is_historical === true) return // when historical discard
+
   let value = 0,
     valueString = '',
     valueJson = {},
@@ -938,17 +1020,13 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     catalogProperties = {},
     objectAddress = ''
 
-    if (typeof queueMetric.MapAliasToObjectAddress === 'undefined')
+  if (typeof queueMetric.MapAliasToObjectAddress === 'undefined')
     queueMetric.MapAliasToObjectAddress = []
 
-    if ('name' in metric && metric.name.trim() !== '') {
+  if ('name' in metric && metric.name.trim() !== '') {
     if (templateName && templateName.trim() !== '')
       objectAddress =
-        deviceLocator +
-        '/' +
-        topicStr(templateName) +
-        '/' +
-        metric.name
+        deviceLocator + '/' + topicStr(templateName) + '/' + metric.name
     else objectAddress = deviceLocator + '/' + topicStr(metric.name)
   } else if ('alias' in metric) {
     let alias =
@@ -981,12 +1059,12 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       case 'template':
         type = 'json'
         if ('value' in metric) {
-          console.log(JSON.stringify(metric))
           // recurse to publish more metrics
           if ('metrics' in metric.value) {
             metric.value.metrics.forEach(m => {
               queueMetric(m, deviceLocator, isBirth, metric.name)
             })
+            return
           } else {
             valueJson = metric.value
             valueString = JSON.stringify(metric.value)
@@ -1084,7 +1162,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     if ('alias' in metric) {
       let alias =
         (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
-        queueMetric.MapAliasToObjectAddress[alias.toString()] = objectAddress
+      queueMetric.MapAliasToObjectAddress[alias.toString()] = objectAddress
     }
 
     if ('metadata' in metric && 'description' in metric.metadata)
@@ -1117,21 +1195,6 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     asduAtSource: type,
     ...catalogProperties
   })
-
-  /*
-  return {
-    objectAddress: objectAddress,
-    value: value,
-    valueString: valueString,
-    valueJson: valueJson,
-    transient: transient,
-    invalid: invalid,
-    type: type,
-    timestamp: timestamp,
-    timestampQualityGood: timestampQualityGood,
-    catalogProperties: catalogProperties
-  }
-  */
 }
 
 // replace invalid topic name chars

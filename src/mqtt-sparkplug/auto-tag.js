@@ -117,8 +117,12 @@ async function GetAutoKeyInitialValue (rtCollection, configObj) {
 let ListCreatedTags = []
 
 async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
-
-  let tag = AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber + ':' + data.protocolSourceObjectAddress
+  let tag =
+    AppDefs.AUTOTAG_PREFIX +
+    ':' +
+    connectionNumber +
+    ':' +
+    data.protocolSourceObjectAddress
 
   if (!ListCreatedTags.includes(tag)) {
     // possibly not created tag, must check
@@ -136,14 +140,11 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
         Log.levelDetailed
       )
       let newTag = NewTag(data)
-      newTag.protocolSourceConnectionNumber = new Mongo.Double(
-        connectionNumber
-      )
+      newTag.protocolSourceConnectionNumber = new Mongo.Double(connectionNumber)
 
       newTag.protocolSourceObjectAddress = data.protocolSourceObjectAddress
       newTag.tag = tag
-      if ('type' in data)
-        newTag.type = data.type
+      if ('type' in data) newTag.type = data.type
       newTag.description = data?.description
       newTag.ungroupedDescription = data?.ungroupedDescription
       newTag.group1 = data?.group1
@@ -155,10 +156,17 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.transient = data?.transient === true
       newTag.invalid = data?.invalidAtSource === false ? false : true
       newTag.timeTagAtSource = data?.timeTagAtSource
-      newTag.commissioningRemarks = data?.commissioningRemarks 
+      newTag.commissioningRemarks = data?.commissioningRemarks
+
+      console.log('>> Insert ' + tag)
 
       let resIns = await rtDataCollection.insertOne(newTag)
-      if (resIns.insertedCount === 1) ListCreatedTags.push(tag)
+      if (resIns.insertedCount >= 1) ListCreatedTags.push(tag)
+      else
+        Log.log(
+          'Auto Key - Error inserting tag : ' + tag,
+          Log.levelDetailed
+        )
     } else {
       // found (already exists, no need to create), just list as created
       ListCreatedTags.push(tag)
@@ -169,5 +177,5 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
 module.exports = {
   NewTag: NewTag,
   GetAutoKeyInitialValue: GetAutoKeyInitialValue,
-  AutoCreateTag: AutoCreateTag,
+  AutoCreateTag: AutoCreateTag
 }
