@@ -3,10 +3,11 @@
 This client driver connects to a MQTT Broker and can
 
 * Act as a Sparkplug Primary (or non-primary) SCADA host.
-* Subscribe to Sparkplug B devices.
-* Publish tags as a Sparkplug B device.
-* Subscribe to regular MQTT topics.
+* Subscribe to Sparkplug B devices, create and update tags with Sparkplug metrics.
+* Subscribe to regular MQTT topics, create and updated tags with topics with auto-detected payloads like number, string, boolean, JSON, relaxed JSON.
+* Subscribe to regular binary MQTT topics to be saved as files on MongoDB-Gridfs.
 * Publish tags as regular MQTT topics.
+* Publish tags as a Sparkplug B device.
 
 ##  Configure a driver instance
 
