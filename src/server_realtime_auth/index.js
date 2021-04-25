@@ -158,12 +158,13 @@ let pool = null
   // find file on mongodb gridfs and return it
   async function getFileApi (req, res) {
     let filename = req.query?.name || ''
+    let bucketName = req.query?.bucket || 'fs'
     if (filename.trim() === ''){
       res.setHeader('Content-type', 'application/json')
       res.send("{ error: 'Parameter [name] empty or not specified' }")
     }
     try{
-      let gfs = new mongo.GridFSBucket(db)
+      let gfs = new mongo.GridFSBucket(db, {bucketName: bucketName })
       let f = await gfs.find({filename: filename}).toArray()
       if (f.length === 0){
         console.log('File not found ' + filename)
