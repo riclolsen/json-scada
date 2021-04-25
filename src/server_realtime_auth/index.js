@@ -23,8 +23,8 @@ const IP_BIND = process.env.JS_IP_BIND || 'localhost'
 const HTTP_PORT = process.env.JS_HTTP_PORT || 8080
 const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || 'http://127.0.0.1:3000'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
-const API_AP = '/server_realtime'
-const APP_NAME = ':' + HTTP_PORT + API_AP
+const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
+const APP_NAME = 'server_realtime_auth'
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
 const COLL_COMMANDS = 'commandsQueue'
@@ -149,10 +149,10 @@ let pool = null
 
   if (AUTHENTICATION) {
     require('./app/routes/auth.routes')(app, OPCAPI_AP)
-    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi, getFileApi)
+    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi, GETFILE_AP, getFileApi)
   } else {
     app.post(OPCAPI_AP, opcApi)
-    app.get("/getFile", getFileApi)
+    app.get(GETFILE_AP, getFileApi)
   }
 
   // find file on mongodb gridfs and return it

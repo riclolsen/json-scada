@@ -3,7 +3,7 @@ const express = require('express')
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/user.controller')
 
-module.exports = function (app, accessPoint, opcApi, getFileApi) {
+module.exports = function (app, accessPoint, opcApi, accessPointGetFile, getFileApi) {
   app.use(function (req, res, next) {
     res.header(
       'Access-Control-Allow-Headers',
@@ -39,7 +39,7 @@ module.exports = function (app, accessPoint, opcApi, getFileApi) {
 
   app.post(accessPoint, opcApi) // realtime data API
 
-  app.get("/getFile", getFileApi) // get file from mongo API
+  app.get(accessPointGetFile, getFileApi) // get file from mongo API
 
   app.get(
     accessPoint + 'test/user',

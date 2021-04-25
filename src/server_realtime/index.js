@@ -22,8 +22,8 @@ const IP_BIND = process.env.JS_IP_BIND || "localhost";
 const HTTP_PORT = process.env.JS_HTTP_PORT || 8080;
 const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || "http://127.0.0.1:3000";
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
-const API_AP = '/server_realtime'
-const APP_NAME = ':' + HTTP_PORT + API_AP
+const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
+const APP_NAME = 'server_realtime'
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
 const COLL_COMMANDS = 'commandsQueue'
@@ -102,6 +102,35 @@ let pool = null
         }, 5000)
       })
     }
+
+    // find file on mongodb gridfs and return it
+    app.get(GETFILE_AP, async (req, res) => {
+      let filename = req.query?.name || ''
+      let bucketName = req.query?.bucket || 'fs'
+      if (filename.trim() === ''){
+        res.setHeader('Content-type', 'application/json')
+        res.send("{ error: 'Parameter [name] empty or not specified' }")
+      }
+      try{
+        let gfs = new mongo.GridFSBucket(db, {bucketName: bucketName })
+        let f = await gfs.find({filename: filename}).toArray()
+        if (f.length === 0){
+          console.log('File not found ' + filename)
+          res.setHeader('Content-type', 'application/json')
+          res.send("{ error: 'File not found' }")
+          return
+        }
+        let readstream = gfs.openDownloadStreamByName(filename)
+        res.contentType(path.basename(filename));
+        res.setHeader('Content-disposition', 'inline; filename="'+filename+'"');
+        readstream.pipe(res)
+        }
+        catch(e){
+          console.log('File not found: ' + filename + ' ' + e.message)
+          res.setHeader('Content-type', 'application/json')
+          res.send("{ error: 'File not found' }")
+        }
+    })
 
     // OPC WEB HMI API
     app.post(OPCAPI_AP, async (req, res) => {
