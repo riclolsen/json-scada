@@ -13,7 +13,6 @@ const UserActionsQueue = require('../../userActionsQueue')
 
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
-// const { response } = require('express')
 
 exports.listUserActions = async (req, res) => {
   console.log('listUserActions')

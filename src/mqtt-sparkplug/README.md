@@ -51,6 +51,7 @@ Each instance for this driver can have just one connection defined that must be 
         autoCreateTags: true,
         endpointURLs: ["mqtt://broker.hivemq.com:1883"],
         topics: ["spBv1.0/#"],
+        topicsAsFiles: ["docs/#"],
         groupId: "Sparkplug B Devices",
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
@@ -81,7 +82,8 @@ Each instance for this driver can have just one connection defined that must be 
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (publishing messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**autoCreateTags**_ [Boolean] - Enables automatic creation of all discovered tags. **Mandatory parameter**.
 * _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. **Mandatory parameter**.
-* _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. **Mandatory parameter**.
+* _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. Regular MQTT topics will be converted to tags with the full topic name as object address. **Mandatory parameter**.
+* _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
 * _**groupId**_ [String] - Group Id for publishing. **Mandatory parameter**.
 * _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.
 * _**deviceId**_ [String] - Device Id for publishing. **Optional parameter**.

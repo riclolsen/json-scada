@@ -125,12 +125,12 @@
                      "name" : "my_dataset",
                      "type" : "dataset",
                      "value" : {
-                         "numOfColumns" : 2,
-                         "types" : [ "string", "string" ],
-                         "columns" : [ "str1", "str2" ],
+                         "numOfColumns" : 3,
+                         "types" : [ "string", "string", 'long' ],
+                         "columns" : [ "str1", "str2", 'lnum' ],
                          "rows" : [ 
-                             [ "x", "a"],
-                             [ "y", "b" ]
+                             [ "x", "a", 123456789012345 ],
+                             [ "y", "b", 123456789012346 ]
                          ]
                      }
                  },
@@ -176,6 +176,21 @@
          // Create the SparkplugClient
          sparkplugClient = SparkplugClient.newClient(config);
          
+         sparkplugClient.logger.level = 'debug'
+
+        sparkplugClient.on('connect', function(){
+            let fname = 'digital-transformation.pdf';
+            let data = Fs.readFileSync(fname);
+            let payload = {
+                "filename": fname,
+                "data": data.toString('base64')
+              }
+              
+            // sparkplugClient.client.publish('C3ET/docs/'+fname, Buffer.alloc(0), {qos: 0, retain: true});
+            sparkplugClient.client.publish('C3ET/docs/base64/'+fname, JSON.stringify(payload), {qos: 0, retain: true});
+            sparkplugClient.client.publish('C3ET/docs/bin/'+fname, data, {qos: 0, retain: true});
+        });
+
          // Create 'birth' handler
          sparkplugClient.on('birth', function () {
              // Publish Node BIRTH certificate

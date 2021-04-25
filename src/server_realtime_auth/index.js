@@ -40,6 +40,7 @@ var cookieParser = require('cookie-parser')
 const fs = require('fs')
 const mongo = require('mongodb')
 const MongoClient = require('mongodb').MongoClient
+var Grid = require('gridfs-stream');
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 const UserActionsQueue = require('./userActionsQueue')
@@ -148,9 +149,38 @@ let pool = null
 
   if (AUTHENTICATION) {
     require('./app/routes/auth.routes')(app, OPCAPI_AP)
-    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi)
+    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi, getFileApi)
   } else {
     app.post(OPCAPI_AP, opcApi)
+    app.get("/getFile", getFileApi)
+  }
+
+  // find file on mongodb gridfs and return it
+  async function getFileApi (req, res) {
+    let filename = req.query?.name || ''
+    if (filename.trim() === ''){
+      res.setHeader('Content-type', 'application/json')
+      res.send("{ error: 'Parameter [name] empty or not specified' }")
+    }
+    try{
+      let gfs = new mongo.GridFSBucket(db)
+      let f = await gfs.find({filename: filename}).toArray()
+      if (f.length === 0){
+        console.log('File not found ' + filename)
+        res.setHeader('Content-type', 'application/json')
+        res.send("{ error: 'File not found' }")
+        return
+      }
+      let readstream = gfs.openDownloadStreamByName(filename)
+      res.contentType(path.basename(filename));
+      res.setHeader('Content-disposition', 'inline; filename="'+filename+'"');
+      readstream.pipe(res)
+      }
+      catch(e){
+        console.log('File not found: ' + filename + ' ' + e.message)
+        res.setHeader('Content-type', 'application/json')
+        res.send("{ error: 'File not found' }")
+      }
   }
 
   // OPC WEB HMI API

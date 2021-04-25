@@ -480,8 +480,10 @@ function SparkplugClient(config) {
             splitTopic = topic.split("/");
 
             // discard non-sparkplug B messages
-            if (splitTopic[0] !== "spBv1.0")
+            if (splitTopic[0] !== "spBv1.0"){
+              sparkplugClient.emit("nonSparkplugMessage", topic, message)
               return;
+            }
 
             var payload;
 

@@ -57,6 +57,7 @@ function LoadConfig () {
     if (args.length > 0) instArg = parseInt(args[0])
     configObj.Instance = instArg || process.env[AppDefs.ENV_PREFIX + 'INSTANCE'] || 1
   
+    configObj.GridFsCollectionName = 'files'
     configObj.RealtimeDataCollectionName = 'realtimeData'
     configObj.SoeDataCollectionName = 'soeData'
     configObj.CommandsQueueCollectionName = 'commandsQueue'
