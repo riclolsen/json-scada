@@ -175,7 +175,7 @@ let pool = null
         return
       }
       let readstream = gfs.openDownloadStreamByName(filename)
-      res.contentType(mimeType)
+      res.type(mimeType)
       res.setHeader('Content-disposition', 'inline; filename="'+filename+'"')
       readstream.pipe(res)
       }
