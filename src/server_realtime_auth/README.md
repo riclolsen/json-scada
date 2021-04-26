@@ -246,9 +246,29 @@ When the StatusCode for the command is 0 (Good) the command was acknowledged ok.
 ### Read History Service Request
 ### Request Unique Attributes Value
 
+## File Services API
+
+Access point : /getFile
+
+This API can be used to retrieve files stored in MongoDB Gridfs. Files can be manipulated using the _mongofiles_ tool.
+
+    https://docs.mongodb.com/database-tools/mongofiles/
+
+The MQTT client driver can be used to subscribe and save files published in MQTT topics on a broker. In this case, the file name is the MQTT topic name.
+
+Parameters:
+
+* _**name**_ [String] - File name. **Required parameter**
+* _**bucket**_ [String] - Gridfs bucket name. Default is "fs". **Optional parameter**
+* _**mime**_ [String] - Mime type. If not specified, it will be guessed based on the file extension. **Optional parameter**
+
+Example:
+
+    /getFile?name=document.pdf&bucket=fs&mime=application/pdf
+
 ## User Authentication / Authorization (RBAC)
 
-When enabled the user roles (Role Based Access Control - RBAC) and rights are configured in the collections _roles_ and _users_ in the MongoDB database.
+When enabled, the user roles (Role Based Access Control - RBAC) and rights are configured in the collections _roles_ and _users_ in the MongoDB database.
 
 ### _roles_ Collection Schema
 

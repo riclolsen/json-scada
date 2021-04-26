@@ -157,8 +157,10 @@ let pool = null
 
   // find file on mongodb gridfs and return it
   async function getFileApi (req, res) {
-    let filename = req.query?.name || ''
+    let filename = req.query?.name || ''    
     let bucketName = req.query?.bucket || 'fs'
+    let mimeType = req.query?.mime || path.basename(filename)
+
     if (filename.trim() === ''){
       res.setHeader('Content-type', 'application/json')
       res.send("{ error: 'Parameter [name] empty or not specified' }")
@@ -173,7 +175,7 @@ let pool = null
         return
       }
       let readstream = gfs.openDownloadStreamByName(filename)
-      res.contentType(path.basename(filename));
+      res.contentType(mimeType);
       res.setHeader('Content-disposition', 'inline; filename="'+filename+'"');
       readstream.pipe(res)
       }
