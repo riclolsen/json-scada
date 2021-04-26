@@ -155,7 +155,8 @@ function SparkplugClient(config) {
                 "uuid" : compressed
             };
 
-        logger.debug("Compressing payload " + JSON.stringify(options));
+        if (logger.level === 'debug')  
+            logger.debug("Compressing payload " + JSON.stringify(options));
 
         // See if any options have been set
         if (options !== undefined && options !== null) {
@@ -381,6 +382,7 @@ function SparkplugClient(config) {
                 "keepalive" : 5,
                 "reschedulePings" : false,
                 "connectionTimeout" : 30,
+                // "protocolVersion": 5,
                 "username" : username,
                 "password" : password,
                 // agent:false,
@@ -399,8 +401,10 @@ function SparkplugClient(config) {
 
         // Connect to the MQTT server
         sparkplugClient.connecting = true;
-        logger.debug("Attempting to connect: " + serverUrl);
-        logger.debug("              options: " + JSON.stringify(clientOptions));
+        if (logger.level === 'debug'){
+            logger.debug("Attempting to connect: " + serverUrl);
+            logger.debug("              options: " + JSON.stringify(clientOptions));
+        }
         client = mqtt.connect(serverUrl, clientOptions);
         sparkplugClient.client = client;
         logger.debug("Finished attempting to connect");
@@ -468,6 +472,8 @@ function SparkplugClient(config) {
          * 'packetreceive' handler
          */
         client.on("packetreceive", function(packet) {
+            if (logger.level !== 'debug')
+              return;
             logger.debug("packetreceivecmd: " + packet.cmd);
             logger.debug("packetreceive: " + JSON.stringify(packet));
         });
@@ -475,13 +481,13 @@ function SparkplugClient(config) {
         /*
          * 'message' handler
          */
-        client.on('message', function (topic, message) {
+        client.on('message', function (topic, message, packet) {
             // Split the topic up into tokens
             splitTopic = topic.split("/");
 
             // discard non-sparkplug B messages
             if (splitTopic[0] !== "spBv1.0"){
-              sparkplugClient.emit("nonSparkplugMessage", topic, message)
+              sparkplugClient.emit("nonSparkplugMessage", topic, message, packet)
               return;
             }
 

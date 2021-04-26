@@ -53,6 +53,7 @@ Each instance for this driver can have just one connection defined that must be 
         endpointURLs: ["mqtt://broker.hivemq.com:1883"],
         topics: ["spBv1.0/#"],
         topicsAsFiles: ["docs/#"],
+        topicsScripted: [{topic: "sensor1", script: " let obj=JSON.parse(payload); {value: obj.value, qualityOk: true, timestamp: (new Date()).getTime() } "}],
         groupId: "Sparkplug B Devices",
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
@@ -85,6 +86,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. **Mandatory parameter**.
 * _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. Regular MQTT topics will be converted to tags with the full topic name as object address. **Mandatory parameter**.
 * _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
+* _**topicsScripted**_ [Array of Objects] - List of topics to subscribe on MQTT broker to be treated with dedicated scripts to extract data. **Mandatory parameter**.
 * _**groupId**_ [String] - Group Id for publishing. **Mandatory parameter**.
 * _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.
 * _**deviceId**_ [String] - Device Id for publishing. **Optional parameter**.
@@ -113,3 +115,53 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 ## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
 
 ![Driver instances and connections](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_Connections.png "Driver Instances and Connections Numbering")
+
+## Example of Script to Extract Data from complex Payloads
+
+Given a topic "test/jsonarr" that publishes array of values as JSON like 
+
+    [ 12345.2, 23456.7, 345678.9 ]
+
+The script should extract values and return an array o object like
+
+    [
+    {
+        objectAddress: 'scrVal1',
+        value: 12345.2,
+        qualityOk: true,
+        timestamp: 1619465592683
+    },
+    {
+        objectAddress: 'scrVal2',
+        value: 23456.7,
+        qualityOk: true,
+        timestamp: 1619465592683
+    },
+    {
+        objectAddress: 'scrVal3',
+        value: 345678.9,
+        qualityOk: true,
+        timestamp: 1619465592683
+    }
+    ]
+
+It is necessary to subscribe the topic using the topicsScripted property.    
+
+    "topicsScripted": [{ 
+        "topic": "C3ET/test/jsonarr", 
+        "script": " // remove comments and put all in the same line
+                let ret = []; // array of objects to return
+                let vals=JSON.parse(info.payload.toString()); 
+                let cnt = 1;
+                vals.forEach(elem => {
+                    ret.push({'objectAddress': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
+                    cnt++;
+                })
+                ret; // return values in array of objects
+                "
+        }]
+
+The script is executed in a sandboxed Javascript VM. The MQTT payload is passed as a buffer in the "info.payload" object.
+
+The value of the last expression returns to the main process, this should be an array of objects with at least "value" and "objectAddress" properties set.
+

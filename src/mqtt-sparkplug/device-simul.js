@@ -186,15 +186,17 @@
                 "data": data.toString('base64')
               }
               
+            // properties are carried only for MQTT 5.0 connections
+            
             // sparkplugClient.client.publish('C3ET/docs/bin/'+fname, Buffer.alloc(0), {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/docs/bin/'+fname, data, {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/bool', 'true', {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/int', '12345', {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/float', '12345.6789', {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/string', 'a string 123', {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/quotedstring', "'a string 123'", {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/jsonobj', "{'numberVar': 12345.2, 'boolVar': false }", {qos: 0, retain: true});
-            sparkplugClient.client.publish('C3ET/test/jsonarr', "[ 12345.2, 23456.7, 345678.9 ]", {qos: 0, retain: true});
+            sparkplugClient.client.publish('C3ET/docs/bin/'+fname, data, {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+            sparkplugClient.client.publish('C3ET/test/bool', 'true', {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+            sparkplugClient.client.publish('C3ET/test/int', '12345', {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+            sparkplugClient.client.publish('C3ET/test/float', '12345.6789', {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+            sparkplugClient.client.publish('C3ET/test/string', 'a string 123', {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'text/plain'}});
+            sparkplugClient.client.publish('C3ET/test/quotedstring', "'a string 123'", {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+            sparkplugClient.client.publish('C3ET/test/jsonobj', "{'numberVar': 12345.2, 'boolVar': false }", {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+            sparkplugClient.client.publish('C3ET/test/jsonarr', "[ 12345.2, 23456.7, 345678.9 ]", {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}} );
         });
 
          // Create 'birth' handler
