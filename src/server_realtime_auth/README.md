@@ -252,7 +252,7 @@ Access point : /getFile
 
 This API can be used to retrieve files stored in MongoDB Gridfs. Files can be manipulated using the _mongofiles_ tool.
 
-    https://docs.mongodb.com/database-tools/mongofiles/
+* https://docs.mongodb.com/database-tools/mongofiles/
 
 The MQTT client driver can be used to subscribe and save files published to MQTT topics on a broker. In this case, the file name is the MQTT topic name.
 
@@ -263,7 +263,7 @@ Parameters:
 * _**mime**_ [String] - Mime type for the HTTP header. If not specified, it will be guessed based on the file extension. **Optional parameter**
 * _**refresh**_ [Integer] - Time interval in seconds to reload page automatically (using the refresh HTTP header). **Optional parameter**
 
-Example:
+Examples:
 
     /getFile?name=topicRoot/subtopic/document.pdf&bucket=fs
     /getFile?name=cameras/camera1/image.jpg&mime=image/jpg&refresh=5
