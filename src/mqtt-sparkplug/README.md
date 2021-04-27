@@ -53,7 +53,7 @@ Each instance for this driver can have just one connection defined that must be 
         endpointURLs: ["mqtt://broker.hivemq.com:1883"],
         topics: ["spBv1.0/#"],
         topicsAsFiles: ["docs/#"],
-        topicsScripted: [{topic: "sensor1", script: " let obj=JSON.parse(payload); {value: obj.value, qualityOk: true, timestamp: (new Date()).getTime() } "}],
+        topicsScripted: [{topic: "sensors/sensor1", script: "ret = []; vals = JSON.parse(info.payload.toString()); cnt = 1; vals.forEach(elem => { ret.push({ id: 'scrVal' + cnt, value: elem, qualityOk: true, timestamp: new Date().getTime() }); cnt++; }); ret;"}],
         groupId: "Sparkplug B Devices",
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
@@ -160,7 +160,7 @@ The script should extract values and return an array o object like
 It is necessary to subscribe the topic using the _topicsScripted_ array property, providing _topic_ and _script_ in each object of the array.
 
     "topicsScripted": [{ 
-        "topic": "C3ET/test/jsonarr", 
+        "topic": "Enterprise/test/jsonarr", 
         "script": " // remove comments and put all in the same line
                 ret = []; // array of objects to return
                 vals = JSON.parse(info.payload.toString()); 
