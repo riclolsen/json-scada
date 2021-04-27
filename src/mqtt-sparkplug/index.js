@@ -20,6 +20,7 @@
  */
 
 const RJSON = require('relaxed-json')
+const { VM } = require('vm2')
 const Streamifier = require('streamifier')
 const SparkplugClient = require('./sparkplug-client')
 const Fs = require('fs')
@@ -96,9 +97,14 @@ let AutoCreateTags = true
         metrics = []
       while (!SparkplugPublishQueue.isEmpty()) {
         let data = SparkplugPublishQueue.peek()
+        SparkplugPublishQueue.dequeue()
 
         // publish as normal topics
-        if (connection.publishTopicRoot && 'properties' in data) {
+        if (
+          connection.publishTopicRoot &&
+          connection.publishTopicRoot.trim() !== '' &&
+          'properties' in data
+        ) {
           // publish value under root/group1/group2/group3/name
           SparkplugClientObj.handle.client.publish(
             data.properties.topic.value,
@@ -129,8 +135,9 @@ let AutoCreateTags = true
         }
 
         // aggregate for sparkplug publishing
-        metrics.push(data)
-        SparkplugPublishQueue.dequeue()
+        if (connection.groupId && connection.groupId.trim() !== '') {
+          metrics.push(data)
+        }
         cnt++
       }
 
@@ -216,34 +223,44 @@ let AutoCreateTags = true
           fullDocument: 'updateLookup'
         })
 
-        try {
-          changeStream.on('error', change => {
-            if (clientMongo) clientMongo.close()
-            clientMongo = null
-            Log.log('MongoDB - Error on ChangeStream!')
-          })
-          changeStream.on('close', change => {
-            if (clientMongo) clientMongo.close()
-            clientMongo = null
-            Log.log('MongoDB - Closed ChangeStream!')
-          })
-          changeStream.on('end', change => {
-            if (clientMongo) clientMongo.close()
-            clientMongo = null
-            Log.log('MongoDB - Ended ChangeStream!')
-          })
+        // start a changestream monitor on realtimeData only if configured some MQTT publishing
+        if (
+          (connection.publishTopicRoot &&
+            connection.publishTopicRoot.length > 0) ||
+          (connection.groupId && connection.groupId.length > 0)
+        ) {
+          try {
+            changeStream.on('error', change => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+              Log.log('MongoDB - Error on ChangeStream!')
+            })
+            changeStream.on('close', change => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+              Log.log('MongoDB - Closed ChangeStream!')
+            })
+            changeStream.on('end', change => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+              Log.log('MongoDB - Ended ChangeStream!')
+            })
 
-          // start listen to changes
-          changeStream.on('change', change => {
-            // do not queue data changes until device connected and birthed
-            if (!SparkplugDeviceBirthed || !SparkplugClientObj.handle.connected)
-              return
+            // start listen to changes
+            changeStream.on('change', change => {
+              // do not queue data changes until device connected and birthed
+              if (
+                !SparkplugDeviceBirthed ||
+                !SparkplugClientObj.handle.connected
+              )
+                return
 
-            let data = getMetricPayload(change.fullDocument, connection)
-            if (data) SparkplugPublishQueue.enqueue(data)
-          })
-        } catch (e) {
-          Log.log('MongoDB - Error: ' + e, Log.levelMin)
+              let data = getMetricPayload(change.fullDocument, connection)
+              if (data) SparkplugPublishQueue.enqueue(data)
+            })
+          } catch (e) {
+            Log.log('MongoDB - Error: ' + e, Log.levelMin)
+          }
         }
       })
 
@@ -826,34 +843,130 @@ async function sparkplugProcess (
       const topicMatchSub = t => s =>
         new RegExp(s.split`+`.join`[^/]+`.split`#`.join`.+`).test(t)
 
+      // A VM to run scripts to extract complex payloads
+      let infoObj = {}
+      const sandbox = {
+        info: infoObj
+      }
+      const vm = new VM({ sandbox })
+
       // process non sparkplug b messages
-      spClient.handle.on('nonSparkplugMessage', function (topic, payload) {
-        Log.log(logMod + 'Event: Regular MQTT message')
-        Log.log(logMod + 'Topic: ' + topic + ' Size: ' + payload.length)
+      spClient.handle.on('nonSparkplugMessage', async function (
+        topic,
+        payload,
+        packet
+      ) {
+        Log.log(
+          logMod +
+            'Event: Regular MQTT message, topic: ' +
+            topic +
+            ' size: ' +
+            payload.length
+        )
 
         let match = false
+        // console.log("--> 1 " + topic)
         // check for match of some topic subscription to be saved as files
-        jscadaConnection.topicsAsFiles.forEach(async tp => {
-          if (topicMatchSub(topic)(tp)) {
-            match = true
-            try {
-              // save as file on Mongodb Gridfs
-              let gfs = new Mongo.GridFSBucket(db)
+        if (jscadaConnection.topicsAsFiles instanceof Array)
+          await jscadaConnection.topicsAsFiles.forEach(async tp => {
+            // console.log("--> 2 " + topic)
+            if (topicMatchSub(topic)(tp)) {
+              // console.log("--> 3 " + topic)
+              match = true
+              try {
+                // save as file on Mongodb Gridfs
+                let gfs = new Mongo.GridFSBucket(db)
 
-              // delete older files with same name
-              let f = await gfs.find({ filename: topic }).toArray()
-              f.forEach(async elem => {
-                await gfs.delete(elem._id)
-              })
+                // delete older files with same name
+                let f = await gfs.find({ filename: topic }).toArray()
+                f.forEach(async elem => {
+                  await gfs.delete(elem._id)
+                })
 
-              let writestream = gfs.openUploadStream(topic)
-              Streamifier.createReadStream(payload).pipe(writestream)
-            } catch (e) {
-              Log.log(logMod + 'Error saving file. ' + e.message)
+                let writestream = gfs.openUploadStream(topic)
+                Streamifier.createReadStream(payload).pipe(writestream)
+              } catch (e) {
+                Log.log(logMod + 'Error saving file. ' + e.message)
+              }
+              return
             }
-            return
-          }
-        })
+          })
+
+        if (match) return
+
+        if (jscadaConnection.topicsScripted instanceof Array)
+          jscadaConnection.topicsScripted.forEach(elem => {
+            if (elem.topic)
+              if (topicMatchSub(topic)(elem.topic)) {
+                match = true
+
+                /*
+              "topicsScripted": [{ 
+                 "topic": "C3ET/test/jsonarr", 
+                 "script": " // remove comments and put all in the same line
+                            ret = []; // array of objects to return
+                            vals=JSON.parse(info.payload.toString()); 
+                            cnt = 1;
+                            vals.forEach(elem => {
+                              ret.push({'id': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
+                              cnt++;
+                            })
+                            ret; // return values in array of objects
+                           "
+                  }]
+              */
+
+                if (elem.script) {
+                  // make payload (buffer) available inside VM (as info.payload)
+                  infoObj.payload = payload
+
+                  try {
+                    // execute script and queue extracted values
+                    let extractedData = vm.run(elem.script)
+
+                    if (extractedData instanceof Array)
+                      extractedData.forEach(element => {
+                        if (!element.id || !'value' in element) return
+                        let type = 'analog'
+                        if (element.type) type = element.type
+                        ValuesQueue.enqueue({
+                          protocolSourceObjectAddress: topic + '/' + element.id,
+                          value: element.value,
+                          valueString: element.valueString
+                            ? element.valueString
+                            : element.value.toString(),
+                          valueJson: element.valueJson
+                            ? element.valueJson
+                            : element.value,
+                          invalid: element.qualityOk === false ? true : false,
+                          transient: element.transient === true ? true : false,
+                          causeOfTransmissionAtSource:
+                            'causeOfTransmissionAtSource' in element
+                              ? element.causeOfTransmissionAtSource
+                              : '3',
+                          timeTagAtSource: element.timestamp
+                            ? new Date(element.timestamp)
+                            : new Date(),
+                          timeTagAtSourceOk: element.timestamp ? true : false,
+                          asduAtSource: 'scripted',
+                          type: type
+                        })
+                      })
+                  } catch (e) {
+                    Log.log(
+                      logMod +
+                        'Error on script on topic ' +
+                        topic +
+                        ' - ' +
+                        e.message
+                    )
+                  }
+                }
+                return
+              }
+          })
+
+        // console.log("--> 4 " + topic + ' ' + match )
 
         if (match) return
 
@@ -880,7 +993,7 @@ async function sparkplugProcess (
           }
         }
 
-        console.log(typeof JsonValue + ' - ' + JsonValue)
+        // console.log(typeof JsonValue + ' - ' + JsonValue)
         let value = 0,
           valueString = '',
           type = 'json'
@@ -908,7 +1021,7 @@ async function sparkplugProcess (
 
         if (isNaN(value)) value = 0
         if (JsonValue === null) JsonValue = {}
-        
+
         ValuesQueue.enqueue({
           protocolSourceObjectAddress: topic,
           value: value,

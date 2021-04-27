@@ -87,7 +87,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. Regular MQTT topics will be converted to tags with the full topic name as object address. **Mandatory parameter**.
 * _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
 * _**topicsScripted**_ [Array of Objects] - List of topics to subscribe on MQTT broker to be treated with dedicated scripts to extract data. **Mandatory parameter**.
-* _**groupId**_ [String] - Group Id for publishing. **Mandatory parameter**.
+* _**groupId**_ [String] - Group Id for publishing. Leave empty to avoid Sparkplug B publishing. **Mandatory parameter**.
 * _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.
 * _**deviceId**_ [String] - Device Id for publishing. **Optional parameter**.
 * _**scadaHostId**_ [String] - Scada host Id for Primary Application STATE publishing. Leave empty if not a primary application. **Mandatory parameter**.
@@ -112,6 +112,18 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 * https://nodejs.org/api/tls.html
 * https://github.com/Cirrus-Link/Sparkplug/tree/master/client_libraries/javascript/sparkplug-client
 
+
+### Configuration Hints
+
+* To act as a Sparkplug Primary (or non-primary) SCADA host, configure the _scadaHostId_ property.
+* To subscribe to Sparkplug B devices, configure the _topics_ property with a list of topics with root "spBv1.0/".
+* To subscribe to regular MQTT topics, configure the _topics_ property with a list of the desired topics.
+* The topics property can have mixed Sparkplug and regular topics listed.
+* To subscribe to regular MQTT topics, and extract complex data structures with scripts, configure the _topicsScripted_ property.
+* To subscribe to regular binary MQTT topics to be saved as files on MongoDB-Gridfs, configure the _topicsAsFiles_ property.
+* To publish tags as regular MQTT topics, configure the _publishTopicRoot_ property.
+* To publish tags as a Sparkplug B device, configure the _groupId_, _edgeNodeId_ and _deviceId_ properties.
+
 ## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
 
 ![Driver instances and connections](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_Connections.png "Driver Instances and Connections Numbering")
@@ -126,42 +138,44 @@ The script should extract values and return an array o object like
 
     [
     {
-        objectAddress: 'scrVal1',
+        id: 'scrVal1',
         value: 12345.2,
         qualityOk: true,
         timestamp: 1619465592683
     },
     {
-        objectAddress: 'scrVal2',
+        id: 'scrVal2',
         value: 23456.7,
         qualityOk: true,
         timestamp: 1619465592683
     },
     {
-        objectAddress: 'scrVal3',
+        id: 'scrVal3',
         value: 345678.9,
         qualityOk: true,
         timestamp: 1619465592683
     }
     ]
 
-It is necessary to subscribe the topic using the topicsScripted property.    
+It is necessary to subscribe the topic using the _topicsScripted_ array property, providing _topic_ and _script_ in each object of the array.
 
     "topicsScripted": [{ 
         "topic": "C3ET/test/jsonarr", 
         "script": " // remove comments and put all in the same line
-                let ret = []; // array of objects to return
-                let vals=JSON.parse(info.payload.toString()); 
-                let cnt = 1;
+                ret = []; // array of objects to return
+                vals = JSON.parse(info.payload.toString()); 
+                cnt = 1;
                 vals.forEach(elem => {
-                    ret.push({'objectAddress': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
+                    ret.push({'id': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
                     cnt++;
                 })
                 ret; // return values in array of objects
                 "
         }]
 
-The script is executed in a sandboxed Javascript VM. The MQTT payload is passed as a buffer in the "info.payload" object.
+All scripts are executed in a shared sandboxed Javascript VM. The MQTT payload of each message is passed as a buffer in the "info.payload" object. The sandboxed VM context is preserved and reused at each call, so variables created inside the scripts are also preserved.
 
-The value of the last expression returns to the main process, this should be an array of objects with at least "value" and "objectAddress" properties set.
+The value of the last expression returns to the main process, this should be an array of objects with at least "value" and "id" properties set.
+
+Can also be set the following optional properties: "type", "qualityOk", "timestamp", "transient", "valueString", "valueJson", "causeOfTransmissionAtSource".
 
