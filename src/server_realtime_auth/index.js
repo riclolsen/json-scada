@@ -160,6 +160,7 @@ let pool = null
     let filename = req.query?.name || ''    
     let bucketName = req.query?.bucket || 'fs'
     let mimeType = req.query?.mime || path.basename(filename)
+    let refresh = req.query.refresh || 0
 
     if (filename.trim() === ''){
       res.setHeader('Content-type', 'application/json')
@@ -177,6 +178,7 @@ let pool = null
       let readstream = gfs.openDownloadStreamByName(filename)
       res.type(mimeType)
       res.setHeader('Content-disposition', 'inline; filename="'+filename+'"')
+      if (refresh) res.setHeader('Refresh', refresh);
       readstream.pipe(res)
       }
       catch(e){

@@ -254,17 +254,19 @@ This API can be used to retrieve files stored in MongoDB Gridfs. Files can be ma
 
     https://docs.mongodb.com/database-tools/mongofiles/
 
-The MQTT client driver can be used to subscribe and save files published in MQTT topics on a broker. In this case, the file name is the MQTT topic name.
+The MQTT client driver can be used to subscribe and save files published to MQTT topics on a broker. In this case, the file name is the MQTT topic name.
 
 Parameters:
 
-* _**name**_ [String] - File name. **Required parameter**
+* _**name**_ [String] - File name (for files saved by the MQTT driver, use the MQTT topic name). **Required parameter**
 * _**bucket**_ [String] - Gridfs bucket name. Default is "fs". **Optional parameter**
-* _**mime**_ [String] - Mime type. If not specified, it will be guessed based on the file extension. **Optional parameter**
+* _**mime**_ [String] - Mime type for the HTTP header. If not specified, it will be guessed based on the file extension. **Optional parameter**
+* _**refresh**_ [Integer] - Time interval in seconds to reload page automatically (using the refresh HTTP header). **Optional parameter**
 
 Example:
 
-    /getFile?name=document.pdf&bucket=fs&mime=application/pdf
+    /getFile?name=topicRoot/subtopic/document.pdf&bucket=fs
+    /getFile?name=cameras/camera1/image.jpg&mime=image/jpg&refresh=5
 
 ## User Authentication / Authorization (RBAC)
 
