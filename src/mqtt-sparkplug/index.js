@@ -82,7 +82,7 @@ let AutoCreateTags = true
   ]
 
   const SparkplugClientObj = { handle: null } // points to sparkplug-client object
-  let collection = null
+  let rtCollection = null
   let clientMongo = null
   let connection = null
 
@@ -168,7 +168,7 @@ let AutoCreateTags = true
   }, AppDefs.SPARKPLUG_PUBLISH_INTERVAL)
 
   setInterval(async function () {
-    processMongoUpdates(clientMongo, collection, jsConfig)
+    processMongoUpdates(clientMongo, rtCollection, jsConfig)
   }, 500)
 
   Log.log('MongoDB - Connecting to MongoDB server...', Log.levelMin)
@@ -198,7 +198,7 @@ let AutoCreateTags = true
 
         // specify db and collections
         const db = client.db(jsConfig.mongoDatabaseName)
-        collection = db.collection(jsConfig.RealtimeDataCollectionName)
+        rtCollection = db.collection(jsConfig.RealtimeDataCollectionName)
 
         // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
         connection = await getConnection(
@@ -212,14 +212,14 @@ let AutoCreateTags = true
         }
 
         let autoKeyId = await AutoTag.GetAutoKeyInitialValue(
-          collection,
+          rtCollection,
           jsConfig
         )
         Log.log('Auto Key - Initial value: ' + autoKeyId)
 
         Redundancy.Start(5000, clientMongo, db, jsConfig)
 
-        const changeStream = collection.watch(csPipeline, {
+        const changeStream = rtCollection.watch(csPipeline, {
           fullDocument: 'updateLookup'
         })
 
@@ -1064,11 +1064,25 @@ async function sparkplugProcess (
             )
             ProcessDeviceBirthOrData(deviceLocator, payload, true)
             break
-          case 'DDEATH':
-            Log.log(logMod + 'Device DEATH', Log.levelDetailed)
-            break
           case 'NDEATH':
+            // Node death, invalidate all Sparkplug subscribed data from this node
             Log.log(logMod + 'Node DEATH', Log.levelDetailed)
+            InvalidateDeviceTags(
+              deviceLocator.substring(0, deviceLocator.lastIndexOf('/')),
+              mongoClient,
+              jscadaConnection,
+              configObj
+            )
+            break
+          case 'DDEATH':
+            // Node death, invalidate all Sparkplug subscribed data from this device
+            Log.log(logMod + 'Device DEATH', Log.levelDetailed)
+            InvalidateDeviceTags(
+              deviceLocator,
+              mongoClient,
+              jscadaConnection,
+              configObj
+            )
             break
         }
       })
@@ -1106,6 +1120,7 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
   if (!'metrics' in payload) return
 
   if (isBirth) {
+    Log.log('Sparkplug - New device: ' + deviceLocator)
     DevicesList[deviceLocator] = {
       birth: true,
       metrics: payload.metrics
@@ -1319,4 +1334,28 @@ function topicStr (s) {
       .replace('+', '-')
       .replace('#', '-')
   return ''
+}
+
+// invalidate tags from device or node based on Sparkplug B topic path
+function InvalidateDeviceTags (
+  deviceTopicPath,
+  mongoClient,
+  jscadaConnection,
+  configObj
+) {
+  try {
+  Log.log('MongoDB - Invalidate tags from ' + deviceTopicPath)
+  const db = mongoClient.db(configObj.mongoDatabaseName)
+  let rtCollection = db.collection(configObj.RealtimeDataCollectionName)
+  rtCollection.updateMany(
+    {
+      protocolSourceConnectionNumber: jscadaConnection.protocolConnectionNumber,
+      protocolSourceObjectAddress: { $regex: '^'+deviceTopicPath }
+    },
+    { $set: { invalid: true } }
+  )
+  }
+  catch(e){
+    Log.log('MongoDB - Error invalidating tags from ' + deviceTopicPath + " - " + e.message)
+  }
 }
