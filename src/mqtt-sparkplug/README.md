@@ -53,7 +53,7 @@ Each instance for this driver can have just one connection defined that must be 
         endpointURLs: ["mqtt://broker.hivemq.com:1883"],
         topics: ["spBv1.0/#"],
         topicsAsFiles: ["docs/#"],
-        topicsScripted: [{topic: "sensors/sensor1", script: "ret = []; vals = JSON.parse(info.payload.toString()); cnt = 1; vals.forEach(elem => { ret.push({ id: 'scrVal' + cnt, value: elem, qualityOk: true, timestamp: new Date().getTime() }); cnt++; }); ret;"}],
+        topicsScripted: [{topic: "sensors/sensor1", script: "shared.dataArray = []; vals = JSON.parse(shared.payload.toString()); cnt = 1; vals.forEach(elem => { shared.dataArray.push({ id: 'scrVal' + cnt, value: elem, qualityOk: true, timestamp: new Date().getTime() }); cnt++; });"}],
         groupId: "Sparkplug B Devices",
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
@@ -162,20 +162,20 @@ It is necessary to subscribe the topic using the _topicsScripted_ array property
     "topicsScripted": [{ 
         "topic": "Enterprise/test/jsonarr", 
         "script": " // remove comments and put all in the same line
-                ret = []; // array of objects to return
-                vals = JSON.parse(info.payload.toString()); 
+                shared.dataArray = []; // array of objects to return
+                vals = JSON.parse(shared.payload.toString()); 
                 cnt = 1;
                 vals.forEach(elem => {
-                    ret.push({'id': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
+                    shared.dataArray.push({'id': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
                     cnt++;
                 })
-                ret; // return values in array of objects
+                // return values in array of objects shared.dataArray
                 "
         }]
 
-All scripts are executed in a shared sandboxed Javascript VM. The MQTT payload of each message is passed as a buffer in the "info.payload" object. The sandboxed VM context is preserved and reused at each call, so variables created inside the scripts are also preserved.
+All scripts are executed in a shared sandboxed Javascript VM. The MQTT payload of each message is passed as a buffer in the "shared.payload" object. The sandboxed VM context is preserved and reused at each call, so variables created inside the scripts are also preserved.
 
-The value of the last expression returns to the main process, this should be an array of objects with at least "value" and "id" properties set.
+The "shared.dataArray" should receive the array of objects with at least "value" and "id" properties set.
 
 Can also be set the following optional properties: "type", "qualityOk", "timestamp", "transient", "valueString", "valueJson", "causeOfTransmissionAtSource".
 

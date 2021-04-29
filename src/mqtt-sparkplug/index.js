@@ -844,9 +844,9 @@ async function sparkplugProcess (
         new RegExp(s.split`+`.join`[^/]+`.split`#`.join`.+`).test(t)
 
       // A VM to run scripts to extract complex payloads
-      let infoObj = {}
+      let sharedObj = {}
       const sandbox = {
-        info: infoObj
+        shared: sharedObj
       }
       const vm = new VM({ sandbox })
 
@@ -904,11 +904,11 @@ async function sparkplugProcess (
               "topicsScripted": [{ 
                  "topic": "C3ET/test/jsonarr", 
                  "script": " // remove comments and put all in the same line
-                            ret = []; // array of objects to return
-                            vals=JSON.parse(info.payload.toString()); 
+                            shared.dataArray = []; // array of objects to return
+                            vals=JSON.parse(shared.payload.toString()); 
                             cnt = 1;
                             vals.forEach(elem => {
-                              ret.push({'id': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
+                              shared.dataArray.push({'id': 'scrVal'+cnt, 'value': elem, 'qualityOk': true, 'timestamp': (new Date()).getTime() });
                               cnt++;
                             })
                             ret; // return values in array of objects
@@ -918,14 +918,15 @@ async function sparkplugProcess (
 
                 if (elem.script) {
                   // make payload (buffer) available inside VM (as info.payload)
-                  infoObj.payload = payload
+                  sharedObj.payload = payload
+                  sharedObj.dataArray = []
 
                   try {
                     // execute script and queue extracted values
-                    let extractedData = vm.run(elem.script)
+                    vm.run(elem.script)
 
-                    if (extractedData instanceof Array)
-                      extractedData.forEach(element => {
+                    if (sharedObj.dataArray instanceof Array)
+                      sharedObj.dataArray.forEach(element => {
                         if (!element.id || !'value' in element) return
                         let type = 'analog'
                         if (element.type) type = element.type
