@@ -772,7 +772,7 @@ async function sparkplugProcess (
         SparkplugPublishQueue.clear() // clear old data
         MqttPublishQueue.clear() // clear old data
 
-        // Publish SCADA HOST BIRTH certificate
+        // Publish SCADA HOST BIRTH certificate (7.5.1)
         spClient.handle.publishScadaHostBirth()
         // Publish Node BIRTH certificate
         spClient.handle.publishNodeBirth(getNodeBirthPayload(configObj))
@@ -1047,45 +1047,100 @@ async function sparkplugProcess (
           Log.log(logMod + JSON.stringify(payload), Log.levelDetailed)
 
         let splTopic = topic.split('/')
-
-        let deviceLocator = splTopic[1] + '/' + splTopic[3] + '/' + splTopic[4]
-
-        switch (splTopic[2]) {
-          case 'DDATA':
-            Log.log(logMod + 'Device DATA: ' + deviceLocator, Log.levelDetailed)
-            ProcessDeviceBirthOrData(deviceLocator, payload, false)
-            break
-          case 'NBIRTH':
-            Log.log(logMod + 'Node BIRTH', Log.levelDetailed)
-            break
-          case 'DBIRTH':
-            Log.log(
-              logMod + 'Device BIRTH: ' + deviceLocator,
-              Log.levelDetailed
-            )
-            ProcessDeviceBirthOrData(deviceLocator, payload, true)
-            break
-          case 'NDEATH':
-            // Node death, invalidate all Sparkplug subscribed data from this node
-            Log.log(logMod + 'Node DEATH', Log.levelDetailed)
-            InvalidateDeviceTags(
-              deviceLocator.substring(0, deviceLocator.lastIndexOf('/')),
-              mongoClient,
-              jscadaConnection,
-              configObj
-            )
-            break
-          case 'DDEATH':
-            // Node death, invalidate all Sparkplug subscribed data from this device
-            Log.log(logMod + 'Device DEATH', Log.levelDetailed)
-            InvalidateDeviceTags(
-              deviceLocator,
-              mongoClient,
-              jscadaConnection,
-              configObj
-            )
-            break
+        if (splTopic.length < 4) {
+          // invalid topic
+          Log.log(logMod + 'Invalid topic')
         }
+        let deviceLocator = splTopic[1] + '/' + splTopic[3]
+        if (splTopic.length > 4) deviceLocator += '/' + splTopic[4]
+
+        if (splTopic.length)
+          switch (splTopic[2]) {
+            case 'NDATA':
+              // edge of node data (7.2)
+              break
+            case 'DDATA':
+              // device data, update metrics (7.4)
+              Log.log(
+                logMod + 'Device DATA: ' + deviceLocator,
+                Log.levelDetailed
+              )
+
+              // data from not birthed device?
+              if (
+                !(deviceLocator in DevicesList) ||
+                !DevicesList[deviceLocator].birthed
+              ) {
+                Log.log(
+                  'Sparkplug - Data from not yet birthed device: ' +
+                    deviceLocator
+                )
+                Log.log('Sparkplug - Requesting node rebirth...')
+                spClient.handle.publishNodeCmd(
+                  topicInfo.groupId,
+                  topicInfo.edgeNodeId,
+                  {
+                    timestamp: new Date().getTime(),
+                    metrics: [
+                      {
+                        name: 'Node Control/Rebirth',
+                        timestamp: new Date().getTime(),
+                        type: 'Boolean',
+                        value: true
+                      }
+                    ]
+                  }
+                )
+              }
+
+              ProcessDeviceBirthOrData(deviceLocator, payload, false)
+              break
+            case 'NBIRTH':
+              // on node birth all associated data is invalidated (7.1.2)
+              Log.log(logMod + 'Node BIRTH', Log.levelDetailed)
+              InvalidateDeviceTags(
+                deviceLocator,
+                mongoClient,
+                jscadaConnection,
+                configObj
+              )
+              break
+            case 'DBIRTH':
+              // device birth, create tags and update metrics (7.3.1)
+              Log.log(
+                logMod + 'Device BIRTH: ' + deviceLocator,
+                Log.levelDetailed
+              )
+              ProcessDeviceBirthOrData(deviceLocator, payload, true)
+              break
+            case 'NDEATH':
+              // Node death, invalidate all Sparkplug metrics from this node (7.1.1)
+              Log.log(logMod + 'Node DEATH', Log.levelDetailed)
+              // devices from this node marked as dead
+              DevicesList.forEach(function (element, key) {
+                if (key.indexOf(deviceLocator) === 0)
+                  DevicesList[key].birthed = false
+              })
+              InvalidateDeviceTags(
+                deviceLocator,
+                mongoClient,
+                jscadaConnection,
+                configObj
+              )
+              break
+            case 'DDEATH':
+              // Node death, invalidate all Sparkplug metrics from this device (7.3.2)
+              Log.log(logMod + 'Device DEATH', Log.levelDetailed)
+              if (deviceLocator in DevicesList)
+                DevicesList[deviceLocator].birthed = false
+              InvalidateDeviceTags(
+                deviceLocator,
+                mongoClient,
+                jscadaConnection,
+                configObj
+              )
+              break
+          }
       })
     } catch (e) {
       Log.log(logMod + 'Error: ' + e.message, Log.levelMin)
@@ -1123,7 +1178,8 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
   if (isBirth) {
     Log.log('Sparkplug - New device: ' + deviceLocator)
     DevicesList[deviceLocator] = {
-      birth: true,
+      birthed: true,
+      mapAliasToObjectAddress: [],
       metrics: payload.metrics
     }
   }
@@ -1147,12 +1203,13 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timestamp,
     timestampQualityGood = true,
     catalogProperties = {},
-    objectAddress = ''
+    objectAddress = null
 
-  if (typeof queueMetric.MapAliasToObjectAddress === 'undefined')
-    queueMetric.MapAliasToObjectAddress = []
+  //if (typeof queueMetric.MapAliasToObjectAddress === 'undefined')
+  //  queueMetric.MapAliasToObjectAddress = []
 
   if ('name' in metric && metric.name.trim() !== '') {
+    // when metric is from a template, add template name to object address
     if (templateName && templateName.trim() !== '')
       objectAddress =
         deviceLocator + '/' + topicStr(templateName) + '/' + metric.name
@@ -1160,10 +1217,19 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
   } else if ('alias' in metric) {
     let alias =
       (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
-    objectAddress = queueMetric.MapAliasToObjectAddress[alias.toString()]
+    let device = DevicesList[deviceLocator]
+    if (device)
+      objectAddress =
+        DevicesList[deviceLocator].mapAliasToObjectAddress['a' + alias.toString()]
     if (!objectAddress) {
       // alias not mapped
-      Log.log('Sparkplug - Unmapped metric alias: ' + alias, Log.levelDetailed)
+      Log.log(
+        'Sparkplug - Unmapped metric alias=' +
+          alias +
+          ' device=' +
+          deviceLocator,
+        Log.levelDetailed
+      )
       return false
     }
   } else {
@@ -1291,7 +1357,12 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     if ('alias' in metric) {
       let alias =
         (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
-      queueMetric.MapAliasToObjectAddress[alias.toString()] = objectAddress
+      let device = DevicesList[deviceLocator]
+      if (!device) {
+        // device not yet included
+        return
+      }
+      device.mapAliasToObjectAddress['a' + alias.toString()] = objectAddress
     }
 
     if ('metadata' in metric && 'description' in metric.metadata)
@@ -1345,18 +1416,23 @@ function InvalidateDeviceTags (
   configObj
 ) {
   try {
-  Log.log('MongoDB - Invalidate tags from ' + deviceTopicPath)
-  const db = mongoClient.db(configObj.mongoDatabaseName)
-  let rtCollection = db.collection(configObj.RealtimeDataCollectionName)
-  rtCollection.updateMany(
-    {
-      protocolSourceConnectionNumber: jscadaConnection.protocolConnectionNumber,
-      protocolSourceObjectAddress: { $regex: '^'+deviceTopicPath }
-    },
-    { $set: { invalid: true } }
-  )
-  }
-  catch(e){
-    Log.log('MongoDB - Error invalidating tags from ' + deviceTopicPath + " - " + e.message)
+    Log.log('MongoDB - Invalidate tags from ' + deviceTopicPath)
+    const db = mongoClient.db(configObj.mongoDatabaseName)
+    let rtCollection = db.collection(configObj.RealtimeDataCollectionName)
+    rtCollection.updateMany(
+      {
+        protocolSourceConnectionNumber:
+          jscadaConnection.protocolConnectionNumber,
+        protocolSourceObjectAddress: { $regex: '^' + deviceTopicPath }
+      },
+      { $set: { invalid: true } }
+    )
+  } catch (e) {
+    Log.log(
+      'MongoDB - Error invalidating tags from ' +
+        deviceTopicPath +
+        ' - ' +
+        e.message
+    )
   }
 }
