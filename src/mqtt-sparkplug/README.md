@@ -9,6 +9,20 @@ This client driver connects to a MQTT Broker and can
 * Publish tags as regular MQTT topics.
 * Publish tags as a Sparkplug B device.
 
+This driver is based on the Eclipse Tahu Javascript Sparkplug B Client library.
+
+* https://github.com/eclipse/tahu
+
+Here are some nice introduction about MQTT/Sparkplug-B.
+
+* https://www.mbtmag.com/best-practices/article/21172575/how-to-integrate-automation-data-with-mqttsparkplug-b
+* https://www.linkedin.com/pulse/mqtt-sparkplug-what-marriage-all-kudzai-manditereza
+
+Official MQTT and Sparkplug B Specifications
+
+* https://mqtt.org/mqtt-specification/
+* https://www.eclipse.org/tahu/spec/Sparkplug%20Topic%20Namespace%20and%20State%20ManagementV2.2-with%20appendix%20B%20format%20-%20Eclipse.pdf
+
 ##  Configure a driver instance
 
 To create a new _MQTT-SPARKPLUG-B_ driver instance, use the Admin UI or insert a new document in the _protocolDriverInstances_ collection using a command like this:

@@ -26,6 +26,7 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
 ![](https://img.shields.io/badge/DNP3-yellow "DNP3")
 ![](https://img.shields.io/badge/MQTT-yellow "MQTT")
+![](https://img.shields.io/badge/MQTT-yellow "Sparkplug B")
 ![](https://img.shields.io/badge/OPC--UA-yellow "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
@@ -127,7 +128,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [ ] OPC UA Server
 - [ ] OPC DA Client
 - [ ] OPC DA Server
-- [x] MQTT Client
+- [x] MQTT/Sparkplug-B Client
 - [ ] Modbus Client
 - [ ] IEC 61850 MMS Client
 - [ ] IEC 61850 GOOSE Client
@@ -143,6 +144,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [x] User auth/Role-based Access Control (RBAC)
 - [x] Inkscape-based SVG Synoptic Editor
 - [x] Compiled Calculations Engine
+- [x] Customizable Change-Stream Processor (for user implemented scripts)
 - [ ] Low-latency/Interpreted Calculations Engine
 - [x] Basic Alarms Processor
 - [ ] Advanced Alarms Processor 
