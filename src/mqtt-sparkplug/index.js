@@ -1091,6 +1091,7 @@ async function sparkplugProcess (
                     ]
                   }
                 )
+                return
               }
 
               ProcessDeviceBirthOrData(deviceLocator, payload, false)
@@ -1168,8 +1169,6 @@ async function sparkplugProcess (
       spClient.handle = null
     }
   }
-
-  return
 }
 
 function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
