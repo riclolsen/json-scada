@@ -60,7 +60,7 @@ Each instance for this driver can have just one connection defined that must be 
         protocolDriverInstanceNumber: 1,
         protocolConnectionNumber: 1200,
         name: "MQTT-BROKER",
-        description: "TELEGRAF Demo",
+        description: "MQTT Demo",
         enabled: true,
         commandsEnabled: true,
         autoCreateTags: true,
