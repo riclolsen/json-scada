@@ -318,7 +318,17 @@
     "handshakeHint": "به عنوان مثال، هیچ ، Xon ، Rts ، ...",
     "asyncOpenDelay": "تأخیر باز Async",
     "asyncOpenDelayTitle": "تأخیر باز همگام سازی سریال",
-    "asyncOpenDelayHint": "بر حسب میلی ثانیه."
+    "asyncOpenDelayHint": "بر حسب میلی ثانیه.",
+    "rulesRequired": "ضروری",
+    "rulesInvalidEndpoint": "URL نقطه پایانی نامعتبر است!",
+    "rulesInvalidIP": "آدرس IP نامعتبر است!",
+    "rulesInvalidIpPort": "IP نامعتبر: آدرس پورت!",
+    "rulesInvalidTopic": "مبحث MQTT نامعتبر است!",
+    "topics": "مباحث",
+    "topicsAddNew": "افزودن موضوع جدید",
+    "topicsNew": "موضوع جدید",
+    "topicsNewCancel": "لغو",
+    "topicsNewExecute": "افزودن موضوع"
   },
   "src\\components\\tags": {
     "tags": "برچسب ها",

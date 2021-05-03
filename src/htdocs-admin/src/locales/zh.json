@@ -318,7 +318,17 @@
     "handshakeHint": "例如无，Xon，Rts等...",
     "asyncOpenDelay": "异步打开延迟",
     "asyncOpenDelayTitle": "串行异步打开延迟",
-    "asyncOpenDelayHint": "以毫秒为单位。"
+    "asyncOpenDelayHint": "以毫秒为单位。",
+    "rulesRequired": "必需的",
+    "rulesInvalidEndpoint": "无效的端点URL！",
+    "rulesInvalidIP": "IP地址无效！",
+    "rulesInvalidIpPort": "无效的IP：端口地址！",
+    "rulesInvalidTopic": "无效的MQTT主题！",
+    "topics": "话题",
+    "topicsAddNew": "新增主题",
+    "topicsNew": "新话题",
+    "topicsNewCancel": "取消",
+    "topicsNewExecute": "新增主题"
   },
   "src\\components\\tags": {
     "tags": "标签",

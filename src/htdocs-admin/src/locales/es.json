@@ -318,7 +318,17 @@
     "handshakeHint": "p.ej. Ninguno, Xon, Rts, ...",
     "asyncOpenDelay": "Retardo de apertura asincrónica",
     "asyncOpenDelayTitle": "Retardo de apertura asíncrona serial",
-    "asyncOpenDelayHint": "En milisegundos."
+    "asyncOpenDelayHint": "En milisegundos.",
+    "rulesRequired": "Requerido",
+    "rulesInvalidEndpoint": "URL de extremo no válida",
+    "rulesInvalidIP": "¡Dirección IP inválida!",
+    "rulesInvalidIpPort": "IP inválida: ¡Dirección de puerto!",
+    "rulesInvalidTopic": "¡Tema MQTT no válido!",
+    "topics": "Temas",
+    "topicsAddNew": "Agregar nuevo tema",
+    "topicsNew": "Nuevo tema",
+    "topicsNewCancel": "Cancelar",
+    "topicsNewExecute": "Agregar nuevo tema"
   },
   "src\\components\\tags": {
     "tags": "Etiquetas",

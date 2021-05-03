@@ -318,7 +318,17 @@
     "handshakeHint": "على سبيل المثال لا شيء ، Xon ، Rts ، ...",
     "asyncOpenDelay": "فتح تأخير غير متزامن",
     "asyncOpenDelayTitle": "تأخير فتح تسلسلي غير متزامن",
-    "asyncOpenDelayHint": "في مللي ثانية."
+    "asyncOpenDelayHint": "في مللي ثانية.",
+    "rulesRequired": "مطلوب",
+    "rulesInvalidEndpoint": "عنوان URL لنقطة النهاية غير صالح!",
+    "rulesInvalidIP": "عنوان إب غير صالح!",
+    "rulesInvalidIpPort": "IP غير صالح: عنوان المنفذ!",
+    "rulesInvalidTopic": "موضوع MQTT غير صالح!",
+    "topics": "المواضيع",
+    "topicsAddNew": "أضف موضوع جديد",
+    "topicsNew": "موضوع جديد",
+    "topicsNewCancel": "يلغي",
+    "topicsNewExecute": "أضف الموضوع"
   },
   "src\\components\\tags": {
     "tags": "العلامات",

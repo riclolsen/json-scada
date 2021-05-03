@@ -47,7 +47,7 @@
             class="pt-6 mx-auto"
             flat            
           >
-            <v-row min-width="500px" class="mx-auto" justify="space-between">
+            <v-row class="mx-auto flex-nowrap" justify="space-between">
               <v-select
                 prepend-inner-icon="mdi-cogs"
                 :items="driverNameItems"
@@ -229,10 +229,11 @@ export default {
       "IEC60870-5-101",
       "IEC60870-5-101_SERVER",
       "DNP3",
+      "MQTT-SPARKPLUG-B",
       "OPC-UA",
       "PLCTAG",
-      "I104M",
       "TELEGRAF-LISTENER",
+      "I104M",
     ],
     driverInstances: [],
   }),

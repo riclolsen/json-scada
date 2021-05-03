@@ -48,7 +48,7 @@
             flat
             max-width="600"
           >
-            <v-row class="pb-8 mx-auto" justify="space-between">
+            <v-row class="pb-8 mx-auto flex-nowrap" justify="space-between">
               <v-text-field
                 prepend-inner-icon="mdi-account"
                 :disabled="selected.username==='admin' ? true : false"

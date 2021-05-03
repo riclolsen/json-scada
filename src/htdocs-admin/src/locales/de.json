@@ -318,7 +318,17 @@
     "handshakeHint": "z.B. Keine, Xon, Rts, ...",
     "asyncOpenDelay": "Async Open Delay",
     "asyncOpenDelayTitle": "Serielle asynchrone Öffnungsverzögerung",
-    "asyncOpenDelayHint": "In Millisekunden."
+    "asyncOpenDelayHint": "In Millisekunden.",
+    "rulesRequired": "Erforderlich",
+    "rulesInvalidEndpoint": "Ungültige Endpunkt-URL!",
+    "rulesInvalidIP": "Ungültige IP-Adresse!",
+    "rulesInvalidIpPort": "Ungültige IP: Portadresse!",
+    "rulesInvalidTopic": "Ungültiges MQTT-Thema!",
+    "topics": "Themen",
+    "topicsAddNew": "Neues Thema hinzufügen",
+    "topicsNew": "Neues Thema",
+    "topicsNewCancel": "Stornieren",
+    "topicsNewExecute": "Thema hinzufügen"
   },
   "src\\components\\tags": {
     "tags": "Stichworte",

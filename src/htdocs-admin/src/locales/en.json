@@ -8,8 +8,8 @@
   },
   "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
-    "searchTag": "Search Tag",
-    "searchDescription": "Search Description",
+    "searchTag": "Search by Tag",
+    "searchDescription": "Search by Description",
     "confirmErase": "Confirm delete tag?",
     "eraseId": "Tag _id",
     "eraseName": "Tag name",
@@ -319,7 +319,17 @@
     "handshakeHint": "e.g. None, Xon, Rts, ...",
     "asyncOpenDelay": "Async Open Delay",
     "asyncOpenDelayTitle": "Serial async open delay",
-    "asyncOpenDelayHint": "In milliseconds."
+    "asyncOpenDelayHint": "In milliseconds.",
+    "rulesRequired": "Required",
+    "rulesInvalidEndpoint": "Invalid endpoint URL!",
+    "rulesInvalidIP": "Invalid IP Address!",
+    "rulesInvalidIpPort": "Invalid IP:Port Address!",
+    "rulesInvalidTopic": "Invalid MQTT Topic!",
+    "topics": "Topics",
+    "topicsAddNew": "Add new topic",
+    "topicsNew": "New topic",
+    "topicsNewCancel": "Cancel",
+    "topicsNewExecute": "Add topic"
   },
   "src\\components\\tags": {
     "tags": "Tags",

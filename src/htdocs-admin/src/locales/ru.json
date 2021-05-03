@@ -318,7 +318,17 @@
     "handshakeHint": "например Нет, Xon, Rts, ...",
     "asyncOpenDelay": "Асинхронная задержка открытия",
     "asyncOpenDelayTitle": "Последовательная асинхронная задержка открытия",
-    "asyncOpenDelayHint": "В миллисекундах."
+    "asyncOpenDelayHint": "В миллисекундах.",
+    "rulesRequired": "Обязательный",
+    "rulesInvalidEndpoint": "Недействительный URL-адрес конечной точки!",
+    "rulesInvalidIP": "Неверный IP-адрес!",
+    "rulesInvalidIpPort": "Недействительный IP: адрес порта!",
+    "rulesInvalidTopic": "Неверная тема MQTT!",
+    "topics": "Темы",
+    "topicsAddNew": "Добавить новую тему",
+    "topicsNew": "Новая тема",
+    "topicsNewCancel": "Отмена",
+    "topicsNewExecute": "Добавить тему"
   },
   "src\\components\\tags": {
     "tags": "Теги",

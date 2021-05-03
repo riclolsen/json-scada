@@ -318,7 +318,17 @@
     "handshakeHint": "напр. Жоден, Ксон, Rts, ...",
     "asyncOpenDelay": "Async Open Delay",
     "asyncOpenDelayTitle": "Затримка послідовного відкриття асинхронізації",
-    "asyncOpenDelayHint": "За мілісекунди."
+    "asyncOpenDelayHint": "За мілісекунди.",
+    "rulesRequired": "вимагається",
+    "rulesInvalidEndpoint": "Недійсна URL-адреса кінцевої точки!",
+    "rulesInvalidIP": "Недійсна IP-адреса!",
+    "rulesInvalidIpPort": "Недійсний IP: Адреса порту!",
+    "rulesInvalidTopic": "Недійсна тема MQTT!",
+    "topics": "Теми",
+    "topicsAddNew": "Додати нову тему",
+    "topicsNew": "Нова тема",
+    "topicsNewCancel": "Скасувати",
+    "topicsNewExecute": "Додати тему"
   },
   "src\\components\\tags": {
     "tags": "Теги",
