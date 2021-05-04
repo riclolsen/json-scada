@@ -324,6 +324,7 @@
     "rulesInvalidIP": "¡Dirección IP inválida!",
     "rulesInvalidIpPort": "IP inválida: ¡Dirección de puerto!",
     "rulesInvalidTopic": "¡Tema MQTT no válido!",
+    "topic": "Tema",
     "topics": "Temas",
     "topicsAddNew": "Agregar nuevo tema",
     "topicsNew": "Nuevo tema",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "Agregar nuevo tema",
     "topicsAsFiles": "Temas como archivos",
     "topicsScripted": "Temas con guión",
+    "topicScript": "Texto",
+    "topicsScriptedNew": "Agregar tema con guión",
+    "topicDelete": "Eliminar tema",
     "groupId": "ID de grupo de bujías",
     "groupIdTitle": "ID de grupo de bujía para publicar",
     "groupIdHint": "Déjelo en blanco para evitar la publicación de Sparkplug.",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "Dejar vacío para no publicar etiquetas como temas habituales.",
     "pfxFilePath": "Archivo PFX o PKCS12",
     "pfxFilePathTitle": "Ruta a la clave privada codificada y la cadena de certificados [* .pfx]",
-    "pfxFilePathHint": "Equiv. a la opción 'pfx' de NodeJS TLS"
+    "pfxFilePathHint": "Equiv. a la opción 'pfx' de NodeJS TLS",
+    "passphrase": "Frase de contraseña PFX",
+    "passphraseTitle": "Frase de contraseña compartida utilizada para una única clave privada y / o un PFX",
+    "passphraseHint": "Equiv. a la opción 'contraseña' de NodeJS TLS"
   },
   "src\\components\\tags": {
     "tags": "Etiquetas",

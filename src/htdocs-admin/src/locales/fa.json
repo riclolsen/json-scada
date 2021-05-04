@@ -324,6 +324,7 @@
     "rulesInvalidIP": "آدرس IP نامعتبر است!",
     "rulesInvalidIpPort": "IP نامعتبر: آدرس پورت!",
     "rulesInvalidTopic": "مبحث MQTT نامعتبر است!",
+    "topic": "موضوع",
     "topics": "مباحث",
     "topicsAddNew": "افزودن موضوع جدید",
     "topicsNew": "موضوع جدید",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "افزودن موضوع",
     "topicsAsFiles": "مباحث به عنوان پرونده",
     "topicsScripted": "مباحث نوشتاری",
+    "topicScript": "فیلمنامه",
+    "topicsScriptedNew": "افزودن موضوع نوشتاری",
+    "topicDelete": "حذف موضوع",
     "groupId": "شناسه گروه Sparkplug",
     "groupIdTitle": "شناسه گروه Sparkplug برای انتشار",
     "groupIdHint": "برای جلوگیری از انتشار Sparkplug خالی بگذارید.",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "خالی بگذارید تا برچسب ها به عنوان موضوعات عادی منتشر نشوند",
     "pfxFilePath": "پرونده PFX یا PKCS12",
     "pfxFilePathTitle": "مسیر رمزگذاری شده برای کلید خصوصی و زنجیره گواهینامه [* .pfx]",
-    "pfxFilePathHint": "معادل به گزینه NodeJS TLS 'pfx'"
+    "pfxFilePathHint": "معادل به گزینه NodeJS TLS 'pfx'",
+    "passphrase": "عبارت عبور PFX",
+    "passphraseTitle": "رمز عبور مشترک برای یک کلید خصوصی و یا PFX استفاده می شود",
+    "passphraseHint": "معادل گزینه NodeJS TLS 'passphrase'"
   },
   "src\\components\\tags": {
     "tags": "برچسب ها",

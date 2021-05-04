@@ -324,6 +324,7 @@
     "rulesInvalidIP": "IP地址无效！",
     "rulesInvalidIpPort": "无效的IP：端口地址！",
     "rulesInvalidTopic": "无效的MQTT主题！",
+    "topic": "话题",
     "topics": "话题",
     "topicsAddNew": "新增主题",
     "topicsNew": "新话题",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "新增主题",
     "topicsAsFiles": "主题作为文件",
     "topicsScripted": "脚本主题",
+    "topicScript": "脚本",
+    "topicsScriptedNew": "添加脚本主题",
+    "topicDelete": "删除主题",
     "groupId": "火花塞组ID",
     "groupIdTitle": "用于发布的Sparkplug组ID",
     "groupIdHint": "保留为空以避免Sparkplug发布。",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "留空不将标签发布为常规主题",
     "pfxFilePath": "PFX或PKCS12文件",
     "pfxFilePathTitle": "编码的私钥和证书链[* .pfx]的路径",
-    "pfxFilePathHint": "对等到NodeJS TLS选项'pfx'"
+    "pfxFilePathHint": "对等到NodeJS TLS选项'pfx'",
+    "passphrase": "PFX密码",
+    "passphraseTitle": "用于单个私钥和/或PFX的共享密码短语",
+    "passphraseHint": "对等到NodeJS TLS选项“密码”"
   },
   "src\\components\\tags": {
     "tags": "标签",

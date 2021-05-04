@@ -324,6 +324,7 @@
     "rulesInvalidIP": "Ungültige IP-Adresse!",
     "rulesInvalidIpPort": "Ungültige IP: Portadresse!",
     "rulesInvalidTopic": "Ungültiges MQTT-Thema!",
+    "topic": "Thema",
     "topics": "Themen",
     "topicsAddNew": "Neues Thema hinzufügen",
     "topicsNew": "Neues Thema",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "Thema hinzufügen",
     "topicsAsFiles": "Themen als Dateien",
     "topicsScripted": "Skript-Themen",
+    "topicScript": "Skript",
+    "topicsScriptedNew": "Skript-Thema hinzufügen",
+    "topicDelete": "Thema löschen",
     "groupId": "Gruppen-ID der Zündkerze",
     "groupIdTitle": "Zündkerzengruppen-ID zum Veröffentlichen",
     "groupIdHint": "Lassen Sie das Feld leer, um das Veröffentlichen von Sparkplug zu vermeiden.",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "Lassen Sie das Feld leer, um Tags nicht als reguläre Themen zu veröffentlichen",
     "pfxFilePath": "PFX- oder PKCS12-Datei",
     "pfxFilePathTitle": "Pfad zur verschlüsselten privaten Schlüssel- und Zertifikatkette [* .pfx]",
-    "pfxFilePathHint": "Äquiv. zu NodeJS TLS Option 'pfx'"
+    "pfxFilePathHint": "Äquiv. zu NodeJS TLS Option 'pfx'",
+    "passphrase": "PFX-Passphrase",
+    "passphraseTitle": "Gemeinsame Passphrase für einen einzelnen privaten Schlüssel und / oder eine PFX",
+    "passphraseHint": "Äquiv. zu NodeJS TLS-Option 'Passphrase'"
   },
   "src\\components\\tags": {
     "tags": "Stichworte",

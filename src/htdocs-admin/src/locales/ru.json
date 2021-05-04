@@ -324,6 +324,7 @@
     "rulesInvalidIP": "Неверный IP-адрес!",
     "rulesInvalidIpPort": "Недействительный IP: адрес порта!",
     "rulesInvalidTopic": "Неверная тема MQTT!",
+    "topic": "Тема",
     "topics": "Темы",
     "topicsAddNew": "Добавить новую тему",
     "topicsNew": "Новая тема",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "Добавить тему",
     "topicsAsFiles": "Темы в виде файлов",
     "topicsScripted": "Темы со сценариями",
+    "topicScript": "Сценарий",
+    "topicsScriptedNew": "Добавить тему со сценарием",
+    "topicDelete": "Удалить тему",
     "groupId": "Идентификатор группы свечей зажигания",
     "groupIdTitle": "Идентификатор группы Sparkplug для публикации",
     "groupIdHint": "Оставьте пустым, чтобы избежать публикации Sparkplug.",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "Оставьте поле пустым, чтобы теги не публиковались как обычные темы.",
     "pfxFilePath": "Файл PFX или PKCS12",
     "pfxFilePathTitle": "Путь к закодированному закрытому ключу и цепочке сертификатов [* .pfx]",
-    "pfxFilePathHint": "Эквив. в параметр NodeJS TLS 'pfx'"
+    "pfxFilePathHint": "Эквив. в параметр NodeJS TLS 'pfx'",
+    "passphrase": "Кодовая фраза PFX",
+    "passphraseTitle": "Общая парольная фраза, используемая для одного закрытого ключа и / или PFX",
+    "passphraseHint": "Эквив. в NodeJS TLS опцию 'passphrase'"
   },
   "src\\components\\tags": {
     "tags": "Теги",

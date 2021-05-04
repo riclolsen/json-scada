@@ -324,6 +324,7 @@
     "rulesInvalidIP": "عنوان إب غير صالح!",
     "rulesInvalidIpPort": "IP غير صالح: عنوان المنفذ!",
     "rulesInvalidTopic": "موضوع MQTT غير صالح!",
+    "topic": "عنوان",
     "topics": "المواضيع",
     "topicsAddNew": "أضف موضوع جديد",
     "topicsNew": "موضوع جديد",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "أضف الموضوع",
     "topicsAsFiles": "الموضوعات كملفات",
     "topicsScripted": "مواضيع مكتوبة",
+    "topicScript": "النصي",
+    "topicsScriptedNew": "أضف موضوعًا مكتوبًا",
+    "topicDelete": "حذف الموضوع",
     "groupId": "معرف مجموعة Sparkplug",
     "groupIdTitle": "معرف مجموعة Sparkplug للنشر",
     "groupIdHint": "اتركه فارغًا لتجنب نشر Sparkplug.",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "اتركه فارغًا حتى لا يتم نشر العلامات كمواضيع عادية",
     "pfxFilePath": "ملف PFX أو PKCS12",
     "pfxFilePathTitle": "المسار إلى المفتاح الخاص المشفر وسلسلة الشهادات [* .pfx]",
-    "pfxFilePathHint": "معادل. إلى خيار NodeJS TLS \"pfx\""
+    "pfxFilePathHint": "معادل. إلى خيار NodeJS TLS \"pfx\"",
+    "passphrase": "عبارة مرور PFX",
+    "passphraseTitle": "عبارة المرور المشتركة المستخدمة لمفتاح خاص واحد و / أو PFX",
+    "passphraseHint": "معادل. إلى خيار NodeJS TLS \"عبارة المرور\""
   },
   "src\\components\\tags": {
     "tags": "العلامات",

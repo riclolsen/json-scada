@@ -324,6 +324,7 @@
     "rulesInvalidIP": "Endereço IP inválido!",
     "rulesInvalidIpPort": "IP inválido: Endereço da porta!",
     "rulesInvalidTopic": "Tópico MQTT inválido!",
+    "topic": "Tópico",
     "topics": "Tópicos",
     "topicsAddNew": "Adicionar novo tópico",
     "topicsNew": "Novo topico",
@@ -331,6 +332,9 @@
     "topicsNewExecute": "Adicionar tópico",
     "topicsAsFiles": "Tópicos como arquivos",
     "topicsScripted": "Tópicos com script",
+    "topicScript": "Roteiro",
+    "topicsScriptedNew": "Adicionar tópico com script",
+    "topicDelete": "Apagar tópico",
     "groupId": "Id do grupo Sparkplug",
     "groupIdTitle": "ID do grupo Sparkplug para publicação",
     "groupIdHint": "Deixe em branco para evitar a publicação do Sparkplug.",
@@ -356,7 +360,10 @@
     "publishTopicRootHint": "Deixe em branco para não publicar tags como tópicos regulares",
     "pfxFilePath": "Arquivo PFX ou PKCS12",
     "pfxFilePathTitle": "Caminho para a chave privada codificada e cadeia de certificados [* .pfx]",
-    "pfxFilePathHint": "Equiv. para a opção NodeJS TLS 'pfx'"
+    "pfxFilePathHint": "Equiv. para a opção NodeJS TLS 'pfx'",
+    "passphrase": "Senha PFX",
+    "passphraseTitle": "Senha compartilhada usada para uma única chave privada e / ou um PFX",
+    "passphraseHint": "Equiv. para a opção NodeJS TLS 'passphrase'"
   },
   "src\\components\\tags": {
     "tags": "Tags",
