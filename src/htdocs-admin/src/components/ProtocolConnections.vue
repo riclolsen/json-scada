@@ -24,7 +24,7 @@
           dark
           x-small
           color="blue"
-          @click="createProtocolConnection($event)"
+          @click="createProtocolConnection()"
         >
           <v-icon dark> mdi-plus </v-icon>
           {{ $t("src\\components\\connections.newConnection") }}
@@ -114,7 +114,7 @@
                       text
                       @click="
                         dialogDelConn = false;
-                        deleteProtocolConnection($event);
+                        deleteProtocolConnection();
                       "
                     >
                       {{
@@ -400,7 +400,7 @@
                             text
                             @click="
                               dialogAddURL = false;
-                              addNewURL($event);
+                              addNewURL();
                             "
                           >
                             {{
@@ -1471,7 +1471,7 @@
                             text
                             @click="
                               dialogAddIP = false;
-                              addNewRangeScan($event);
+                              addNewRangeScan();
                             "
                           >
                             {{
@@ -1754,7 +1754,7 @@
                             text
                             @click="
                               dialogAddIP = false;
-                              addNewIP($event);
+                              addNewIP();
                             "
                           >
                             {{
@@ -2250,7 +2250,7 @@
                             text
                             @click="
                               dialogAddTopic = false;
-                              addNewTopic($event);
+                              addNewTopic();
                             "
                           >
                             {{
@@ -2314,7 +2314,7 @@
                             :label="
                               $t('src\\components\\connections.topicsNew')
                             "
-                            v-model="newTopic"
+                            v-model="newTopicAsFile"
                             :rules="[rules.required, rules.topic]"
                           ></v-text-field>
                         </v-card-title>
@@ -2337,7 +2337,7 @@
                             text
                             @click="
                               dialogAddTopicAsFile = false;
-                              addNewTopicAsFile($event);
+                              addNewTopicAsFile();
                             "
                           >
                             {{
@@ -2394,7 +2394,6 @@
                                           dark
                                           x-small
                                           color="red"
-                                          @click="$event"
                                         >
                                           <v-icon dark> mdi-minus </v-icon>
                                           {{ $t("src\\components\\connections.topicDelete") }}
@@ -2410,7 +2409,6 @@
                                           dark
                                           x-small
                                           color="blue"
-                                          @click="$event"
                                         >
                                           <v-icon dark> mdi-plus </v-icon>
                                           {{ $t("src\\components\\connections.topicsScriptedNew") }}
@@ -2824,6 +2822,7 @@ export default {
     newIP: "",
     newURL: "",
     newTopic: "",
+    newTopicAsFile: "",
     newTopicScripted: {
       topic: "",
       script: "",

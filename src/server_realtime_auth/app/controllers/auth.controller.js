@@ -178,16 +178,62 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['OPC-UA', 'TELEGRAF-LISTENER'].includes(req?.body?.protocolDriver)) {
+  if (['OPC-UA', 'TELEGRAF-LISTENER', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('autoCreateTags' in req.body)) {
       req.body.autoCreateTags = true
     }
   }
 
-  if (['OPC-UA'].includes(req?.body?.protocolDriver)) {
+
+  if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+    if (!('topics' in req.body)) {
+      req.body.topics = []
+    }
+    if (!('topicsAsFiles' in req.body)) {
+      req.body.topicsAsFiles = []
+    }
+    if (!('topicsScripted' in req.body)) {
+      req.body.topicsScripted = []
+    }
+    if (!('groupId' in req.body)) {
+      req.body.groupId = ''
+    }
+    if (!('edgeNodeId' in req.body)) {
+      req.body.edgeNodeId = ''
+    }
+    if (!('deviceId' in req.body)) {
+      req.body.deviceId = ''
+    }
+    if (!('scadaHostId' in req.body)) {
+      req.body.scadaHostId = ''
+    }
+    if (!('publishTopicRoot' in req.body)) {
+      req.body.publishTopicRoot = ''
+    }
+    if (!('username' in req.body)) {
+      req.body.username = ''
+    }
+    if (!('password' in req.body)) {
+      req.body.password = ''
+    }
+    if (!('pfxFilePath' in req.body)) {
+      req.body.pfxFilePath = ''
+    }
+    if (!('passphrase' in req.body)) {
+      req.body.passphrase = ''
+    }
+  }
+
+  if (['OPC-UA', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('endpointURLs' in req.body)) {
       req.body.endpointURLs = []
     }
+    if (!('useSecurity' in req.body)) {
+      req.body.useSecurity = false
+    }
+  }
+
+  if (['OPC-UA'].includes(req?.body?.protocolDriver)) {
     if (!('configFileName' in req.body)) {
       req.body.configFileName = '../conf/Opc.Ua.DefaultClient.Config.xml'
     }
@@ -202,9 +248,6 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('timeoutMs' in req.body)) {
       req.body.timeoutMs = 20000.0
-    }
-    if (!('useSecurity' in req.body)) {
-      req.body.useSecurity = false
     }
   }
 
@@ -292,28 +335,34 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104', 'DNP3'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104', 'DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('localCertFilePath' in req.body)) {
       req.body.localCertFilePath = ''
     }
+  }
+
+  if (['IEC60870-5-104', 'DNP3'].includes(req?.body?.protocolDriver)) {
     if (!('peerCertFilePath' in req.body)) {
       req.body.peerCertFilePath = ''
     }
   }
 
-  if (['IEC60870-5-104'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('rootCertFilePath' in req.body)) {
       req.body.rootCertFilePath = ''
-    }
-    if (!('allowOnlySpecificCertificates' in req.body)) {
-      req.body.allowOnlySpecificCertificates = false
     }
     if (!('chainValidation' in req.body)) {
       req.body.chainValidation = false
     }
   }
 
-  if (['DNP3'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104'].includes(req?.body?.protocolDriver)) {
+    if (!('allowOnlySpecificCertificates' in req.body)) {
+      req.body.allowOnlySpecificCertificates = false
+    }
+  }
+
+  if (['DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('allowTLSv10' in req.body)) {
       req.body.allowTLSv10 = false
     }
@@ -332,6 +381,9 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('privateKeyFilePath' in req.body)) {
       req.body.privateKeyFilePath = ''
     }
+  }
+
+  if (['DNP3'].includes(req?.body?.protocolDriver)) {
     if (!('asyncOpenDelay' in req.body)) {
       req.body.asyncOpenDelay = 0.0
     }

@@ -27,16 +27,32 @@ const ProtocolConnection = mongoose.model(
     ipAddressLocalBind: { type: String },
     ipAddresses: { type: [String], default: [] },
 
-    // OPC-UA Client, TELEGRAF_LISTENER
+    // MQTT-SPARKPLUG-B
+    topics: { type: [String], default: [] },
+    topicsAsFiles: { type: [String], default: [] },
+    topicsScripted: { type: [Object], default: [] },  
+    groupId: { type: String },
+    edgeNodeId: { type: String },
+    deviceId: { type: String },
+    scadaHostId: { type: String },
+    publishTopicRoot: { type: String },
+    username: { type: String },
+    password: { type: String },
+    pfxFilePath: { type: String, default: '' }, 
+    passphrase: { type: String, default: '' }, 
+
+    // OPC-UA Client, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B
     autoCreateTags: { type: Boolean, default: true },
     
+    // OPC-UA Client, MQTT-SPARKPLUG-B
+    endpointURLs: { type: [String], default: [] },
+    useSecurity: { type: Boolean, default: false },
+
     // OPC-UA Client
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
     autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
     autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
-    endpointURLs: { type: [String], default: [] },
     configFileName: { type: String, default: "../conf/Opc.Ua.DefaultClient.Config.xml" },
-    useSecurity: { type: Boolean, default: false },
     timeoutMs: { type: Double, min: 0, default: 20000 },
 
     // IEC 104 Server and Client, DNP3, PLCTag, I104M
@@ -68,22 +84,28 @@ const ProtocolConnection = mongoose.model(
     // IEC 101/104 Server 
     maxQueueSize: { type: Double, min: 0, default: 5000.0 },
 
-    // IEC 104 Client, DNP3 Client
+    // IEC 104 Client, DNP3 Client, MQTT-SPARKPLUG-B
     localCertFilePath: { type: String, default: '' },
+
+    // IEC 104 Client, DNP3 Client
     peerCertFilePath: { type: String, default: '' }, 
 
-    // IEC 104 Client
+    // IEC 104 Client, MQTT-SPARKPLUG-B
     rootCertFilePath: { type: String, default: '' }, 
-    allowOnlySpecificCertificates: { type: Boolean, default: false },
     chainValidation: { type: Boolean, default: false }, 
 
-    // DNP3 Client
+    // IEC 104 Client
+    allowOnlySpecificCertificates: { type: Boolean, default: false },
+
+    // DNP3 Client, MQTT-SPARKPLUG-B
+    privateKeyFilePath: { type: String, default: '' }, 
     allowTLSv10: { type: Boolean, default: false }, 
     allowTLSv11: { type: Boolean, default: false }, 
     allowTLSv12: { type: Boolean, default: true }, 
     allowTLSv13: { type: Boolean, default: true }, 
     cipherList: { type: String, default: '' },  
-    privateKeyFilePath: { type: String, default: '' }, 
+
+    // DNP3 Client
     asyncOpenDelay: { type: Double, min: 0.0, default: 0.0 }, 
     timeSyncMode: { type: Double, min: 0.0, max: 2.0, default: 0.0 }, 
     class0ScanInterval: { type: Double, min: 0.0, default: 0.0 }, 
