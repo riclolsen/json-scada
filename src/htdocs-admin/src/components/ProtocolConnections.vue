@@ -2238,7 +2238,7 @@
                           <v-btn
                             color="green darken-1"
                             text
-                            @click="dialogTopic = false"
+                            @click="dialogAddTopic = false"
                           >
                             {{
                               $t("src\\components\\connections.topicsNewCancel")
@@ -2325,7 +2325,7 @@
                           <v-btn
                             color="green darken-1"
                             text
-                            @click="dialogTopicAsFile = false"
+                            @click="dialogAddTopicAsFile = false"
                           >
                             {{
                               $t("src\\components\\connections.topicsNewCancel")
@@ -2356,27 +2356,35 @@
                       ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
                     "
                     :label="$t('src\\components\\connections.topicsScripted')"
-                    class="mb-2"
                   >
                     <v-layout fill-height>
                       <v-flex fill-height>
                         <v-card dense tile>
                           <v-card-text> Scripted Topics </v-card-text>
 
-                          <template v-for="item in selected.topicsScripted">
-                            <v-container :key="item.topic" fluid>
+                          <template v-for="(item, index) in selected.topicsScripted">
+                            <v-container :key="item.dummy" fluid>
                               <v-card dense>
                                 <v-card-text dense>
-                                  <v-text-field style="font-size:1em;" dense
+                                  <v-text-field
+                                    style="font-size: 1em"
+                                    dense
                                     :label="
                                       $t('src\\components\\connections.topic')
                                     "
                                     v-model="item.topic"
+                                    @change="updateProtocolConnection"
                                     :rules="[rules.required, rules.topic]"
                                   ></v-text-field>
 
-                                  <v-textarea  style="font-size:.8em;font-family: monospace"
-                                  class="ma-0"
+                                  <v-textarea
+                                  row-height=20
+                                  auto-grow
+                                    style="
+                                      font-size: .9em;
+                                      font-family: monospace;
+                                    "
+                                    class="ma-0"
                                     outlined
                                     rows="4"
                                     dense
@@ -2385,42 +2393,48 @@
                                         'src\\components\\connections.topicScript'
                                       )
                                     "
+                                    @change="updateProtocolConnection"
                                     v-model="item.script"
                                     :rules="[rules.required]"
                                   ></v-textarea>
 
-                                          <v-btn
-                                          class="ma-0"
-                                          dark
-                                          x-small
-                                          color="red"
-                                        >
-                                          <v-icon dark> mdi-minus </v-icon>
-                                          {{ $t("src\\components\\connections.topicDelete") }}
-                                        </v-btn>
-
+                                  <v-btn class="ma-0" dark x-small color="red"
+                                  @click="deleteTopicScripted(index)"
+                                  >
+                                    <v-icon dark> mdi-minus </v-icon>
+                                    {{
+                                      $t(
+                                        "src\\components\\connections.topicDelete"
+                                      )
+                                    }}
+                                  </v-btn>
                                 </v-card-text>
                               </v-card>
                             </v-container>
                           </template>
                           <v-card-text>
-                                          <v-btn
-                                          class="ma-0"
-                                          dark
-                                          x-small
-                                          color="blue"
-                                        >
-                                          <v-icon dark> mdi-plus </v-icon>
-                                          {{ $t("src\\components\\connections.topicsScriptedNew") }}
-                                        </v-btn>
-                                        </v-card-text>
+                            <v-btn
+                              class="ma-0"
+                              dark
+                              x-small
+                              color="blue"
+                              @click="addNewTopicScripted"
+                            >
+                              <v-icon dark> mdi-plus </v-icon>
+                              {{
+                                $t(
+                                  "src\\components\\connections.topicsScriptedNew"
+                                )
+                              }}
+                            </v-btn>
+                          </v-card-text>
                         </v-card>
                       </v-flex>
                     </v-layout>
                   </v-list-item>
 
-
                   <v-list-item
+                    class="mt-4"
                     v-if="
                       ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
                     "
@@ -2922,11 +2936,6 @@ export default {
   },
 
   methods: {
-    editTopicScripted(event) {
-      // topicScripted = { topic: this.selected. }
-      this.dialogEditTopicScripted = true;
-      console.log(event);
-    },
     async updateProtocolConnection() {
       var connDup = Object.assign({}, this.selected);
       delete connDup["id"];
@@ -2937,13 +2946,6 @@ export default {
           connDup.rangeScans.push(JSON.parse(connDup.rangeScansStr[i]));
       }
       delete connDup["rangeScansStr"];
-
-      if ("topicsScripted" in connDup) {
-        connDup.topicsScripted = [];
-        for (let i = 0; i < connDup.topicsScriptedStr.length; i++)
-          connDup.topicsScripted.push(JSON.parse(connDup.topicsScriptedStr[i]));
-      }
-      delete connDup["topicsScriptedStr"];
 
       return await fetch("/Invoke/auth/updateProtocolConnection", {
         method: "post",
@@ -3030,10 +3032,31 @@ export default {
         this.newTopicAsFile = "";
       }
     },
+    async deleteTopicScripted(index) {
+      this.selected.topicsScripted.splice(index, 1);
+      this.updateProtocolConnection();
+    },
     async addNewTopicScripted() {
-      this.selected.topicsScriptedStr.push(
-        JSON.stringify(this.newTopicScripted)
-      );
+      this.selected.topicsScripted.push({
+        topic: "",
+        script: `// extract values from array of values [ 1.22, 2.34, 3.45 ]
+shared.dataArray = [] // here put the array of returned objects
+// shared.payload contains the message payload as a buffer
+vals = JSON.parse(shared.payload.toString()) 
+cnt = 1
+vals.forEach(elem => {
+  // returned objects must contain id and value at least
+  shared.dataArray.push({
+    id: 'scrVal' + cnt,
+    value: elem,
+    qualityOk: true,
+    timestamp: new Date().getTime()
+  })
+  cnt++
+})
+
+`,
+      });
       this.updateProtocolConnection();
     },
     async deleteProtocolConnection() {
@@ -3065,13 +3088,6 @@ export default {
           for (let i = 0; i < json.length; i++) {
             json[i].id = i + 1;
 
-            json[i].topicsScriptedStr = [];
-            if ("topicsScripted" in json[i])
-              for (let j = 0; j < json[i].topicsScripted.length; j++)
-                json[i].topicsScriptedStr.push(
-                  JSON.stringify(json[i].topicsScripted[j])
-                );
-
             json[i].rangeScansStr = [];
             if ("rangeScans" in json[i])
               for (let j = 0; j < json[i].rangeScans.length; j++)
@@ -3098,5 +3114,9 @@ export default {
   display: inline-block !important;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.v-textarea textarea {
+line-height: 1.1em! Important;
 }
 </style>
