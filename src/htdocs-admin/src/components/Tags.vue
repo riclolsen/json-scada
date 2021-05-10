@@ -12,7 +12,7 @@
       :items-per-page="15"
     >
       <template v-slot:top>
-        <v-toolbar flat>
+        <v-toolbar flat class="d-print-none">
           <v-toolbar-title>{{
             $t("src\\components\\tags.tags")
           }}</v-toolbar-title>

@@ -7,34 +7,34 @@
       icons-and-text
       height="62px"
     >
-      <v-tabs-slider></v-tabs-slider>
+      <v-tabs-slider class="d-print-none"></v-tabs-slider>
 
-      <v-tab href="#tab-1">
+      <v-tab href="#tab-1" class="d-print-none">
         {{ $t('src\\components\\users.users') }}
         <v-icon>mdi-account-multiple</v-icon>
       </v-tab>
 
-      <v-tab href="#tab-2">
+      <v-tab href="#tab-2" class="d-print-none">
         {{ $t('src\\components\\roles.roles') }}
         <v-icon>mdi-security</v-icon>
       </v-tab>
 
-      <v-tab href="#tab-3">
+      <v-tab href="#tab-3" class="d-print-none">
         {{ $t('src\\components\\driverInstances.driverInstances') }}
         <v-icon>mdi-cogs</v-icon>
       </v-tab>
 
-      <v-tab href="#tab-4">
+      <v-tab href="#tab-4" class="d-print-none">
         {{ $t('src\\components\\connections.connections') }}
         <v-icon>mdi-file-tree</v-icon>
       </v-tab>
 
-      <v-tab href="#tab-5">
+      <v-tab href="#tab-5" class="d-print-none">
         {{ $t('src\\components\\tags.tags') }}
         <v-icon>mdi-tag-multiple</v-icon>
       </v-tab>
 
-      <v-tab href="#tab-6">
+      <v-tab href="#tab-6" class="d-print-none">
         {{ $t('src\\components\\useractions.userActions') }}
         <v-icon>mdi-clipboard-account</v-icon>
       </v-tab>

@@ -1,6 +1,6 @@
 <template>
   <span>
-    <v-app-bar color="primary darken-4" dark dense>
+    <v-app-bar color="primary darken-4" dark dense class="d-print-none">
       <img alt="{json-scada}" height="36px" src="../assets/json-scada.svg" />
       <v-spacer></v-spacer>
       <v-toolbar-title>{{ $t('src\\components\\appnavigation.appTitle') }}</v-toolbar-title>
