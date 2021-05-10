@@ -49,6 +49,10 @@ https://helicalinsight.github.io/helicalinsight/#/quickstart
 Data mining, ML and visualization tool. 
 https://github.com/biolab/orange3
 
+### JSReport
+An open-source platform for designing and rendering various reports.
+https://github.com/jsreport/jsreport
+
 ### MS Power BI
 This is a popular commercial (with some free tiers) BI Package that can work with PostgreSQL. It is not a report generator but can suit most needs. It can work with MongoDB using the _MongoBD Connector for BI_.
 https://docs.mongodb.com/bi-connector/master/connect/powerbi/
