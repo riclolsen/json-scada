@@ -25,4 +25,5 @@ MSG: '{json:scada} - MQTT-Sparkplug-B Client Driver',
 VERSION: '0.1.1',
 MAX_QUEUEDMETRICS: 10000,
 SPARKPLUG_PUBLISH_INTERVAL: 777,
+TAGS_SUBTOPIC: "_tags",
 }

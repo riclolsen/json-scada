@@ -110,24 +110,17 @@ let AutoCreateTags = true
             data.properties.topic.value,
             data.value.toString()
           )
-          // publish under root/group1/tag: value(v), timestamp(t), quality(q)
+          
+          // publish under root/group1/tags/tag: value(v), timestamp(t), quality(q)
           SparkplugClientObj.handle.client.publish(
-            data.properties.topicAsTag.value + '/v',
-            data.value.toString(),
+            data.properties.topicAsTag.value,
+            JSON.stringify({
+              value: data.value,
+              ...('timestamp' in data)?{timestamp: data.timestamp}:{},
+              ...('good' in data.properties)?{good: data.properties.good.value}:{},
+            }),
             { retain: true }
           )
-          if ('timestamp' in data)
-            SparkplugClientObj.handle.client.publish(
-              data.properties.topicAsTag.value + '/t',
-              data.timestamp.toString(),
-              { retain: true }
-            )
-          if ('qualityIsGood' in data.properties)
-            SparkplugClientObj.handle.client.publish(
-              data.properties.topicAsTag.value + '/q',
-              data.properties.qualityIsGood.value.toString(),
-              { retain: true }
-            )
 
           // remove (static) properties to avoid publishing to sparkplug
           delete data.properties.topic
@@ -372,11 +365,11 @@ async function getDeviceBirthPayload (rtCollection) {
     }
 
     let timestamp = false
-    let timestampQualityGood = false
+    let timestampGood = false
     if ('timeTagAtSource' in element && element.timeTagAtSource !== null) {
       timestamp = new Date(element.timeTagAtSource).getTime()
       if ('timeTagAtSourceOk' in element)
-        timestampQualityGood = element.timeTagAtSourceOk
+        timestampGood = element.timeTagAtSourceOk
     }
     //else if ("timeTag" in element && element.timeTag !== null){
     //  timestamp = (new Date(element.timeTag)).getTime()
@@ -393,16 +386,16 @@ async function getDeviceBirthPayload (rtCollection) {
 
       properties: {
         description: { type: 'string', value: element.description },
-        qualityIsGood: {
+        good: {
           type: 'boolean',
           value: element.invalid ? false : true
         },
         ...(timestamp === false
           ? {}
           : {
-              timestampQualityIsGood: {
+              timestampGood: {
                 type: 'boolean',
-                value: timestampQualityGood
+                value: timestampGood
               }
             })
       }
@@ -447,10 +440,10 @@ function getMetricPayload (element, jscadaConnection) {
   }
 
   let timestamp = false
-  let timestampQualityGood = false
+  let timestampGood = false
   if ('timeTagAtSource' in element && element.timeTagAtSource !== null) {
     timestamp = new Date(element.timeTagAtSource).getTime()
-    timestampQualityGood = element.timeTagAtSourceOk
+    timestampGood = element.timeTagAtSourceOk
   }
   //else if ("timeTag" in element && element.timeTag !== null){
   //  timestamp = (new Date(element.timeTag)).getTime()
@@ -487,7 +480,7 @@ function getMetricPayload (element, jscadaConnection) {
 
     topicName = jscadaConnection.publishTopicRoot.trim() + '/'
     if (element.group1 && element.group1.trim() !== '')
-      topicName += topicStr(element.group1) + '/'
+      topicName += topicStr(element.group1) + '/' + AppDefs.TAGS_SUBTOPIC + '/'
     topicName += topicStr(element.tag)
     topicAsTag = {
       topicAsTag: {
@@ -504,7 +497,7 @@ function getMetricPayload (element, jscadaConnection) {
     type: type,
     ...(timestamp === false ? {} : { timestamp: timestamp }),
     properties: {
-      qualityIsGood: {
+      good: {
         type: 'boolean',
         value: element.invalid ? false : true
       },
@@ -513,9 +506,9 @@ function getMetricPayload (element, jscadaConnection) {
       ...(timestamp === false
         ? {}
         : {
-            timestampQualityIsGood: {
+            timestampGood: {
               type: 'boolean',
-              value: timestampQualityGood
+              value: timestampGood
             }
           })
     }
@@ -1200,7 +1193,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     invalid = false,
     transient = false,
     timestamp,
-    timestampQualityGood = true,
+    timestampGood = true,
     catalogProperties = {},
     objectAddress = null
 
@@ -1243,7 +1236,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timestamp = metric.timestamp
   } else {
     timestamp = new Date().getTime()
-    timestampQualityGood = false
+    timestampGood = false
   }
 
   if (metric?.is_null === true) {
@@ -1334,11 +1327,11 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
   if (metric?.is_transient === true) transient = true
 
   if ('properties' in metric) {
-    if ('qualityIsGood' in metric.properties) {
-      invalid = !metric.properties.qualityIsGood.value
+    if ('good' in metric.properties) {
+      invalid = !metric.properties.good.value
     }
-    if ('timestampQualityIsGood' in metric.properties) {
-      timestampQualityGood = !metric.properties.timestampQualityIsGood.value
+    if ('timestampGood' in metric.properties) {
+      timestampGood = !metric.properties.timestampGood.value
     }
   }
 
@@ -1390,7 +1383,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     transient: transient,
     causeOfTransmissionAtSource: isBirth ? '20' : '3',
     timeTagAtSource: new Date(timestamp),
-    timeTagAtSourceOk: timestampQualityGood,
+    timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
     ...catalogProperties
   })
