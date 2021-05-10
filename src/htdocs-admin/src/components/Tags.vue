@@ -340,7 +340,7 @@
         </v-toolbar>
       </template>
 
-      <template v-slot:item.Actions="{ item }">
+      <template v-slot:[`item.Actions`]="{ item }">
         <v-icon small class="mr-2" @click="editTag(item)"> mdi-pencil </v-icon>
         <v-icon small @click="deleteTagOpenDialog(item)"> mdi-delete </v-icon>
       </template>
