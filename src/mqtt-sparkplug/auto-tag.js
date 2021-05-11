@@ -22,7 +22,7 @@ const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 
 let AutoKeyId = 0
-let AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
+let AutoKeyMultiplier = 1000000 // should be more than estimated maximum points on a connection
 
 function NewTag () {
   AutoKeyId++

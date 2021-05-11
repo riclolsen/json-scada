@@ -83,8 +83,11 @@ function SparkplugClient(config) {
         maxVersion = getProperty(config, "maxVersion", "TLSv1.3"),
         ciphers = getProperty(config, "ciphers", ""),
         rejectUnauthorized = getProperty(config, "rejectUnauthorized", true),
-        bdSeq = getProperty(config, "bdSeq", 0),
+        bdSeq = getProperty(config, "bdSeq", -1),
         seq = getProperty(config, "seq", 0),
+        clean = getProperty(config, "clean", true),
+        keepalive = getProperty(config, "keepalive", 5),
+        connectionTimeout = getProperty(config, "connectionTimeout", 30),
         devices = [],
         client = null,
         connecting = false,
@@ -378,10 +381,10 @@ function SparkplugClient(config) {
         var // Client connection options
             clientOptions = {
                 "clientId" : clientId,
-                "clean" : true,
-                "keepalive" : 5,
+                "clean" : clean,
+                "keepalive" : keepalive,
                 "reschedulePings" : false,
-                "connectionTimeout" : 30,
+                "connectionTimeout" : connectionTimeout,
                 // "protocolVersion": 5,
                 "username" : username,
                 "password" : password,
@@ -413,6 +416,7 @@ function SparkplugClient(config) {
          * 'connect' handler
          */
         client.on('connect', function () {
+            bdSeq++; // increment birth/death sequence at each connect (initialized with)
             logger.info("Client has connected");
             sparkplugClient.connecting = false;
             sparkplugClient.connected = true;

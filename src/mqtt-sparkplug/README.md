@@ -140,6 +140,34 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 * To publish tags as regular MQTT topics, configure the _publishTopicRoot_ property.
 * To publish tags as a Sparkplug B device, configure the _groupId_, _edgeNodeId_ and _deviceId_ properties.
 
+
+## Send Command Via Sparkplug B
+
+To send commands via Sparkplug B.
+
+## Receive Commands Via Sparkplug B
+
+Received commands via Sparkplug B can be routed to other protocol connections by configuring the _protocolDestinations_ array of the _realtimeData_ collection.
+
+    db.realtimeData.updateOne({"tag":"A_COMMAND_TAG_NAME"}, {
+        $push:{
+            "protocolDestinations":{
+                "protocolDestinationConnectionNumber": 1200,
+                "protocolDestinationObjectAddress": "metric_name",
+                "protocolDestinationKConv1": 1,
+                "protocolDestinationKConv2": 0
+                }
+        }
+    });
+
+Parameters description for _protocolDestinations_
+* _**protocolDestinationConnectionNumber**_ - Number code of the protocol connection (must match the number code of the desired MQTT connection defined on _protocolConnections_ collection). **Mandatory parameter**.
+* _**protocolDestinationObjectAddress**_ - Sparkplug B metric name to write command. **Mandatory parameter**.
+* _**protocolDestinationKConv1**_ - Conversion factor for values (multiplier). Use -1 to invert digital states. **Mandatory parameter**.
+* _**protocolDestinationKConv2**_ - Conversion factor for values (adder). **Mandatory parameter**.
+
+When the protocol destination is changed for a tag, the change will be immediately effective on running drivers. There is no need to restart any process.
+
 ## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
 
 ![Driver instances and connections](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_Connections.png "Driver Instances and Connections Numbering")

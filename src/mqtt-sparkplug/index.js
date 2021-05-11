@@ -34,6 +34,7 @@ const AppDefs = require('./app-defs')
 const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
+const { timeEnd } = require('console')
 
 const SparkplugNS = 'spBv1.0'
 
@@ -108,16 +109,19 @@ let AutoCreateTags = true
           // publish value under root/group1/group2/group3/name
           SparkplugClientObj.handle.client.publish(
             data.properties.topic.value,
-            data.value.toString()
+            data.value.toString(),
+            { retain: true }
           )
-          
+
           // publish under root/group1/tags/tag: value(v), timestamp(t), quality(q)
           SparkplugClientObj.handle.client.publish(
             data.properties.topicAsTag.value,
             JSON.stringify({
               value: data.value,
-              ...('timestamp' in data)?{timestamp: data.timestamp}:{},
-              ...('good' in data.properties)?{good: data.properties.good.value}:{},
+              ...('timestamp' in data ? { timestamp: data.timestamp } : {}),
+              ...('good' in data.properties
+                ? { good: data.properties.good.value }
+                : {})
             }),
             { retain: true }
           )
@@ -725,10 +729,9 @@ async function sparkplugProcess (
       Log.log(logMod + 'Creating client...')
       let config
       try {
-      config = getSparkplugConfig(jscadaConnection)
-      }
-      catch(e){
-        Log.log(logMod + "Parameter error. " + e.message)
+        config = getSparkplugConfig(jscadaConnection)
+      } catch (e) {
+        Log.log(logMod + 'Parameter error. ' + e.message)
         process.exit(1)
       }
 
@@ -1059,6 +1062,54 @@ async function sparkplugProcess (
 
         if (splTopic.length)
           switch (splTopic[2]) {
+            case 'NCMD':
+              if (payload.metrics instanceof Array) {
+                payload.metrics.forEach(metric => {
+                  switch (metric?.name) {
+                    case 'Node Control/Rebirth':
+                      if (metric?.value === true) {
+                        Log.log(
+                          logMod + 'Node rebirth command received',
+                          Log.levelDetailed
+                        )
+                        // Publish Node BIRTH certificate
+                        spClient.handle.publishNodeBirth(
+                          getNodeBirthPayload(configObj)
+                        )
+                        // Publish Device BIRTH certificate
+                        spClient.handle.publishDeviceBirth(
+                          jscadaConnection.deviceId,
+                          getDeviceBirthPayload(
+                            db.collection(configObj.RealtimeDataCollectionName)
+                          )
+                        )
+                      }
+                      break
+                  }
+                })
+              }
+            case 'DCMD':
+              console.log(JSON.stringify(topic))
+              console.log(JSON.stringify(payload))
+              if (topicInfo.groupId !== jscadaConnection.groupId ||
+                  topicInfo.edgeNodeId !== jscadaConnection.edgeNodeId ||
+                  topicInfo.deviceId !== jscadaConnection.deviceId                 
+                 ){
+                   Log.log(logMod + 'Command not for this device: ' + topic, Log.levelDetailed)
+                   break
+                 }
+              if (payload.metrics instanceof Array) {
+                payload.metrics.forEach(metric => {
+                  ProcessDeviceCommand(
+                    deviceLocator,
+                    metric,
+                    payload?.timestamp,
+                    db.collection(configObj.RealtimeDataCollectionName),
+                    jscadaConnection
+                  )
+                })
+              }
+              break
             case 'NDATA':
               // edge of node data (7.2)
               break
@@ -1074,11 +1125,11 @@ async function sparkplugProcess (
                 !(deviceLocator in DevicesList) ||
                 !DevicesList[deviceLocator].birthed
               ) {
-                Log.log(
-                  'Sparkplug - Data from not yet birthed device: ' +
-                    deviceLocator
+                Log.log( logMod +
+                  'Data from not yet birthed device: ' +
+                   deviceLocator
                 )
-                Log.log('Sparkplug - Requesting node rebirth...')
+                Log.log(logMod + 'Requesting node rebirth...')
                 spClient.handle.publishNodeCmd(
                   topicInfo.groupId,
                   topicInfo.edgeNodeId,
@@ -1096,7 +1147,6 @@ async function sparkplugProcess (
                 )
                 return
               }
-
               ProcessDeviceBirthOrData(deviceLocator, payload, false)
               break
             case 'NBIRTH':
@@ -1222,7 +1272,9 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     let device = DevicesList[deviceLocator]
     if (device)
       objectAddress =
-        DevicesList[deviceLocator].mapAliasToObjectAddress['a' + alias.toString()]
+        DevicesList[deviceLocator].mapAliasToObjectAddress[
+          'a' + alias.toString()
+        ]
     if (!objectAddress) {
       // alias not mapped
       Log.log(
@@ -1396,6 +1448,71 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
     ...catalogProperties
+  })
+}
+
+
+// Process received Sparkplug B command to possible protocol destinations (routed command)
+async function ProcessDeviceCommand (
+  deviceLocator,
+  metric,
+  timestamp,
+  rtCollection,
+  jscadaConnection
+) {
+  let res = await rtCollection
+    .find(
+      {
+        'protocolDestinations.protocolDestinationConnectionNumber':
+          jscadaConnection.protocolConnectionNumber,
+        'protocolDestinations.protocolDestinationObjectAddress': metric.name,
+        origin: 'command'
+      },
+      {
+        projection: {
+          _id: 1,
+          tag: 1,
+          type: 1,
+          description: 1,
+          origin: 1
+        }
+      }
+    )
+    .toArray()
+
+  res.forEach(element => {
+    if (element.origin === 'command' || element._id < 1) {
+      return
+    }
+
+   // insert command on commandsQueue collection
+
+   let cmd =
+   {
+    protocolSourceConnectionNumber: jscadaConnection.protocolConnectionNumber,
+    protocolSourceCommonAddress: '',
+    protocolSourceObjectAddress: metric.name,
+    protocolSourceASDU: metric.type,
+    protocolSourceCommandDuration: 0,
+    protocolSourceCommandUseSBO: false,
+    pointKey: element._id,
+    tag: element.tag,
+    value: element.value,
+    valueString: element.value.toString(),
+    originatorUserName: jscadaConnection.name,
+    originatorIpAddress: "",
+    timeTag: new Date()
+   }
+
+    Log.log('Sparkplug Command - Timestamp ' + new Date(timestamp))
+    Log.log(
+      'Sparkplug Command - ' +
+        deviceLocator +
+        '/' +
+        metric.name +
+        ' value:' +
+        metric.value
+    )
   })
 }
 

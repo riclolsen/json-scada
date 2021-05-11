@@ -286,6 +286,17 @@
              setTimeout(function() {
                  // Publish device data
                  sparkplugClient.publishDeviceData(deviceId, getDataPayload());
+
+                 sparkplugClient.publishDeviceCmd("Sparkplug B Devices", "JSON-SCADA Server", "JSON-SCADA Device", {
+                   timestamp: new Date().getTime(),
+                   metrics: [
+                       {
+                           name: "command1",
+                           value: true,
+                           type: "boolean"
+                       }
+                   ]  
+                 })
                  
                  // End the client connection after the last publish
                  if (i === 5000) {
