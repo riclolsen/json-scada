@@ -68,6 +68,7 @@ Each instance for this driver can have just one connection defined that must be 
         topics: ["spBv1.0/#"],
         topicsAsFiles: ["docs/#"],
         topicsScripted: [{topic: "sensors/sensor1", script: "shared.dataArray = []; vals = JSON.parse(shared.payload.toString()); cnt = 1; vals.forEach(elem => { shared.dataArray.push({ id: 'scrVal' + cnt, value: elem, qualityOk: true, timestamp: new Date().getTime() }); cnt++; });"}],
+        clientId: "JSON-SCADA Server 1",
         groupId: "Sparkplug B Devices",
         edgeNodeId: "JSON-SCADA Server",
         deviceId: "JSON-SCADA Device",
@@ -101,6 +102,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. Regular MQTT topics will be converted to tags with the full topic name as object address. **Mandatory parameter**.
 * _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
 * _**topicsScripted**_ [Array of Objects] - List of topics to subscribe on MQTT broker to be treated with dedicated scripts to extract data. **Mandatory parameter**.
+* _**clientId**_ [String] - MQTT Client Id for the connection. If configured, it should be unique over all MQTT clients. Leave empty to to be automatically assigned by the broker. **Optional parameter**.
 * _**groupId**_ [String] - Group Id for publishing. Leave empty to avoid Sparkplug B publishing. **Mandatory parameter**.
 * _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.
 * _**deviceId**_ [String] - Device Id for publishing. **Optional parameter**.

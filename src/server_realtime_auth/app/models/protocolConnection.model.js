@@ -31,6 +31,7 @@ const ProtocolConnection = mongoose.model(
     topics: { type: [String], default: [] },
     topicsAsFiles: { type: [String], default: [] },
     topicsScripted: { type: [Object], default: [] },  
+    clientId: { type: String },
     groupId: { type: String },
     edgeNodeId: { type: String },
     deviceId: { type: String },

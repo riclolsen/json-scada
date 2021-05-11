@@ -184,7 +184,6 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-
   if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('topics' in req.body)) {
       req.body.topics = []
@@ -194,6 +193,9 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('topicsScripted' in req.body)) {
       req.body.topicsScripted = []
+    }
+    if (!('clientId' in req.body)) {
+      req.body.clientId = ''
     }
     if (!('groupId' in req.body)) {
       req.body.groupId = ''

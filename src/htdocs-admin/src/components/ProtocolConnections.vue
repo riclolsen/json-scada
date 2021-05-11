@@ -2444,6 +2444,34 @@
                         <v-text-field
                           type="text"
                           :input-value="active"
+                          :label="$t('src\\components\\connections.clientId')"
+                          hide-details="auto"
+                          v-model="selected.clientId"
+                          :rules="[rules.subtopic]"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>{{
+                          $t("src\\components\\connections.clientIdTitle")
+                        }}</v-list-item-title>
+                        <v-list-item-subtitle>{{
+                          $t("src\\components\\connections.clientIdHint")
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
                           :label="$t('src\\components\\connections.groupId')"
                           hide-details="auto"
                           v-model="selected.groupId"

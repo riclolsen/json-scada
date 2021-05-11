@@ -676,13 +676,13 @@ function getSparkplugConfig (connection) {
 
   return {
     serverUrl: connection.endpointURLs[0],
-    username: connection.username,
-    password: connection.password,
-    groupId: connection.groupId,
-    edgeNode: connection.edgeNodeId,
-    clientId: 'JSON-SCADA',
+    username: connection?.username || '',
+    password: connection?.password || '',
+    groupId: connection?.groupId || '',
+    edgeNode: connection?.edgeNodeId || '',
+    clientId: connection?.clientId || '',
     version: SparkplugNS,
-    scadaHostId: connection.scadaHostId, // only if a primary application
+    scadaHostId: connection?.scadaHostId || '', // only if a primary application
     ...secOpts
   }
 }
