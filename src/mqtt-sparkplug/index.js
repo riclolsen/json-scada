@@ -675,6 +675,9 @@ function getSparkplugConfig (connection) {
   }
 
   return {
+    clean: AppDefs.MQTT_CLEAN_SESSION,
+    keepalive: AppDefs.MQTT_CONNECTION_KEEPALIVE,
+    connectionTimeout: AppDefs.MQTT_CONNECTION_TIMEOUT,
     serverUrl: connection.endpointURLs[0],
     username: connection?.username || '',
     password: connection?.password || '',
@@ -720,7 +723,14 @@ async function sparkplugProcess (
 
       // Create the SparkplugClient
       Log.log(logMod + 'Creating client...')
-      let config = getSparkplugConfig(jscadaConnection)
+      let config
+      try {
+      config = getSparkplugConfig(jscadaConnection)
+      }
+      catch(e){
+        Log.log(logMod + "Parameter error. " + e.message)
+        process.exit(1)
+      }
 
       config.serverUrl =
         jscadaConnection.endpointURLs[sparkplugProcess.currentBroker]
