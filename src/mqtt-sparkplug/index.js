@@ -145,7 +145,10 @@ let AutoCreateTags = true
           metrics: metrics
         }
         if (Log.logLevelCurrent >= Log.levelDetailed)
-          Log.log(JSON.stringify(payload), Log.levelDetailed)
+          Log.log(
+            'Sparkplug - Publish - ' + JSON.stringify(payload),
+            Log.levelDetailed
+          )
         SparkplugClientObj.handle.publishDeviceData(
           connection.deviceId,
           payload
@@ -703,6 +706,7 @@ async function sparkplugProcess (
 ) {
   if (jscadaConnection === null || mongoClient === null) return
   const logMod = 'MQTT Client - '
+  const logModS = 'Sparkplug - '
   const connectionRetriesLimit = 20
 
   // poor man's local static variables
@@ -871,13 +875,10 @@ async function sparkplugProcess (
         )
 
         let match = false
-        // console.log("--> 1 " + topic)
         // check for match of some topic subscription to be saved as files
         if (jscadaConnection.topicsAsFiles instanceof Array)
           await jscadaConnection.topicsAsFiles.forEach(async tp => {
-            // console.log("--> 2 " + topic)
             if (topicMatchSub(topic)(tp)) {
-              // console.log("--> 3 " + topic)
               match = true
               try {
                 // save as file on Mongodb Gridfs
@@ -1044,71 +1045,85 @@ async function sparkplugProcess (
         })
       })
 
+      // process received node commands (for this node)
+      spClient.handle.on('ncmd', function (payload) {
+        Log.log(
+          logModS + 'Received NCMD - ' + JSON.stringify(payload),
+          Log.levelDetailed
+        )
+        if (payload.metrics instanceof Array) {
+          payload.metrics.forEach(metric => {
+            switch (metric?.name) {
+              case 'Node Control/Rebirth':
+                if (metric?.value === true) {
+                  Log.log(
+                    logModS + 'Node rebirth command received',
+                    Log.levelDetailed
+                  )
+                  // Publish Node BIRTH certificate
+                  spClient.handle.publishNodeBirth(
+                    getNodeBirthPayload(configObj)
+                  )
+                  // Publish Device BIRTH certificate
+                  spClient.handle.publishDeviceBirth(
+                    jscadaConnection.deviceId,
+                    getDeviceBirthPayload(
+                      db.collection(configObj.RealtimeDataCollectionName)
+                    )
+                  )
+                }
+                break
+            }
+          })
+        }
+      })
+
+      // process received device commands (for this device)
+      spClient.handle.on('dcmd', function (deviceId, payload) {
+        if (!jscadaConnection.commandsEnabled)
+          return
+        Log.log(
+          logModS +
+            'Received DCMD - ' +
+            deviceId +
+            ' - ' +
+            JSON.stringify(payload),
+          Log.levelDetailed
+        )
+        if (payload.metrics instanceof Array) {
+          payload.metrics.forEach(metric => {
+            ProcessDeviceCommand(
+              deviceId,
+              metric,
+              payload?.timestamp,
+              db.collection(configObj.RealtimeDataCollectionName),
+              jscadaConnection
+            )
+          })
+        }
+      })
+
       // process MQTT Sparkplug B messages
       spClient.handle.on('message', function (topic, payload, topicInfo) {
-        Log.log(logMod + 'Event: Sparkplug B message')
-        Log.log(logMod + 'Topic: ' + topic)
+        Log.log(logModS + 'Event: Sparkplug B message')
+        Log.log(logModS + 'Topic: ' + topic)
         // Log.log(topicInfo);
         if (Log.logLevelCurrent >= Log.levelDetailed)
-          Log.log(logMod + JSON.stringify(payload), Log.levelDetailed)
+          Log.log(logModS + JSON.stringify(payload), Log.levelDetailed)
 
         let splTopic = topic.split('/')
         if (splTopic.length < 4) {
           // invalid topic
-          Log.log(logMod + 'Invalid topic')
+          Log.log(logModS + 'Invalid topic')
         }
         let deviceLocator = splTopic[1] + '/' + splTopic[3]
         if (splTopic.length > 4) deviceLocator += '/' + splTopic[4]
 
         if (splTopic.length)
           switch (splTopic[2]) {
-            case 'NCMD':
-              if (payload.metrics instanceof Array) {
-                payload.metrics.forEach(metric => {
-                  switch (metric?.name) {
-                    case 'Node Control/Rebirth':
-                      if (metric?.value === true) {
-                        Log.log(
-                          logMod + 'Node rebirth command received',
-                          Log.levelDetailed
-                        )
-                        // Publish Node BIRTH certificate
-                        spClient.handle.publishNodeBirth(
-                          getNodeBirthPayload(configObj)
-                        )
-                        // Publish Device BIRTH certificate
-                        spClient.handle.publishDeviceBirth(
-                          jscadaConnection.deviceId,
-                          getDeviceBirthPayload(
-                            db.collection(configObj.RealtimeDataCollectionName)
-                          )
-                        )
-                      }
-                      break
-                  }
-                })
-              }
-            case 'DCMD':
-              console.log(JSON.stringify(topic))
-              console.log(JSON.stringify(payload))
-              if (topicInfo.groupId !== jscadaConnection.groupId ||
-                  topicInfo.edgeNodeId !== jscadaConnection.edgeNodeId ||
-                  topicInfo.deviceId !== jscadaConnection.deviceId                 
-                 ){
-                   Log.log(logMod + 'Command not for this device: ' + topic, Log.levelDetailed)
-                   break
-                 }
-              if (payload.metrics instanceof Array) {
-                payload.metrics.forEach(metric => {
-                  ProcessDeviceCommand(
-                    deviceLocator,
-                    metric,
-                    payload?.timestamp,
-                    db.collection(configObj.RealtimeDataCollectionName),
-                    jscadaConnection
-                  )
-                })
-              }
+            case 'NCMD': // commands for other nodes
+              break
+            case 'DCMD': // commands for other devices
               break
             case 'NDATA':
               // edge of node data (7.2)
@@ -1116,7 +1131,7 @@ async function sparkplugProcess (
             case 'DDATA':
               // device data, update metrics (7.4)
               Log.log(
-                logMod + 'Device DATA: ' + deviceLocator,
+                logModS + 'Device DATA: ' + deviceLocator,
                 Log.levelDetailed
               )
 
@@ -1125,11 +1140,10 @@ async function sparkplugProcess (
                 !(deviceLocator in DevicesList) ||
                 !DevicesList[deviceLocator].birthed
               ) {
-                Log.log( logMod +
-                  'Data from not yet birthed device: ' +
-                   deviceLocator
+                Log.log(
+                  logModS + 'Data from not yet birthed device: ' + deviceLocator
                 )
-                Log.log(logMod + 'Requesting node rebirth...')
+                Log.log(logModS + 'Requesting node rebirth...')
                 spClient.handle.publishNodeCmd(
                   topicInfo.groupId,
                   topicInfo.edgeNodeId,
@@ -1151,7 +1165,7 @@ async function sparkplugProcess (
               break
             case 'NBIRTH':
               // on node birth all associated data is invalidated (7.1.2)
-              Log.log(logMod + 'Node BIRTH', Log.levelDetailed)
+              Log.log(logModS + 'Node BIRTH', Log.levelDetailed)
               InvalidateDeviceTags(
                 deviceLocator,
                 mongoClient,
@@ -1162,14 +1176,14 @@ async function sparkplugProcess (
             case 'DBIRTH':
               // device birth, create tags and update metrics (7.3.1)
               Log.log(
-                logMod + 'Device BIRTH: ' + deviceLocator,
+                logModS + 'Device BIRTH: ' + deviceLocator,
                 Log.levelDetailed
               )
               ProcessDeviceBirthOrData(deviceLocator, payload, true)
               break
             case 'NDEATH':
               // Node death, invalidate all Sparkplug metrics from this node (7.1.1)
-              Log.log(logMod + 'Node DEATH', Log.levelDetailed)
+              Log.log(logModS + 'Node DEATH', Log.levelDetailed)
               // devices from this node marked as dead
               DevicesList.forEach(function (element, key) {
                 if (key.indexOf(deviceLocator) === 0)
@@ -1184,7 +1198,7 @@ async function sparkplugProcess (
               break
             case 'DDEATH':
               // Node death, invalidate all Sparkplug metrics from this device (7.3.2)
-              Log.log(logMod + 'Device DEATH', Log.levelDetailed)
+              Log.log(logModS + 'Device DEATH', Log.levelDetailed)
               if (deviceLocator in DevicesList)
                 DevicesList[deviceLocator].birthed = false
               InvalidateDeviceTags(
@@ -1197,7 +1211,7 @@ async function sparkplugProcess (
           }
       })
     } catch (e) {
-      Log.log(logMod + 'Error: ' + e.message, Log.levelMin)
+      Log.log(logModS + 'Error: ' + e.message, Log.levelMin)
     }
   } else {
     // MQTT client is already created
@@ -1451,15 +1465,23 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
   })
 }
 
-
 // Process received Sparkplug B command to possible protocol destinations (routed command)
 async function ProcessDeviceCommand (
-  deviceLocator,
+  deviceId,
   metric,
   timestamp,
   rtCollection,
   jscadaConnection
 ) {
+  Log.log(
+    'Sparkplug - Received command: ' +
+      deviceId +
+      '/' +
+      metric.name +
+      ' value:' +
+      metric.value
+  )
+
   let res = await rtCollection
     .find(
       {
@@ -1474,40 +1496,96 @@ async function ProcessDeviceCommand (
           tag: 1,
           type: 1,
           description: 1,
-          origin: 1
+          origin: 1,
+          kconv1: 1,
+          kconv2: 1,
+          protocolSourceConnectionNumber: 1,
+          protocolSourceObjectAddress: 1,
+          protocolSourceCommonAddress: 1,
+          protocolSourceASDU: 1,
+          protocolSourceCommandDuration: 1,
+          protocolSourceCommandUseSBO: 1
         }
       }
     )
     .toArray()
 
   res.forEach(element => {
-    if (element.origin === 'command' || element._id < 1) {
+    if (element.origin !== 'command' || element._id < 1) {
       return
     }
 
-   // insert command on commandsQueue collection
+    let value = parseFloat(metric.value)
+    if (isNaN(value)) value = 0
+    let valueString = ''
+    let valueJson = {}
 
-   let cmd =
-   {
-    protocolSourceConnectionNumber: jscadaConnection.protocolConnectionNumber,
-    protocolSourceCommonAddress: '',
-    protocolSourceObjectAddress: metric.name,
-    protocolSourceASDU: metric.type,
-    protocolSourceCommandDuration: 0,
-    protocolSourceCommandUseSBO: false,
-    pointKey: element._id,
-    tag: element.tag,
-    value: element.value,
-    valueString: element.value.toString(),
-    originatorUserName: jscadaConnection.name,
-    originatorIpAddress: "",
-    timeTag: new Date()
-   }
+    if('type' in metric)
+    switch (metric.type.toLowerCase()) {
+      case 'boolean':
+        console.log(metric.value)
+        if (element?.kconv1 === -1) value = metric.value ? 0 : 1
+        else value = metric.value ? 1 : 0
+        valueString = value?"true":"false"
+        valueJson = value?true:false
+        break
+      case 'string':
+        valueString = metric.value
+        // try to parse value as JSON
+        try {
+          valueJson = JSON.parse(metric.value)
+        } catch (e) {}
+        break
+      case 'int32':
+      case 'uint32':
+      case 'float':
+      case 'double':
+        value = element.kconv1 * metric.value + element.kconv2
+        valueString = value.toString()
+        valueJson = value      
+        break
+      case 'int64':
+      case 'uint64':
+        value =
+          (metric.value.low >>> 0) + (metric.value.high >>> 0) * Math.pow(2, 32)
+        value = element.kconv1 * value + element.kconv2
+        valueString = value.toString()
+        valueJson = value
+        break
+      default:
+        valueString = JSON.stringify(metric)
+        valueJson = metric
+        break
+    }
+    else {
+      Log.log("Sparkplug - Invalid command!")
+      return
+    }      
+
+    // insert command on commandsQueue collection
+
+    let cmd = {
+      protocolSourceConnectionNumber: element.protocolSourceConnectionNumber,
+      protocolSourceCommonAddress: element.protocolSourceCommonAddress,
+      protocolSourceObjectAddress: element.protocolSourceObjectAddress,
+      protocolSourceASDU: element.protocolSourceASDU,
+      protocolSourceCommandDuration: element.protocolSourceCommandDuration,
+      protocolSourceCommandUseSBO: element.protocolSourceCommandUseSBO,
+      pointKey: element._id,
+      tag: element.tag,
+      value: new Mongo.Double(value),
+      valueString: valueString,
+      valueJson: valueJson,
+      originatorUserName: jscadaConnection.name,
+      originatorIpAddress: '',
+      timeTag: new Date()
+    }
+    console.log(cmd)
 
     Log.log('Sparkplug Command - Timestamp ' + new Date(timestamp))
     Log.log(
       'Sparkplug Command - ' +
-        deviceLocator +
+        deviceId +
         '/' +
         metric.name +
         ' value:' +

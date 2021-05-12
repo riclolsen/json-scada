@@ -139,7 +139,8 @@ function SparkplugClient(config) {
         payload = getDeathPayload();
         topic = version + "/" + groupId + "/NDEATH/" + edgeNode;
         client.publish(topic, encodePayload(payload));
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     },
 
     // Logs a message alert to the console
@@ -263,7 +264,8 @@ function SparkplugClient(config) {
         logger.info("Publishing Edge Node Birth");
         var p = maybeCompressPayload(payload, options);
         client.publish(topic, encodePayload(p));
-        messageAlert("published", topic, p);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, p);
     };
 
     // Publishes Node Data messages for the edge node
@@ -274,7 +276,8 @@ function SparkplugClient(config) {
         // Publish
         logger.info("Publishing NDATA");
         client.publish(topic, encodePayload(maybeCompressPayload(payload, options)));
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     };
 
     // Publishes Node Command messages for the edge node
@@ -285,7 +288,8 @@ function SparkplugClient(config) {
         // Publish
         logger.info("Publishing NCMD for node " + edge);
         client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), {"qos" : 0});
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     };
 
     // Publishes device data
@@ -298,7 +302,8 @@ function SparkplugClient(config) {
         // Publish
         logger.info("Publishing DDATA for device " + deviceId);
         client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), pubOptions);
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     };
 
     // Publishes device command
@@ -309,7 +314,8 @@ function SparkplugClient(config) {
         // Publish
         logger.info("Publishing DCMD for device " + device);
         client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), {"qos" : 0});
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     };
     
     // Publishes device BIRTH certificates 
@@ -321,7 +327,8 @@ function SparkplugClient(config) {
         logger.info("Publishing DBIRTH for device " + deviceId);
         var p = maybeCompressPayload(payload, options);
         client.publish(topic, encodePayload(p));
-        messageAlert("published", topic, p);
+        if (logger.level === 'debug')
+           messageAlert("published", topic, p);
     };
 
     // Publishes device DEATH certificates
@@ -333,7 +340,8 @@ function SparkplugClient(config) {
         // Publish
         logger.info("Publishing DDEATH for device " + deviceId);
         client.publish(topic, encodePayload(maybeCompressPayload(payload, options)));
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     };
 
     // Publishes SCADA HOST BIRTH certificates
@@ -350,7 +358,8 @@ function SparkplugClient(config) {
         // Publish
         logger.info("Publishing SCADA HOST BIRTH for host " + scadaHostId);
         client.publish(topic, payload, {"qos" : 1, "retain": true});
-        messageAlert("published", topic, payload);
+        if (logger.level === 'debug')
+          messageAlert("published", topic, payload);
     };
     
     this.stop = function() {
@@ -507,7 +516,8 @@ function SparkplugClient(config) {
                 logger.warn(e.message);
             }
 
-            messageAlert("arrived", topic, payload);
+            if (logger.level === 'debug')
+              messageAlert("arrived", topic, payload);
 
             if (splitTopic[0] === version
                     && splitTopic[1] === groupId
