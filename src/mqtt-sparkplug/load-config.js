@@ -23,54 +23,55 @@ const AppDefs = require('./app-defs')
 
 // load and parse config file
 function LoadConfig () {
-    const args = process.argv.slice(2)
-  
-    var confFileArg = null
-    if (args.length > 2) confFileArg = args[2]
-  
-    let configFile =
-      confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
-    Log.log('Config - Config File: ' + configFile)
-  
-    if (!fs.existsSync(configFile)) {
-      Log.log('Config - Error: config file not found!')
-      process.exit()
-    }
-  
-    let rawFileContents = fs.readFileSync(configFile)
-    let configObj = JSON.parse(rawFileContents)
-    if (
-      typeof configObj.mongoConnectionString != 'string' ||
-      configObj.mongoConnectionString === ''
-    ) {
-      Log.log('Error reading config file.')
-      process.exit()
-    }
+  const args = process.argv.slice(2)
 
-    var logLevelArg = null
-    if (args.length > 1) logLevelArg = parseInt(args[1])
-    Log.levelCurrent =
-      logLevelArg || process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL'] || 1
-    configObj.LogLevel = Log.levelCurrent
+  var confFileArg = null
+  if (args.length > 2) confFileArg = args[2]
 
-    var instArg = null
-    if (args.length > 0) instArg = parseInt(args[0])
-    configObj.Instance = instArg || process.env[AppDefs.ENV_PREFIX + 'INSTANCE'] || 1
-  
-    configObj.GridFsCollectionName = 'files'
-    configObj.RealtimeDataCollectionName = 'realtimeData'
-    configObj.SoeDataCollectionName = 'soeData'
-    configObj.CommandsQueueCollectionName = 'commandsQueue'
-    configObj.ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
-    configObj.ProtocolConnectionsCollectionName = 'protocolConnections'
-    configObj.GroupSep = '~'
-    configObj.ConnectionNumber = 0
-  
-    Log.log('Config - ' + AppDefs.MSG + ' Version ' + AppDefs.VERSION)
-    Log.log('Config - Instance: ' + configObj.Instance)
-    Log.log('Config - Log level: ' + Log.levelCurrent)
-  
-    return configObj
+  let configFile =
+    confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
+  Log.log('Config - Config File: ' + configFile)
+
+  if (!fs.existsSync(configFile)) {
+    Log.log('Config - Error: config file not found!')
+    process.exit()
   }
-  
-  module.exports = LoadConfig
+
+  let rawFileContents = fs.readFileSync(configFile)
+  let configObj = JSON.parse(rawFileContents)
+  if (
+    typeof configObj.mongoConnectionString != 'string' ||
+    configObj.mongoConnectionString === ''
+  ) {
+    Log.log('Error reading config file.')
+    process.exit()
+  }
+
+  Log.levelCurrent = Log.levelNormal
+  if (AppDefs.ENV_PREFIX + 'LOGLEVEL' in process.env)
+    Log.levelCurrent = process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL']
+  if (args.length > 1) Log.levelCurrent = parseInt(args[1])
+  configObj.LogLevel = Log.levelCurrent
+
+  var instArg = null
+  if (args.length > 0) instArg = parseInt(args[0])
+  configObj.Instance =
+    instArg || process.env[AppDefs.ENV_PREFIX + 'INSTANCE'] || 1
+
+  configObj.GridFsCollectionName = 'files'
+  configObj.RealtimeDataCollectionName = 'realtimeData'
+  configObj.SoeDataCollectionName = 'soeData'
+  configObj.CommandsQueueCollectionName = 'commandsQueue'
+  configObj.ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
+  configObj.ProtocolConnectionsCollectionName = 'protocolConnections'
+  configObj.GroupSep = '~'
+  configObj.ConnectionNumber = 0
+
+  Log.log('Config - ' + AppDefs.MSG + ' Version ' + AppDefs.VERSION)
+  Log.log('Config - Instance: ' + configObj.Instance)
+  Log.log('Config - Log level: ' + Log.levelCurrent)
+
+  return configObj
+}
+
+module.exports = LoadConfig

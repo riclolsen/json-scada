@@ -292,7 +292,7 @@
                    metrics: [
                        {
                            name: "command1",
-                           value: true,
+                           value: Math.random() > 0.5,
                            type: "boolean"
                        }
                    ]  
