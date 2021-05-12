@@ -113,7 +113,7 @@ let AutoCreateTags = true
             { retain: true }
           )
 
-          // publish under root/group1/tags/tag: value(v), timestamp(t), quality(q)
+          // publish under root/group1/tags/tag: value, timestamp, good (value quality)
           SparkplugClientObj.handle.client.publish(
             data.properties.topicAsTag.value,
             JSON.stringify({
@@ -487,7 +487,7 @@ function getMetricPayload (element, jscadaConnection) {
 
     topicName = jscadaConnection.publishTopicRoot.trim() + '/'
     if (element.group1 && element.group1.trim() !== '')
-      topicName += topicStr(element.group1) + '/' + AppDefs.TAGS_SUBTOPIC + '/'
+      topicName += AppDefs.TAGS_SUBTOPIC + '/' + topicStr(element.group1) + '/'
     topicName += topicStr(element.tag)
     topicAsTag = {
       topicAsTag: {
