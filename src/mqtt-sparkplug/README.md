@@ -141,6 +141,32 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 * To publish tags as a Sparkplug B device, configure the _groupId_, _edgeNodeId_ and _deviceId_ properties.
 
 
+## Configuring Tags for uUdate by Sparkplug B Metrics
+
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug parameters GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node.
+
+    db.realtimeData.updateOne({"tag":"SPB_TAG_NAME"}, {
+        $set: {
+            "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
+            "protocolSourceObjectAddress": "group_id/edge_node_id/device_id/metric_name", // Sparkplug parameters
+            "kconv1": 1.0,
+            "kconv2": 0.0,
+        });
+
+## Configuring Tags for Update by regular MQTT Topics
+
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device.
+
+    db.realtimeData.updateOne({"tag":"MQTT_TAG_NAME"}, {
+        $set: {
+            "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
+            "protocolSourceObjectAddress": "enterprise_name/area_name/device_name/metric_name", // topic name
+            "kconv1": 1.0,
+            "kconv2": 0.0,
+        });
+
+The data type is automatically detected and converted by the driver. If the data published is not to be interpreted as a number, boolean, JSON or string, it should be subscribed as a _Scripted Topic_ so data will be extracted by the dedicated script.
+
 ## Send Command Via Sparkplug B
 
 To send commands via Sparkplug B.
