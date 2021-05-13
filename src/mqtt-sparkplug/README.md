@@ -141,14 +141,14 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 * To publish tags as a Sparkplug B device, configure the _groupId_, _edgeNodeId_ and _deviceId_ properties.
 
 
-## Configuring Tags for uUdate by Sparkplug B Metrics
+## Configuring Tags for Update by Sparkplug B Metrics
 
-The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug parameters GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node.
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug addressing parameters GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node.
 
     db.realtimeData.updateOne({"tag":"SPB_TAG_NAME"}, {
         $set: {
             "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
-            "protocolSourceObjectAddress": "group_id/edge_node_id/device_id/metric_name", // Sparkplug parameters
+            "protocolSourceObjectAddress": "group_id/edge_node_id/device_id/metric_name", // Sparkplug addressing
             "kconv1": 1.0,
             "kconv2": 0.0,
         });
