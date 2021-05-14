@@ -315,12 +315,11 @@ function getNodeBirthPayload (configObj) {
 }
 
 // Get BIRTH payload for the device
-async function getDeviceBirthPayload (rtCollection, commandsEnabled) {
+async function getDeviceBirthPayload (rtCollection, commandsEnabled, connectionNumber) {
   let res = await rtCollection
     .find(
       {
-        // protocolSourceConnectionNumber: ConnectionNumber,
-        // protocolSourceObjectAddress: data.protocolSourceObjectAddress
+        protocolSourceConnectionNumber: { $ne: connectionNumber }, // exclude data from the same connection
         ...(commandsEnabled ? {}:{ origin: { $ne: 'command' } }),
         _id: { $gt: 0 }
       },
@@ -337,7 +336,8 @@ async function getDeviceBirthPayload (rtCollection, commandsEnabled) {
           invalid: 1,
           isEvent: 1,
           description: 1,
-          origin: 1
+          origin: 1,
+          protocolSourceConnectionNumber: 1
         }
       }
     )
@@ -345,7 +345,12 @@ async function getDeviceBirthPayload (rtCollection, commandsEnabled) {
 
   let metrics = []
   res.forEach(element => {
-    if (element._id <= 0) {
+    if (element._id <= 0) { // exclude internal system data
+      return
+    }
+
+    // avoid publishing what is acquired in this same connection
+    if (element.protocolSourceConnectionNumber === connectionNumber) {
       return
     }
 
@@ -740,7 +745,8 @@ async function sparkplugProcess (
       // obtain device birth payload
       sparkplugProcess.deviceBirthPayload = await getDeviceBirthPayload(
         sparkplugProcess.db.collection(configObj.RealtimeDataCollectionName),
-        jscadaConnection.commandsEnabled
+        jscadaConnection.commandsEnabled,
+        jscadaConnection.protocolConnectionNumber
       )
       // Log.log(sparkplugProcess.deviceBirthPayload, Log.levelDebug)
 
@@ -1084,7 +1090,8 @@ async function sparkplugProcess (
                       sparkplugProcess.db.collection(
                         configObj.RealtimeDataCollectionName
                       ),
-                      jscadaConnection.commandsEnabled
+                      jscadaConnection.commandsEnabled,
+                      jscadaConnection.protocolConnectionNumber
                     )
                   )
                 }
@@ -1540,6 +1547,13 @@ async function ProcessDeviceCommand (
   res.forEach(async element => {
     if (element.origin !== 'command' || element._id <= 0) {
       return
+    }
+
+    if (element.protocolSourceConnectionNumber === jscadaConnection.protocolConnectionNumber){
+      Log.log(
+        'Sparkplug - Discarding received command on the same driver connection: ' +
+          jscadaConnection.protocolConnectionNumber
+      )    
     }
 
     let value = parseFloat(metric.value)
