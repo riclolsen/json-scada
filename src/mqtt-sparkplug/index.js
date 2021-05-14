@@ -315,13 +315,13 @@ function getNodeBirthPayload (configObj) {
 }
 
 // Get BIRTH payload for the device
-async function getDeviceBirthPayload (rtCollection) {
+async function getDeviceBirthPayload (rtCollection, commandsEnabled) {
   let res = await rtCollection
     .find(
       {
         // protocolSourceConnectionNumber: ConnectionNumber,
         // protocolSourceObjectAddress: data.protocolSourceObjectAddress
-        origin: { $ne: 'command' },
+        ...(commandsEnabled ? {}:{ origin: { $ne: 'command' } }),
         _id: { $gt: 0 }
       },
       {
@@ -345,7 +345,7 @@ async function getDeviceBirthPayload (rtCollection) {
 
   let metrics = []
   res.forEach(element => {
-    if (element.origin === 'command' || element._id < 1) {
+    if (element._id <= 0) {
       return
     }
 
@@ -392,6 +392,14 @@ async function getDeviceBirthPayload (rtCollection) {
       ...(timestamp === false ? {} : { timestamp: timestamp }),
 
       properties: {
+        ...(element.origin==='command'
+          ? {
+              isCommand: {
+                type: 'boolean',
+                value: true
+              }
+            }
+          : {}),
         description: { type: 'string', value: element.description },
         good: {
           type: 'boolean',
@@ -408,8 +416,6 @@ async function getDeviceBirthPayload (rtCollection) {
       }
     }
     metrics.push(metric)
-    // Log.log(element)
-    // Log.log(ret)
     return
   })
 
@@ -733,7 +739,8 @@ async function sparkplugProcess (
     try {
       // obtain device birth payload
       sparkplugProcess.deviceBirthPayload = await getDeviceBirthPayload(
-        sparkplugProcess.db.collection(configObj.RealtimeDataCollectionName)
+        sparkplugProcess.db.collection(configObj.RealtimeDataCollectionName),
+        jscadaConnection.commandsEnabled
       )
       // Log.log(sparkplugProcess.deviceBirthPayload, Log.levelDebug)
 
@@ -890,7 +897,7 @@ async function sparkplugProcess (
               match = true
               try {
                 // save as file on Mongodb Gridfs
-                let gfs = new Mongo.GridFSBucket(db)
+                let gfs = new Mongo.GridFSBucket(sparkplugProcess.db)
 
                 // delete older files with same name
                 let f = await gfs.find({ filename: topic }).toArray()
@@ -1076,7 +1083,8 @@ async function sparkplugProcess (
                     getDeviceBirthPayload(
                       sparkplugProcess.db.collection(
                         configObj.RealtimeDataCollectionName
-                      )
+                      ),
+                      jscadaConnection.commandsEnabled
                     )
                   )
                 }
@@ -1128,7 +1136,7 @@ async function sparkplugProcess (
           // invalid topic
           Log.log(logModS + 'Invalid topic')
         }
-        let deviceLocator = splTopic[1] + '/' + splTopic[3]
+        let deviceLocator = splTopic[0] + '/' + splTopic[1] + '/' + splTopic[3]
         if (splTopic.length > 4) deviceLocator += '/' + splTopic[4]
 
         if (splTopic.length)
@@ -1493,7 +1501,7 @@ async function ProcessDeviceCommand (
   const db = mongoClient.db(configObj.mongoDatabaseName)
   const rtCollection = db.collection(configObj.RealtimeDataCollectionName)
   const cmdQueue = db.collection(configObj.CommandsQueueCollectionName)
-  
+
   Log.log(
     'Sparkplug - Received command: ' +
       deviceId +
@@ -1506,9 +1514,7 @@ async function ProcessDeviceCommand (
   let res = await rtCollection
     .find(
       {
-        'protocolDestinations.protocolDestinationConnectionNumber':
-          jscadaConnection.protocolConnectionNumber,
-        'protocolDestinations.protocolDestinationObjectAddress': metric.name,
+        'tag': metric.name,
         origin: 'command'
       },
       {
@@ -1520,7 +1526,6 @@ async function ProcessDeviceCommand (
           origin: 1,
           kconv1: 1,
           kconv2: 1,
-          protocolDestinations: 1,
           protocolSourceConnectionNumber: 1,
           protocolSourceObjectAddress: 1,
           protocolSourceCommonAddress: 1,
@@ -1533,23 +1538,9 @@ async function ProcessDeviceCommand (
     .toArray()
 
   res.forEach(async element => {
-    if (element.origin !== 'command' || element._id < 1) {
+    if (element.origin !== 'command' || element._id <= 0) {
       return
     }
-
-    let destKconv1 = 1,
-      destKconv2 = 0
-    element.protocolDestinations.forEach(dest => {
-      if (
-        dest.protocolDestinationConnectionNumber ===
-        jscadaConnection.protocolConnectionNumber
-      ) {
-        if ('protocolDestinationKConv1' in dest)
-          destKconv1 = dest.protocolDestinationKConv1
-        if ('protocolDestinationKConv2' in dest)
-          destKconv2 = dest.protocolDestinationKConv2
-      }
-    })
 
     let value = parseFloat(metric.value)
     if (isNaN(value)) value = 0
@@ -1559,7 +1550,7 @@ async function ProcessDeviceCommand (
     if ('type' in metric)
       switch (metric.type.toLowerCase()) {
         case 'boolean':
-          if (destKconv1 === -1) value = metric.value ? 0 : 1
+          if (element.kconv1 === -1) value = metric.value ? 0 : 1
           else value = metric.value ? 1 : 0
           valueString = value ? 'true' : 'false'
           valueJson = value ? true : false
@@ -1575,7 +1566,7 @@ async function ProcessDeviceCommand (
         case 'uint32':
         case 'float':
         case 'double':
-          value = destKconv1 * metric.value + destKconv2
+          value = element.kconv1 * metric.value + element.kconv2
           valueString = value.toString()
           valueJson = value
           break
@@ -1584,7 +1575,7 @@ async function ProcessDeviceCommand (
           value =
             (metric.value.low >>> 0) +
             (metric.value.high >>> 0) * Math.pow(2, 32)
-          value = destKconv1 * value + destKconv2
+          value = element.kconv1 * value + element.kconv2
           valueString = value.toString()
           valueJson = value
           break
@@ -1620,10 +1611,10 @@ async function ProcessDeviceCommand (
 
     let rIns = await cmdQueue.insertOne(cmd)
     if (rIns.insertedCount)
-    Log.log(
-      'MongoDB - Command Queued: ' + JSON.stringify(cmd),
-      Log.levelDetailed
-    )
+      Log.log(
+        'MongoDB - Command Queued: ' + JSON.stringify(cmd),
+        Log.levelDetailed
+      )
   })
 }
 

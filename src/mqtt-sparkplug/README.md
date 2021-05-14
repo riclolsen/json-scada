@@ -128,7 +128,6 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 * https://nodejs.org/api/tls.html
 * https://github.com/Cirrus-Link/Sparkplug/tree/master/client_libraries/javascript/sparkplug-client
 
-
 ### Configuration Hints
 
 * To act as a Sparkplug Primary (or non-primary) SCADA host, configure the _scadaHostId_ property.
@@ -140,22 +139,21 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 * To publish tags as regular MQTT topics, configure the _publishTopicRoot_ property.
 * To publish tags as a Sparkplug B device, configure the _groupId_, _edgeNodeId_ and _deviceId_ properties.
 
-
 ## Configuring Tags for Update by Sparkplug B Metrics
 
-The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug addressing parameters GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node.
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug addressing parameters SparkplugNamespace/GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_.
 
     db.realtimeData.updateOne({"tag":"SPB_TAG_NAME"}, {
         $set: {
             "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
-            "protocolSourceObjectAddress": "group_id/edge_node_id/device_id/metric_name", // Sparkplug addressing
+            "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/device_id/metric_name", // Sparkplug addressing
             "kconv1": 1.0,
             "kconv2": 0.0,
         });
 
 ## Configuring Tags for Update by regular MQTT Topics
 
-The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device.
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_.
 
     db.realtimeData.updateOne({"tag":"MQTT_TAG_NAME"}, {
         $set: {
@@ -167,32 +165,21 @@ The tag to be updated in the _realtimeData_ collection must have the _protocolSo
 
 The data type is automatically detected and converted by the driver. If the data published is not to be interpreted as a number, boolean, JSON or string, it should be subscribed as a _Scripted Topic_ so data will be extracted by the dedicated script.
 
-## Send Command Via Sparkplug B
+## Send Commands Via Sparkplug B
 
 To send commands via Sparkplug B.
 
-## Receive Commands Via Sparkplug B
+## Receive (Device) Commands Via Sparkplug B
 
-Received commands via Sparkplug B can be routed to other protocol connections by configuring the _protocolDestinations_ array of the _realtimeData_ collection.
+If commands are enabled for the connection and Sparkplug B is configured, all commands from the tags database are enabled automatically (even without _protocolDestinations_ defined). In this case, commands are routed to other protocols. The tag is used as the Sparkplug B metric name.
 
-    db.realtimeData.updateOne({"tag":"A_COMMAND_TAG_NAME"}, {
-        $push:{
-            "protocolDestinations":{
-                "protocolDestinationConnectionNumber": 1200,
-                "protocolDestinationObjectAddress": "metric_name",
-                "protocolDestinationKConv1": 1,
-                "protocolDestinationKConv2": 0
-                }
-        }
-    });
+Commands will be listed in the metrics available on the DBIRTH message with the property _isCommand=true_.
 
-Parameters description for _protocolDestinations_
-* _**protocolDestinationConnectionNumber**_ - Number code of the protocol connection (must match the number code of the desired MQTT connection defined on _protocolConnections_ collection). **Mandatory parameter**.
-* _**protocolDestinationObjectAddress**_ - Sparkplug B metric name to write command. **Mandatory parameter**.
-* _**protocolDestinationKConv1**_ - Conversion factor for values (multiplier). Use -1 to invert digital states. **Mandatory parameter**.
-* _**protocolDestinationKConv2**_ - Conversion factor for values (adder). **Mandatory parameter**.
+    {"name":"KAW2AL-21XCBR5238----K","alias":64001,"value":false,"type":"boolean","properties":{"isCommand":{"type":"boolean","value":true},"description":{"type":"string","value":"KAW2~FD21 13,8kV~BRK52-38:status-Cmd"},"good":{"type":"boolean","value":false}}}
 
-When the protocol destination is changed for a tag, the change will be immediately effective on running drivers. There is no need to restart any process.
+Example topic for Sparkplug B command:
+
+    spBv1.0/group_id/edge_node_id/DCMD/device_id/KAW2AL-21XCBR5238----K
 
 ## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
 

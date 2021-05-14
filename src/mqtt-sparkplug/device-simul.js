@@ -291,7 +291,7 @@
                    timestamp: new Date().getTime(),
                    metrics: [
                        {
-                           name: "command1",
+                           name: "KAW2AL-21XCBR5238----K",
                            value: Math.random() > 0.5,
                            type: "boolean"
                        }
