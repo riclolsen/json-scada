@@ -1,6 +1,6 @@
 ﻿/* 
  * DNP3 Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -32,9 +32,10 @@ namespace Dnp3Driver
 {
     partial class MainClass
     {
-        public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020 RLO";
+        static IDNP3Manager mgr;
+        public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020-2021 RLO";
         public static String ProtocolDriverName = "DNP3";
-        public static String DriverVersion = "0.1.0";
+        public static String DriverVersion = "0.1.1";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
 
@@ -327,7 +328,7 @@ namespace Dnp3Driver
             thrMongoCmd.Start();
 
             Log("Setting up connections & ASDU handlers...");
-            IDNP3Manager mgr = DNP3ManagerFactory.CreateManager(2*Environment.ProcessorCount, new PrintingLogAdapter());
+            mgr = DNP3ManagerFactory.CreateManager(2*Environment.ProcessorCount, new PrintingLogAdapter());
             foreach (DNP3_connection srv in DNP3conns)
             {
                 uint logLevel = LogLevels.NONE;
@@ -602,13 +603,18 @@ namespace Dnp3Driver
 
             while (true)
             {
-                switch (Console.ReadLine())
-                {
-                    case "x":
-                        return 0;
-                    default:
-                        break;
-                }
+                Thread.Sleep(500);
+                if (!Console.IsInputRedirected)
+                    if (Console.KeyAvailable)
+                    {
+                        if (Console.ReadKey().Key == ConsoleKey.Escape)
+                        {
+                            Log("Exiting application!");
+                            Environment.Exit(0);
+                        }
+                        else
+                            Log("Press 'Esc' key to terminate...");
+                    }
             }
         }
     }
