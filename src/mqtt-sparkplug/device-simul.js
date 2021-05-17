@@ -281,31 +281,55 @@
              sparkplugClient.publishDeviceData(deviceId, outboundPayload);             
          });
          
-         for (let i = 1; i < 10001; i++) {
-             // Set up a device data publish for i*publishPeriod milliseconds from now
-             setTimeout(function() {
+
+             /*
+             setInterval(function() {
+                console.log("Publish node command.")
+                sparkplugClient.publishNodeCmd("Sparkplug B Devices", "JSON-SCADA Server", {
+                    timestamp: new Date().getTime(),
+                    metrics: [
+                        {
+                            name: "Node Control/Reboot",
+                            value: true,
+                            type: "boolean"
+                        }
+                    ]  
+                  })
+                  sparkplugClient.publishNodeCmd("Sparkplug B Devices", "JSON-SCADA Server", {
+                    timestamp: new Date().getTime(),
+                    metrics: [
+                        {
+                            name: "Node Control/Next Server",
+                            value: true,
+                            type: "boolean"
+                        }
+                    ]  
+                  })
+             }, 30000)
+             */
+
+             setInterval(function() {
+                console.log("Publish device command.")
+                sparkplugClient.publishDeviceCmd("Sparkplug B Devices", "JSON-SCADA Server", "JSON-SCADA Device", {
+                    timestamp: new Date().getTime(),
+                    metrics: [
+                        {
+                            name: "KAW2AL-21XCBR5238----K",
+                            value: Math.random() > 0.5,
+                            type: "boolean"
+                        }
+                    ]  
+                  })
+             }, 7700)
+
+             setInterval(function() {
+                 console.log("Publish device data.")
                  // Publish device data
                  sparkplugClient.publishDeviceData(deviceId, getDataPayload());
-
-                 sparkplugClient.publishDeviceCmd("Sparkplug B Devices", "JSON-SCADA Server", "JSON-SCADA Device", {
-                   timestamp: new Date().getTime(),
-                   metrics: [
-                       {
-                           name: "KAW2AL-21XCBR5238----K",
-                           value: Math.random() > 0.5,
-                           type: "boolean"
-                       }
-                   ]  
-                 })
-                 
-                 // End the client connection after the last publish
-                 if (i === 5000) {
-                     sparkplugClient.stop();
-                 }
-             }, i*publishPeriod);
+             }, publishPeriod);
          }
-     };
      
+         
      return {run:run};
  }());
  

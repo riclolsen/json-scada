@@ -301,6 +301,11 @@ function getNodeBirthPayload (configObj) {
         value: false
       },
       {
+        name: 'Node Control/Next Server',
+        type: 'boolean',
+        value: false
+      },
+      {
         name: 'Properties/sw_version',
         type: 'string',
         value: swVersion
@@ -315,12 +320,16 @@ function getNodeBirthPayload (configObj) {
 }
 
 // Get BIRTH payload for the device
-async function getDeviceBirthPayload (rtCollection, commandsEnabled, connectionNumber) {
+async function getDeviceBirthPayload (
+  rtCollection,
+  commandsEnabled,
+  connectionNumber
+) {
   let res = await rtCollection
     .find(
       {
         protocolSourceConnectionNumber: { $ne: connectionNumber }, // exclude data from the same connection
-        ...(commandsEnabled ? {}:{ origin: { $ne: 'command' } }),
+        ...(commandsEnabled ? {} : { origin: { $ne: 'command' } }),
         _id: { $gt: 0 }
       },
       {
@@ -345,7 +354,8 @@ async function getDeviceBirthPayload (rtCollection, commandsEnabled, connectionN
 
   let metrics = []
   res.forEach(element => {
-    if (element._id <= 0) { // exclude internal system data
+    if (element._id <= 0) {
+      // exclude internal system data
       return
     }
 
@@ -397,7 +407,7 @@ async function getDeviceBirthPayload (rtCollection, commandsEnabled, connectionN
       ...(timestamp === false ? {} : { timestamp: timestamp }),
 
       properties: {
-        ...(element.origin==='command'
+        ...(element.origin === 'command'
           ? {
               isCommand: {
                 type: 'boolean',
@@ -1075,10 +1085,7 @@ async function sparkplugProcess (
             switch (metric?.name) {
               case 'Node Control/Rebirth':
                 if (metric?.value === true) {
-                  Log.log(
-                    logModS + 'Node rebirth command received',
-                    Log.levelDetailed
-                  )
+                  Log.log(logModS + 'Node Rebirth command received')
                   // Publish Node BIRTH certificate
                   spClient.handle.publishNodeBirth(
                     getNodeBirthPayload(configObj)
@@ -1094,6 +1101,37 @@ async function sparkplugProcess (
                       jscadaConnection.protocolConnectionNumber
                     )
                   )
+                }
+                break
+              case 'Node Control/Reboot':
+                // only accept Reboot command if not a primary application
+                // if (!jscadaConnection.scadaHostId || jscadaConnection.scadaHostId == '') 
+                {
+                  Log.log(logModS + 'Node Reboot command received, exiting process...')
+                  process.exit(999)
+                }
+                break
+              case 'Node Control/Next Server':
+                // only accept Next Server command if not a primary application
+                //if (!jscadaConnection.scadaHostId || jscadaConnection.scadaHostId == '') 
+                {
+                  Log.log(logMod + 'Node command Next Server received')
+                  if (jscadaConnection.endpointURLs.length > 1) {
+                    sparkplugProcess.currentBroker =
+                      (sparkplugProcess.currentBroker + 1) %
+                      jscadaConnection.endpointURLs.length
+                    Log.log(
+                      logMod +
+                        'Will try to connect to server ' +
+                        jscadaConnection.endpointURLs[
+                          sparkplugProcess.currentBroker
+                        ]
+                    )
+                    // stop and destroy current client
+                    spClient.handle.stop()
+                    spClient.handle = null
+                    sparkplugProcess.connectionRetries = 0
+                  } else Log.log(logMod + 'No alternatives servers configured!')
                 }
                 break
             }
@@ -1521,7 +1559,7 @@ async function ProcessDeviceCommand (
   let res = await rtCollection
     .find(
       {
-        'tag': metric.name,
+        tag: metric.name,
         origin: 'command'
       },
       {
@@ -1549,11 +1587,14 @@ async function ProcessDeviceCommand (
       return
     }
 
-    if (element.protocolSourceConnectionNumber === jscadaConnection.protocolConnectionNumber){
+    if (
+      element.protocolSourceConnectionNumber ===
+      jscadaConnection.protocolConnectionNumber
+    ) {
       Log.log(
         'Sparkplug - Discarding received command on the same driver connection: ' +
           jscadaConnection.protocolConnectionNumber
-      )    
+      )
     }
 
     let value = parseFloat(metric.value)
