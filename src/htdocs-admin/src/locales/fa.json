@@ -264,7 +264,7 @@
     "bindIpPort": "آدرس و پورت IP را پیوند دهید",
     "bindIpPortTitle": "اتصال آدرس IP: پورت",
     "bindIpPortHint": "اتصال محلی برای گوش دادن",
-    "remoteIpAddresses": "آدرس های IP از راه دور",
+    "remoteIpAddresses": "آدرس های IP از راه دور (آدرس: پورت)",
     "remoteIpAddressAdd": "آدرس IP جدیدی اضافه کنید!",
     "remoteIpAddressAddCancel": "لغو",
     "remoteIpAddressAddExecute": "IP اضافه کنید!",

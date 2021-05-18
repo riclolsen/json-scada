@@ -264,7 +264,7 @@
     "bindIpPort": "Привязать IP-адрес и порт",
     "bindIpPortTitle": "Привязать IP-адрес: порт",
     "bindIpPortHint": "Локальная привязка для прослушивания.",
-    "remoteIpAddresses": "Удаленные IP-адреса",
+    "remoteIpAddresses": "Удаленные IP-адреса (адрес:порт)",
     "remoteIpAddressAdd": "Добавьте новый IP-адрес!",
     "remoteIpAddressAddCancel": "Отмена",
     "remoteIpAddressAddExecute": "Добавьте IP!",

@@ -264,7 +264,7 @@
     "bindIpPort": "Vincular dirección IP y puerto",
     "bindIpPortTitle": "Vincular dirección IP: puerto",
     "bindIpPortHint": "Enlace local para escuchar.",
-    "remoteIpAddresses": "Direcciones IP remotas",
+    "remoteIpAddresses": "Direcciones IP remotas (dirección:puerto)",
     "remoteIpAddressAdd": "¡Agregue una nueva dirección IP!",
     "remoteIpAddressAddCancel": "Cancelar",
     "remoteIpAddressAddExecute": "¡Agregar IP!",

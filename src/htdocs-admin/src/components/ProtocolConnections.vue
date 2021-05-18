@@ -1730,7 +1730,7 @@
                           <v-text-field
                             label="New IP"
                             v-model="newIP"
-                            :rules="[rules.required, rules.ip]"
+                            :rules="[rules.required, rules.ipPort]"
                           ></v-text-field>
                         </v-card-title>
 
@@ -2362,7 +2362,9 @@
                         <v-card dense tile>
                           <v-card-text> Scripted Topics </v-card-text>
 
-                          <template v-for="(item, index) in selected.topicsScripted">
+                          <template
+                            v-for="(item, index) in selected.topicsScripted"
+                          >
                             <v-container :key="item.dummy" fluid>
                               <v-card dense>
                                 <v-card-text dense>
@@ -2378,10 +2380,10 @@
                                   ></v-text-field>
 
                                   <v-textarea
-                                  row-height=20
-                                  auto-grow
+                                    row-height="20"
+                                    auto-grow
                                     style="
-                                      font-size: .9em;
+                                      font-size: 0.9em;
                                       font-family: monospace;
                                     "
                                     class="ma-0"
@@ -2398,8 +2400,12 @@
                                     :rules="[rules.required]"
                                   ></v-textarea>
 
-                                  <v-btn class="ma-0" dark x-small color="red"
-                                  @click="deleteTopicScripted(index)"
+                                  <v-btn
+                                    class="ma-0"
+                                    dark
+                                    x-small
+                                    color="red"
+                                    @click="deleteTopicScripted(index)"
                                   >
                                     <v-icon dark> mdi-minus </v-icon>
                                     {{
@@ -2882,7 +2888,7 @@ export default {
         );
       },
       ipPort: (value) => {
-        const pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$/;
+        const pattern = /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?::\d{0,4})?\b/;
         return (
           pattern.test(value) ||
           i18n.t("src\\components\\connections.rulesInvalidIpPort")
@@ -3011,7 +3017,7 @@ export default {
       this.updateProtocolConnection();
     },
     async addNewIP() {
-      if (this.rules.ip(this.newIP) !== true) return;
+      if (this.rules.ipPort(this.newIP) !== true) return;
       if (this.newIP != "" && !this.selected.ipAddresses.includes(this.newIP)) {
         this.selected.ipAddresses.push(this.newIP);
         this.updateProtocolConnection();
@@ -3145,6 +3151,6 @@ vals.forEach(elem => {
 }
 
 .v-textarea textarea {
-line-height: 1.1em! Important;
+  line-height: 1.1em !important;
 }
 </style>

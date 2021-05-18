@@ -264,7 +264,7 @@
     "bindIpPort": "ربط عنوان IP والمنفذ",
     "bindIpPortTitle": "ربط عنوان IP: المنفذ",
     "bindIpPortHint": "الارتباط المحلي للاستماع.",
-    "remoteIpAddresses": "عناوين IP البعيدة",
+    "remoteIpAddresses": "عناوين IP عن بعد (العنوان: المنفذ)",
     "remoteIpAddressAdd": "أضف عنوان IP جديد!",
     "remoteIpAddressAddCancel": "يلغي",
     "remoteIpAddressAddExecute": "أضف IP!",

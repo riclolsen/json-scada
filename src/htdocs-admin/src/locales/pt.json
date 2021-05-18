@@ -264,7 +264,7 @@
     "bindIpPort": "Endereço IP e porta para escuta",
     "bindIpPortTitle": "Endereço IP de escuta (bind) na forma 'IP:porta'",
     "bindIpPortHint": "Ligação local para escuta (ex. '0.0.0.0:2404').",
-    "remoteIpAddresses": "Endereços IP remotos",
+    "remoteIpAddresses": "Endereços IP remotos (end:porta)",
     "remoteIpAddressAdd": "Adicione um novo endereço IP!",
     "remoteIpAddressAddCancel": "Cancelar",
     "remoteIpAddressAddExecute": "Adicionar IP!",

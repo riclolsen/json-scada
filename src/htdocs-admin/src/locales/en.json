@@ -265,7 +265,7 @@
     "bindIpPort": "Bind IP Address and Port",
     "bindIpPortTitle": "Bind IP address:port",
     "bindIpPortHint": "Local bind for listening.",
-    "remoteIpAddresses": "Remote IP addresses",
+    "remoteIpAddresses": "Remote IP addresses (address:port)",
     "remoteIpAddressAdd": "Add a new IP address!",
     "remoteIpAddressAddCancel": "Cancel",
     "remoteIpAddressAddExecute": "Add IP!",

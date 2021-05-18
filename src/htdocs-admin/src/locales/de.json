@@ -264,7 +264,7 @@
     "bindIpPort": "Binden Sie IP-Adresse und Port",
     "bindIpPortTitle": "IP-Adresse binden: Port",
     "bindIpPortHint": "Lokale Bindung zum Abhören.",
-    "remoteIpAddresses": "Remote-IP-Adressen",
+    "remoteIpAddresses": "Remote-IP-Adressen (Adresse:Port)",
     "remoteIpAddressAdd": "Fügen Sie eine neue IP-Adresse hinzu!",
     "remoteIpAddressAddCancel": "Stornieren",
     "remoteIpAddressAddExecute": "IP hinzufügen!",

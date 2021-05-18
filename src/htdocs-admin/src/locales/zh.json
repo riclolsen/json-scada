@@ -264,7 +264,7 @@
     "bindIpPort": "绑定IP地址和端口",
     "bindIpPortTitle": "绑定IP地址：端口",
     "bindIpPortHint": "本地绑定以进行监听。",
-    "remoteIpAddresses": "远端IP位址",
+    "remoteIpAddresses": "远程IP地址（地址：端口）",
     "remoteIpAddressAdd": "添加一个新的IP地址！",
     "remoteIpAddressAddCancel": "取消",
     "remoteIpAddressAddExecute": "添加IP！",
