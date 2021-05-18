@@ -5,7 +5,7 @@
 {json:scada}
 ============
 
-A portable and scalable SCADA/IoT platform centered on the MongoDB database server.
+A portable and scalable SCADA/IIoT platform centered on the MongoDB database server.
 
 ![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js >= 14")
 ![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go >= 1.14")
@@ -35,51 +35,45 @@ A portable and scalable SCADA/IoT platform centered on the MongoDB database serv
 
 ## Mission Statement
 
-To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT system built by leveraging mainstream open-source IT tools.
+To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.0 platform built by leveraging mainstream open-source IT tools.
  
 ## Screenshots
 
 ![screenshots](https://github.com/riclolsen/json-scada/raw/master/docs/screenshots/anim-screenshots.gif "{json:scada} Screenshots")
 
-## Major features and characteristics
+## Major features
 
-* Standard IT tools applied to SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB,Node.js, C#, Golang, Grafana, etc.).
+* Standard IT tools applied to SCADA/IoT (MongoDB, PostgreSQL/TimescaleDB, Node.js, C#, Golang, Grafana, etc.).
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
-* Portability and interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
+* Event-based realtime async data processing with MongoDB Change Streams.
+* Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
 * Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.8-alpha).
-* Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Unlimited tags, servers, and users.
+* Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
-* MongoDB Change Streams for realtime async database events processing.
-* HTML5 Web interface. UTF-8/I18N. Mobile access.
-* Web-based configuration management.
+* Extensibility of the core data model (MongoDB: NoSQL/schema-less).
+* HTML5 Web interface. UTF-8/I18N. Mobile access. Web-based configuration management.
 * Role-based access control (RBAC). 
 * Various high-quality protocol drivers.
+* Integration with MQTT brokers (compatibility with Sparkplug B).
 * Live point configuration updates.
 * Inkscape-based SVG synoptic display editor.
 * PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
-* Extensibility of data model (MongoDB: NoSQL/schema-less).
-* Development of custom applications with modern stacks like MEAN/MERN, etc.
-* Big data / ML capabilities through MongoDB Spark connector.
-* Access to the huge MongoDB and PostgreSQL ecosystem of tools, community, services, etc.
-* Easy to understand system with small code footprint for each independent module. Extensive use of JSON from bottom up.
-* Possibility of easy integration of new and custom protocol drivers developed with modern programming languages (just read/write to MongoDB).
-* Future-proof, vendor independence, flexibility, extensibility.
-* Reduced human costs for maintenance and development thanks to the employment of widely-used open-source IT technologies.
+* Easy development of custom applications with modern stacks like MEAN/MERN, etc. Extensive use of JSON from bottom up.
+* Leverage a huge ecosystem of MongoDB/PostgreSQL tools, community, services, etc.
 
 ## Use cases
 
-* Power/Oil/Gas/etc Local Station HMI.
-* Manufacturing Local HMI.
+* Power/Oil/Gas/Manufacturing/etc Local Station HMI.
 * SCADA Protocol Gateway.
-* SCADA Control Center Full System.
-* SCADA/IoT Historian. MS Power BI integration.
+* SCADA Control Centers.
+* SCADA/IIoT Historian.
 * Intranet/Internet HTTPS Gateway - Visualization Server.
-* Multilevel Systems Integrator (SCADA/IoT/ERP/MES/PLC).
-* Global-Level SCADA Systems Integration/Centralization.
-* Edge data processor.
-* Extensible Development Platform For Data Acquisition And Processing.
+* Multilevel Systems Integration (SCADA/IIoT/ERP/MES/PLC).
+* Global-Level/Cloud SCADA Systems Integration.
+* Edge processing.
 * Data concentrator for Big Data / ML processing.
+* Digital Transformation, Industry 4.0 enabler.
 
 ## Architecture
 
@@ -167,6 +161,10 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IoT syst
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] PLC4X Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
+
+## Online Demo
+
+* http://vmi233205.contaboserver.net:8080/.
 
 ## Contact
 
