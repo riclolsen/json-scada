@@ -41,28 +41,30 @@ go build
 copy /Y i104m ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\cs_custom_processor
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\oshmi2json
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\oshmi_sync
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\alarm_beep
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\server_realtime
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\server_realtime_auth
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\shell-api
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\htdocs-admin
 call \json-scada\platform-windows\nodejs-runtime\npm install
 call \json-scada\platform-windows\nodejs-runtime\npm run build
 cd \json-scada\src\grafana_alert2event
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\telegraf-listener
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call \json-scada\platform-windows\nodejs-runtime\npm install
+cd \json-scada\src\mqtt-sparkplug
+call \json-scada\platform-windows\nodejs-runtime\npm install
 
 cd ..\..\platform-windows
 

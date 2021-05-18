@@ -52,7 +52,7 @@ cd ../alarm_beep
 npm install
 cd ../telegraf-listener
 npm install
-cd ../mqtt-sparkplugb
+cd ../mqtt-sparkplug
 npm install
 cd ../..
 

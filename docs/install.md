@@ -175,21 +175,23 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     cp i104m ../../bin/
 
     cd ../cs_data_processor
-    npm update
+    npm install
     cd ../cs_custom_processor
-    npm update
+    npm install
     cd ../grafana_alert2event
-    npm update
+    npm install
     cd ../demo_simul
-    npm update
+    npm install
     cd ../server_realtime
-    npm update
+    npm install
     cd ../server_realtime_auth
-    npm update
+    npm install
     cd ../oshmi2json
-    npm update
+    npm install
     cd ../telegraf-listener
-    npm update
+    npm install
+    cd ../mqtt-sparkplug
+    npm install
     cd ../htdocs-admin
     npm install
     npm run build
