@@ -17,7 +17,7 @@ var protocolDriverNames = [
           'TELEGRAF-LISTENER',
           'MODBUS',
           'MODBUS_SERVER',
-          'MQTT',
+          'MQTT-SPARKPLUG-B',
           'IEC61850-GOOSE',
           'IEC61850-MMS',
           'IEC61850-MMS_SERVER',
@@ -462,6 +462,7 @@ var protocolConnectionsValidator = {
         description: 'Protocol parameter.'
       },
       rangeScans: {
+        bsonType: 'array',
         minItems: 0,
         uniqueItems: true,
         additionalProperties: false,
@@ -538,6 +539,78 @@ var protocolConnectionsValidator = {
         bsonType: ['double', 'null']
        },
       configFileName: {
+        bsonType: ['string', 'null']
+      },
+      topics: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        additionalProperties: false,
+        items: {
+          bsonType: 'string',
+          additionalProperties: false,
+          description:
+            'MQTT topics'
+        }
+      },
+      topicsAsFiles: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        additionalProperties: false,
+        items: {
+          bsonType: 'string',
+          additionalProperties: false,
+          description:
+            'MQTT topics as binary files'
+        }
+      },
+      topicsScripted: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        additionalProperties: false,
+        items: {
+          bsonType: ['object', 'null'],
+          additionalProperties: true,
+          properties: {
+            topic: {
+              bsonType: 'string'
+            },
+            script: {
+              bsonType: 'string'
+            }
+          }
+        }
+      },
+      clientId: {
+        bsonType: ['string', 'null']
+      },
+      groupId: {
+        bsonType: ['string', 'null']
+      },
+      edgeNodeId: {
+        bsonType: ['string', 'null']
+      },
+      deviceId: {
+        bsonType: ['string', 'null']
+      },
+      scadaHostId: {
+        bsonType: ['string', 'null']
+      },
+      publishTopicRoot: {
+        bsonType: ['string', 'null']
+      },
+      username: {
+        bsonType: ['string', 'null']
+      },
+      password: {
+        bsonType: ['string', 'null']
+      },
+      pfxFilePath: {
+        bsonType: ['string', 'null']
+      },
+      passphrase: {
         bsonType: ['string', 'null']
       },
       stats: {
