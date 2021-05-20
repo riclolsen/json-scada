@@ -57,14 +57,16 @@ COPY src/htdocs /json-scada/src/htdocs
 COPY src/alarm_beep /json-scada/src/alarm_beep
 COPY src/oshmi2json /json-scada/src/oshmi2json
 COPY src/telegraf-listener /json-scada/src/telegraf-listener
-RUN sh -c "cd /json-scada/src/cs_data_processor && npm update"
-RUN sh -c "cd /json-scada/src/cs_custom_processor && npm update"
-RUN sh -c "cd /json-scada/src/server_realtime && npm update"
+COPY src/mqtt-sparkplug /json-scada/src/mqtt-sparkplug
+RUN sh -c "cd /json-scada/src/cs_data_processor && npm install"
+RUN sh -c "cd /json-scada/src/cs_custom_processor && npm install"
+RUN sh -c "cd /json-scada/src/server_realtime && npm install"
 RUN sh -c "cd /json-scada/src/server_realtime_auth && npm update"
 RUN sh -c "cd /json-scada/src/htdocs-admin && npm install && npm run build"
-RUN sh -c "cd /json-scada/src/alarm_beep && npm update"
-RUN sh -c "cd /json-scada/src/oshmi2json && npm update"
-RUN sh -c "cd /json-scada/src/telegraf-listener && npm update"
+RUN sh -c "cd /json-scada/src/alarm_beep && npm install"
+RUN sh -c "cd /json-scada/src/oshmi2json && npm install"
+RUN sh -c "cd /json-scada/src/telegraf-listener && npm install"
+RUN sh -c "cd /json-scada/src/mqtt-sparkplug && npm install"
 
 # Dotnet runtime deps
 #  from https://github.com/dotnet/dotnet-docker/blob/master/src/runtime-deps/3.1/alpine3.12/amd64/Dockerfile
@@ -90,12 +92,14 @@ ENV \
 
 # Install .NET
 # from https://github.com/dotnet/dotnet-docker/blob/master/src/runtime/5.0/alpine3.12/amd64/Dockerfile
-ENV DOTNET_VERSION=5.0.2
+
+ENV DOTNET_VERSION=5.0.6
 
 RUN wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Runtime/$DOTNET_VERSION/dotnet-runtime-$DOTNET_VERSION-linux-musl-x64.tar.gz \
-    && dotnet_sha512='84e69846188689cf5ee1eddce77c6cf92a7becddac9cdd9b985a490446d5acbd5d59e3703e8da4241895c1907b85bac852735c756098774e3b890c1944cda64f' \
+    && dotnet_sha512='13316e039b04b04c9def1f3a17c6391fd2fe6a6264528eba24b9cf6967ab292e4c4c8adc4ab2e032586f94e5f0ef0dfcf7315cb5cc324ec672bede0f16713f41' \
     && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
     && mkdir -p /usr/share/dotnet \
     && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
     && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
     && rm dotnet.tar.gz
+
