@@ -29,12 +29,15 @@ COPY src/i104m /go/src/i104m
 COPY --from=dotnetDrivers /json-scada/bin /json-scada/bin
 RUN sh -c "apk add --no-cache git && \
            cd /go/src/calculations/ && \
+           go env -w GO111MODULE=auto && \
+           go get -v -t -d ./... && \
            go get ./... && \
            go build && \
            cp calculations /json-scada/bin/"
 RUN sh -c "apk add --no-cache git && \
            cd /go/src/i104m/ && \
-           go get ./... && \
+           go env -w GO111MODULE=auto && \
+           go get -v -t -d ./... && \
            go build && \
            cp i104m /json-scada/bin/"
 
