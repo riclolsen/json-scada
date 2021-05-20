@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.8"
-!define VERSION_ "0.8.0.0"
+!define VERSION "v.0.9"
+!define VERSION_ "0.9.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -50,7 +50,7 @@ VIProductVersion ${VERSION_}
 VIAddVersionKey ProductName "JSON SCADA"
 VIAddVersionKey Comments "SCADA IoT Software"
 VIAddVersionKey CompanyName "Ricardo Olsen"
-VIAddVersionKey LegalCopyright "Copyright 2020 Ricardo L. Olsen"
+VIAddVersionKey LegalCopyright "Copyright 2020-2021 Ricardo L. Olsen"
 VIAddVersionKey FileDescription "JSON SCADA Installer"
 VIAddVersionKey FileVersion ${VERSION}
 VIAddVersionKey ProductVersion ${VERSION}
@@ -108,6 +108,7 @@ SetRegView 64
 
 
 ; Closes all processes
+  nsExec::Exec 'net stop JSON_SCADA_grafana'
   nsExec::Exec 'net stop JSON_SCADA_mongodb'
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
@@ -125,6 +126,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
+  nsExec::Exec 'net stop JSON_SCADA_mqttsparkplugclient'  
   nsExec::Exec 'net stop JSON_SCADA_telegraf_runtime'
   nsExec::Exec 'net stop JSON_SCADA_telegraf_listener'
   nsExec::Exec 'net stop JSON_SCADA_nginx'
@@ -209,7 +211,7 @@ SetRegView 64
   CreateDirectory "$INSTDIR\platform-windows\postgresql-runtime"
   CreateDirectory "$INSTDIR\platform-windows\nginx_php-runtime"
   CreateDirectory "$INSTDIR\platform-windows\telegraf-runtime"
-
+  
   ; This is to try to avoid this Postgresql error:
   ; https://edwin.baculsoft.com/2014/05/fixing-postgresql-error-initdb-could-not-change-permissions-of-directory-permission-denied/
   ; (S-1-5-32-545)=Users (S-1-1-0)=Everyone
@@ -234,7 +236,7 @@ SetRegView 64
   File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-5.0.4-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-5.0.6-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -246,8 +248,8 @@ SetRegView 64
   ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
   ;${EndIf}
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.4-win-x64.exe" /install /quiet'
-
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.6-win-x64.exe" /install /quiet'
+  
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
@@ -352,6 +354,13 @@ SetRegView 64
   SetOutPath $INSTDIR\src\telegraf-listener
   File /a /r "..\src\telegraf-listener\*.*"
 
+  SetOutPath $INSTDIR\src\mqtt-sparkplug
+  File /a "..\src\mqtt-sparkplug\*.js"
+  File /a "..\src\mqtt-sparkplug\*.json"
+  File /a "..\src\mqtt-sparkplug\*.md"
+  SetOutPath $INSTDIR\src\mqtt-sparkplug\node_modules
+  File /a /r "..\src\mqtt-sparkplug\node_modules\*.*"
+
   ;SetOutPath $INSTDIR\extprogs
   ;File /a "..\extprogs\vcredist_x86.exe"
   ;File /a "..\extprogs\vcredist_x86-2012.exe"
@@ -430,7 +439,7 @@ SetRegView 64
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Configuration Manual.lnk"          "$INSTDIR\bin\configuration_manual.bat"
 
   CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\inkscape.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                     "$INSTDIR\bt-uninst.exe"
 
 
@@ -608,6 +617,11 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_telegraf_runtime"`
   ClearErrors
 
+  ExecWait `"${SC}" stop "JSON_SCADA_mqttsparkplugclient"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_mqttsparkplugclient"`
+  ClearErrors
+
   ExecWait `"${SC}" stop "JSON_SCADA_telegraf_listener"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_telegraf_listener"`
@@ -638,6 +652,11 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_calculations"`
   ClearErrors
   
+  ExecWait `"${SC}" stop "JSON_SCADA_grafana"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_grafana"`
+  ClearErrors
+
   ExecWait `"${SC}" stop "JSON_SCADA_mongodb"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_mongodb"`
