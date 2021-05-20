@@ -141,7 +141,7 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 
 ## Configuring Tags for Update by Sparkplug B Metrics
 
-The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug addressing parameters SparkplugNamespace/GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_.
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the Sparkplug addressing parameters SparkplugNamespace/GroupId/EdgeNodeId/DeviceId/MetricName published by the originator device/node. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_. Tags can also be configured via the Admin Management UI.
 
     db.realtimeData.updateOne({"tag":"SPB_TAG_NAME"}, {
         $set: {
@@ -153,7 +153,7 @@ The tag to be updated in the _realtimeData_ collection must have the _protocolSo
 
 ## Configuring Tags for Update by regular MQTT Topics
 
-The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_.
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_. Tags can also be configured via the Admin Management UI.
 
     db.realtimeData.updateOne({"tag":"MQTT_TAG_NAME"}, {
         $set: {
@@ -167,23 +167,24 @@ The data type is automatically detected and converted by the driver. If the data
 
 ## Send Commands As MQTT regular topic published
 
-To send commands via Sparkplug B.
+To send commands as a regular MQTT topic, configure the command tag as below. Tags can also be configured via the Admin Management UI.
 
     db.realtimeData.updateOne({"tag":"MQTT_COMMAND_TAG_NAME"}, {
         $set: {
             "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
-            // MQTT payload will be a string containing a value of type: int,int8,int16,int32,int64,uint8,uint16,uint32,uint64,float,double,boolean,string,datetime,text
+            // MQTT payload will be a string containing a value of type: 
+            //   int,int8,int16,int32,int64,uint8,uint16,uint32,uint64,float,double,boolean,string,datetime,text
             "protocolSourceASDU": "boolean", // type
             "protocolSourceObjectAddress": "enterprise_name/area_name/device_name/metric_name", // topic name
             "protocolSourceCommandDuration": 0, // qos level
             "protocolSourceCommandUseSBO": false, // retain flag
-            "kconv1": 1.0,
-            "kconv2": 0.0,
+            "kconv1": 1.0, // conversion factor: multiplier
+            "kconv2": 0.0, // conversion factor: adder
         });
 
 ## Send Commands Via Sparkplug B
 
-To send commands via Sparkplug B.
+To send commands via Sparkplug B, configure the command tag as below. Tags can also be configured via the Admin Management UI.
 
     db.realtimeData.updateOne({"tag":"MQTT_SPB_COMMAND_TAG_NAME"}, {
         $set: {
@@ -193,13 +194,13 @@ To send commands via Sparkplug B.
             // "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/metric_name", // topic name/metric name, for NCMD (do not include NCMD)
             "protocolSourceCommandDuration": 0, // no effect for sparkplug B
             "protocolSourceCommandUseSBO": false, // no effect for sparkplug B
-            "kconv1": 1.0,
-            "kconv2": 0.0,
+            "kconv1": 1.0, // conversion factor: multiplier
+            "kconv2": 0.0, // conversion factor: adder
         });
 
 ## Receive (Device) Commands Via Sparkplug B
 
-If commands are enabled for the connection and Sparkplug B is configured, all commands from the tags database are enabled automatically (even without _protocolDestinations_ defined). In this case, commands are routed to other protocols. The tag is used as the Sparkplug B metric name.
+If commands are enabled for the connection and Sparkplug B is configured, all commands from the tags database are enabled automatically (even without _protocolDestinations_ defined!). In this case, commands are routed to other protocols. The tag is used as the Sparkplug B metric name.
 
 Commands will be listed in the metrics available on the DBIRTH message with the property _isCommand=true_.
 
