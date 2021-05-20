@@ -81,6 +81,10 @@ nssm set JSON_SCADA_nginx Start SERVICE_AUTO_START
 
 REM SELECT THE DESIRED PROTOCOL DRIVERS (service startup options: SERVICE_AUTO_START, SERVICE_DELAYED_START, SERVICE_DEMAND_START, SERVICE_DISABLED)
 
+nssm install JSON_SCADA_mqttsparkplugclient "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\mqtt-sparkplug\index.js" 
+nssm set JSON_SCADA_mqttsparkplugclient AppDirectory "C:\json-scada\src\mqtt-sparkplug"
+nssm set JSON_SCADA_mqttsparkplugclient Start SERVICE_AUTO_START
+
 nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe" 1 1 
 nssm set JSON_SCADA_iec104client Start SERVICE_DELAYED_START
 

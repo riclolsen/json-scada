@@ -28,6 +28,7 @@ Acknowledgements:
   ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
   Inkscape - https://inkscape.org
   Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
+  Inkscape + SAGE (updated) - https://gitlab.com/lvta0909/inkscape
   Chromium - by "The Chromium Authors"
   Chromium x86 binaries - http://chromium.woolyss.com
   NGINX - http://nginx.org
@@ -118,6 +119,25 @@ See official repo:
 
 Inkscape+SAGE:
  - See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.9: 
+
+ - New MQTT/Sparkplug-B Client driver.
+ - Updated Inkscape SVG editor to version 1.1 64 bits.
+ - Admin UI I10n user-selectable (code now based on Vue standards).
+ - Various translations added to Admin UI.
+ - Enhancements and fixes for Admin UI.
+ - Chromium updated to 90.0.4430.72.
+ - Grafana updated to 7.5.4.
+ - Openssl DLLs added to binary folder (no need to install Openssl anymore).
+ - Fixed problems with DNP3 Client driver.
+ - DotNet runtime updated to 5.0.6.
+ 
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
 
 -------------------------------------------------------------------
 

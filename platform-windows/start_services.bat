@@ -26,6 +26,7 @@ nssm start JSON_SCADA_nginx
 
 REM SELECT PROTOCOLS TO START
 nssm start JSON_SCADA_iec104client
+nssm start JSON_SCADA_mqttsparkplugclient
 nssm start JSON_SCADA_telegraf_listener
 net start JSON_SCADA_telegraf_runtime
 REM nssm start JSON_SCADA_iec104server
