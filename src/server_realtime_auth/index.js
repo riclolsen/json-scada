@@ -674,19 +674,35 @@ let pool = null
                       }
                     }
 
+                    let addressing = {}
+                    if (
+                      isNaN(data.protocolSourceCommonAddress) ||
+                      isNaN(data.protocolSourceObjectAddress) ||
+                      isNaN(data.protocolSourceASDU)
+                    ){ // non numerical addressing
+                      addressing = {
+                        protocolSourceCommonAddress: data.protocolSourceCommonAddress,
+                        protocolSourceObjectAddress: data.protocolSourceObjectAddress,
+                        protocolSourceASDU: data.protocolSourceASDU
+                      }
+                    }
+                    else { // numerical addressing: force data type as BSON double
+                      addressing = {
+                        protocolSourceCommonAddress: new mongo.Double(
+                          data.protocolSourceCommonAddress
+                        ),
+                        protocolSourceObjectAddress: new mongo.Double(
+                          data.protocolSourceObjectAddress
+                        ),
+                        protocolSourceASDU: new mongo.Double(data.protocolSourceASDU)
+                      }
+                    }
+
                     let result = await db.collection(COLL_COMMANDS).insertOne({
                       protocolSourceConnectionNumber: new mongo.Double(
                         data.protocolSourceConnectionNumber
                       ),
-                      protocolSourceCommonAddress: new mongo.Double(
-                        data.protocolSourceCommonAddress
-                      ),
-                      protocolSourceObjectAddress: new mongo.Double(
-                        data.protocolSourceObjectAddress
-                      ),
-                      protocolSourceASDU: new mongo.Double(
-                        data.protocolSourceASDU
-                      ),
+                      ... addressing,
                       protocolSourceCommandDuration: new mongo.Double(
                         data.protocolSourceCommandDuration
                       ),
@@ -701,7 +717,7 @@ let pool = null
                       originatorIpAddress:
                         req.headers['x-real-ip'] ||
                         req.headers['x-forwarded-for'] ||
-                        req.connection.remoteAddress
+                        req.socket.remoteAddress
                     })
                     // console.log(result);
                     if (result.insertedCount !== 1) {
