@@ -1,6 +1,6 @@
 version: '2.1'
 
-# {json:scada} Docker Compilation for Linux x64 - (c) 2020 - Ricardo L. Olsen 
+# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2021 - Ricardo L. Olsen 
 # Requires Internet connection!
 
 services:
@@ -67,28 +67,28 @@ services:
   cs_data_processor_update:
     image: node:current-alpine3.12
     container_name: js_cs_data_processor_update
-    command:  sh -c "npm install -g npm && cd /cs_data_processor && npm update"
+    command:  sh -c "npm install -g npm && cd /cs_data_processor && npm install"
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
 
   cs_custom_processor_update:
     image: node:current-alpine3.12
     container_name: js_cs_custom_processor_update
-    command:  sh -c "npm install -g npm && cd /cs_custom_processor && npm update"
+    command:  sh -c "npm install -g npm && cd /cs_custom_processor && npm install"
     volumes:
       - ../src/cs_custom_processor:/cs_custom_processor
 
   server_realtime_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_update
-    command:  sh -c "npm install -g npm && cd /server_realtime && npm update"
+    command:  sh -c "npm install -g npm && cd /server_realtime && npm install"
     volumes:
       - ../src/server_realtime:/server_realtime
 
   server_realtime_auth_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_auth_update
-    command:  sh -c "npm install -g npm && cd /server_realtime_auth && npm update"
+    command:  sh -c "npm install -g npm && cd /server_realtime_auth && npm install"
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
 
@@ -102,20 +102,27 @@ services:
   alarm_beep_update:
     image: node:current-alpine3.12
     container_name: js_alarm_beep_update
-    command:  sh -c "npm install -g npm && cd /alarm_beep && npm update"
+    command:  sh -c "npm install -g npm && cd /alarm_beep && npm install"
     volumes:
       - ../src/alarm_beep:/alarm_beep
 
   oshmi2json_update:
     image: node:current-alpine3.12
     container_name: js_oshmi2json_update
-    command:  sh -c "npm install -g npm && cd /oshmi2json && npm update"
+    command:  sh -c "npm install -g npm && cd /oshmi2json && npm install"
     volumes:
       - ../src/oshmi2json:/oshmi2json
 
   telegraf_listener_update:
     image: node:current-alpine3.12
     container_name: js_telegraf_listener_update
-    command:  sh -c "npm install -g npm && cd /telegraf-listener && npm update"
+    command:  sh -c "npm install -g npm && cd /telegraf-listener && npm install"
     volumes:
       - ../src/telegraf-listener:/telegraf-listener
+
+  mqtt_sparkplug_update:
+    image: node:current-alpine3.12
+    container_name: js_mqtt_sparkplug_update
+    command:  sh -c "npm install -g npm && cd /mqtt-sparkplug && npm install"
+    volumes:
+      - ../src/mqtt-sparkplug:/mqtt-sparkplug
