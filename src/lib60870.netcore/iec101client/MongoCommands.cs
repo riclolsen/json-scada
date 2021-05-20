@@ -284,20 +284,7 @@ namespace Iec10XDriver
                                                 .protocolSourceObjectAddress +
                                             " value " +
                                             change.FullDocument.value +
-                                            " Not Found");
-                                            var filter =
-                                                new BsonDocument(new BsonDocument("_id",
-                                                        change
-                                                            .FullDocument
-                                                            .id));
-                                            var update =
-                                                new BsonDocument("$set",
-                                                    new BsonDocument("cancelReason",
-                                                        "connection not found"));
-                                            var result =
-                                                await collection
-                                                    .UpdateOneAsync(filter,
-                                                    update);
+                                            " Connection Not Found");
                                         }
                                     }
                                 }
