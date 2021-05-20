@@ -84,6 +84,7 @@ let AutoCreateTags = true
 
   const SparkplugClientObj = { handle: null } // points to sparkplug-client object
   let rtCollection = null
+  let cmdCollection = null
   let clientMongo = null
   let connection = null
 
@@ -199,6 +200,7 @@ let AutoCreateTags = true
         // specify db and collections
         const db = client.db(jsConfig.mongoDatabaseName)
         rtCollection = db.collection(jsConfig.RealtimeDataCollectionName)
+        cmdCollection = db.collection(jsConfig.CommandsQueueCollectionName)
 
         // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
         connection = await getConnection(
@@ -219,16 +221,16 @@ let AutoCreateTags = true
 
         Redundancy.Start(5000, clientMongo, db, jsConfig)
 
-        const changeStream = rtCollection.watch(csPipeline, {
-          fullDocument: 'updateLookup'
-        })
-
         // start a changestream monitor on realtimeData only if configured some MQTT publishing
         if (
           (connection.publishTopicRoot &&
             connection.publishTopicRoot.length > 0) ||
           (connection.groupId && connection.groupId.length > 0)
         ) {
+          const changeStream = rtCollection.watch(csPipeline, {
+            fullDocument: 'updateLookup'
+          })
+
           try {
             changeStream.on('error', change => {
               if (clientMongo) clientMongo.close()
@@ -259,7 +261,112 @@ let AutoCreateTags = true
               if (data) SparkplugPublishQueue.enqueue(data)
             })
           } catch (e) {
-            Log.log('MongoDB - Error: ' + e, Log.levelMin)
+            Log.log('MongoDB - CS Error: ' + e, Log.levelMin)
+          }
+        }
+
+        if (connection.commandsEnabled) {
+          const csCmdPipeline = [
+            {
+              $project: { documentKey: false }
+            },
+            {
+              $match: {
+                $and: [
+                  {
+                    'fullDocument.protocolSourceConnectionNumber': {
+                      $eq: connection.protocolConnectionNumber
+                    }
+                  },
+                  { operationType: 'insert' }
+                ]
+              }
+            }
+          ]
+
+          const changeStreamCmd = cmdCollection.watch(csCmdPipeline, {
+            fullDocument: 'updateLookup'
+          })
+          try {
+            changeStreamCmd.on('error', change => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+              Log.log('MongoDB - Error on ChangeStream Cmd!')
+            })
+            changeStreamCmd.on('close', change => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+              Log.log('MongoDB - Closed ChangeStream Cmd!')
+            })
+            changeStreamCmd.on('end', change => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+              Log.log('MongoDB - Ended ChangeStream Cmd!')
+            })
+
+            // start listen to changes
+            changeStreamCmd.on('change', change => {
+              // do not queue data changes until device connected and birthed
+              if (
+                !SparkplugDeviceBirthed ||
+                !SparkplugClientObj.handle.connected
+              )
+                return
+
+              if (
+                change.fullDocument?.protocolSourceConnectionNumber !==
+                connection.protocolConnectionNumber
+              )
+                return // not for this connection
+
+              console.log(JSON.stringify(change))
+              let data = getMetricCommandPayload(change.fullDocument)
+              if (!data) return
+
+              if (data.deviceId) {
+                data.metric.timestamp = new Date(change.fullDocument.timeTag).getTime()
+                SparkplugClientObj.handle.publishDeviceCmd(
+                  data.groupId,
+                  data.edgeNodeId,
+                  data.deviceId,
+                  {
+                    timestamp: new Date(change.fullDocument.timeTag).getTime(),
+                    metrics: [data.metric]
+                  }
+                )
+              } else if (data.groupId) {
+                data.metric.timestamp = new Date(change.fullDocument.timeTag).getTime()
+                SparkplugClientObj.handle.publishNodeCmd(
+                  data.groupId,
+                  data.edgeNodeId,
+                  {
+                    timestamp: new Date(change.fullDocument.timeTag).getTime(),
+                    metrics: [data.metric]
+                  }
+                )
+              } else {
+                let qos = 0,
+                  retain = false
+                if (!isNaN(change.fullDocument?.protocolSourceCommandDuration))
+                  qos = parseInt(
+                    change.fullDocument.protocolSourceCommandDuration
+                  )
+                if (
+                  typeof change.fullDocument?.protocolSourceCommandUseSBO ===
+                  'boolean'
+                )
+                  retain = change.fullDocument.protocolSourceCommandUseSBO
+                SparkplugClientObj.handle.client.publish(
+                  data.topic,
+                  data.value.toString(),
+                  { qos: qos, retain: retain }
+                )
+              }
+
+              console.log(data)
+            })
+          } catch (e) {
+            Log.log('MongoDB - CS CMD Error: ' + e, Log.levelMin)
           }
         }
       })
@@ -437,6 +544,114 @@ async function getDeviceBirthPayload (
   return {
     timestamp: new Date().getTime(),
     metrics: metrics
+  }
+}
+
+// Get command payload
+function getMetricCommandPayload (cmd) {
+  let value = null
+
+  if (
+    typeof cmd.protocolSourceASDU !== 'string' ||
+    cmd.protocolSourceASDU.trim() === ''
+  )
+    return null
+
+  // int, int8, int16, int32, int64, uint8, uint16, uint32, uint64, float, double, boolean, string, datetime
+  switch (cmd.protocolSourceASDU.toLowerCase()) {
+    case 'int8':
+      value = parseInt(cmd.value)
+      if (value > Math.pow(2, 8) - 1) value = Math.pow(2, 8) - 1
+      else if (value < Math.pow(2, 8)) value = Math.pow(2, 8)
+      break
+    case 'int16':
+      value = parseInt(cmd.value)
+      if (value > Math.pow(2, 16) - 1) value = Math.pow(2, 16) - 1
+      else if (value < Math.pow(2, 16)) value = Math.pow(2, 16)
+      break
+    case 'int32':
+      value = parseInt(cmd.value)
+      if (value > Math.pow(2, 32) - 1) value = Math.pow(2, 32) - 1
+      else if (value < Math.pow(2, 32)) value = Math.pow(2, 32)
+      break
+    case 'int':
+    case 'int64':
+      value = parseInt(cmd.value)
+      break
+    case 'uint8':
+      value = parseInt(cmd.value)
+      if (value > Math.pow(2, 8)) value = Math.pow(2, 8)
+      else if (value < 0) value = 0
+      break
+    case 'uint16':
+      value = parseInt(cmd.value)
+      if (value > Math.pow(2, 16)) value = Math.pow(2, 16)
+      else if (value < 0) value = 0
+      break
+    case 'uint32':
+      value = parseInt(cmd.value)
+      if (value > Math.pow(2, 32)) value = Math.pow(2, 32)
+      else if (value < 0) value = 0
+      break
+    case 'uint64':
+      value = parseInt(cmd.value)
+      if (value < 0) value = 0
+      break
+    case 'float':
+    case 'double':
+      value = parseFloat(cmd.value)
+      break
+    case 'boolean':
+      value = cmd.value !== 0
+      break
+    case 'text':
+    case 'string':
+      value = cmd?.valueString || cmd.value.toString()
+      break
+    case 'datetime':
+      value = parseInt(Math.abs(cmd.value))
+      if (value < 0) value = 0
+      break
+    default:
+      return null
+  }
+
+  const splTopic = cmd.protocolSourceObjectAddress.split('/')
+  if (splTopic.length === 0) return null
+
+  if (splTopic[0] === SparkplugNS) {
+    if (splTopic.length === 5) {
+      // DCMD
+      return {
+        groupId: splTopic[1],
+        edgeNodeId: splTopic[2],
+        deviceId: splTopic[3],
+        metric: {
+          name: splTopic[4],
+          value: value,
+          type: cmd.protocolSourceASDU.toLowerCase(),
+          timestamp: new Date().getTime()
+        }
+      }
+    } else if (splTopic.length === 4) {
+      // NCMD
+      return {
+        groupId: splTopic[1],
+        edgeNodeId: splTopic[2],
+        metric: {
+          name: splTopic[3],
+          value: value,
+          type: cmd.protocolSourceASDU.toLowerCase(),
+          timestamp: new Date().getTime()
+        }
+      }
+    }
+    return null
+  }
+
+  return {
+    topic: cmd.protocolSourceObjectAddress,
+    value: value
   }
 }
 
@@ -1105,15 +1320,17 @@ async function sparkplugProcess (
                 break
               case 'Node Control/Reboot':
                 // only accept Reboot command if not a primary application
-                // if (!jscadaConnection.scadaHostId || jscadaConnection.scadaHostId == '') 
+                // if (!jscadaConnection.scadaHostId || jscadaConnection.scadaHostId == '')
                 {
-                  Log.log(logModS + 'Node Reboot command received, exiting process...')
+                  Log.log(
+                    logModS + 'Node Reboot command received, exiting process...'
+                  )
                   process.exit(999)
                 }
                 break
               case 'Node Control/Next Server':
                 // only accept Next Server command if not a primary application
-                //if (!jscadaConnection.scadaHostId || jscadaConnection.scadaHostId == '') 
+                //if (!jscadaConnection.scadaHostId || jscadaConnection.scadaHostId == '')
                 {
                   Log.log(logMod + 'Node command Next Server received')
                   if (jscadaConnection.endpointURLs.length > 1) {

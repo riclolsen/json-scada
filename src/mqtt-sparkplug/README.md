@@ -165,9 +165,37 @@ The tag to be updated in the _realtimeData_ collection must have the _protocolSo
 
 The data type is automatically detected and converted by the driver. If the data published is not to be interpreted as a number, boolean, JSON or string, it should be subscribed as a _Scripted Topic_ so data will be extracted by the dedicated script.
 
+## Send Commands As MQTT regular topic published
+
+To send commands via Sparkplug B.
+
+    db.realtimeData.updateOne({"tag":"MQTT_COMMAND_TAG_NAME"}, {
+        $set: {
+            "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
+            // MQTT payload will be a string containing a value of type: int,int8,int16,int32,int64,uint8,uint16,uint32,uint64,float,double,boolean,string,datetime,text
+            "protocolSourceASDU": "boolean", // type
+            "protocolSourceObjectAddress": "enterprise_name/area_name/device_name/metric_name", // topic name
+            "protocolSourceCommandDuration": 0, // qos level
+            "protocolSourceCommandUseSBO": false, // retain flag
+            "kconv1": 1.0,
+            "kconv2": 0.0,
+        });
+
 ## Send Commands Via Sparkplug B
 
 To send commands via Sparkplug B.
+
+    db.realtimeData.updateOne({"tag":"MQTT_SPB_COMMAND_TAG_NAME"}, {
+        $set: {
+            "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
+            "protocolSourceASDU": "boolean", // metric type: int,int8,int16,int32,int64,uint8,uint16,uint32,uint64,float,double,boolean,string,datetime,text
+            "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/device_id/metric_name", // topic name/metric name, for DCMD (do not include DCMD in the parameter!)
+            // "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/metric_name", // topic name/metric name, for NCMD (do not include NCMD)
+            "protocolSourceCommandDuration": 0, // no effect for sparkplug B
+            "protocolSourceCommandUseSBO": false, // no effect for sparkplug B
+            "kconv1": 1.0,
+            "kconv2": 0.0,
+        });
 
 ## Receive (Device) Commands Via Sparkplug B
 
@@ -191,7 +219,7 @@ Given a topic "test/jsonarr" that publishes array of values as JSON like
 
     [ 12345.2, 23456.7, 345678.9 ]
 
-The script should extract values and return an array o object like
+The script should extract values and return an array of objects like
 
     [
     {

@@ -247,6 +247,7 @@
                  outboundPayload;
              
              console.log("Command received for device " + deviceId);
+             console.log(payload);
              
              // Loop over the metrics and store them in a map
              if (metrics !== undefined && metrics !== null) {
