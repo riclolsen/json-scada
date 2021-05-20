@@ -146,9 +146,9 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.tag = tag
       if ('type' in data) newTag.type = data.type
       newTag.description = data?.description
-      newTag.ungroupedDescription = data?.ungroupedDescription
-      newTag.group1 = data?.group1
-      newTag.group2 = data?.group2
+      newTag.ungroupedDescription = data?.ungroupedDescription || data.protocolSourceObjectAddress
+      newTag.group1 = data?.group1 || AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber   
+      newTag.group2 = data?.group2 || ''
       newTag.group3 = data?.group3
       newTag.value = new Mongo.Double(data.value)
       newTag.valueString = data?.valueString
