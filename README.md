@@ -5,7 +5,7 @@
 {json:scada}
 ============
 
-A portable and scalable SCADA/IIoT platform centered on the MongoDB database server.
+A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB database server.
 
 ![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js >= 14")
 ![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go >= 1.14")
@@ -81,10 +81,12 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Documentation
 
+* [Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
+* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.9-alpha)
 * [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
-* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.8-alpha)
+* [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
 * [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
-* [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
+* [SVG Synoptic Display Editor](https://github.com/riclolsen/json-scada/blob/master/src/svg-display-editor/README.md)
 * [IEC60870-5-104 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104server/README.md)
 * [IEC60870-5-104 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104client/README.md)
 * [IEC60870-5-101 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec101server/README.md)
@@ -95,13 +97,11 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * [OPC-UA Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-UA-Client/README.md)
 * [CIP Ethernet/IP PLCTags Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/i104m/README.md)
+* [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
 * [Change Stream Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_data_processor/README.md)
 * [Custom Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_custom_processor/README.md)
 * [Realtime Data Server](https://github.com/riclolsen/json-scada/blob/master/src/server_realtime/README.md)
-* [SVG Synoptic Display Editor](https://github.com/riclolsen/json-scada/blob/master/src/svg-display-editor/README.md)
 * [OSHMI2JSON Tool](https://github.com/riclolsen/json-scada/blob/master/src/oshmi2json/README.md)
-* [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
-* [Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
 * [Report Generators](https://github.com/riclolsen/json-scada/blob/master/docs/report_generators.md)
 
 ## Protocols Roadmap
@@ -114,15 +114,15 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] IEC 60870-5-103 Client
 - [x] DNP3 Client (TCP, UDP, TLS, Serial)
 - [ ] DNP3 Server (TCP, UDP, TLS, Serial)
+- [x] MQTT/Sparkplug-B Client
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [ ] Secure ICCP Client
-- [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
+- [x] Telegraf Client (OPC-UA, MQTT, MODBUS, SNMP, ...)
 - [x] OPC UA Client (experimental)
 - [ ] OPC UA Server
 - [ ] OPC DA Client
 - [ ] OPC DA Server
-- [x] MQTT/Sparkplug-B Client
 - [ ] Modbus Client
 - [ ] IEC 61850 MMS Client
 - [ ] IEC 61850 GOOSE Client
@@ -164,8 +164,8 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Online Demo
 
-* http://vmi233205.contaboserver.net:8080/.
+* http://vmi233205.contaboserver.net:8080/
 
-## Contact
+## Developer Contact
 
-https://www.linkedin.com/in/ricardo-olsen/
+* https://www.linkedin.com/in/ricardo-olsen/
