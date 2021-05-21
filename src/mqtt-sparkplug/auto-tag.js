@@ -157,8 +157,9 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.invalid = data?.invalidAtSource === false ? false : true
       newTag.timeTagAtSource = data?.timeTagAtSource
       newTag.commissioningRemarks = data?.commissioningRemarks
+      newTag.priority = 3
 
-      console.log('>> Insert ' + tag)
+      // console.log('>> Insert ' + tag)
 
       let resIns = await rtDataCollection.insertOne(newTag)
       if (resIns.insertedCount >= 1) ListCreatedTags.push(tag)

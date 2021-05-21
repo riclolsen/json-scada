@@ -114,11 +114,14 @@ let AutoCreateTags = true
             { retain: true }
           )
 
-          // publish under root/group1/tags/tag: value, timestamp, good (value quality)
+          // publish under root/@jsons-scada/tags/group1/tags/value: value, timestamp, good (value quality), ...
           SparkplugClientObj.handle.client.publish(
             data.properties.topicAsTag.value,
             JSON.stringify({
-              value: data.value,
+              value: data.value,              
+              valueString: data?.properties?.valueString?.value,
+              valueJson: data?.properties?.valueJson?.value,
+              type: data?.type,
               ...('timestamp' in data ? { timestamp: data.timestamp } : {}),
               ...('good' in data.properties
                 ? { good: data.properties.good.value }
@@ -724,7 +727,7 @@ function getMetricPayload (element, jscadaConnection) {
     topicName = jscadaConnection.publishTopicRoot.trim() + '/'
     if (element.group1 && element.group1.trim() !== '')
       topicName += AppDefs.TAGS_SUBTOPIC + '/' + topicStr(element.group1) + '/'
-    topicName += topicStr(element.tag)
+    topicName += topicStr(element.tag) + '/value'
     topicAsTag = {
       topicAsTag: {
         type: 'string',
@@ -740,6 +743,14 @@ function getMetricPayload (element, jscadaConnection) {
     type: type,
     ...(timestamp === false ? {} : { timestamp: timestamp }),
     properties: {
+      valueJson: {
+        type: 'string',
+        value: JSON.stringify(element?.valueJson || value).replace(/^"(.*)"$/, '$1')
+      },
+      valueString: {
+        type: 'string',
+        value: element.valueString || value.toString()
+      },
       good: {
         type: 'boolean',
         value: element.invalid ? false : true
@@ -1900,9 +1911,9 @@ function topicStr (s) {
   if (typeof s === 'string')
     return s
       .trim()
-      .replace('/', '-')
-      .replace('+', '-')
-      .replace('#', '-')
+      .replace(/\//g, '|')
+      .replace(/\+/g, '^')
+      .replace(/\#/g, '@')
   return ''
 }
 
