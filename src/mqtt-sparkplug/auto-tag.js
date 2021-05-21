@@ -145,6 +145,15 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.protocolSourceObjectAddress = data.protocolSourceObjectAddress
       newTag.tag = tag
       if ('type' in data) newTag.type = data.type
+      if (newTag.type === 'analog'){
+        newTag.unit = data?.unit || 'units'
+      }
+      if (newTag.type === 'digital'){
+        newTag.eventTextFalse = "false"
+        newTag.eventTextTrue = "true"
+        newTag.stateTextFalse = "false"
+        newTag.stateTextTrue = "true"
+      }
       newTag.description = data?.description
       newTag.ungroupedDescription = data?.ungroupedDescription || data.protocolSourceObjectAddress
       newTag.group1 = data?.group1 || AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber   
