@@ -118,7 +118,7 @@ let AutoCreateTags = true
           SparkplugClientObj.handle.client.publish(
             data.properties.topicAsTag.value,
             JSON.stringify({
-              value: data.value,              
+              value: data.value,
               valueString: data?.properties?.valueString?.value,
               valueJson: data?.properties?.valueJson?.value,
               type: data?.type,
@@ -142,8 +142,8 @@ let AutoCreateTags = true
         cnt++
       }
 
-      // publish metrics as sparkplug b device data
-      if (cnt) {
+      // publish metrics as sparkplug b device data      
+      if (metrics.length>0) {
         let payload = {
           timestamp: new Date().getTime(),
           metrics: metrics
@@ -322,12 +322,14 @@ let AutoCreateTags = true
               )
                 return // not for this connection
 
-              console.log(JSON.stringify(change))
+              // console.log(JSON.stringify(change))
               let data = getMetricCommandPayload(change.fullDocument)
               if (!data) return
 
               if (data.deviceId) {
-                data.metric.timestamp = new Date(change.fullDocument.timeTag).getTime()
+                data.metric.timestamp = new Date(
+                  change.fullDocument.timeTag
+                ).getTime()
                 SparkplugClientObj.handle.publishDeviceCmd(
                   data.groupId,
                   data.edgeNodeId,
@@ -338,7 +340,9 @@ let AutoCreateTags = true
                   }
                 )
               } else if (data.groupId) {
-                data.metric.timestamp = new Date(change.fullDocument.timeTag).getTime()
+                data.metric.timestamp = new Date(
+                  change.fullDocument.timeTag
+                ).getTime()
                 SparkplugClientObj.handle.publishNodeCmd(
                   data.groupId,
                   data.edgeNodeId,
@@ -366,7 +370,7 @@ let AutoCreateTags = true
                 )
               }
 
-              console.log(data)
+              // console.log(data)
             })
           } catch (e) {
             Log.log('MongoDB - CS CMD Error: ' + e, Log.levelMin)
@@ -745,7 +749,10 @@ function getMetricPayload (element, jscadaConnection) {
     properties: {
       valueJson: {
         type: 'string',
-        value: JSON.stringify(element?.valueJson || value).replace(/^"(.*)"$/, '$1')
+        value: JSON.stringify(element?.valueJson || value).replace(
+          /^"(.*)"$/,
+          '$1'
+        )
       },
       valueString: {
         type: 'string',
@@ -841,15 +848,15 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
     while (!ValuesQueue.isEmpty()) {
       let data = ValuesQueue.peek()
       ValuesQueue.dequeue()
-      // const db = clientMongo.db(jsConfig.mongoDatabaseName)
+
+      // console.log(data)
 
       // check tag is created, if not found create it
       if (AutoCreateTags) {
         let topicSplit = data.protocolSourceObjectAddress.split('/')
-        if (topicSplit.length>0)
-          data.group2 = topicSplit[0] 
-        if (topicSplit.length>1 && topicSplit[0]===SparkplugNS)
-          data.group2 = topicSplit[1] 
+        if (topicSplit.length > 0) data.group2 = topicSplit[0]
+        if (topicSplit.length > 1 && topicSplit[0] === SparkplugNS)
+          data.group2 = topicSplit[1]
         await AutoTag.AutoCreateTag(data, jsConfig.ConnectionNumber, collection)
       }
 
@@ -1405,7 +1412,7 @@ async function sparkplugProcess (
         Log.log(logModS + 'Event: Sparkplug B message on topic: ' + topic)
 
         if (Log.logLevelCurrent >= Log.levelDetailed) {
-          Log.log(logModS + topicInfo)
+          //Log.log(logModS + JSON.stringify(topicInfo), Log.levelDetailed)
           Log.log(logModS + JSON.stringify(payload), Log.levelDetailed)
         }
 
@@ -1459,6 +1466,7 @@ async function sparkplugProcess (
                 )
                 return
               }
+              // console.log(payload)
               ProcessDeviceBirthOrData(deviceLocator, payload, false)
               break
             case 'NBIRTH':
@@ -1559,14 +1567,15 @@ function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
 
 // obtain information from sparkplug-b decoded payload and queue for mongo tag updates
 function queueMetric (metric, deviceLocator, isBirth, templateName) {
-  if (metric?.is_historical === true) return // when historical discard
+  if (metric?.isHistorical === true) return // when historical, discard
+  if (metric?.isTransient === true) return // when transient, discard
 
   let value = 0,
     valueString = '',
     valueJson = {},
     type = 'digital',
     invalid = false,
-    transient = false,
+    isNull = false,
     timestamp,
     timestampGood = true,
     catalogProperties = {},
@@ -1616,63 +1625,81 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timestampGood = false
   }
 
-  if (metric?.is_null === true) {
-    valueString = 'null'
-  } else
-    switch (metric.type.toLowerCase()) {
-      case 'template':
-        type = 'json'
-        if ('value' in metric) {
-          // recurse to publish more metrics
-          if ('metrics' in metric.value) {
-            metric.value.metrics.forEach(m => {
-              queueMetric(m, deviceLocator, isBirth, metric.name)
-            })
-            return
-          } else {
-            valueJson = metric.value
-            valueString = JSON.stringify(metric.value)
-          }
+  if (metric?.value===null || metric?.isNull === true || !'value' in metric){
+    // when value is absent, consider it invalid
+    invalid = true
+    isNull = true
+  }
+
+  switch (metric.type.toLowerCase()) {
+    case 'template':
+      type = 'json'
+      if ('value' in metric) {
+        // recurse to publish more metrics
+        if ('metrics' in metric.value) {
+          metric.value.metrics.forEach(m => {
+            queueMetric(m, deviceLocator, isBirth, metric.name)
+          })
+          return
+        } else {
+          valueJson = metric.value
+          valueString = JSON.stringify(metric.value)
         }
-        break
-      case 'dataset':
-        // transform data set in a simpler array of objects with named properties
-        type = 'json'
-        if ('value' in metric) {
-          if ('numOfColumns' in metric.value) {
-            let v = []
-            for (let j = 0; j < metric.value.rows.length; j++) {
-              let r = {}
-              for (let i = 0; i < metric.value.numOfColumns; i++) {
-                let mv = metric.value.rows[j][i]
-                switch (metric.value.types[i].toLowerCase()) {
-                  case 'int64':
-                  case 'uint64':
-                    mv = (mv.low >>> 0) + (mv.high >>> 0) * Math.pow(2, 32)
-                    break
-                  default:
-                    break
-                }
-                r[metric.value.columns[i]] = mv
+      }
+      break
+    case 'dataset':
+      // transform data set in a simpler array of objects with named properties
+      type = 'json'
+      if ('value' in metric) {
+        if ('numOfColumns' in metric.value) {
+          let v = []
+          for (let j = 0; j < metric.value.rows.length; j++) {
+            let r = {}
+            for (let i = 0; i < metric.value.numOfColumns; i++) {
+              let mv = metric.value.rows[j][i]
+              switch (metric.value.types[i].toLowerCase()) {
+                case 'int64':
+                case 'uint64':
+                  mv = (mv.low >>> 0) + (mv.high >>> 0) * Math.pow(2, 32)
+                  break
+                default:
+                  break
               }
-              v.push(r)
+              r[metric.value.columns[i]] = mv
             }
-            valueJson = v
-            valueString = JSON.stringify(v)
-          } else {
-            valueJson = metric.value
-            valueString = JSON.stringify(metric.value)
+            v.push(r)
           }
+          valueJson = v
+          valueString = JSON.stringify(v)
+        } else {
+          valueJson = metric.value
+          valueString = JSON.stringify(metric.value)
         }
-        break
-      case 'boolean':
-        type = 'digital'
+      }
+      break
+    case 'boolean':
+      type = 'digital'
+      if (!'value' in metric || metric.value===null) {
+        // metric does not have a value
+        value = 0
+        valueString = 'false'
+        valueJson = false
+      } else {
+        // metric does have a value
         value = metric.value === false ? 0 : 1
         valueString = metric.value.toString()
         valueJson = metric
-        break
-      case 'string':
-        type = 'string'
+      }
+      break
+    case 'string':
+      type = 'string'
+      if (!'value' in metric || metric.value===null) {
+        // metric does not have a value
+        value = 0
+        valueString = ''
+        valueJson = ''
+      } else {
+        // metric does have a value
         value = parseFloat(metric.value)
         if (isNaN(value)) value = 0
         valueString = metric.value
@@ -1681,27 +1708,42 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
         try {
           valueJson = JSON.parse(metric.value)
         } catch (e) {}
-        break
-      case 'int32':
-      case 'uint32':
-      case 'float':
-      case 'double':
-        type = 'analog'
+      }
+      break
+    case 'int32':
+    case 'uint32':
+    case 'float':
+    case 'double':
+      type = 'analog'
+      if (!'value' in metric || metric.value===null) {
+        // metric does not have a value
+        value = 0
+        valueString = '0'
+        valueJson = 0
+      } else {
+        // metric does have a value
         value = metric.value
         valueString = value.toString()
         valueJson = metric
-        break
-      case 'int64':
-      case 'uint64':
-        type = 'analog'
+      }
+      break
+    case 'int64':
+    case 'uint64':
+      type = 'analog'
+      if (!'value' in metric || metric.value===null) {
+        // metric does not have a value
+        value = 0
+        valueString = '0'
+        valueJson = 0
+      } else {
+        // metric does have a value
         value =
           (metric.value.low >>> 0) + (metric.value.high >>> 0) * Math.pow(2, 32)
         valueString = value.toString()
         valueJson = metric
-        break
-    }
-
-  if (metric?.is_transient === true) transient = true
+      }
+      break
+  }
 
   if ('properties' in metric) {
     if ('good' in metric.properties) {
@@ -1759,11 +1801,11 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     valueString: valueString,
     valueJson: valueJson,
     invalid: invalid,
-    transient: transient,
     causeOfTransmissionAtSource: isBirth ? '20' : '3',
     timeTagAtSource: new Date(timestamp),
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
+    isNull: metric?.isNull===true,
     ...catalogProperties
   })
 }

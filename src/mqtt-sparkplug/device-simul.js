@@ -160,6 +160,20 @@
      
      // Get data payload for the device
      getDataPayload = function() {
+         if (Math.random() > 0.9){
+            // simulate metrics lost (failed data acquisition) with is_null=true and some absent values
+            return {
+                "timestamp" : new Date().getTime(),
+                "metrics" : [
+                    { /*"name" : "my_boolean",*/ "alias": 1, "isNull": true, "value": null, "type" : "boolean", "timestamp" : new Date().getTime() },
+                    { /*"name" : "my_double",*/ "alias": 2, "isHistorical": false, "isNull": true, "value": null, "type" : "double" },
+                    { /*"name" : "my_float",*/ "alias": 3, "isNull": true, "value": null, "type" : "float" },
+                    { /*"name" : "my_int",*/ "alias": 4, "isNull": true, "value": null, "type" : "int" },
+                    { /*"name" : "my_long",*/ "alias": 5, "isNull": true, "value": null, "type" : "long", "timestamp" : new Date().getTime() }
+                ]
+            };
+         }
+
          return {
              "timestamp" : new Date().getTime(),
              "metrics" : [

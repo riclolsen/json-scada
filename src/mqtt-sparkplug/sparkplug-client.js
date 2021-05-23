@@ -535,9 +535,8 @@ function SparkplugClient(config) {
                 // exclude messages from itself
                 if (splitTopic[0] === version
                     && (splitTopic[1] !== groupId || splitTopic[3] !== edgeNode)  )
-
-                // emit decoded message
-                sparkplugClient.emit("message", topic, payload, { namespace: splitTopic[0], groupId: splitTopic[1], msgType: splitTopic[2], edgeNodeId: splitTopic[3], deviceId: splitTopic[4] }  );                
+                  // emit decoded message
+                  sparkplugClient.emit("message", topic, payload, { namespace: splitTopic[0], groupId: splitTopic[1], msgType: splitTopic[2], edgeNodeId: splitTopic[3], deviceId: splitTopic[4] }  );                
             }
         });
 
