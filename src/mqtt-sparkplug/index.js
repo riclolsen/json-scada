@@ -97,6 +97,7 @@ let AutoCreateTags = true
     ) {
       let cnt = 0,
         metrics = []
+
       while (!SparkplugPublishQueue.isEmpty()) {
         let data = SparkplugPublishQueue.peek()
         SparkplugPublishQueue.dequeue()
@@ -108,11 +109,12 @@ let AutoCreateTags = true
           'properties' in data
         ) {
           // publish value under root/group1/group2/group3/name
-          SparkplugClientObj.handle.client.publish(
-            data.properties.topic.value,
-            data.value.toString(),
-            { retain: true }
-          )
+          if ('topic' in data.properties)
+            SparkplugClientObj.handle.client.publish(
+              data.properties.topic.value,
+              data.value.toString(),
+              { retain: true }
+            )
 
           // publish under root/@jsons-scada/tags/group1/tags/value: value, timestamp, good (value quality), ...
           SparkplugClientObj.handle.client.publish(
@@ -137,13 +139,15 @@ let AutoCreateTags = true
 
         // aggregate for sparkplug publishing
         if (connection.groupId && connection.groupId.trim() !== '') {
-          metrics.push(data)
+          if (!('name' in data))
+            // do not publish initial device metrics (they have name property)
+            metrics.push(data)
         }
         cnt++
       }
 
-      // publish metrics as sparkplug b device data      
-      if (metrics.length>0) {
+      // publish metrics as sparkplug b device data
+      if (metrics.length > 0) {
         let payload = {
           timestamp: new Date().getTime(),
           metrics: metrics
@@ -437,7 +441,8 @@ function getNodeBirthPayload (configObj) {
 async function getDeviceBirthPayload (
   rtCollection,
   commandsEnabled,
-  connectionNumber
+  connectionNumber,
+  jscadaConnection
 ) {
   let res = await rtCollection
     .find(
@@ -459,6 +464,10 @@ async function getDeviceBirthPayload (
           invalid: 1,
           isEvent: 1,
           description: 1,
+          ungroupedDescription: 1,
+          group1: 1,
+          group2: 1,
+          group3: 1,
           origin: 1,
           protocolSourceConnectionNumber: 1
         }
@@ -513,6 +522,46 @@ async function getDeviceBirthPayload (
     //  timestamp = (new Date()).getTime()
     //}
 
+    let topic = {}
+    let topicAsTag = {}
+    if (
+      'publishTopicRoot' in jscadaConnection &&
+      jscadaConnection.publishTopicRoot.trim() !== ''
+    ) {
+      let topicName = jscadaConnection.publishTopicRoot.trim() + '/'
+
+      if (element.group1 && element.group1.trim() !== '')
+        topicName += topicStr(element.group1) + '/'
+      if (element.group2 && element.group2.trim() !== '')
+        topicName += topicStr(element.group2) + '/'
+      if (element.group3 && element.group3.trim() !== '')
+        topicName += topicStr(element.group3) + '/'
+      if (
+        element.ungroupedDescription &&
+        element.ungroupedDescription.trim() !== ''
+      )
+        topicName += topicStr(element.ungroupedDescription)
+      else topicName += topicStr(element.tag)
+      topic = {
+        topic: {
+          type: 'string',
+          value: topicName
+        }
+      }
+
+      topicName = jscadaConnection.publishTopicRoot.trim() + '/'
+      if (element.group1 && element.group1.trim() !== '')
+        topicName +=
+          AppDefs.TAGS_SUBTOPIC + '/' + topicStr(element.group1) + '/'
+      topicName += topicStr(element.tag) + '/value'
+      topicAsTag = {
+        topicAsTag: {
+          type: 'string',
+          value: topicName
+        }
+      }
+    }
+
     let metric = {
       name: element.tag,
       alias: element._id,
@@ -521,6 +570,8 @@ async function getDeviceBirthPayload (
       ...(timestamp === false ? {} : { timestamp: timestamp }),
 
       properties: {
+        ...topic,
+        ...topicAsTag,
         ...(element.origin === 'command'
           ? {
               isCommand: {
@@ -994,7 +1045,8 @@ async function sparkplugProcess (
       sparkplugProcess.deviceBirthPayload = await getDeviceBirthPayload(
         sparkplugProcess.db.collection(configObj.RealtimeDataCollectionName),
         jscadaConnection.commandsEnabled,
-        jscadaConnection.protocolConnectionNumber
+        jscadaConnection.protocolConnectionNumber,
+        jscadaConnection
       )
       // Log.log(sparkplugProcess.deviceBirthPayload, Log.levelDebug)
 
@@ -1021,7 +1073,7 @@ async function sparkplugProcess (
       //}
 
       if (
-        !'deviceId' in jscadaConnection ||
+        !('deviceId' in jscadaConnection) ||
         jscadaConnection.deviceId.trim() === ''
       ) {
         jscadaConnection.deviceId = 'Primary Application'
@@ -1062,6 +1114,9 @@ async function sparkplugProcess (
           sparkplugProcess.deviceBirthPayload
         )
         SparkplugDeviceBirthed = true
+        sparkplugProcess.deviceBirthPayload.metrics.forEach(elem => {
+          SparkplugPublishQueue.enqueue(elem)
+        })
       })
 
       spClient.handle.on('connect', function () {
@@ -1203,7 +1258,7 @@ async function sparkplugProcess (
 
                     if (sharedObj.dataArray instanceof Array)
                       sharedObj.dataArray.forEach(element => {
-                        if (!element.id || !'value' in element) return
+                        if (!element.id || !('value' in element)) return
                         let type = 'analog'
                         if (element.type) type = element.type
                         ValuesQueue.enqueue({
@@ -1336,7 +1391,8 @@ async function sparkplugProcess (
                         configObj.RealtimeDataCollectionName
                       ),
                       jscadaConnection.commandsEnabled,
-                      jscadaConnection.protocolConnectionNumber
+                      jscadaConnection.protocolConnectionNumber,
+                      jscadaConnection
                     )
                   )
                 }
@@ -1548,7 +1604,7 @@ async function sparkplugProcess (
 }
 
 function ProcessDeviceBirthOrData (deviceLocator, payload, isBirth) {
-  if (!'metrics' in payload) return
+  if (!('metrics' in payload)) return
 
   if (isBirth) {
     Log.log('Sparkplug - New device: ' + deviceLocator)
@@ -1625,7 +1681,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timestampGood = false
   }
 
-  if (metric?.value===null || metric?.isNull === true || !'value' in metric){
+  if (metric?.value === null || metric?.isNull === true || !('value' in metric)) {
     // when value is absent, consider it invalid
     invalid = true
     isNull = true
@@ -1679,7 +1735,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       break
     case 'boolean':
       type = 'digital'
-      if (!'value' in metric || metric.value===null) {
+      if (!('value' in metric) || metric.value === null) {
         // metric does not have a value
         value = 0
         valueString = 'false'
@@ -1693,7 +1749,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       break
     case 'string':
       type = 'string'
-      if (!'value' in metric || metric.value===null) {
+      if (!('value' in metric) || metric.value === null) {
         // metric does not have a value
         value = 0
         valueString = ''
@@ -1715,7 +1771,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     case 'float':
     case 'double':
       type = 'analog'
-      if (!'value' in metric || metric.value===null) {
+      if (!('value' in metric) || metric.value === null) {
         // metric does not have a value
         value = 0
         valueString = '0'
@@ -1730,7 +1786,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     case 'int64':
     case 'uint64':
       type = 'analog'
-      if (!'value' in metric || metric.value===null) {
+      if (!('value' in metric) || metric.value === null) {
         // metric does not have a value
         value = 0
         valueString = '0'
@@ -1805,7 +1861,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timeTagAtSource: new Date(timestamp),
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
-    isNull: metric?.isNull===true,
+    isNull: metric?.isNull === true,
     ...catalogProperties
   })
 }
