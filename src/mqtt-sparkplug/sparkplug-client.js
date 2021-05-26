@@ -474,11 +474,23 @@ function SparkplugClient(config) {
             sparkplugClient.emit("offline");
         });
 
+        function replacer(key, value) {
+            if (Array.isArray(value)){
+                if (value.length>10)
+                  return 'Array:' + value.length;
+            }
+            if (typeof value === "string") {
+                if (value.length > 200)
+                return value.substr(200)+'...';
+            }
+            return value;
+          }
+
         /*
          * 'packetsend' handler
          */
         client.on("packetsend", function(packet) {
-            logger.debug("packetsend: " + packet.cmd);
+            logger.debug("packetsend: " + JSON.stringify(packet, replacer));
         });
 
         /*
@@ -487,8 +499,7 @@ function SparkplugClient(config) {
         client.on("packetreceive", function(packet) {
             if (logger.level !== 'debug')
               return;
-            logger.debug("packetreceivecmd: " + packet.cmd);
-            logger.debug("packetreceive: " + JSON.stringify(packet));
+            logger.debug("packetreceive: " + JSON.stringify(packet, replacer));
         });
 
         /*

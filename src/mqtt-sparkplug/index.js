@@ -1100,6 +1100,9 @@ async function sparkplugProcess (
 
       // Create 'birth' handler
       spClient.handle.on('birth', function () {
+        if (!('groupId' in jscadaConnection) || jscadaConnection.groupId.trim()==='')
+          return
+
         SparkplugPublishQueue.clear() // clear old data
         MqttPublishQueue.clear() // clear old data
 
@@ -1203,6 +1206,7 @@ async function sparkplugProcess (
         if (jscadaConnection.topicsAsFiles instanceof Array)
           await jscadaConnection.topicsAsFiles.forEach(async tp => {
             if (topicMatchSub(topic)(tp)) {
+              Log.log(logMod + 'Received topic as file ' + topic)
               match = true
               try {
                 // save as file on Mongodb Gridfs
@@ -1377,6 +1381,8 @@ async function sparkplugProcess (
           payload.metrics.forEach(metric => {
             switch (metric?.name) {
               case 'Node Control/Rebirth':
+                if (!('groupId' in jscadaConnection) || jscadaConnection.groupId.trim()==='')
+                  return
                 if (metric?.value === true) {
                   Log.log(logModS + 'Node Rebirth command received')
                   // Publish Node BIRTH certificate
