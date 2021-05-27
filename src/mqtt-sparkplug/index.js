@@ -1100,7 +1100,10 @@ async function sparkplugProcess (
 
       // Create 'birth' handler
       spClient.handle.on('birth', function () {
-        if (!('groupId' in jscadaConnection) || jscadaConnection.groupId.trim()==='')
+        if (
+          !('groupId' in jscadaConnection) ||
+          jscadaConnection.groupId.trim() === ''
+        )
           return
 
         SparkplugPublishQueue.clear() // clear old data
@@ -1378,10 +1381,13 @@ async function sparkplugProcess (
           Log.levelDetailed
         )
         if (payload.metrics instanceof Array) {
-          payload.metrics.forEach(metric => {
+          payload.metrics.forEach(async metric => {
             switch (metric?.name) {
               case 'Node Control/Rebirth':
-                if (!('groupId' in jscadaConnection) || jscadaConnection.groupId.trim()==='')
+                if (
+                  !('groupId' in jscadaConnection) ||
+                  jscadaConnection.groupId.trim() === ''
+                )
                   return
                 if (metric?.value === true) {
                   Log.log(logModS + 'Node Rebirth command received')
@@ -1390,16 +1396,17 @@ async function sparkplugProcess (
                     getNodeBirthPayload(configObj)
                   )
                   // Publish Device BIRTH certificate
+                  let dbc = await getDeviceBirthPayload(
+                    sparkplugProcess.db.collection(
+                      configObj.RealtimeDataCollectionName
+                    ),
+                    jscadaConnection.commandsEnabled,
+                    jscadaConnection.protocolConnectionNumber,
+                    jscadaConnection
+                  )
                   spClient.handle.publishDeviceBirth(
                     jscadaConnection.deviceId,
-                    getDeviceBirthPayload(
-                      sparkplugProcess.db.collection(
-                        configObj.RealtimeDataCollectionName
-                      ),
-                      jscadaConnection.commandsEnabled,
-                      jscadaConnection.protocolConnectionNumber,
-                      jscadaConnection
-                    )
+                    dbc
                   )
                 }
                 break
@@ -1687,7 +1694,11 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
     timestampGood = false
   }
 
-  if (metric?.value === null || metric?.isNull === true || !('value' in metric)) {
+  if (
+    metric?.value === null ||
+    metric?.isNull === true ||
+    !('value' in metric)
+  ) {
     // when value is absent, consider it invalid
     invalid = true
     isNull = true
