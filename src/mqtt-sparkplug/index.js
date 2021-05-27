@@ -1659,6 +1659,19 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       objectAddress =
         deviceLocator + '/' + topicStr(templateName) + '/' + metric.name
     else objectAddress = deviceLocator + '/' + topicStr(metric.name)
+
+    // map alias to object address for later query
+    if ('alias' in metric) {
+      let alias =
+        (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
+      let device = DevicesList[deviceLocator]
+      if (!device) {
+        // device not yet included
+        return
+      }
+      device.mapAliasToObjectAddress['a' + alias.toString()] = objectAddress
+    }
+
   } else if ('alias' in metric) {
     let alias =
       (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
@@ -1835,18 +1848,6 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       group2: '',
       group3: '',
       type: type
-    }
-
-    // map alias to object address for later query
-    if ('alias' in metric) {
-      let alias =
-        (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
-      let device = DevicesList[deviceLocator]
-      if (!device) {
-        // device not yet included
-        return
-      }
-      device.mapAliasToObjectAddress['a' + alias.toString()] = objectAddress
     }
 
     if ('metadata' in metric && 'description' in metric.metadata)
