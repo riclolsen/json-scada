@@ -2031,14 +2031,12 @@ function InvalidateDeviceTags (
 // If do not found a jsonPath in the last level, return topic and empty string for jsonPath
 function JsonPathTopic (jpTopic) {
   let jsonPath = ''
-  let topic = jpTopic
-  if (jpTopic.indexOf('$') !== -1) {
-    let topicSplit = jpTopic.split('/')
-    if (topicSplit[topicSplit.length - 1].indexOf('$') === 0) {
-      jsonPath = topicSplit[topicSplit.length - 1]
-      topicSplit.pop()
-      topic = topicSplit.join('/')
-    }
+  let topic = jpTopic.trim()
+
+  const pos = topic.indexOf('/$.')
+  if (pos !== -1) {
+    jsonPath = topic.substring(pos + 1, topic.length)
+    topic = topic.substring(0, pos)
   }
 
   return {
@@ -2049,7 +2047,6 @@ function JsonPathTopic (jpTopic) {
 
 // convert possible JSON value to number and string and enqueue for mongo update
 function EnqueueJsonValue (JsonValue, protocolSourceObjectAddress) {
-  // console.log(typeof JsonValue + ' - ' + JsonValue)
   let value = 0,
     valueString = '',
     type = 'json'

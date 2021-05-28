@@ -338,6 +338,16 @@
              }, 7700)
 
              setInterval(function() {
+                sparkplugClient.client.publish('C3ET/test/bool', (Math.random() > 0.5)?'true':'false', {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+                sparkplugClient.client.publish('C3ET/test/int', parseInt(Math.random()*1000).toString(), {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+                sparkplugClient.client.publish('C3ET/test/float', (Math.random()*10000).toString(), {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+                //sparkplugClient.client.publish('C3ET/test/string', 'a string 123', {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'text/plain'}});
+                //sparkplugClient.client.publish('C3ET/test/quotedstring', "'a string 123'", {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+                sparkplugClient.client.publish('C3ET/test/jsonobj', "{'numberVar': " + (Math.random()*1000).toString() + ", 'boolVar': false }", {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}});
+                //sparkplugClient.client.publish('C3ET/test/jsonarr', "[ 12345.2, 23456.7, 345678.9 ]", {qos: 0, retain: true, properties: {payloadFormatIndicator: true, contentType: 'application/json'}} );
+             }, 9300)
+ 
+             setInterval(function() {
                  console.log("Publish device data.")
                  // Publish device data
                  sparkplugClient.publishDeviceData(deviceId, getDataPayload());
