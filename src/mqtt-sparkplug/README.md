@@ -99,7 +99,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (publishing messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**autoCreateTags**_ [Boolean] - Enables automatic creation of all discovered tags. **Mandatory parameter**.
 * _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. **Mandatory parameter**.
-* _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. Regular MQTT topics will be converted to tags with the full topic name as object address. **Mandatory parameter**.
+* _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. JSON Path Plus can be used to extract values from JSON payloads e.g. "/root_topic/subtopic/$.var1". Regular MQTT topics will be converted to tags with the full topic name as object address. **Mandatory parameter**.
 * _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
 * _**topicsScripted**_ [Array of Objects] - List of topics to subscribe on MQTT broker to be treated with dedicated scripts to extract data. **Mandatory parameter**.
 * _**clientId**_ [String] - MQTT Client Id for the connection. If configured, it should be unique over all MQTT clients. Leave empty to to be automatically assigned by the broker. **Optional parameter**.
@@ -127,6 +127,9 @@ See also NodeJS TLS configuration and Sparkplug-Client original lib.
 
 * https://nodejs.org/api/tls.html
 * https://github.com/Cirrus-Link/Sparkplug/tree/master/client_libraries/javascript/sparkplug-client
+
+JSON Path Plus
+* https://github.com/JSONPath-Plus/JSONPath
 
 ### Configuration Hints
 

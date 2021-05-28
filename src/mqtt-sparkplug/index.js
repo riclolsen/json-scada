@@ -20,6 +20,7 @@
  */
 
 const RJSON = require('relaxed-json')
+const { JSONPath } = require('jsonpath-plus')
 const { VM } = require('vm2')
 const Streamifier = require('streamifier')
 const SparkplugClient = require('./sparkplug-client')
@@ -37,9 +38,7 @@ const AutoTag = require('./auto-tag')
 const { timeEnd } = require('console')
 
 const SparkplugNS = 'spBv1.0'
-
 const DevicesList = []
-
 const ValuesQueue = new Queue() // queue of values to update acquisition
 const SparkplugPublishQueue = new Queue() // queue of values to publish as Sparkplug-B
 const MqttPublishQueue = new Queue() // queue of values to publish as standard MQTT topics
@@ -1132,9 +1131,11 @@ async function sparkplugProcess (
         jscadaConnection.topics
           .concat(jscadaConnection.topicsAsFiles)
           .forEach(elem => {
-            Log.log(logMod + 'Subscribing topic: ' + elem)
+            let topicStr = JsonPathTopic(elem).topic
 
-            spClient.handle.client.subscribe(elem, {
+            Log.log(logMod + 'Subscribing topic: ' + topicStr)
+
+            spClient.handle.client.subscribe(topicStr, {
               qos: 1,
               properties: { subscriptionIdentifier: 1 },
               function (err, granted) {
@@ -1307,6 +1308,22 @@ async function sparkplugProcess (
 
         if (match) return
 
+        if (jscadaConnection.topics instanceof Array)
+          jscadaConnection.topics.forEach(elem => {
+            if (elem) {
+              let jpt = JsonPathTopic(elem)
+              if (jpt.jsonPath !== '' && topicMatchSub(topic)(jpt.topic)) {
+                // extract value from payload using JSON PATH
+                let JsonPayload = TryPayloadAsRJson(payload)
+                const jpRes = JSONPath({path: jpt.jsonPath, json: JsonPayload, wrap: false, })
+                EnqueueJsonValue(jpRes, elem)
+                match = true
+              }
+            }
+          })
+
+        if (match) return
+
         // try to detect payload as JSON or RJSON
 
         if (payload.length > 10000) {
@@ -1314,64 +1331,8 @@ async function sparkplugProcess (
           return
         }
 
-        let payloadStr = ''
-        let JsonValue = null
-        try {
-          payloadStr = payload.toString()
-          // try to parse as regular JSON
-          JsonValue = JSON.parse(payloadStr)
-        } catch (e) {
-          // NOT STRICT JSON, try RJSON
-          try {
-            JsonValue = RJSON.parse(payloadStr)
-          } catch (e) {
-            // NOT JSON NOR RJSON, consider as string
-            JsonValue = payloadStr
-          }
-        }
-
-        // console.log(typeof JsonValue + ' - ' + JsonValue)
-        let value = 0,
-          valueString = '',
-          type = 'json'
-        switch (typeof JsonValue) {
-          case 'boolean':
-            type = 'digital'
-            value = JsonValue ? 1 : 0
-            valueString = JsonValue.toString()
-            break
-          case 'number':
-            type = 'analog'
-            value = JsonValue
-            valueString = JsonValue.toString()
-            break
-          case 'string':
-            type = 'string'
-            value = parseFloat(JsonValue)
-            valueString = JsonValue
-            break
-          default:
-            if (JsonValue === null) JsonValue = {}
-            else valueString = JSON.stringify(JsonValue)
-            break
-        }
-
-        if (isNaN(value)) value = 0
-        if (JsonValue === null) JsonValue = {}
-
-        ValuesQueue.enqueue({
-          protocolSourceObjectAddress: topic,
-          value: value,
-          valueString: valueString,
-          valueJson: JsonValue,
-          invalid: false,
-          transient: false,
-          causeOfTransmissionAtSource: '3',
-          timeTagAtSource: new Date(),
-          timeTagAtSourceOk: false,
-          asduAtSource: typeof JsonValue,
-          type: type
-        })
+        let JsonValue = TryPayloadAsRJson(payload)
+        EnqueueJsonValue(JsonValue, topic)
       })
 
       // process received node commands (for this node)
@@ -1671,7 +1632,6 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       }
       device.mapAliasToObjectAddress['a' + alias.toString()] = objectAddress
     }
-
   } else if ('alias' in metric) {
     let alias =
       (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
@@ -2063,4 +2023,91 @@ function InvalidateDeviceTags (
         e.message
     )
   }
+}
+
+// extract topic and jsonPath from topic/jsonPath
+// the last level must begin with $
+// E.g. /root/topicname/$.var1 topic=/root/topicname jsonPath=$.var1
+// If do not found a jsonPath in the last level, return topic and empty string for jsonPath
+function JsonPathTopic (jpTopic) {
+  let jsonPath = ''
+  let topic = jpTopic
+  if (jpTopic.indexOf('$') !== -1) {
+    let topicSplit = jpTopic.split('/')
+    if (topicSplit[topicSplit.length - 1].indexOf('$') === 0) {
+      jsonPath = topicSplit[topicSplit.length - 1]
+      topicSplit.pop()
+      topic = topicSplit.join('/')
+    }
+  }
+
+  return {
+    topic: topic,
+    jsonPath: jsonPath
+  }
+}
+
+// convert possible JSON value to number and string and enqueue for mongo update
+function EnqueueJsonValue (JsonValue, protocolSourceObjectAddress) {
+  // console.log(typeof JsonValue + ' - ' + JsonValue)
+  let value = 0,
+    valueString = '',
+    type = 'json'
+  switch (typeof JsonValue) {
+    case 'boolean':
+      type = 'digital'
+      value = JsonValue ? 1 : 0
+      valueString = JsonValue.toString()
+      break
+    case 'number':
+      type = 'analog'
+      value = JsonValue
+      valueString = JsonValue.toString()
+      break
+    case 'string':
+      type = 'string'
+      value = parseFloat(JsonValue)
+      valueString = JsonValue
+      break
+    default:
+      if (JsonValue === null) JsonValue = {}
+      else valueString = JSON.stringify(JsonValue)
+      break
+  }
+
+  if (isNaN(value)) value = 0
+  if (JsonValue === null) JsonValue = {}
+
+  ValuesQueue.enqueue({
+    protocolSourceObjectAddress: protocolSourceObjectAddress,
+    value: value,
+    valueString: valueString,
+    valueJson: JsonValue,
+    invalid: false,
+    transient: false,
+    causeOfTransmissionAtSource: '3',
+    timeTagAtSource: new Date(),
+    timeTagAtSourceOk: false,
+    asduAtSource: typeof JsonValue,
+    type: type
+  })
+}
+
+function TryPayloadAsRJson (payload) {
+  let payloadStr = ''
+  let JsonValue = null
+  try {
+    payloadStr = payload.toString()
+    // try to parse as regular JSON
+    JsonValue = JSON.parse(payloadStr)
+  } catch (e) {
+    // NOT STRICT JSON, try RJSON
+    try {
+      JsonValue = RJSON.parse(payloadStr)
+    } catch (e) {
+      // NOT JSON NOR RJSON, consider as string
+      JsonValue = payloadStr
+    }
+  }
+  return JsonValue
 }
