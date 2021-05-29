@@ -87,7 +87,7 @@ function SparkplugClient(config) {
         seq = getProperty(config, "seq", 0),
         clean = getProperty(config, "clean", true),
         keepalive = getProperty(config, "keepalive", 5),
-        connectionTimeout = getProperty(config, "connectionTimeout", 30),
+        connectionTimeout = getProperty(config, "connectionTimeout", 10*1000),
         devices = [],
         client = null,
         connecting = false,
