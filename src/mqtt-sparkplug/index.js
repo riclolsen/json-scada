@@ -1040,15 +1040,6 @@ async function sparkplugProcess (
       return
 
     try {
-      // obtain device birth payload
-      sparkplugProcess.deviceBirthPayload = await getDeviceBirthPayload(
-        sparkplugProcess.db.collection(configObj.RealtimeDataCollectionName),
-        jscadaConnection.commandsEnabled,
-        jscadaConnection.protocolConnectionNumber,
-        jscadaConnection
-      )
-      // Log.log(sparkplugProcess.deviceBirthPayload, Log.levelDebug)
-
       // Create the SparkplugClient
       Log.log(logMod + 'Creating client...')
       let config
@@ -1098,7 +1089,7 @@ async function sparkplugProcess (
       })
 
       // Create 'birth' handler
-      spClient.handle.on('birth', function () {
+      spClient.handle.on('birth', async function () {
         if (
           !('groupId' in jscadaConnection) ||
           jscadaConnection.groupId.trim() === ''
@@ -1109,9 +1100,36 @@ async function sparkplugProcess (
         MqttPublishQueue.clear() // clear old data
 
         // Publish SCADA HOST BIRTH certificate (7.5.1)
-        spClient.handle.publishScadaHostBirth()
+        if (
+          jscadaConnection.scadaHostId &&
+          jscadaConnection.scadaHostId.trim() !== ''
+        ) {
+          spClient.handle.publishScadaHostBirth()
+          Log.log(logMod + 'Publish SCADA Host Birth')
+        }
+
         // Publish Node BIRTH certificate
-        spClient.handle.publishNodeBirth(getNodeBirthPayload(configObj))
+        let nbc = getNodeBirthPayload(configObj)
+        spClient.handle.publishNodeBirth(nbc)
+        Log.log(
+          logMod + 'Publish node birth with ' + nbc.metrics.length + ' metrics'
+        )
+
+        // obtain device birth payload
+        sparkplugProcess.deviceBirthPayload = await getDeviceBirthPayload(
+          sparkplugProcess.db.collection(configObj.RealtimeDataCollectionName),
+          jscadaConnection.commandsEnabled,
+          jscadaConnection.protocolConnectionNumber,
+          jscadaConnection
+        )
+        Log.log(
+          logMod +
+            'Publish device birth "' +
+            jscadaConnection.deviceId +
+            '" with ' +
+            sparkplugProcess.deviceBirthPayload.metrics.length +
+            ' metrics'
+        )
 
         // Publish Device BIRTH certificate
         spClient.handle.publishDeviceBirth(
@@ -1315,7 +1333,11 @@ async function sparkplugProcess (
               if (jpt.jsonPath !== '' && topicMatchSub(topic)(jpt.topic)) {
                 // extract value from payload using JSON PATH
                 let JsonPayload = TryPayloadAsRJson(payload)
-                const jpRes = JSONPath({path: jpt.jsonPath, json: JsonPayload, wrap: false, })
+                const jpRes = JSONPath({
+                  path: jpt.jsonPath,
+                  json: JsonPayload,
+                  wrap: false
+                })
                 EnqueueJsonValue(jpRes, elem)
                 match = true
               }
@@ -1353,8 +1375,13 @@ async function sparkplugProcess (
                 if (metric?.value === true) {
                   Log.log(logModS + 'Node Rebirth command received')
                   // Publish Node BIRTH certificate
-                  spClient.handle.publishNodeBirth(
-                    getNodeBirthPayload(configObj)
+                  let nbc = getNodeBirthPayload(configObj)
+                  spClient.handle.publishNodeBirth(nbc)
+                  Log.log(
+                    logMod +
+                      'Publish node birth with ' +
+                      nbc.metrics.length +
+                      ' metrics'
                   )
                   // Publish Device BIRTH certificate
                   let dbc = await getDeviceBirthPayload(
@@ -1364,6 +1391,14 @@ async function sparkplugProcess (
                     jscadaConnection.commandsEnabled,
                     jscadaConnection.protocolConnectionNumber,
                     jscadaConnection
+                  )
+                  Log.log(
+                    logMod +
+                      'Publish device Birth "' +
+                      jscadaConnection.deviceId +
+                      '" with ' +
+                      sparkplugProcess.deviceBirthPayload.metrics.length +
+                      ' metrics'
                   )
                   spClient.handle.publishDeviceBirth(
                     jscadaConnection.deviceId,
