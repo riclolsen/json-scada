@@ -158,7 +158,8 @@ let AutoCreateTags = true
           )
         SparkplugClientObj.handle.publishDeviceData(
           connection.deviceId,
-          payload
+          payload,
+          {compress: AppDefs.SPARKPLUG_COMPRESS_DDATA}
         )
         Log.log('Sparkplug - Publish metrics updates: ' + cnt, Log.levelNormal)
       }
@@ -1110,7 +1111,9 @@ async function sparkplugProcess (
 
         // Publish Node BIRTH certificate
         let nbc = getNodeBirthPayload(configObj)
-        spClient.handle.publishNodeBirth(nbc)
+        spClient.handle.publishNodeBirth(nbc, {
+          compress: AppDefs.SPARKPLUG_COMPRESS_NBIRTH
+        })
         Log.log(
           logMod + 'Publish node birth with ' + nbc.metrics.length + ' metrics'
         )
@@ -1134,7 +1137,8 @@ async function sparkplugProcess (
         // Publish Device BIRTH certificate
         spClient.handle.publishDeviceBirth(
           jscadaConnection.deviceId,
-          sparkplugProcess.deviceBirthPayload
+          sparkplugProcess.deviceBirthPayload,
+          { compress: AppDefs.SPARKPLUG_COMPRESS_DBIRTH }
         )
         SparkplugDeviceBirthed = true
         sparkplugProcess.deviceBirthPayload.metrics.forEach(elem => {
@@ -1225,7 +1229,7 @@ async function sparkplugProcess (
 
         let match = false
         // check for match of some topic subscription to be saved as files
-        if (jscadaConnection.topicsAsFiles instanceof Array)
+        if (jscadaConnection?.topicsAsFiles instanceof Array)
           await jscadaConnection.topicsAsFiles.forEach(async tp => {
             if (topicMatchSub(topic)(tp)) {
               Log.log(logMod + 'Received topic as file ' + topic)
@@ -1251,7 +1255,7 @@ async function sparkplugProcess (
 
         if (match) return
 
-        if (jscadaConnection.topicsScripted instanceof Array)
+        if (jscadaConnection?.topicsScripted instanceof Array)
           jscadaConnection.topicsScripted.forEach(elem => {
             if (elem.topic)
               if (topicMatchSub(topic)(elem.topic)) {
@@ -1282,7 +1286,7 @@ async function sparkplugProcess (
                     // execute script and queue extracted values
                     vm.run(elem.script)
 
-                    if (sharedObj.dataArray instanceof Array)
+                    if (sharedObj?.dataArray instanceof Array)
                       sharedObj.dataArray.forEach(element => {
                         if (!element.id || !('value' in element)) return
                         let type = 'analog'
@@ -1326,7 +1330,7 @@ async function sparkplugProcess (
 
         if (match) return
 
-        if (jscadaConnection.topics instanceof Array)
+        if (jscadaConnection?.topics instanceof Array)
           jscadaConnection.topics.forEach(elem => {
             if (elem) {
               let jpt = JsonPathTopic(elem)
@@ -1363,7 +1367,7 @@ async function sparkplugProcess (
           logModS + 'Received NCMD - ' + JSON.stringify(payload),
           Log.levelDetailed
         )
-        if (payload.metrics instanceof Array) {
+        if (payload?.metrics instanceof Array) {
           payload.metrics.forEach(async metric => {
             switch (metric?.name) {
               case 'Node Control/Rebirth':
@@ -1376,7 +1380,9 @@ async function sparkplugProcess (
                   Log.log(logModS + 'Node Rebirth command received')
                   // Publish Node BIRTH certificate
                   let nbc = getNodeBirthPayload(configObj)
-                  spClient.handle.publishNodeBirth(nbc)
+                  spClient.handle.publishNodeBirth(nbc, {
+                    compress: AppDefs.SPARKPLUG_COMPRESS_NBIRTH
+                  })
                   Log.log(
                     logMod +
                       'Publish node birth with ' +
@@ -1402,7 +1408,8 @@ async function sparkplugProcess (
                   )
                   spClient.handle.publishDeviceBirth(
                     jscadaConnection.deviceId,
-                    dbc
+                    dbc,
+                    { compress: AppDefs.SPARKPLUG_COMPRESS_DBIRTH }
                   )
                 }
                 break
@@ -1458,7 +1465,7 @@ async function sparkplugProcess (
         // ignore command if mongo disconnected
         if (sparkplugProcess.mongoClient === null) return
         // process each metric on DCMD payload
-        if (payload.metrics instanceof Array) {
+        if (payload?.metrics instanceof Array) {
           payload.metrics.forEach(metric => {
             ProcessDeviceCommand(
               deviceId,
