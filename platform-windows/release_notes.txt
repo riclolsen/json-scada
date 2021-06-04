@@ -126,7 +126,7 @@ Notes for version 0.9:
 
  - New MQTT/Sparkplug-B Client driver.
  - Updated Inkscape SVG editor to version 1.1 64 bits.
- - Admin UI I10n user-selectable (code now based on Vue standards).
+ - Admin UI I18n user-selectable (code now based on Vue standards).
  - Various translations added to Admin UI.
  - Enhancements and fixes for Admin UI.
  - Chromium updated to 90.0.4430.72.
