@@ -20,6 +20,7 @@ using System;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using lib60870.CS101;
+using System.Threading;
 
 namespace Iec10XDriver
 {
@@ -299,7 +300,7 @@ namespace Iec10XDriver
                         .ToString()
                         .Substring(0,
                         e.ToString().IndexOf(Environment.NewLine)));
-                    System.Threading.Thread.Sleep(3000);
+                    Thread.Sleep(3000);
                 }
             }
             while (true);

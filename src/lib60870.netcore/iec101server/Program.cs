@@ -150,7 +150,9 @@ namespace Iec10XDriver
             public BsonDouble kconv1 { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
             public BsonDouble kconv2 { get; set; }
+            [BsonDefaultValue(null)] 
             public rtSourceDataUpdate sourceDataUpdate { get; set; }
+            [BsonDefaultValue(null)]
             public rtDataProtocDest[] protocolDestinations { get; set; }
         }
 

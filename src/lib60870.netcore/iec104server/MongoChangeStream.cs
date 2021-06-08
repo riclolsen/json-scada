@@ -145,10 +145,15 @@ namespace Iec10XDriver
                                                         ApplicationLayerParameters alp =
                                                             srv.server.GetApplicationLayerParameters();
                                                         var quality = new QualityDescriptor();
-                                                        quality.Invalid = change.FullDocument.invalid.ToBoolean() ||
-                                                                          change.FullDocument.overflow.ToBoolean() ||
-                                                                          change.FullDocument.transient.ToBoolean();
-                                                        quality.Substituted = change.FullDocument.substituted.ToBoolean();
+                                                        quality.Invalid = false;
+                                                        if (change.FullDocument.invalid != null)
+                                                            quality.Invalid |= change.FullDocument.invalid.ToBoolean();
+                                                        if (change.FullDocument.overflow != null)
+                                                            quality.Invalid |= change.FullDocument.overflow.ToBoolean();
+                                                        if (change.FullDocument.transient != null)
+                                                            quality.Invalid |= change.FullDocument.transient.ToBoolean();
+                                                        if (change.FullDocument.substituted != null)
+                                                            quality.Substituted = change.FullDocument.substituted.ToBoolean();
                                                         quality.Blocked = false;
                                                         quality.NonTopical = false;
                                                         CP56Time2a cp56timesrc = null;
@@ -195,13 +200,13 @@ namespace Iec10XDriver
                 }
                 catch (Exception e)
                 {
-                    Log("Exception MongoCmd");
+                    Log("Exception MongoCS");
                     Log(e);
                     Log(e
                         .ToString()
                         .Substring(0,
                         e.ToString().IndexOf(Environment.NewLine)));
-                    System.Threading.Thread.Sleep(3000);
+                    Thread.Sleep(3000);
                 }
             }
             while (true);
