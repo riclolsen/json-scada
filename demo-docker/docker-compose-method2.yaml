@@ -102,7 +102,7 @@ services:
       - jsdemo_net
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
     container_name: jsdemo_grafana
     # you may need to set the docker user:group to be able to write grafana folder 
     # set UID and GID variables 
@@ -183,6 +183,20 @@ services:
     restart: unless-stopped
     volumes:
       - ../src/cs_custom_processor:/cs_custom_processor
+      - ./conf:/conf
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  # mqtt sparkplug-b driver
+  mqtt-sparkplug:
+    image: node:current-alpine3.12
+    container_name: jsdemo_mqtt-sparkplug
+    command:  sh -c "cd /mqtt-sparkplug && sleep 20 && node index.js"
+    restart: unless-stopped
+    volumes:
+      - ../src/mqtt-sparkplug:/mqtt-sparkplug
       - ./conf:/conf
     links:
       - jsdemo_mongorsn1
