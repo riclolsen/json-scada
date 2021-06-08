@@ -33,6 +33,8 @@ function NewTag () {
     protocolSourceCommonAddress: '',
     protocolSourceConnectionNumber: new Mongo.Double(0),
     protocolSourceObjectAddress: '',
+    protocolSourceCommandUseSBO: false,
+    protocolSourceCommandDuration: new Mongo.Double(0),
     alarmState: new Mongo.Double(-1.0),
     description: '',
     ungroupedDescription: '',
@@ -82,6 +84,7 @@ function NewTag () {
     protocolDestinations: null,
     sourceDataUpdate: null,
     supervisedOfCommand: new Mongo.Double(0.0),
+    substituted: false,
     timeTag: null,
     timeTagAlarm: null,
     timeTagAtSource: null,
@@ -166,7 +169,7 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.invalid = data?.invalidAtSource === false ? false : true
       newTag.timeTagAtSource = data?.timeTagAtSource
       newTag.commissioningRemarks = data?.commissioningRemarks
-      newTag.priority = 3
+      newTag.priority = new Mongo.Double(3.0)
 
       // console.log('>> Insert ' + tag)
 

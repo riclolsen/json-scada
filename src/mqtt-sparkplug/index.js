@@ -924,7 +924,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
       )
 
       let updTag = {
-        valueAtSource: parseFloat(data.value),
+        valueAtSource: new Mongo.Double(parseFloat(data.value)),
         valueStringAtSource: data.valueString,
         valueJsonAtSource: data?.valueJson,
         asduAtSource: data?.asduAtSource,
@@ -934,7 +934,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
         timeTag: new Date(),
         originator: AppDefs.NAME + '|' + jsConfig.ConnectionNumber,
         invalidAtSource: data.invalid,
-        transientAtSource: data.transient,
+        transientAtSource: false,
         notTopicalAtSource: false,
         overflowAtSource: false,
         blockedAtSource: false,
