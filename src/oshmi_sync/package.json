@@ -1,0 +1,11 @@
+{
+  "name": "oshmi_sync",
+  "version": "1.0.0",
+  "description": "A tool to sync OSHMI (OSHMI -> JSON SCADA) operator entered settings (notes, alarms inhibits, limits).\r Warning: Annotations and limits on JSON SCADA will be overwritten!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
