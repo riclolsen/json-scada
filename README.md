@@ -167,7 +167,9 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * http://vmi233205.contaboserver.net:8080/
 
 This demo provides a public IEC 60870-5-104 server port on IP address 207.180.242.96:2404 (common address = 1) for testing.
+
 The demo data is published as regular MQTT topics to the public broker mqtt://test.mosquitto.org:1883 (about 8600 topics in ACME_Utility/#).
+
 Data is also published as Sparkplug-B to mqtt://test.mosquitto.org:1883 (about 4300 device metrics in spBv1.0/Sparkplug B Devices/+/JSON-SCADA Server/#). Data/birth messages are compressed by Eclipse Tahu Javascript libs.
 
 ## Developer Contact
