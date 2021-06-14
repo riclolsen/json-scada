@@ -122,6 +122,28 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.10: 
+
+ - Default login credentials: username=admin password=jsonscada
+ - Enhanced MQTT/Sparkplug-B Client driver.
+ - Fixed commands cancelled from unrelated connections for DNP3, IEC101/104 client drivers.
+ - Nodejs updated to 16.3.0.
+ - Nginx update to 1.21.0.
+ - Telegraf updated to 1.18.3.
+ - PostgreSQL updated to 13.3.2.
+ - TimescaleDB updated to 2.2.1.
+ - MongoDB Community Server updated to 4.4.6.
+ - MongoDB Compass updated to 1.26.1.
+ - Chromium updated to 91.0.4472.101.
+ - Grafana updated to 8.0.1.
+ - DotNet runtime updated to 5.0.7.
+ 
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+
+-------------------------------------------------------------------
+
 Notes for version 0.9: 
 
  - New MQTT/Sparkplug-B Client driver.

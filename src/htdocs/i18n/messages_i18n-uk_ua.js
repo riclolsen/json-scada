@@ -4,7 +4,7 @@
 var Msg =
 {
 NomeProduto: '{json:scada}',
-VersaoProduto: '0.9',
+VersaoProduto: '0.10',
 
 NomeVisorTelas: 'Перегляд ',
 NomeVisorEventos: 'Події',
@@ -101,7 +101,7 @@ FSCMDACTION: 'Дія Команди',
 FSCMDOPTION: 'Параметри',
 
 // trend.html
-yaxisleft: 'Показати менші значення [стрілка вгору],
+yaxisleft: 'Показати менші значення [стрілка вгору]',
 yaxisright: 'Показати великі значення [стрілка вниз]',
 yaxiszoomout: 'Зменшити [-]',
 yaxiszoomin: 'Збільшити [+]',

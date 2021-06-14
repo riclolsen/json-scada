@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.9"
-!define VERSION_ "0.9.0.0"
+!define VERSION "v.0.10"
+!define VERSION_ "0.10.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -62,7 +62,7 @@ SetDateSave on
 SetDatablockOptimize on
 CRCCheck on
 SilentInstall normal
-BGGradient 000000 800000 FFFFFF
+BGGradient 000000 000080 FFFFFF
 InstallColors FF8080 000030
 XPStyle on
 
@@ -236,7 +236,7 @@ SetRegView 64
   File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-5.0.6-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-5.0.7-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -248,7 +248,7 @@ SetRegView 64
   ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
   ;${EndIf}
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.6-win-x64.exe" /install /quiet'
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.7-win-x64.exe" /install /quiet'
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
