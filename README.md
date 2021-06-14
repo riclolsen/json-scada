@@ -24,9 +24,9 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 
 ![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
-![](https://img.shields.io/badge/DNP3-yellow "DNP3")
-![](https://img.shields.io/badge/MQTT-yellow "MQTT")
-![](https://img.shields.io/badge/Sparkplug--B-yellow "Sparkplug B")
+![](https://img.shields.io/badge/DNP3-green "DNP3")
+![](https://img.shields.io/badge/MQTT-green "MQTT")
+![](https://img.shields.io/badge/Sparkplug--B-green "Sparkplug B")
 ![](https://img.shields.io/badge/OPC--UA-yellow "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
@@ -47,7 +47,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 * Event-based realtime async data processing with MongoDB Change Streams.
 * Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.8-alpha).
+* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.10-alpha).
 * Unlimited tags, servers, and users.
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -162,9 +162,13 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] PLC4X Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
 
-## Online Demo
+## Online Demo (substations simulation)
 
 * http://vmi233205.contaboserver.net:8080/
+
+This demo provides a public IEC 60870-5-104 server port on IP address 207.180.242.96:2404 (common address = 1) for testing.
+The demo data is published as regular MQTT topics to the public broker mqtt://test.mosquitto.org:1883 (about 8600 topics in ACME_Utility/#).
+Data is also published as Sparkplug-B to mqtt://test.mosquitto.org:1883 (about 4300 device metrics in spBv1.0/Sparkplug B Devices/+/JSON-SCADA Server/#). Data/birth messages are compressed by Eclipse Tahu Javascript libs.
 
 ## Developer Contact
 
