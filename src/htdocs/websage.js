@@ -3460,6 +3460,8 @@ getHistoricalData: function (i, pnt, timeBegin) {
           else if (element.Value.Type === OpcValueTypes.Double) {
             V[pointKey] = parseFloat(element.Value.Body);
             F[pointKey] = 0x20;
+            if ('frozen' in prop)
+              F[pointKey] |= (prop.frozen === true ? 0x1000 : 0x0000);
             T[pointKey] = element.SourceTimestamp;
             S[pointKey] = parseFloat(element.Value.Body).toFixed(3);
           }

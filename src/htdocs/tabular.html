@@ -1539,9 +1539,12 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
           }
 
           var flags = (element.Value.Quality!==OpcStatusCodes.Good?0x80:0x00);
-          if ( element.Value.Type === OpcValueTypes.Double )
+          if ( element.Value.Type === OpcValueTypes.Double ) {
             flags |= 0x20;
-          if (prop.alarmed )
+            if ('frozen' in prop && prop.frozen === true )
+              flags |= 0x1000;
+          }
+          if (prop.alarmed === true )
             flags |= 0x100;
           var persistent = "";
           if (prop.alarmState === 1 && element.Value.Body === true  ||
@@ -1571,6 +1574,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
             "" + prop.priority + (prop.alarmed?"L":"") + persistent +
               (prop.annotation!=""?"A":"") + 
               (prop.isEvent?"E":"") + 
+              (('frozen' in prop && prop.frozen===true)?"U":"") + 
               (prop.commandOfSupervised!==0?"K":"") + 
               (prop.origin==="manual"?"M":"") + 
               (("timeTagAtSourceOk" in prop && prop.timeTagAtSourceOk === "false")?"T":"") +
@@ -1741,6 +1745,8 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
           else if (element.Value.Type === OpcValueTypes.Double) {
             V[pointKey] = element.Value.Body;
             F[pointKey] = 0x20;
+            if (prop.frozen)
+              F[pointKey] |= (prop.frozen === true ? 0x1000 : 0x0000);
             T[pointKey] = element.SourceTimestamp;
             S[pointKey] = prop.valueString;
           }
