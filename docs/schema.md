@@ -44,6 +44,7 @@ Example document.
         "hihihiLimit": null,
         "historianDeadBand": 0,
         "historianPeriod": 0,
+        "historianLastValue": null,
         "hysteresis": 0,
         "invalid": false,
         "invalidDetectTimeout": 300,
@@ -132,8 +133,8 @@ Example document.
 * _**_priority_**_ [String] - Alarm priority: 0=highest, 9=lowest. **Mandatory parameter**.
 * _**_frozenDetectTimeout_**_ [Double] -  Time in seconds to detect frozen (not changing) analog value. Use zero to never detect. **Mandatory parameter**.
 * _**_invalidDetectTimeout_**_ [Double] - Time in seconds to detect invalid/old value when not updating. All supervised values expire, do not use zero for supervised values. This timeout should be at least more than the station integrity interrogation period. **Mandatory parameter**.
-* _**_historianDeadBand_**_ [Double] - Reserved for dead band parameter for historian. Currently not in use. **Mandatory parameter**.
-* _**_historianPeriod_**_ [Double] - Reserved for period of integrity recording on historian. Currently not in use. Value -1 will be used to remove tag from historian. **Mandatory parameter**.
+* _**_historianDeadBand_**_ [Double] - Absolute dead band parameter for historian. Does not affect non analog tags. **Mandatory parameter**.
+* _**_historianPeriod_**_ [Double] - Period of integrity recording on historian. Currently only values 0 and -1 are supported. Value 0.0 will not record by integrity. Value -1 will remove tag from historian. **Mandatory parameter**.
 * _**_commandOfSupervised_**_ [Double] - Key (\_id) pointing to the command point related to a supervised point. Only meaningful for _origin=supervised_ points (put zero here for other origins). Put value zero for this parameter when the supervised point does not have a related command. **Mandatory parameter**.
 * _**_supervisedOfCommand_**_ [Double] - Key (\_id) pointing to a supervised point related to a command point (tag where the command feedback manifests). Only meaningful for _origin=command_ points (put zero here for other origins). Put value zero for this parameter when the command point does not have a related supervised (not recommended as this is a blind command with no feedback for the user). **Mandatory parameter**.
 * _**_location_**_ [GeoJSON] - Reserved for location coordinates. Currently not in use. Can be null. **Mandatory parameter**.
@@ -178,6 +179,7 @@ Example document.
 * _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
 * _**_alertedState_**_ [Boolean] - Grafana alert state name. **Optional parameter**.
+* _**_historianLastValue_**_ [Double] - Last value sent to historian (for dead band processing). Only for analog tags. **Mandatory parameter**.
 * _**_invalid_**_ [Boolean] - When true value is considered old or not trusted. **Mandatory parameter**.
 * _**_overflow_**_ [Boolean] - Overflow detected for _type=analog_ value. **Mandatory parameter**.
 * _**_transient_**_ [Boolean] - Flags a transient value. **Mandatory parameter**.
