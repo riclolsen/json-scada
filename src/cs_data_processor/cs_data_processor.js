@@ -949,6 +949,10 @@ const pipeline = [
                   // build sql values list for queued insert into historian
                   // Fields: tag, time_tag, value, value_json, time_tag_at_source, flags
                   if (insertIntoHistorian) {
+                    let dVal = 0.0
+                    if (!isNaN(value))
+                      dVal = value
+
                     // queue data change for postgresql historian
                     let b7 = invalid ? '1' : '0', // value invalid
                       b6 = isSOE
@@ -974,7 +978,7 @@ const pipeline = [
                         "'" +
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTag.toISOString() +
                         "'," +
-                        value +
+                        dVal +
                         ',' +
                         '\'{"s": "' +
                         valueString +
