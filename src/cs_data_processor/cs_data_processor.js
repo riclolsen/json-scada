@@ -646,8 +646,14 @@ const pipeline = [
                     .valueAtSource
                 let valueString =
                   change.updateDescription.updatedFields.sourceDataUpdate
-                    .valueStringAtSource
+                    ?.valueStringAtSource || ''
                 let alarmed = change.fullDocument.alarmed
+
+                // avoid undefined, null or NaN values
+                if (value === null || value === undefined || isNaN(value)) {
+                  value = 0.0
+                  invalid = true
+                }
 
                 // Qualifier to be shown in valueString
                 let txtQualif = ''
@@ -862,7 +868,8 @@ const pipeline = [
                   if ('historianPeriod' in change.fullDocument) {
                     if (change.fullDocument.historianPeriod < 0)
                       insertIntoHistorian = false
-                    else { // historianPeriod >= 0, will test dead band for analogs
+                    else {
+                      // historianPeriod >= 0, will test dead band for analogs
                       if (
                         change.fullDocument?.type === 'analog' &&
                         'historianDeadBand' in change.fullDocument
@@ -871,9 +878,9 @@ const pipeline = [
                           'historianLastValue' in change.fullDocument &&
                           change.fullDocument.historianLastValue !== null &&
                           change.fullDocument.historianDeadBand > 0
-                        ) {    
+                        ) {
                           // test for variation less than absolute dead band
-                          if ( 
+                          if (
                             Math.abs(
                               value - change.fullDocument.historianLastValue
                             ) < Math.abs(change.fullDocument.historianDeadBand)
@@ -949,9 +956,6 @@ const pipeline = [
                   // build sql values list for queued insert into historian
                   // Fields: tag, time_tag, value, value_json, time_tag_at_source, flags
                   if (insertIntoHistorian) {
-                    let dVal = 0.0
-                    if (!isNaN(value))
-                      dVal = value
 
                     // queue data change for postgresql historian
                     let b7 = invalid ? '1' : '0', // value invalid
@@ -978,7 +982,7 @@ const pipeline = [
                         "'" +
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTag.toISOString() +
                         "'," +
-                        dVal +
+                        value +
                         ',' +
                         '\'{"s": "' +
                         valueString +
