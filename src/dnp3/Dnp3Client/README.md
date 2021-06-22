@@ -182,7 +182,7 @@ Object Group | Variations        | Common Address | Description
 3            | 0,1,2             | **3**          | Double Binary Input
 4            | 0,1,2,3           | **3**          | Double Binary Input Change
 30           | 0,1,2,3,4,5,6     | **30**         | Analog Input
-31           | 0,1,2,3,4,5,6,7,8 | **30**         | Analog Input Change
+32           | 0,1,2,3,4,5,6,7,8 | **30**         | Analog Input Change
 20           | 0,1,2,5,6         | **20**         | Counter
 22           | 0,1,2,5,6         | **20**         | Counter Change
 21           | 0,1,2,5,6,9,10    | **21**         | Frozen Counter
