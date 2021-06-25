@@ -67,8 +67,11 @@ Log.logLevelCurrent = jsConfig.LogLevel
 app.use(express.json({ limit: '200mb' }))
 app.use(express.text({ limit: '200mb' }))
 
-app.listen(AppDefs.HTTP_PORT, AppDefs.IP_BIND, () => {
-  Log.log('listening on ' + AppDefs.HTTP_PORT)
+const IP_BIND = process.env.JS_CSEXCEL_IP_BIND || AppDefs.IP_BIND;
+const HTTP_PORT = process.env.JS_CSEXCEL_HTTP_PORT || AppDefs.HTTP_PORT;
+
+app.listen(HTTP_PORT, IP_BIND, () => {
+  Log.log('listening on ' + IP_BIND + ':' + HTTP_PORT)
 })
 
 MongoClient.connect(

@@ -195,9 +195,14 @@ services:
     container_name: jsdemo_config_server_excel
     command:  sh -c "cd /config_server_for_excel && sleep 10 && node index.js"
     restart: unless-stopped
+    environment:
+      - JS_CSEXCEL_IP_BIND=0.0.0.0
+      - JS_CSEXCEL_HTTP_PORT=10001
     ports:
       - 10001:10001
-    volumes:
+    expose:
+      - "10001"
+  volumes:
       - ../src/config_server_for_excel:/config_server_for_excel
       - ./conf:/conf
     links:
