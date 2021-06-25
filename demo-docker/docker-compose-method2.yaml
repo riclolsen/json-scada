@@ -202,7 +202,7 @@ services:
       - 10001:10001
     expose:
       - "10001"
-  volumes:
+    volumes:
       - ../src/config_server_for_excel:/config_server_for_excel
       - ./conf:/conf
     links:
