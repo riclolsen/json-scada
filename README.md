@@ -135,6 +135,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 - [x] Web-based Viewers
 - [x] Web-based Configuration Manager
+- [x] Excel-based Configuration
 - [x] User auth/Role-based Access Control (RBAC)
 - [x] Inkscape-based SVG Synoptic Editor
 - [x] Compiled Calculations Engine
