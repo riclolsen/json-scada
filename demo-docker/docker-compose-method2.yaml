@@ -189,6 +189,22 @@ services:
     networks:
       - jsdemo_net
 
+  # config server for excel
+  config_server_excel:
+    image: node:current-alpine3.12
+    container_name: jsdemo_config_server_excel
+    command:  sh -c "cd /config_server_for_excel && sleep 10 && node index.js"
+    restart: unless-stopped
+    ports:
+      - 10001:10001
+    volumes:
+      - ../src/config_server_for_excel:/config_server_for_excel
+      - ./conf:/conf
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
   # mqtt sparkplug-b driver
   mqtt-sparkplug:
     image: node:current-alpine3.12
