@@ -162,7 +162,7 @@ services:
 
   # process incoming data 
   cs_data_processor:
-    image: node:current-alpine3.12
+    image: node:current-alpine3.13
     container_name: jsdemo_cs_data_processor
     command:  sh -c "cd /cs_data_processor && sleep 10 && node cs_data_processor.js"
     restart: unless-stopped
@@ -177,7 +177,7 @@ services:
 
   # custom script processor
   cs_custom_processor:
-    image: node:current-alpine3.12
+    image: node:current-alpine3.13
     container_name: jsdemo_cs_custom_processor
     command:  sh -c "cd /cs_custom_processor && sleep 10 && node cs_custom_processor.js"
     restart: unless-stopped
@@ -191,7 +191,7 @@ services:
 
   # config server for excel
   config_server_excel:
-    image: node:current-alpine3.12
+    image: node:current-alpine3.13
     container_name: jsdemo_config_server_excel
     command:  sh -c "cd /config_server_for_excel && sleep 10 && node index.js"
     restart: unless-stopped
@@ -207,7 +207,7 @@ services:
 
   # mqtt sparkplug-b driver
   mqtt-sparkplug:
-    image: node:current-alpine3.12
+    image: node:current-alpine3.13
     container_name: jsdemo_mqtt-sparkplug
     command:  sh -c "cd /mqtt-sparkplug && sleep 20 && node index.js"
     restart: unless-stopped
@@ -221,7 +221,7 @@ services:
 
   # realtime web server, will listen on some HTTP port NO AUTH/RBAC
   #server_realtime:
-  #  image: node:current-alpine3.12
+  #  image: node:current-alpine3.13
   #  container_name: jsdemo_server_realtime
   #  command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
   #  restart: unless-stopped
@@ -251,7 +251,7 @@ services:
 
   # realtime web server, will listen on some HTTP port with auth, RBAC management UI
   server_realtime:
-    image: node:current-alpine3.12
+    image: node:current-alpine3.13
     container_name: jsdemo_server_realtime_auth
     command:  sh -c "cd /server_realtime_auth && sleep 10 && node index.js"
     restart: unless-stopped
@@ -282,7 +282,7 @@ services:
     
   # calculation process
   calculations:
-    image: node:current-alpine3.12
+    image: node:current-alpine3.13
     container_name: jsdemo_calculations
     command:  sh -c "sleep 15 && cd /jsonscada_bin/ && ./calculations"
     restart: unless-stopped
