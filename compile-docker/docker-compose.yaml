@@ -92,7 +92,7 @@ services:
     volumes:
       - ../src/config_server_for_excel:/config_server_for_excel
 
-    server_realtime_auth_update:
+  server_realtime_auth_update:
     image: node:current-alpine3.12
     container_name: js_server_realtime_auth_update
     command:  sh -c "npm install -g npm && cd /server_realtime_auth && npm install"
