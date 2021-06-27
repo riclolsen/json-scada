@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.10"
-!define VERSION_ "0.10.0.0"
+!define VERSION "v.0.11"
+!define VERSION_ "0.11.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -48,7 +48,7 @@ OutFile "installer-release\json-scada_setup_${VERSION}.exe"
 
 VIProductVersion ${VERSION_}
 VIAddVersionKey ProductName "JSON SCADA"
-VIAddVersionKey Comments "SCADA IoT Software"
+VIAddVersionKey Comments "SCADA IIoT Software"
 VIAddVersionKey CompanyName "Ricardo Olsen"
 VIAddVersionKey LegalCopyright "Copyright 2020-2021 Ricardo L. Olsen"
 VIAddVersionKey FileDescription "JSON SCADA Installer"
@@ -115,6 +115,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_cs_custom_processor'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
+  nsExec::Exec 'net stop JSON_SCADA_config_server_excel'
   nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
   nsExec::Exec 'net stop JSON_SCADA_shell_api'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
@@ -345,6 +346,14 @@ SetRegView 64
   SetOutPath $INSTDIR\src\cs_custom_processor\node_modules
   File /a /r "..\src\cs_custom_processor\node_modules\*.*"
 
+  SetOutPath $INSTDIR\src\config_server_for_excel
+  File /a "..\src\config_server_for_excel\README.md"
+  File /a "..\src\config_server_for_excel\*.js"
+  File /a "..\src\config_server_for_excel\*.json"
+  ;File /a "..\src\config_server_for_excel\json-scada-config.xlsm"
+  SetOutPath $INSTDIR\src\config_server_for_excel\node_modules
+  File /a /r "..\src\config_Server_for_excel\node_modules\*.*"
+
   SetOutPath $INSTDIR\src\server_realtime
   File /a /r "..\src\server_realtime\*.*"
 
@@ -412,6 +421,7 @@ SetRegView 64
   File /a "..\conf-templates\json-scada.json"
   File /a "..\conf-templates\Opc.Ua.DefaultClient.Config.xml"
   File /a "..\conf-templates\telegraf.conf"
+  File /a "..\conf-templates\json-scada-config.xlsm"
 
 ; Aqui ficam todos os atalhos no Desktop, apagando os antigos
   Delete "$DESKTOP\JSON-SCADA\*.*"
@@ -437,6 +447,8 @@ SetRegView 64
 
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Operation Manual.lnk"              "$INSTDIR\bin\operation_manual.bat"
 ; CreateShortCut "$DESKTOP\JSON-SCADA\Configuration Manual.lnk"          "$INSTDIR\bin\configuration_manual.bat"
+
+  CreateShortCut "$DESKTOP\JSON-SCADA\Excel Config Spreadsheet.lnk"      "$INSTDIR\conf\json-scada-config.xlsm"
 
   CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
@@ -555,6 +567,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_server_realtime_auth"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_server_realtime_auth"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_config_server_excel"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_config_server_excel"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_demo_simul"`

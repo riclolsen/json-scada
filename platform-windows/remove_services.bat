@@ -36,6 +36,7 @@ nssm remove JSON_SCADA_process_hist confirm
 nssm remove JSON_SCADA_alarm_beep confirm
 nssm remove JSON_SCADA_shell_api confirm
 nssm remove JSON_SCADA_demo_simul confirm
+nssm remove JSON_SCADA_config_server_excel confirm
 
 nssm remove JSON_SCADA_nginx confirm
 nssm remove JSON_SCADA_php confirm

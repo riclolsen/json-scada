@@ -122,6 +122,21 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.11: 
+
+ - Default login credentials: username=admin password=jsonscada
+ - DNP3 Client: fixed problems with timestamps.
+ - Excel-based tags configuration added.
+ - Chromium updated to 91.0.4472.124.
+ - Grafana updated to 8.0.3.
+ - Nodejs updated to 16.4.0.
+  
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+
+-------------------------------------------------------------------
+
 Notes for version 0.10: 
 
  - Default login credentials: username=admin password=jsonscada

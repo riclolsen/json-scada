@@ -18,6 +18,7 @@ nssm start JSON_SCADA_server_realtime_auth
 nssm start JSON_SCADA_calculations 
 nssm start JSON_SCADA_process_rtdata
 nssm start JSON_SCADA_process_hist 
+nssm start JSON_SCADA_config_server_excel
 REM nssm start JSON_SCADA_alarm_beep
 REM nssm start JSON_SCADA_shell_api
 

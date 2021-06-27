@@ -15,6 +15,7 @@ nssm stop JSON_SCADA_server_realtime
 nssm stop JSON_SCADA_server_realtime_auth
 nssm stop JSON_SCADA_alarm_beep
 nssm stop JSON_SCADA_shell_api
+nssm stop JSON_SCADA_config_server_excel
 ping -n 2
 
 REM STOP PROTOCOL CLIENTS
