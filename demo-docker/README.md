@@ -52,7 +52,7 @@ Wait until the compilation process finishes.
 Go to the demo-docker folder and run the system.
 	
 	cd ../demo-docker
-	docker-compose up -f docker-compose-method2.yaml
+	docker-compose -f docker-compose-method2.yaml up
 
 ## Access Instructions (common for both methods)
 
