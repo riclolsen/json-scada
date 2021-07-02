@@ -81,27 +81,30 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Documentation
 
-* [Screenshots](docs/screenshots/)
+* [Install Guide](docs/install.md)
+* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.11-alpha)
 * [Docker Demo](demo-docker/README.md)
+* [Schema Documentation](docs/schema.md)
 * [Config File](conf/README.md)
-* [Calculations](src/calculations/README.md)
+* [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
 * [IEC60870-5-104 Server Driver](src/lib60870.netcore/iec104server/README.md)
 * [IEC60870-5-104 Client Driver](src/lib60870.netcore/iec104client/README.md)
 * [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
 * [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
 * [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
 * [Telegraf Listener Driver](src/telegraf-listener/README.md)
+* [MQTT Sparkplug-B Client Driver](src/mqtt-sparkplug/README.md)
 * [OPC-UA Client Driver](src/OPC-UA-Client/README.md)
+* [OPC-UA Server Driver](src/OPC-UA-Server/README.md)
 * [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 * [I104M Client Driver](src/i104m/README.md)
+* [Calculations](src/calculations/README.md)
 * [Change Stream Data Processor](src/cs_data_processor/README.md)
 * [Custom Data Processor](src/cs_custom_processor/README.md)
 * [Realtime Data Server](src/server_realtime/README.md)
-* [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
 * [OSHMI2JSON Tool](src/oshmi2json/README.md)
-* [Schema Documentation](docs/schema.md)
-* [Install Guide](docs/install.md)
 * [Report Generators](docs/report_generators.md)
+* [SAGE-web Displays](src/htdocs/sage-cepel-displays/README.md)
 
 ## Protocols Roadmap
 
@@ -116,19 +119,18 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] MQTT/Sparkplug-B Client
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
-- [ ] Secure ICCP Client
 - [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
 - [x] OPC UA Client (experimental)
+- [x] OPC UA Server (experimental)
+- [ ] OPC UA Historical Data Server
 - [ ] OPC UA Server
 - [ ] OPC DA Client
-- [ ] OPC DA Server
 - [ ] Modbus Client
 - [ ] IEC 61850 MMS Client
 - [ ] IEC 61850 GOOSE Client
 - [x] CIP Ethernet/IP (libplctag, experimental)
 - [ ] Siemens S7
 - [ ] BACNET
-- [ ] OPC UA Historical Data Server
 
 ## Features Roadmap
 
@@ -159,6 +161,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] PLC4X Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
+- [x] SAGE (brazilian SCADA from CEPEL) web displays visualization
 
 ## Online Demo (substations simulation)
 
