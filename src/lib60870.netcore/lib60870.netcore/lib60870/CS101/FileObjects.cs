@@ -38,6 +38,9 @@ namespace lib60870.CS101
         SEQUENCES_OF_ANALOGUE_VALUES = 4
     }
 
+    /// <summary>
+    /// Select and call qualifier (SCQ)
+    /// </summary>
     public enum SelectAndCallQualifier : byte
     {
         DEFAULT = 0,
@@ -50,6 +53,9 @@ namespace lib60870.CS101
         DEACTIVATE_SECTION = 7
     }
 
+    /// <summary>
+    /// Last section or segment qualifier (LSQ)
+    /// </summary>
     public enum LastSectionOrSegmentQualifier : byte
     {
         NOT_USED = 0,
@@ -59,6 +65,9 @@ namespace lib60870.CS101
         SECTION_TRANSFER_WITH_DEACT = 4
     }
 
+    /// <summary>
+    /// Acknowledge qualifier (AFQ)
+    /// </summary>
     public enum AcknowledgeQualifier
     {
         NOT_USED = 0,
@@ -68,6 +77,9 @@ namespace lib60870.CS101
         NEG_ACK_SECTION = 4
     }
 
+    /// <summary>
+    /// File Error
+    /// </summary>
     public enum FileError
     {
         DEFAULT = 0,

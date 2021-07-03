@@ -40,6 +40,8 @@ namespace lib60870.CS101
         protected SerialPort port = null;
         protected bool running = false;
 
+        private bool fatalError = false;
+
         private void ReceiveMessageLoop()
         {
             running = true;
@@ -74,10 +76,24 @@ namespace lib60870.CS101
         /// </summary>
         public void Run()
         {
-            linkLayer.Run();
+            if(fatalError == false)
+            {
+                linkLayer.Run();
 
-            if (fileClient != null)
-                fileClient.HandleFileService();
+                if (fileClient != null)
+                    fileClient.HandleFileService();
+            }
+                        
+        }
+
+        private void fatalErrorHandler(object sender, EventArgs eventArgs)
+        {
+            fatalError = true;
+        }
+
+        public void AddPortDeniedHandler(EventHandler eventHandler)
+        {
+            linkLayer.AddPortDeniedHandler(eventHandler);
         }
 
         /// <summary>
@@ -85,6 +101,8 @@ namespace lib60870.CS101
         /// </summary>
         public void Start()
         {
+            linkLayer.AddPortDeniedHandler(fatalErrorHandler);
+            
             if (port != null)
             {
                 if (port.IsOpen == false)

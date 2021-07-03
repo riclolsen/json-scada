@@ -590,7 +590,6 @@ namespace lib60870.linklayer
             return false;
         }
 
-
         public void RequestClass1Data(int slaveAddress)
         {
             SlaveConnection slave = GetSlaveConnection(slaveAddress);
@@ -598,11 +597,8 @@ namespace lib60870.linklayer
             if (slave != null)
             {
                 slave.requestClass1Data = true;
-                ;
             }
         }
-
-
 
         public void RequestClass2Data(int slaveAddress)
         {
@@ -616,7 +612,6 @@ namespace lib60870.linklayer
                     slave.requestClass2Data = true;
             }
         }
-
 
         public void SendConfirmed(int slaveAddress, BufferFrame message)
         {
@@ -661,8 +656,8 @@ namespace lib60870.linklayer
         }
 
         /********************************
-		 * END IPrimaryLinkLayerUnbalanced
-		 ********************************/
+         * END IPrimaryLinkLayerUnbalanced
+         ********************************/
 
         public PrimaryLinkLayerUnbalanced(LinkLayer linkLayer, IPrimaryLinkLayerCallbacks callbacks, Action<string> debugLog)
         {
@@ -691,7 +686,6 @@ namespace lib60870.linklayer
                 slaveConnections.Add(new SlaveConnection(slaveAddress, linkLayer, DebugLog, this));
         }
 
-
         public LinkLayerState GetStateOfSlave(int slaveAddress)
         {	
             SlaveConnection connection = GetSlaveConnection(slaveAddress);
@@ -701,8 +695,6 @@ namespace lib60870.linklayer
             else
                 throw new ArgumentException("No slave with this address found");
         }
-
-
 
         public override void HandleMessage(FunctionCodeSecondary fcs, bool acd, bool dfc, 
                                      int address, byte[] msg, int userDataStart, int userDataLength)
@@ -725,7 +717,6 @@ namespace lib60870.linklayer
                 DebugLog("PLL RECV - response from unknown slave " + address + " !");
             }
         }
-
 
         private int currentSlaveIndex = 0;
 

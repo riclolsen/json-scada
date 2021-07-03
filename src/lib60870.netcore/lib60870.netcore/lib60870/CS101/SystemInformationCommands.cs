@@ -354,7 +354,7 @@ namespace lib60870.CS101
             if ((msg.Length - startIndex) < GetEncodedSize())
                 throw new ASDUParsingException("Message too small");
 
-            if (msg[startIndex++] != 0xcc)
+            if (msg[startIndex++] != 0xaa)
                 valid = false;
 
             if (msg[startIndex] != 0x55)
@@ -365,7 +365,7 @@ namespace lib60870.CS101
         {
             base.Encode(frame, parameters, isSequence);
 
-            frame.SetNextByte(0xcc);
+            frame.SetNextByte(0xaa);
             frame.SetNextByte(0x55);
         }
     }

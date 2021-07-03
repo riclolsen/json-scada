@@ -48,6 +48,8 @@ namespace lib60870.linklayer
         // timeout to wait for next character in a message
         private int characterTimeout = 50;
 
+        private bool fatalError = false;
+
         public SerialTransceiverFT12(SerialPort port, LinkLayerParameters linkLayerParameters, Action<string> debugLog)
         {
             this.port = port;
@@ -96,8 +98,16 @@ namespace lib60870.linklayer
         {
             DebugLog("SEND " + BitConverter.ToString(msg, 0, msgSize));
 
-            serialStream.Write(msg, 0, msgSize);
-            serialStream.Flush();
+            try
+            {
+                serialStream.Write(msg, 0, msgSize);
+                serialStream.Flush();
+            }
+            catch(UnauthorizedAccessException)
+            {
+
+            }
+            
         }
 
         // read the next block of the message
@@ -106,10 +116,9 @@ namespace lib60870.linklayer
             int readByte;
             int readBytes = 0;
 
-            serialStream.ReadTimeout = timeout * count;
-
             try
             {
+                serialStream.ReadTimeout = timeout * count;
 
                 while ((readByte = serialStream.ReadByte()) != -1)
                 {
@@ -124,8 +133,29 @@ namespace lib60870.linklayer
             catch (TimeoutException)
             {
             }
+            catch(IOException ex)
+            {
+                DebugLog("READ: IOException - " + ex.Message);	
+            }
+            catch (UnauthorizedAccessException)
+            {
+                if (fatalError == false)
+                {
+                    if (accessDenied != null)
+                        accessDenied(this, EventArgs.Empty);
+
+                    fatalError = true;
+                }
+            }
 
             return readBytes;
+        }
+
+        private event EventHandler accessDenied = null;
+
+        public void AddPortDeniedHandler (EventHandler eventHandler)
+        {
+            accessDenied += eventHandler;
         }
 
         public void ReadNextMessage(byte[] buffer, Action<byte[], int> messageHandler)

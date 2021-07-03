@@ -1060,7 +1060,9 @@ namespace lib60870.CS104
             }
         }
 
-
+        /// <summary>
+        /// Start application layer data transmission on this connection
+        /// </summary>
         protected void SendStartDT_CON()
         {
             if (running)
@@ -1181,7 +1183,6 @@ namespace lib60870.CS104
         /// <exception cref="ConnectionException">description</exception>
         public void Connect()
         {
-
             ConnectAsync();
 
             while ((running == false) && (socketError == false))

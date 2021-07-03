@@ -599,9 +599,22 @@ namespace lib60870.CS104
         private APCIParameters apciParameters;
         private ApplicationLayerParameters alParameters;
 
+        /// <summary>
+        /// Get active application layer parameters (modify only before starting the server!)
+        /// </summary>
+        /// <returns>application layer parameters object used by the server</returns>
         public ApplicationLayerParameters GetApplicationLayerParameters()
         {
             return alParameters;
+        }
+
+        /// <summary>
+        /// Get active APCI parameters (modify only before starting the server!)
+        /// </summary>
+        /// <returns>APCI parameters object used by the server</returns>
+        public APCIParameters GetAPCIParameters()
+        {
+            return apciParameters;
         }
 
         private TlsSecurityInformation securityInfo = null;
@@ -618,7 +631,10 @@ namespace lib60870.CS104
             this.alParameters = new ApplicationLayerParameters();
         }
 
-
+        /// <summary>
+        /// Create a new server using default connection parameters and TLS configuration
+        /// </summary>
+        /// <param name="securityInfo">TLS layer configuation, or null when not using TLS</param>
         public Server(TlsSecurityInformation securityInfo)
         {
             this.apciParameters = new APCIParameters();
@@ -630,17 +646,22 @@ namespace lib60870.CS104
                 this.localPort = 19998;
         }
 
-
         /// <summary>
         /// Create a new server using the provided connection parameters.
         /// </summary>
-        /// <param name="parameters">Connection parameters</param>
+        /// <param name="apciParameters">APCI parameters</param>
+        /// <param name="alParameters">application layer parameters</param>
         public Server(APCIParameters apciParameters, ApplicationLayerParameters alParameters)
         {
             this.apciParameters = apciParameters;
             this.alParameters = alParameters;
         }
 
+        /// <summary>
+        /// Create a new server using the provided connection parameters.
+        /// </summary>
+        /// <param name="apciParameters">APCI parameters</param>
+        /// <param name="alParameters">application layer parameters</param>
         public Server(APCIParameters apciParameters, ApplicationLayerParameters alParameters, TlsSecurityInformation securityInfo)
         {
             this.apciParameters = apciParameters;
@@ -913,21 +934,28 @@ namespace lib60870.CS104
 
             try
             {
+                try
+                {
+                    listeningSocket.Shutdown(SocketShutdown.Both);
+                }
+                catch (SocketException ex)
+                {
+                    DebugLog("SocketException: " + ex.Message);
+                }
+
                 listeningSocket.Close();
-				
+
                 // close all open connection
                 foreach (ClientConnection connection in allOpenConnections)
                 {
                     connection.Close();
                 }
-					
+
             }
             catch (Exception e)
             {
                 DebugLog("Exception: " + e.Message);
             }
-
-            listeningSocket.Close();
         }
 
         /// <summary>

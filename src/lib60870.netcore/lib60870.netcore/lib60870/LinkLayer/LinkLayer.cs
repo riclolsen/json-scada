@@ -776,7 +776,14 @@ namespace lib60870.linklayer
 
         public void Run()
         {
-            transceiver.ReadNextMessage(buffer, HandleMessageAction);
+            try
+            {
+                transceiver.ReadNextMessage(buffer, HandleMessageAction);
+            }
+            catch (InvalidOperationException)
+            {
+                //TODO exception handling code       
+            }
 
             if (linkLayerMode == LinkLayerMode.BALANCED)
             {
@@ -792,6 +799,11 @@ namespace lib60870.linklayer
             }
 
         }
+
+       public void AddPortDeniedHandler (EventHandler eventHandler)
+       {
+            transceiver.AddPortDeniedHandler(eventHandler);
+       }
     }
 }
 

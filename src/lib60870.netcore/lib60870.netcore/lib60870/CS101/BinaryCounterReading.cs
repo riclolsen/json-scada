@@ -146,7 +146,7 @@ namespace lib60870.CS101
             }
         }
 
-        internal BinaryCounterReading(byte[] msg, int startIndex)
+        public BinaryCounterReading(byte[] msg, int startIndex)
         {
             if (msg.Length < startIndex + 5)
                 throw new ASDUParsingException("Message too small for parsing BinaryCounterReading");

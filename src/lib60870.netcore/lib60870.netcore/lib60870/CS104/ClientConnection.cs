@@ -71,13 +71,16 @@ namespace lib60870.CS104
 
         /* T3 parameter handling */
         private UInt64 nextT3Timeout;
-        private int outStandingTestFRConMessages = 0;
+
+        /* TEST-FR con timeout handling */
+        private bool waitingForTestFRcon = false;
+        private UInt64 nextTestFRConTimeout = 0;
 
         /* T2 parameter handling */
         private bool timeoutT2Triggered = false;
 
         /* timestamp when the last confirmation message was sent */
-        private Int64 lastConfirmationTime = System.Int64.MaxValue;
+        private UInt64 lastConfirmationTime = System.UInt64.MaxValue;
       
         private TlsSecurityInformation tlsSecInfo = null;
 
@@ -183,7 +186,7 @@ namespace lib60870.CS104
             this.asduQueue = asduQueue;
             this.debugOutput = debugOutput;
 
-            ResetT3Timeout();
+            ResetT3Timeout((UInt64)SystemUtils.currentTimeMillis());
 
             maxSentASDUs = apciParameters.K;
             this.sentASDUs = new SentASDU[maxSentASDUs];
@@ -216,9 +219,45 @@ namespace lib60870.CS104
             return alParameters;
         }
 
-        private void ResetT3Timeout()
+        private void ResetT3Timeout(UInt64 currentTime)
         {
             nextT3Timeout = (UInt64)SystemUtils.currentTimeMillis() + (UInt64)(apciParameters.T3 * 1000);
+        }
+
+        private bool CheckT3Timeout(UInt64 currentTime)
+        {
+            if (waitingForTestFRcon)
+                return false;
+
+            if (nextT3Timeout > (currentTime + (UInt64)(apciParameters.T3 * 1000)))
+            {
+                /* timeout value not plausible (maybe system time changed) */
+                ResetT3Timeout(currentTime);
+            }
+
+            if (currentTime > nextT3Timeout)
+                return true;
+            else
+                return false;
+        }
+
+        private void ResetTestFRConTimeout(UInt64 currentTime)
+        {
+            nextTestFRConTimeout = currentTime + (UInt64)(apciParameters.T1 * 1000);
+        }
+
+        private bool CheckTestFRConTimeout(UInt64 currentTime)
+        {
+            if (nextTestFRConTimeout > (currentTime + (UInt64)(apciParameters.T1 * 1000)))
+            {
+                /* timeout value not plausible (maybe system time changed) */
+                ResetTestFRConTimeout(currentTime);
+            }
+
+            if (currentTime > nextTestFRConTimeout)
+                return true;
+            else
+                return false;
         }
 
         /// <summary>
@@ -914,7 +953,7 @@ namespace lib60870.CS104
 
         private bool HandleMessage(byte[] buffer, int msgSize)
         {
-            long currentTime = SystemUtils.currentTimeMillis();
+            UInt64 currentTime = (UInt64) SystemUtils.currentTimeMillis();
 
             if ((buffer[2] & 1) == 0)
             {
@@ -954,7 +993,6 @@ namespace lib60870.CS104
 
                 if (isActive)
                 {
-
                     try
                     {
                         ASDU asdu = new ASDU(alParameters, buffer, 6, msgSize);
@@ -971,8 +1009,10 @@ namespace lib60870.CS104
                 }
                 else
                 {
-                    // connection not activated --> skip message
-                    DebugLog("Connection not activated. Skip I message");
+                    // connection not active
+                    DebugLog("Connection not active -> close connection");
+
+                    return false;
                 }
             }
 
@@ -1022,12 +1062,21 @@ namespace lib60870.CS104
             {
                 DebugLog("Recv TESTFR_CON");
 
-                outStandingTestFRConMessages = 0;
+                waitingForTestFRcon = false;
+
+                ResetT3Timeout(currentTime);
             }
 
 			// S-message
 			else if (buffer[2] == 0x01)
             {
+                if (isActive == false)
+                {
+                    // connection not active
+                    DebugLog("Connection not active -> close connection");
+
+                    return false;
+                }
 
                 int seqNo = (buffer[4] + buffer[5] * 0x100) / 2;
 
@@ -1042,7 +1091,7 @@ namespace lib60870.CS104
                 DebugLog("Unknown message");
             }
 
-            ResetT3Timeout();
+            ResetT3Timeout(currentTime);
 
             return true;
         }
@@ -1051,40 +1100,44 @@ namespace lib60870.CS104
         {
             UInt64 currentTime = (UInt64)SystemUtils.currentTimeMillis();
 
-            if (currentTime > nextT3Timeout)
+            if (CheckT3Timeout(currentTime))
             {
+                try
+                {
+                    socketStream.Write(TESTFR_ACT_MSG, 0, TESTFR_ACT_MSG.Length);
 
-                if (outStandingTestFRConMessages > 2)
+                    DebugLog("U message T3 timeout");
+                    ResetT3Timeout(currentTime);
+                }
+                catch (System.IO.IOException)
+                {
+                    running = false;
+                }
+
+                waitingForTestFRcon = true;
+
+                ResetTestFRConTimeout(currentTime);                
+            }
+
+            /* Check for TEST FR con timeout */
+            if (waitingForTestFRcon)
+            {
+                if (CheckTestFRConTimeout(currentTime))
                 {
                     DebugLog("Timeout for TESTFR_CON message");
 
                     // close connection
                     return false;
                 }
-                else
-                {
-                    try
-                    {
-                        socketStream.Write(TESTFR_ACT_MSG, 0, TESTFR_ACT_MSG.Length);
-
-                        DebugLog("U message T3 timeout");
-                        outStandingTestFRConMessages++;
-                        ResetT3Timeout();
-                    }
-                    catch (System.IO.IOException)
-                    {
-                        running = false;
-                    }
-                }
             }
 
             if (unconfirmedReceivedIMessages > 0)
             {
 
-                if (((long)currentTime - lastConfirmationTime) >= (apciParameters.T2 * 1000))
+                if ((currentTime - lastConfirmationTime) >= (UInt64)(apciParameters.T2 * 1000))
                 {
 
-                    lastConfirmationTime = (long)currentTime;
+                    lastConfirmationTime = currentTime;
                     unconfirmedReceivedIMessages = 0;
                     timeoutT2Triggered = false;
                     SendSMessage();
@@ -1239,7 +1292,7 @@ namespace lib60870.CS104
                         callbackThread = new Thread(ProcessASDUs);
                         callbackThread.Start();
 
-                        ResetT3Timeout();
+                        ResetT3Timeout((UInt64)SystemUtils.currentTimeMillis());
                     }
 
                     while (running)
@@ -1263,7 +1316,7 @@ namespace lib60870.CS104
 
                                 if (unconfirmedReceivedIMessages >= apciParameters.W)
                                 {
-                                    lastConfirmationTime = SystemUtils.currentTimeMillis();
+                                    lastConfirmationTime = (UInt64)SystemUtils.currentTimeMillis();
                                     unconfirmedReceivedIMessages = 0;
                                     timeoutT2Triggered = false;
                                     SendSMessage();

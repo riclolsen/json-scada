@@ -178,7 +178,7 @@ namespace lib60870.CS101
         public abstract ApplicationLayerParameters GetApplicationLayerParameters();
 
         /// <summary>
-        /// Sets the raw message handler for receoved messages
+        /// Sets the raw message handler for received messages
         /// </summary>
         /// <param name="handler">Handler/delegate that will be invoked when a message is received</param>
         /// <param name="parameter">will be passed to the delegate</param>

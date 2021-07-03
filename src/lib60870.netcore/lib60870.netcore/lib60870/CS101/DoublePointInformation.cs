@@ -25,6 +25,9 @@ using System;
 
 namespace lib60870.CS101
 {
+    /// <summary>
+    /// Double point value
+    /// </summary>
     public enum DoublePointValue
     {
         INTERMEDIATE = 0,
