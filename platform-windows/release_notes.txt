@@ -122,6 +122,24 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.12: 
+
+ - Default login credentials: username=admin password=jsonscada
+ - Fixed problems with source timestamps for analog tags.
+ - DNP3: added more options for CROB commands and a fixed PULSE time.
+ - Added visualization for SAGE-web displays (brazilian SCADA).
+ - Updated Lib60870.NET for iec60870-5-101/104 drivers.
+ - Nodejs updated to 16.4.1.
+ - Grafana updated to 8.0.4.
+ - Updated vc_redist.x64 2019 runtime.
+ - New OPC-UA Server driver (experimental).
+
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+
+-------------------------------------------------------------------
+
 Notes for version 0.11: 
 
  - Default login credentials: username=admin password=jsonscada

@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.11"
-!define VERSION_ "0.11.0.0"
+!define VERSION "v.0.12"
+!define VERSION_ "0.12.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -248,7 +248,9 @@ SetRegView 64
   ;  DetailPrint "Must install VC 14 redist"
   ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
   ;${EndIf}
-  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
+  Sleep 1000
+  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /quiet'
+  Sleep 1000
   Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.7-win-x64.exe" /install /quiet'
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
@@ -303,6 +305,10 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\htdocs
   File /a "..\src\htdocs\*.*"
+  SetOutPath $INSTDIR\src\htdocs\scripts
+  File /a /r "..\src\htdocs\scripts\*.*"
+  SetOutPath $INSTDIR\src\sage-cepel-displays
+  File /a /r "..\src\htdocs\sage-cepel-displays\README.md"
   SetOutPath $INSTDIR\src\htdocs\images
   File /a /r "..\src\htdocs\images\*.*"
   SetOutPath $INSTDIR\src\htdocs\charts
@@ -371,12 +377,6 @@ SetRegView 64
   File /a /r "..\src\mqtt-sparkplug\node_modules\*.*"
 
   ;SetOutPath $INSTDIR\extprogs
-  ;File /a "..\extprogs\vcredist_x86.exe"
-  ;File /a "..\extprogs\vcredist_x86-2012.exe"
-  ;File /a "..\extprogs\vcredist_x86-2013.exe"
-  ;File /a "..\extprogs\vcredist_x86-2015.exe"
-  ;File /a "..\extprogs\vcredist_x86-2017.exe"
-  ;File /a "..\extprogs\vcredist_x86-15-17-19.exe"
 
   SetOutPath $INSTDIR\platform-windows\browser-runtime
   File /a /r "..\platform-windows\browser-runtime\*.*"
