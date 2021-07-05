@@ -547,6 +547,7 @@ const pipeline = [
                 if (delay > latencyPeak) latencyPeak = delay
 
                 // consider SOE when digital changes has field timestamp
+                // or analog with isEvent true
                 if (
                   'timeTagAtSource' in
                   change.updateDescription.updatedFields.sourceDataUpdate
@@ -555,7 +556,9 @@ const pipeline = [
                     change.updateDescription.updatedFields.sourceDataUpdate
                       .timeTagAtSource !== null
                   )
-                    if (change.fullDocument.type === 'digital') {
+                    if (change.fullDocument.type === 'digital' ||
+                        (change.fullDocument.type === 'analog' && change.fullDocument.isEvent)
+                       ) {
                       if (
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.getFullYear() >
                         1899
@@ -912,29 +915,16 @@ const pipeline = [
                   }
                   if (alarmTime !== null) update.timeTagAlarm = alarmTime
 
-                  // update source time when is SOE and state ON
-                  if (
-                    (change.fullDocument.isEvent &&
-                      isSOE &&
-                      change.updateDescription.updatedFields.sourceDataUpdate
-                        .timeTagAtSource !== null &&
-                      value === 1) ||
-                    (!change.fullDocument.isEvent &&
-                      isSOE &&
-                      change.updateDescription.updatedFields.sourceDataUpdate
-                        .timeTagAtSource !== null &&
-                      change.fullDocument.value !== value)
-                  ) {
+                  // update source time when available
+                  if (change.updateDescription.updatedFields.sourceDataUpdate
+                    .timeTagAtSource !== null ) {
                     update.timeTagAtSource =
                       change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
                     update.timeTagAtSourceOk =
                       change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSourceOk
-                  } else {
-                    update.timeTagAtSource = null
-                    update.timeTagAtSourceOk = null
                   }
 
-                  if (!(change.fullDocument.isEvent && value === 0)) {
+                  if (!(change.fullDocument.isEvent && change.fullDocument.type === 'digital' &&  value === 0)) {
                     // do not update protection-like events for state OFF
                     mongoRtDataQueue.enqueue(update)
 
