@@ -10,6 +10,7 @@ mkdir bin
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
+dotnet build --runtime win-x64 -c Release
 dotnet build --runtime win-x64 -c Release -o ..\..\..\bin\ 
 cd \json-scada\src\lib60870.netcore\iec101client\
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ 
