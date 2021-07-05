@@ -204,17 +204,23 @@ For commands, also configure the variation on _protocolSourceASDU_.
 
 For CROB commands use _protocolSourceCommandDuration_ to set command details:
 
-Operation Type         | protocolSourceCommandDuration
------------------------|------------------------------
-UNDEFINED/NUL          | 0
-PULSE 1=ON 0=OFF       | 1
-PULSE 0=ON 1=OFF       | 2
-LATCH 1=ON 0=OFF       | 3
-LATCH 0=ON 1=OFF       | 3
-PULSE + CLOSE=1/TRIP=0 | 11
-LATCH + CLOSE=1/TRIP=0 | 13
-PULSE + CLOSE=0/TRIP=1 | 21
-LATCH + CLOSE=0/TRIP=1 | 23
+Operation Type                    | protocolSourceCommandDuration
+----------------------------------|------------------------------
+UNDEFINED/NUL                     | 0
+PULSE 1=ON 0=OFF                  | 1
+PULSE 0=ON 1=OFF                  | 2
+LATCH 1=ON 0=OFF                  | 3
+LATCH 0=ON 1=OFF                  | 4
+PULSE 1=ON 0=OFF,  CLOSE=1 TRIP=0 | 11
+PULSE 1=ON 0=OFF,  CLOSE=0 TRIP=1 | 21
+LATCH 1=ON 0=OFF,  CLOSE=1 TRIP=0 | 13
+LATCH 1=ON 0=OFF,  CLOSE=0 TRIP=1 | 23
+PULSE 1=ON 0=ON,   CLOSE=1 TRIP=0 | 12
+PULSE 1=ON 0=ON,   CLOSE=0 TRIP=1 | 22
+PULSE 1=OFF 0=OFF, CLOSE=1 TRIP=0 | 10
+PULSE 1=OFF 0=OFF, CLOSE=0 TRIP=1 | 20
+
+Currently, pulse CROB controls have a fixed time of 100ms hardcoded in the source code.
 
 ## Process Command Line Arguments
 

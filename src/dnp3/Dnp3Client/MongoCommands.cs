@@ -119,6 +119,8 @@ namespace Dnp3Driver
                                                             if (group == 12)
                                                             {
                                                                 OperationType ot = OperationType.NUL;
+                                                                uint onTime = 0;
+                                                                uint offTime = 0;
                                                                    
                                                                 TripCloseCode tc = TripCloseCode.NUL;
                                                                 switch (System.Convert.ToUInt16(change.FullDocument.protocolSourceCommandDuration))
@@ -128,12 +130,16 @@ namespace Dnp3Driver
                                                                         ot = OperationType.NUL;
                                                                         break;
                                                                     case 1:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
                                                                         if (change.FullDocument.value != 0)
                                                                             ot = OperationType.PULSE_ON;
                                                                         else
                                                                             ot = OperationType.PULSE_OFF;
                                                                         break;
                                                                     case 2:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
                                                                         if (change.FullDocument.value != 0)
                                                                             ot = OperationType.PULSE_OFF;
                                                                         else
@@ -152,6 +158,8 @@ namespace Dnp3Driver
                                                                             ot = OperationType.LATCH_ON;
                                                                         break;
                                                                     case 11:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
                                                                         if (change.FullDocument.value != 0)
                                                                         {
                                                                             ot = OperationType.PULSE_ON;
@@ -176,6 +184,8 @@ namespace Dnp3Driver
                                                                         }
                                                                         break;
                                                                     case 21:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
                                                                         if (change.FullDocument.value != 0)
                                                                         {
                                                                             ot = OperationType.PULSE_ON;
@@ -199,8 +209,64 @@ namespace Dnp3Driver
                                                                             tc = TripCloseCode.CLOSE;
                                                                         }
                                                                         break;
+                                                                    case 12:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
+                                                                        if (change.FullDocument.value != 0)
+                                                                        {
+                                                                            ot = OperationType.PULSE_ON;
+                                                                            tc = TripCloseCode.CLOSE;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            ot = OperationType.PULSE_ON;
+                                                                            tc = TripCloseCode.TRIP;
+                                                                        }
+                                                                        break;
+                                                                    case 22:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
+                                                                        if (change.FullDocument.value != 0)
+                                                                        {
+                                                                            ot = OperationType.PULSE_ON;
+                                                                            tc = TripCloseCode.TRIP;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            ot = OperationType.PULSE_ON;
+                                                                            tc = TripCloseCode.CLOSE;
+                                                                        }
+                                                                        break;
+                                                                    case 10:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
+                                                                        if (change.FullDocument.value != 0)
+                                                                        {
+                                                                            ot = OperationType.PULSE_OFF;
+                                                                            tc = TripCloseCode.CLOSE;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            ot = OperationType.PULSE_OFF;
+                                                                            tc = TripCloseCode.TRIP;
+                                                                        }
+                                                                        break;
+                                                                    case 20:
+                                                                        onTime = CROB_PulseOnTime;
+                                                                        offTime = CROB_PulseOffTime;
+                                                                        if (change.FullDocument.value != 0)
+                                                                        {
+                                                                            ot = OperationType.PULSE_OFF;
+                                                                            tc = TripCloseCode.TRIP;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            ot = OperationType.PULSE_OFF;
+                                                                            tc = TripCloseCode.CLOSE;
+                                                                        }
+                                                                        break;
                                                                 }
-                                                                ControlRelayOutputBlock crob = new ControlRelayOutputBlock(ot, tc, false, 1, 0, 0);
+                                                                ControlRelayOutputBlock crob = new ControlRelayOutputBlock(ot, tc, false, 1, onTime, offTime);
                                                                 if (System.Convert.ToBoolean(change.FullDocument.protocolSourceCommandUseSBO))
                                                                     cmdTask = srv.master.SelectAndOperate(
                                                                         crob,

@@ -35,7 +35,9 @@ namespace Dnp3Driver
         static IDNP3Manager mgr;
         public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020-2021 RLO";
         public static String ProtocolDriverName = "DNP3";
-        public static String DriverVersion = "0.1.1";
+        public static String DriverVersion = "0.1.2";
+        public static uint CROB_PulseOnTime = 100;
+        public static uint CROB_PulseOffTime = 100;
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
 
