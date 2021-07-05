@@ -908,6 +908,8 @@ const pipeline = [
                     invalid: invalid,
                     transient: transient,
                     frozen: false,
+                    timeTagAtSource: null,
+                    timeTagAtSourceOk: null,
                     updatesCnt: new mongo.Double(
                       change.fullDocument.updatesCnt + 1
                     ),
@@ -916,8 +918,8 @@ const pipeline = [
                   if (alarmTime !== null) update.timeTagAlarm = alarmTime
 
                   // update source time when available
-                  if (change.updateDescription.updatedFields.sourceDataUpdate
-                    .timeTagAtSource !== null ) {
+                  if ('timeTagAtSource' in change.updateDescription.updatedFields.sourceDataUpdate &&
+                    change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource !== null ) {
                     update.timeTagAtSource =
                       change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
                     update.timeTagAtSourceOk =
@@ -949,9 +951,8 @@ const pipeline = [
 
                     // queue data change for postgresql historian
                     let b7 = invalid ? '1' : '0', // value invalid
-                      b6 = isSOE
-                        ? change.updateDescription.updatedFields
-                            .sourceDataUpdate.timeTagAtSourceOk
+                      b6 = (update.timeTagAtSourceOk!==null)
+                          ? update.timeTagAtSourceOk
                           ? '0'
                           : '1'
                         : '1', // time tag at source invalid
@@ -977,8 +978,7 @@ const pipeline = [
                         '\'{"s": "' +
                         valueString +
                         '"}\',' +
-                        (isSOE
-                          ? "'" +
+                        ( (update.timeTagAtSource!==null) ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
                             "'"
                           : 'null') +
