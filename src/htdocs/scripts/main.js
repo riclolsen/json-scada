@@ -20,6 +20,7 @@
  */
 
 var updatePeriod = 3000
+var statusInvalidColor = 'white'
 var sageDisplayDir = '/sage-cepel-displays'
 function paddingLeft (str, paddingValue) {
   return String(paddingValue + str).slice(-paddingValue.length)
@@ -67,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
         pos = node.parentNode.href.baseVal.indexOf('&id=')
         if (pos > 0) {
           var key = node.parentNode.href.baseVal.substring(pos + 4)
-          key = key.replace('LAJ2', 'KAW2')
+          // key = key.replace('LAJ2', 'KAW2')
           if (!(key in keysIdsMap)) keysIdsMap[key] = {}
           if (!('listIds' in keysIdsMap[key])) keysIdsMap[key].listIds = []
           if (node.tagName === 'text') {
@@ -103,19 +104,18 @@ document.addEventListener('DOMContentLoaded', function () {
     //console.log('Timer')
 
     // use this to redefine failed values color
-    corRgalr = function(val){
-        return 'white'
+    corRgalr = function (val) {
+      return statusInvalidColor
     }
 
-    setInterval( ()=>{
-        getRealtimeData(queryKeys, false, () => {
-            //console.log('loaded')
-      
-            //console.log(msgSage)
-            socket_di.onmessage({ data: JSON.stringify(msgSage) })
-          })  
-        }, updatePeriod)
-    
+    setInterval(() => {
+      getRealtimeData(queryKeys, false, () => {
+        //console.log('loaded')
+
+        //console.log(msgSage)
+        socket_di.onmessage({ data: JSON.stringify(msgSage) })
+      })
+    }, updatePeriod)
 
     getRealtimeData(queryKeys, true, () => {
       //console.log('loaded')
@@ -234,7 +234,7 @@ function getRealtimeData (querykeys, askinfo, callbacksuccess) {
           //console.log(element)
           keysIdsMap[element.NodeId.Id].listIds.forEach(k => {
             if (element.Value.Type === 1) {
-              msgSage[k] = { val: element.ValueBody === true ? 2 : 1 }
+              msgSage[k] = { val: element.Value.Body === true ? 1 : 2 }
               //msgSage[k].rgalr = 0
             }
 
@@ -247,8 +247,34 @@ function getRealtimeData (querykeys, askinfo, callbacksuccess) {
                   keysIdsMap[element.NodeId.Id].padding
                 )
               }
-              if (element.StatusCode !== 0)
-                msgSage[k].rgalr = 0
+            }
+
+            if (element.Value.Quality !== 0) {
+              console.log(k)
+              var svgElement = document.getElementById(k)
+              var sageType = svgElement.getAttribute('sage:tipo')
+              switch (sageType) {
+                case 'Medida':
+                  msgSage[k].rgalr = 0
+                  break
+                case 'Disjuntor':
+                  console.log(k)
+                  if (element.Value.Body)
+                    setTimeout(() => {
+                      svgElement.style.stroke = statusInvalidColor
+                      svgElement.style.fill = statusInvalidColor
+                    }, 1)
+                  else
+                    setTimeout(() => {
+                      svgElement.style.stroke = statusInvalidColor
+                    }, 1)
+                  break
+                case 'Seccionadora':
+                  setTimeout(() => {
+                    svgElement.style.stroke = statusInvalidColor
+                  }, 1)
+                  break
+              }
             }
           })
 
