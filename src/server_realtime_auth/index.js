@@ -35,7 +35,7 @@ const httpProxy = require('express-http-proxy')
 const path = require('path')
 const cors = require('cors')
 const app = express()
-const bodyParser = require('body-parser')
+//const bodyParser = require('body-parser')
 var cookieParser = require('cookie-parser')
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -90,20 +90,28 @@ if (AUTHENTICATION) {
 
   app.use(cookieParser())
   app.options(OPCAPI_AP, cors()) // enable pre-flight request
-  app.use(bodyParser.json())
+  app.use(express.json())
   app.use(
-    bodyParser.urlencoded({
+    express.urlencoded({
       extended: true
     })
   )
 } else {
   console.log('******* DISABLED AUTHENTICATION! ********')
 
+  // add charset for special sage displays
+  app.use('/sage-cepel-displays/', express.static('../htdocs/sage-cepel-displays', {
+    setHeaders: function(res, path) {
+      if (/.*\.html/.test(path)) {
+        res.set({ 'content-type': 'text/html; charset=iso-8859-1' });
+      }
+    }
+  }));
   app.use(express.static('../htdocs')) // serve static files
   app.options(OPCAPI_AP, cors()) // enable pre-flight request
-  app.use(bodyParser.json())
+  app.use(express.json())
   app.use(
-    bodyParser.urlencoded({
+    express.urlencoded({
       extended: true
     })
   )

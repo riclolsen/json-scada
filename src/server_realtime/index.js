@@ -32,7 +32,7 @@ const express = require('express')
 const httpProxy = require('express-http-proxy');
 const path = require('path')
 const cors = require('cors')
-const bodyParser = require('body-parser')
+// const bodyParser = require('body-parser')
 const app = express()
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -54,11 +54,19 @@ if (
   process.exit(-1)
 }
 
+// add charset for special sage displays
+app.use('/sage-cepel-displays/', express.static('../htdocs/sage-cepel-displays', {
+  setHeaders: function(res, path) {
+    if (/.*\.html/.test(path)) {
+      res.set({ 'content-type': 'text/html; charset=iso-8859-1' });
+    }
+  }
+}));
 app.use(express.static('../htdocs')) // serve static files
 app.options('/Invoke/', cors()) // enable pre-flight request
-app.use(bodyParser.json())
+app.use(express.json())
 app.use(
-  bodyParser.urlencoded({
+  express.urlencoded({
     extended: true
   })
 )

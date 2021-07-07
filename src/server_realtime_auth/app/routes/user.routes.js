@@ -35,6 +35,14 @@ module.exports = function (app, accessPoint, opcApi, accessPointGetFile, getFile
 
   app.use('/admin', [authJwt.isAdmin], express.static('../htdocs-admin/dist'))
 
+  // add charset for special sage displays
+  app.use('/sage-cepel-displays/', [authJwt.verifyToken], express.static('../htdocs/sage-cepel-displays', {
+    setHeaders: function(res, path) {
+      if (/.*\.html/.test(path)) {
+        res.set({ 'content-type': 'text/html; charset=iso-8859-1' });
+      }
+    }
+  }));
   app.use([authJwt.verifyToken], express.static('../htdocs')) // serve static files
 
   app.post(accessPoint, opcApi) // realtime data API
