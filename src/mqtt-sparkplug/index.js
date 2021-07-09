@@ -1481,6 +1481,8 @@ async function sparkplugProcess (
 
       // process MQTT Sparkplug B messages (coming from other devices)
       spClient.handle.on('message', function (topic, payload, topicInfo) {
+        payload.metrics = payload?.metrics // null check filter
+          ?.filter(metric => !(metric?.type === undefined || metric?.type === null))
         Log.log(logModS + 'Event: Sparkplug B message on topic: ' + topic)
 
         if (Log.logLevelCurrent >= Log.levelDetailed) {
