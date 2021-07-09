@@ -67,22 +67,21 @@ document.addEventListener('DOMContentLoaded', function () {
       if ('baseVal' in node.parentNode.href) {
         pos = node.parentNode.href.baseVal.indexOf('&id=')
         if (pos > 0) {
-			
-		  var sageType = node.getAttribute('sage:tipo')
-		  switch (sageType) {
-			case 'Medida':
-			  node.OriginalFill = node.style.fill
-			  node.style.fill = statusInvalidColor
-			  break
-			case 'Disjuntor':
-			  node.style.stroke = statusInvalidColor
-			  node.style.fill = statusInvalidColor
-			  break
-			case 'Seccionadora':
-			  node.style.stroke = statusInvalidColor
-			  break
-		  }
-		
+          var sageType = node.getAttribute('sage:tipo')
+          switch (sageType) {
+            case 'Medida':
+              node.OriginalFill = node.style.fill
+              node.style.fill = statusInvalidColor
+              break
+            case 'Disjuntor':
+              node.style.stroke = statusInvalidColor
+              node.style.fill = statusInvalidColor
+              break
+            case 'Seccionadora':
+              node.style.stroke = statusInvalidColor
+              break
+          }
+
           var key = node.parentNode.href.baseVal.substring(pos + 4)
           //key = key.replace('LAJ2', 'KAW2')
           if (!(key in keysIdsMap)) keysIdsMap[key] = {}
@@ -291,9 +290,9 @@ function getRealtimeData (querykeys, askinfo, callbacksuccess) {
                   break
               }
             } else {
-				if (sageType === 'Medida')
-				  svgElement.style.fill = svgElement.OriginalFill				
-			}
+              if (sageType === 'Medida')
+                svgElement.style.fill = svgElement.OriginalFill
+            }
           })
 
           return element
