@@ -281,13 +281,18 @@ function SparkplugClient(config) {
     };
 
     // Publishes Node Command messages for the edge node
-    this.publishNodeCmd = function(group, edge, payload, options) {
+    this.publishNodeCmd = function(group, edge, payload, options, callback) {
+        if (typeof opts === 'function') {
+            callback = opts
+            opts = null
+          }
+
         var topic = version + "/" + group + "/NCMD/" + edge;
         // Add seq number
         addSeqNumber(payload);
         // Publish
         logger.info("Publishing NCMD for node " + edge);
-        client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), {"qos" : 0});
+        client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), {"qos" : 0}, callback);
         if (logger.level === 'debug')
           messageAlert("published", topic, payload);
     };
@@ -307,13 +312,18 @@ function SparkplugClient(config) {
     };
 
     // Publishes device command
-    this.publishDeviceCmd = function(group, edge, device, payload, options) {
+    this.publishDeviceCmd = function(group, edge, device, payload, options, callback) {
+        if (typeof opts === 'function') {
+            callback = opts
+            opts = null
+          }
+
         var topic = version + "/" + group + "/DCMD/" + edge + "/" + device;
         // Add seq number
         addSeqNumber(payload);
         // Publish
         logger.info("Publishing DCMD for device " + device);
-        client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), {"qos" : 0});
+        client.publish(topic, encodePayload(maybeCompressPayload(payload, options)), {"qos" : 0}, callback);
         if (logger.level === 'debug')
           messageAlert("published", topic, payload);
     };

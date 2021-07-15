@@ -159,7 +159,7 @@ let AutoCreateTags = true
         SparkplugClientObj.handle.publishDeviceData(
           connection.deviceId,
           payload,
-          {compress: AppDefs.SPARKPLUG_COMPRESS_DDATA}
+          { compress: AppDefs.SPARKPLUG_COMPRESS_DDATA }
         )
         Log.log('Sparkplug - Publish metrics updates: ' + cnt, Log.levelNormal)
       }
@@ -326,7 +326,6 @@ let AutoCreateTags = true
               )
                 return // not for this connection
 
-              // console.log(JSON.stringify(change))
               let data = getMetricCommandPayload(change.fullDocument)
               if (!data) return
 
@@ -341,6 +340,23 @@ let AutoCreateTags = true
                   {
                     timestamp: new Date(change.fullDocument.timeTag).getTime(),
                     metrics: [data.metric]
+                  },
+                  {},
+                  err => {
+                    if (!err) {
+                      cmdCollection.updateOne(
+                        { _id: change.fullDocument._id },
+                        { $set: { ack: true, timeTag: new Date() } }
+                      )
+                    } else {
+                      cmdCollection.updateOne(
+                        { _id: change.fullDocument._id },
+                        { $set: { ack: false, timeTag: new Date() } }
+                      )
+                      Log.log(
+                        'Sparkplug Command Error, Tag: ' + change.fullDocument.tag
+                      )
+                    }
                   }
                 )
               } else if (data.groupId) {
@@ -353,6 +369,23 @@ let AutoCreateTags = true
                   {
                     timestamp: new Date(change.fullDocument.timeTag).getTime(),
                     metrics: [data.metric]
+                  },
+                  {},
+                  err => {
+                    if (!err) {
+                      cmdCollection.updateOne(
+                        { _id: change.fullDocument._id },
+                        { $set: { ack: true, timeTag: new Date() } }
+                      )
+                    } else {
+                      cmdCollection.updateOne(
+                        { _id: change.fullDocument._id },
+                        { $set: { ack: false, timeTag: new Date() } }
+                      )
+                      Log.log(
+                        'Sparkplug Command Error, Tag: ' + change.fullDocument.tag
+                      )
+                    }
                   }
                 )
               } else {
@@ -370,11 +403,25 @@ let AutoCreateTags = true
                 SparkplugClientObj.handle.client.publish(
                   data.topic,
                   data.value.toString(),
-                  { qos: qos, retain: retain }
+                  { qos: qos, retain: retain },
+                  err => {
+                    if (!err) {
+                      cmdCollection.updateOne(
+                        { _id: change.fullDocument._id },
+                        { $set: { ack: true, timeTag: new Date() } }
+                      )
+                    } else {
+                      cmdCollection.updateOne(
+                        { _id: change.fullDocument._id },
+                        { $set: { ack: false, timeTag: new Date() } }
+                      )
+                      Log.log(
+                        'MQTT Command Error, Tag: ' + change.fullDocument.tag
+                      )
+                    }
+                  }
                 )
               }
-
-              // console.log(data)
             })
           } catch (e) {
             Log.log('MongoDB - CS CMD Error: ' + e, Log.levelMin)
@@ -899,8 +946,6 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
     while (!ValuesQueue.isEmpty()) {
       let data = ValuesQueue.peek()
       ValuesQueue.dequeue()
-
-      // console.log(data)
 
       // check tag is created, if not found create it
       if (AutoCreateTags) {
@@ -1482,7 +1527,9 @@ async function sparkplugProcess (
       // process MQTT Sparkplug B messages (coming from other devices)
       spClient.handle.on('message', function (topic, payload, topicInfo) {
         payload.metrics = payload?.metrics // null check filter
-          ?.filter(metric => !(metric?.type === undefined || metric?.type === null))
+          ?.filter(
+            metric => !(metric?.type === undefined || metric?.type === null)
+          )
         Log.log(logModS + 'Event: Sparkplug B message on topic: ' + topic)
 
         if (Log.logLevelCurrent >= Log.levelDetailed) {
@@ -1540,7 +1587,6 @@ async function sparkplugProcess (
                 )
                 return
               }
-              // console.log(payload)
               ProcessDeviceBirthOrData(deviceLocator, payload, false)
               break
             case 'NBIRTH':
