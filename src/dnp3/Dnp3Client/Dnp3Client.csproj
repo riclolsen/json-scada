@@ -10,17 +10,5 @@
     <PackageReference Include="MongoDB.Driver" Version="2.11.6" />
     <PackageReference Include="opendnp3" Version="3.1.1" />
   </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="..\Dependencies\Microsoft\VC_redist.x64.exe">
-      <Link>VC_redist.x64.exe</Link>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\Dependencies\OpenSSL\libcrypto-1_1-x64.dll">
-      <Link>libcrypto-1_1-x64.dll</Link>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\Dependencies\OpenSSL\libssl-1_1-x64.dll">
-      <Link>libssl-1_1-x64.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
   
 </Project>

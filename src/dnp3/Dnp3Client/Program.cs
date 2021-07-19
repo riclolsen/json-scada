@@ -158,7 +158,7 @@ namespace Dnp3Driver
         {
             Log(DriverMessage);
             Log("Driver version " + DriverVersion);
-            Log("Using opendnp3 version 3.0.4");
+            Log("Using opendnp3 version 3.1.1");
 
             if (args.Length > 0) // first argument in number of the driver instance
             {

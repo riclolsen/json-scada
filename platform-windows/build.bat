@@ -21,7 +21,7 @@ dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\.
 cd \json-scada\src\lib60870.netcore\iec104server\ 
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 cd \json-scada\src\dnp3\Dnp3Client\ 
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ Dnp3Client.csproj
 cd \json-scada\src\OPC-UA-Client\ 
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
 cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
