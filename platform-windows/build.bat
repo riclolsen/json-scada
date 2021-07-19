@@ -7,6 +7,8 @@ echo - Node.js 14+
 cd c:\json-scada
 mkdir bin
 
+copy \json-scada\src\dnp3\Dependencies\OpenSSL\*.dll bin\ /y
+
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
