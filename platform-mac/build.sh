@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ARG1=${1:-linux-x64}
+ARG1=${1:-osx-x64}
 
 cd ..
 mkdir bin
