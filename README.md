@@ -114,7 +114,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] IEC 60870-5-101 Server (Serial, TCP)
 - [x] IEC 60870-5-101 Client (Serial, TCP)
 - [ ] IEC 60870-5-103 Client
-- [x] DNP3 Client (TCP, UDP, TLS, Serial)
+- [x] DNP3 Client (TCP, UDP, TLS, Serial) - Windows x64 only!
 - [ ] DNP3 Server (TCP, UDP, TLS, Serial)
 - [x] MQTT/Sparkplug-B Client
 - [x] I104M (adapter for some OSHMI drivers)

@@ -1,5 +1,7 @@
 # DNP3 Client Protocol Driver
 
+This DNP3 client driver is programmed with C# on Dotnet Core and depends on the OpenDNP3 library Dotnet package that is Windows-only, so it will not run natively on other platforms. The Windows build can possibly run under WINE on x64 Linux, but this is untested.
+
 This driver implements a client for the DNP3 protocol. It can have multiple connections to DNP3 servers on multiple computers, if needed.
 
 To configure the driver it is necessary to create one or more driver instances and at least one connection per instance. Also the tags intended to be updated should be configured appropriately.
