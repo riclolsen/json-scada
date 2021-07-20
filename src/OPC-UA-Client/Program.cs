@@ -250,7 +250,7 @@ namespace OPCUAClientDriver
 
             } while (true);
 
-            return (int)OPCUAClient.ExitCode;
+            // return (int)OPCUAClient.ExitCode;
         }
     }
 }

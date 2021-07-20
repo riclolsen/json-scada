@@ -324,7 +324,7 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "--- RECONNECTED ---");
             }
 
-            private async void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
+            private void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
             {
 
                 //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
