@@ -17,6 +17,10 @@ https://grafana.com/grafana/dashboards/11365
 Grafana paid options (Enterprise or Cloud) can do reporting.
 https://grafana.com/docs/grafana/latest/enterprise/reporting/
 
+### Nocodb
+The Open Source Airtable alternative. Can connect to PostgreSQL.
+https://github.com/nocodb/nocodb
+
 ### Budibase
 Budibase is an open-source low-code platform. Supports MongoDB, PostgreSQL and other data sources.
 https://github.com/Budibase/budibase
