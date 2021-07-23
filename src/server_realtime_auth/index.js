@@ -35,7 +35,6 @@ const httpProxy = require('express-http-proxy')
 const path = require('path')
 const cors = require('cors')
 const app = express()
-//const bodyParser = require('body-parser')
 var cookieParser = require('cookie-parser')
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -99,6 +98,9 @@ if (AUTHENTICATION) {
 } else {
   console.log('******* DISABLED AUTHENTICATION! ********')
 
+  // reverse proxy for grafana
+  app.use('/grafana', httpProxy(GRAFANA_SERVER)) 
+
   // add charset for special sage displays
   app.use('/sage-cepel-displays/', express.static('../htdocs/sage-cepel-displays', {
     setHeaders: function(res, path) {
@@ -120,9 +122,6 @@ if (AUTHENTICATION) {
     res.sendFile(path.join(__dirname + '../htdocs/index.html'))
   })
 }
-
-// reverse proxy for grafana
-app.use('/grafana', httpProxy(GRAFANA_SERVER))
 
 let db = null
 let clientMongo = null
@@ -157,7 +156,7 @@ let pool = null
 
   if (AUTHENTICATION) {
     require('./app/routes/auth.routes')(app, OPCAPI_AP)
-    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi, GETFILE_AP, getFileApi)
+    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi, GETFILE_AP, getFileApi, GRAFANA_SERVER)
   } else {
     app.post(OPCAPI_AP, opcApi)
     app.get(GETFILE_AP, getFileApi)

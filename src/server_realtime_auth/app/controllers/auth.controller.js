@@ -14,6 +14,14 @@ const UserActionsQueue = require('../../userActionsQueue')
 var jwt = require('jsonwebtoken')
 var bcrypt = require('bcryptjs')
 
+exports.addXWebAuthUser = (req, res) => {
+  let token = req.headers['x-access-token'] || req.cookies['x-access-token']
+  let ck = checkToken(req)
+  console.log(ck?.username)
+  //req.header('X-WEBAUTH-USER', ck?.username)
+  req.headers['X-WEBAUTH-USER'] = ck?.username
+}
+
 exports.listUserActions = async (req, res) => {
   console.log('listUserActions')
 
