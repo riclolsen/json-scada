@@ -13,7 +13,7 @@ nssm set JSON_SCADA_postgresql Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_grafana "C:\json-scada\platform-windows\grafana-runtime\bin\grafana-server.exe"
 nssm set JSON_SCADA_grafana AppDirectory "C:\json-scada\platform-windows\grafana-runtime\bin"
-nssm set JSON_SCADA_grafana AppEnvironmentExtra GF_SERVER_DOMAIN=127.0.0.1 GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:80/grafana/ GF_SERVER_SERVE_FROM_SUB_PATH=true
+nssm set JSON_SCADA_grafana AppEnvironmentExtra GF_SERVER_DOMAIN=127.0.0.1 GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:80/grafana/ GF_SERVER_SERVE_FROM_SUB_PATH=true GF_AUTH_PROXY_ENABLED=true GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN=true GF_AUTH_DISABLE_SIGNOUT_MENU=true
 nssm set JSON_SCADA_grafana Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_mongodb "C:\json-scada\platform-windows\mongodb-runtime\bin\mongod.exe" --config  "c:\json-scada\platform-windows\mongodb-conf\mongod.cfg" 
