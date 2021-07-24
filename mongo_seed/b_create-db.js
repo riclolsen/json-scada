@@ -621,6 +621,23 @@ var protocolConnectionsValidator = {
   }
 }
 
+// if server is >= 5.0 enable new feature set and create hist time series collection
+if (db.version().charAt(0) >= 5){
+  db.adminCommand( { setFeatureCompatibilityVersion: "5.0" } )
+  db.createCollection(
+    "hist",
+    {
+       timeseries: {
+          timeField: "timeTag",
+          metaField: "tag",
+          granularity: "seconds"
+       },
+       expireAfterSeconds: 60*60*24*30*2
+    }
+  )
+  db.hist.createIndex({ "tag": 1, "timeTag": 1 })  
+}
+
 db.createCollection('protocolDriverInstances', {
   validationLevel: validationLevel,
   validationAction: validationAction,
@@ -659,10 +676,17 @@ db.realtimeData.createIndex({
   protocolSourceCommonAddress: 1,
   protocolSourceObjectAddress: 1
 })
+db.realtimeData.createIndex({
+  group1: 1,
+  group2: 1
+})
+db.realtimeData.createIndex({
+  alarmed: 1
+})
 
 // soeData is defined as a capped collection (limited size 2GB, circular buffer)
 // remove the parameters to create as a normal collection to overcome the size restriction
-db.createCollection('soeData', { capped: true, size: 2000000 })
+db.createCollection('soeData', { capped: true, size: 2000000000 })
 db.soeData.createIndex({ timeTag: 1 })
 db.soeData.createIndex({ timeTagAtSource: 1 })
 db.soeData.createIndex({ group1: 1 })
