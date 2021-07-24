@@ -62,9 +62,8 @@ module.exports = function (
   app.use(
     '/grafana',
     [authJwt.verifyToken],
-    function (req, res, next) {
-      authController.addXWebAuthUser(req, res)
-      console.log(req)
+    function (req, _, next) {
+      authController.addXWebAuthUser(req)
       next()
     },
     httpProxy(grafanaServer)
