@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.12"
-!define VERSION_ "0.12.0.0"
+!define VERSION "v.0.13"
+!define VERSION_ "0.13.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -237,7 +237,7 @@ SetRegView 64
   File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-5.0.7-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-5.0.8-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -249,15 +249,15 @@ SetRegView 64
   ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
   ;${EndIf}
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /quiet'
+  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.7-win-x64.exe" /install /quiet'
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.8-win-x64.exe" /install /passive /quiet'
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
-  SetOutPath $INSTDIR\platform-windows\ruby-runtime
-  File /a /r "..\platform-windows\ruby-runtime\*.*"
+  ;SetOutPath $INSTDIR\platform-windows\ruby-runtime
+  ;File /a /r "..\platform-windows\ruby-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\telegraf-runtime
   File /a "..\platform-windows\telegraf-runtime\telegraf.exe"

@@ -122,6 +122,23 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.13:
+
+ - Default login credentials: username=admin password=jsonscada
+ - Chromium updated to 92.0.4515.107.
+ - Grafana updated to 8.0.6.
+ - Auto-login of JSON-SCADA user into Grafana.
+ - Feedback on UI added for MQTT/Sparkplug commands.
+ - Fixed soeData capped collection size of 2GB.
+ - DotNet runtime updated to 5.0.8.
+
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+ - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000.
+
+-------------------------------------------------------------------
+
 Notes for version 0.12: 
 
  - Default login credentials: username=admin password=jsonscada
