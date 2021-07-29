@@ -1,0 +1,57 @@
+@startuml
+
+!define osaPuml https://raw.githubusercontent.com/Crashedmind/PlantUML-opensecurityarchitecture2-icons/master
+!include osaPuml/Common.puml
+!include osaPuml/Hardware/all.puml
+!include osaPuml/Server/all.puml
+
+title JSON-SCADA Architecture
+
+cloud "Operators" as WebClients {
+osa_desktop(Operator1,"Client","Web browser")
+osa_desktop(Operator2,"Client","Web browser")
+}
+
+cloud "Other\nSCADA Systems"{
+osa_server(SCADA1,"SCADA","Server")
+}
+
+node "{json:scada}" {
+database "MongoDB\n" as MongoDB1
+database "PostgreSQL\n" as PostgreSQL1 
+[Grafana] as Grafana
+[Webserver\nNginx] as Webserver
+[Calculations\nProcessor] as Calc
+[Change Stream\nProcessor] as CSProc
+[Custom Change Stream\nProcessor] as CustomCSProc
+[Server\nProtocol\nDriver] as ServerProtocol1
+[IT Systems\nIntegrations] as IT1
+package "Front End" as NodeJS {
+    component [Visualization\nNodeJS/Express] as GUI
+}
+}
+
+
+cloud "Corporate IT" as Corp1 {
+osa_server(ITServer1,"ERP","Server")
+osa_server(ITServer2,"MES","Server")
+}
+ 
+Webserver -d-> NodeJS: JWT auth
+NodeJS -d-> MongoDB1
+NodeJS -d-> PostgreSQL1
+NodeJS -l-> Grafana
+Grafana -d-> PostgreSQL1
+MongoDB1 -l-> PostgreSQL1
+Operator1 -d-> Webserver: https, JWT auth
+Operator2 -d-> Webserver: https, JWT auth
+Calc -u-> MongoDB1
+CSProc -u->MongoDB1
+CustomCSProc -u->MongoDB1
+MongoDB1 -r-> ServerProtocol1
+ServerProtocol1 -r-> SCADA1
+IT1 -d-> MongoDB1
+IT1 -d-> PostgreSQL1
+IT1 -u-> ITServer1
+IT1 -u-> ITServer2
+@enduml
