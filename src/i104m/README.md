@@ -40,7 +40,7 @@ One connection must be created for each instance in "protocolConnections":
         "enabled": true,                        // enable the connection
         "commandsEnabled": true,                // enable commands for the connection (if false, no commands will be forwarded)
         "ipAddressLocalBind": "0.0.0.0:8099",   // bind address and port to listen for UPD messages
-        "ipAddresses": ["127.0.0.1:8098"]       // only accept messages from addresses here, deliver commands to IP:port
+        "ipAddresses": ["127.0.0.1:8098"]       // only accept messages from addresses here, deliver commands only to the first two to IP:port of this list
         })
 
 
