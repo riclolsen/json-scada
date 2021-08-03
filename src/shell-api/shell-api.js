@@ -26,7 +26,7 @@ const CHECK_PERIOD = 1000
 
 const APP_NAME = 'SHELL-API'
 const APP_MSG = '{json:scada} - Shell API'
-const VERSION = '0.1.1'
+const VERSION = '0.1.2'
 var jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -34,6 +34,7 @@ const MongoClient = require('mongodb').MongoClient
 const { setInterval } = require('timers')
 const express = require('express')
 const app = express()
+const RealtimeDataCollectionName = 'realtimeData'
 const beepPointKey = -1
 const allowSilenceBeep = true
 let beepPresent = false
@@ -62,9 +63,6 @@ if (!fs.existsSync(jsConfigFile)) {
   console.log('Error: config file not found!')
   process.exit()
 }
-
-const RealtimeDataCollectionName = 'realtimeData'
-const beepPointKey = -1
 
 let rawFileContents = fs.readFileSync(jsConfigFile)
 let jsConfig = JSON.parse(rawFileContents)
