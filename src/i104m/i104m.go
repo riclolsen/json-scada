@@ -761,7 +761,8 @@ func main() {
 	var waitGroup sync.WaitGroup
 	if protocolConn.CommandsEnabled == true {
 		waitGroup.Add(1)
-		routineCtx, _ := context.WithCancel(context.Background())
+		routineCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		go iterateChangeStream(routineCtx, &waitGroup, csCommands, &protocolConn, ServerConn, collectionCommands)
 	}
 
