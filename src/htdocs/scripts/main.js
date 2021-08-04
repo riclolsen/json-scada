@@ -57,7 +57,13 @@ var keysIdsMap = []
 var msgSage = {}
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('DOMContentLoaded')
+  // console.log('DOMContentLoaded')
+
+  // hide sage shortcut panels
+  if (document.getElementById('bottom'))
+    document.getElementById('bottom').style.display = 'none'
+  if (document.getElementById('left'))
+    document.getElementById('left').style.display = 'none'
 
   // socket_di = null
   var nodeList = document.querySelectorAll("[id^='ID']")
