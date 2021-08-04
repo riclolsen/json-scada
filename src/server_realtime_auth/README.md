@@ -292,7 +292,7 @@ When enabled, the user roles (Role Based Access Control - RBAC) and rights are c
 
 To each user can be attributed a set of roles. Each right in each user role are combined to be the less restrictive (except for arrays). The combination is a logical OR for booleans, maximum value for numbers and union for arrays. When arrays are combined, an empty array can be combined with a non-empty list leaving to a more restrictive result.
 
-## Environment Variables
+### Environment Variables
 
 * _**JS_IP_BIND**_ [String] - IP address for server to listen. Use "0.0.0.0" to listen on all interfaces. **Default="localhost" (local host only)**.
 * _**JS_HTTP_PORT**_ [Integer] - HTTP Port for server listening. **Default=8080**.
@@ -305,7 +305,18 @@ For connection to the PostgreSQL historian, it is possible to use the standard _
 
 * https://www.postgresql.org/docs/current/libpq-envars.html
 
-## Command line arguments
+### Command line arguments
 
 * _**1st Argument**_ [String] - Control of user Authentication/Authorization. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
 
+## Tool to create users and change password via command line
+
+Use this tool to create new users or change passwords using the command line.
+
+Usage:
+
+    node updateUser.js username password [email] [config file name]
+
+Username and password arguments are mandatory, email and config file are optional.
+
+If the user is not found in the database it will be created a new user. This new user will not be able to login until an administrator assign him some role.
