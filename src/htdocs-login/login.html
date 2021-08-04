@@ -10,7 +10,7 @@
         position: relative;
         float: left;
         flex-wrap: wrap;
-        background-color: rgb(141, 160, 182);
+        background-color: rgb(145, 156, 168);
         color: white;
         vertical-align: middle;
         margin: 5px;
@@ -278,10 +278,13 @@
 
     <script>
       ;(function () {
+        setTimeout( function () {
+          document.getElementById('username').focus()
+        }, 250)
+
         LoadFavicon('images/favicon.ico')
         testLogin()
         setInterval(testLogin, 5000)
-
         document
           .getElementById('password')
           .addEventListener('keyup', function (event) {
