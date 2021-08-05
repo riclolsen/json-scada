@@ -61,7 +61,7 @@ exports.createTag = async (req, res) => {
     .select( "_id" )
     .sort({ _id: -1 })
     .limit(1)
-  if (resBiggest) 
+  if (resBiggest && resBiggest.length > 0) 
   if ("_id" in resBiggest[0])
     biggestTagId = parseFloat(resBiggest[0]._id)
   console.log(biggestTagId)
