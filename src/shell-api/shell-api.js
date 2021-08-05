@@ -79,7 +79,7 @@ if (
     useNewUrlParser: true,
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION,
-    poolSize: 20,
+    maxPoolSize: 20,
     readPreference: MongoClient.READ_PRIMARY
   }
 

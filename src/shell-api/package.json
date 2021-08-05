@@ -11,6 +11,6 @@
   "dependencies": {
     "express": "^4.17.1",
     "fs": "0.0.1-security",
-    "mongodb": "^3.6.5"
+    "mongodb": "^4.1.0"
   }
 }
