@@ -20,8 +20,6 @@
  */
 
 const MongoClient = require('mongodb').MongoClient
-const config = require('./app/config/auth.config')
-const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 
@@ -58,6 +56,8 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
   ).then(async client => {
     // connected
 
+    console.log('Connected to MongoDB.')
+
     const db = client.db(jsConfig.mongoDatabaseName)
     let usersCollection = db.collection('users')
 
@@ -87,10 +87,10 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
         email: email,
         roles: []
       })
-      if (res.insertedCount === 1) {
+      if ('insertedId' in res) {
         console.log('User created successfully.')
         console.log(
-          'An administrator must attribute a role to the new user so that he can possibly login!'
+          'An administrator must assign a role to the new user so that he can possibly login!'
         )
       } else console.log('Error creating user!')
     }

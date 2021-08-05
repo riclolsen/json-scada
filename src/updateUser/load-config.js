@@ -79,7 +79,7 @@ function getMongoConnectionOptions (configObj, MongoClient) {
       AppDefs.VERSION +
       ' Instance:' +
       configObj.Instance,
-    poolSize: 20,
+    maxPoolSize: 20,
     readPreference: MongoClient.READ_PRIMARY
   }
 
