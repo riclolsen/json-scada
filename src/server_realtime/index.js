@@ -1595,7 +1595,7 @@ let pool = null
             useNewUrlParser: true,
             useUnifiedTopology: true,
             appname: APP_NAME,
-            poolSize: 20,
+            maxPoolSize: 20,
             readPreference: MongoClient.READ_PRIMARY
           }
 
