@@ -29,6 +29,10 @@ const Tag = mongoose.model(
     protocolSourceCommandDuration: {type: String, default: ""},
     protocolSourceCommandUseSBO: {type: Boolean, default: false},
     isEvent: {type: Boolean, default: false},
+    invalid: {type: Boolean, default: true},
+    value: {type: Double, default: 0.0},
+    valueString: {type: String, default: ""},
+    valueJson: {type: Object, default: null}
   }),
   "realtimeData"
 );
