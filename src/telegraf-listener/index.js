@@ -398,7 +398,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
     useNewUrlParser: true,
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
-    poolSize: 20,
+    maxPoolSize: 20,
     readPreference: MongoClient.READ_PRIMARY
   }
 

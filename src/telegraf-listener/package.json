@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^3.6.4",
+    "mongodb": "^4.1.0",
     "queue-fifo": "^0.2.6",
     "timers": "^0.1.1"
   }
