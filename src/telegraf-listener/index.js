@@ -2,7 +2,7 @@
 
 /*
  * Telegraf listener driver.
- * 
+ *
  * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
@@ -21,7 +21,7 @@
 
 const APP_NAME = 'TELEGRAF-LISTENER'
 const APP_MSG = '{json:scada} - Telegraf UDP JSON Client Driver'
-const VERSION = '0.1.1'
+const VERSION = '0.1.2'
 let ProcessActive = false // for redundancy control
 let jsConfigFile = '../../conf/json-scada.json'
 let UdpBindPort = process.env.JS_TELEGRAF_LISTENER_BIND_PORT || 51920
@@ -38,7 +38,8 @@ const MongoClient = require('mongodb').MongoClient
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
-const server = dgram.createSocket('udp4')
+const serverUdpSocket = dgram.createSocket({ type: 'udp4'})
+let bindCount = 0
 const grpSep = '~'
 
 let ListCreatedTags = []
@@ -85,23 +86,28 @@ const addGrpIfNotEmpty = function (obj) {
   return ''
 }
 
-server.on('error', err => {
+serverUdpSocket.on('error', err => {
   console.log(`server error:\n${err.stack}`)
-  server.close()
+  serverUdpSocket.close()
   process.exit(1)
 })
 
-server.on('listening', () => {
-  const address = server.address()
+serverUdpSocket.on('listening', () => {
+  const address = serverUdpSocket.address()
   if (LogLevel > LogLevelMin)
     console.log(`server listening ${address.address}:${address.port}`)
 })
 
-server.on('message', (msg, rinfo) => {
-
-  if (RestrictIPOrigins.length>0 && !RestrictIPOrigins.includes(rinfo.address)){
+serverUdpSocket.on('message', (msg, rinfo) => {
+  if (
+    RestrictIPOrigins.length > 0 &&
+    !RestrictIPOrigins.includes(rinfo.address)
+  ) {
     if (LogLevel >= LogLevelDetailed)
-      console.log("Message - Source of message not allowed, discarding message from " + rinfo.address)
+      console.log(
+        'Message - Source of message not allowed, discarding message from ' +
+          rinfo.address
+      )
     return
   }
 
@@ -115,8 +121,7 @@ server.on('message', (msg, rinfo) => {
           JSON.stringify(data) +
           ` - from ${rinfo.address}:${rinfo.port}`
       )
-    if (ProcessActive)
-      processMessageJSON(data)
+    if (ProcessActive) processMessageJSON(data)
   } catch (e) {
     console.log(e)
   }
@@ -185,7 +190,7 @@ const processMessageJSON = function (data) {
         'group3'
       ].includes(key)
     )
-      if (val !== '' && grouping.indexOf(val)===-1) {
+      if (val !== '' && grouping.indexOf(val) === -1) {
         grouping += `${val}${grpSep}`
         // ungroupedDescription += `${value}${grpSep}`
       }
@@ -252,7 +257,11 @@ const rtData = function (measurement) {
     eventTextTrue: '',
     origin: 'supervised',
     tag: measurement.tag,
-    type: (typeof measurement.value === 'number' && !isNaN(parseFloat(measurement.value)))? 'analog':'string',
+    type:
+      typeof measurement.value === 'number' &&
+      !isNaN(parseFloat(measurement.value))
+        ? 'analog'
+        : 'string',
     value: new mongo.Double(measurement.value),
     valueString: measurement.value.toString(),
     alarmDisabled: false,
@@ -310,7 +319,6 @@ if (
   process.exit()
 }
 
-if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
 ;(async () => {
   let collection = null
 
@@ -319,7 +327,6 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
     if (clientMongo && collection)
       while (!ValuesQueue.isEmpty()) {
         let data = ValuesQueue.peek()
-        // const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
         // if not sure tag is created, try to find, if not found create it
         if (AutoCreateTags)
@@ -372,7 +379,7 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
           timeTagAtSource: data.timeTagAtSource,
           timeTagAtSourceOk: false, // signal that it is not really from field time
           timeTag: new Date(),
-          originator: APP_NAME + "|" + ConnectionNumber,
+          originator: APP_NAME + '|' + ConnectionNumber,
           notTopicalAtSource: false,
           invalidAtSource: data.invalidAtSource,
           overflowAtSource: false,
@@ -423,219 +430,275 @@ if (LogLevel > LogLevelMin) console.log('Connecting to MongoDB server...')
   let clientMongo = null
   let redundancyIntervalHandle = null
   while (true) {
-    if (clientMongo === null)
-      await MongoClient.connect(
-        jsConfig.mongoConnectionString,
-        connOptions
-      ).then(async client => {
-        clientMongo = client
-
+    try {
+      if (clientMongo === null) {
         if (LogLevel > LogLevelMin)
-          console.log('Connected correctly to MongoDB server')
+          console.log('Connecting to MongoDB server...')
+        await MongoClient.connect(
+          jsConfig.mongoConnectionString,
+          connOptions
+        ).then(async client => {
+          clientMongo = client
+          if (LogLevel > LogLevelMin)
+            console.log('Connected correctly to MongoDB server')
 
-        // specify db and collections
-        const db = client.db(jsConfig.mongoDatabaseName)
-        collection = db.collection(RealtimeDataCollectionName)
+          // specify db and collections
+          const db = client.db(jsConfig.mongoDatabaseName)
+          collection = db.collection(RealtimeDataCollectionName)
 
-        // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
-        db.collection(ProtocolConnectionsCollectionName)
-          .find({
-            protocolDriver: APP_NAME,
-            protocolDriverInstanceNumber: Instance
-          })
-          .toArray(async function (err, results) {
-            if (err) console.log(err)
-            else if (results) {
-              if (results.length == 0) {
-                console.log('No protocol connection found!')
-                process.exit(1)
-              } else {
-                if (!('protocolConnectionNumber' in results[0])) {
-                  console.log('No protocol connection found on record!')
-                  process.exit(2)
-                }
-                if (results[0].enabled === false) {
-                  console.log('Connection disabled, exiting! (connection:' + results[0].protocolConnectionNumber + ")")
-                  process.exit(3)
-                }
-                if ('autoCreateTags' in results[0]) {
-                  AutoCreateTags = results[0].autoCreateTags ? true : false
-                }
-                if ('ipAddressLocalBind' in results[0]) {
-                  if (results[0].ipAddressLocalBind.trim() !== '') {
-                    let aux = results[0].ipAddressLocalBind.split(':')
-                    UdpBindAddress = aux[0]
-                    if (aux.length > 1 && !isNaN(parseInt(aux[1])))
-                      UdpBindPort = parseInt(aux[1])
-                  }
-                }
-                if ('ipAddresses' in results[0]) {
-                  RestrictIPOrigins = results[0].ipAddresses
-                }
-                console.log('Binding to ' + UdpBindAddress + ':' + UdpBindPort)
-                server.bind(UdpBindPort, UdpBindAddress)
-
-                ConnectionNumber = results[0]?.protocolConnectionNumber
-                console.log('Connection - ' + ConnectionNumber)
-
-                // find biggest point key (_id) on range and ajdust automatic key
-                AutoKeyId = ConnectionNumber * AutoKeyMultiplier
-                let resLastKey = await collection
-                  .find({
-                    _id: {
-                      $gt: AutoKeyId,
-                      $lt: (ConnectionNumber + 1) * AutoKeyMultiplier
-                    }
-                  })
-                  .sort({ _id: -1 })
-                  .limit(1)
-                  .toArray()
-                if (resLastKey.length > 0 && '_id' in resLastKey[0]) {
-                  if (parseInt(resLastKey[0]._id) >= AutoKeyId)
-                    AutoKeyId = parseInt(resLastKey[0]._id)
-                }
-              }
-            }
-          })
-
-        let lastActiveNodeKeepAliveTimeTag = null
-        let countKeepAliveNotUpdated = 0
-        let countKeepAliveUpdatesLimit = 4
-        async function ProcessRedundancy () {
-          if (!clientMongo) return
-
-          if (LogLevel >= LogLevelNormal)
-            console.log('Redundancy - Process Active: ' + ProcessActive)
-
-          // look for process instance entry, if not found create a new entry
-          db.collection(ProtocolDriverInstancesCollectionName)
+          // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
+          db.collection(ProtocolConnectionsCollectionName)
             .find({
               protocolDriver: APP_NAME,
               protocolDriverInstanceNumber: Instance
             })
-            .toArray(function (err, results) {
+            .toArray(async function (err, results) {
               if (err) console.log(err)
               else if (results) {
-                if (results.length === 0) {
-                  // not found, then create
-                  ProcessActive = true
-                  console.log(
-                    'Redundancy - Instance config not found, creating one...'
-                  )
-                  db.collection(
-                    ProtocolDriverInstancesCollectionName
-                  ).insertOne({
-                    protocolDriver: APP_NAME,
-                    protocolDriverInstanceNumber: new mongo.Double(1),
-                    enabled: true,
-                    logLevel: new mongo.Double(1),
-                    nodeNames: [],
-                    activeNodeName: jsConfig.nodeName,
-                    activeNodeKeepAliveTimeTag: new Date()
-                  })
+                if (results.length == 0) {
+                  console.log('No protocol connection found!')
+                  process.exit(1)
                 } else {
-                  // check for disabled or node not allowed
-                  let instance = results[0]
-
-                  let instKeepAliveTimeTag = null
-
-                  if ('activeNodeKeepAliveTimeTag' in instance)
-                    instKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
-
-                  if (instance?.enabled === false) {
-                    console.log('Redundancy - Instance disabled, exiting...')
-                    process.exit()
+                  if (!('protocolConnectionNumber' in results[0])) {
+                    console.log('No protocol connection found on record!')
+                    process.exit(2)
                   }
-                  if (
-                    instance?.nodeNames !== null &&
-                    instance.nodeNames.length > 0
-                  ) {
-                    if (!instance.nodeNames.includes(jsConfig.nodeName)) {
-                      console.log(
-                        'Redundancy - Node name not allowed, exiting...'
-                      )
-                      process.exit()
-                    }
-                  }
-                  if (instance?.activeNodeName === jsConfig.nodeName) {
-                    if (!ProcessActive)
-                      console.log('Redundancy - Node activated!')
-                    countKeepAliveNotUpdated = 0
-                    ProcessActive = true
-                  } else {
-                    // other node active
-                    if (ProcessActive) {
-                      console.log('Redundancy - Node deactivated!')
-                      countKeepAliveNotUpdated = 0
-                    }
-                    ProcessActive = false
-                    if (
-                      lastActiveNodeKeepAliveTimeTag === instKeepAliveTimeTag
-                    ) {
-                      countKeepAliveNotUpdated++
-                      console.log(
-                        'Redundancy - Keep-alive from active node not updated. ' +
-                          countKeepAliveNotUpdated
-                      )
-                    } else {
-                      countKeepAliveNotUpdated = 0
-                      console.log(
-                        'Redundancy - Keep-alive updated by active node. Staying inactive.'
-                      )
-                    }
-                    lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
-                    if (countKeepAliveNotUpdated > countKeepAliveUpdatesLimit) {
-                      // cnt exceeded, be active
-                      countKeepAliveNotUpdated = 0
-                      console.log('Redundancy - Node activated!')
-                      ProcessActive = true
-                    }
-                  }
-
-                  if (ProcessActive) {
-                    // process active, then update keep alive
-                    db.collection(
-                      ProtocolDriverInstancesCollectionName
-                    ).updateOne(
-                      {
-                        protocolDriver: APP_NAME,
-                        protocolDriverInstanceNumber: new mongo.Double(Instance)
-                      },
-                      {
-                        $set: {
-                          activeNodeName: jsConfig.nodeName,
-                          activeNodeKeepAliveTimeTag: new Date(),
-                          softwareVersion: VERSION,
-                          stats: {}
-                        }
-                      }
+                  if (results[0].enabled === false) {
+                    console.log(
+                      'Connection disabled, exiting! (connection:' +
+                        results[0].protocolConnectionNumber +
+                        ')'
                     )
+                    process.exit(3)
+                  }
+                  if ('autoCreateTags' in results[0]) {
+                    AutoCreateTags = results[0].autoCreateTags ? true : false
+                  }
+                  if ('ipAddressLocalBind' in results[0]) {
+                    if (results[0].ipAddressLocalBind.trim() !== '') {
+                      let aux = results[0].ipAddressLocalBind.split(':')
+                      UdpBindAddress = aux[0]
+                      if (aux.length > 1 && !isNaN(parseInt(aux[1])))
+                        UdpBindPort = parseInt(aux[1])
+                    }
+                  }
+                  if ('ipAddresses' in results[0]) {
+                    RestrictIPOrigins = results[0].ipAddresses
+                  }
+                  
+                  if (bindCount === 0) {
+                    console.log(
+                      'Binding to ' + UdpBindAddress + ':' + UdpBindPort
+                    )
+                    serverUdpSocket.bind(UdpBindPort, UdpBindAddress)
+                    bindCount++
+                  }
+
+                  ConnectionNumber = results[0]?.protocolConnectionNumber
+                  console.log('Connection - ' + ConnectionNumber)
+
+                  // find biggest point key (_id) on range and ajdust automatic key
+                  AutoKeyId = ConnectionNumber * AutoKeyMultiplier
+                  let resLastKey = await collection
+                    .find({
+                      _id: {
+                        $gt: AutoKeyId,
+                        $lt: (ConnectionNumber + 1) * AutoKeyMultiplier
+                      }
+                    })
+                    .sort({ _id: -1 })
+                    .limit(1)
+                    .toArray()
+                  if (resLastKey.length > 0 && '_id' in resLastKey[0]) {
+                    if (parseInt(resLastKey[0]._id) >= AutoKeyId)
+                      AutoKeyId = parseInt(resLastKey[0]._id)
                   }
                 }
               }
             })
-        }
 
-        // check and update redundancy control
-        ProcessRedundancy()
-        clearInterval(redundancyIntervalHandle)
-        redundancyIntervalHandle = setInterval(ProcessRedundancy, 5000)
-      })
+          let lastActiveNodeKeepAliveTimeTag = null
+          let countKeepAliveNotUpdated = 0
+          let countKeepAliveUpdatesLimit = 4
+          async function ProcessRedundancy () {
+            if (LogLevel >= LogLevelNormal)
+              console.log('Redundancy - Process Active: ' + ProcessActive)
 
-    // wait 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+            if (!clientMongo || !HintMongoIsConnected) {
+              ProcessActive = false
+              return
+            }
 
-    // detect connection problems, if error will null the client to later reconnect
-    if (clientMongo === undefined) {
-      console.log('Disconnected Mongodb!')
-      clientMongo = null
-    }
-    if (clientMongo)
-      if (!clientMongo.isConnected()) {
-        // not anymore connected, will retry
+            // look for process instance entry, if not found create a new entry
+            db.collection(ProtocolDriverInstancesCollectionName)
+              .find({
+                protocolDriver: APP_NAME,
+                protocolDriverInstanceNumber: Instance
+              })
+              .toArray(function (err, results) {
+                if (err) console.log(err)
+                else if (results) {
+                  if (results.length === 0) {
+                    // not found, then create
+                    ProcessActive = true
+                    console.log(
+                      'Redundancy - Instance config not found, creating one...'
+                    )
+                    db.collection(
+                      ProtocolDriverInstancesCollectionName
+                    ).insertOne({
+                      protocolDriver: APP_NAME,
+                      protocolDriverInstanceNumber: new mongo.Double(1),
+                      enabled: true,
+                      logLevel: new mongo.Double(1),
+                      nodeNames: [],
+                      activeNodeName: jsConfig.nodeName,
+                      activeNodeKeepAliveTimeTag: new Date()
+                    })
+                  } else {
+                    // check for disabled or node not allowed
+                    let instance = results[0]
+
+                    let instKeepAliveTimeTag = null
+
+                    if ('activeNodeKeepAliveTimeTag' in instance)
+                      instKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
+
+                    if (instance?.enabled === false) {
+                      console.log('Redundancy - Instance disabled, exiting...')
+                      process.exit()
+                    }
+                    if (
+                      instance?.nodeNames !== null &&
+                      instance.nodeNames.length > 0
+                    ) {
+                      if (!instance.nodeNames.includes(jsConfig.nodeName)) {
+                        console.log(
+                          'Redundancy - Node name not allowed, exiting...'
+                        )
+                        process.exit()
+                      }
+                    }
+                    if (instance?.activeNodeName === jsConfig.nodeName) {
+                      if (!ProcessActive)
+                        console.log('Redundancy - Node activated!')
+                      countKeepAliveNotUpdated = 0
+                      ProcessActive = true
+                    } else {
+                      // other node active
+                      if (ProcessActive) {
+                        console.log('Redundancy - Node deactivated!')
+                        countKeepAliveNotUpdated = 0
+                      }
+                      ProcessActive = false
+                      if (
+                        lastActiveNodeKeepAliveTimeTag === instKeepAliveTimeTag
+                      ) {
+                        countKeepAliveNotUpdated++
+                        console.log(
+                          'Redundancy - Keep-alive from active node not updated. ' +
+                            countKeepAliveNotUpdated
+                        )
+                      } else {
+                        countKeepAliveNotUpdated = 0
+                        console.log(
+                          'Redundancy - Keep-alive updated by active node. Staying inactive.'
+                        )
+                      }
+                      lastActiveNodeKeepAliveTimeTag = instKeepAliveTimeTag
+                      if (
+                        countKeepAliveNotUpdated > countKeepAliveUpdatesLimit
+                      ) {
+                        // cnt exceeded, be active
+                        countKeepAliveNotUpdated = 0
+                        console.log('Redundancy - Node activated!')
+                        ProcessActive = true
+                      }
+                    }
+
+                    if (ProcessActive) {
+                      // process active, then update keep alive
+                      db.collection(
+                        ProtocolDriverInstancesCollectionName
+                      ).updateOne(
+                        {
+                          protocolDriver: APP_NAME,
+                          protocolDriverInstanceNumber: new mongo.Double(
+                            Instance
+                          )
+                        },
+                        {
+                          $set: {
+                            activeNodeName: jsConfig.nodeName,
+                            activeNodeKeepAliveTimeTag: new Date(),
+                            softwareVersion: VERSION,
+                            stats: {}
+                          }
+                        }
+                      )
+                    }
+                  }
+                }
+              })
+          }
+
+          // check and update redundancy control
+          ProcessRedundancy()
+          clearInterval(redundancyIntervalHandle)
+          redundancyIntervalHandle = setInterval(ProcessRedundancy, 5000)
+        })
+      }
+
+      // wait 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      // detect connection problems, if error will null the client to later reconnect
+      if (clientMongo === undefined) {
         console.log('Disconnected Mongodb!')
-        clientMongo.close()
         clientMongo = null
       }
+      if (clientMongo) {
+        if (!(await checkConnectedMongo(clientMongo))) {
+          // not anymore connected, will retry
+          ProcessActive = false
+          console.log('Disconnected Mongodb!')
+          if (clientMongo) clientMongo.close()
+          clientMongo = null
+        }
+      }
+    } catch (e) {
+      console.log('Error connecting to mongodb!')
+    }
   }
 })()
+
+// test mongoDB connectivity
+let CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo (client) {
+  if (!client) {
+    return false
+  }
+
+  let tr = setTimeout(() => {
+    console.log('Mongo ping timeout error!')
+    ProcessActive = false
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    console.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
+}
