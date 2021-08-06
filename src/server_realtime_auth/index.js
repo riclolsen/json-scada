@@ -79,7 +79,7 @@ if (AUTHENTICATION) {
       useFindAndModify: false
     })
     .then(() => {
-      console.log('Successfully connect to MongoDB (auth).')
+      console.log('Successfully connect to MongoDB (via mongoose).')
       // initial();
     })
     .catch(err => {
@@ -263,7 +263,7 @@ let pool = null
       }
     }
 
-    if (!clientMongo || !clientMongo.isConnected()) {
+    if (!clientMongo || !HintMongoIsConnected) {
       // fail if not connected to database server
       OpcResp.ServiceId = opc.ServiceCode.ServiceFault
       OpcResp.Body.ResponseHeader.ServiceResult =
@@ -1962,7 +1962,7 @@ let pool = null
   for (;;) {
     try {
       if (clientMongo) {
-        if (!clientMongo.isConnected()) {
+        if (!HintMongoIsConnected) {
           // not anymore connected, will retry
           clientMongo.close()
           db = null
@@ -1982,7 +1982,7 @@ let pool = null
           useNewUrlParser: true,
           useUnifiedTopology: true,
           appname: APP_NAME,
-          poolSize: 20,
+          maxPoolSize: 20,
           readPreference: MongoClient.READ_PRIMARY
         }
 
@@ -2019,6 +2019,7 @@ let pool = null
               if (err.name == 'MongoParseError') process.exit(-1)
               return
             }
+            console.log('Connected to MongoDB')
             db = client.db(jsConfig.mongoDatabaseName)
             clientMongo = client
           }
@@ -2033,5 +2034,40 @@ let pool = null
 
     // wait 5 seconds
     await new Promise(resolve => setTimeout(resolve, 5000))
+
+    if (!(await checkConnectedMongo(clientMongo))) {
+      clientMongo = null
+    }
+
   }
 })()
+
+// test mongoDB connectivity
+let CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo (client) {
+  if (!client) {
+    return false
+  }
+
+  let tr = setTimeout(() => {
+    console.log('Mongo ping timeout error!')
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    console.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
+}

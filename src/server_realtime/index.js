@@ -1629,6 +1629,7 @@ let pool = null
                 if (err.name == 'MongoParseError') process.exit(-1)
                 return
               }
+              console.log('Connected to MongoDB')
               db = client.db(jsConfig.mongoDatabaseName)
               clientMongo = client
             }
