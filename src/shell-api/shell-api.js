@@ -19,14 +19,14 @@
  */
 
 const IP_BIND = process.env.JS_SHELLAPI_IP_BIND || 'localhost'
-const HTTP_PORT = process.env.JS_SHELLAPI_HTTP_PORT || 51909
+const HTTP_PORT = process.env.JS_SHELLAPI_HTTP_PORT || 51910
 const API_URL = '/htdocs/shellapi.rjs'
 const SCREEN_LIST_URL = '/svg/screen_list.js'
 const CHECK_PERIOD = 1000
 
 const APP_NAME = 'SHELL-API'
 const APP_MSG = '{json:scada} - Shell API'
-const VERSION = '0.1.2'
+const VERSION = '0.1.3'
 var jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
 const mongo = require('mongodb')
@@ -116,22 +116,24 @@ if (
           const db = client.db(jsConfig.mongoDatabaseName)
           collection = db.collection(RealtimeDataCollectionName)
 
-          // Here we serve beep status and 
+          // Here we serve beep status and
           app.get(API_URL, function (req, res) {
             // request to silence alarm beep?
             if (allowSilenceBeep && 'Z' in req.query && req.query.Z == 1) {
-              console.log("Silence beep request.")
-              beepValue = 0
-              collection.updateOne(
-                { _id: beepPointKey },
-                {
-                  $set: {
-                    value: new mongo.Double(0),
-                    valueString: '0',
-                    beepType: new mongo.Double(0)
+              if (HintMongoIsConnected) {
+                console.log('Silence beep request.')
+                beepValue = 0
+                collection.updateOne(
+                  { _id: beepPointKey },
+                  {
+                    $set: {
+                      value: new mongo.Double(0),
+                      valueString: '0',
+                      beepType: new mongo.Double(0)
+                    }
                   }
-                }
-              )
+                )
+              }
             }
 
             res.setHeader('Access-Control-Allow-Origin', '*')
@@ -142,6 +144,7 @@ if (
           clearInterval(checkBeepIntervalHandle)
           let enterQuery = false
           checkBeepIntervalHandle = setInterval(async function () {
+            if (!HintMongoIsConnected) return
             if (enterQuery) return
             if (clientMongo) {
               enterQuery = true
@@ -191,7 +194,7 @@ if (
       clientMongo = null
     }
     if (clientMongo)
-      if (!clientMongo.isConnected()) {
+      if (!(await checkConnectedMongo(clientMongo))) {
         // not anymore connected, will retry
         beepPresent = false
         console.log('Disconnected Mongodb!')
@@ -200,3 +203,34 @@ if (
       }
   }
 })()
+
+// test mongoDB connectivity
+let CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo (client) {
+  if (!client) {
+    return false
+  }
+
+  let tr = setTimeout(() => {
+    console.log('Mongo ping timeout error!')
+    ProcessActive = false
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    console.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
+}
