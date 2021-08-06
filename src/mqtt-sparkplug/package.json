@@ -11,7 +11,7 @@
   "dependencies": {
     "fs": "*",
     "gridfs-stream": "^1.1.1",
-    "jsonpath-plus": "^5.0.7",
+    "jsonpath-plus": "^6.0.1",
     "mongodb": "^3.6.5",
     "queue-fifo": "^0.2.6",
     "relaxed-json": "^1.0.3",
