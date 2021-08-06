@@ -198,7 +198,8 @@ if (
         // not anymore connected, will retry
         beepPresent = false
         console.log('Disconnected Mongodb!')
-        clientMongo.close()
+        if (clientMongo)
+          clientMongo.close()
         clientMongo = null
       }
   }
@@ -214,7 +215,6 @@ async function checkConnectedMongo (client) {
 
   let tr = setTimeout(() => {
     console.log('Mongo ping timeout error!')
-    ProcessActive = false
     HintMongoIsConnected = false
   }, CheckMongoConnectionTimeout)
 
