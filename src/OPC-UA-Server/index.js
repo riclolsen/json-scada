@@ -158,6 +158,7 @@ const Redundancy = require('./redundancy')
         getMongoConnectionOptions(jsConfig, MongoClient)
       ).then(async client => {
         // connected
+        Log.log('MongoDB - Connected correctly to MongoDB server', Log.levelMin)
         clientMongo = client
         // specify db and collections
         const db = client.db(jsConfig.mongoDatabaseName)
@@ -283,28 +284,32 @@ const Redundancy = require('./redundancy')
         //
         //        }, 5000)
 
-        const changeStream = rtCollection.watch(csPipeline, {
+        let changeStream = rtCollection.watch(csPipeline, {
           fullDocument: 'updateLookup'
         })
 
         try {
           changeStream.on('error', change => {
+            changeStream.on('change', ()=>{})
             if (clientMongo) clientMongo.close()
             clientMongo = null
             Log.log('MongoDB - Error on ChangeStream!')
           })
           changeStream.on('close', change => {
+            changeStream.on('change', ()=>{})
             if (clientMongo) clientMongo.close()
             clientMongo = null
             Log.log('MongoDB - Closed ChangeStream!')
           })
           changeStream.on('end', change => {
+            changeStream.on('change', ()=>{})
             if (clientMongo) clientMongo.close()
             clientMongo = null
             Log.log('MongoDB - Ended ChangeStream!')
           })
 
-          // start listen to changes
+          // start to listen for changes
+          // a mongo disconnection produces a fatal error here!
           changeStream.on('change', change => {
             let m = metrics[change.fullDocument?.tag]
             if (m !== undefined)
@@ -352,11 +357,14 @@ const Redundancy = require('./redundancy')
           Log.log('MongoDB - CS Error: ' + e, Log.levelMin)
         }
 
-        Log.log('MongoDB - Connected correctly to MongoDB server', Log.levelMin)
       })
 
     // wait 5 seconds
     await new Promise(resolve => setTimeout(resolve, 5000))
+
+    if (!(await checkConnectedMongo(clientMongo))) {
+      clientMongo = null
+    }
 
     // detect connection problems, if error will null the client to later reconnect
     if (!clientMongo) {
@@ -365,16 +373,6 @@ const Redundancy = require('./redundancy')
       rtCollection = null
       cmdCollection = null
       connsCollection = null
-    } else {
-      if (!clientMongo.isConnected()) {
-        // not anymore connected, will retry
-        Log.log('MongoDB - Disconnected Mongodb!')
-        clientMongo.close()
-        clientMongo = null
-        rtCollection = null
-        cmdCollection = null
-        connsCollection = null
-      }
     }
   }
 })()
@@ -439,4 +437,34 @@ async function getValue (tag, rtCollection) {
 
   console.log(results[0].value)
   return parseFloat(results[0].value)
+}
+
+// test mongoDB connectivity
+let CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo (client) {
+  if (!client) {
+    return false
+  }
+
+  let tr = setTimeout(() => {
+    console.log('Mongo ping timeout error!')
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    console.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
 }
