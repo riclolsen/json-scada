@@ -29,7 +29,7 @@ const API_URL = '/grafana_alert2event'
 
 const APP_NAME = 'GRAFANA_ALERT2EVENT'
 const APP_MSG = '{json:scada} - Grafana Alert To Event Listener'
-const VERSION = '0.1.0'
+const VERSION = '0.1.1'
 const RealtimeDataCollectionName = 'realtimeData'
 const SoeCollectionName = 'soeData'
 const NO_TAG_TAG_NAME = '_NO_TAG_'
@@ -109,9 +109,7 @@ app.post(API_URL, function (req, res) {
 
   let timeStamp = new Date()
   let tag =
-    req.body?.tags?.tag ||
-    req.body?.evalMatches[0]?.metric ||
-    NO_TAG_TAG_NAME
+    req.body?.tags?.tag || req.body?.evalMatches[0]?.metric || NO_TAG_TAG_NAME
   let priority = new mongo.Double(parseFloat(req.body?.tags?.priority || 3))
   let group1 = req.body?.tags?.group1 || 'Grafana'
   let pointKey = new mongo.Double(parseFloat(req.body?.tags?.pointKey || 0))
@@ -119,12 +117,11 @@ app.post(API_URL, function (req, res) {
   switch (req.body?.state) {
     case 'ok':
       eventText = OK_MSG
-      if ("okText" in req.body.tags)
-        eventText = req.body.tags.okText
+      if ('okText' in req.body.tags) eventText = req.body.tags.okText
       break
     case 'alerting':
       eventText = ALERTING_MSG
-      if ("alertingText" in req.body.tags)
+      if ('alertingText' in req.body.tags)
         eventText = req.body.tags.alertingText
       break
   }
@@ -178,7 +175,7 @@ if (
     useNewUrlParser: true,
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION,
-    poolSize: 20,
+    maxPoolSize: 20,
     readPreference: MongoClient.READ_PRIMARY
   }
 
@@ -223,9 +220,7 @@ if (
                   soeQueue.dequeue()
                   const coll_soe = db.collection(SoeCollectionName)
                   res = await coll_soe.insertOne(event)
-                  console.log(
-                    `${res.insertedCount} document(s) inserted`
-                  )
+                  console.log(`${res.insertedCount} document(s) inserted`)
 
                   const coll_rtData = db.collection(RealtimeDataCollectionName)
 
@@ -255,7 +250,8 @@ if (
                     let where = { tag: event.tag }
                     let upd = {
                       $set: {
-                        alerted: event.eventText === ALERTING_MSG ? true : false,
+                        alerted:
+                          event.eventText === ALERTING_MSG ? true : false,
                         alertState: event.alertState,
                         timeTagAlertState: event.timeTag
                       }
@@ -290,17 +286,50 @@ if (
     // wait 5 seconds
     await new Promise(resolve => setTimeout(resolve, 5000))
 
+    if (!(await checkConnectedMongo(clientMongo))) {
+      clientMongo = null
+    }
+
     // detect connection problems, if error will null the client to later reconnect
     if (clientMongo === undefined) {
       console.log('Disconnected Mongodb!')
       clientMongo = null
     }
-    if (clientMongo)
-      if (!clientMongo.isConnected()) {
-        // not anymore connected, will retry
-        console.log('Disconnected Mongodb!')
-        clientMongo.close()
-        clientMongo = null
-      }
+    if (!HintMongoIsConnected) {
+      // not anymore connected, will retry
+      console.log('Disconnected Mongodb!')
+      if (clientMongo) clientMongo.close()
+      clientMongo = null
+    }
   }
 })()
+
+// test mongoDB connectivity
+let CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo (client) {
+  if (!client) {
+    return false
+  }
+
+  let tr = setTimeout(() => {
+    console.log('Mongo ping timeout error!')
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    console.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
+}
