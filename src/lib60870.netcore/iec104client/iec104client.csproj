@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Driver" Version="2.13.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.13.1" />
   </ItemGroup>
 
 
