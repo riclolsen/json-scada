@@ -693,6 +693,7 @@ else
           ST_OFF = STOFS[WebSAGE.g_nponto_sup];
           UNIDADE = prop.unit;
           DESC = BAYS[WebSAGE.g_nponto_sup] + "-" + DCRS[WebSAGE.g_nponto_sup];
+          MODULO = BAYS[WebSAGE.g_nponto_sup];
           LIMS = LIMSUPS[WebSAGE.g_nponto_sup];
           LIMI = LIMINFS[WebSAGE.g_nponto_sup];
           HISTER = prop.hysteresis;

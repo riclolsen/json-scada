@@ -233,6 +233,7 @@ return document.getElementById('FiltroSE').value === WebSAGE.g_filt_all_alarms;
           ST_OFF = STOFS[WebSAGE.g_nponto_sup];
           UNIDADE = prop.unit;
           DESC = BAYS[WebSAGE.g_nponto_sup] + "-" + DCRS[WebSAGE.g_nponto_sup];
+          MODULO = BAYS[WebSAGE.g_nponto_sup];
           LIMS = LIMSUPS[WebSAGE.g_nponto_sup];
           LIMI = LIMINFS[WebSAGE.g_nponto_sup];
           HISTER = prop.hysteresis;
@@ -1162,7 +1163,7 @@ for (var se in Lista)
 
 // ve se recebeu algum modulo (SE+MODULO) para mostrar pela URL, caso positivo já usa para filtrar  
 var se = gup("SUBST");
-var mod = gup("BAY");
+var mod = decodeURIComponent(gup("BAY"));
 
 if ( se != "" )
   {
