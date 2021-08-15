@@ -1,35 +1,34 @@
 @startuml
-
-!define osaPuml https://raw.githubusercontent.com/Crashedmind/PlantUML-opensecurityarchitecture2-icons/master
-!include osaPuml/Common.puml
-!include osaPuml/Hardware/all.puml
-!include osaPuml/Server/all.puml
+scale .5
+!include <osa/desktop/desktop>
+!include <osa/vpn/vpn>
+!include <osa/ics/plc/plc>
 
 title JSON-SCADA Architecture
 
 cloud "Operators" as WebClients {
-osa_desktop(Operator1,"Client","Web browser")
-osa_desktop(Operator2,"Client","Web browser")
+rectangle "Web client\n <$desktop>" as Operator1
+rectangle "Web client\n <$desktop>" as Operator2
 }
 
 together {
 cloud "Other\nSCADA Systems"{
-osa_server(SCADA1,"SCADA","Server")
+rectangle "SCADA:\n <$vpn>" as SCADA1
 }
 
 cloud "IoT/IIoT Devices" as MQTTDevices {
-osa_server(MQTTDevice1,"MQTT","Device")
+rectangle "Device:\n <$plc>" as MQTTDevice1
 }
 
 cloud "RTU Devices" as RTUDevices {
-osa_server(RTUDevice1,"RTU","Device")
+rectangle "RTU:\n <$plc>" as RTUDevice1
 }
 }
 
 cloud "Corporate IT" as Corp1 {
 [BI Tools\n<<MS Power BI>>]
-osa_server(ITServer1,"ERP","Server")
-osa_server(ITServer2,"MES","Server")
+rectangle "ERP:\n <$vpn>" as ITServer1
+rectangle "MES:\n <$vpn>" as ITServer2
 }
 
 node "MQTT Broker" as Broker{
@@ -58,7 +57,7 @@ package Drivers{
 }
 
 
-Webserver -d-> NodeJS: JWT auth
+Webserver -d-> NodeJS
 NodeJS -d-> MongoDB1
 NodeJS -d-> PostgreSQL1
 NodeJS -l-> Grafana
