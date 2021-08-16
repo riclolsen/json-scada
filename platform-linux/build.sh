@@ -4,6 +4,7 @@ ARG1=${1:-linux-x64}
 
 cd ..
 mkdir bin
+mkdir bin-wine
 
 cd src/lib60870.netcore
 dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
@@ -12,7 +13,7 @@ cd ../OPC-UA-Client
 dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../dnp3/Dnp3Client
-dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../../bin/ Dnp3Client.csproj
+dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../../bin-wine/ Dnp3Client.csproj
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
@@ -38,6 +39,8 @@ npm install
 cd ../server_realtime
 npm install
 cd ../server_realtime_auth
+npm install
+cd ../updateUser
 npm install
 cd ../oshmi2json
 npm install
