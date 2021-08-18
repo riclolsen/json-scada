@@ -27,10 +27,11 @@ let ProcessActive = false // for redundancy control
 var jsConfigFile = '../../conf/json-scada.json'
 const sqlFilesPath = '../../sql/'
 const fs = require('fs')
-const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, Double } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
+
+const LowestPriorityThatBeeps = 1 // will beep for priorities zero and one
 
 const args = process.argv.slice(2)
 var inst = null
@@ -353,7 +354,7 @@ const pipeline = [
                       db.collection(ProcessInstancesCollectionName).updateOne(
                         {
                           processName: APP_NAME,
-                          processInstanceNumber: new mongo.Double(Instance)
+                          processInstanceNumber: new Double(Instance)
                         },
                         {
                           $set: {
@@ -361,13 +362,13 @@ const pipeline = [
                             activeNodeKeepAliveTimeTag: new Date(),
                             softwareVersion: VERSION,
                             stats: {
-                              latencyAvg: new mongo.Double(
+                              latencyAvg: new Double(
                                 latencyAccTotal / latencyTotalCnt
                               ),
-                              latencyAvgMinute: new mongo.Double(
+                              latencyAvgMinute: new Double(
                                 latencyAccMinute / latencyMinuteCnt
                               ),
-                              latencyPeak: new mongo.Double(latencyPeak)
+                              latencyPeak: new Double(latencyPeak)
                             }
                           }
                         }
@@ -556,9 +557,11 @@ const pipeline = [
                     change.updateDescription.updatedFields.sourceDataUpdate
                       .timeTagAtSource !== null
                   )
-                    if (change.fullDocument.type === 'digital' ||
-                        (change.fullDocument.type === 'analog' && change.fullDocument.isEvent)
-                       ) {
+                    if (
+                      change.fullDocument.type === 'digital' ||
+                      (change.fullDocument.type === 'analog' &&
+                        change.fullDocument.isEvent)
+                    ) {
                       if (
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.getFullYear() >
                         1899
@@ -833,7 +836,7 @@ const pipeline = [
 
                   if (!change.fullDocument.alarmDisabled) {
                     if (
-                      isSOE ||
+                      (alarmed && isSOE) ||
                       (alarmed && alarmed !== change.fullDocument.alarmed)
                     ) {
                       // a new alarm, then update beep var
@@ -842,15 +845,15 @@ const pipeline = [
                         // signal an important beep (for alarm of priority 0)
                         mongoRtDataQueue.enqueue({
                           _id: beepPointKey,
-                          beepType: new mongo.Double(2), // this is an important beep
-                          value: new mongo.Double(1),
+                          beepType: new Double(2), // this is an important beep
+                          value: new Double(1),
                           valueString: 'Beep Active',
                           timeTag: dt
                         })
-                      else
+                      else if (change.fullDocument.priority <= LowestPriorityThatBeeps)
                         mongoRtDataQueue.enqueue({
                           _id: beepPointKey,
-                          value: new mongo.Double(1),
+                          value: new Double(1),
                           valueString: 'Beep Active',
                           timeTag: dt
                         })
@@ -859,7 +862,7 @@ const pipeline = [
                       digitalUpdatesCount++
                       mongoRtDataQueue.enqueue({
                         _id: cntUpdatesPointKey,
-                        value: new mongo.Double(digitalUpdatesCount),
+                        value: new Double(digitalUpdatesCount),
                         valueString: '' + digitalUpdatesCount + ' Updates',
                         timeTag: dt
                       })
@@ -897,11 +900,11 @@ const pipeline = [
 
                   let update = {
                     _id: change.fullDocument._id,
-                    value: new mongo.Double(value),
+                    value: new Double(value),
                     valueString: valueString,
                     ...(change.fullDocument?.type === 'analog' &&
                     insertIntoHistorian
-                      ? { historianLastValue: new mongo.Double(value) }
+                      ? { historianLastValue: new Double(value) }
                       : {}),
                     timeTag: dt,
                     overflow: overflow,
@@ -910,7 +913,7 @@ const pipeline = [
                     frozen: false,
                     timeTagAtSource: null,
                     timeTagAtSourceOk: null,
-                    updatesCnt: new mongo.Double(
+                    updatesCnt: new Double(
                       change.fullDocument.updatesCnt + 1
                     ),
                     alarmed: alarmed
@@ -918,15 +921,25 @@ const pipeline = [
                   if (alarmTime !== null) update.timeTagAlarm = alarmTime
 
                   // update source time when available
-                  if ('timeTagAtSource' in change.updateDescription.updatedFields.sourceDataUpdate &&
-                    change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource !== null ) {
+                  if (
+                    'timeTagAtSource' in
+                      change.updateDescription.updatedFields.sourceDataUpdate &&
+                    change.updateDescription.updatedFields.sourceDataUpdate
+                      .timeTagAtSource !== null
+                  ) {
                     update.timeTagAtSource =
                       change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
                     update.timeTagAtSourceOk =
                       change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSourceOk
                   }
 
-                  if (!(change.fullDocument.isEvent && change.fullDocument.type === 'digital' &&  value === 0)) {
+                  if (
+                    !(
+                      change.fullDocument.isEvent &&
+                      change.fullDocument.type === 'digital' &&
+                      value === 0
+                    )
+                  ) {
                     // do not update protection-like events for state OFF
                     mongoRtDataQueue.enqueue(update)
 
@@ -948,14 +961,14 @@ const pipeline = [
                   // build sql values list for queued insert into historian
                   // Fields: tag, time_tag, value, value_json, time_tag_at_source, flags
                   if (insertIntoHistorian) {
-
                     // queue data change for postgresql historian
                     let b7 = invalid ? '1' : '0', // value invalid
-                      b6 = (update.timeTagAtSourceOk!==null)
+                      b6 =
+                        update.timeTagAtSourceOk !== null
                           ? update.timeTagAtSourceOk
-                          ? '0'
-                          : '1'
-                        : '1', // time tag at source invalid
+                            ? '0'
+                            : '1'
+                          : '1', // time tag at source invalid
                       b5 = change.fullDocument.type === 'analog' ? '1' : '0', // analog
                       b4 =
                         change.updateDescription.updatedFields.sourceDataUpdate
@@ -978,7 +991,8 @@ const pipeline = [
                         '\'{"s": "' +
                         valueString +
                         '"}\',' +
-                        ( (update.timeTagAtSource!==null) ? "'" +
+                        (update.timeTagAtSource !== null
+                          ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
                             "'"
                           : 'null') +
