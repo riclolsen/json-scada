@@ -174,6 +174,7 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       // console.log('>> Insert ' + tag)
 
       let resIns = await rtDataCollection.insertOne(newTag)
+      // if (resIns.acknowledged) ListCreatedTags.push(tag) // change for mongo driver >= 4.0 
       if (resIns.insertedCount >= 1) ListCreatedTags.push(tag)
       else
         Log.log(
