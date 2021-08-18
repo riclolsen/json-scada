@@ -345,7 +345,7 @@ if (
               if (logLevel >= LogLevelDetailed)
                 console.log('Tag not found, will create: ' + data.tag)
               let resIns = await collection.insertOne(newTag)
-              if (resIns.insertedCount === 1) ListCreatedTags.push(data.tag)
+              if (resIns.acknowledged) ListCreatedTags.push(data.tag)
             } else {
               // found (already exists, no need to create), just list as created
               ListCreatedTags.push(data.tag)
