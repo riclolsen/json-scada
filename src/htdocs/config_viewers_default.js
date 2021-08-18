@@ -81,9 +81,9 @@ var TabularViewer_LocaleDateTimeOptions = {
 var ScreenViewer_RefreshTime = 3; // refresh time in seconds (digital changes triggers a faster refresh) 
 
 // SVG Screen dimensions (must match <svg> tag dimensions on SVG screens)
-// <svg width="2400" height="1500">
-var ScreenViewer_SVGMaxWidth = 2400; // default SVG screen width in pixels
-var ScreenViewer_SVGMaxHeight  = 1500; // default SVG screen height in pixels
+// <svg width="3840" height="2160">
+var ScreenViewer_SVGMaxWidth = 3840; // default SVG screen width in pixels
+var ScreenViewer_SVGMaxHeight  = 2160; // default SVG screen height in pixels
 
 var ScreenViewer_Background  = '#DDDDDD'; // background color for Inkscape SAGE SVG screens
 var ScreenViewer_ToolbarColor = 'lightslategray'; // toolbar color
