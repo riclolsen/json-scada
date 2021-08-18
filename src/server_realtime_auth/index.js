@@ -37,8 +37,7 @@ const cors = require('cors')
 const app = express()
 var cookieParser = require('cookie-parser')
 const fs = require('fs')
-const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, ObjectId, Double, GridFSBucket } = require('mongodb')
 var Grid = require('gridfs-stream');
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
@@ -174,7 +173,7 @@ let pool = null
       res.send("{ error: 'Parameter [name] empty or not specified' }")
     }
     try{
-      let gfs = new mongo.GridFSBucket(db, {bucketName: bucketName })
+      let gfs = new GridFSBucket(db, {bucketName: bucketName })
       let f = await gfs.find({filename: filename}).toArray()
       if (f.length === 0){
         console.log('File not found ' + filename)
@@ -451,7 +450,7 @@ let pool = null
                   console.log('Remove One Event: ' + node.NodeId.Id)
                   let result = await db.collection(COLL_SOE).updateMany(
                     {
-                      _id: new mongo.ObjectID(node._Properties.event_id),
+                      _id: new ObjectId(node._Properties.event_id),
                       ack: { $lte: 1 }
                     },
                     {
@@ -464,14 +463,14 @@ let pool = null
                     username: username,
                     action: 'Remove One Event',
                     tag: node.NodeId.Id,
-                    eventId: new mongo.ObjectID(node._Properties.event_id),
+                    eventId: new ObjectId(node._Properties.event_id),
                     timeTag: new Date()
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckOneEvent) {
                   console.log('Ack One Event: ' + node.NodeId.Id)
                   let result = await db.collection(COLL_SOE).updateMany(
                     {
-                      _id: new mongo.ObjectID(node._Properties.event_id),
+                      _id: new ObjectId(node._Properties.event_id),
                       ack: 0
                     },
                     {
@@ -484,7 +483,7 @@ let pool = null
                     username: username,
                     action: 'Ack One Event',
                     tag: node.NodeId.Id,
-                    eventId: new mongo.ObjectID(node._Properties.event_id),
+                    eventId: new ObjectId(node._Properties.event_id),
                     timeTag: new Date()
                   })
                 }
@@ -551,9 +550,9 @@ let pool = null
                     { _id: beepPointKey },
                     {
                       $set: {
-                        value: new mongo.Double(0),
+                        value: new Double(0),
                         valueString: '0',
-                        beepType: new mongo.Double(0)
+                        beepType: new Double(0)
                       }
                     }
                   )
@@ -695,30 +694,30 @@ let pool = null
                     }
                     else { // numerical addressing: force data type as BSON double
                       addressing = {
-                        protocolSourceCommonAddress: new mongo.Double(
+                        protocolSourceCommonAddress: new Double(
                           data.protocolSourceCommonAddress
                         ),
-                        protocolSourceObjectAddress: new mongo.Double(
+                        protocolSourceObjectAddress: new Double(
                           data.protocolSourceObjectAddress
                         ),
-                        protocolSourceASDU: new mongo.Double(data.protocolSourceASDU)
+                        protocolSourceASDU: new Double(data.protocolSourceASDU)
                       }
                     }
 
                     let result = await db.collection(COLL_COMMANDS).insertOne({
-                      protocolSourceConnectionNumber: new mongo.Double(
+                      protocolSourceConnectionNumber: new Double(
                         data.protocolSourceConnectionNumber
                       ),
                       ... addressing,
-                      protocolSourceCommandDuration: new mongo.Double(
+                      protocolSourceCommandDuration: new Double(
                         data.protocolSourceCommandDuration
                       ),
                       protocolSourceCommandUseSBO:
                         data.protocolSourceCommandUseSBO,
-                      pointKey: new mongo.Double(data._id),
+                      pointKey: new Double(data._id),
                       tag: data.tag,
                       timeTag: new Date(),
-                      value: new mongo.Double(cmd_val),
+                      value: new Double(cmd_val),
                       valueString: parseFloat(cmd_val).toString(),
                       originatorUserName: username,
                       originatorIpAddress:
@@ -726,8 +725,8 @@ let pool = null
                         req.headers['x-forwarded-for'] ||
                         req.socket.remoteAddress
                     })
-                    // console.log(result);
-                    if (result.insertedCount !== 1) {
+
+                    if (!result.acknowledged) {
                       OpcResp.Body.ResponseHeader.ServiceResult =
                         opc.StatusCode.BadUnexpectedError
                       OpcResp.Body.ResponseHeader.StringTable = [
@@ -749,15 +748,15 @@ let pool = null
                       tag: data.tag,
                       action: 'Command',
                       properties: {
-                        value: new mongo.Double(cmd_val),
+                        value: new Double(cmd_val),
                         valueString: parseFloat(cmd_val).toString(),
                       },
                       timeTag: new Date()
                     })
 
                     OpcResp.Body.Results.push(opc.StatusCode.Good) // write ok
-                    // a way for the client to find this inserted command
-                    OpcResp.Body._CommandHandles.push(result.insertedId)
+                    // a way for the client to find this inserted command                    
+                    OpcResp.Body._CommandHandles.push(result.insertedId.toString())
                   }
               } else if (node.AttributeId == opc.AttributeId.Description) {
                 // Write Properties
@@ -812,7 +811,7 @@ let pool = null
                           prevData?.loLimit !== node.Value._Properties?.loLimit
                         )
                           loLimitNew = {
-                            loLimit: new mongo.Double(
+                            loLimit: new Double(
                               node.Value._Properties.loLimit
                             )
                           }
@@ -823,7 +822,7 @@ let pool = null
                           prevData?.hiLimit !== node.Value._Properties?.hiLimit
                         )
                           hiLimitNew = {
-                            hiLimit: new mongo.Double(
+                            hiLimit: new Double(
                               node.Value._Properties.hiLimit
                             )
                           }
@@ -850,7 +849,7 @@ let pool = null
                             prevData?.value !== node.Value._Properties.newValue
                           )
                             valueNew = {
-                              value: new mongo.Double(
+                              value: new Double(
                                 node.Value._Properties.newValue
                               )
                             }
@@ -1020,7 +1019,7 @@ let pool = null
 
             let data = await db
               .collection(COLL_COMMANDS)
-              .findOne({ _id: new mongo.ObjectID(cmdHandles[0]) })
+              .findOne({ _id: new ObjectId(cmdHandles[0]) })
 
             // console.log(data);
             let status = -1,
