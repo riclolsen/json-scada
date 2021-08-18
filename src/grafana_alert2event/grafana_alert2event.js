@@ -220,7 +220,10 @@ if (
                   soeQueue.dequeue()
                   const coll_soe = db.collection(SoeCollectionName)
                   res = await coll_soe.insertOne(event)
-                  console.log(`${res.insertedCount} document(s) inserted`)
+                  if (res.acknowledged)
+                    console.log('MongoDB - Document inserted')
+                  else
+                    console.log('MongoDB - Error inserting Document')
 
                   const coll_rtData = db.collection(RealtimeDataCollectionName)
 
