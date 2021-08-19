@@ -298,16 +298,16 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 
 * _**__id_**_ [ObjectId] - MongoDB document id.
 * _**_tag_**_ [String] - Point tag name of event.
-* _**_pointKey_**_ [Double] - Numeric key of the point (link to _id field of _realtimeData_ collection).
+* _**_pointKey_**_ [Int32] - Numeric key of the point (link to _id field of _realtimeData_ collection).
 * _**_group1_**_ [String] - Highest level grouping.
 * _**_description_**_ [String] - Full description of monitored information.
 * _**_eventText_**_ [String] - Text related to the event status change.
 * _**_invalid_**_ [Boolean] - When true means the status change is not trusted to be ok.
-* _**_priority_**_ [Double] - Priority of the point, 0 (highest) - 9 (lowest)
+* _**_priority_**_ [Int32] - Priority of the point, 0 (highest) - 9 (lowest)
 * _**_timeTag_**_ [Date] - Timestamp for the arrival of information.
 * _**_timeTagAtSource_**_ [Date] - Timestamp for the change stamped by the source device (RTU/IED).
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true means the source timestamp is considered ok.
-* _**_ack_**_ [Double] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
+* _**_ack_**_ [Int32] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
 
 ## _processInstances_ collection
 
