@@ -55,6 +55,8 @@ const { canSendCommands } = require('./app/middlewares/authJwt.js')
 var args = process.argv.slice(2)
 if (args.length > 0) if (args[0] === 'NOAUTH') AUTHENTICATION = false
 
+const DoInsertCommandAsSOE = true
+const CommandSentAsSOESymbol = '⚙️➡️'
 const opcIdTypeNumber = 0
 const opcIdTypeString = 1
 const beepPointKey = -1
@@ -741,6 +743,30 @@ let pool = null
                       res.send(OpcResp)
                       return
                     }
+
+                    // insert command action on SOE list, if desired
+                    if (DoInsertCommandAsSOE) {
+                      let eventText = cmd_val.toString()
+                      if (data.type === 'digital'){
+                        if (cmd_val)
+                          eventText = data.eventTextTrue
+                        else
+                          eventText = data.eventTextFalse
+                      }
+                      db.collection(COLL_SOE).insertOne({
+                        tag: data.tag,
+                        pointKey: data._id,
+                        description: data.description,
+                        group1: data.group1,
+                        eventText: eventText + CommandSentAsSOESymbol,
+                        invalid: false,
+                        priority: data.priority,
+                        timeTag: new Date(),
+                        timeTagAtSource: new Date(),
+                        timeTagAtSourceOk: true,
+                        ack: 1
+                      }) 
+                    }                 
 
                     UserActionsQueue.enqueue({
                       username: username,
