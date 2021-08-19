@@ -569,10 +569,7 @@ let pool = null
                               ...(("substituted" in node.Value._Properties && "newValue" in node.Value._Properties) ? { value: node.Value._Properties.newValue } : {})
                             }
                           })
-                        if (
-                          typeof result.result.n === 'number' &&
-                          result.result.n === 1
-                        ) {
+                          if ( result.acknowledged ) {
                           // updateOne ok
                           OpcResp.Body.Results.push(opc.StatusCode.Good)
                           console.log('update ok id: ' + node.NodeId.Id)

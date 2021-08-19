@@ -827,6 +827,17 @@ let pool = null
                             )
                           }
 
+                      let hysteresisNew = {}
+                      if (!AUTHENTICATION || userRights?.enterLimits)
+                        if (
+                          prevData?.hysteresis !== node.Value._Properties?.hysteresis
+                        )
+                          hysteresisNew = {
+                            hysteresis: new Double(
+                              node.Value._Properties.hysteresis
+                            )
+                          }
+
                       // loloLimit: node.Value._Properties.loLimit,
                       // lololoLimit: node.Value._Properties.loLimit,
                       // hihiLimit: node.Value._Properties.hiLimit,
@@ -860,6 +871,7 @@ let pool = null
                           ...annotationNew,
                           ...loLimitNew,
                           ...hiLimitNew,
+                          ...hysteresisNew,
                           ...notesNew,
                           ...valueNew
                         }
@@ -868,10 +880,7 @@ let pool = null
                       let result = await db
                         .collection(COLL_REALTIME)
                         .updateOne(findPoint, set)
-                      if (
-                        typeof result.result.n === 'number' &&
-                        result.result.n === 1
-                      ) {
+                      if ( result.acknowledged ) {
                         // updateOne ok
                         OpcResp.Body.Results.push(opc.StatusCode.Good)
                         console.log('update ok id: ' + node.NodeId.Id)

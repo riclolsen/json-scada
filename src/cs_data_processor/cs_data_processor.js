@@ -758,38 +758,34 @@ const pipeline = [
                         txtQualif
                     }
 
+                  let hysteresis = 0
+                  if (change.fullDocument?.hysteresis)
+                    hysteresis = parseFloat(change.fullDocument.hysteresis)
+
                   // check for limits
                   if (
-                    value != change.fullDocument.value &&
+                    // value != change.fullDocument.value &&
+                    ('hiLimit' in change.fullDocument && change.fullDocument.hiLimit !== null) &&
+                    ('loLimit' in change.fullDocument && change.fullDocument.loLimit !== null) &&
                     !change.fullDocument.alarmDisabled
                   ) {
+
                     if (
-                      change.fullDocument.value <=
-                        change.fullDocument.hiLimit &&
-                      value >
-                        change.fullDocument.hiLimit +
-                          change.fullDocument.hysteresis
-                    )
+                      //change.fullDocument.value <=
+                      //  change.fullDocument.hiLimit &&                      
+                      value > change.fullDocument.hiLimit + hysteresis
+                    ) 
                       alarmed = true
                     else if (
-                      change.fullDocument.value >=
-                        change.fullDocument.loLimit &&
+                      //change.fullDocument.value >=
+                      //  change.fullDocument.loLimit &&
                       value <
-                        change.fullDocument.loLimit -
-                          change.fullDocument.hysteresis
+                      change.fullDocument.loLimit - hysteresis
                     )
                       alarmed = true
-                    else if (
-                      value <
-                      change.fullDocument.hiLimit -
-                        change.fullDocument.hysteresis
-                    )
+                    else if (value < change.fullDocument.hiLimit - hysteresis)
                       alarmed = false
-                    else if (
-                      value >
-                      change.fullDocument.loLimit +
-                        change.fullDocument.hysteresis
-                    )
+                    else if (value > change.fullDocument.loLimit + hysteresis)
                       alarmed = false
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
@@ -850,7 +846,9 @@ const pipeline = [
                           valueString: 'Beep Active',
                           timeTag: dt
                         })
-                      else if (change.fullDocument.priority <= LowestPriorityThatBeeps)
+                      else if (
+                        change.fullDocument.priority <= LowestPriorityThatBeeps
+                      )
                         mongoRtDataQueue.enqueue({
                           _id: beepPointKey,
                           value: new Double(1),
@@ -913,10 +911,11 @@ const pipeline = [
                     frozen: false,
                     timeTagAtSource: null,
                     timeTagAtSourceOk: null,
-                    updatesCnt: new Double(
-                      change.fullDocument.updatesCnt + 1
-                    ),
-                    alarmed: alarmed
+                    updatesCnt: new Double(change.fullDocument.updatesCnt + 1),
+                    alarmed:
+                      change.fullDocument?.alarmDisabled === true
+                        ? false
+                        : alarmed
                   }
                   if (alarmTime !== null) update.timeTagAlarm = alarmTime
 
