@@ -31,6 +31,7 @@ const { MongoClient, Double } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
+const SoeDataCollectionName = 'soeData'
 const LowestPriorityThatBeeps = 1 // will beep for priorities zero and one
 
 const args = process.argv.slice(2)
@@ -765,16 +766,18 @@ const pipeline = [
                   // check for limits
                   if (
                     // value != change.fullDocument.value &&
-                    ('hiLimit' in change.fullDocument && change.fullDocument.hiLimit !== null) &&
-                    ('loLimit' in change.fullDocument && change.fullDocument.loLimit !== null) &&
+                    'hiLimit' in change.fullDocument &&
+                    change.fullDocument.hiLimit !== null &&
+                    'loLimit' in change.fullDocument &&
+                    change.fullDocument.loLimit !== null &&
                     !change.fullDocument.alarmDisabled
                   ) {
-
                     if (
                       //change.fullDocument.value <=
-                      //  change.fullDocument.hiLimit &&                      
-                      value > change.fullDocument.hiLimit + hysteresis
-                    ) 
+                      //  change.fullDocument.hiLimit &&
+                      value >
+                      change.fullDocument.hiLimit + hysteresis
+                    )
                       alarmed = true
                     else if (
                       //change.fullDocument.value >=
@@ -790,14 +793,18 @@ const pipeline = [
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
                     if (alarmed != change.fullDocument.alarmed) {
-                      let eventDate = new Date()
-                      let eventText =
-                        value.toFixed(2) +
+                      const eventDate = new Date()
+                      const eventText =
+                        parseFloat(value.toFixed(3)) +
                         ' ' +
                         change.fullDocument.unit +
-                        (alarmed ? ' &#x1F6A9;' : ' &#x1F197;')
-                      const coll_soe = db.collection('soeData')
-                      coll_soe.insertOne({
+                        (Math.abs(value) > Math.abs(change.fullDocument?.value)
+                          ? ' ⤉'
+                          : Math.abs(value) < Math.abs(change.fullDocument?.value)
+                          ? ' ⤈'
+                          : '') +
+                          (alarmed ? ' 🚩' : ' 🆗')
+                      db.collection(SoeDataCollectionName).insertOne({
                         tag: change.fullDocument.tag,
                         pointKey: change.fullDocument._id,
                         group1: change.fullDocument.group1,
@@ -811,6 +818,44 @@ const pipeline = [
                         ack: alarmed ? 0 : 1 // enter as acknowledged when normalized
                       })
                     }
+                  }
+
+                  // analog tags can produce SOE events when marked as isEvent and valid value change, or having source timestamp
+                  if (!change.fullDocument.alarmDisabled)
+                  if (
+                    (change.fullDocument?.isEvent === true &&
+                      !invalid &&
+                      value !== change.fullDocument?.value) ||
+                    isSOE
+                  ) {
+                    const eventText =
+                      parseFloat(value.toFixed(3)) +
+                      ' ' +
+                      change.fullDocument.unit +
+                      (Math.abs(value) > Math.abs(change.fullDocument?.value)
+                        ? ' ↑'
+                        : Math.abs(value) < Math.abs(change.fullDocument?.value)
+                        ? ' ↓'
+                        : '')
+                    db.collection(SoeDataCollectionName).insertOne({
+                      tag: change.fullDocument.tag,
+                      pointKey: change.fullDocument._id,
+                      group1: change.fullDocument.group1,
+                      description: change.fullDocument.description,
+                      eventText: eventText,
+                      invalid: false,
+                      priority: change.fullDocument.priority,
+                      timeTag: new Date(),
+                      timeTagAtSource: isSOE
+                        ? change.updateDescription.updatedFields
+                            .sourceDataUpdate.timeTagAtSource
+                        : new Date(),
+                      timeTagAtSourceOk: isSOE
+                        ? change.updateDescription.updatedFields
+                            .sourceDataUpdate.timeTagAtSourceOk
+                        : false,
+                      ack: 1 // enter as acknowledged as it is not an alarm
+                    })
                   }
                 }
 
@@ -1049,8 +1094,7 @@ const pipeline = [
                       eventText = change.fullDocument.eventTextTrue
                     }
 
-                    const coll_soe = db.collection('soeData')
-                    coll_soe.insertOne({
+                    db.collection(SoeDataCollectionName).insertOne({
                       tag: change.fullDocument.tag,
                       pointKey: change.fullDocument._id,
                       group1: change.fullDocument.group1,
