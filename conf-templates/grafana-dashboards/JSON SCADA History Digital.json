@@ -1,0 +1,279 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 6,
+  "iteration": 1629902492296,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "PostgreSQL-JSON_SCADA",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepBefore",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "none"
+        }
+      },
+      "pluginVersion": "8.0.1",
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "metric",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  \"time\" AS \"time\",\n  value\nFROM grafana_hist\nWHERE\n  $__timeFilter(\"time\") and metric IN ('$point_tag')  \n\nUNION\n(\nSELECT\n  ($__timeFrom())::timestamp  AS \"time\",\n  value\nFROM grafana_hist \nWHERE\n  $__timeFrom() < time and metric IN ('$point_tag') order by grafana_hist.time desc limit 1\n)  \norder by 1 desc\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "grafana_hist",
+          "timeColumn": "\"time\"",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            },
+            {
+              "datatype": "text",
+              "name": "",
+              "params": [
+                "metric",
+                "IN",
+                "$point_tag"
+              ],
+              "type": "expression"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Plot",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "filterable": true
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 177
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "metric"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 198
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 5,
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.0.1",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  metric,\n  \"time\" AS \"time\",\n  value_json->>'s' as state,\n  case when (flags & B'10000000') = B'10000000' then 'F' else '' end as flags\nFROM grafana_hist\nWHERE\n  $__timeFilter(\"time\") and metric IN ('$point_tag')  \n\nUNION\n(\nSELECT\n  metric,\n  ($__timeFrom())::timestamp  AS \"time\",\n  value_json->>'s' as state,\n  case when (flags & B'10000000') = B'10000000' then 'F' else '' end as flags\nFROM grafana_hist \nWHERE\n  $__timeFrom() < time and metric IN ('$point_tag') order by grafana_hist.time desc limit 1\n)  \norder by 2 desc\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "grafana_hist",
+          "timeColumn": "\"time\"",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Table",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 30,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "description": null,
+        "error": null,
+        "hide": 2,
+        "label": "Tags",
+        "name": "point_tag",
+        "query": "KAW2KPR21MTVA--------C",
+        "skipUrlSync": false,
+        "type": "constant"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "timezone": "",
+  "title": "JSON SCADA History Digital",
+  "uid": "LsXOaz47z",
+  "version": 7
+}
