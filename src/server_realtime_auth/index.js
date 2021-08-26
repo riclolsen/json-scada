@@ -502,7 +502,7 @@ let pool = null
                   )
                   result = await db
                     .collection(COLL_REALTIME)
-                    .updateMany({ isEvent: true }, [
+                    .updateMany({ type: 'digital', origin: 'supervised', isEvent: true }, [
                       {
                         $set: {
                           value: 0,
@@ -1108,7 +1108,11 @@ let pool = null
                   valueString: 1,
                   invalid: 1,
                   timeTag: 1,
+                  loLimit: 1,
+                  hiLimit: 1,
+                  hysteresis: 1,
                   alarmed: 1,
+                  alarmRange: 1,
                   frozen: 1,
                   type: 1,
                   annotation: 1,
@@ -1266,7 +1270,8 @@ let pool = null
                           _id: pointInfo._id,
                           valueString: pointInfo.valueString,
                           alarmed: pointInfo.alarmed,
-                          ...(pointInfo.type==='analog'?{frozen:pointInfo.frozen}:{}),
+                          ...(pointInfo.type==='analog'?{alarmRange: pointInfo?.alarmRange}:{}),
+                          ...(pointInfo.type==='analog'?{frozen:pointInfo?.frozen}:{}),
                           transit: pointInfo.transit,
                           annotation: pointInfo.annotation,
                           notes: pointInfo.notes,
@@ -1278,7 +1283,8 @@ let pool = null
                             valueString: pointInfo.valueString,
                             valueDefault: pointInfo.valueDefault,
                             alarmed: pointInfo.alarmed,
-                            ...(pointInfo.type==='analog'?{frozen:pointInfo.frozen}:{}),
+                            ...(pointInfo.type==='analog'?{alarmRange: pointInfo?.alarmRange}:{}),
+                            ...(pointInfo.type==='analog'?{frozen:pointInfo?.frozen}:{}),
                             alarmDisabled: pointInfo.alarmDisabled,
                             transit: pointInfo.transit,
                             group1: pointInfo.group1,
@@ -1376,7 +1382,8 @@ let pool = null
                         valueString: node.valueString,
                         valueDefault: node.valueDefault,
                         alarmed: node.alarmed,
-                        ...(node.type==='analog'?{frozen:node.frozen}:{}),
+                        ...(node.type==='analog'?{alarmRange: node?.alarmRange}:{}),
+                        ...(node.type==='analog'?{frozen:node?.frozen}:{}),
                         alarmDisabled: node.alarmDisabled,
                         alarmState: node.alarmState,
                         isEvent: node.isEvent,
