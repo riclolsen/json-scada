@@ -1872,6 +1872,45 @@ if (pointId === undefined)
 
 },
 
+// open trend visor of point info
+tendencias: function() {
+  WebSAGE.vis_trend(NPTO);
+},
+
+// open trend visor
+vis_trend: function(npt) {
+  window.open(
+    "trend.html?NPONTO=" + npt,
+    "Tendencias " + npt,
+    "dependent=no,height=400,width=700,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
+  );
+  setTimeout("WebSAGE.g_win_cmd.close()", 500);
+},
+
+// open plot visor (historical) of point info
+curvas: function() {
+  if (F[NPTO] & 0x20)
+    window.open(
+      "/grafana/d/78X6BmvMk/json-scada-history-analog?var-point_tag=" + TAGS[NPTO],
+      "History " + TAGS[NPTO],
+      "dependent=no,height=600,width=1000,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
+    );
+  else
+    window.open(
+      "/grafana/d/LsXOaz47z/json-scada-history-digital?var-point_tag=" + TAGS[NPTO],
+      "History " + TAGS[NPTO],
+      "dependent=no,height=600,width=1000,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
+    );
+  setTimeout("WebSAGE.g_win_cmd.close()", 500);
+},
+
+// open tabular visor of bay, of point info
+tabular : function()
+{
+window.open( 'tabular.html?SUBST=' + ESTACAO + '&BAY=' + MODULO, 'Tabular', 'dependent=no,height=700,width=900,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no' );    
+setTimeout('WebSAGE.g_win_cmd.close()',500);
+},
+
 applyTableStyle: function()
 {
 var almFilter={};
@@ -2417,7 +2456,7 @@ mostraTodosAnormais: function()
 
   WebSAGE.g_timeOutRefresh = WebSAGE.g_timeOutRefresh / 1.5; // shorten refresh time for alarms viewer
   document.getElementById('FiltroSE').value = WebSAGE.g_filt_all_alarms;
-  WebSAGE.g_titulo_janela = Msg.NomeVisorAnormais + " - " +  Msg.NomeProduto + " - " + Msg.VersaoProduto;
+  WebSAGE.g_titulo_janela = Msg.NomeVisorAnormais + " - " +  Msg.NomeProduto + " - " + Msg.VersaoProduto + getUsernameFmt();
   document.title = "."; // necessário devido a um bug do chromium!
   document.title = WebSAGE.g_titulo_janela;
   
@@ -2779,7 +2818,7 @@ init: function()
 {
     WebSAGE.tbl_prepare();
 
-    WebSAGE.g_titulo_janela = Msg.NomeVisorTabular + " - " +  Msg.NomeProduto + " - " + Msg.VersaoProduto;
+    WebSAGE.g_titulo_janela = Msg.NomeVisorTabular + " - " +  Msg.NomeProduto + " - " + Msg.VersaoProduto + getUsernameFmt();
     document.title = "."; // necessário devido a um bug do chromium!
     document.title = WebSAGE.g_titulo_janela;
 

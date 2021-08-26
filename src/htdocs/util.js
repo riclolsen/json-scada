@@ -708,3 +708,24 @@ const fetchTimeout = (url, tout = 1000, { signal, ...options } = {}) => {
   const timeout = setTimeout(() => controller.abort(), tout);
   return promise.finally(() => clearTimeout(timeout));
 };
+
+const getUsername = () => {
+  var jsUserCookie, jsUserObj;
+  try {
+    jsUserCookie = readCookie( "json-scada-user")
+    if (jsUserCookie && jsUserCookie!="") {
+      jsUserObj = JSON.parse(decodeURIComponent(jsUserCookie))      
+    if (!jsUserObj || !('username' in jsUserObj))
+      return '';
+    }
+  } catch (e){ return '';} 
+
+  return jsUserObj.username.trim();
+}
+
+const getUsernameFmt = () => {
+  const username = getUsername();
+  if (username==='')
+    return '';
+  return ' [' + username + ']';
+}

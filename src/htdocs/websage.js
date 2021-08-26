@@ -349,7 +349,7 @@ var WebSAGE = {
             " - " +
             Msg.NomeProduto +
             " - " +
-            Msg.VersaoProduto;
+            Msg.VersaoProduto + getUsernameFmt();
           // document.title = "."; // necessário devido a um bug do chromium!
           document.title = WebSAGE.g_titulo_janela;
           // coloca o nome da tela na toolbar, se configurado
@@ -1548,11 +1548,18 @@ else
 
   // open plot visor (historical) of point info
   curvas: function() {
-    window.open(
-      "/grafana/d/78X6BmvMk/json-scada-history?var-point_tag=" + TAGS[NPTO],
-      "History " + TAGS[NPTO],
-      "dependent=no,height=600,width=1000,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
-    );
+    if (F[NPTO] & 0x20)
+      window.open(
+        "/grafana/d/78X6BmvMk/json-scada-history-analog?var-point_tag=" + TAGS[NPTO],
+        "History " + TAGS[NPTO],
+        "dependent=no,height=600,width=1000,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
+      );
+    else
+      window.open(
+        "/grafana/d/LsXOaz47z/json-scada-history-digital?var-point_tag=" + TAGS[NPTO],
+        "History " + TAGS[NPTO],
+        "dependent=no,height=600,width=1000,location=no,toolbar=no,directories=no,status=no,menubar=no,resizable=yes,modal=no"
+      );
     setTimeout("WebSAGE.g_win_cmd.close()", 500);
   },
 
@@ -3474,6 +3481,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
           }
           F[pointKey] |= (element.Value.Quality & 0x80000000 ? 0x80 : 0x00) | 
                          (prop.alarmed ? 0x100 : 0x000) |
+                         // (('outOfRange' in prop && prop.outOfRange) ? 0x800 : 0x000) |
                          (("annotation" in prop && prop.annotation!=="")? 0x200 : 0x000);
 
           TAGS[pointKey] = element.NodeId.Id;
