@@ -74,6 +74,9 @@ var ComandoEnviado = '';
 
 // callback function a ser chamada pelo servidor
 var cbf_F = function() {}; 
+var toValidId = function(id) {
+  return id.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-');
+}
 
 var WebSAGE =
 {
@@ -1193,7 +1196,7 @@ for (var se in Lista)
   "<div id='DIV_" + Lista[se] + "' " +
       " onclick='WebSAGE.g_alminfo[&quot;" + Lista[se] + "&quot;].filterout = ! WebSAGE.g_alminfo[&quot;" + Lista[se] + "&quot;].filterout;WebSAGE.applyTableStyle();'" +
       " style='position:relative;float:left;text-align:center;margin-bottom:7px;margin-left:3px;top:" + ytop + "px;" + 
-      "cursor:pointer;box-shadow: 1px 1px 1px #666666;background-color:white;width:48px;height:20px;border-radius:4px;border:1px solid #777;padding-top:2px;padding-left:2px;padding-right:2px;line-height:80%;font-size:15px;font-family:trebuchet ms,tahoma,helvetica,arial'>"+ 
+      "cursor:pointer;box-shadow: 1px 1px 1px #666666;background-color:white;min-width:48px;height:20px;border-radius:4px;border:1px solid #777;padding-top:2px;padding-left:2px;padding-right:2px;line-height:80%;font-size:15px;font-family:trebuchet ms,tahoma,helvetica,arial'>"+ 
     Lista[se] + 
     "<br>" + 
     "<span id='SP_" + Lista[se] +  "_ACK" +
@@ -1206,7 +1209,7 @@ for (var se in Lista)
 
   if ( typeof( WebSAGE.g_alminfo[ Lista[se] ] ) === 'undefined' )
     {
-    WebSAGE.g_alminfo[ Lista[se] ] =  { countnack: 0, 
+    WebSAGE.g_alminfo[ toValidId(Lista[se]) ] =  { countnack: 0, 
                                         countack: 0, 
                                         filterout: false, 
                                         minpriorack: 10, 
@@ -1921,6 +1924,7 @@ var almFilter={};
 WebSAGE.g_filterOutList = [];
 for ( var substorpri in WebSAGE.g_alminfo ) 
    {
+     substorpri = toValidId(substorpri);
      if ( WebSAGE.g_alminfo.hasOwnProperty(substorpri) ) 
         {
         almFilter[substorpri] = WebSAGE.g_alminfo[substorpri].filterout;
@@ -2074,6 +2078,8 @@ showVals: function()
     if ( WebSAGE.isAlarmsViewer() ) // manage alarm boxes
     for ( var substorpri in WebSAGE.g_alminfo ) 
       {
+      substorpri = toValidId(substorpri);
+      console.log(substorpri)
       if ( WebSAGE.g_alminfo.hasOwnProperty(substorpri) ) 
         {
         if ( WebSAGE.g_alminfo[substorpri].is_subst )
@@ -2145,7 +2151,7 @@ showVals: function()
                " onclick='WebSAGE.g_alminfo[&quot;" + substorpri + "&quot;].filterout = ! WebSAGE.g_alminfo[&quot;" + substorpri + "&quot;].filterout;WebSAGE.applyTableStyle();'" +
                " style='position:relative;float:left;text-align:center;margin-bottom:7px;margin-left:3px;top:" + ytop + "px;" + 
                        // "left:" + ( xleft + ( WebSAGE.g_alminfo[substorpri].is_subst ? cntsb : cntpr ) * 58 ) + "px;" + 
-                       "cursor:pointer;box-shadow: 1px 1px 1px #666666;background-color:white;width:48px;height:20px;border-radius:4px;border:1px solid #777;padding-top:2px;padding-left:2px;padding-right:2px;line-height:80%;font-size:15px;font-family:trebuchet ms,tahoma,helvetica,arial'>"+ 
+                       "cursor:pointer;box-shadow: 1px 1px 1px #666666;background-color:white;min-width:48px;height:20px;border-radius:4px;border:1px solid #777;padding-top:2px;padding-left:2px;padding-right:2px;line-height:80%;font-size:15px;font-family:trebuchet ms,tahoma,helvetica,arial'>"+ 
               substorpri + 
               "<br>" + 
               "<span id='SP_" + substorpri +  "_ACK" +
