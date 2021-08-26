@@ -1544,6 +1544,8 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
             flags |= 0x20;
             if ('frozen' in prop && prop.frozen === true )
               flags |= 0x1000;
+            if ('alarmRange' in prop)
+              flags |= (prop.alarmRange !== 0 ? 0x800 : 0x0000);
           }
           if (prop.alarmed === true )
             flags |= 0x100;

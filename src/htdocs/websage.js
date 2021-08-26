@@ -3470,6 +3470,8 @@ getHistoricalData: function (i, pnt, timeBegin) {
             F[pointKey] = 0x20;
             if ('frozen' in prop)
               F[pointKey] |= (prop.frozen === true ? 0x1000 : 0x0000);
+            if ('alarmRange' in prop)
+              F[pointKey] |= (prop.alarmRange !== 0 ? 0x800 : 0x0000);
             T[pointKey] = element.SourceTimestamp;
             S[pointKey] = parseFloat(element.Value.Body).toFixed(3);
           }
@@ -3481,7 +3483,6 @@ getHistoricalData: function (i, pnt, timeBegin) {
           }
           F[pointKey] |= (element.Value.Quality & 0x80000000 ? 0x80 : 0x00) | 
                          (prop.alarmed ? 0x100 : 0x000) |
-                         // (('outOfRange' in prop && prop.outOfRange) ? 0x800 : 0x000) |
                          (("annotation" in prop && prop.annotation!=="")? 0x200 : 0x000);
 
           TAGS[pointKey] = element.NodeId.Id;

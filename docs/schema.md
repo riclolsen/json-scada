@@ -22,6 +22,7 @@ Example document.
     {
         "_id": 3285,
         "alarmDisabled": false,
+        "alarmRange": 0,
         "alarmState": -1,
         "alarmed": false,
         "alerted": false,
@@ -177,6 +178,7 @@ Example document.
 ### Fields updated by the system.
 
 * _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
+* _**_alarmRange**_ [Double] - Current alarm range for analog tags. 0=normal, 1=hiLimit violated, -1=loLimit violated. **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
 * _**_alertedState_**_ [Boolean] - Grafana alert state name. **Optional parameter**.
 * _**_historianLastValue_**_ [Double] - Last value sent to historian (for dead band processing). Only for analog tags. **Mandatory parameter**.
