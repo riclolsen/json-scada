@@ -502,6 +502,7 @@ const pipeline = [
                 if (change.operationType === 'delete') return
 
                 let isSOE = false
+                let alarmRange = 0
 
                 if (change.operationType === 'insert') {
                   // document inserted
@@ -773,26 +774,41 @@ const pipeline = [
                     !change.fullDocument.alarmDisabled
                   ) {
                     if (
-                      //change.fullDocument.value <=
-                      //  change.fullDocument.hiLimit &&
                       value >
                       change.fullDocument.hiLimit + hysteresis
-                    )
+                    ) {
                       alarmed = true
+                      alarmRange = 1
+                    }
                     else if (
-                      //change.fullDocument.value >=
-                      //  change.fullDocument.loLimit &&
                       value <
                       change.fullDocument.loLimit - hysteresis
-                    )
+                    ) {
                       alarmed = true
+                      alarmRange = -1
+                    }
                     else if (value < change.fullDocument.hiLimit - hysteresis)
                       alarmed = false
                     else if (value > change.fullDocument.loLimit + hysteresis)
                       alarmed = false
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
-                    if (alarmed != change.fullDocument.alarmed) {
+                    //if (alarmed != change.fullDocument.alarmed) 
+                    //if (
+                    //    change.fullDocument.value <= change.fullDocument.hiLimit + hysteresis &&
+                    //    value > change.fullDocument.hiLimit + hysteresis
+                    //    ||
+                    //    change.fullDocument.value >= change.fullDocument.hiLimit - hysteresis &&
+                    //    value < change.fullDocument.hiLimit - hysteresis
+                    //    ||
+                    //    change.fullDocument.value >= change.fullDocument.loLimit - hysteresis  &&
+                    //    value < change.fullDocument.loLimit - hysteresis
+                    //    ||
+                    //    change.fullDocument.value <= change.fullDocument.loLimit + hysteresis  &&
+                    //    value > change.fullDocument.loLimit + hysteresis
+                    //      ) 
+                    if (!change.fullDocument.alarmDisabled)
+                    if (change.fullDocument?.alarmRange !== alarmRange) {
                       const eventDate = new Date()
                       const eventText =
                         parseFloat(value.toFixed(3)) +
@@ -877,11 +893,11 @@ const pipeline = [
 
                   if (!change.fullDocument.alarmDisabled) {
                     if (
-                      (alarmed && isSOE) ||
-                      (alarmed && alarmed !== change.fullDocument.alarmed)
+                      // (alarmed && isSOE && change.fullDocument?.isEvent===true && change.fullDocument.type === 'digital') ||
+                      (alarmed && change.fullDocument?.alarmed === false)
                     ) {
                       // a new alarm, then update beep var
-                      Log.log('NEW BEEP', Log.levelDetailed)
+                      Log.log('NEW BEEP, tag: ' + change.fullDocument.tag)
                       if (change.fullDocument.priority === 0)
                         // signal an important beep (for alarm of priority 0)
                         mongoRtDataQueue.enqueue({
@@ -957,6 +973,7 @@ const pipeline = [
                     timeTagAtSource: null,
                     timeTagAtSourceOk: null,
                     updatesCnt: new Double(change.fullDocument.updatesCnt + 1),
+                    alarmRange: new Double(alarmRange),
                     alarmed:
                       change.fullDocument?.alarmDisabled === true
                         ? false
