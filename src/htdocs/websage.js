@@ -3483,6 +3483,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
           }
           F[pointKey] |= (element.Value.Quality & 0x80000000 ? 0x80 : 0x00) | 
                          (prop.alarmed ? 0x100 : 0x000) |
+                         (prop.alarmDisabled ? 0x400 : 0x000) |
                          (("annotation" in prop && prop.annotation!=="")? 0x200 : 0x000);
 
           TAGS[pointKey] = element.NodeId.Id;

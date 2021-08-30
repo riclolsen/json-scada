@@ -1606,8 +1606,10 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
             if ('alarmRange' in prop)
               flags |= (prop.alarmRange !== 0 ? 0x800 : 0x0000);
           }
-          if (prop.alarmed === true )
+          if ('alarmed' in prop && prop.alarmed === true )
             flags |= 0x100;
+          if ('alarmDisabled' in prop && prop.alarmDisabled === true )
+            flags |= 0x400;
           var persistent = "";
           if (prop.alarmState === 1 && element.Value.Body === true  ||
               prop.alarmState === 0 && element.Value.Body === false )
@@ -1635,6 +1637,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
             prop.commandOfSupervised + WebSAGE.g_split_line_code + 
             "" + prop.priority + (prop.alarmed?"L":"") + persistent +
               (prop.annotation!=""?"A":"") + 
+              (prop.alarmDisabled?"I":"") + 
               (prop.isEvent?"E":"") + 
               (('frozen' in prop && prop.frozen===true)?"U":"") + 
               (prop.commandOfSupervised!==0?"K":"") + 
@@ -1667,6 +1670,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
           }
           F[pointKey] |= (element.Value.Quality & 0x80000000 ? 0x80 : 0x00) | 
                         (prop.alarmed ? 0x100 : 0x000) |
+                        (prop.alarmDisabled ? 0x400 : 0x000) |
                         (("annotation" in prop && prop.annotation!=="")? 0x200 : 0x000);
           if (prop.origin === "manual")
             F[pointKey] |= 0x0C;
