@@ -85,17 +85,20 @@ const ProtocolConnection = mongoose.model(
     // IEC 101/104 Server 
     maxQueueSize: { type: Double, min: 0, default: 5000.0 },
 
-    // IEC 104 Client, DNP3 Client, MQTT-SPARKPLUG-B
+    // IEC 104 Client/Server, DNP3 Client, MQTT-SPARKPLUG-B
     localCertFilePath: { type: String, default: '' },
 
-    // IEC 104 Client, DNP3 Client
+    // IEC 104 Client/Server, DNP3 Client
     peerCertFilePath: { type: String, default: '' }, 
 
-    // IEC 104 Client, MQTT-SPARKPLUG-B
+    // IEC 104 Server
+    peerCertFilesPaths: { type: [String], default: [] }, 
+
+    // IEC 104 Client/Server, MQTT-SPARKPLUG-B
     rootCertFilePath: { type: String, default: '' }, 
     chainValidation: { type: Boolean, default: false }, 
 
-    // IEC 104 Client
+    // IEC 104 Client/Server
     allowOnlySpecificCertificates: { type: Boolean, default: false },
 
     // DNP3 Client, MQTT-SPARKPLUG-B

@@ -344,19 +344,25 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104', 'DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('localCertFilePath' in req.body)) {
       req.body.localCertFilePath = ''
     }
   }
 
-  if (['IEC60870-5-104', 'DNP3'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(req?.body?.protocolDriver)) {
     if (!('peerCertFilePath' in req.body)) {
       req.body.peerCertFilePath = ''
     }
   }
 
-  if (['IEC60870-5-104', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('peerCertFilesPaths' in req.body)) {
+      req.body.peerCertFilesPaths = ''
+    }
+  }
+
+  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('rootCertFilePath' in req.body)) {
       req.body.rootCertFilePath = ''
     }
@@ -365,7 +371,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('allowOnlySpecificCertificates' in req.body)) {
       req.body.allowOnlySpecificCertificates = false
     }
