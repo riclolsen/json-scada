@@ -1,10 +1,13 @@
 @startuml
+
 scale .5
 !include <osa/desktop/desktop>
 !include <osa/vpn/vpn>
 !include <osa/ics/plc/plc>
 
 title JSON-SCADA Architecture
+
+rectangle "Engineering\nAdmin\nDisplay Creation\n<$desktop>" as Engineering1
 
 cloud "Operators" as WebClients {
 rectangle "Web client\n <$desktop>" as Operator1
@@ -23,12 +26,13 @@ rectangle "Device:\n <$plc>" as MQTTDevice1
 cloud "RTU Devices" as RTUDevices {
 rectangle "RTU:\n <$plc>" as RTUDevice1
 }
+
+rectangle "Network\nInfrastructure\nMonitoring" as NetInfra
+
 }
 
-cloud "Corporate IT" as Corp1 {
-[BI Tools\n<<MS Power BI>>]
-rectangle "ERP:\n <$vpn>" as ITServer1
-rectangle "MES:\n <$vpn>" as ITServer2
+Cloud "Corporate IT" as Corp {
+rectangle "ERP\nMES\nBI\n...\n <$vpn>" as Corp1
 }
 
 node "MQTT Broker" as Broker{
@@ -50,30 +54,35 @@ database "PostgreSQL\n" as PostgreSQL1
 package Drivers{
 [Server\nProtocol\nDriver] as ServerProtocol1
 [Client\nProtocol\nDriver] as ClientProtocol1
-[MQTT\nSparkplug\nProtocol\nDriver] as MQTTDriver1
+[MQTT\nSparkplug B\nProtocol\nDriver] as MQTTDriver1
+[Telegraf\nAdapter\nDriver] as Telegraf
 }
 [IT Systems\nIntegrations] as IT1
 [Front End\nVisualization\nNodeJS/Express] as NodeJS
 }
 
-
-Webserver -d-> NodeJS
+Engineering1 -d-> Webserver: https\nJWT auth
+Webserver -d-> NodeJS: HTTP\nJWT
 NodeJS -d-> MongoDB1
 NodeJS -d-> PostgreSQL1
 NodeJS -l-> Grafana
 Grafana -d-> PostgreSQL1
 MongoDB1 -r-> PostgreSQL1
-Operator1 -d-> Webserver: https, JWT auth
-Operator2 -d-> Webserver: https, JWT auth
+Operator1 -d-> Webserver: https\nJWT auth
+Operator2 -d-> Webserver: https\nJWT auth
 Processors -d-> MongoDB1
 ClientProtocol1 -u-> MongoDB1
-ClientProtocol1 -d-> RTUDevice1: "IEC101/104\nDNP3\n..."
+ClientProtocol1 -d-> RTUDevice1: "IEC101/104\nDNP3\nICCP\n..."
 MQTTDriver1 -u-> MongoDB1
 MQTTDriver1 -d-> Broker
 MQTTDevice1 -u-> Broker: "Vanilla MQTT\nSparkplug B"
-
+Corp1 -d-> Broker: MQTT
+Corp1 -d-> IT1
+IT1 -d-> MongoDB1
+Telegraf -d-> NetInfra: SNMP\nModbus\nOPC-UA\nAPIs
+Telegraf -u-> MongoDB1
 ServerProtocol1 -r-> MongoDB1
-SCADA1 -u-> ServerProtocol1
+SCADA1 -u-> ServerProtocol1: "IEC101/104\n..."
 IT1 -d-> PostgreSQL1
-IT1 -u-> Corp1
+
 @enduml
