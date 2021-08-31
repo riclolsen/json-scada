@@ -30,13 +30,14 @@ using MongoDB.Driver;
 using lib60870;
 using lib60870.CS101;
 using lib60870.CS104;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Iec10XDriver
 {
     partial class MainClass
     {
         public static String ProtocolDriverName = "IEC60870-5-104_SERVER";
-        public static String DriverVersion = "0.1.0";
+        public static String DriverVersion = "0.2.0";
         public static MongoClient Client = null;
         public static Boolean IsMongoLive = false;
         public static Int32 timeToExpireCommandsWithTime = 20;
@@ -101,6 +102,17 @@ namespace Iec10XDriver
             public int maxClientConnections { get; set; }
             [BsonDefaultValue(1000)]
             public int maxQueueSize { get; set; }
+            [BsonDefaultValue("")]
+            public string localCertFilePath { get; set; }
+            public string []peerCertFilesPaths { get; set; }
+            [BsonDefaultValue("")]
+            public string peerCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string rootCertFilePath { get; set; }
+            [BsonDefaultValue(false)]
+            public bool allowOnlySpecificCertificates { get; set; }
+            [BsonDefaultValue(false)]
+            public bool chainValidation { get; set; }
             public Server server;
             public ConcurrentQueue<InfoCA> infoCAQueue = new ConcurrentQueue<InfoCA>(); // data objects to send 
             public List<ClientConnection> clientConnections = new List<ClientConnection>();
@@ -342,7 +354,40 @@ namespace Iec10XDriver
                 alpars.SizeOfIOA = srv.sizeOfIOA;
                 alpars.OA = srv.localLinkAddress;
 
-                var server = new Server(apcipars, alpars);
+                TlsSecurityInformation secInfo = null;
+                if (srv.localCertFilePath != "")
+                {
+                    try
+                    {
+                        // Own certificate has to be a pfx file that contains the private key
+                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath);
+
+                        // Create a new security information object to configure TLS
+                        secInfo = new TlsSecurityInformation(null, ownCertificate);
+
+                        // Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
+                        secInfo.AddAllowedCertificate(new X509Certificate2(srv.peerCertFilePath));
+                        foreach (string peerCertFilePath in srv.peerCertFilesPaths)
+                          secInfo.AddAllowedCertificate(new X509Certificate2(peerCertFilePath));
+
+                        // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
+                        secInfo.AddCA(new X509Certificate2(srv.rootCertFilePath));
+
+                        // Check if the certificate is signed by a provided CA
+                        secInfo.ChainValidation = srv.chainValidation;
+
+                        // Check that the shown server certificate is in the list of allowed certificates
+                        secInfo.AllowOnlySpecificCertificates = srv.allowOnlySpecificCertificates;
+                    }
+                    catch (Exception e)
+                    {
+                        Log(srv.name + " - Error configuring TLS certficates.");
+                        Log(srv.name + " - " + e.Message);
+                        Environment.Exit(1);
+                    }
+                }
+
+                var server = new Server(apcipars, alpars, secInfo);
                 srv.server = server;
                 if (srv.serverModeMultiActive)
                     server.ServerMode = ServerMode.CONNECTION_IS_REDUNDANCY_GROUP;

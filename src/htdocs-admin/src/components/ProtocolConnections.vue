@@ -1775,7 +1775,7 @@
               class="mt-6"
               tile
               v-if="
-                ['IEC60870-5-104', 'DNP3'].includes(selected.protocolDriver) ||
+                ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(selected.protocolDriver) ||
                 (['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver) &&
                   selected.useSecurity)
               "
@@ -1787,7 +1787,7 @@
                 <v-list-item-group>
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'DNP3', 'MQTT-SPARKPLUG-B'].includes(
+                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3', 'MQTT-SPARKPLUG-B'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -1863,7 +1863,7 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'DNP3'].includes(
+                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -1900,7 +1900,7 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'MQTT-SPARKPLUG-B'].includes(
+                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'MQTT-SPARKPLUG-B'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2117,7 +2117,7 @@
                   </v-list-item>
 
                   <v-list-item
-                    v-if="['IEC60870-5-104'].includes(selected.protocolDriver)"
+                    v-if="['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(selected.protocolDriver)"
                   >
                     <v-switch
                       v-model="selected.allowOnlySpecificCertificates"
@@ -2140,7 +2140,7 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'MQTT-SPARKPLUG-B'].includes(
+                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'MQTT-SPARKPLUG-B'].includes(
                         selected.protocolDriver
                       )
                     "
