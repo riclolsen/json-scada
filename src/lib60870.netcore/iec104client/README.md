@@ -90,9 +90,9 @@ Each instance for this driver can have many client connection defined that must 
 
 Parameters needed only for TLS encrypted connections (when there are redundant servers, the same set of certificates is applied to connections to both servers).
 
-* _**localCertFilePath**_ [String] - File that contains the certificate (*.pfx) that will be presented to the remote side of the connection. **Optional parameter**.
-* _**peerCertFilePath**_ [String] - Certificate file used to verify the peer or server (*.cer). **Optional parameter**.
-* _**rootCertFilePath**_ [String] - CA certificate to check the certificate provided by the server - not required when _chainValidation=false_. **Optional parameter**.
+* _**localCertFilePath**_ [String] - Path to file that contains the local certificate (*.pfx) that will be presented to the remote side of the connection. **Optional parameter**.
+* _**peerCertFilePath**_ [String] - Path to certificate file used to verify the peer (server) (*.cer). **Optional parameter**.
+* _**rootCertFilePath**_ [String] - Path to CA certificate file to check the certificate provided by the server - not required when _chainValidation=false_. **Optional parameter**.
 * _**allowOnlySpecificCertificates**_ [bool] - Indicates whether the driver allows only specific certificates. Default: false. **Optional parameter**.
 * _**chainValidation**_ [bool] - Indicates whether the drivers performs a X509 chain validation against the registered CA certificates. Default: false. **Optional parameter**.
 
