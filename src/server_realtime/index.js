@@ -343,9 +343,10 @@ let pool = null
                         }
                       }
                     )
+                    // make digital event tags return to zero after acknowledged
                     result = await db
                       .collection(COLL_REALTIME)
-                      .updateMany({ isEvent: true }, [
+                      .updateMany({ $and: [{type: 'digital'}, {isEvent: true}, {value:1}, {$or : [{origin: 'supervised'},{origin: 'calculated'}]}] }, [
                         {
                           $set: {
                             value: 0,
@@ -364,10 +365,10 @@ let pool = null
                           alarmed: false
                         }
                       })
-                    findPoint['isEvent'] = true
+                    // make digital event tag return to zero after acknowledged
                     result = await db
                       .collection(COLL_REALTIME)
-                      .updateOne(findPoint, [
+                      .updateOne({ $and: [findPoint, {type: 'digital'}, {isEvent: true}, {$or : [{origin: 'supervised'},{origin: 'calculated'}]}] }, [
                         {
                           $set: {
                             value: 0,
