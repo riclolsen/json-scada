@@ -104,6 +104,7 @@ namespace Iec10XDriver
             public int maxQueueSize { get; set; }
             [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
+            [BsonDefaultValue(new string[] { })]
             public string []peerCertFilesPaths { get; set; }
             [BsonDefaultValue("")]
             public string peerCertFilePath { get; set; }
