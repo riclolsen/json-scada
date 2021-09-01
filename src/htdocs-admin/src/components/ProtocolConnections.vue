@@ -2951,7 +2951,7 @@ export default {
     items() {
       return [
         {
-          name: "Protocol Connections",
+          name:  i18n.t("src\\components\\connections.connections"),
           children: this.protocolConnections,
         },
       ];
