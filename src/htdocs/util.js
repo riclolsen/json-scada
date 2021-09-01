@@ -709,6 +709,7 @@ const fetchTimeout = (url, tout = 1000, { signal, ...options } = {}) => {
   return promise.finally(() => clearTimeout(timeout));
 };
 
+// retrieve username from cookie, if available
 const getUsername = () => {
   var jsUserCookie, jsUserObj;
   try {
@@ -723,9 +724,27 @@ const getUsername = () => {
   return jsUserObj.username.trim();
 }
 
+// retrieve formatted username from cookie, if available
 const getUsernameFmt = () => {
   const username = getUsername();
   if (username==='')
     return '';
   return ' [' + username + ']';
+}
+
+// retrieve user right from cookie, if available
+const userHasRight = (right) => {
+  var jsUserCookie, jsUserObj;
+  try {
+    jsUserCookie = readCookie( "json-scada-user")
+    if (jsUserCookie && jsUserCookie!="") {
+      jsUserObj = JSON.parse(decodeURIComponent(jsUserCookie))
+    if (!jsUserObj || !('rights' in jsUserObj))
+      return true;
+    }
+  } catch (e){ return true;} 
+
+  if( !(right in jsUserObj.rights))
+    return false;
+  return jsUserObj.rights[right];
 }

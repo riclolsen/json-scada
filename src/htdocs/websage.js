@@ -1054,6 +1054,24 @@ else
         }
       }
 
+      if (!userHasRight('sendCommands'))
+        WebSAGE.g_win_cmd.document.getElementById('COMANDAR').disabled = true;
+      if (!userHasRight('enterAnnotations'))
+        WebSAGE.g_win_cmd.document.getElementById('ANOTACAO').disabled = true;
+      if ( (F[NPTO] & 0x0c) == 0x0c && !userHasRight('enterManuals'))
+        WebSAGE.g_win_cmd.document.getElementById('CBALTVALOR').disabled = true;
+      if (!userHasRight('substituteValues'))
+        WebSAGE.g_win_cmd.document.getElementById('CBALTVALOR').disabled = true;
+      if (!userHasRight('enterNotes'))
+        WebSAGE.g_win_cmd.document.getElementById('ANOTACAODOC').disabled = true;
+      if (!userHasRight('disableAlarms'))
+        WebSAGE.g_win_cmd.document.getElementById('CBALRIN').disabled = true;
+      if (!userHasRight('enterLimits')) {
+        WebSAGE.g_win_cmd.document.getElementById('LIMSUP').disabled = true;
+        WebSAGE.g_win_cmd.document.getElementById('LIMINF').disabled = true;
+        WebSAGE.g_win_cmd.document.getElementById('HISTER').disabled = true;
+      }
+
       WebSAGE.g_timerID = setTimeout("WebSAGE.showValsInfo2(1)", 2000);
     } catch (err) {
       $("#SP_STATUS").text(err.name + ": " + err.message + " [2]");
@@ -6157,7 +6175,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
         window.drgObject = null;
       }
     });
-
+   
     WebSAGE.pinnedAnnotations();
   } // init
 }; // WebSAGE
