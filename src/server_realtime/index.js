@@ -599,7 +599,7 @@ let pool = null
                           if ( result.acknowledged ) {
                           // updateOne ok
                           OpcResp.Body.Results.push(opc.StatusCode.Good)
-                          console.log('update ok id: ' + node.NodeId.Id)
+                          console.log('update ok id: ' + node.NodeId.Id)                          
                         } else {
                           // some updateOne error
                           OpcResp.Body.Results.push(
@@ -810,6 +810,7 @@ let pool = null
                           {
                             $and: [
                               { type: 'analog' },
+                              { alarmDisabled: false },
                               { alarmed: true },
                               { invalid: false },
                               { ...((grp1 !== null)?grp1:{}) },
@@ -818,7 +819,18 @@ let pool = null
                           },
                           {
                             $and: [
+                              { type: 'analog' },
+                              { alarmDisabled: false },
+                              { alarmRange: { $exists: true, $ne: 0 } },
+                              { invalid: false },
+                              { ...(grp1 !== null ? grp1 : {}) },
+                              { ...(grp2 !== null ? grp2 : {}) }
+                            ]
+                          },
+                          {
+                            $and: [
                               { type: 'digital' },
+                              { alarmDisabled: false },
                               { alarmState: 0 },
                               { value: 0 },
                               { invalid: false },
@@ -829,6 +841,7 @@ let pool = null
                           {
                             $and: [
                               { type: 'digital' },
+                              { alarmDisabled: false },
                               { alarmState: 1 },
                               { value: 1 },
                               { invalid: false },

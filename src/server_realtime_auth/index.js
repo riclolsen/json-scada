@@ -38,7 +38,7 @@ const app = express()
 var cookieParser = require('cookie-parser')
 const fs = require('fs')
 const { MongoClient, ObjectId, Double, GridFSBucket } = require('mongodb')
-var Grid = require('gridfs-stream');
+var Grid = require('gridfs-stream')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 const UserActionsQueue = require('./userActionsQueue')
@@ -100,16 +100,19 @@ if (AUTHENTICATION) {
   console.log('******* DISABLED AUTHENTICATION! ********')
 
   // reverse proxy for grafana
-  app.use('/grafana', httpProxy(GRAFANA_SERVER)) 
+  app.use('/grafana', httpProxy(GRAFANA_SERVER))
 
   // add charset for special sage displays
-  app.use('/sage-cepel-displays/', express.static('../htdocs/sage-cepel-displays', {
-    setHeaders: function(res, path) {
-      if (/.*\.html/.test(path)) {
-        res.set({ 'content-type': 'text/html; charset=iso-8859-1' });
+  app.use(
+    '/sage-cepel-displays/',
+    express.static('../htdocs/sage-cepel-displays', {
+      setHeaders: function (res, path) {
+        if (/.*\.html/.test(path)) {
+          res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
+        }
       }
-    }
-  }));
+    })
+  )
   app.use(express.static('../htdocs')) // serve static files
   app.options(OPCAPI_AP, cors()) // enable pre-flight request
   app.use(express.json())
@@ -157,7 +160,14 @@ let pool = null
 
   if (AUTHENTICATION) {
     require('./app/routes/auth.routes')(app, OPCAPI_AP)
-    require('./app/routes/user.routes')(app, OPCAPI_AP, opcApi, GETFILE_AP, getFileApi, GRAFANA_SERVER)
+    require('./app/routes/user.routes')(
+      app,
+      OPCAPI_AP,
+      opcApi,
+      GETFILE_AP,
+      getFileApi,
+      GRAFANA_SERVER
+    )
   } else {
     app.post(OPCAPI_AP, opcApi)
     app.get(GETFILE_AP, getFileApi)
@@ -165,19 +175,19 @@ let pool = null
 
   // find file on mongodb gridfs and return it
   async function getFileApi (req, res) {
-    let filename = req.query?.name || ''    
+    let filename = req.query?.name || ''
     let bucketName = req.query?.bucket || 'fs'
     let mimeType = req.query?.mime || path.basename(filename)
     let refresh = req.query.refresh || 0
 
-    if (filename.trim() === ''){
+    if (filename.trim() === '') {
       res.setHeader('Content-type', 'application/json')
       res.send("{ error: 'Parameter [name] empty or not specified' }")
     }
-    try{
-      let gfs = new GridFSBucket(db, {bucketName: bucketName })
-      let f = await gfs.find({filename: filename}).toArray()
-      if (f.length === 0){
+    try {
+      let gfs = new GridFSBucket(db, { bucketName: bucketName })
+      let f = await gfs.find({ filename: filename }).toArray()
+      if (f.length === 0) {
         console.log('File not found ' + filename)
         res.setHeader('Content-type', 'application/json')
         res.send("{ error: 'File not found' }")
@@ -185,15 +195,17 @@ let pool = null
       }
       let readstream = gfs.openDownloadStreamByName(filename)
       res.type(mimeType)
-      res.setHeader('Content-disposition', 'inline; filename="'+filename+'"')
-      if (refresh) res.setHeader('Refresh', refresh);
+      res.setHeader(
+        'Content-disposition',
+        'inline; filename="' + filename + '"'
+      )
+      if (refresh) res.setHeader('Refresh', refresh)
       readstream.pipe(res)
-      }
-      catch(e){
-        console.log('File not found: ' + filename + ' ' + e.message)
-        res.setHeader('Content-type', 'application/json')
-        res.send("{ error: 'File not found' }")
-      }
+    } catch (e) {
+      console.log('File not found: ' + filename + ' ' + e.message)
+      res.setHeader('Content-type', 'application/json')
+      res.send("{ error: 'File not found' }")
+    }
   }
 
   // OPC WEB HMI API
@@ -503,16 +515,31 @@ let pool = null
                   // make digital event tags return to zero after acknowledged
                   result = await db
                     .collection(COLL_REALTIME)
-                    .updateMany({ $and: [{type: 'digital'}, {isEvent: true}, {value:1}, {$or : [{origin: 'supervised'},{origin: 'calculated'}]}] }, [
+                    .updateMany(
                       {
-                        $set: {
-                          value: 0,
-                          valueString: '$stateTextFalse',
-                          timeTagAtSource: null,
-                          TimeTagAtSourceOk: null
+                        $and: [
+                          { type: 'digital' },
+                          { isEvent: true },
+                          { value: 1 },
+                          {
+                            $or: [
+                              { origin: 'supervised' },
+                              { origin: 'calculated' }
+                            ]
+                          }
+                        ]
+                      },
+                      [
+                        {
+                          $set: {
+                            value: 0,
+                            valueString: '$stateTextFalse',
+                            timeTagAtSource: null,
+                            TimeTagAtSourceOk: null
+                          }
                         }
-                      }
-                    ])
+                      ]
+                    )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Alarms',
@@ -530,16 +557,31 @@ let pool = null
                   // make digital event tag return to zero after acknowledged
                   result = await db
                     .collection(COLL_REALTIME)
-                    .updateOne({ $and: [findPoint, {type: 'digital'}, {isEvent: true}, {$or : [{origin: 'supervised'},{origin: 'calculated'}]}] }, [
+                    .updateOne(
                       {
-                        $set: {
-                          value: 0,
-                          valueString: '$stateTextFalse',
-                          timeTagAtSource: null,
-                          TimeTagAtSourceOk: null
+                        $and: [
+                          findPoint,
+                          { type: 'digital' },
+                          { isEvent: true },
+                          {
+                            $or: [
+                              { origin: 'supervised' },
+                              { origin: 'calculated' }
+                            ]
+                          }
+                        ]
+                      },
+                      [
+                        {
+                          $set: {
+                            value: 0,
+                            valueString: '$stateTextFalse',
+                            timeTagAtSource: null,
+                            TimeTagAtSourceOk: null
+                          }
                         }
-                      }
-                    ])
+                      ]
+                    )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Alarm',
@@ -688,14 +730,17 @@ let pool = null
                       isNaN(data.protocolSourceCommonAddress) ||
                       isNaN(data.protocolSourceObjectAddress) ||
                       isNaN(data.protocolSourceASDU)
-                    ){ // non numerical addressing
+                    ) {
+                      // non numerical addressing
                       addressing = {
-                        protocolSourceCommonAddress: data.protocolSourceCommonAddress,
-                        protocolSourceObjectAddress: data.protocolSourceObjectAddress,
+                        protocolSourceCommonAddress:
+                          data.protocolSourceCommonAddress,
+                        protocolSourceObjectAddress:
+                          data.protocolSourceObjectAddress,
                         protocolSourceASDU: data.protocolSourceASDU
                       }
-                    }
-                    else { // numerical addressing: force data type as BSON double
+                    } else {
+                      // numerical addressing: force data type as BSON double
                       addressing = {
                         protocolSourceCommonAddress: new Double(
                           data.protocolSourceCommonAddress
@@ -711,7 +756,7 @@ let pool = null
                       protocolSourceConnectionNumber: new Double(
                         data.protocolSourceConnectionNumber
                       ),
-                      ... addressing,
+                      ...addressing,
                       protocolSourceCommandDuration: new Double(
                         data.protocolSourceCommandDuration
                       ),
@@ -748,11 +793,9 @@ let pool = null
                     // insert command action on SOE list, if desired
                     if (DoInsertCommandAsSOE) {
                       let eventText = cmd_val.toString()
-                      if (data.type === 'digital'){
-                        if (cmd_val)
-                          eventText = data.eventTextTrue
-                        else
-                          eventText = data.eventTextFalse
+                      if (data.type === 'digital') {
+                        if (cmd_val) eventText = data.eventTextTrue
+                        else eventText = data.eventTextFalse
                       }
                       db.collection(COLL_SOE).insertOne({
                         tag: data.tag,
@@ -766,8 +809,8 @@ let pool = null
                         timeTagAtSource: new Date(),
                         timeTagAtSourceOk: true,
                         ack: 1
-                      }) 
-                    }                 
+                      })
+                    }
 
                     UserActionsQueue.enqueue({
                       username: username,
@@ -776,14 +819,16 @@ let pool = null
                       action: 'Command',
                       properties: {
                         value: new Double(cmd_val),
-                        valueString: parseFloat(cmd_val).toString(),
+                        valueString: parseFloat(cmd_val).toString()
                       },
                       timeTag: new Date()
                     })
 
                     OpcResp.Body.Results.push(opc.StatusCode.Good) // write ok
-                    // a way for the client to find this inserted command                    
-                    OpcResp.Body._CommandHandles.push(result.insertedId.toString())
+                    // a way for the client to find this inserted command
+                    OpcResp.Body._CommandHandles.push(
+                      result.insertedId.toString()
+                    )
                   }
               } else if (node.AttributeId == opc.AttributeId.Description) {
                 // Write Properties
@@ -838,9 +883,7 @@ let pool = null
                           prevData?.loLimit !== node.Value._Properties?.loLimit
                         )
                           loLimitNew = {
-                            loLimit: new Double(
-                              node.Value._Properties.loLimit
-                            )
+                            loLimit: new Double(node.Value._Properties.loLimit)
                           }
 
                       let hiLimitNew = {}
@@ -849,15 +892,14 @@ let pool = null
                           prevData?.hiLimit !== node.Value._Properties?.hiLimit
                         )
                           hiLimitNew = {
-                            hiLimit: new Double(
-                              node.Value._Properties.hiLimit
-                            )
+                            hiLimit: new Double(node.Value._Properties.hiLimit)
                           }
 
                       let hysteresisNew = {}
                       if (!AUTHENTICATION || userRights?.enterLimits)
                         if (
-                          prevData?.hysteresis !== node.Value._Properties?.hysteresis
+                          prevData?.hysteresis !==
+                          node.Value._Properties?.hysteresis
                         )
                           hysteresisNew = {
                             hysteresis: new Double(
@@ -887,9 +929,7 @@ let pool = null
                             prevData?.value !== node.Value._Properties.newValue
                           )
                             valueNew = {
-                              value: new Double(
-                                node.Value._Properties.newValue
-                              )
+                              value: new Double(node.Value._Properties.newValue)
                             }
 
                       let set = {
@@ -907,7 +947,7 @@ let pool = null
                       let result = await db
                         .collection(COLL_REALTIME)
                         .updateOne(findPoint, set)
-                      if ( result.acknowledged ) {
+                      if (result.acknowledged) {
                         // updateOne ok
                         OpcResp.Body.Results.push(opc.StatusCode.Good)
                         console.log('update ok id: ' + node.NodeId.Id)
@@ -919,6 +959,28 @@ let pool = null
                           timeTag: new Date()
                         })
 
+                        // if changed limits force an updated to recheck range
+                        if (prevData.type === 'analog') {
+                          if (
+                            'alarmDisabled' in alarmDisableNew ||
+                            'hiLimit' in hiLimitNew ||
+                            'loLimit' in loLimitNew ||
+                            'hysteresis' in hysteresisNew
+                          ) {
+                            console.log(
+                              'Update for range check: ' + node.NodeId.Id
+                            )
+                            db.collection(COLL_REALTIME).updateOne(findPoint, {
+                              $set: {
+                                sourceDataUpdate: {
+                                  ...prevData.sourceDataUpdate,
+                                  rangeCheck: new Date().getTime()
+                                }
+                              }
+                            })
+                          }
+                        }
+
                         // insert event for changed annotation
                         if ('annotation' in annotationNew) {
                           let eventDate = new Date()
@@ -927,7 +989,10 @@ let pool = null
                             pointKey: prevData._id,
                             group1: prevData?.group1,
                             description: prevData?.description,
-                            eventText: (annotationNew.annotation.trim()==='')?'🏷️🗑️':'🏷️🔒', // &#127991;
+                            eventText:
+                              annotationNew.annotation.trim() === ''
+                                ? '🏷️🗑️'
+                                : '🏷️🔒', // &#127991;
                             invalid: false,
                             priority: prevData?.priority,
                             timeTag: eventDate,
@@ -942,14 +1007,13 @@ let pool = null
                           let eventDate = new Date()
                           let eventText = ''
                           if (prevData?.type === 'digital')
-                            eventText = (valueNew.value == 0)
-                              ? prevData?.eventTextFalse
-                              : prevData?.eventTextTrue
+                            eventText =
+                              valueNew.value == 0
+                                ? prevData?.eventTextFalse
+                                : prevData?.eventTextTrue
                           else
                             eventText =
-                              valueNew.value.toFixed(2) +
-                              ' ' +
-                              prevData?.unit
+                              valueNew.value.toFixed(2) + ' ' + prevData?.unit
                           db.collection(COLL_SOE).insertOne({
                             tag: prevData.tag,
                             pointKey: prevData._id,
@@ -1178,6 +1242,7 @@ let pool = null
                         {
                           $and: [
                             { type: 'analog' },
+                            { alarmDisabled: false },
                             { alarmed: true },
                             { invalid: false },
                             { ...(grp1 !== null ? grp1 : {}) },
@@ -1186,7 +1251,18 @@ let pool = null
                         },
                         {
                           $and: [
+                            { type: 'analog' },
+                            { alarmDisabled: false },
+                            { alarmRange: { $exists: true, $ne: 0 } },
+                            { invalid: false },
+                            { ...(grp1 !== null ? grp1 : {}) },
+                            { ...(grp2 !== null ? grp2 : {}) }
+                          ]
+                        },
+                        {
+                          $and: [
                             { type: 'digital' },
+                            { alarmDisabled: false },
                             { alarmState: 0 },
                             { value: 0 },
                             { invalid: false },
@@ -1197,6 +1273,7 @@ let pool = null
                         {
                           $and: [
                             { type: 'digital' },
+                            { alarmDisabled: false },
                             { alarmState: 1 },
                             { value: 1 },
                             { invalid: false },
@@ -1271,9 +1348,13 @@ let pool = null
                         Result._Properties = {
                           _id: pointInfo._id,
                           valueString: pointInfo.valueString,
-                          alarmed: pointInfo.alarmed,                          
-                          ...(pointInfo.type==='analog'?{alarmRange: pointInfo?.alarmRange}:{}),
-                          ...(pointInfo.type==='analog'?{frozen:pointInfo?.frozen}:{}),
+                          alarmed: pointInfo.alarmed,
+                          ...(pointInfo.type === 'analog'
+                            ? { alarmRange: pointInfo?.alarmRange }
+                            : {}),
+                          ...(pointInfo.type === 'analog'
+                            ? { frozen: pointInfo?.frozen }
+                            : {}),
                           alarmDisabled: pointInfo.alarmDisabled,
                           transit: pointInfo.transit,
                           annotation: pointInfo.annotation,
@@ -1286,8 +1367,12 @@ let pool = null
                             valueString: pointInfo.valueString,
                             valueDefault: pointInfo.valueDefault,
                             alarmed: pointInfo.alarmed,
-                            ...(pointInfo.type==='analog'?{alarmRange: pointInfo?.alarmRange}:{}),
-                            ...(pointInfo.type==='analog'?{frozen:pointInfo?.frozen}:{}),
+                            ...(pointInfo.type === 'analog'
+                              ? { alarmRange: pointInfo?.alarmRange }
+                              : {}),
+                            ...(pointInfo.type === 'analog'
+                              ? { frozen: pointInfo?.frozen }
+                              : {}),
                             alarmDisabled: pointInfo.alarmDisabled,
                             transit: pointInfo.transit,
                             group1: pointInfo.group1,
@@ -1315,7 +1400,7 @@ let pool = null
                             Quality: pointInfo.invalid
                               ? opc.StatusCode.Bad
                               : opc.StatusCode.Good
-                          } 
+                          }
                         else
                           Result.Value = {
                             Type:
@@ -1346,15 +1431,14 @@ let pool = null
                 } else {
                   // no NodesToRead so it is a filtered query
                   results.map(node => {
-
                     let Value = {}
                     if (node.type === 'string')
                       Value = {
                         Type: opc.DataType.String,
                         Body: node.valueString,
                         Quality: node.invalid
-                        ? opc.StatusCode.Bad
-                        : opc.StatusCode.Good
+                          ? opc.StatusCode.Bad
+                          : opc.StatusCode.Good
                       }
                     else
                       Value = {
@@ -1385,8 +1469,12 @@ let pool = null
                         valueString: node.valueString,
                         valueDefault: node.valueDefault,
                         alarmed: node.alarmed,
-                        ...(node.type==='analog'?{alarmRange: node?.alarmRange}:{}),
-                        ...(node.type==='analog'?{frozen:node?.frozen}:{}),
+                        ...(node.type === 'analog'
+                          ? { alarmRange: node?.alarmRange }
+                          : {}),
+                        ...(node.type === 'analog'
+                          ? { frozen: node?.frozen }
+                          : {}),
                         alarmDisabled: node.alarmDisabled,
                         alarmState: node.alarmState,
                         isEvent: node.isEvent,
@@ -2082,7 +2170,6 @@ let pool = null
     if (!(await checkConnectedMongo(clientMongo))) {
       clientMongo = null
     }
-
   }
 })()
 

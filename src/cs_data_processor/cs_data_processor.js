@@ -395,6 +395,7 @@ const pipeline = [
                   $expr: {
                     $and: [
                       { $eq: ['$origin', 'supervised'] },
+                      { $eq: ['$substituted', false] },
                       { $eq: ['$invalid', false] },
                       {
                         $lt: [
@@ -777,20 +778,20 @@ const pipeline = [
                       value >
                       change.fullDocument.hiLimit + hysteresis
                     ) {
-                      alarmed = true
                       alarmRange = 1
                     }
                     else if (
                       value <
                       change.fullDocument.loLimit - hysteresis
                     ) {
-                      alarmed = true
                       alarmRange = -1
                     }
-                    else if (value < change.fullDocument.hiLimit - hysteresis)
+                    else if ( (value < (change.fullDocument.hiLimit - hysteresis)) && 
+                              (value > (change.fullDocument.loLimit + hysteresis)) ) {
                       alarmed = false
-                    else if (value > change.fullDocument.loLimit + hysteresis)
-                      alarmed = false
+                      alarmRange = 0
+                    } else if (change.fullDocument?.alarmRange) // keep the old range if out of range
+                      alarmRange = change.fullDocument.alarmRange 
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
                     //if (alarmed != change.fullDocument.alarmed) 
@@ -808,7 +809,9 @@ const pipeline = [
                     //    value > change.fullDocument.loLimit + hysteresis
                     //      ) 
                     if (!change.fullDocument.alarmDisabled)
-                    if (change.fullDocument?.alarmRange !== alarmRange) {
+                    if (change.fullDocument?.alarmRange != alarmRange) {
+                      if (alarmRange != 0)
+                        alarmed = true
                       const eventDate = new Date()
                       const eventText =
                         parseFloat(value.toFixed(3)) +
@@ -885,12 +888,13 @@ const pipeline = [
                 // update only if changed or for SOE
                 if (
                   isSOE ||
+                  change.updateDescription.updatedFields.sourceDataUpdate?.rangeCheck ||
                   value !== change.fullDocument.value ||
                   valueString !== change.fullDocument.valueString ||
                   invalid !== change.fullDocument.invalid
                 ) {
                   let dt = new Date()
-
+                  
                   if (!change.fullDocument.alarmDisabled) {
                     if (
                       // (alarmed && isSOE && change.fullDocument?.isEvent===true && change.fullDocument.type === 'digital') ||
