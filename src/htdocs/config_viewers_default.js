@@ -177,6 +177,7 @@ ScreenViewer_ColorTable[59] = '#CCCCCC'; // load rectangle MW or MVA or A
 
 var ScreenViewer_SlideShowInterval = 10; // slide show time in seconds
 var ScreenViewer_EnableTimeMachine = 1; // 1 = enable time machine, 0 = disable time machine
+var ScreenViewer_SecurityCardScale = 1.0; // scale to represent an annotation security card
 
 // Command dialog
 var CommandDialog_Background = 'wheat'; // background color

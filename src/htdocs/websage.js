@@ -4639,7 +4639,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
     block.setAttributeNS(
       null,
       "transform",
-      xfm + " translate(" + x + " " + y + ") "
+      xfm + " translate(" + x + " " + y + ") " + "scale(" + ScreenViewer_SecurityCardScale + ")"
     );
 
     // SVGDoc.documentElement.appendChild( block );
