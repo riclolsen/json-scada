@@ -35,7 +35,7 @@ namespace Dnp3Driver
         static IDNP3Manager mgr;
         public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020-2021 RLO";
         public static String ProtocolDriverName = "DNP3";
-        public static String DriverVersion = "0.1.2";
+        public static String DriverVersion = "0.1.3";
         public static uint CROB_PulseOnTime = 100;
         public static uint CROB_PulseOffTime = 100;
         public static bool Active = false; // indicates this driver instance is the active node in the moment
@@ -297,9 +297,9 @@ namespace Dnp3Driver
                     .ToList();
             foreach (DNP3_connection isrv in conns)
             {
-                if (isrv.ipAddresses.Length < 1)
+                if (isrv.ipAddresses.Length < 1 && isrv.portName.Trim() == "")
                 {
-                    Log("Missing ipAddresses list!");
+                    Log("No ipAddresses or port name defined on conenction! " + isrv.name);
                     Environment.Exit(-1);
                 }
                 DNP3conns.Add(isrv);
