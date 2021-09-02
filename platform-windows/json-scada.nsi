@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.13"
-!define VERSION_ "0.13.0.0"
+!define VERSION "v.0.14"
+!define VERSION_ "0.14.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -307,7 +307,7 @@ SetRegView 64
   File /a "..\src\htdocs\*.*"
   SetOutPath $INSTDIR\src\htdocs\scripts
   File /a /r "..\src\htdocs\scripts\*.*"
-  SetOutPath $INSTDIR\src\sage-cepel-displays
+  SetOutPath $INSTDIR\src\htdocs\sage-cepel-displays
   File /a /r "..\src\htdocs\sage-cepel-displays\README.md"
   SetOutPath $INSTDIR\src\htdocs\images
   File /a /r "..\src\htdocs\images\*.*"
@@ -365,6 +365,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\server_realtime_auth
   File /a /r "..\src\server_realtime_auth\*.*"
+
+  SetOutPath $INSTDIR\src\updateUser
+  File /a /r "..\src\updateUser\*.*"
 
   SetOutPath $INSTDIR\src\telegraf-listener
   File /a /r "..\src\telegraf-listener\*.*"

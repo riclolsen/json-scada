@@ -122,6 +122,30 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.14:
+
+ - Default login credentials: username=admin password=jsonscada
+ - Fixed tag creation missing properties on admin UI.
+ - Added updateUser tool to update password and create users via command line.
+ - I104M fixed command problems.
+ - Fixed problem with DNP3 client serial.
+ - IEC60870-5-104 Server now supports TLS.
+ - Shell API can now silence the alarm beep.
+ - Various fixes and enhancements for viewers.
+ - MongoDB Community Server updated to 4.4.8.
+ - MongoDB Compass updated to 1.28.1.
+ - Grafana updated to 8.1.2.
+ - Nodejs updated to 16.6.1.
+ - Updated MongoDB drivers for various modules.
+
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+ - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000.  Other ports may be required for optional services and protocols.
+ - Administrative rights. Corporative Windows policies may cause problems with the creation of services and use of TCP ports.
+
+-------------------------------------------------------------------
+
 Notes for version 0.13:
 
  - Default login credentials: username=admin password=jsonscada

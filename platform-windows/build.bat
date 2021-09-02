@@ -11,6 +11,9 @@ copy \json-scada\src\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll bin\ /y
 
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
+cd \json-scada\src\dnp3\Dnp3Client\ 
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ..\..\..\demo-docker\bin_win\
+
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
 dotnet build --runtime win-x64 -c Release
 dotnet build --runtime win-x64 -c Release -o ..\..\..\bin\ 
@@ -56,6 +59,8 @@ call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\server_realtime
 call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\server_realtime_auth
+call \json-scada\platform-windows\nodejs-runtime\npm install
+cd \json-scada\src\updateUser
 call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\shell-api
 call \json-scada\platform-windows\nodejs-runtime\npm install
