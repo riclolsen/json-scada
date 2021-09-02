@@ -108,8 +108,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Protocols Roadmap
 
-- [x] IEC 60870-5-104 Server TCP
-- [ ] IEC 60870-5-104 Server TLS
+- [x] IEC 60870-5-104 Server TCP/TLS
 - [x] IEC 60870-5-104 Client TCP/TLS
 - [x] IEC 60870-5-101 Server (Serial, TCP)
 - [x] IEC 60870-5-101 Client (Serial, TCP)
