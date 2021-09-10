@@ -18,8 +18,8 @@
  */
 
 module.exports = {
-  NAME: 'SERVER_REALTIME_AUTH',
-  ENV_PREFIX: 'JS_SERVER_RT_AUTH',
-  MSG: '{json:scada} - Server Realtime Auth',
+  NAME: 'UPDATE_USER',
+  ENV_PREFIX: 'JS_SERVER_UPDATE_USER',
+  MSG: '{json:scada} - Update User Tool',
   VERSION: '0.1.0',
 }
