@@ -27,7 +27,7 @@ const VERSION = '0.1.0'
 var jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
 const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, ReadPreference } = require('mongodb')
 const { setInterval } = require('timers')
 const {beep}=require('a1-beep')
 let sys = require('child_process')
@@ -79,7 +79,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + " Version:" + VERSION,
     poolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (typeof jsConfig.tlsCaPemFile === 'string' && jsConfig.tlsCaPemFile.trim() !== '') {
