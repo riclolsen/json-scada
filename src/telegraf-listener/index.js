@@ -34,7 +34,7 @@ const LogLevelMin = 0,
 
 const fs = require('fs')
 const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, ReadPreference } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
@@ -406,7 +406,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     maxPoolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (
