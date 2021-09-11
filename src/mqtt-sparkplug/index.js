@@ -47,7 +47,7 @@ let AutoCreateTags = true
 
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
-  Log.logLevelCurrent = jsConfig.LogLevel
+  Log.levelCurrent = jsConfig.LogLevel
   const csPipeline = [
     {
       $project: { documentKey: false }
@@ -151,7 +151,7 @@ let AutoCreateTags = true
           timestamp: new Date().getTime(),
           metrics: metrics
         }
-        if (Log.logLevelCurrent >= Log.levelDetailed)
+        if (Log.levelCurrent >= Log.levelDetailed)
           Log.log(
             'Sparkplug - Publish - ' + JSON.stringify(payload),
             Log.levelDetailed
@@ -1532,7 +1532,7 @@ async function sparkplugProcess (
           )
         Log.log(logModS + 'Event: Sparkplug B message on topic: ' + topic)
 
-        if (Log.logLevelCurrent >= Log.levelDetailed) {
+        if (Log.levelCurrent >= Log.levelDetailed) {
           //Log.log(logModS + JSON.stringify(topicInfo), Log.levelDetailed)
           Log.log(logModS + JSON.stringify(payload), Log.levelDetailed)
         }

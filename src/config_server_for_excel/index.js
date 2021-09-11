@@ -62,7 +62,7 @@ function toMongoObj (value, defaultValue) {
 }
 
 const jsConfig = LoadConfig() // load and parse config file
-Log.logLevelCurrent = jsConfig.LogLevel
+Log.levelCurrent = jsConfig.LogLevel
 
 app.use(express.json({ limit: '200mb' }))
 app.use(express.text({ limit: '200mb' }))

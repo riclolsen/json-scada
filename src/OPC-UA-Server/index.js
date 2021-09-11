@@ -37,7 +37,7 @@ const Redundancy = require('./redundancy')
 
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
-  Log.logLevelCurrent = jsConfig.LogLevel
+  Log.levelCurrent = jsConfig.LogLevel
 
   const csPipeline = [
     {
