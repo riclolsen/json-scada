@@ -35,7 +35,7 @@ const cors = require('cors')
 // const bodyParser = require('body-parser')
 const app = express()
 const fs = require('fs')
-const { MongoClient, ObjectId, Double, GridFSBucket } = require('mongodb')
+const { MongoClient, ObjectId, Double, GridFSBucket, ReadPreference } = require('mongodb')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 
@@ -1638,7 +1638,7 @@ let pool = null
             useUnifiedTopology: true,
             appname: APP_NAME,
             maxPoolSize: 20,
-            readPreference: MongoClient.READ_PRIMARY
+            readPreference: ReadPreference.PRIMARY
           }
 
           if (
