@@ -1,6 +1,6 @@
 const express = require('express')
 const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, ReadPreference } = require('mongodb')
 const { parse } = require('json2csv')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
@@ -365,7 +365,7 @@ function getMongoConnectionOptions (configObj) {
       ' Instance:' +
       configObj.Instance,
     maxPoolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (
