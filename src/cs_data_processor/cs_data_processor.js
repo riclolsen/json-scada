@@ -41,7 +41,7 @@ const Instance = inst || process.env.JS_CSDATAPROC_INSTANCE || 1
 
 var logLevel = null
 if (args.length > 1) logLevel = parseInt(args[1])
-Log.logLevelCurrent = logLevel || process.env.JS_CSDATAPROC_LOGLEVEL || 1
+Log.levelCurrent = logLevel || process.env.JS_CSDATAPROC_LOGLEVEL || 1
 
 var confFile = null
 if (args.length > 2) confFile = args[2]
@@ -49,7 +49,7 @@ jsConfigFile = confFile || process.env.JS_CONFIG_FILE || jsConfigFile
 
 Log.log(APP_MSG + ' Version ' + VERSION)
 Log.log('Instance: ' + Instance)
-Log.log('Log level: ' + Log.logLevelCurrent)
+Log.log('Log level: ' + Log.levelCurrent)
 Log.log('Config File: ' + jsConfigFile)
 
 if (!fs.existsSync(jsConfigFile)) {
