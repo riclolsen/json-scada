@@ -155,7 +155,7 @@ const Redundancy = require('./redundancy')
       await MongoClient.connect(
         // try to (re)connect
         jsConfig.mongoConnectionString,
-        getMongoConnectionOptions(jsConfig, MongoClient)
+        getMongoConnectionOptions(jsConfig)
       ).then(async client => {
         // connected
         Log.log('MongoDB - Connected correctly to MongoDB server', Log.levelMin)
