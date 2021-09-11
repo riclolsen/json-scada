@@ -53,7 +53,7 @@ const OutputDir = 'output'
   // connect to mongodb
   MongoClient.connect(
     jsConfig.mongoConnectionString,
-    getMongoConnectionOptions(jsConfig, MongoClient)
+    getMongoConnectionOptions(jsConfig)
   ).then(async client => {
     // connected
 
