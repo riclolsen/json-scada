@@ -291,9 +291,9 @@ const pipeline = [
                     Log.log('Instance config not found, creating one...')
                     db.collection(ProcessInstancesCollectionName).insertOne({
                       processName: APP_NAME,
-                      processInstanceNumber: new mongo.Double(Instance),
+                      processInstanceNumber: new Double(Instance),
                       enabled: true,
-                      logLevel: new mongo.Double(1),
+                      logLevel: new Double(1),
                       nodeNames: [],
                       activeNodeName: jsConfig.nodeName,
                       activeNodeKeepAliveTimeTag: new Date()
