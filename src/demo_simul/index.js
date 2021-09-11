@@ -21,7 +21,7 @@
 
 const APP_NAME = 'demo substation simul'
 const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, ReadPreference } = require('mongodb')
 const fs = require('fs')
 
 const jsConfigFile = '../../conf/json-scada.json'
@@ -34,7 +34,7 @@ let connOptions = {
   useUnifiedTopology: true,
   appname: APP_NAME,
   poolSize: 20,
-  readPreference: MongoClient.READ_PRIMARY
+  readPreference: ReadPreference.PRIMARY
 }
 
 const pipeline = [
