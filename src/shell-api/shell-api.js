@@ -30,7 +30,7 @@ const VERSION = '0.1.3'
 var jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
 const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, ReadPreference } = require('mongodb')
 const { setInterval } = require('timers')
 const express = require('express')
 const app = express()
@@ -80,7 +80,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION,
     maxPoolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (
