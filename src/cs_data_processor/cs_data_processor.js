@@ -27,7 +27,7 @@ let ProcessActive = false // for redundancy control
 var jsConfigFile = '../../conf/json-scada.json'
 const sqlFilesPath = '../../sql/'
 const fs = require('fs')
-const { MongoClient, Double } = require('mongodb')
+const { MongoClient, Double, ReadPreference } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
@@ -220,7 +220,8 @@ const pipeline = [
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     poolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY,
+    // readConcern: { level: 'majority' }
   }
 
   if (
