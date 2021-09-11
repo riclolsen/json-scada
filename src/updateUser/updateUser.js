@@ -52,7 +52,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
   // connect to mongodb
   await MongoClient.connect(
     jsConfig.mongoConnectionString,
-    getMongoConnectionOptions(jsConfig, MongoClient)
+    getMongoConnectionOptions(jsConfig)
   ).then(async client => {
     // connected
 

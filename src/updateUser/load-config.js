@@ -20,6 +20,7 @@
 const fs = require('fs')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
+const { ReadPreference } = require('mongodb')
 
 // load and parse config file
 function LoadConfig (confFileArg, logLevelArg, instArg) {
@@ -69,7 +70,7 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
 }
 
 // prepare mongo connection options
-function getMongoConnectionOptions (configObj, MongoClient) {
+function getMongoConnectionOptions (configObj) {
   let connOptions = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -80,7 +81,7 @@ function getMongoConnectionOptions (configObj, MongoClient) {
       ' Instance:' +
       configObj.Instance,
     maxPoolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (
