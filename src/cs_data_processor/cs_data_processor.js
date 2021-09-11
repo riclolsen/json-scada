@@ -57,6 +57,23 @@ if (!fs.existsSync(jsConfigFile)) {
   process.exit()
 }
 
+let DivideProcessingExpression = {}
+if (
+  'JS_CSDATAPROC_DIVIDE_EXP' in process.env &&
+  process.env.JS_CSDATAPROC_DIVIDE_EXP.trim() !== ''
+) {
+  try {
+    DivideProcessingExpression = JSON.parse(
+      process.env.JS_CSDATAPROC_DIVIDE_EXP
+    )
+    Log.log("Divide Processing Expression: " + JSON.stringify(DivideProcessingExpression))
+  } catch (e) {
+    DivideProcessingExpression = {}
+    Log.log("Divide Processing Expression: ERROR!" + e )
+    process.exit(1)
+  }
+}
+
 const RealtimeDataCollectionName = 'realtimeData'
 const ProcessInstancesCollectionName = 'processInstances'
 const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
@@ -85,6 +102,7 @@ const pipeline = [
     $match: {
       $and: [
         { 'fullDocument.value': { $exists: true } },
+        DivideProcessingExpression,
         {
           'updateDescription.updatedFields.sourceDataUpdate': { $exists: true }
         },
