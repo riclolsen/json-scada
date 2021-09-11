@@ -25,8 +25,7 @@ const { VM } = require('vm2')
 const Streamifier = require('streamifier')
 const SparkplugClient = require('./sparkplug-client')
 const Fs = require('fs')
-const Mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, GridFSBucket, Double, ReadPreference } = require('mongodb')
 const Grid = require('gridfs-stream')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
@@ -915,7 +914,7 @@ function getMongoConnectionOptions (configObj) {
       ' Instance:' +
       configObj.Instance,
     poolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (
@@ -969,7 +968,7 @@ async function processMongoUpdates (clientMongo, collection, jsConfig) {
       )
 
       let updTag = {
-        valueAtSource: new Mongo.Double(parseFloat(data.value)),
+        valueAtSource: new Double(parseFloat(data.value)),
         valueStringAtSource: data.valueString,
         valueJsonAtSource: data?.valueJson,
         asduAtSource: data?.asduAtSource,
@@ -1281,7 +1280,7 @@ async function sparkplugProcess (
               match = true
               try {
                 // save as file on Mongodb Gridfs
-                let gfs = new Mongo.GridFSBucket(sparkplugProcess.db)
+                let gfs = new GridFSBucket(sparkplugProcess.db)
 
                 // delete older files with same name
                 let f = await gfs.find({ filename: topic }).toArray()
@@ -2054,9 +2053,9 @@ async function ProcessDeviceCommand (
       protocolSourceASDU: element.protocolSourceASDU,
       protocolSourceCommandDuration: element.protocolSourceCommandDuration,
       protocolSourceCommandUseSBO: element.protocolSourceCommandUseSBO,
-      pointKey: new Mongo.Double(element._id),
+      pointKey: new Double(element._id),
       tag: element.tag,
-      value: new Mongo.Double(value),
+      value: new Double(value),
       valueString: valueString,
       valueJson: valueJson,
       originatorUserName: jscadaConnection.name,
