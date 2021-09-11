@@ -25,8 +25,7 @@ const VERSION = '0.1.1'
 let ProcessActive = false // for redundancy control
 var jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
-const mongo = require('mongodb')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, Double, ReadPreference } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const CustomProcessor = require('./customized_module').CustomProcessor
@@ -82,7 +81,7 @@ console.log('Connecting to MongoDB server...')
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     poolSize: 20,
-    readPreference: MongoClient.READ_PRIMARY
+    readPreference: ReadPreference.PRIMARY
   }
 
   if (
@@ -140,9 +139,9 @@ console.log('Connecting to MongoDB server...')
                     console.log('Redundancy - Instance config not found, creating one...')
                     db.collection(ProcessInstancesCollectionName).insertOne({
                       processName: APP_NAME,
-                      processInstanceNumber: new mongo.Double(Instance),
+                      processInstanceNumber: new Double(Instance),
                       enabled: true,
-                      logLevel: new mongo.Double(1),
+                      logLevel: new Double(1),
                       nodeNames: [],
                       activeNodeName: jsConfig.nodeName,
                       activeNodeKeepAliveTimeTag: new Date()
@@ -207,7 +206,7 @@ console.log('Connecting to MongoDB server...')
                       db.collection(ProcessInstancesCollectionName).updateOne(
                         {
                           processName: APP_NAME,
-                          processInstanceNumber: new mongo.Double(Instance)
+                          processInstanceNumber: new Double(Instance)
                         },
                         {
                           $set: {

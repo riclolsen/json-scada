@@ -21,7 +21,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const mongo = require('mongodb')
+const { Double } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
@@ -113,16 +113,16 @@ module.exports.CustomProcessor = function (clientMongo, jsConfig) {
 
         // insert a command for requesting general interrogation on a IEC 104 connection
         db.collection(CommandsQueueCollectionName).insertOne({
-          protocolSourceConnectionNumber: new mongo.Double(61), // put here number of connection (101/104 client)
-          protocolSourceCommonAddress: new mongo.Double(1), // put here common address to interrogate
-          protocolSourceObjectAddress: new mongo.Double(0), // should be 0 for general interrogation
-          protocolSourceASDU: new mongo.Double(100), // 100 ASDU TYPE for general interrogation C_CS_NA_1
-          protocolSourceCommandDuration: new mongo.Double(20), // group of interrogation (20-36), 20=general interrogation
+          protocolSourceConnectionNumber: new Double(61), // put here number of connection (101/104 client)
+          protocolSourceCommonAddress: new Double(1), // put here common address to interrogate
+          protocolSourceObjectAddress: new Double(0), // should be 0 for general interrogation
+          protocolSourceASDU: new Double(100), // 100 ASDU TYPE for general interrogation C_CS_NA_1
+          protocolSourceCommandDuration: new Double(20), // group of interrogation (20-36), 20=general interrogation
           protocolSourceCommandUseSBO: false,
-          pointKey: new mongo.Double(0),
+          pointKey: new Double(0),
           tag: '',
           timeTag: new Date(),
-          value: new mongo.Double(20), // will not be used for interrogation, just for documentation
+          value: new Double(20), // will not be used for interrogation, just for documentation
           valueString: 'general interrogation', // just for documentation
           originatorUserName:
             'custom processor script, action "' +
