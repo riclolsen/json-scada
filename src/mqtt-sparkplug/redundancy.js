@@ -39,7 +39,7 @@ function Start (interval, clientMongo, db, configObj) {
 async function ProcessRedundancy (clientMongo, db, configObj) {
   if (!clientMongo || !db) return
 
-  Log.logLevelCurrent = configObj.LogLevel
+  Log.levelCurrent = configObj.LogLevel
 
   const countKeepAliveUpdatesLimit = 4
 
