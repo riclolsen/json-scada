@@ -195,7 +195,7 @@ const pipeline = [
         sqlTransaction + 'ON CONFLICT (tag, time_tag) DO NOTHING;\n'
       sqlTransaction = sqlTransaction + 'COMMIT;\n'
       fs.writeFile(
-        sqlFilesPath + 'pg_hist_' + new Date().getTime() + '.sql',
+        sqlFilesPath + 'pg_hist_' + new Date().getTime() + '_' + Instance + '.sql',
         sqlTransaction,
         err => {
           if (err) Log.log('Error writing SQL file!')
@@ -224,7 +224,7 @@ const pipeline = [
     if (doInsertData) {
       sqlTransaction = sqlTransaction + 'COMMIT;\n'
       fs.writeFile(
-        sqlFilesPath + 'pg_rtdata_' + new Date().getTime() + '.sql',
+        sqlFilesPath + 'pg_rtdata_' + new Date().getTime() + '_' + Instance + '.sql',
         sqlTransaction,
         err => {
           if (err) Log.log('Error writing SQL file!')
