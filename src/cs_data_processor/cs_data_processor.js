@@ -21,7 +21,7 @@
 
 const APP_NAME = 'CS_DATA_PROCESSOR'
 const APP_MSG = '{json:scada} - Change Stream Data Processor'
-const VERSION = '0.1.1'
+const VERSION = '0.1.2'
 const Log = require('./simple-logger')
 let ProcessActive = false // for redundancy control
 var jsConfigFile = '../../conf/json-scada.json'
@@ -55,6 +55,15 @@ Log.log('Config File: ' + jsConfigFile)
 if (!fs.existsSync(jsConfigFile)) {
   Log.log('Error: config file not found!', Log.levelMin)
   process.exit()
+}
+
+let ReadFromSecondary = false
+if (
+  'JS_CSDATAPROC_READ_FROM_SECONDARY' in process.env &&
+  process.env.JS_CSDATAPROC_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
+) {
+  Log.log("Read From Secondary (Preferred): TRUE")
+  ReadFromSecondary = true
 }
 
 let DivideProcessingExpression = {}
@@ -238,7 +247,7 @@ const pipeline = [
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     poolSize: 20,
-    readPreference: ReadPreference.PRIMARY,
+    readPreference: ReadFromSecondary? ReadPreference.SECONDARY_PREFERRED : ReadPreference.PRIMARY,
     // readConcern: { level: 'majority' }
   }
 

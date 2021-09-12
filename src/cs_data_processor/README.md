@@ -46,6 +46,7 @@ This driver has the following command line arguments and equivalent environment 
 * _**3rd arg. - Config File Path/Name**_ [String] - Path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**. Env. variable: **JS_CONFIG_FILE**.
 
 Env. variable: **JS_CSDATAPROC_DIVIDE_EXP** [String] - A JSON expression to divide change stream processing, will be part of the pipeline for the change stream. E.g: JS_CSDATAPROC_DIVIDE_EXP={ "fullDocument._id": { "$mod": [ 2, 1 ] } } or JS_CSDATAPROC_DIVIDE_EXP={"fullDocument.type":"analog"}. Use this to break change stream processing in multiple processes to reduce peak latency. This method can be paired with sharding for best results.
+Env. variable: **JS_CSDATAPROC_READ_FROM_SECONDARY** [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
 
 Command line args take precedence over environment variables.
 
