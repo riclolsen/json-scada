@@ -71,6 +71,15 @@ if (
   process.exit(-1)
 }
 
+let ReadFromSecondary = false
+if (
+  'JS_READ_FROM_SECONDARY' in process.env &&
+  process.env.JS_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
+) {
+  console.log("Read From Secondary (Preferred): TRUE")
+  ReadFromSecondary = true
+}
+
 if (AUTHENTICATION) {
   // JWT Auth Mongo Express https://bezkoder.com/node-js-mongodb-auth-jwt/
   dbAuth.mongoose
@@ -2115,7 +2124,7 @@ let pool = null
           useUnifiedTopology: true,
           appname: APP_NAME,
           maxPoolSize: 20,
-          readPreference: ReadPreference.PRIMARY
+          readPreference: ReadFromSecondary? ReadPreference.SECONDARY_PREFERRED : ReadPreference.PRIMARY,
         }
 
         if (

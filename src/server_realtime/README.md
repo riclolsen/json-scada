@@ -46,6 +46,7 @@ See https://github.com/riclolsen/json-scada/tree/master/src/server_realtime_auth
 * _**JS_HTTP_PORT**_ [Integer] - HTTP Port for server listening. **Default=8080**.
 * _**JS_GRAFANA_SERVER**_ [Integer] - HTTP URL to the Grafana server (for reverse proxy on /grafana). **Default="http://127.0.0.1:3000"**.
 * _**JS_CONFIG_FILE**_ [String] - JSON SCADA config file name. **Default="../../conf/json-scada.json"**.
+* _**JS_READ_FROM_SECONDARY**_ [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
 
 For connection to the PostgreSQL historian, it is possible to use the standard _Libpq_ environment variables. 
 

@@ -55,6 +55,15 @@ if (
   process.exit(-1)
 }
 
+let ReadFromSecondary = false
+if (
+  'JS_READ_FROM_SECONDARY' in process.env &&
+  process.env.JS_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
+) {
+  console.log("Read From Secondary (Preferred): TRUE")
+  ReadFromSecondary = true
+}
+
 // add charset for special sage displays
 app.use('/sage-cepel-displays/', express.static('../htdocs/sage-cepel-displays', {
   setHeaders: function(res, path) {
@@ -1638,7 +1647,7 @@ let pool = null
             useUnifiedTopology: true,
             appname: APP_NAME,
             maxPoolSize: 20,
-            readPreference: ReadPreference.PRIMARY
+            readPreference: ReadFromSecondary? ReadPreference.SECONDARY_PREFERRED : ReadPreference.PRIMARY,
           }
 
           if (
