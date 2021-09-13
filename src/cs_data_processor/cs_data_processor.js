@@ -62,7 +62,7 @@ if (
   'JS_CSDATAPROC_READ_FROM_SECONDARY' in process.env &&
   process.env.JS_CSDATAPROC_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
 ) {
-  Log.log("Read From Secondary (Preferred): TRUE")
+  Log.log('Read From Secondary (Preferred): TRUE')
   ReadFromSecondary = true
 }
 
@@ -75,10 +75,13 @@ if (
     DivideProcessingExpression = JSON.parse(
       process.env.JS_CSDATAPROC_DIVIDE_EXP
     )
-    Log.log("Divide Processing Expression: " + JSON.stringify(DivideProcessingExpression))
+    Log.log(
+      'Divide Processing Expression: ' +
+        JSON.stringify(DivideProcessingExpression)
+    )
   } catch (e) {
     DivideProcessingExpression = {}
-    Log.log("Divide Processing Expression: ERROR!" + e )
+    Log.log('Divide Processing Expression: ERROR!' + e)
     process.exit(1)
   }
 }
@@ -204,7 +207,12 @@ const pipeline = [
         sqlTransaction + 'ON CONFLICT (tag, time_tag) DO NOTHING;\n'
       sqlTransaction = sqlTransaction + 'COMMIT;\n'
       fs.writeFile(
-        sqlFilesPath + 'pg_hist_' + new Date().getTime() + '_' + Instance + '.sql',
+        sqlFilesPath +
+          'pg_hist_' +
+          new Date().getTime() +
+          '_' +
+          Instance +
+          '.sql',
         sqlTransaction,
         err => {
           if (err) Log.log('Error writing SQL file!')
@@ -233,7 +241,12 @@ const pipeline = [
     if (doInsertData) {
       sqlTransaction = sqlTransaction + 'COMMIT;\n'
       fs.writeFile(
-        sqlFilesPath + 'pg_rtdata_' + new Date().getTime() + '_' + Instance + '.sql',
+        sqlFilesPath +
+          'pg_rtdata_' +
+          new Date().getTime() +
+          '_' +
+          Instance +
+          '.sql',
         sqlTransaction,
         err => {
           if (err) Log.log('Error writing SQL file!')
@@ -247,7 +260,9 @@ const pipeline = [
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     poolSize: 20,
-    readPreference: ReadFromSecondary? ReadPreference.SECONDARY_PREFERRED : ReadPreference.PRIMARY,
+    readPreference: ReadFromSecondary
+      ? ReadPreference.SECONDARY_PREFERRED
+      : ReadPreference.PRIMARY
     // readConcern: { level: 'majority' }
   }
 
@@ -802,27 +817,25 @@ const pipeline = [
                     change.fullDocument.loLimit !== null &&
                     !change.fullDocument.alarmDisabled
                   ) {
-                    if (
-                      value >
-                      change.fullDocument.hiLimit + hysteresis
-                    ) {
+                    if (value > change.fullDocument.hiLimit + hysteresis) {
                       alarmRange = 1
-                    }
-                    else if (
+                    } else if (
                       value <
                       change.fullDocument.loLimit - hysteresis
                     ) {
                       alarmRange = -1
-                    }
-                    else if ( (value < (change.fullDocument.hiLimit - hysteresis)) && 
-                              (value > (change.fullDocument.loLimit + hysteresis)) ) {
+                    } else if (
+                      value < change.fullDocument.hiLimit - hysteresis &&
+                      value > change.fullDocument.loLimit + hysteresis
+                    ) {
                       alarmed = false
                       alarmRange = 0
-                    } else if (change.fullDocument?.alarmRange) // keep the old range if out of range
-                      alarmRange = change.fullDocument.alarmRange 
+                    } else if (change.fullDocument?.alarmRange)
+                      // keep the old range if out of range
+                      alarmRange = change.fullDocument.alarmRange
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
-                    //if (alarmed != change.fullDocument.alarmed) 
+                    //if (alarmed != change.fullDocument.alarmed)
                     //if (
                     //    change.fullDocument.value <= change.fullDocument.hiLimit + hysteresis &&
                     //    value > change.fullDocument.hiLimit + hysteresis
@@ -835,22 +848,57 @@ const pipeline = [
                     //    ||
                     //    change.fullDocument.value <= change.fullDocument.loLimit + hysteresis  &&
                     //    value > change.fullDocument.loLimit + hysteresis
-                    //      ) 
+                    //      )
                     if (!change.fullDocument.alarmDisabled)
-                    if (change.fullDocument?.alarmRange != alarmRange) {
-                      if (alarmRange != 0)
-                        alarmed = true
-                      const eventDate = new Date()
+                      if (change.fullDocument?.alarmRange != alarmRange) {
+                        if (alarmRange != 0) alarmed = true
+                        const eventDate = new Date()
+                        const eventText =
+                          parseFloat(value.toFixed(3)) +
+                          ' ' +
+                          change.fullDocument.unit +
+                          (Math.abs(value) >
+                          Math.abs(change.fullDocument?.value)
+                            ? ' ⤉'
+                            : Math.abs(value) <
+                              Math.abs(change.fullDocument?.value)
+                            ? ' ⤈'
+                            : '') +
+                          (alarmed ? ' 🚩' : ' 🆗')
+                        db.collection(SoeDataCollectionName).insertOne({
+                          tag: change.fullDocument.tag,
+                          pointKey: change.fullDocument._id,
+                          group1: change.fullDocument.group1,
+                          description: change.fullDocument.description,
+                          eventText: eventText,
+                          invalid: false,
+                          priority: change.fullDocument.priority,
+                          timeTag: eventDate,
+                          timeTagAtSource: eventDate,
+                          timeTagAtSourceOk: true,
+                          ack: alarmed ? 0 : 1 // enter as acknowledged when normalized
+                        })
+                      }
+                  }
+
+                  // analog tags can produce SOE events when marked as isEvent and valid value change, or having source timestamp
+                  if (!change.fullDocument.alarmDisabled)
+                    if (
+                      (change.fullDocument?.isEvent === true &&
+                        !invalid &&
+                        value !== change.fullDocument?.value) ||
+                      isSOE
+                    ) {
                       const eventText =
                         parseFloat(value.toFixed(3)) +
                         ' ' +
                         change.fullDocument.unit +
                         (Math.abs(value) > Math.abs(change.fullDocument?.value)
-                          ? ' ⤉'
-                          : Math.abs(value) < Math.abs(change.fullDocument?.value)
-                          ? ' ⤈'
-                          : '') +
-                          (alarmed ? ' 🚩' : ' 🆗')
+                          ? ' ↑'
+                          : Math.abs(value) <
+                            Math.abs(change.fullDocument?.value)
+                          ? ' ↓'
+                          : '')
                       db.collection(SoeDataCollectionName).insertOne({
                         tag: change.fullDocument.tag,
                         pointKey: change.fullDocument._id,
@@ -859,74 +907,49 @@ const pipeline = [
                         eventText: eventText,
                         invalid: false,
                         priority: change.fullDocument.priority,
-                        timeTag: eventDate,
-                        timeTagAtSource: eventDate,
-                        timeTagAtSourceOk: true,
-                        ack: alarmed ? 0 : 1 // enter as acknowledged when normalized
+                        timeTag: new Date(),
+                        timeTagAtSource: isSOE
+                          ? change.updateDescription.updatedFields
+                              .sourceDataUpdate.timeTagAtSource
+                          : new Date(),
+                        timeTagAtSourceOk: isSOE
+                          ? change.updateDescription.updatedFields
+                              .sourceDataUpdate.timeTagAtSourceOk
+                          : false,
+                        ack: 1 // enter as acknowledged as it is not an alarm
                       })
                     }
-                  }
-
-                  // analog tags can produce SOE events when marked as isEvent and valid value change, or having source timestamp
-                  if (!change.fullDocument.alarmDisabled)
-                  if (
-                    (change.fullDocument?.isEvent === true &&
-                      !invalid &&
-                      value !== change.fullDocument?.value) ||
-                    isSOE
-                  ) {
-                    const eventText =
-                      parseFloat(value.toFixed(3)) +
-                      ' ' +
-                      change.fullDocument.unit +
-                      (Math.abs(value) > Math.abs(change.fullDocument?.value)
-                        ? ' ↑'
-                        : Math.abs(value) < Math.abs(change.fullDocument?.value)
-                        ? ' ↓'
-                        : '')
-                    db.collection(SoeDataCollectionName).insertOne({
-                      tag: change.fullDocument.tag,
-                      pointKey: change.fullDocument._id,
-                      group1: change.fullDocument.group1,
-                      description: change.fullDocument.description,
-                      eventText: eventText,
-                      invalid: false,
-                      priority: change.fullDocument.priority,
-                      timeTag: new Date(),
-                      timeTagAtSource: isSOE
-                        ? change.updateDescription.updatedFields
-                            .sourceDataUpdate.timeTagAtSource
-                        : new Date(),
-                      timeTagAtSourceOk: isSOE
-                        ? change.updateDescription.updatedFields
-                            .sourceDataUpdate.timeTagAtSourceOk
-                        : false,
-                      ack: 1 // enter as acknowledged as it is not an alarm
-                    })
-                  }
                 }
 
                 let alarmTime = null
-                if (!change.fullDocument.alarmDisabled)
-                  if (alarmed && !change.fullDocument.alarmed) {
-                    // changed to alarmed state
+                // if changed to alarmed state, or digital change or soe, register new alarm tag
+                if (!change.fullDocument.alarmDisabled && alarmed) {
+                  if (
+                    !change.fullDocument.alarmed ||
+                    (change.fullDocument.type === 'digital' &&
+                      value !== change.fullDocument.value) ||
+                    (change.fullDocument.type === 'digital' && isSOE)
+                  ) {
                     alarmTime = new Date()
                   }
+                }
 
                 // update only if changed or for SOE
                 if (
                   isSOE ||
-                  change.updateDescription.updatedFields.sourceDataUpdate?.rangeCheck ||
+                  change.updateDescription.updatedFields.sourceDataUpdate
+                    ?.rangeCheck ||
                   value !== change.fullDocument.value ||
                   valueString !== change.fullDocument.valueString ||
                   invalid !== change.fullDocument.invalid
                 ) {
                   let dt = new Date()
-                  
+
                   if (!change.fullDocument.alarmDisabled) {
                     if (
                       // (alarmed && isSOE && change.fullDocument?.isEvent===true && change.fullDocument.type === 'digital') ||
-                      (alarmed && change.fullDocument?.alarmed === false)
+                      alarmed &&
+                      change.fullDocument?.alarmed === false
                     ) {
                       // a new alarm, then update beep var
                       Log.log('NEW BEEP, tag: ' + change.fullDocument.tag)
