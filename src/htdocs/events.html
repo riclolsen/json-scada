@@ -532,7 +532,7 @@ showValsInfo2: function() {
       WebSAGE.g_win_cmd.document.getElementById('ANOTACAODOC').disabled = true;
     if (!userHasRight('disableAlarms'))
       WebSAGE.g_win_cmd.document.getElementById('CBALRIN').disabled = true;
-    if (userHasRight('enterLimits')) {
+    if (!userHasRight('enterLimits')) {
       WebSAGE.g_win_cmd.document.getElementById('LIMSUP').disabled = true;
       WebSAGE.g_win_cmd.document.getElementById('LIMINF').disabled = true;
       WebSAGE.g_win_cmd.document.getElementById('HISTER').disabled = true;
