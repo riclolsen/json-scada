@@ -1252,6 +1252,24 @@ if ( WebSAGE.isAlarmsViewer() )
             document.getElementById("DIV_SUBSTALMFILT").style.height="35px"; 
           });
   
+  TabularViewer_CustomFiltersSelectors.forEach(element => {
+    document.getElementById('ZZABC1').insertAdjacentHTML('beforeend', '&nbsp;&nbsp;<input id="ZZCB_'+ element.name +'" type="button" value="'+element.name+'">');
+    document.getElementById('ZZCB_'+ element.name)._group1List = element.group1List;
+    document.getElementById('ZZCB_'+ element.name).addEventListener('click', function() {
+      for ( var sorp in WebSAGE.g_alminfo )
+            {
+            if (WebSAGE.g_alminfo[sorp].is_subst)
+              {
+                if (document.getElementById('ZZCB_'+ element.name)._group1List.includes(sorp))
+                  WebSAGE.g_alminfo[sorp].filterout=false;
+                else
+                  WebSAGE.g_alminfo[sorp].filterout=true;
+              }
+            }
+            WebSAGE.applyTableStyle();
+    })
+  });
+
   // create substation filters inside a div
   Lista.reverse();
   for (var se in Lista)

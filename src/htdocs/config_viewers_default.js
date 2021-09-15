@@ -76,6 +76,12 @@ var TabularViewer_LocaleDateTimeOptions = {
     // weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3, timeZone: 'America/New_York'
 }; 
 
+// use this to create custom buttons that can select a set of group1 filters on Alarms Viewer
+var TabularViewer_CustomFiltersSelectors = [
+//    { name: 'Test1', group1List: ['KAW2', 'KOR1'] },
+//    { name: 'Test2', group1List: ['KIK3', 'KNH2'] },
+];
+
 // Screen Viewer ---------------------------------------------------------------------------------
 
 var ScreenViewer_RefreshTime = 3; // refresh time in seconds (digital changes triggers a faster refresh) 
