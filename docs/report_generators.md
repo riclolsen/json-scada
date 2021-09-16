@@ -17,6 +17,10 @@ https://grafana.com/grafana/dashboards/11365
 Grafana paid options (Enterprise or Cloud) can do reporting.
 https://grafana.com/docs/grafana/latest/enterprise/reporting/
 
+### Eclipse Streamsheets
+An open-source tool for processing stream data using a spreadsheet-like interface. Supports MongoDB, MQTT and other data sources.
+https://github.com/eclipse/streamsheets
+
 ### Nocodb
 The Open Source Airtable alternative. Can connect to PostgreSQL.
 https://github.com/nocodb/nocodb
