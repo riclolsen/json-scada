@@ -25,6 +25,17 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 const fs = require('fs')
 const OutputDir = 'output'
 
+String.prototype.escapeSpecialChars = function() {
+  return this.replace(/\\n/g, "\\n")
+             .replace(/\\'/g, "\\'")
+             .replace(/\\"/g, '\\"')
+             .replace(/\\&/g, "\\&")
+             .replace(/\\r/g, "\\r")
+             .replace(/\\t/g, "\\t")
+             .replace(/\\b/g, "\\b")
+             .replace(/\\f/g, "\\f")
+}
+
 ;(async () => {
   const args = process.argv.slice(2)
 
@@ -85,6 +96,31 @@ const OutputDir = 'output'
         fs.writeSync(fd,'db.'+jsConfig.RealtimeDataCollectionName+'.insertOne(')
         fs.writeSync(fd,JSON.stringify(element))
         fs.writeSync(fd,');\n')
+      })
+      fs.close(fd)
+    }
+
+    res = await rtDataCollection.find({}).toArray()
+    if (res) {
+      let fd = fs.openSync(OutputDir + '/' + jsConfig.RealtimeDataCollectionName + '_update.js','w')
+      Log.log('Collection '+jsConfig.RealtimeDataCollectionName)
+      res.forEach(element => {
+        Log.log(element.tag)
+        fs.writeSync(fd,'db.'+jsConfig.RealtimeDataCollectionName+'.updateOne(')
+        fs.writeSync(fd,'{tag:'+JSON.stringify(element.tag)+'},{$set:{')
+        fs.writeSync(fd,'hiLimit:'+element?.hiLimit+',')
+        fs.writeSync(fd,'hihiLimit:'+element?.hihiLimit+',')
+        fs.writeSync(fd,'hihihiLimit:'+element?.hihihiLimit+',')
+        fs.writeSync(fd,'loLimit:'+element?.loLimit+',')
+        fs.writeSync(fd,'loloLimit:'+element?.loloLimit+',')
+        fs.writeSync(fd,'lololoLimit:'+element?.lololoLimit+',')
+        fs.writeSync(fd,'hysteresis:'+element?.hysteresis+',')
+        fs.writeSync(fd,'substituted:'+element?.substituted+',')
+        fs.writeSync(fd,'alarmDisabled:'+element?.alarmDisabled+',')
+        fs.writeSync(fd,'annotation:'+JSON.stringify(element?.annotation)+',')
+        fs.writeSync(fd,'notes:'+JSON.stringify(element?.notes)+',')
+        fs.writeSync(fd,'commandBlocked:'+element?.commandBlocked)        
+        fs.writeSync(fd,'}});\n')
       })
       fs.close(fd)
     }
