@@ -308,6 +308,22 @@ services:
     networks:
       - jsdemo_net
 
+# dnp3_client_wine:
+#   #image: tianon/wine:latest
+#   image: scottyhardy/docker-wine:devel-6.12-nordp
+#   container_name: js_dnp3_client_wine
+#   #command: sh -c "wget https://download.visualstudio.microsoft.com/download/pr/474a078c-f415-4bae-8571-2fe8ea37ed51/a8ac1fe825f63411c375633bd98205c4/dotnet-sdk-5.0.302-win-x64.exe &&
+#   #                chmod +x dotnet-sdk-5.0.302-win-x64.exe
+#   #                wineboot -u &&
+#   #                winetricks vcrun2019
+#   #                wine dotnet-sdk-5.0.302-win-x64.exe /install /quiet && wine "/root/.wine/drive_c/dotnet-sdk-5.0.302-win-x64.exe" "/install" "/quiet"
+#   #                cd /src/dnp3/Dnp3Client/ && 
+#   #                wine dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
+#   command: tail -f /dev/null
+#   volumes:
+#     - ./conf:/conf
+#     - ./bin_win:/jsonscada_bin
+
 ## Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
 #  metabase:
 #    image: metabase/metabase:latest
