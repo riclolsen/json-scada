@@ -54,6 +54,7 @@ COPY src/cs_data_processor /json-scada/src/cs_data_processor
 COPY src/cs_custom_processor /json-scada/src/cs_custom_processor
 COPY src/server_realtime /json-scada/src/server_realtime
 COPY src/server_realtime_auth /json-scada/src/server_realtime_auth
+COPY src/updateUser /json-scada/src/updateUser
 COPY src/htdocs-admin /json-scada/src/htdocs-admin
 COPY src/htdocs-login /json-scada/src/htdocs-login
 COPY src/htdocs /json-scada/src/htdocs
@@ -65,6 +66,7 @@ RUN sh -c "cd /json-scada/src/cs_data_processor && npm install"
 RUN sh -c "cd /json-scada/src/cs_custom_processor && npm install"
 RUN sh -c "cd /json-scada/src/server_realtime && npm install"
 RUN sh -c "cd /json-scada/src/server_realtime_auth && npm update"
+RUN sh -c "cd /json-scada/src/updateUser && npm update"
 RUN sh -c "cd /json-scada/src/htdocs-admin && npm install && npm run build"
 RUN sh -c "cd /json-scada/src/alarm_beep && npm install"
 RUN sh -c "cd /json-scada/src/oshmi2json && npm install"
