@@ -44,6 +44,7 @@ const CommandSentAsSOESymbol = '⚙️➡️'
 const opcIdTypeNumber = 0
 const opcIdTypeString = 1
 const beepPointKey = -1
+const EventsRemoveGuardSeconds = 20
 
 let rawFileContents = fs.readFileSync(jsConfigFile)
 let jsConfig = JSON.parse(rawFileContents)
@@ -274,8 +275,9 @@ let pool = null
 
                   if (node.Value.Body & opc.Acknowledge.RemoveAllEvents) {
                     console.log('Remove All Events')
+                    let fromDate = new Date(Date.now() - EventsRemoveGuardSeconds * 1000)
                     let result = await db.collection(COLL_SOE).updateMany(
-                      { ack: { $lte: 1 } },
+                      { ack: { $lte: 1 }, timeTag: { $lte: fromDate} },
                       {
                         $set: {
                           ack: 2
@@ -296,8 +298,9 @@ let pool = null
                     node.Value.Body & opc.Acknowledge.RemovePointEvents
                   ) {
                     console.log('Remove Point Events: ' + node.NodeId.Id)
+                    let fromDate = new Date(Date.now() - EventsRemoveGuardSeconds * 1000)
                     let result = await db.collection(COLL_SOE).updateMany(
-                      { tag: node.NodeId.Id, ack: { $lte: 1 } },
+                      { tag: node.NodeId.Id, ack: { $lte: 1 }, timeTag: { $lte: fromDate} },
                       {
                         $set: {
                           ack: 2
