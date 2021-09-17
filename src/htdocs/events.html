@@ -957,7 +957,7 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
  if (aggregate === 2) { // panic, filter priority also
    ContFiltElem = {
         FilterOperator: OpcFilterOperator.LessThanOrEqual,
-        FilterOperands: [1] // filter to show only priorities 0 and 1
+        FilterOperands: [EventsViewer_PanicModePriorityLimit]
         }
  ContentFilter.push(ContFiltElem)
  }

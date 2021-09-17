@@ -34,6 +34,8 @@ var EventsViewer_AllowFilter = 1;  // 0: no filters, 1=operator can set filter b
 
 var EventsViewer_Notific = 1;  // 0: disable desktop notifications, 1=enable desktop notifications
 
+var EventsViewer_PanicModePriorityLimit = 1; // limit priorities shown in panic mode (up to)
+
 // locale and time zone for date/time formatting (leave empty for browser defaults)
 // see https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
 var EventsViewer_LocaleTime = ""; // locale for time format e.g "en-US"
