@@ -64,6 +64,9 @@ call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\server_realtime_auth
 call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
 call \json-scada\platform-windows\nodejs-runtime\npm update
+cd \json-scada\src\updateUser
+call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
+call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\shell-api
 call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
 call \json-scada\platform-windows\nodejs-runtime\npm update
