@@ -69,25 +69,6 @@
           "text": { "template": "{{datum.y|number:'.0f'}}" }
         }
       }
-    },
-    {
-      "type": "text",
-      "from": {"data": "Power"},
-      "properties": {
-        "enter": {
-          "x": {"field": {"group": "width"}, "mult": 0.5},
-          "y": {"field": {"group": "height"}, "mult": 0.5},
-          "radius": {"scale": "r", "field": "y", "offset": "23"},
-          "theta": {"field": "layout_mid"},
-          "align": {"value": "center"},
-          "baseline": {"value": "middle"},
-          "fill": {"value": "#00eeee"},
-          "font": {"value": "tahoma"},
-          "fontSize": {"value": 14},
-          "fontWeight": {"value": 300},
-          "text": { "template": "{{datum.bay|left:9}}" }
-        }
-      }
     }
   ]
 }

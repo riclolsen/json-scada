@@ -40,7 +40,7 @@
           "startAngle": {"field": "layout_start"},
           "endAngle": {"field": "layout_end"},
           "innerRadius": {"value": 20},
-          "outerRadius": {"scale": "r", "field": "y"},
+          "outerRadius": {"value": 40},
           "fill": {"scale": "c", "field": "x"}
         },
         "update": {
