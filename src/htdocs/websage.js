@@ -740,12 +740,6 @@ else
          return; // give up
       }
 
-      // on closing info window, cancel point and hide object highlight
-      WebSAGE.g_win_cmd.addEventListener("unload", function() { 
-        WebSAGE.escondeDestaqPonto(NPTO);
-        NPTO = 0;
-      })
-
       // janela carregada
       var se = ESTACAO;
       se = se + "-";
@@ -830,6 +824,13 @@ else
       );
 
       if (WebSAGE.g_win_1stdraw) {
+        
+        // on closing info window, cancel point and hide object highlight
+        WebSAGE.g_win_cmd.addEventListener("unload", function() { 
+          WebSAGE.escondeDestaqPonto(NPTO);
+          NPTO = 0;
+        })
+
         // escreve parâmetros só na primeira vez que abriu a janela
         clearTimeout(WebSAGE.g_tminfoID);
         WebSAGE.g_win_1stdraw = 0;
