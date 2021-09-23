@@ -41,6 +41,12 @@ go get ./...
 go build 
 copy /Y calculations ..\..\bin\
 
+cd \json-scada\src\plc4x
+go get "github.com/icza/bitio"
+go get ./... 
+go build 
+copy /Y plc4x ..\..\bin\
+
 cd \json-scada\src\i104m
 go get ./... 
 go build 
