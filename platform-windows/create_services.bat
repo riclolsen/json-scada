@@ -113,7 +113,7 @@ nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
 nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
 nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
 
-cd \json-scada\platform-windows\telegraf-listener
+cd \json-scada\platform-windows\telegraf-runtime
 
 REM service for telegraf runtime
 C:\json-scada\platform-windows\telegraf-runtime\telegraf --service install --service-name="JSON_SCADA_telegraf_runtime" --service-display-name="JSON_SCADA_telegraf_runtime" --config "C:\json-scada\conf\telegraf.conf"
