@@ -88,6 +88,21 @@ exports.updateTag = async (req, res) => {
   if ('_id' in req.body) {
     let _id = req.body._id
     delete req.body._id
+
+    var IsNumberVal = function (value) {
+      if(/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/
+        .test(value))
+        return true;
+    return false;
+    }
+
+    if ( IsNumberVal(req.body.protocolSourceCommonAddress) )
+      req.body.protocolSourceCommonAddress = parseFloat(req.body.protocolSourceCommonAddress)
+    if ( IsNumberVal(req.body.protocolSourceObjectAddress) )
+      req.body.protocolSourceObjectAddress = parseFloat(req.body.protocolSourceObjectAddress)
+    if ( IsNumberVal(req.body.protocolSourceASDU) )
+      req.body.protocolSourceASDU = parseFloat(req.body.protocolSourceASDU)
+
     await Tag.findOneAndUpdate({ _id: _id }, req.body)
     res.status(200).send({ error: false })
   } else res.status(200).send({ error: 'No _id in update request.' })
