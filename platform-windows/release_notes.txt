@@ -26,14 +26,22 @@ Acknowledgements:
   Grafana - https://github.com/grafana/grafana, https://grafana.com/
   Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
   ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
+  Opendnp3 - https://github.com/dnp3/opendnp3
+  PLC4X - https://github.com/apache/plc4x
+  Libplctag - https://github.com/libplctag/libplctag
+  Node-opcua - https://github.com/node-opcua/node-opcua
+  OPC-UA - https://github.com/OPCFoundation/UA-.NETStandard
+  Telegraf - https://github.com/influxdata/telegraf
   Inkscape - https://inkscape.org
   Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
   Inkscape + SAGE (updated) - https://gitlab.com/lvta0909/inkscape
   Chromium - by "The Chromium Authors"
-  Chromium x86 binaries - http://chromium.woolyss.com
-  NGINX - http://nginx.org
+  Chromium x86 binaries - http://chromium.woolyss.com/
+  NGINX - http://nginx.org/
+  Node.js - https://nodejs.org/
   Express - https://expressjs.com/pt-br/
-  Opendnp3 - https://www.automatak.com/opendnp3/
+  Dotnet - https://dotnet.microsoft.com/download
+  Golang - https://golang.org/
   Open Sans Fonts by Steve Matteson
   Source Sans Pro by Adobe Systems Incorporated. License - http://scripts.sil.org/OFL
   Google Fonts - https://fonts.google.com/
@@ -102,12 +110,12 @@ Recommended Operating Systems:
 Please use an updated OS.
 
 Can also run on:
- - Other Linux distros, Mac OSX, x86, x64, ARM 32/64, (no installer provided).
+ - Other Linux distros, Mac OSX, x86/64, ARM, (no installer provided).
  - See documentation.
 
 Client user interface can be used on:
  - Modern IOS and Android devices.
- - Any device with an updated HTML5 browser like Chrome/Chromium, Firefox, Edge (Chromium based) or Safari.
+ - Any device with an updated HTML5 browser like Chrome, Chromium, Firefox, Edge, Safari, Brave, Opera, Vivaldi.
  - Internet Explorer and non-Chromium based Edge are strictly not supported!
 
 -------------------------------------------------------------------
