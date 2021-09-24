@@ -36,6 +36,7 @@ function NewTag () {
     protocolSourceCommandUseSBO: false,
     protocolSourceCommandDuration: new Mongo.Double(0),
     alarmState: new Mongo.Double(-1.0),
+    alarmRange: new Mongo.Double(0.0),
     description: '',
     ungroupedDescription: '',
     group1: '',

@@ -33,8 +33,7 @@ const LogLevelMin = 0,
   LogLevelDebug = 3
 
 const fs = require('fs')
-const mongo = require('mongodb')
-const { MongoClient, ReadPreference } = require('mongodb')
+const { MongoClient, ReadPreference, Double } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
@@ -240,12 +239,13 @@ const rtData = function (measurement) {
   AutoKeyId++
 
   return {
-    _id: new mongo.Double(AutoKeyId),
+    _id: new Double(AutoKeyId),
     protocolSourceASDU: '',
     protocolSourceCommonAddress: '',
-    protocolSourceConnectionNumber: new mongo.Double(ConnectionNumber),
+    protocolSourceConnectionNumber: new Double(ConnectionNumber),
     protocolSourceObjectAddress: measurement?.tag,
-    alarmState: new mongo.Double(-1.0),
+    alarmState: new Double(-1.0),
+    alarmRange: new Double(0.0),
     description: measurement?.description,
     ungroupedDescription: measurement?.ungroupedDescription,
     group1: measurement?.group1,
@@ -262,7 +262,7 @@ const rtData = function (measurement) {
       !isNaN(parseFloat(measurement.value))
         ? 'analog'
         : 'string',
-    value: new mongo.Double(measurement.value),
+    value: new Double(measurement.value),
     valueString: measurement.value.toString(),
     alarmDisabled: false,
     alerted: false,
@@ -270,42 +270,42 @@ const rtData = function (measurement) {
     alertedState: '',
     annotation: '',
     commandBlocked: false,
-    commandOfSupervised: new mongo.Double(0.0),
+    commandOfSupervised: new Double(0.0),
     commissioningRemarks: 'Auto created by ' + APP_NAME,
-    formula: new mongo.Double(0.0),
+    formula: new Double(0.0),
     frozen: false,
-    frozenDetectTimeout: new mongo.Double(0.0),
-    hiLimit: new mongo.Double(Number.MAX_VALUE),
-    hihiLimit: new mongo.Double(Number.MAX_VALUE),
-    hihihiLimit: new mongo.Double(Number.MAX_VALUE),
-    historianDeadBand: new mongo.Double(0.0),
-    historianPeriod: new mongo.Double(0.0),
-    hysteresis: new mongo.Double(0.0),
+    frozenDetectTimeout: new Double(0.0),
+    hiLimit: new Double(Number.MAX_VALUE),
+    hihiLimit: new Double(Number.MAX_VALUE),
+    hihihiLimit: new Double(Number.MAX_VALUE),
+    historianDeadBand: new Double(0.0),
+    historianPeriod: new Double(0.0),
+    hysteresis: new Double(0.0),
     invalid: measurement?.invalidAtSource ? true : false,
-    invalidDetectTimeout: new mongo.Double(60000.0),
+    invalidDetectTimeout: new Double(60000.0),
     isEvent: false,
-    kconv1: new mongo.Double(1.0),
-    kconv2: new mongo.Double(0.0),
+    kconv1: new Double(1.0),
+    kconv2: new Double(0.0),
     location: null,
-    loLimit: new mongo.Double(-Number.MAX_VALUE),
-    loloLimit: new mongo.Double(-Number.MAX_VALUE),
-    lololoLimit: new mongo.Double(-Number.MAX_VALUE),
+    loLimit: new Double(-Number.MAX_VALUE),
+    loloLimit: new Double(-Number.MAX_VALUE),
+    lololoLimit: new Double(-Number.MAX_VALUE),
     notes: '',
     overflow: false,
     parcels: null,
-    priority: new mongo.Double(0.0),
+    priority: new Double(0.0),
     protocolDestinations: null,
     sourceDataUpdate: null,
-    supervisedOfCommand: new mongo.Double(0.0),
+    supervisedOfCommand: new Double(0.0),
     timeTag: null,
     timeTagAlarm: null,
     timeTagAtSource: measurement.timeTagAtSource,
     timeTagAtSourceOk: false,
     transient: false,
     unit: '',
-    updatesCnt: new mongo.Double(0.0),
-    valueDefault: new mongo.Double(0.0),
-    zeroDeadband: new mongo.Double(0.0)
+    updatesCnt: new Double(0.0),
+    valueDefault: new Double(0.0),
+    zeroDeadband: new Double(0.0)
   }
 }
 
@@ -548,9 +548,9 @@ if (
                       ProtocolDriverInstancesCollectionName
                     ).insertOne({
                       protocolDriver: APP_NAME,
-                      protocolDriverInstanceNumber: new mongo.Double(1),
+                      protocolDriverInstanceNumber: new Double(1),
                       enabled: true,
-                      logLevel: new mongo.Double(1),
+                      logLevel: new Double(1),
                       nodeNames: [],
                       activeNodeName: jsConfig.nodeName,
                       activeNodeKeepAliveTimeTag: new Date()
@@ -623,7 +623,7 @@ if (
                       ).updateOne(
                         {
                           protocolDriver: APP_NAME,
-                          protocolDriverInstanceNumber: new mongo.Double(
+                          protocolDriverInstanceNumber: new Double(
                             Instance
                           )
                         },
