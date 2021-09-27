@@ -121,7 +121,8 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
         Log.log('OPC-UA Server initialized.')
 
         const addressSpace = server.engine.addressSpace
-        const namespace = addressSpace.getOwnNamespace()
+        // const namespace = addressSpace.getOwnNamespace()
+        const namespace = server.engine.addressSpace.registerNamespace("urn:json_scada:tags");
 
         // declare a new object
         const device = namespace.addObject({
@@ -255,7 +256,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           if (type) {
             metrics[element.tag] = namespace.addVariable({
               componentOf: device,
-              nodeId: 'ns=1;i=' + element._id,
+              nodeId: 'i=' + element._id,
               browseName: element.tag,
               dataType: type,
               description: element?.description
