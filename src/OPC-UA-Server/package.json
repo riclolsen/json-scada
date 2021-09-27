@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "mongodb": "^4.1.0",
-    "node-opcua": "^2.45.0"
+    "node-opcua": "^2.50.0"
   }
 }

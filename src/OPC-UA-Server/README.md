@@ -1,13 +1,14 @@
 # OPC-UA Server
 
-This driver implements a server for the OPC-UA protocol.
+This driver implements a server for the OPC-UA protocol (binary transport only, opc.tcp://hostname:port/resourcePath).
 
-This driver uses the Node OPC-UA library.
+Implemented using the Node OPC-UA library.
 
     https://github.com/node-opcua/node-opcua
 
-The driver can serve multiple connections to OPC-UA clients on multiple computers, if needed.
-To configure the driver it is necessary to create one or more driver instances and one connection per instance.
+The driver can serve multiple connections to OPC-UA clients on multiple computers, if needed. 
+
+To configure the driver it is necessary to create one or more driver instances and one protocol connection per instance.
 
 ##  Configure a driver instance
 
@@ -19,7 +20,7 @@ To create a new OPC-UA client instance, insert a new document in the _protocolDr
             protocolDriverInstanceNumber: 1,
             enabled: true,
             logLevel: 1,
-            nodeNames: ["mainNode"],
+            nodeNames: [],
         });
 
 * _**protocolDriver**_ [String] - Name of the protocol driver, must be "OPC-UA". **Mandatory parameter**.
@@ -45,7 +46,8 @@ This driver will make all points available to the clients, unless filtered. Ther
         description: "OPC-UA Server",
         enabled: true,
         commandsEnabled: true,
-        endpointURLs: ["opc.tcp://localhost:4840/UA/JsonScada"],
+        groupId: "UA/JsonScada",
+        ipAddressLocalBind: "0.0.0.0:4840",
         ipAddresses: ["192.168.1.1"],
         topics: ["KAW2", "KOR1"],
         timeoutMs: 15000,
@@ -63,8 +65,9 @@ Parameters for communication with OPC-UA servers.
 * _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
-* _**endpointURLs**_ [Array of Strings] - The first entry will be the server URL, with port and path. Defaults to "opc.tcp://localhost:4840/UA/JsonScada". Only "opc.tcp" protocol transport is possible. **Optional parameter**.
+* _**groupId**_ [String] - OPC-UA resource path. This path will be added to the endpoint resource name. Default value is "UA/JsonScada". **Optional parameter**.
 * _**ipAddresses**_ [Array of Strings] - List of client's IP addresses allowed. Leave empty to allow any IP address to connect to the server. **Optional parameter**.
+* _**ipAddressLocalBind**_ [String] - Interface bind IP address and port. Currently supports only IP "0.0.0.0". Default "0.0.0.0:4840". **Optional parameter**.
 * _**topics**_ [Array of Strings] - List of _group1_ filter for the available tags on the server. Leave empty to include all tags on the OPC-UA server. **Optional parameter**.
 * _**timeoutMs**_ [Double] - Timeout. The HEL/ACK transaction timeout in ms. Use a large value (i.e. 15000 ms) for slow connections or embedded devices. **Mandatory parameter**.
 * _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
