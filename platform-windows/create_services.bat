@@ -42,9 +42,21 @@ REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
 rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
 rem nssm set JSON_SCADA_server_realtime AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
+REM CREATE A RANDOM SECRET FOR JWT ENCRYPTION
+setlocal EnableDelayedExpansion
+set char=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+set count=0
+set /a length=25
+:Loop
+set /a count+=1
+set /a rand=%Random%%%62
+set buffer=!buffer!!char:~%rand%,1!
+if !count! leq !length! goto Loop
+
 nssm install JSON_SCADA_server_realtime_auth  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime_auth\index.js" 
 nssm set JSON_SCADA_server_realtime_auth AppDirectory "C:\json-scada\src\server_realtime_auth"
 nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
+nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra JS_JWT_SECRET=%buffer%
 rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
 rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
