@@ -61,7 +61,7 @@ Each instance for this driver can have many client connection defined that must 
     });
 
 Parameters for communication with OPC-UA servers.
-* _**protocolDriver**_ [String] - Name of the protocol driver, must be  "DNP3". **Mandatory parameter**.
+* _**protocolDriver**_ [String] - Name of the protocol driver, must be "OPC-UA". **Mandatory parameter**.
 * _**protocolDriverInstanceNumber**_ [Double] - Number of the instance. Use 1 to N to number instances. For the same driver instance numbers should be unique. The instance number makes possible to run use multiple processes of the driver, each one with a distinct configuration. **Mandatory parameter**.
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. This must be unique for all connections over all drivers on a system. This number is be used to define the connection that can update a tag. **Mandatory parameter**.
 * _**name**_ [String] - Name for a connection. Will be used for logging. **Mandatory parameter**.
