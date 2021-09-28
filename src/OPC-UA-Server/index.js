@@ -70,27 +70,34 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           process.exit(1)
         }
 
-        let certificateProp = {}
-        if (
-          'localCertFilePath' in connection &&
-          'length' in connection.localCertFilePath
-        ) {
-          if (connection.localCertFilePath.length > 0)
-            certificateProp.certificateFile = connection.localCertFilePath
-        }
-        let privateKeyProp = {}
-        if (
-          'privateKeyFilePath' in connection &&
-          'length' in connection.privateKeyFilePath
-        ) {
-          if (connection.privateKeyFilePath.length > 0)
-            privateKeyProp.privateKeyFile = connection.privateKeyFilePath
-        }
-
         let port = 4840
         if ('ipAddressLocalBind' in connection) {
           let ipPort = connection.ipAddressLocalBind.split(':')
           if (ipPort.length > 1) port = parseInt(ipPort[1])
+        }
+
+        let timeout = 15000
+        if ('timeoutMs' in connection) {
+          timeout = parseInt(connection.timeoutMs)
+        }
+
+        let certificateProp = {}
+        let privateKeyProp = {}
+        if (connection?.useSecurity === true) {
+          if (
+            'localCertFilePath' in connection &&
+            'length' in connection.localCertFilePath
+          ) {
+            if (connection.localCertFilePath.length > 0)
+              certificateProp.certificateFile = connection.localCertFilePath
+          }
+          if (
+            'privateKeyFilePath' in connection &&
+            'length' in connection.privateKeyFilePath
+          ) {
+            if (connection.privateKeyFilePath.length > 0)
+              privateKeyProp.privateKeyFile = connection.privateKeyFilePath
+          }
         }
 
         // Let's create an instance of OPCUAServer
@@ -108,21 +115,21 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           maxAllowedSessionNumber: 100,
           maxConnectionsPerEndpoint: 10,
           disableDiscovery: false,
-          timeout: 15000,
+          timeout: timeout,
           ...certificateProp,
           ...privateKeyProp
           // securityModes: [],
           // securityPolicies: [],
           // defaultSecureTokenLifetime: 10000000,
-          // certificateFile: "", // PEM file
-          // privateKeyFile: "", // PEM file
         })
         await server.initialize()
         Log.log('OPC-UA Server initialized.')
 
         const addressSpace = server.engine.addressSpace
         // const namespace = addressSpace.getOwnNamespace()
-        const namespace = server.engine.addressSpace.registerNamespace("urn:json_scada:tags");
+        const namespace = server.engine.addressSpace.registerNamespace(
+          'urn:json_scada:tags'
+        )
 
         // declare a new object
         const device = namespace.addObject({
@@ -177,7 +184,8 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
         let filterGroup1CS = {
           'fullDocument.group1': {
             $exists: true
-        }}
+          }
+        }
 
         if ('topics' in connection && 'length' in connection.topics) {
           if (connection.topics.length > 0) {
@@ -233,11 +241,17 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           }
 
           let type, value, dataType
-          switch (element.type) {
+          switch (element?.type) {
             case 'digital':
               type = 'Boolean'
               dataType = DataType.Boolean
               value = element.value === 0 ? false : true
+              break
+            case 'json':
+              type = 'String'
+              dataType = DataType.String
+              if ('valueJson' in element) JSON.stringify(element?.valueJson)
+              else value = JSON.stringify(element?.value)
               break
             case 'string':
               type = 'String'
@@ -248,7 +262,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
             case 'analog':
               type = 'Double'
               dataType = DataType.Double
-              value = element.value
+              value = parseFloat(element.value)
               break
             default:
               return
@@ -274,7 +288,8 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
                 value: value
               }),
               element.invalid ? StatusCodes.Bad : StatusCodes.Good,
-              element.timeTagAtSource === null
+              !('timeTagAtSource' in element) ||
+                element.timeTagAtSource === null
                 ? new Date(1970, 0, 1)
                 : element.timeTagAtSource
             )
@@ -367,19 +382,28 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           // a mongo disconnection produces a fatal error here!
           changeStream.on('change', change => {
             let m = metrics[change.fullDocument?.tag]
-            Log.log(change.fullDocument?.tag + ' ' + change.fullDocument.value, Log.levelDetailed)
-            if (m !== undefined)
+            if (m !== undefined) {
               switch (change.fullDocument?.type) {
                 case 'analog':
                   m.setValueFromSource(
                     new Variant({
                       dataType: DataType.Double,
-                      value: change.fullDocument?.value
+                      value: parseFloat(change.fullDocument?.value)
                     }),
                     change.fullDocument?.invalid
                       ? StatusCodes.Bad
                       : StatusCodes.Good,
-                    new Date(1970, 0, 1)
+                    !('timeTagAtSource' in change.fullDocument) ||
+                      change.fullDocument.timeTagAtSource === null
+                      ? new Date(1970, 0, 1)
+                      : change.fullDocument.timeTagAtSource
+                  )
+                  Log.log(
+                    change.fullDocument?.tag +
+                      ' ' +
+                      change.fullDocument?.value +
+                      (change.fullDocument?.invalid ? ' bad' : ' good'),
+                    Log.levelDetailed
                   )
                   break
                 case 'digital':
@@ -391,7 +415,17 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
                     change.fullDocument?.invalid
                       ? StatusCodes.Bad
                       : StatusCodes.Good,
-                    change.fullDocument?.timeTagAtSource
+                    !('timeTagAtSource' in change.fullDocument) ||
+                      change.fullDocument.timeTagAtSource === null
+                      ? new Date(1970, 0, 1)
+                      : change.fullDocument.timeTagAtSource
+                  )
+                  Log.log(
+                    change.fullDocument?.tag +
+                      ' ' +
+                      change.fullDocument?.value +
+                      (change.fullDocument?.invalid ? ' bad' : ' good'),
+                    Log.levelDetailed
                   )
                   break
                 case 'string':
@@ -403,10 +437,43 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
                     change.fullDocument?.invalid
                       ? StatusCodes.Bad
                       : StatusCodes.Good,
-                    change.fullDocument?.timeTagAtSource
+                    !('timeTagAtSource' in change.fullDocument) ||
+                      change.fullDocument.timeTagAtSource === null
+                      ? new Date(1970, 0, 1)
+                      : change.fullDocument.timeTagAtSource
+                  )
+                  Log.log(
+                    change.fullDocument?.tag +
+                      ' ' +
+                      change.fullDocument?.valueString +
+                      (change.fullDocument?.invalid ? ' bad' : ' good'),
+                    Log.levelDetailed
+                  )
+                  break
+                case 'json':
+                  m.setValueFromSource(
+                    new Variant({
+                      dataType: DataType.String,
+                      value: JSON.stringify(change.fullDocument?.valueJson)
+                    }),
+                    change.fullDocument?.invalid
+                      ? StatusCodes.Bad
+                      : StatusCodes.Good,
+                    !('timeTagAtSource' in change.fullDocument) ||
+                      change.fullDocument.timeTagAtSource === null
+                      ? new Date(1970, 0, 1)
+                      : change.fullDocument.timeTagAtSource
+                  )
+                  Log.log(
+                    change.fullDocument?.tag +
+                      ' ' +
+                      JSON.stringify(change.fullDocument?.valueJson) +
+                      (change.fullDocument?.invalid ? ' bad' : ' good'),
+                    Log.levelDetailed
                   )
                   break
               }
+            }
           })
         } catch (e) {
           Log.log('MongoDB - CS Error: ' + e, Log.levelMin)
@@ -489,7 +556,7 @@ async function getValue (tag, rtCollection) {
     return 0
   }
 
-  console.log(results[0].value)
+  // console.log(results[0].value)
   return parseFloat(results[0].value)
 }
 
@@ -502,7 +569,7 @@ async function checkConnectedMongo (client) {
   }
 
   let tr = setTimeout(() => {
-    console.log('Mongo ping timeout error!')
+    Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false
   }, CheckMongoConnectionTimeout)
 
@@ -511,7 +578,7 @@ async function checkConnectedMongo (client) {
     res = await client.db('admin').command({ ping: 1 })
     clearTimeout(tr)
   } catch (e) {
-    console.log('Error on mongodb connection!')
+    Log.log('Error on mongodb connection!')
     return false
   }
   if ('ok' in res && res.ok) {
