@@ -52,6 +52,7 @@ nssm remove JSON_SCADA_plctags confirm
 nssm remove JSON_SCADA_telegraf_runtime confirm
 nssm remove JSON_SCADA_telegraf_listener confirm
 nssm remove JSON_SCADA_mqttsparkplugclient confirm
+nssm remove JSON_SCADA_opcuaserver confirm
 
 PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& {Start-Process PowerShell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""remove_jsonscada_services.ps1""' -Verb RunAs}"
 

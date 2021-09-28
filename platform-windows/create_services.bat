@@ -125,6 +125,11 @@ nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
 nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
 nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
 
+REM service for OPC-UA Server
+nssm install JSON_SCADA_opcuaserver "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\OPC-UA-Server\index.js"  1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_opcuaserver AppDirectory "C:\json-scada\src\OPC-UA-Server"
+nssm set JSON_SCADA_opcuaserver Start SERVICE_DEMAND_START
+
 REM service for telegraf listener
 nssm install JSON_SCADA_telegraf_listener "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\telegraf-listener\index.js" 
 nssm set JSON_SCADA_telegraf_listener AppDirectory "C:\json-scada\src\telegraf-listener"

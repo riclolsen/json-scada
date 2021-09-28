@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.15"
-!define VERSION_ "0.15.0.0"
+!define VERSION "v.0.16"
+!define VERSION_ "0.16.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -127,6 +127,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
+  nsExec::Exec 'net stop JSON_SCADA_opcuaserver' 
   nsExec::Exec 'net stop JSON_SCADA_mqttsparkplugclient'  
   nsExec::Exec 'net stop JSON_SCADA_telegraf_runtime'
   nsExec::Exec 'net stop JSON_SCADA_telegraf_listener'
@@ -381,6 +382,13 @@ SetRegView 64
   File /a "..\src\mqtt-sparkplug\*.md"
   SetOutPath $INSTDIR\src\mqtt-sparkplug\node_modules
   File /a /r "..\src\mqtt-sparkplug\node_modules\*.*"
+
+  SetOutPath $INSTDIR\src\OPC-UA-Server
+  File /a "..\src\OPC-UA-Server\*.js"
+  File /a "..\src\OPC-UA-Server\*.json"
+  File /a "..\src\OPC-UA-Server\*.md"
+  SetOutPath $INSTDIR\src\OPC-UA-Server\node_modules
+  File /a /r "..\src\OPC-UA-Server\node_modules\*.*"
 
   ;SetOutPath $INSTDIR\extprogs
 
@@ -658,6 +666,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_iec104server"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_iec104server"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_opcuaserver"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_opcuaserver"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_cs_data_processor"`

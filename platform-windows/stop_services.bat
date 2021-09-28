@@ -33,6 +33,7 @@ ping -n 3
 REM STOP PROTOCOL SERVERS
 nssm stop JSON_SCADA_iec104server
 nssm stop JSON_SCADA_iec101server
+nssm stop JSON_SCADA_opcuaserver
 ping -n 2
 
 REM STOP OTHER PROCESSES
