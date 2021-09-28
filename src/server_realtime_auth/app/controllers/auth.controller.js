@@ -159,7 +159,8 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-104_SERVER',
       'DNP3_SERVER',
       'I104M',
-      'TELEGRAF-LISTENER'
+      'TELEGRAF-LISTENER',
+      'OPC-UA_SERVER'
     ].includes(req?.body?.protocolDriver)
   ) {
     if (
@@ -168,6 +169,9 @@ exports.updateProtocolConnection = async (req, res) => {
     ) {
       req.body.ipAddressLocalBind = '0.0.0.0'
       switch (req?.body?.protocolDriver) {
+        case 'OPC-UA_SERVER':
+          req.body.ipAddressLocalBind = '0.0.0.0:4840'
+          break
         case 'IEC60870-5-104_SERVER':
           req.body.ipAddressLocalBind = '0.0.0.0:2404'
           break
@@ -192,7 +196,8 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3_SERVER',
       'PLCTAG',
       'I104M',
-      'TELEGRAF-LISTENER'
+      'TELEGRAF-LISTENER',
+      'OPC-UA_SERVER'
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('ipAddresses' in req.body)) {
@@ -206,10 +211,16 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (['MQTT-SPARKPLUG-B','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('topics' in req.body)) {
       req.body.topics = []
     }
+    if (!('groupId' in req.body)) {
+      req.body.groupId = ''
+    }
+  }
+
+  if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('topicsAsFiles' in req.body)) {
       req.body.topicsAsFiles = []
     }
@@ -218,9 +229,6 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('clientId' in req.body)) {
       req.body.clientId = ''
-    }
-    if (!('groupId' in req.body)) {
-      req.body.groupId = ''
     }
     if (!('edgeNodeId' in req.body)) {
       req.body.edgeNodeId = ''
@@ -248,12 +256,21 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['OPC-UA', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
-    if (!('endpointURLs' in req.body)) {
-      req.body.endpointURLs = []
-    }
+  if (['OPC-UA', 'MQTT-SPARKPLUG-B','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('useSecurity' in req.body)) {
       req.body.useSecurity = false
+    }
+  }
+
+  if (['OPC-UA', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+    if (!('useSecurity' in req.body)) {
+      req.body.useSecurity = false
+    }
+  }
+
+  if (['OPC-UA','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('timeoutMs' in req.body)) {
+      req.body.timeoutMs = 20000.0
     }
   }
 
@@ -269,9 +286,6 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('autoCreateTagQueueSize' in req.body)) {
       req.body.autoCreateTagQueueSize = 0.0
-    }
-    if (!('timeoutMs' in req.body)) {
-      req.body.timeoutMs = 20000.0
     }
   }
 
@@ -359,7 +373,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3', 'MQTT-SPARKPLUG-B','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('localCertFilePath' in req.body)) {
       req.body.localCertFilePath = ''
     }
@@ -392,6 +406,12 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
+  if (['DNP3', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('privateKeyFilePath' in req.body)) {
+      req.body.privateKeyFilePath = ''
+    }
+  }
+
   if (['DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('allowTLSv10' in req.body)) {
       req.body.allowTLSv10 = false
@@ -407,9 +427,6 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('cipherList' in req.body)) {
       req.body.cipherList = ''
-    }
-    if (!('privateKeyFilePath' in req.body)) {
-      req.body.privateKeyFilePath = ''
     }
   }
 
@@ -590,7 +607,13 @@ exports.listProtocolDriverInstances = (req, res) => {
 
 exports.updateProtocolDriverInstance = async (req, res) => {
   registerUserAction(req, 'updateProtocolDriverInstance')
-  await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
+  try {
+    await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
+  }
+  catch (e){
+    req.body.protocolDriverInstanceNumber = req.body.protocolDriverInstanceNumber + 1
+    await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
+  }
   res.status(200).send({})
 }
 
