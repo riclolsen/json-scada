@@ -606,7 +606,6 @@ exports.listProtocolDriverInstances = (req, res) => {
 }
 
 exports.updateProtocolDriverInstance = async (req, res) => {
-  registerUserAction(req, 'updateProtocolDriverInstance')
   try {
     await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
   }
@@ -614,6 +613,7 @@ exports.updateProtocolDriverInstance = async (req, res) => {
     req.body.protocolDriverInstanceNumber = req.body.protocolDriverInstanceNumber + 1
     await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
   }
+  registerUserAction(req, 'updateProtocolDriverInstance')
   res.status(200).send({})
 }
 
