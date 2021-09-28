@@ -57,5 +57,7 @@ cd ../telegraf-listener
 npm install
 cd ../mqtt-sparkplug
 npm install
+cd ../OPC-UA-Server
+npm install
 cd ../..
 

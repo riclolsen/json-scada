@@ -233,6 +233,25 @@ services:
     networks:
       - jsdemo_net
 
+
+  # OPC-UA Server
+  opcua_server:
+    image: node:current-alpine3.13
+    container_name: jsdemo_opcua_server
+    command:  sh -c "cd /OPC-UA-Server && sleep 10 && node index.js"
+    restart: unless-stopped
+    ports:
+      - 4840:4840
+    expose:
+      - "4840"
+    volumes:
+      - ../src/OPC-UA-Server:/OPC-UA-Server
+      - ./conf:/conf
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
   # realtime web server, will listen on some HTTP port NO AUTH/RBAC
   #server_realtime:
   #  image: node:current-alpine3.13

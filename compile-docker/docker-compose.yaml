@@ -134,6 +134,13 @@ services:
     volumes:
       - ../src/telegraf-listener:/telegraf-listener
 
+  opcua_server_update:
+    image: node:current-alpine3.13
+    container_name: js_opcua_server_update
+    command:  sh -c "npm install -g npm && cd /OPC-UA-Server && npm install"
+    volumes:
+      - ../src/OPC-UA-Server:/OPC-UA-Server
+
   mqtt_sparkplug_update:
     image: node:current-alpine3.13
     container_name: js_mqtt_sparkplug_update
