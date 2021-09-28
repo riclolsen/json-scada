@@ -240,6 +240,26 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
             return
           }
 
+          let cmdWriteProp = {}
+          if (element.origin === 'command') {
+            let variant = {dataType: DataType.Double, value: element?.value }
+            if (element.type === 'string')
+              variant = {dataType: DataType.String, value: element?.valueString }
+            if (element.type === 'digital')
+              variant = {dataType: DataType.Boolean, value: element?.value==0?false:true }
+
+            cmdWriteProp = {
+              value: {
+                get: () => new Variant(variant),
+                set: variant => {
+                  console.log(variant)
+                  console.log(element.tag)
+                  return StatusCodes.Good
+                }
+              }
+            }
+          }
+
           let type, value, dataType
           switch (element?.type) {
             case 'digital':
@@ -273,13 +293,15 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
               nodeId: 'i=' + element._id,
               browseName: element.tag,
               dataType: type,
-              description: element?.description
-              // statusCode: StatusCodes.Bad,
+              description: element?.description,
+              ... cmdWriteProp,
               //value: {
-              //  get:
-              //  () =>
-              //  new Variant({ dataType: DataType.Double,
-              //                value: getValue(element.tag, rtCollection) })
+              //  get: () => new Variant({}),
+              //  set: variant => {
+              //    console.log(variant)
+              //    console.log(element.tag)
+              //    return StatusCodes.Good
+              //  }
               //}
             })
             metrics[element.tag].setValueFromSource(

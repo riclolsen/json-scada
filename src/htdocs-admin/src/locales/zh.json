@@ -339,7 +339,7 @@
     "clientIdTitle": "MQTT连接的唯一客户端ID",
     "clientIdHint": "保留为空以由代理自动分配。",
     "groupId": "火花塞组ID",
-    "groupIdTitle": "用于发布的Sparkplug组ID",
+    "groupIdTitle": "用于发布的组ID",
     "groupIdHint": "保留为空以避免Sparkplug发布。",
     "edgeNodeId": "边缘节点ID",
     "edgeNodeIdTitle": "用于发布的Sparkplug Edge节点ID",
