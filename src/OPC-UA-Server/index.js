@@ -28,7 +28,7 @@ const {
   StatusCodes,
   AttributeIds
 } = require('node-opcua')
-const MongoClient = require('mongodb').MongoClient
+const { MongoClient, Double } = require('mongodb')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
@@ -68,6 +68,97 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
         if (!'_id' in connection) {
           Log.log('Fatal error: malformed record for connection found!')
           process.exit(1)
+        }
+
+        async function sendCommand (tag, variant) {
+          let cmdRes = await rtCollection.findOne({ tag: tag })
+
+          if (!('_id' in cmdRes)) {
+            Log.log('Command not found! Tag: ' + tag)
+            return StatusCodes.BadNotFound
+          }
+
+          if (cmdRes?.commandBlocked !== false) {
+            Log.log('Command blocked! Tag: ' + tag)
+            return StatusCodes.BadNotWritable
+          }
+
+          // check the supervised point for commandBlocked
+          if (cmdRes.supervisedOfCommand != 0) {
+            let supRes = await rtCollection.findOne({
+              _id: cmdRes.supervisedOfCommand
+            })
+            if ('_id' in supRes) {
+              if (supRes?.commandBlocked !== false) {
+                Log.log('Command blocked (sup)! Tag: ' + tag)
+                return StatusCodes.BadNotWritable
+              }
+            }
+
+            let doubleVal = variant.value
+            let strVal = variant.value.toString()
+
+            switch (variant.dataType) {
+              case DataType.Boolean:
+                doubleVal = variant.value ? 1 : 0
+                strVal = variant.value.toString()
+                break
+              case DataType.SByte:
+              case DataType.Byte:
+              case DataType.Byte:
+              case DataType.Int16:
+              case DataType.UInt16:
+              case DataType.Int32:
+              case DataType.UInt32:
+              case DataType.Int64:
+              case DataType.UInt64:
+              case DataType.Float:
+              case DataType.Double:
+                doubleVal = variant.value
+                strVal = variant.value.toString()
+                break
+              case DataType.Variant:
+              case DataType.StatusCode:
+              case DataType.Guid:
+              case DataType.QualifiedName:
+              case DataType.LocalizedText:
+              case DataType.DiagnosticInfo:
+              case DataType.ByteString:
+              case DataType.ExpandedNodeId:
+              case DataType.NodeId:
+              case DataType.XmlElement:
+              case DataType.String:
+                doubleVal = parseFloat(variant.value)
+                strVal = variant.value.toString()
+                break
+            }
+
+            // clear to send command
+            Log.log("Inserting command: " + cmdRes.tag + ' ' + doubleVal + ' ' + strVal)
+            cmdCollection.insertOne({
+              protocolSourceConnectionNumber:
+                cmdRes?.protocolSourceConnectionNumber,
+              protocolSourceCommonAddress: cmdRes?.protocolSourceCommonAddress,
+              protocolSourceObjectAddress: cmdRes?.protocolSourceObjectAddress,
+              protocolSourceASDU: cmdRes?.protocolSourceASDU,
+              protocolSourceCommandDuration:
+                cmdRes?.protocolSourceCommandDuration,
+              protocolSourceCommandUseSBO: cmdRes?.protocolSourceCommandUseSBO,
+              pointKey: cmdRes._id,
+              tag: cmdRes.tag,
+              value: new Double(doubleVal),
+              valueString: strVal,
+              originatorUserName:
+                'Protocol connection: ' +
+                connection.protocolConnectionNumber +
+                ' ' +
+                connection.name,
+              originatorIpAddress: '',
+              timeTag: new Date()
+            })
+
+            return StatusCodes.BadNotFound
+          }
         }
 
         let port = 4840
@@ -242,18 +333,23 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 
           let cmdWriteProp = {}
           if (element.origin === 'command') {
-            let variant = {dataType: DataType.Double, value: element?.value }
+            let variant = { dataType: DataType.Double, value: element?.value }
             if (element.type === 'string')
-              variant = {dataType: DataType.String, value: element?.valueString }
+              variant = {
+                dataType: DataType.String,
+                value: element?.valueString
+              }
             if (element.type === 'digital')
-              variant = {dataType: DataType.Boolean, value: element?.value==0?false:true }
+              variant = {
+                dataType: DataType.Boolean,
+                value: element?.value == 0 ? false : true
+              }
 
             cmdWriteProp = {
               value: {
                 get: () => new Variant(variant),
-                set: variant => {
-                  console.log(variant)
-                  console.log(element.tag)
+                set: variant => {                  
+                  sendCommand(element.tag, variant)
                   return StatusCodes.Good
                 }
               }
@@ -294,7 +390,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
               browseName: element.tag,
               dataType: type,
               description: element?.description,
-              ... cmdWriteProp,
+              ...cmdWriteProp
               //value: {
               //  get: () => new Variant({}),
               //  set: variant => {
