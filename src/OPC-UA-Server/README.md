@@ -64,11 +64,11 @@ Parameters for communication with OPC-UA servers.
 * _**name**_ [String] - Name for a connection. Will be used for logging. **Mandatory parameter**.
 * _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
-* _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
+* _**commandsEnabled**_ [Boolean] - Allows to disable/enable commands (messages in control direction) for a connection. Use false to disable all commands. If true the driver will create writable command tags for the enabled topics (_group1_ list). **Mandatory parameter**.
 * _**groupId**_ [String] - OPC-UA resource path. This path will be added to the endpoint resource name. Default value is "UA/JsonScada". **Optional parameter**.
 * _**ipAddresses**_ [Array of Strings] - List of client's IP addresses allowed. Leave empty to allow any IP address to connect to the server. **Optional parameter**.
 * _**ipAddressLocalBind**_ [String] - Interface bind IP address and port. Currently supports only IP "0.0.0.0". Default "0.0.0.0:4840". **Optional parameter**.
-* _**topics**_ [Array of Strings] - List of _group1_ filter for the available tags on the server. Leave empty to include all tags on the OPC-UA server. **Optional parameter**.
+* _**topics**_ [Array of Strings] - List of _group1_ filter for the available tags on the OPC-UA server. Leave empty to include all tags. **Optional parameter**.
 * _**timeoutMs**_ [Double] - Timeout. The HEL/ACK transaction timeout in ms. Use a large value (i.e. 15000 ms) for slow connections or embedded devices. **Mandatory parameter**.
 * _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
 * _**localCertFilePath**_ [String] - File that contains the certificate (*.PEM) that will be presented to the remote side of the connection (equiv. to NodeJS TLS option 'cert'). **Optional parameter**.
