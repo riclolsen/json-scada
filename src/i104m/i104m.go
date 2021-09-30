@@ -54,6 +54,7 @@ const logLevelDebug = 3
 const udpChannelSize = 1000
 const udpReadBufferPackets = 100
 
+var udpForwardAddress = "" // assing a forward address for I104M UDP messages
 var pointFilter uint32 = 0
 
 type configData struct {
@@ -483,7 +484,7 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 		log.Println("Redundancy - No driver instance found!")
 	}
 
-	if !contains(instance.NodeNames, cfg.NodeName) {
+	if len(instance.NodeNames) > 0 && !contains(instance.NodeNames, cfg.NodeName) {
 		log.Fatal("Redundancy - This node name not in the list of nodes from driver instance!")
 	}
 
@@ -508,25 +509,27 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 			log.Println("Redundancy - ACTIVATING this Node!")
 			isActive = true
 		}
-
 	}
 
 	if isActive {
 		log.Println("Redundancy - This node is active.")
 
 		// update keep alive time and node name
-		result, err := collectionInstances.UpdateOne(
+		_, err := collectionInstances.UpdateOne(
 			context.TODO(),
 			bson.M{"_id": bson.M{"$eq": id}},
 			bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now())}},
 		)
 		if err != nil {
+			log.Println("Redundancy - error updating mongodb!")
 			log.Println(err)
 		} else {
 			if logLevel >= logLevelDebug {
-				log.Println("Redundancy - Update result: ", result)
+				log.Println("Redundancy - Update mongodb ok.")
 			}
 		}
+	} else {
+		log.Println("Redundancy - This node is not active.")
 	}
 }
 
@@ -597,6 +600,14 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 			if logLevel >= logLevelBasic {
 				log.Printf("UDP - Enqueued received packet with %d bytes from %s, #%d", n, ipPort, cntEnqPkt)
 			}
+
+			// forward message if address set
+			if udpForwardAddress != "" {
+				udpAddr, err := net.ResolveUDPAddr("udp", udpForwardAddress)
+				if err == nil {
+					con.WriteToUDP(buf, udpAddr)
+				}
+			}
 		} else {
 			if logLevel >= logLevelDebug {
 				log.Printf("UDP - Invalid small packet. Ignored.\n")
@@ -649,6 +660,10 @@ func main() {
 			log.Println("Log Level parameter should be a number!")
 			os.Exit(2)
 		}
+	}
+
+	if os.Getenv("JS_I104M_UDP_FORWARD_ADDRESS") != "" {
+		udpForwardAddress = os.Getenv("JS_I104M_UDP_FORWARD_ADDRESS")
 	}
 
 	cfgFileName := filepath.Join("..", "conf", "json-scada.json")
@@ -738,7 +753,7 @@ func main() {
 	}
 
 	if len(protocolConn.IPAddresses) == 0 {
-		protocolConn.IPAddresses[0] = "127.0.0.1"
+		protocolConn.IPAddresses = append(protocolConn.IPAddresses, "127.0.0.1:8098")
 	}
 
 	log.Printf("Instance:%d Connection:%d", protocolConn.ProtocolDriverInstanceNumber, protocolConn.ProtocolConnectionNumber)
