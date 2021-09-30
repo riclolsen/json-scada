@@ -11,7 +11,9 @@ module.exports = function (
   opcApi,
   accessPointGetFile,
   getFileApi,  
-  grafanaServer
+  grafanaServer,
+  customJsonQueryAP,
+  customJsonQuery
 ) {
   app.use(function (req, res, next) {
     res.header(
@@ -70,6 +72,8 @@ module.exports = function (
   )
 
   app.post(accessPoint, opcApi) // realtime data API
+
+  app.get(customJsonQueryAP, customJsonQuery) // custom queries returning JSON
 
   app.get(accessPointGetFile, getFileApi) // get file from mongo API
 

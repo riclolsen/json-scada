@@ -24,6 +24,7 @@ const HTTP_PORT = process.env.JS_HTTP_PORT || 8080
 const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || 'http://127.0.0.1:3000'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
+const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
 const APP_NAME = 'server_realtime_auth'
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
@@ -42,6 +43,7 @@ var Grid = require('gridfs-stream')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 const UserActionsQueue = require('./userActionsQueue')
+const GetQueryPostgresql = require('./customJsonQueries')
 
 const config = require('./app/config/auth.config.js')
 if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
@@ -50,6 +52,7 @@ const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const { AsyncLocalStorage } = require('async_hooks')
 const { canSendCommands } = require('./app/middlewares/authJwt.js')
+const { query } = require('express')
 
 // Argument NOAUTH disables user authentication
 var args = process.argv.slice(2)
@@ -176,11 +179,43 @@ let pool = null
       opcApi,
       GETFILE_AP,
       getFileApi,
-      GRAFANA_SERVER
+      GRAFANA_SERVER,
+      QUERYJSON_AP,
+      queryJSON
     )
   } else {
     app.post(OPCAPI_AP, opcApi)
     app.get(GETFILE_AP, getFileApi)
+    app.get(QUERYJSON_AP, queryJSON)
+  }
+
+  async function queryJSON(req, res){
+
+    let queryname = req.query?.query || ''
+    console.log("queryJSON " + queryname)
+    res.setHeader('Content-type', 'application/json')
+
+    if (queryname===''){
+      res.send({error:'Missing "query" parameter!'})
+      return
+    }
+    
+    let query = GetQueryPostgresql(queryname)
+    if (query===''){
+      res.send({error:'Unknown query name!'})
+      return
+    }
+
+    // read data from postgreSQL
+    pool.query(query, (err, resp) => {
+      if (err) {
+        res.send({error:'Query error!'})
+        return
+      }
+
+      res.send(resp.rows)
+      return
+    })
   }
 
   // find file on mongodb gridfs and return it
