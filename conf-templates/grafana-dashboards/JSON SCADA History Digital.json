@@ -8,6 +8,12 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
@@ -15,8 +21,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 6,
-  "iteration": 1629902492296,
+  "id": 8,
+  "iteration": 1633462739754,
   "links": [],
   "panels": [
     {
@@ -38,7 +44,7 @@
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "stepBefore",
+            "lineInterpolation": "stepAfter",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -97,7 +103,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  \"time\" AS \"time\",\n  value\nFROM grafana_hist\nWHERE\n  $__timeFilter(\"time\") and metric IN ('$point_tag')  \n\nUNION\n(\nSELECT\n  ($__timeFrom())::timestamp  AS \"time\",\n  value\nFROM grafana_hist \nWHERE\n  $__timeFrom() < time and metric IN ('$point_tag') order by grafana_hist.time desc limit 1\n)  \norder by 1 desc\n",
+          "rawSql": "SELECT\n  \"time\" AS \"time\",\n  value\nFROM grafana_hist\nWHERE\n  $__timeFilter(\"time\") and metric IN ('$point_tag')  \n\nUNION\n(\nSELECT\n  ($__timeFrom())::timestamp with time zone AS \"time\",\n  value\nFROM grafana_hist \nWHERE\n  time < (($__timeFrom())::timestamp with time zone) and metric IN ('$point_tag') order by grafana_hist.time desc limit 1\n)  \norder by 1 ",
           "refId": "A",
           "select": [
             [
@@ -202,14 +208,14 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.3",
       "targets": [
         {
           "format": "table",
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  metric,\n  \"time\" AS \"time\",\n  value_json->>'s' as state,\n  case when (flags & B'10000000') = B'10000000' then 'F' else '' end as flags\nFROM grafana_hist\nWHERE\n  $__timeFilter(\"time\") and metric IN ('$point_tag')  \n\nUNION\n(\nSELECT\n  metric,\n  ($__timeFrom())::timestamp  AS \"time\",\n  value_json->>'s' as state,\n  case when (flags & B'10000000') = B'10000000' then 'F' else '' end as flags\nFROM grafana_hist \nWHERE\n  $__timeFrom() < time and metric IN ('$point_tag') order by grafana_hist.time desc limit 1\n)  \norder by 2 desc\n",
+          "rawSql": "SELECT\n  metric,\n  \"time\" AS \"time\",\n  value_json->>'s' as state,\n  case when (flags & B'10000000') = B'10000000' then 'F' else '' end as flags\nFROM grafana_hist\nWHERE\n  $__timeFilter(\"time\") and metric IN ('$point_tag')  \n\nUNION\n(\nSELECT\n  metric,\n  ($__timeFrom())::timestamp with time zone AS \"time\",\n  value_json->>'s' as state,\n  case when (flags & B'10000000') = B'10000000' then 'F' else '' end as flags\nFROM grafana_hist \nWHERE\n  time < (($__timeFrom())::timestamp with time zone) and metric IN ('$point_tag') order by grafana_hist.time desc limit 1\n)  \norder by 2 desc\n",
           "refId": "A",
           "select": [
             [
