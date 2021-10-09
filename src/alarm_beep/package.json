@@ -1,7 +1,7 @@
 {
   "name": "alarm_beeep",
   "version": "1.0.0",
-  "description": "Process realtime data updated to mongodb through change streams.",
+  "description": "Beeps sound when new alarms are detected.",
   "main": "alarm_beeep",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,8 +9,7 @@
   "author": "Ricardo Lastra Olsen",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "a1-beep": "^1.2.1",
     "fs": "0.0.1-security",
-    "mongodb": "^3.6.4"
+    "mongodb": "^4.1.3"
   }
 }

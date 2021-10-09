@@ -23,23 +23,29 @@ const CHECK_PERIOD = 2000
 
 const APP_NAME = 'ALARM_BEEP'
 const APP_MSG = '{json:scada} - Alarm Beep'
-const VERSION = '0.1.0'
+const VERSION = '0.1.1'
 var jsConfigFile = '../../conf/json-scada.json'
 const fs = require('fs')
 const mongo = require('mongodb')
 const { MongoClient, ReadPreference } = require('mongodb')
 const { setInterval } = require('timers')
-const {beep}=require('a1-beep')
 let sys = require('child_process')
 
-function Beep(...args) {
-  if (process.platform === "win32")
-    sys.exec(`rundll32 user32.dll,MessageBeep`)
+const WavFilesWin = ['c:\\windows\\media\\Windows Background.wav', 'c:\\windows\\media\\Windows Foreground.wav', 'c:\\windows\\media\\Windows Message Nudge.wav' ]
+const WavFilesNonWin = ['/usr/share/sounds/linuxmint-gdm.wav']
+
+// produces a beep using platform dependant method, parameter is an index to the wav file to be played
+function Beep(beepType) {
+  beepType = beepType || 0
+  if (process.platform === "win32") {
+    // sys.exec(`rundll32 user32.dll,MessageBeep`) // this won't work for windows services
+    console.log("Beep! " + WavFilesWin[beepType%WavFilesWin.length])
+    sys.execFile('c:\\json-scada\\platform-windows\\sounder.exe', [WavFilesWin[beepType%WavFilesWin.length]])
+  }    
   else {
-    // using beepbeep package
-    beep(...args)
-    // alternative method
-    sys.exec('/usr/bin/aplay -q -D default /usr/share/sounds/linuxmint-gdm.wav')
+    // Other platforms
+    console.log("Beep! " + WavFilesNonWin[beepType%WavFilesNonWin.length])
+    sys.exec('/usr/bin/aplay -q -D default ' + WavFilesNonWin[beepType%WavFilesNonWin.length])
   }
 }
 
@@ -78,7 +84,7 @@ if (
     useNewUrlParser: true,
     useUnifiedTopology: true,
     appname: APP_NAME + " Version:" + VERSION,
-    poolSize: 20,
+    maxPoolSize: 20,
     readPreference: ReadPreference.PRIMARY
   }
 
@@ -101,6 +107,7 @@ if (
   let doBeepIntervalHandle = null
   let checkBeepIntervalHandle = null
   let beepPresent = false
+  let beepType = 0
   while (true) {
     if (clientMongo === null) {
       console.log('Try to connect to MongoDB server...')
@@ -113,15 +120,16 @@ if (
           const db = client.db(jsConfig.mongoDatabaseName)
           collection = db.collection(RealtimeDataCollectionName)
 
-          clearInterval(doBeepIntervalHandle)
-          doBeepIntervalHandle = setInterval(function () {
+          function doBeep() {
             if (clientMongo) {
               if (beepPresent) {
-                console.log("Beep!")
-                Beep()
+                Beep(beepType-1)
               }
             }
-          }, BEEP_PERIOD)
+          }
+
+          clearInterval(doBeepIntervalHandle)
+          doBeepIntervalHandle = setInterval(doBeep, BEEP_PERIOD)
 
           clearInterval(checkBeepIntervalHandle)
           let enterQuery = false
@@ -142,7 +150,16 @@ if (
               if (data && typeof data._id === 'number') {
                 if ("value" in data) {
                   beepPresent = data.value === 0 ? false : true;
-                  console.log("Beep status " + beepPresent)
+                  if ('beepType' in data) {
+                    if (beepType != data.beepType) {
+                      clearInterval(doBeepIntervalHandle)
+                      doBeepIntervalHandle = setInterval(doBeep, BEEP_PERIOD/(data.beepType>=2?2:1))
+                    }
+                    beepType = data.beepType                    
+                  }
+                  else
+                    beepType = 0 
+                  console.log("Beep status " + beepPresent + ' ' + data.beepType )
                 }
               }
               enterQuery = false
@@ -168,7 +185,7 @@ if (
       clientMongo = null
     }
     if (clientMongo)
-      if (!clientMongo.isConnected()) {
+    if (!(await checkConnectedMongo(clientMongo))) {
         // not anymore connected, will retry
         beepPresent = false
         console.log('Disconnected Mongodb!')
@@ -177,3 +194,33 @@ if (
       }
   }
 })()
+
+// test mongoDB connectivity
+let CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo (client) {
+  if (!client) {
+    return false
+  }
+
+  let tr = setTimeout(() => {
+    console.log('Mongo ping timeout error!')
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    console.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
+}

@@ -237,6 +237,7 @@ SetRegView 64
   File /a "..\platform-windows\*.bat"
   File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
+  File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
   File /a "..\platform-windows\dotnet-runtime-5.0.10-win-x64.exe"
 
