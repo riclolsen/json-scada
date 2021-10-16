@@ -305,6 +305,11 @@ SetRegView 64
   ; preserve previous screen_list 
   ; Rename $INSTDIR\src\htdocs\svg\screen_list.js $INSTDIR\src\htdocs\svg\screen_list.js.bak
 
+  SetOutPath $INSTDIR\src\certificate-creator
+  File /a "..\src\certificate-creator\client.conf"
+  File /a "..\src\certificate-creator\server.conf"
+  File /a "..\src\certificate-creator\create_certs.sh"
+
   SetOutPath $INSTDIR\src\htdocs
   File /a "..\src\htdocs\*.*"
   SetOutPath $INSTDIR\src\htdocs\scripts

@@ -130,6 +130,28 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.16:
+
+ - Default login credentials: username=admin password=jsonscada
+ - OPC-UA Server working.
+ - Fixed error when duplicating protocol instance on Admin UI.
+ - Auto created random secret for JWT encryption.
+ - Better Grafana Dashboards.
+ - Grafana updated to 8.1.6.
+ - Added passphrase parameter to IEC60870-5-104 server and client (for the .pfx certificate file).
+ - Fixed quality bit missing for IEC60870-5-101/104 server on integrity.
+ - Added tool to create TLS certificates (requires bash, can be Git bash on Windows).
+
+Requirements:
+
+ - Windows 10 64 bits or Server 2016, Windows PowerShell.
+ - Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
+ - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+ - If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+ - Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
 Notes for version 0.15:
 
  - Default login credentials: username=admin password=jsonscada
@@ -147,7 +169,7 @@ Requirements:
 
  - Windows 10 64 bits or Server 2016, Windows PowerShell.
  - Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000.  Other ports may be required for optional services and protocols.
+ - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
  - If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
  - Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
@@ -172,7 +194,7 @@ Notes for version 0.14:
 Requirements:
 
  - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000.  Other ports may be required for optional services and protocols.
+ - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
  - Administrative rights. Corporative Windows policies may cause problems with the creation of services and use of TCP ports.
 
 -------------------------------------------------------------------
