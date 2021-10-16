@@ -384,7 +384,7 @@ namespace Iec10XDriver
                     }
                     catch (Exception e)
                     {
-                        Log(srv.name + " - Error configuring TLS certficates.");
+                        Log(srv.name + " - Error configuring TLS certificates.");
                         Log(srv.name + " - " + e.Message);
                         Environment.Exit(1);
                     }

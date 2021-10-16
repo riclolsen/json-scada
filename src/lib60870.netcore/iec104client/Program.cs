@@ -98,6 +98,8 @@ namespace Iec10XDriver
             [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
             [BsonDefaultValue("")]
+            public string passphrase { get; set; }
+            [BsonDefaultValue("")]
             public string peerCertFilePath { get; set; }
             [BsonDefaultValue("")]
             public string rootCertFilePath { get; set; }
@@ -359,7 +361,7 @@ namespace Iec10XDriver
                     try 
                     {
                         // Own certificate has to be a pfx file that contains the private key
-                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath);
+                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath, srv.passphrase, X509KeyStorageFlags.MachineKeySet);
 
                         // Create a new security information object to configure TLS
                         secInfo = new TlsSecurityInformation(null, ownCertificate);
@@ -378,7 +380,7 @@ namespace Iec10XDriver
                     }
                     catch (Exception e)
                     {
-                        Log(srv.name + " - Error configuring TLS certficates.");
+                        Log(srv.name + " - Error configuring TLS certificates.");
                         Log(srv.name + " - " + e.Message);
                         Environment.Exit(1);
                     }

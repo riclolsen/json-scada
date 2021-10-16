@@ -1857,7 +1857,7 @@
 
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER'].includes(selected.protocolDriver)
+                      ['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER', 'IEC60870-5-104'].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">

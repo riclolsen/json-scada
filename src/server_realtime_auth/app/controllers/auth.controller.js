@@ -220,7 +220,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER', 'IEC60870-5-104'].includes(req?.body?.protocolDriver)) {
     if (!('passphrase' in req.body)) {
       req.body.passphrase = ''
     }

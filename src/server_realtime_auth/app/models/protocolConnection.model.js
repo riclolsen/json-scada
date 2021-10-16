@@ -31,7 +31,7 @@ const ProtocolConnection = mongoose.model(
     topics: { type: [String], default: [] },
     groupId: { type: String },
 
-    // MQTT-SPARKPLUG-B, IEC 104 Server
+    // MQTT-SPARKPLUG-B, IEC 104 Server, IEC 104 Client
     passphrase: { type: String, default: '' }, 
 
     // MQTT-SPARKPLUG-B
