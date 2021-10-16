@@ -246,7 +246,7 @@ namespace Iec10XDriver
                                         nwasdu
                                             .AddInformationObject(new MeasuredValueNormalized(System.Convert.ToInt32(dst.protocolDestinationObjectAddress.ToDouble()),
                                                 System.Convert.ToInt16(val),
-                                                new QualityDescriptor()));
+                                                q));
                                         cntasduobj++;
                                     }
                                     break;
@@ -280,7 +280,7 @@ namespace Iec10XDriver
                                         nwasdu
                                             .AddInformationObject(new MeasuredValueScaled(System.Convert.ToInt32(dst.protocolDestinationObjectAddress.ToDouble()),
                                                 System.Convert.ToInt16(val),
-                                                new QualityDescriptor()));
+                                                q));
                                         cntasduobj++;
                                     }
                                     break;
@@ -303,7 +303,7 @@ namespace Iec10XDriver
                                         nwasdu
                                             .AddInformationObject(new MeasuredValueShort(System.Convert.ToInt32(dst.protocolDestinationObjectAddress.ToDouble()),
                                                 System.Convert.ToSingle(val),
-                                                new QualityDescriptor()));
+                                                q));
                                         cntasduobj++;
                                     }
                                     break;

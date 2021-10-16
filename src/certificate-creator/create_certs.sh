@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # create TLS certificates 
-
 # based on https://github.com/nodejs/help/issues/253
+# requires git bash on Windows
 
 if test $# -ne 3
 then
