@@ -104,6 +104,8 @@ namespace Iec10XDriver
             public int maxQueueSize { get; set; }
             [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string passphrase { get; set; }            
             [BsonDefaultValue(new string[] { })]
             public string []peerCertFilesPaths { get; set; }
             [BsonDefaultValue("")]
@@ -361,7 +363,7 @@ namespace Iec10XDriver
                     try
                     {
                         // Own certificate has to be a pfx file that contains the private key
-                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath);
+                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath, srv.passphrase, X509KeyStorageFlags.MachineKeySet);
 
                         // Create a new security information object to configure TLS
                         secInfo = new TlsSecurityInformation(null, ownCertificate);

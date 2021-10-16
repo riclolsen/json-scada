@@ -31,6 +31,9 @@ const ProtocolConnection = mongoose.model(
     topics: { type: [String], default: [] },
     groupId: { type: String },
 
+    // MQTT-SPARKPLUG-B, IEC 104 Server
+    passphrase: { type: String, default: '' }, 
+
     // MQTT-SPARKPLUG-B
     topicsAsFiles: { type: [String], default: [] },
     topicsScripted: { type: [Object], default: [] },  
@@ -42,7 +45,6 @@ const ProtocolConnection = mongoose.model(
     username: { type: String },
     password: { type: String },
     pfxFilePath: { type: String, default: '' }, 
-    passphrase: { type: String, default: '' }, 
 
     // OPC-UA Client, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B
     autoCreateTags: { type: Boolean, default: true },

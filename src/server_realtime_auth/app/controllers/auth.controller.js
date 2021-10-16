@@ -220,6 +220,12 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
+  if (['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('passphrase' in req.body)) {
+      req.body.passphrase = ''
+    }
+  }
+
   if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('topicsAsFiles' in req.body)) {
       req.body.topicsAsFiles = []
@@ -250,9 +256,6 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('pfxFilePath' in req.body)) {
       req.body.pfxFilePath = ''
-    }
-    if (!('passphrase' in req.body)) {
-      req.body.passphrase = ''
     }
   }
 

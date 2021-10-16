@@ -97,6 +97,7 @@ A instance for this driver can have many server ports defined that must be descr
 Parameters needed only for TLS encrypted connections (when there are redundant servers, the same set of certificates is applied to connections to both servers).
 
 * _**localCertFilePath**_ [String] - Path to file that contains the server certificate (*.pfx) that will be presented to the remote side of the connection. **Optional parameter**.
+* _**passphrase**_ [String] - Password to the server certificate file (*.pfx). **Optional parameter**.
 * _**peerCertFilePath**_ [String] - Path to certificate file used to verify the client (*.cer). Not required when _allowOnlySpecificCertificates=false_. **Optional parameter**.
 * _**peerCertFilesPaths**_ [Array of Strings] - Path to certificate files used to verify additional clients (*.cer). Not required when _allowOnlySpecificCertificates=false_. **Optional parameter**.
 * _**rootCertFilePath**_ [String] - Path to CA certificate file to check the certificates - not required when _chainValidation=false_. **Optional parameter**.

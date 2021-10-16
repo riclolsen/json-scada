@@ -1828,6 +1828,62 @@
 
                   <v-list-item
                     v-if="
+                      ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          :label="
+                            $t('src\\components\\connections.pfxFilePath')
+                          "
+                          hide-details="auto"
+                          v-model="selected.pfxFilePath"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>{{
+                          $t("src\\components\\connections.pfxFilePathTitle")
+                        }}</v-list-item-title>
+                        <v-list-item-subtitle>{{
+                          $t("src\\components\\connections.pfxFilePathHint")
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER'].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          :label="$t('src\\components\\connections.passphrase')"
+                          hide-details="auto"
+                          v-model="selected.passphrase"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>{{
+                          $t("src\\components\\connections.passphraseTitle")
+                        }}</v-list-item-title>
+                        <v-list-item-subtitle>{{
+                          $t("src\\components\\connections.passphraseHint")
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
                       ['DNP3', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
                         selected.protocolDriver
                       )
@@ -1932,62 +1988,6 @@
                           $t(
                             "src\\components\\connections.rootCertificateFileHint"
                           )
-                        }}</v-list-item-subtitle>
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :input-value="active"
-                          :label="
-                            $t('src\\components\\connections.pfxFilePath')
-                          "
-                          hide-details="auto"
-                          v-model="selected.pfxFilePath"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
-                      <v-list-item-content>
-                        <v-list-item-title>{{
-                          $t("src\\components\\connections.pfxFilePathTitle")
-                        }}</v-list-item-title>
-                        <v-list-item-subtitle>{{
-                          $t("src\\components\\connections.pfxFilePathHint")
-                        }}</v-list-item-subtitle>
-                      </v-list-item-content>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-if="
-                      ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
-                    "
-                  >
-                    <template v-slot:default="{ active }">
-                      <v-list-item-action>
-                        <v-text-field
-                          type="text"
-                          :input-value="active"
-                          :label="$t('src\\components\\connections.passphrase')"
-                          hide-details="auto"
-                          v-model="selected.passphrase"
-                          @change="updateProtocolConnection"
-                        ></v-text-field>
-                      </v-list-item-action>
-                      <v-list-item-content>
-                        <v-list-item-title>{{
-                          $t("src\\components\\connections.passphraseTitle")
-                        }}</v-list-item-title>
-                        <v-list-item-subtitle>{{
-                          $t("src\\components\\connections.passphraseHint")
                         }}</v-list-item-subtitle>
                       </v-list-item-content>
                     </template>
