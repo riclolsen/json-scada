@@ -257,17 +257,17 @@ Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
     ;prompt=mysupervisor         ; cmd line prompt (default "supervisor")
     ;history_file=~/.sc_history  ; use readline history if available
 
-    [program:server_realtime]
-    command=/usr/bin/node /home/jsuser/json-scada/src/server_realtime/index.js
+    [program:server_realtime_auth]
+    command=/usr/bin/node /home/jsuser/json-scada/src/server_realtime_auth/index.js
     ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
     numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/src/server_realtime/    ; directory to cwd to before exec (def no cwd)
+    directory=/home/jsuser/json-scada/src/server_realtime_auth/    ; directory to cwd to before exec (def no cwd)
     user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/server_realtime.log    ; stdout log path, NONE for none;
+    stdout_logfile=/home/jsuser/json-scada/log/server_realtime_auth.log    ; stdout log path, NONE for none;
     stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
     stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
     stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/server_realtime.err    ; stderr log path, NONE for none;
+    stderr_logfile=/home/jsuser/json-scada/log/server_realtime_auth.err    ; stderr log path, NONE for none;
     stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
     stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
     stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)

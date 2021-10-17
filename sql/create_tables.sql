@@ -4,13 +4,16 @@
 CREATE DATABASE "json_scada"
     WITH OWNER "postgres"
     ENCODING 'UTF8'
-    LC_COLLATE = 'en-US'
-    LC_CTYPE = 'en-US'
+    -- LC_COLLATE = 'en-US.UTF8' -- can cause errors sometimes
+    -- LC_CTYPE = 'en-US.UTF8' 
     TEMPLATE template0;
 
 \c json_scada
 
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+
+-- disable timescaledb telemetry
+ALTER SYSTEM SET timescaledb.telemetry_level=off
 
 -- create tables
 
