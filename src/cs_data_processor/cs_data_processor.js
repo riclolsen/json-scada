@@ -947,9 +947,15 @@ const pipeline = [
 
                   if (!change.fullDocument.alarmDisabled) {
                     if (
-                      // (alarmed && isSOE && change.fullDocument?.isEvent===true && change.fullDocument.type === 'digital') ||
-                      alarmed &&
-                      change.fullDocument?.alarmed === false
+                      (alarmed &&
+                        isSOE &&
+                        change.fullDocument?.isEvent === true &&
+                        change.fullDocument.type === 'digital' &&
+                        value != 0) ||
+                      (alarmed &&
+                        change.fullDocument?.isEvent === false &&
+                        change.fullDocument.type === 'digital') ||
+                      (alarmed && change.fullDocument?.alarmed === false)
                     ) {
                       // a new alarm, then update beep var
                       Log.log('NEW BEEP, tag: ' + change.fullDocument.tag)
