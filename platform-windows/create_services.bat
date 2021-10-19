@@ -27,11 +27,11 @@ REM See log rotation options https://nssm.cc/usage#io
 
 nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_data_processor\cs_data_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
 nssm set JSON_SCADA_cs_data_processor AppDirectory  "C:\json-scada\src\cs_data_processor"
-nssm set JSON_SCADA_cd_data_processor Start SERVICE_AUTO_START
+nssm set JSON_SCADA_cs_data_processor Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_cs_custom_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_custom_processor\cs_custom_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
 nssm set JSON_SCADA_cs_custom_processor AppDirectory  "C:\json-scada\src\cs_custom_processor"
-nssm set JSON_SCADA_cd_custom_processor Start SERVICE_AUTO_START
+nssm set JSON_SCADA_cs_custom_processor Start SERVICE_AUTO_START
 
 
 REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token based auth and RBAC)
