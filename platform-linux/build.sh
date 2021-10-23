@@ -59,5 +59,7 @@ cd ../mqtt-sparkplug
 npm install
 cd ../OPC-UA-Server
 npm install
+cd ../carbone-reports
+npm install
 cd ../..
 

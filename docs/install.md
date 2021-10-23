@@ -186,15 +186,28 @@ Build the code (use inverted slashes, .exe extension and copy instead of cp on W
     npm install
     cd ../server_realtime_auth
     npm install
+    cd ../updateUser
+    npm install
     cd ../oshmi2json
+    npm install
+    cd ../oshmi_sync
+    npm install
+    cd ../htdocs-admin
+    npm install
+    npm run build
+    cd ../shell_api
+    npm install
+    cd ../alarm_beep
     npm install
     cd ../telegraf-listener
     npm install
     cd ../mqtt-sparkplug
     npm install
-    cd ../htdocs-admin
+    cd ../OPC-UA-Server
     npm install
-    npm run build
+    cd ../carbone-reports
+    npm install
+    cd ../..
 
 
 Configure the conf/json-scada.json file to define the node name and to point to the MongoDB server. Processes will look for the config file on the ../conf/ folder.

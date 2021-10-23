@@ -83,6 +83,8 @@ cd \json-scada\src\config_server_for_excel
 call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\OPC-UA-Server
 call \json-scada\platform-windows\nodejs-runtime\npm install
+cd \json-scada\src\carbone-reports
+call \json-scada\platform-windows\nodejs-runtime\npm install
 
 cd ..\..\platform-windows
 
