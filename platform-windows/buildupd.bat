@@ -89,6 +89,9 @@ call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\OPC-UA-Server
 call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
 call \json-scada\platform-windows\nodejs-runtime\npm update
+cd \json-scada\src\carbone-reports
+call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
+call \json-scada\platform-windows\nodejs-runtime\npm update
 
 cd ..\..\platform-windows
 
