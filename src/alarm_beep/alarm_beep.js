@@ -19,7 +19,7 @@
  */
 
 const BEEP_PERIOD = 3000
-const CHECK_PERIOD = 2000
+const CHECK_PERIOD = 1000
 
 const APP_NAME = 'ALARM_BEEP'
 const APP_MSG = '{json:scada} - Alarm Beep'
@@ -31,12 +31,14 @@ const { MongoClient, ReadPreference } = require('mongodb')
 const { setInterval } = require('timers')
 let sys = require('child_process')
 
-const WavFilesWin = ['c:\\windows\\media\\Windows Background.wav', 'c:\\windows\\media\\Windows Foreground.wav', 'c:\\windows\\media\\Windows Message Nudge.wav' ]
+const WavFilesWin = ['c:\\windows\\media\\Windows Default.wav', 'c:\\windows\\media\\Windows Background.wav', 'c:\\windows\\media\\Windows Message Nudge.wav' ]
 const WavFilesNonWin = ['/usr/share/sounds/linuxmint-gdm.wav']
 
 // produces a beep using platform dependant method, parameter is an index to the wav file to be played
 function Beep(beepType) {
   beepType = beepType || 0
+  if (beepType<0) 
+	beepType=0
   if (process.platform === "win32") {
     // sys.exec(`rundll32 user32.dll,MessageBeep`) // this won't work for windows services
     console.log("Beep! " + WavFilesWin[beepType%WavFilesWin.length])
@@ -49,7 +51,8 @@ function Beep(beepType) {
   }
 }
 
-Beep()
+//Beep(0)
+Beep(2)
 
 const args = process.argv.slice(2)
 var confFile = null
@@ -138,7 +141,9 @@ if (
               return
             if (clientMongo) {
               enterQuery = true
-              let data = await collection.findOne({ _id: beepPointKey }, { maxTimeMS: CHECK_PERIOD / 2 })
+              let data = await collection.findOne({ _id: beepPointKey }
+			    /*, { maxTimeMS: CHECK_PERIOD / 2 }*/
+				)
                 .catch(function (err) {
                   if (clientMongo) clientMongo.close()
                   beepPresent = false
@@ -153,7 +158,7 @@ if (
                   if ('beepType' in data) {
                     if (beepType != data.beepType) {
                       clearInterval(doBeepIntervalHandle)
-                      doBeepIntervalHandle = setInterval(doBeep, BEEP_PERIOD/(data.beepType>=2?2:1))
+                      doBeepIntervalHandle = setInterval(doBeep, BEEP_PERIOD/(data.beepType>=2?3:1))
                     }
                     beepType = data.beepType                    
                   }
