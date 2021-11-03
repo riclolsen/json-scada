@@ -97,6 +97,24 @@ Parameters needed only for TLS encrypted connections (when there are redundant s
 * _**allowOnlySpecificCertificates**_ [bool] - Indicates whether the driver allows only specific certificates. Default: false. **Optional parameter**.
 * _**chainValidation**_ [bool] - Indicates whether the drivers performs a X509 chain validation against the registered CA certificates. Default: false. **Optional parameter**.
 
+### Usage of TLS on RHEL8 Linux
+
+Errors on TLS connections may be encountered when using TLS on Linux.
+
+To solve this problem on client side edit the following file.
+
+    /etc/pki/tls/openssl.cnf
+
+Change the section  below to 
+
+    [ crypto_policy ]
+
+    .include /etc/crypto-policies/back-ends/opensslcnf.config
+    MinProtocol = TLSv1
+    CipherString = DEFAULT:@SECLEVEL=2
+
+The file name and section can be different on other Linux distros.
+
 ## Configure tags for update
 
 Each tag to be update on a connection must have a protocol source set configured. 
