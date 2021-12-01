@@ -5466,7 +5466,9 @@ getHistoricalData: function (i, pnt, timeBegin) {
         html = html + "<div id='PINANNOT_COUNT" + "' style='text-align:center;" + anotstyle + ";border-radius:12px;'></div>";
 
         var cnt = 0;
-        DNOTES.map( (anot, pointKey) => {
+        for (var pointKey in DNOTES) {
+          var anot = DNOTES[pointKey];
+        
           if ( anot.indexOf("#PIN") !== -1){
             cnt++;
 
@@ -5476,9 +5478,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
               html = html + "<div id='PINANNOT_" + pointKey + "' style='" + anotstyle + ";border-radius:5px;'>"+ stripHtml(text)+"</div>";
             }
           }
-
-          return anot;
-        });
+        };
         if (cnt === 0) {
           elem.style.display = "none";
           return;
