@@ -62,7 +62,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " SP value: " +
                         val.Value,
@@ -96,7 +98,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " SP value: " +
                         val.Value,
@@ -131,7 +135,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " DP value: " +
                         val.Value,
@@ -165,7 +171,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " DP value: " +
                         val.Value,
@@ -201,7 +209,9 @@ namespace Iec10XDriver
                         iv.quality.Invalid = iv.quality.Invalid | val.Transient;
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " step pos: " +
                         val.Value,
@@ -236,7 +246,9 @@ namespace Iec10XDriver
                         iv.quality.Invalid = iv.quality.Invalid | val.Transient;
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " step pos: " +
                         val.Value,
@@ -271,7 +283,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         bitstr.ObjectAddress +
                         " bitstring value: " +
                         bitstr.Value,
@@ -302,7 +316,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         bitstr.ObjectAddress +
                         " bitstring value: " +
                         bitstr.Value,
@@ -335,7 +351,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " normalized value: " +
                         msv.NormalizedValue,
@@ -370,7 +388,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " normalized value: " +
                         msv.NormalizedValue,
@@ -405,7 +425,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " scaled value: " +
                         msv.ScaledValue,
@@ -440,7 +462,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " scaled value: " +
                         msv.ScaledValue,
@@ -475,7 +499,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " float value: " +
                         msv.Value,
@@ -510,7 +536,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " float value: " +
                         msv.Value,
@@ -551,7 +579,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " integrated total: " +
                         msv.BCR.Value,
@@ -591,7 +621,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " integrated total: " +
                         msv.BCR.Value,
@@ -639,7 +671,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Prot. State: " +
                         val.Event.State,
@@ -681,7 +715,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Packed start event",
                         LogLevelDetailed);
@@ -722,7 +758,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Packed output ckt event",
                         LogLevelDetailed);
@@ -762,7 +800,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         pspscd.ObjectAddress +
                         " Packed single point w/SCD value: " +
                         pspscd.SCD,
@@ -801,7 +841,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " normalized value: " +
                         msv.NormalizedValue,
@@ -833,7 +875,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " SP value: " +
                         val.Value,
@@ -869,7 +913,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " SP value: " +
                         val.Value,
@@ -906,7 +952,9 @@ namespace Iec10XDriver
                         iv.quality.Invalid = iv.quality.Invalid | msv.Transient;
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " step pos: " +
                         msv.Value,
@@ -941,7 +989,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         bitstr.ObjectAddress +
                         " bitstring value: " +
                         bitstr.Value,
@@ -976,7 +1026,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " normalized value: " +
                         msv.NormalizedValue,
@@ -1013,7 +1065,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " scaled value: " +
                         msv.ScaledValue,
@@ -1050,7 +1104,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " float value: " +
                         msv.Value,
@@ -1092,7 +1148,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         msv.ObjectAddress +
                         " integrated total: " +
                         msv.BCR.Value,
@@ -1140,7 +1198,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Prot. State: " +
                         val.Event.State,
@@ -1182,7 +1242,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Packed start event",
                         LogLevelDetailed);
@@ -1223,7 +1285,9 @@ namespace Iec10XDriver
                             };
                         IECDataQueue.Enqueue(iv);
                         Log(conNameStr +
-                        "  IOA: " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Packed output ckt event",
                         LogLevelDetailed);
@@ -1237,15 +1301,37 @@ namespace Iec10XDriver
                     {
                         var val = (SingleCommand)asdu.GetElement(0);
                         Log(conNameStr +
+                        (val.Select ? "Select " : "Execute ") +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.State,
                         LogLevelDetailed);
+
+                        if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
+                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                        {
+                            srv
+                                .master
+                                .SendControlCommand(CauseOfTransmission
+                                    .ACTIVATION,
+                                asdu.Ca,
+                                LastCommandSelected);
+                            Log(conNameStr +
+                            " Sending command execute after select confirmed " +
+                            " Object Address " +
+                            val.ObjectAddress +
+                            " State " +
+                            val.State,
+                            LogLevelDetailed);
+                        }
+
                         IEC_CmdAck ia =
                             new IEC_CmdAck()
                             {
@@ -1262,15 +1348,37 @@ namespace Iec10XDriver
                     {
                         var val = (DoubleCommand)asdu.GetElement(0);
                         Log(conNameStr +
+                        (val.Select ? "Select " : "Execute ") +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.State,
                         LogLevelDetailed);
+
+                        if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
+                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                        {
+                            srv
+                                .master
+                                .SendControlCommand(CauseOfTransmission
+                                    .ACTIVATION,
+                                asdu.Ca,
+                                LastCommandSelected);
+                            Log(conNameStr +
+                            " Sending command execute after select confirmed " +
+                            " Object Address " +
+                            val.ObjectAddress +
+                            " State " +
+                            val.State,
+                            LogLevelDetailed);
+                        }
+
                         IEC_CmdAck ia =
                             new IEC_CmdAck()
                             {
@@ -1287,15 +1395,37 @@ namespace Iec10XDriver
                     {
                         var val = (StepCommand)asdu.GetElement(0);
                         Log(conNameStr +
+                        (val.Select ? "Select " : "Execute ") +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.State,
                         LogLevelDetailed);
+
+                        if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
+                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                        {
+                            srv
+                                .master
+                                .SendControlCommand(CauseOfTransmission
+                                    .ACTIVATION,
+                                asdu.Ca,
+                                LastCommandSelected);
+                            Log(conNameStr +
+                            " Sending command execute after select confirmed " +
+                            " Object Address " +
+                            val.ObjectAddress +
+                            " State " +
+                            val.State,
+                            LogLevelDetailed);
+                        }
+
                         IEC_CmdAck ia =
                             new IEC_CmdAck()
                             {
@@ -1316,7 +1446,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.NormalizedValue,
@@ -1341,7 +1473,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.ScaledValue,
@@ -1366,7 +1500,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.Value,
@@ -1391,7 +1527,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.Value,
@@ -1412,15 +1550,37 @@ namespace Iec10XDriver
                     {
                         var val = (SingleCommandWithCP56Time2a)asdu.GetElement(0);
                         Log(conNameStr +
+                        (val.Select ? "Select " : "Execute ") +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.State,
                         LogLevelDetailed);
+
+                        if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
+                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                        {
+                            srv
+                                .master
+                                .SendControlCommand(CauseOfTransmission
+                                    .ACTIVATION,
+                                asdu.Ca,
+                                LastCommandSelected);
+                            Log(conNameStr +
+                            " Sending command execute after select confirmed " +
+                            " Object Address " +
+                            val.ObjectAddress +
+                            " State " +
+                            val.State,
+                            LogLevelDetailed);
+                        }
+
                         IEC_CmdAck ia =
                             new IEC_CmdAck()
                             {
@@ -1437,15 +1597,37 @@ namespace Iec10XDriver
                     {
                         var val = (DoubleCommandWithCP56Time2a)asdu.GetElement(0);
                         Log(conNameStr +
+                        (val.Select ? "Select " : "Execute ") +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.State,
                         LogLevelDetailed);
+
+                        if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
+                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                        {
+                            srv
+                                .master
+                                .SendControlCommand(CauseOfTransmission
+                                    .ACTIVATION,
+                                asdu.Ca,
+                                LastCommandSelected);
+                            Log(conNameStr +
+                            " Sending command execute after select confirmed " +
+                            " Object Address " +
+                            val.ObjectAddress +
+                            " State " +
+                            val.State,
+                            LogLevelDetailed);
+                        }
+
                         IEC_CmdAck ia =
                             new IEC_CmdAck()
                             {
@@ -1462,15 +1644,37 @@ namespace Iec10XDriver
                     {
                         var val = (StepCommandWithCP56Time2a)asdu.GetElement(0);
                         Log(conNameStr +
+                        (val.Select ? "Select " : "Execute ") +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.State,
                         LogLevelDetailed);
+
+                        if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
+                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                        {
+                            srv
+                                .master
+                                .SendControlCommand(CauseOfTransmission
+                                    .ACTIVATION,
+                                asdu.Ca,
+                                LastCommandSelected);
+                            Log(conNameStr +
+                            " Sending command execute after select confirmed " +
+                            " Object Address " +
+                            val.ObjectAddress +
+                            " State " +
+                            val.State,
+                            LogLevelDetailed);
+                        }
+
                         IEC_CmdAck ia =
                             new IEC_CmdAck()
                             {
@@ -1491,7 +1695,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.NormalizedValue,
@@ -1516,7 +1722,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.ScaledValue,
@@ -1541,7 +1749,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.Value,
@@ -1566,7 +1776,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " State " +
                         val.Value,
@@ -1608,7 +1820,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Value " +
                         val.NormalizedValue +
@@ -1635,7 +1849,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Value " +
                         val.ScaledValue +
@@ -1662,7 +1878,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " Value " +
                         val.Value +
@@ -1689,7 +1907,9 @@ namespace Iec10XDriver
                         " confirmation for command",
                         LogLevelDetailed);
                         Log(conNameStr +
-                        " Object Address " +
+                        " CA: " +
+                        asdu.Ca +
+                        " IOA: " +
                         val.ObjectAddress +
                         " QPA " +
                         val.QPA,

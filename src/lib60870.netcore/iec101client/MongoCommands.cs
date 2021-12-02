@@ -26,6 +26,8 @@ namespace Iec10XDriver
 {
     partial class MainClass
     {
+        static InformationObject LastCommandSelected;
+
         // This process watches (via change stream) for commands inserted to a commands collection
         // When the command is considered valid it is forwarded to the RTU
         static async void ProcessMongoCmd(JSONSCADAConfig jsConfig)
@@ -137,7 +139,33 @@ namespace Iec10XDriver
                                                             10
                                                         )
                                                         {
-                                                            // execute
+                                                            if (System.Convert.ToBoolean(change.FullDocument.protocolSourceCommandUseSBO))
+                                                            {
+                                                                LastCommandSelected = BuildInfoObj(System
+                                                                    .Convert
+                                                                    .ToInt32(change
+                                                                        .FullDocument
+                                                                        .protocolSourceASDU),
+                                                                    System
+                                                                        .Convert
+                                                                        .ToInt32(change
+                                                                            .FullDocument
+                                                                            .protocolSourceObjectAddress),
+                                                                    System
+                                                                        .Convert
+                                                                        .ToDouble(change
+                                                                            .FullDocument
+                                                                            .value),
+                                                                    false, // to be executed when confirmed (on ASDU Receive Handler)
+                                                                    System
+                                                                        .Convert
+                                                                        .ToByte(change
+                                                                            .FullDocument
+                                                                            .protocolSourceCommandDuration));
+
+                                                            }
+
+                                                            // execute or select
                                                             srv.master.
                                                             SendControlCommand(CauseOfTransmission
                                                                     .ACTIVATION,
