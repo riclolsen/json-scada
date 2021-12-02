@@ -298,7 +298,12 @@
                             '47',
                             '58',
                             '59',
-                            '60'
+                            '60',
+                            '0',
+                            '1',
+                            '2',
+                            '3',
+                            '4'
                           ].includes(''+editedItem.protocolSourceASDU)
                         "
                         v-model="editedItem.protocolSourceCommandUseSBO"
