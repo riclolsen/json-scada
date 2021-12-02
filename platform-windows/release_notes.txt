@@ -130,6 +130,33 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.17:
+
+ - Default login credentials: username=admin password=jsonscada.
+ - Fixed IEC60870-5-101/104 commands with select.
+ - Added Carbone report generator example.
+ - Alarm beep process can now produce sound when executed as a Windows service.
+ - Fixed alarm beep for unacked alarm of the same point.
+ - Disabled Timescaledb telemetry.
+ - Fixed performance problem in Display Viewer when large point key numbers used (_id).
+ - MongoDB Community Server updated to 4.4.10.
+ - MongoDB Compass updated to 1.29.5.
+ - Chromium updated to 96.0.4664.45.
+ - Grafana updated to 8.3.0
+ - Npm package updates.
+ - DotNet runtime updated to 5.0.12.
+ - Telegraf runtime updated to 1.20.4.
+ 
+Requirements:
+
+ - Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+ - Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+ - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+ - If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+ - Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
 Notes for version 0.16:
 
  - Default login credentials: username=admin password=jsonscada

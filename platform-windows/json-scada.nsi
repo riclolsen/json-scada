@@ -15,8 +15,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.16"
-!define VERSION_ "0.16.0.0"
+!define VERSION "v.0.17"
+!define VERSION_ "0.17.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -239,7 +239,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-5.0.10-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-5.0.12-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -253,7 +253,7 @@ SetRegView 64
   Sleep 1000
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.10-win-x64.exe" /install /passive /quiet'
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-5.0.12-win-x64.exe" /install /passive /quiet'
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
@@ -395,6 +395,9 @@ SetRegView 64
   File /a "..\src\OPC-UA-Server\*.md"
   SetOutPath $INSTDIR\src\OPC-UA-Server\node_modules
   File /a /r "..\src\OPC-UA-Server\node_modules\*.*"
+
+  SetOutPath $INSTDIR\src\carbone-reports
+  File /a /r "..\src\carbone-reports\*.*"
 
   ;SetOutPath $INSTDIR\extprogs
 
