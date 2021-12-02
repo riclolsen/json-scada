@@ -290,7 +290,17 @@
 
                       <v-switch
                         dense
-                        v-if="['command'].includes(editedItem.origin)"
+                        v-if="
+                          ['command'].includes(editedItem.origin) &&
+                          [
+                            '45',
+                            '46',
+                            '47',
+                            '58',
+                            '59',
+                            '60'
+                          ].includes(''+editedItem.protocolSourceASDU)
+                        "
                         v-model="editedItem.protocolSourceCommandUseSBO"
                         inset
                         color="primary"
