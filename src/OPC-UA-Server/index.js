@@ -218,7 +218,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 
         const addressSpace = server.engine.addressSpace
         // const namespace = addressSpace.getOwnNamespace()
-        const namespace = server.engine.addressSpace.registerNamespace(
+        const namespace = addressSpace.registerNamespace(
           'urn:json_scada:tags'
         )
 
@@ -228,11 +228,20 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           browseName: 'JsonScadaServer'
         })
 
-        server.start(function () {
+        await server.start(function () {
           Log.log('Server is now listening ... (press CTRL+C to stop)')
-          const endpointUrl = server.endpoints[0].endpointDescriptions()[0]
-            .endpointUrl
-          Log.log('Server endpoint url is ' + endpointUrl)
+          server.endpoints.forEach(function (endpoint) {
+            endpoint.endpointDescriptions().forEach(function (desc) {
+              Log.log(
+                'Server EndpointUrl: ' +
+                desc.endpointUrl +
+                ' SecurityMode: ' +
+                desc.securityMode.toString() +
+                ' SecurityPolicy: ' +
+                desc.securityPolicyUri
+              )
+            })
+          })
         })
 
         server.on('newChannel', function (channel, endpoint) {
