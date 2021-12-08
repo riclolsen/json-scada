@@ -7,4 +7,4 @@ mongoimport --db $MONGO_INITDB_DATABASE --collection processInstances --type jso
 mongoimport --db $MONGO_INITDB_DATABASE --collection users --type json --file /docker-entrypoint-initdb.d/demo_users.json 
 mongoimport --db $MONGO_INITDB_DATABASE --collection roles --type json --file /docker-entrypoint-initdb.d/demo_roles.json 
 # mark tags as demo to make it easy to remove later
-mongo $MONGO_INITDB_DATAB --eval 'db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:"demo"}})'
+mongo $MONGO_INITDB_DATABASE --eval 'db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:"demo"}})'
