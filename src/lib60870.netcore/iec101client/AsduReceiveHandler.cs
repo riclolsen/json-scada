@@ -1315,14 +1315,14 @@ namespace Iec10XDriver
                         LogLevelDetailed);
 
                         if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
-                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                            !asdu.IsNegative && val.ObjectAddress == srv.LastCommandSelected.ObjectAddress)
                         {
                             srv
                                 .master
                                 .SendControlCommand(CauseOfTransmission
                                     .ACTIVATION,
                                 asdu.Ca,
-                                LastCommandSelected);
+                                srv.LastCommandSelected);
                             Log(conNameStr +
                             " Sending command execute after select confirmed " +
                             " Object Address " +
@@ -1362,14 +1362,14 @@ namespace Iec10XDriver
                         LogLevelDetailed);
 
                         if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
-                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                            !asdu.IsNegative && val.ObjectAddress == srv.LastCommandSelected.ObjectAddress)
                         {
                             srv
                                 .master
                                 .SendControlCommand(CauseOfTransmission
                                     .ACTIVATION,
                                 asdu.Ca,
-                                LastCommandSelected);
+                                srv.LastCommandSelected);
                             Log(conNameStr +
                             " Sending command execute after select confirmed " +
                             " Object Address " +
@@ -1409,14 +1409,14 @@ namespace Iec10XDriver
                         LogLevelDetailed);
 
                         if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
-                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                            !asdu.IsNegative && val.ObjectAddress == srv.LastCommandSelected.ObjectAddress)
                         {
                             srv
                                 .master
                                 .SendControlCommand(CauseOfTransmission
                                     .ACTIVATION,
                                 asdu.Ca,
-                                LastCommandSelected);
+                                srv.LastCommandSelected);
                             Log(conNameStr +
                             " Sending command execute after select confirmed " +
                             " Object Address " +
@@ -1564,14 +1564,14 @@ namespace Iec10XDriver
                         LogLevelDetailed);
 
                         if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
-                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                            !asdu.IsNegative && val.ObjectAddress == srv.LastCommandSelected.ObjectAddress)
                         {
                             srv
                                 .master
                                 .SendControlCommand(CauseOfTransmission
                                     .ACTIVATION,
                                 asdu.Ca,
-                                LastCommandSelected);
+                                srv.LastCommandSelected);
                             Log(conNameStr +
                             " Sending command execute after select confirmed " +
                             " Object Address " +
@@ -1611,14 +1611,14 @@ namespace Iec10XDriver
                         LogLevelDetailed);
 
                         if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
-                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                            !asdu.IsNegative && val.ObjectAddress == srv.LastCommandSelected.ObjectAddress)
                         {
                             srv
                                 .master
                                 .SendControlCommand(CauseOfTransmission
                                     .ACTIVATION,
                                 asdu.Ca,
-                                LastCommandSelected);
+                                srv.LastCommandSelected);
                             Log(conNameStr +
                             " Sending command execute after select confirmed " +
                             " Object Address " +
@@ -1658,14 +1658,14 @@ namespace Iec10XDriver
                         LogLevelDetailed);
 
                         if (val.Select && asdu.Cot == CauseOfTransmission.ACTIVATION_CON &&
-                            !asdu.IsNegative && val.ObjectAddress == LastCommandSelected.ObjectAddress)
+                            !asdu.IsNegative && val.ObjectAddress == srv.LastCommandSelected.ObjectAddress)
                         {
                             srv
                                 .master
                                 .SendControlCommand(CauseOfTransmission
                                     .ACTIVATION,
                                 asdu.Ca,
-                                LastCommandSelected);
+                                srv.LastCommandSelected);
                             Log(conNameStr +
                             " Sending command execute after select confirmed " +
                             " Object Address " +

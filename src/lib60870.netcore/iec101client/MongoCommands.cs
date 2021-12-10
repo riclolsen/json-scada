@@ -26,8 +26,6 @@ namespace Iec10XDriver
 {
     partial class MainClass
     {
-        static InformationObject LastCommandSelected;
-
         // This process watches (via change stream) for commands inserted to a commands collection
         // When the command is considered valid it is forwarded to the RTU
         static async void ProcessMongoCmd(JSONSCADAConfig jsConfig)
@@ -141,7 +139,7 @@ namespace Iec10XDriver
                                                         {
                                                             if (System.Convert.ToBoolean(change.FullDocument.protocolSourceCommandUseSBO))
                                                             {
-                                                                LastCommandSelected = BuildInfoObj(System
+                                                                srv.LastCommandSelected = BuildInfoObj(System
                                                                     .Convert
                                                                     .ToInt32(change
                                                                         .FullDocument

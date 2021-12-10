@@ -104,6 +104,7 @@ namespace Iec10XDriver
             public int CntTestCommand;
             public int CntTimeSync;
             public System.Timers.Timer TimerCnt;
+            public InformationObject LastCommandSelected;
         }
 
         public class rtData
