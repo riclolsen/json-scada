@@ -39,18 +39,18 @@ set GOBIN=c:\json-scada\bin
 cd \json-scada\src\calculations
 go get ./... 
 go build 
-copy /Y calculations ..\..\bin\
+copy /Y calculations.exe ..\..\bin\
 
-cd \json-scada\src\plc4x
+cd \json-scada\src\plc4x-client
 go get "github.com/icza/bitio"
 go get ./... 
 go build 
-copy /Y plc4x ..\..\bin\
+copy /Y plc4x-client.exe ..\..\bin\
 
 cd \json-scada\src\i104m
 go get ./... 
 go build 
-copy /Y i104m ..\..\bin\
+copy /Y i104m.exe ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
 call \json-scada\platform-windows\nodejs-runtime\npm install

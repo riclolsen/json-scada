@@ -26,6 +26,12 @@ go get ./...
 go build
 cp calculations ../../bin/
 
+cd ../plc4x-client
+go get "github.com/icza/bitio"
+go get ./... 
+go build 
+cp plc4x-client ../../bin/
+
 cd ../i104m
 go get ./...
 go build
