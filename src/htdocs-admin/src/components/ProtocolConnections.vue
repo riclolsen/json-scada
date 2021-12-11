@@ -2946,7 +2946,7 @@ export default {
       },
       subtopic: (value) => {
         return (
-          !( (selected.protocolDriver === 'MQTT-SPARKPLUG-B' ) &&
+          !( (this.selected.protocolDriver === 'MQTT-SPARKPLUG-B' ) &&
            (
             value.includes("#") ||
             value.includes("/") ||
