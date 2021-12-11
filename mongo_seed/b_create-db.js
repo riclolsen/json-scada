@@ -125,6 +125,7 @@ var processInstancesValidator = {
         enum: [
           'CALCULATIONS',
           'CS_DATA_PROCESSOR',
+          'CS_CUSTOM_PROCESSOR',
           'SERVER_REALTIME',
           'ALARM_BEEP',
           'DYNAMIC_CALCULATIONS',
