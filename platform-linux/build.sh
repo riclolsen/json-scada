@@ -58,7 +58,7 @@ npm install
 cd ../htdocs-admin
 npm install
 npm run build
-cd ../shell_api
+cd ../shell-api
 npm install
 cd ../alarm_beep
 npm install
