@@ -41,11 +41,11 @@ go get ./...
 go build 
 copy /Y calculations.exe ..\..\bin\
 
-cd \json-scada\src\plc4x-client
-go get "github.com/icza/bitio"
-go get ./... 
-go build 
-copy /Y plc4x-client.exe ..\..\bin\
+rem cd \json-scada\src\plc4x-client
+rem go get "github.com/icza/bitio"
+rem go get ./... 
+rem go build 
+rem copy /Y plc4x-client.exe ..\..\bin\
 
 cd \json-scada\src\i104m
 go get ./... 
