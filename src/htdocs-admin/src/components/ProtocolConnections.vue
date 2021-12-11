@@ -678,7 +678,11 @@
                   </v-list-item>
 
                   <v-list-item
-                    v-if="['OPC-UA', 'OPC-UA_SERVER'].includes(selected.protocolDriver)"
+                    v-if="
+                      ['OPC-UA', 'OPC-UA_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
                   >
                     <template v-slot:default="{ active }">
                       <v-list-item-action>
@@ -1637,7 +1641,7 @@
                         'DNP3_SERVER',
                         'I104M',
                         'TELEGRAF-LISTENER',
-                        'OPC-UA_SERVER'
+                        'OPC-UA_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1678,7 +1682,7 @@
                         'PLCTAG',
                         'MODBUS',
                         'TELEGRAF-LISTENER',
-                        'OPC-UA_SERVER'
+                        'OPC-UA_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1777,8 +1781,12 @@
               class="mt-6"
               tile
               v-if="
-                ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(selected.protocolDriver) ||
-                (['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(selected.protocolDriver) &&
+                ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(
+                  selected.protocolDriver
+                ) ||
+                (['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
+                  selected.protocolDriver
+                ) &&
                   selected.useSecurity)
               "
             >
@@ -1789,9 +1797,13 @@
                 <v-list-item-group>
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
-                        selected.protocolDriver
-                      )
+                      [
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'DNP3',
+                        'MQTT-SPARKPLUG-B',
+                        'OPC-UA_SERVER',
+                      ].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -1857,7 +1869,11 @@
 
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER', 'IEC60870-5-104'].includes(selected.protocolDriver)
+                      [
+                        'MQTT-SPARKPLUG-B',
+                        'IEC60870-5-104_SERVER',
+                        'IEC60870-5-104',
+                      ].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -1921,9 +1937,11 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(
-                        selected.protocolDriver
-                      )
+                      [
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'DNP3',
+                      ].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -1958,9 +1976,11 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'MQTT-SPARKPLUG-B'].includes(
-                        selected.protocolDriver
-                      )
+                      [
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'MQTT-SPARKPLUG-B',
+                      ].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -2119,7 +2139,11 @@
                   </v-list-item>
 
                   <v-list-item
-                    v-if="['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(selected.protocolDriver)"
+                    v-if="
+                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+                        selected.protocolDriver
+                      )
+                    "
                   >
                     <v-switch
                       v-model="selected.allowOnlySpecificCertificates"
@@ -2142,9 +2166,11 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'MQTT-SPARKPLUG-B'].includes(
-                        selected.protocolDriver
-                      )
+                      [
+                        'IEC60870-5-104',
+                        'IEC60870-5-104_SERVER',
+                        'MQTT-SPARKPLUG-B',
+                      ].includes(selected.protocolDriver)
                     "
                   >
                     <v-switch
@@ -2172,7 +2198,11 @@
             <v-card
               class="mt-6"
               tile
-              v-if="['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(selected.protocolDriver)"
+              v-if="
+                ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
+                  selected.protocolDriver
+                )
+              "
             >
               <v-list flat dense shaped subheader>
                 <v-subheader>{{
@@ -2181,7 +2211,9 @@
                 <v-list-item-group>
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(selected.protocolDriver)
+                      ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
+                        selected.protocolDriver
+                      )
                     "
                   >
                     <v-autocomplete
@@ -2472,7 +2504,9 @@
 
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(selected.protocolDriver)
+                      ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
+                        selected.protocolDriver
+                      )
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -2912,11 +2946,12 @@ export default {
       },
       subtopic: (value) => {
         return (
-          !(
+          !( (selected.protocolDriver === 'MQTT-SPARKPLUG-B' ) &&
+           (
             value.includes("#") ||
             value.includes("/") ||
             value.includes("+")
-          ) || i18n.t("src\\components\\connections.rulesInvalidTopic")
+          )) || i18n.t("src\\components\\connections.rulesInvalidTopic")
         );
       },
       topic: () => {
