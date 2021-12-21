@@ -1,16 +1,16 @@
 # Installing JSON-SCADA
 
-## Supported Hardware/OS Platforms
-
-* Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2, Oracle Linux 8 or equivalent.
+## Compatible Hardware/OS Platforms
 
 * Windows 10 or Server x86-64 bits (installer available).
 
-* Linux ARM 32 bits (tested at least for protocol drivers on Raspberry Pi 3/Raspbian OS).
+* Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2, Oracle Linux 8 or equivalent.
 
-* Mac OSX (x64 Intel or M1 under Rosetta).
+* Linux ARM 64 bits.
 
-It can also possibly work on Linux ARM-64.
+* Linux ARM 32 bits (only protocol drivers). MongoDB does not support any 32 bit OS.
+
+* Mac OSX (x64 Intel or M1).
 
 A full system can run on a single commodity x86 computer but for high performance and high availability on big systems (> 10.000 tags) it is strongly recommended the following hardware
 
@@ -37,8 +37,8 @@ The Windows Installer has everything needed to run the system (MongoDB, PostgreS
 * Windows 10 or Server 2016/2019 (x86-64 bits), 8GB+ RAM.
 * Admin privileges.
 * Windows PowerShell.
-* DotNet Core 5.0.3 x64 Runtime.
-* Open SSL binaries for 64-bit Windows: https://slproweb.com/products/Win32OpenSSL.html.
+* DotNet Core 5.0.x x64 Runtime.
+* Open SSL 1.1.1m binaries for 64-bit Windows: https://slproweb.com/products/Win32OpenSSL.html.
 
 ### QUICKSTART
 
@@ -69,12 +69,12 @@ To install JSON-SCADA manually, it is required to install all the requirements f
 
 ### 1. MongoDB Server
 
-Version 4.2.x or 4.4.x - Lower versions are not supported.
+Versions 4.2.x, 4.4.x or 5.0.x - Lower versions are not supported.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
 
-The _MongoDB Atlas_ cloud service is also supported (4.2 or 4.4 versions).
+The _MongoDB Atlas_ cloud service is also compatible.
 
 The _Replica Set_ feature must be enabled, even when just one server is used because this is necessary for Change Streams to work.
 
@@ -88,7 +88,7 @@ For not trusted or open to Internet networks it is important to use TLS for Mong
 
 ### 2. PostgreSQL / TimescaleDB
 
-PostgreSQL version 12. TimescaleDB version 1.7. Previous versions can work but are not recommended. Newer versions can work but were not tested.
+PostgreSQL version 12, 13 or 14. TimescaleDB version 1.7 to 2.2.1 or newer. Previous versions can work but are not recommended. Newer versions can work but were not tested.
 
 * https://www.timescale.com/products
 * https://docs.timescale.com/latest/getting-started/installation
@@ -105,7 +105,7 @@ Replication to a Standby server is recommended for high availability.
 
 ### 3. Grafana
 
-Grafana version 7.x.x. Previous versions can work but are not recommended.
+Grafana version 8.x.x. Previous versions can work but are not recommended.
 
 * https://grafana.com/grafana/download
 * https://grafana.com/docs/grafana/latest/installation/
@@ -124,11 +124,12 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 6. DotNet Core
 
-* DotNet Core version 3.x or 5.x. Previous versions are not tested or supported.
+* DotNet Core version 5.0.x. Previous versions are not tested or supported.
 * https://dotnet.microsoft.com/download
 
 ### 7. Other recommended software tools
 
+* Open SSL Light 1.1.1m (for Windows) - https://slproweb.com/download/Win64OpenSSL_Light-1_1_1m.msi.
 * Nginx or some other web server - https://nginx.org/.
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://sourceforge.net/projects/oshmiopensubstationhmi/ or https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
 * MongoDB Compass - https://www.mongodb.com/products/compass
@@ -147,72 +148,26 @@ Or do a git clone
 
     git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 
-Build the code (use inverted slashes, .exe extension and copy instead of cp on Windows, choose also the adequate Dotnet target platform (e.g. win-x64), on Mac use --runtime osx-x64)
-    
-    cd json-scada
-    mkdir bin
+Build the code using the adequate script for the host platform:
 
-    cd src/lib60870.netcore
-    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
+* https://github.com/riclolsen/json-scada/blob/master/platform-linux/build.sh
 
-    cd ../OPC-UA-Client
-    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../bin/
-	
-    cd ../dnp3/Dnp3Client
-    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin/
-
-    export GOBIN=~/json-scada/bin
-    go env -w GO111MODULE=auto
-    
-    cd ../../calculations
-    go get ./... 
-    go build 
-    cp calculations ../../bin/
-
-    cd ../i104m
-    go get ./... 
-    go build 
-    cp i104m ../../bin/
-
-    cd ../cs_data_processor
-    npm install
-    cd ../cs_custom_processor
-    npm install
-    cd ../grafana_alert2event
-    npm install
-    cd ../demo_simul
-    npm install
-    cd ../server_realtime
-    npm install
-    cd ../server_realtime_auth
-    npm install
-    cd ../updateUser
-    npm install
-    cd ../oshmi2json
-    npm install
-    cd ../oshmi_sync
-    npm install
-    cd ../htdocs-admin
-    npm install
-    npm run build
-    cd ../shell_api
-    npm install
-    cd ../alarm_beep
-    npm install
-    cd ../telegraf-listener
-    npm install
-    cd ../mqtt-sparkplug
-    npm install
-    cd ../OPC-UA-Server
-    npm install
-    cd ../carbone-reports
-    npm install
-    cd ../..
-
+* https://github.com/riclolsen/json-scada/blob/master/platform-windows/build.bat
 
 Configure the conf/json-scada.json file to define the node name and to point to the MongoDB server. Processes will look for the config file on the ../conf/ folder.
 
 * [Config File Documentation](../conf/README.md)
+
+Initiate/seed the MongoDB database.
+
+* https://github.com/riclolsen/json-scada/blob/master/mongo_seed/init.sh
+
+Initiate the Postgresql database.
+
+    cd json-scada/sql
+    psql -h 127.0.0.1 -U postgres -w -f create_tables.sql
+
+* https://github.com/riclolsen/json-scada/blob/master/sql/create_tables.sql
 
 Processes can be distributed on distinct servers, each server must have a different node name.
 
@@ -387,7 +342,7 @@ Use the manager tool to start, stop and monitor the system
         tail -f cs_data_processor
         help
 
-### NSSM Configuration (Windows)
+### NSSM Configuration on Windows (not necessary if used the Windows installer)
 
 Install the NSSM tool. It can be installed in c:\json-scada\bin\ .
 
