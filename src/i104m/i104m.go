@@ -40,7 +40,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var softwareVersion string = "{json:scada} I104M Protocol Driver v.0.1.2 - Copyright 2020-2021 Ricardo L. Olsen"
+var softwareVersion string = "{json:scada} I104M Protocol Driver v.0.1.3 - Copyright 2020-2021 Ricardo L. Olsen"
 var driverName string = "I104M"
 var isActive bool = false
 
@@ -206,7 +206,7 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 
 		var insDoc insertChange
 		if err := stream.Decode(&insDoc); err != nil {
-			log.Printf("Commands - %s", err)
+			log.Printf("Commands - Error: %s", err)
 			continue
 		}
 
@@ -313,6 +313,10 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 				log.Println("Commands - Command canceled!")
 			}
 		}
+	}
+	
+	if err := stream.Err(); err != nil {
+		log.Fatal("Commands - Changestream error: ", err)
 	}
 }
 
