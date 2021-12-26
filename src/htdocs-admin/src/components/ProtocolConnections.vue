@@ -1625,6 +1625,7 @@
                   'MODBUS',
                   'PLCTAG',
                   'TELEGRAF-LISTENER',
+                  'OPC-UA_SERVER',
                 ].includes(selected.protocolDriver)
               "
             >
