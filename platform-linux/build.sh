@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Required tools:
+# Dotnet Core SDK 6.0
+# Golang 1.14+
+# Node.js 14+
+
 # call with argument linux-arm64 for ARM architecture
 
 ARG1=${1:-linux-x64}
@@ -9,14 +14,14 @@ mkdir bin
 mkdir bin-wine
 
 cd src/lib60870.netcore
-dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
-dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 # Dnp3Client is Windows-only (must run under Wine on Linux)
 cd ../dnp3/Dnp3Client
-dotnet publish --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ../../../bin-wine/ Dnp3Client.csproj
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ../../../bin-wine/ Dnp3Client.csproj
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto

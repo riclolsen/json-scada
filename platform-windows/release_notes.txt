@@ -1,6 +1,6 @@
     {json:scada} 
     
-    © 2008-2021 - Ricardo L. Olsen 
+    © 2008-2021* Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify
@@ -20,45 +20,45 @@ The system will install to "c:\json-scada\" (on Windows).
 
 Acknowledgements:
 
-  MongoDB - https://github.com/mongodb/mongo, https://www.mongodb.com/
-  PostgreSQL - https://www.postgresql.org/
-  TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
-  Grafana - https://github.com/grafana/grafana, https://grafana.com/
-  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
-  ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
-  Opendnp3 - https://github.com/dnp3/opendnp3
-  PLC4X - https://github.com/apache/plc4x
-  Libplctag - https://github.com/libplctag/libplctag
-  Node-opcua - https://github.com/node-opcua/node-opcua
-  OPC-UA - https://github.com/OPCFoundation/UA-.NETStandard
-  Telegraf - https://github.com/influxdata/telegraf
-  Inkscape - https://inkscape.org
-  Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
-  Inkscape + SAGE (updated) - https://gitlab.com/lvta0909/inkscape
-  Chromium - by "The Chromium Authors"
-  Chromium x86 binaries - http://chromium.woolyss.com/
-  NGINX - http://nginx.org/
-  Node.js - https://nodejs.org/
-  Express - https://expressjs.com/pt-br/
-  Dotnet - https://dotnet.microsoft.com/download
-  Golang - https://golang.org/
+  MongoDB* https://github.com/mongodb/mongo, https://www.mongodb.com/
+  PostgreSQL* https://www.postgresql.org/
+  TimescaleDB* https://github.com/timescale/timescaledb, https://www.timescale.com/
+  Grafana* https://github.com/grafana/grafana, https://grafana.com/
+  Lib60870 By MZ Automation* https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
+  ICCP Client by Fernando Covatti* https://github.com/fcovatti/iccp
+  Opendnp3* https://github.com/dnp3/opendnp3
+  PLC4X* https://github.com/apache/plc4x
+  Libplctag* https://github.com/libplctag/libplctag
+  Node-opcua* https://github.com/node-opcua/node-opcua
+  OPC-UA* https://github.com/OPCFoundation/UA-.NETStandard
+  Telegraf* https://github.com/influxdata/telegraf
+  Inkscape* https://inkscape.org
+  Inkscape + SAGE* https://sourceforge.net/projects/sage-scada
+  Inkscape + SAGE (updated)* https://gitlab.com/lvta0909/inkscape
+  Chromium* by "The Chromium Authors"
+  Chromium x86 binaries* http://chromium.woolyss.com/
+  NGINX* http://nginx.org/
+  Node.js* https://nodejs.org/
+  Express* https://expressjs.com/pt-br/
+  Dotnet* https://dotnet.microsoft.com/download
+  Golang* https://golang.org/
   Open Sans Fonts by Steve Matteson
-  Source Sans Pro by Adobe Systems Incorporated. License - http://scripts.sil.org/OFL
-  Google Fonts - https://fonts.google.com/
-  JQuery - http://jquery.com
-  Shortcut - http://www.openjs.com/scripts/events/keyboard_shortcuts
-  Core JS - http://www.sitepoint.com
-  Modernzr - http://www.modernizr.com
-  Flot - http://www.flotcharts.org
-  Snap SVG - http://snapsvg.io
-  Chroma.js - https://github.com/gka/chroma.js
-  CSS Animation Cheat Sheet - http://www.justinaguilar.com/animations
-  D3JS - http://d3js.org
-  Radar-chart-d3 - https://github.com/alangrafu/radar-chart-d3
-  Vega A Visualization Grammar - https://vega.github.io/vega
-  NSSM - The Non-Sucking Service Manager: http://nssm.cc
-  Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
-  CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/
+  Source Sans Pro by Adobe Systems Incorporated. License* http://scripts.sil.org/OFL
+  Google Fonts* https://fonts.google.com/
+  JQuery* http://jquery.com
+  Shortcut* http://www.openjs.com/scripts/events/keyboard_shortcuts
+  Core JS* http://www.sitepoint.com
+  Modernzr* http://www.modernizr.com
+  Flot* http://www.flotcharts.org
+  Snap SVG* http://snapsvg.io
+  Chroma.js* https://github.com/gka/chroma.js
+  CSS Animation Cheat Sheet* http://www.justinaguilar.com/animations
+  D3JS* http://d3js.org
+  Radar-chart-d3* https://github.com/alangrafu/radar-chart-d3
+  Vega A Visualization Grammar* https://vega.github.io/vega
+  NSSM* The Non-Sucking Service Manager: http://nssm.cc
+  Some icons from* http://keyamoon.com/icomoon and http://raphaeljs.com/icons
+  CSS Loaders from Luke Haas* https://projects.lukehaas.me/css-loaders/
   
 -------------------------------------------------------------------
 
@@ -66,8 +66,8 @@ QUICKSTART:
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
-  - On the JSON-SCADA desktop folder: execute _Start_Services.
-  - On the JSON-SCADA desktop folder: execute _JSON SCADA WEB.
+ * On the JSON-SCADA desktop folder: execute _Start_Services.
+ * On the JSON-SCADA desktop folder: execute _JSON SCADA WEB.
 
 The system is preconfigured to connect to a online demo simulation via IEC60870-5-104 protocol with an example point list and screens.
 To issue a command, click on a breaker and push the "Command" button then choose 
@@ -104,297 +104,323 @@ Source Code:
   
 Recommended Operating Systems:
 
- - Windows 10 Pro/Home/Enterprise, 64 bits.
- - Modern 64bit Windows server OSs.
+* Windows 10 Pro/Home/Enterprise, 64 bits.
+* Modern 64bit Windows server OSs.
 
 Please use an updated OS.
 
 Can also run on:
- - Other Linux distros, Mac OSX, x86/64, ARM, (no installer provided).
- - See documentation.
+* Other Linux distros, Mac OSX, x86/64, ARM, (no installer provided).
+* See documentation.
 
 Client user interface can be used on:
- - Modern IOS and Android devices.
- - Any device with an updated HTML5 browser like Chrome, Chromium, Firefox, Edge, Safari, Brave, Opera, Vivaldi.
- - Internet Explorer and non-Chromium based Edge are strictly not supported!
+* Modern IOS and Android devices.
+* Any device with an updated HTML5 browser like Chrome, Chromium, Firefox, Edge, Safari, Brave, Opera, Vivaldi.
+* Internet Explorer and non-Chromium based Edge are strictly not supported!
 
 -------------------------------------------------------------------
 
 BUILD REQUIREMENTS.
 
 See official repo:
- - https://github.com/riclolsen/json-scada
+* https://github.com/riclolsen/json-scada
 
 Inkscape+SAGE:
- - See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+* See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.18:
+
+* Default login credentials: username=admin password=jsonscada.
+* I104M: now detects fatal errors on changestream of commands.
+* IEC60870-5-101/104 commands with select handled separately for each connection.
+* OPC-UA Server: packages updated (NodeOPCUA). 
+* OPC-UA Server: better listing of created endpoints.
+* Updated and fixed build scripts for Linux and Windows.
+* Dotnet based drivers migrated to framework version 6.0.1.
+* Grafana updated to 8.3.3.
+* Chromium updated to 96.0.4664.110.
+* MongoDB Community Server updated to 5.0.5.
+* PostgreSQL updated to 14.1-1.
+* TimescaleDB updated to 2.5.0.
+* Telegraf runtime updated to 1.21.1.
+
+Requirements:
+
+* Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 
 Notes for version 0.17:
 
- - Default login credentials: username=admin password=jsonscada.
- - Fixed IEC60870-5-101/104 commands with select.
- - Added Carbone report generator example.
- - Alarm beep process can now produce sound when executed as a Windows service.
- - Fixed alarm beep for unacked alarm of the same point.
- - Disabled Timescaledb telemetry.
- - Fixed performance problem in Display Viewer when large point key numbers used (_id).
- - MongoDB Community Server updated to 4.4.10.
- - MongoDB Compass updated to 1.29.5.
- - Chromium updated to 96.0.4664.45.
- - Grafana updated to 8.3.0
- - Npm package updates.
- - DotNet runtime updated to 5.0.12.
- - Telegraf runtime updated to 1.20.4.
+* Default login credentials: username=admin password=jsonscada.
+* Fixed IEC60870-5-101/104 commands with select.
+* Added Carbone report generator example.
+* Alarm beep process can now produce sound when executed as a Windows service.
+* Fixed alarm beep for unacked alarm of the same point.
+* Disabled Timescaledb telemetry.
+* Fixed performance problem in Display Viewer when large point key numbers used (_id).
+* MongoDB Community Server updated to 4.4.10.
+* MongoDB Compass updated to 1.29.5.
+* Chromium updated to 96.0.4664.45.
+* Grafana updated to 8.3.0.
+* Npm package updates.
+* DotNet runtime updated to 5.0.12.
+* Telegraf runtime updated to 1.20.4.
  
 Requirements:
 
- - Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
- - Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
- - If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
- - Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 
 Notes for version 0.16:
 
- - Default login credentials: username=admin password=jsonscada
- - OPC-UA Server working.
- - Fixed error when duplicating protocol instance on Admin UI.
- - Auto created random secret for JWT encryption.
- - Better Grafana Dashboards.
- - Grafana updated to 8.1.6.
- - Added passphrase parameter to IEC60870-5-104 server and client (for the .pfx certificate file).
- - Fixed quality bit missing for IEC60870-5-101/104 server on integrity.
- - Added tool to create TLS certificates (requires bash, can be Git bash on Windows).
+* Default login credentials: username=admin password=jsonscada
+* OPC-UA Server working.
+* Fixed error when duplicating protocol instance on Admin UI.
+* Auto created random secret for JWT encryption.
+* Better Grafana Dashboards.
+* Grafana updated to 8.1.6.
+* Added passphrase parameter to IEC60870-5-104 server and client (for the .pfx certificate file).
+* Fixed quality bit missing for IEC60870-5-101/104 server on integrity.
+* Added tool to create TLS certificates (requires bash, can be Git bash on Windows).
 
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
- - If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
- - Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 
 Notes for version 0.15:
 
- - Default login credentials: username=admin password=jsonscada
- - Chromium updated to 93.0.4577.82.
- - Telegraf updated to 1.20.0.
- - Grafana updated to 8.1.3.
- - Possibility of multiple cs_data_processor instances.
- - Possibility to direct mongo queries to secondary servers for various modules using environment variables.
- - New tool to create backup scripts.
- - Various fixes and enhancements for viewers.
- - Fixed tags created by UI, protocol source addressing fields recorded as numeric type whenever possible.
- - DotNet runtime updated to 5.0.10.
+* Default login credentials: username=admin password=jsonscada
+* Chromium updated to 93.0.4577.82.
+* Telegraf updated to 1.20.0.
+* Grafana updated to 8.1.3.
+* Possibility of multiple cs_data_processor instances.
+* Possibility to direct mongo queries to secondary servers for various modules using environment variables.
+* New tool to create backup scripts.
+* Various fixes and enhancements for viewers.
+* Fixed tags created by UI, protocol source addressing fields recorded as numeric type whenever possible.
+* DotNet runtime updated to 5.0.10.
 
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
- - If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
- - Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 
 Notes for version 0.14:
 
- - Default login credentials: username=admin password=jsonscada
- - Fixed tag creation missing properties on admin UI.
- - Added updateUser tool to update password and create users via command line.
- - I104M fixed command problems.
- - Fixed problem with DNP3 client serial.
- - IEC60870-5-104 Server now supports TLS.
- - Shell API can now silence the alarm beep.
- - Various fixes and enhancements for viewers.
- - MongoDB Community Server updated to 4.4.8.
- - MongoDB Compass updated to 1.28.1.
- - Grafana updated to 8.1.2.
- - Nodejs updated to 16.6.1.
- - Updated MongoDB drivers for various modules.
+* Default login credentials: username=admin password=jsonscada
+* Fixed tag creation missing properties on admin UI.
+* Added updateUser tool to update password and create users via command line.
+* I104M fixed command problems.
+* Fixed problem with DNP3 client serial.
+* IEC60870-5-104 Server now supports TLS.
+* Shell API can now silence the alarm beep.
+* Various fixes and enhancements for viewers.
+* MongoDB Community Server updated to 4.4.8.
+* MongoDB Compass updated to 1.28.1.
+* Grafana updated to 8.1.2.
+* Nodejs updated to 16.6.1.
+* Updated MongoDB drivers for various modules.
 
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
- - Administrative rights. Corporative Windows policies may cause problems with the creation of services and use of TCP ports.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and use of TCP ports.
 
 -------------------------------------------------------------------
 
 Notes for version 0.13:
 
- - Default login credentials: username=admin password=jsonscada
- - Chromium updated to 92.0.4515.107.
- - Grafana updated to 8.0.6.
- - Auto-login of JSON-SCADA user into Grafana.
- - Feedback on UI added for MQTT/Sparkplug commands.
- - Fixed soeData capped collection size of 2GB.
- - DotNet runtime updated to 5.0.8.
+* Default login credentials: username=admin password=jsonscada
+* Chromium updated to 92.0.4515.107.
+* Grafana updated to 8.0.6.
+* Auto-login of JSON-SCADA user into Grafana.
+* Feedback on UI added for MQTT/Sparkplug commands.
+* Fixed soeData capped collection size of 2GB.
+* DotNet runtime updated to 5.0.8.
 
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Free TCP ports 27017, 5432, 80, 8080, 3000, 9000.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000.
 
 -------------------------------------------------------------------
 
 Notes for version 0.12: 
 
- - Default login credentials: username=admin password=jsonscada
- - Fixed problems with source timestamps for analog tags.
- - DNP3: added more options for CROB commands and a fixed PULSE time.
- - Added visualization for SAGE-web displays (Brazilian SCADA).
- - Updated Lib60870.NET for iec60870-5-101/104 drivers.
- - Nodejs updated to 16.4.1.
- - Grafana updated to 8.0.4.
- - Updated vc_redist.x64 2019 runtime.
- - New OPC-UA Server driver (experimental).
+* Default login credentials: username=admin password=jsonscada
+* Fixed problems with source timestamps for analog tags.
+* DNP3: added more options for CROB commands and a fixed PULSE time.
+* Added visualization for SAGE-web displays (Brazilian SCADA).
+* Updated Lib60870.NET for iec60870-5-101/104 drivers.
+* Nodejs updated to 16.4.1.
+* Grafana updated to 8.0.4.
+* Updated vc_redist.x64 2019 runtime.
+* New OPC-UA Server driver (experimental).
 
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
 
 -------------------------------------------------------------------
 
 Notes for version 0.11: 
 
- - Default login credentials: username=admin password=jsonscada
- - DNP3 Client: fixed problems with timestamps.
- - Excel-based tags configuration added.
- - Chromium updated to 91.0.4472.124.
- - Grafana updated to 8.0.3.
- - Nodejs updated to 16.4.0.
+* Default login credentials: username=admin password=jsonscada
+* DNP3 Client: fixed problems with timestamps.
+* Excel-based tags configuration added.
+* Chromium updated to 91.0.4472.124.
+* Grafana updated to 8.0.3.
+* Nodejs updated to 16.4.0.
   
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
 
 -------------------------------------------------------------------
 
 Notes for version 0.10: 
 
- - Default login credentials: username=admin password=jsonscada
- - Enhanced MQTT/Sparkplug-B Client driver.
- - Fixed commands cancelled from unrelated connections for DNP3, IEC101/104 client drivers.
- - Nodejs updated to 16.3.0.
- - Nginx update to 1.21.0.
- - Telegraf updated to 1.18.3.
- - PostgreSQL updated to 13.3.2.
- - TimescaleDB updated to 2.2.1.
- - MongoDB Community Server updated to 4.4.6.
- - MongoDB Compass updated to 1.26.1.
- - Chromium updated to 91.0.4472.101.
- - Grafana updated to 8.0.1.
- - DotNet runtime updated to 5.0.7.
+* Default login credentials: username=admin password=jsonscada
+* Enhanced MQTT/Sparkplug-B Client driver.
+* Fixed commands cancelled from unrelated connections for DNP3, IEC101/104 client drivers.
+* Nodejs updated to 16.3.0.
+* Nginx update to 1.21.0.
+* Telegraf updated to 1.18.3.
+* PostgreSQL updated to 13.3.2.
+* TimescaleDB updated to 2.2.1.
+* MongoDB Community Server updated to 4.4.6.
+* MongoDB Compass updated to 1.26.1.
+* Chromium updated to 91.0.4472.101.
+* Grafana updated to 8.0.1.
+* DotNet runtime updated to 5.0.7.
  
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
 
 -------------------------------------------------------------------
 
 Notes for version 0.9: 
 
- - New MQTT/Sparkplug-B Client driver.
- - Updated Inkscape SVG editor to version 1.1 64 bits.
- - Admin UI I18n user-selectable (code now based on Vue standards).
- - Various translations added to Admin UI.
- - Enhancements and fixes for Admin UI.
- - Chromium updated to 90.0.4430.72.
- - Grafana updated to 7.5.4.
- - Openssl DLLs added to binary folder (no need to install Openssl anymore).
- - Fixed problems with DNP3 Client driver.
- - DotNet runtime updated to 5.0.6.
+* New MQTT/Sparkplug-B Client driver.
+* Updated Inkscape SVG editor to version 1.1 64 bits.
+* Admin UI I18n user-selectable (code now based on Vue standards).
+* Various translations added to Admin UI.
+* Enhancements and fixes for Admin UI.
+* Chromium updated to 90.0.4430.72.
+* Grafana updated to 7.5.4.
+* Openssl DLLs added to binary folder (no need to install Openssl anymore).
+* Fixed problems with DNP3 Client driver.
+* DotNet runtime updated to 5.0.6.
  
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
 
 -------------------------------------------------------------------
 
 Notes for version 0.8: 
 
- - Telegraf data sources integration.
- - Added a custom script processor.
- - Windows Installer do not wrongly overwrite some config files anymore.
- - Experimental OPC UA client driver.
- - DotNet 5.0.4 runtime added to installer.
- - Various enhancements on Admin panel, Tags and User Actions tabs.
- - New config_viewers.js options for locale/tz date/time formatting on Tabular/Alarms/Events viewers.
- - Various enhancements and fixes.
+* Telegraf data sources integration.
+* Added a custom script processor.
+* Windows Installer do not wrongly overwrite some config files anymore.
+* Experimental OPC UA client driver.
+* DotNet 5.0.4 runtime added to installer.
+* Various enhancements on Admin panel, Tags and User Actions tabs.
+* New config_viewers.js options for locale/tz date/time formatting on Tabular/Alarms/Events viewers.
+* Various enhancements and fixes.
 
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Open SSL binaries for 64-bit Windows, https://slproweb.com/products/Win32OpenSSL.html.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Open SSL binaries for 64-bit Windows, https://slproweb.com/products/Win32OpenSSL.html.
 
 -------------------------------------------------------------------
 
 Notes for version 0.7: 
 
- - PostgreSQL updated to 12.6.
- - TimescaleDB updated to 2.0.1.
- - Experimental OPC UA client driver.
+* PostgreSQL updated to 12.6.
+* TimescaleDB updated to 2.0.1.
+* Experimental OPC UA client driver.
  
 Requirements:
 
- - Windows 10 64 bits or Server 2016, Windows PowerShell.
- - Open SSL binaries for 64-bit Windows, https://slproweb.com/products/Win32OpenSSL.html.
+* Windows 10 64 bits or Server 2016, Windows PowerShell.
+* Open SSL binaries for 64-bit Windows, https://slproweb.com/products/Win32OpenSSL.html.
 
 -------------------------------------------------------------------
 
 Notes for version 0.6: 
 
- - DotNet 5.0.3 runtime added to installer.
- - Nodejs updated to 14.15.5.
- - Mongodb updated to 4.4.3.
- - Mongodb Compass updated to 1.25.
- - Grafana updated to 7.4.1.
- - Chromium updated to 88.0.4324.150.
- - Various enhancements and fixes.
+* DotNet 5.0.3 runtime added to installer.
+* Nodejs updated to 14.15.5.
+* Mongodb updated to 4.4.3.
+* Mongodb Compass updated to 1.25.
+* Grafana updated to 7.4.1.
+* Chromium updated to 88.0.4324.150.
+* Various enhancements and fixes.
 
 -------------------------------------------------------------------
 
 Notes for version 0.5: 
 
- - Admin panel now manages protocol driver connections.
- - Enhancements on Admin panel.
- - Grafana alerting integration with Events Viewer.
- - Various enhancements and fixes.
+* Admin panel now manages protocol driver connections.
+* Enhancements on Admin panel.
+* Grafana alerting integration with Events Viewer.
+* Various enhancements and fixes.
 
 -------------------------------------------------------------------
 
 Notes for version 0.4: 
 
- - Admin panel now manages driver instances.
- - Better install and uninstall.
- - Various minor enhancements and fixes.
+* Admin panel now manages driver instances.
+* Better install and uninstall.
+* Various minor enhancements and fixes.
 
 -------------------------------------------------------------------
 
 Notes for version 0.3: 
 
- - Role based access control (RBAC), user authentication (JWT).
- - Default login credentials: username: admin password: jsonscada
- - Web-based admin panel for users/roles configuration.
- - Dotnet protocol drivers updated to DOTNET 5.0.
+* Role based access control (RBAC), user authentication (JWT).
+* Default login credentials: username: admin password: jsonscada
+* Web-based admin panel for users/roles configuration.
+* Dotnet protocol drivers updated to DOTNET 5.0.
 
 -------------------------------------------------------------------
 
 Notes for version 0.2: 
 
- - Fixed PostgreSQL initdb problems, locale, timing, Windows user rights.
- - Added demo_simul service for offline simulation and testing (must be manually started).
- - Fixed uninstall services removal.
+* Fixed PostgreSQL initdb problems, locale, timing, Windows user rights.
+* Added demo_simul service for offline simulation and testing (must be manually started).
+* Fixed uninstall services removal.
 
 -------------------------------------------------------------------
 
 Notes for version 0.1: 
 
- - First Windows binary release.
+* First Windows binary release.
 
