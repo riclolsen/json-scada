@@ -6,25 +6,24 @@ version: '2.1'
 services:
 
   dotnet_compile:
-    image: mcr.microsoft.com/dotnet/sdk:5.0
-    #image: mcr.microsoft.com/dotnet/core/sdk:3.1
+    image: mcr.microsoft.com/dotnet/sdk:6.0
     container_name: js_dotnet_compile
     command: sh -c "cd /src/lib60870.netcore/lib60870.netcore/ && 
-                    dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
+                    dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec101client/ &&
-                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec101server/ &&
-                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec104client/ &&
-                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec104server/ &&
-                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/OPC-UA-Client/ && 
-                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
-                    dotnet build --runtime linux-x64 -c Release -o /publish_bin/ &&
+                    dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/libplctag/PLCTagsClient &&
-                    dotnet publish --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
                     
 
     # NOTICE Dnp3Client is Windows-only, so it can only run in docker/linux using Wine.
@@ -109,6 +108,8 @@ services:
   htdocs_admin_update:
     image: node:current-alpine3.13
     container_name: js_htdocs_admin_update
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
     command:  sh -c "npm install -g npm && cd /htdocs-admin && npm install && npm run build"
     volumes:
       - ../src/htdocs-admin:/htdocs-admin
