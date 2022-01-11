@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace OPCUAClientDriver
@@ -182,6 +181,7 @@ namespace OPCUAClientDriver
                     .ToList();
             foreach (OPCUA_connection isrv in conns)
             {
+                isrv.LastNewKeyCreated = 0;
                 if (isrv.endpointURLs.Length < 1)
                 {
                     Log("Missing remote endpoint URLs list!");

@@ -148,7 +148,7 @@ namespace OPCUAClientDriver
                                     // look for the tag
                                     var task = await collection.FindAsync<rtData>(new BsonDocument {
                                         {
-                                            "tag", TagFromOPCParameters(iv)
+                                            "tag", tag
                                         }
                                     });
                                     List<rtData> list = await task.ToListAsync();
@@ -159,17 +159,43 @@ namespace OPCUAClientDriver
                                     InsertedTags.Add(tag);
                                     if (list.Count == 0)
                                     {
-                                        Log(iv.conn_name + " - INSERT - " + iv.address);
-                                        // hash to create keys
-                                        var id = HashStringToInt(iv.address);
-                                        var insert = newRealtimeDoc(iv, id);
+                                        Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
+
                                         int conn_index = 0;
                                         // normal for loop
                                         for (int index = 0; index < OPCUAconns.Count; index++)
                                         {
-                                            if (OPCUAconns[index].protocolConnectionNumber == iv.conn_number) 
+                                            if (OPCUAconns[index].protocolConnectionNumber == iv.conn_number)
                                                 conn_index = index;
                                         }
+
+                                        if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
+                                        {
+                                            Double AutoKeyId = iv.conn_number * AutoKeyMultiplier;
+                                            var results = collection.Find<rtData>(new BsonDocument {
+                                                { "_id", new BsonDocument{
+                                                    { "$gt", AutoKeyId },
+                                                    { "$lt", ( iv.conn_number + 1) * AutoKeyMultiplier }
+                                                    }
+                                                }
+                                                }).ToList();
+
+                                            if (results.Count > 0)
+                                            {
+                                                OPCUAconns[conn_index].LastNewKeyCreated = results[0]._id.ToDouble() + 1;
+                                            }
+                                            else
+                                            {
+                                                OPCUAconns[conn_index].LastNewKeyCreated = AutoKeyId;
+                                            }
+                                        }
+                                        else
+                                            OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
+
+                                        // hash to create keys
+                                        var id = OPCUAconns[conn_index].LastNewKeyCreated;
+                                        
+                                        var insert = newRealtimeDoc(iv, id);
                                         insert.protocolSourcePublishingInterval = OPCUAconns[conn_index].autoCreateTagPublishingInterval;
                                         insert.protocolSourceSamplingInterval = OPCUAconns[conn_index].autoCreateTagSamplingInterval;
                                         insert.protocolSourceQueueSize = OPCUAconns[conn_index].autoCreateTagQueueSize;
@@ -345,5 +371,7 @@ namespace OPCUAClientDriver
         {
             return ov.conn_name + ";" + ov.address;
         }
+
+        static public int AutoKeyMultiplier = 1000000;
     }
 }

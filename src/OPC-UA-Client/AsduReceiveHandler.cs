@@ -247,6 +247,7 @@ namespace OPCUAClientDriver
                 if (NodeIdsFromObjects.Contains(nodeid.ToString()))
                      return;
 
+                Log(conn_name + " Browse");
                 session.Browse(
                     null,
                     null,
@@ -258,6 +259,8 @@ namespace OPCUAClientDriver
                     (uint)NodeClass.Variable | (uint)NodeClass.Object,
                     out continuationPoint,
                     out references);
+
+                Log(references.Count.ToString());                
 
                 foreach (var rd in references)
                 {
@@ -283,7 +286,7 @@ namespace OPCUAClientDriver
                         {
                             NodeIdsFromObjects.Add(nodeid.ToString());
                             await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
-                            Thread.Yield();
+                            //Thread.Yield();
                             //Thread.Sleep(1);
                             //await Task.Delay(1);
                         }                            

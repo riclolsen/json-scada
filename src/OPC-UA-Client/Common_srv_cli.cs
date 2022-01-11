@@ -107,6 +107,7 @@ namespace OPCUAClientDriver
             public double timeoutMs { get; set; }
             [BsonDefaultValue(false)]
             public bool useSecurity { get; set; }
+            public Double LastNewKeyCreated;
             public OPCUAClient connection;
             public OPCUAClient conn1;
             public OPCUAClient conn2;
