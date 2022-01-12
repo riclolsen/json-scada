@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -108,10 +108,11 @@ namespace OPCUAClientDriver
             [BsonDefaultValue(false)]
             public bool useSecurity { get; set; }
             public Double LastNewKeyCreated;
+            public SortedSet<string> InsertedTags = new SortedSet<string>();
             public OPCUAClient connection;
-            public OPCUAClient conn1;
-            public OPCUAClient conn2;
-            public System.Timers.Timer TimerCnt;
+            //public OPCUAClient conn1;
+            //public OPCUAClient conn2;
+            //public System.Timers.Timer TimerCnt;
             public Thread thrOPCStack;
         }
         [BsonIgnoreExtraElements]
@@ -171,10 +172,10 @@ namespace OPCUAClientDriver
             public BsonDouble protocolSourceConnectionNumber { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
             public BsonDouble protocolSourceCommonAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
-            public BsonDouble protocolSourceObjectAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
-            public BsonDouble protocolSourceASDU { get; set; }
+            [BsonDefaultValue("")]
+            public BsonString protocolSourceObjectAddress { get; set; }
+            [BsonDefaultValue("")]
+            public BsonString protocolSourceASDU { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
             public BsonDouble protocolSourceCommandDuration { get; set; }
             [BsonDefaultValue(false)]
@@ -202,10 +203,10 @@ namespace OPCUAClientDriver
             public BsonDouble protocolSourceConnectionNumber { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
             public BsonDouble protocolSourceCommonAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
-            public BsonDouble protocolSourceObjectAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
-            public BsonDouble protocolSourceASDU { get; set; }
+            [BsonDefaultValue("")]
+            public BsonString protocolSourceObjectAddress { get; set; }
+            [BsonDefaultValue("")]
+            public BsonString protocolSourceASDU { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
             public BsonDouble protocolSourceCommandDuration { get; set; }
             [BsonDefaultValue(false)]

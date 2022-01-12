@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -21,24 +21,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace OPCUAClientDriver
 {
     partial class MainClass
     {
+        public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2022 RLO";
         public static String ProtocolDriverName = "OPC-UA";
-        public static String DriverVersion = "0.1.0";
+        public static String DriverVersion = "0.1.1";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
-        public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
-        public static Int32 BulkWriteLimit = 1000; // limit of each bulk write to mongodb
+        public static Int32 DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
+        public static Int32 BulkWriteLimit = 1250; // limit of each bulk write to mongodb
         //public static int OPCDefaultPublishingInterval = 2500;
         //public static int OPCDefaultSamplingInterval = 1000;
         //public static uint OPCDefaultQueueSize = 10;
 
         public static int Main(string[] args)
         {
-            Log("{json:scada} OPC-UA Client Driver - Copyright 2021 RLO");
+            Log(CopyrightMessage);
             Log("Driver version " + DriverVersion);
             Log("Using UA-.NETStandard library from the OPC Foundation.");
 
@@ -165,7 +167,7 @@ namespace OPCUAClientDriver
                 "] not found in configuration!");
                 Environment.Exit(-1);
             }
-             
+
             // read and process connections configuration for this driver instance
             var collconns =
                 DB
@@ -179,8 +181,23 @@ namespace OPCUAClientDriver
                         ProtocolDriverInstanceNumber &&
                         conn.enabled == true)
                     .ToList();
+            var collRtData =
+                DB.GetCollection<rtData>(RealtimeDataCollectionName);
+
             foreach (OPCUA_connection isrv in conns)
             {
+                if (isrv.autoCreateTags)
+                {
+                    // look for existing tags in this connections, missing tags will be inserted later when discovered
+                    var results = collRtData.Find<rtData>(new BsonDocument {
+                                        { "protocolSourceConnectionNumber", isrv.protocolConnectionNumber },
+                                        { "origin", "supervised" }
+                                    }).ToList();
+                    for (int i = 0; i < results.Count; i++)
+                    {
+                        isrv.InsertedTags.Add(results[i].tag.ToString());
+                    }
+                }
                 isrv.LastNewKeyCreated = 0;
                 if (isrv.endpointURLs.Length < 1)
                 {
@@ -211,10 +228,10 @@ namespace OPCUAClientDriver
             // thrMongo.Priority = ThreadPriority.AboveNormal;
 
             // start thread to watch for commands in the database using a change stream
-            //var thrMongoCmd =
-            //    new Thread(() =>
-            //            ProcessMongoCmd(JSConfig));
-            //thrMongoCmd.Start();
+            Thread thrMongoCmd =
+                new Thread(() =>
+                        ProcessMongoCmd(JSConfig));
+            thrMongoCmd.Start();
 
             Log("Setting up OPC-UA Connections & ASDU handlers...");
             var thrSrvs = new List<Thread>();

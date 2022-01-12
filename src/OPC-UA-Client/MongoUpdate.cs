@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -20,8 +20,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Diagnostics;
@@ -30,7 +28,7 @@ namespace OPCUAClientDriver
 {
     partial class MainClass
     {
-        static public SortedSet<string>InsertedTags = new SortedSet<string>();
+        static public int AutoKeyMultiplier = 1000000; // maximum number of points on each connection self-published (auto numbered points)
 
         // This process updates acquired values in the mongodb collection for realtime data
         static public async void ProcessMongo(JSONSCADAConfig jsConfig)
@@ -56,55 +54,13 @@ namespace OPCUAClientDriver
                         //if (LogLevel >= LogLevelBasic && OPCDataQueue.Count > 0)
                         //  Log("MongoDB - Data queue size: " +  OPCDataQueue.Count, LogLevelBasic);
 
-                        // Log("1");
-
                         bool isMongoLive =
                             DB
                                 .RunCommandAsync((Command<BsonDocument>)
                                 "{ping:1}")
-                                .Wait(1000);
+                                .Wait(2500);
                         if (!isMongoLive)
                             throw new Exception("Error on MongoDB connection ");
-
-                        // Log("2");
-                        IEC_CmdAck ia;
-                        if (OPCCmdAckQueue.Count > 0)
-                        while (OPCCmdAckQueue.TryDequeue(out ia))
-                        {
-                            var filter1 =
-                                Builders<rtCommand>
-                                    .Filter
-                                    .Eq(m => m.protocolSourceConnectionNumber,
-                                    ia.conn_number);
-                            var filter2 =
-                                Builders<rtCommand>
-                                    .Filter
-                                    .Eq(m => m.protocolSourceObjectAddress,
-                                    ia.object_address);
-                            var filter =
-                                Builders<rtCommand>
-                                    .Filter
-                                    .And(filter1, filter2);
-
-                            var update =
-                                Builders<rtCommand>
-                                    .Update
-                                    .Set(m => m.ack, ia.ack)
-                                    .Set(m => m.ackTimeTag, ia.ack_time_tag);
-
-                            // sort by priority then by insert order
-                            var sort =
-                                Builders<rtCommand>.Sort.Descending("$natural");
-
-                            var options =
-                                new FindOneAndUpdateOptions<rtCommand, rtCommand
-                                >();
-                            options.IsUpsert = false;
-                            options.Sort = sort;
-                            await collection_cmd
-                                .FindOneAndUpdateAsync(filter, update, options);
-                        }
-                        // Log("3");
 
                         Stopwatch stopWatch = new Stopwatch();
                         stopWatch.Start();
@@ -112,7 +68,6 @@ namespace OPCUAClientDriver
                         OPC_Value iv;
                         while (!OPCDataQueue.IsEmpty && OPCDataQueue.TryPeek(out iv) && OPCDataQueue.TryDequeue(out iv))
                         {
-                            // Log("3.1");
                             DateTime tt = DateTime.MinValue;
                             BsonValue bsontt = BsonNull.Value;
                             try
@@ -138,74 +93,66 @@ namespace OPCUAClientDriver
                                 Log(iv.conn_name + " - " + e.Message);
                             }
 
-                            // Log("3.2");
-
                             if (iv.selfPublish)
                             {
-                                string tag = TagFromOPCParameters(iv);
-                                if (!InsertedTags.Contains(tag))
+                                // find the json-scada connection for this received value 
+                                int conn_index = 0;
+                                for (int index = 0; index < OPCUAconns.Count; index++)
                                 {
-                                    // look for the tag
-                                    var task = await collection.FindAsync<rtData>(new BsonDocument {
-                                        {
-                                            "tag", tag
-                                        }
-                                    });
-                                    List<rtData> list = await task.ToListAsync();
-                                    // await Task.Delay(10);
-                                    //Thread.Yield();
-                                    //Thread.Sleep(1);
+                                    if (OPCUAconns[index].protocolConnectionNumber == iv.conn_number)
+                                        conn_index = index;
+                                }
 
-                                    InsertedTags.Add(tag);
-                                    if (list.Count == 0)
+                                string tag = TagFromOPCParameters(iv);
+                                if (!OPCUAconns[conn_index].InsertedTags.Contains(tag))
+                                { // tag not yet inserted
+                                    // put the tag in the list of inserted, then insert it
+
+                                    OPCUAconns[conn_index].InsertedTags.Add(tag);
+                                    
+                                    Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
+
+                                    // find a new freee _id key based on the connection number
+                                    if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
                                     {
-                                        Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
-
-                                        int conn_index = 0;
-                                        // normal for loop
-                                        for (int index = 0; index < OPCUAconns.Count; index++)
-                                        {
-                                            if (OPCUAconns[index].protocolConnectionNumber == iv.conn_number)
-                                                conn_index = index;
-                                        }
-
-                                        if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
-                                        {
-                                            Double AutoKeyId = iv.conn_number * AutoKeyMultiplier;
-                                            var results = collection.Find<rtData>(new BsonDocument {
-                                                { "_id", new BsonDocument{
-                                                    { "$gt", AutoKeyId },
-                                                    { "$lt", ( iv.conn_number + 1) * AutoKeyMultiplier }
-                                                    }
+                                        Double AutoKeyId = iv.conn_number * AutoKeyMultiplier;
+                                        var results = collection.Find<rtData>(new BsonDocument {
+                                            { "_id", new BsonDocument{
+                                                { "$gt", AutoKeyId },
+                                                { "$lt", ( iv.conn_number + 1) * AutoKeyMultiplier }
                                                 }
-                                                }).ToList();
+                                            }
+                                            }).Sort(Builders<rtData>.Sort.Descending("_id"))
+                                            .Limit(1)
+                                            .ToList();
 
-                                            if (results.Count > 0)
-                                            {
-                                                OPCUAconns[conn_index].LastNewKeyCreated = results[0]._id.ToDouble() + 1;
-                                            }
-                                            else
-                                            {
-                                                OPCUAconns[conn_index].LastNewKeyCreated = AutoKeyId;
-                                            }
+                                        if (results.Count > 0)
+                                        {
+                                            OPCUAconns[conn_index].LastNewKeyCreated = results[0]._id.ToDouble() + 1;
                                         }
                                         else
-                                            OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
-
-                                        // hash to create keys
-                                        var id = OPCUAconns[conn_index].LastNewKeyCreated;
-                                        
-                                        var insert = newRealtimeDoc(iv, id);
-                                        insert.protocolSourcePublishingInterval = OPCUAconns[conn_index].autoCreateTagPublishingInterval;
-                                        insert.protocolSourceSamplingInterval = OPCUAconns[conn_index].autoCreateTagSamplingInterval;
-                                        insert.protocolSourceQueueSize = OPCUAconns[conn_index].autoCreateTagQueueSize;
-                                        listWrites
-                                            .Add(new InsertOneModel<rtData>(insert));
+                                        {
+                                            OPCUAconns[conn_index].LastNewKeyCreated = AutoKeyId;
+                                        }
                                     }
+                                    else
+                                        OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
+                                        
+                                    var id = OPCUAconns[conn_index].LastNewKeyCreated;
+                                        
+                                    // will enqueue to insert the new tag into mongo DB
+                                    var insert = newRealtimeDoc(iv, id);
+                                    insert.protocolSourcePublishingInterval = OPCUAconns[conn_index].autoCreateTagPublishingInterval;
+                                    insert.protocolSourceSamplingInterval = OPCUAconns[conn_index].autoCreateTagSamplingInterval;
+                                    insert.protocolSourceQueueSize = OPCUAconns[conn_index].autoCreateTagQueueSize;
+                                    listWrites
+                                        .Add(new InsertOneModel<rtData>(insert));
+                                    
+                                    // will imediatelly be followed by an update below (to the same tag)
                                 }
                             }
 
-                            //below code will update one record of the data
+                            // update one existing document with received tag value (realtimeData)
                             var update =
                                 new BsonDocument {
                                     {
@@ -295,7 +242,6 @@ namespace OPCUAClientDriver
                                 };
                             Log("MongoDB - ADD " + iv.address + " " + iv.value,
                             LogLevelDebug);
-                            // Log("3.3");
 
                             listWrites
                                 .Add(new UpdateOneModel<rtData>(filt
@@ -308,7 +254,7 @@ namespace OPCUAClientDriver
                             if (stopWatch.ElapsedMilliseconds > 400)
                               break;
 
-                            // Log("3.4 - Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
+                            // Log("Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
 
                             // give time to breath each 250 dequeues
                             //if ((listWrites.Count % 250)==0)
@@ -319,13 +265,14 @@ namespace OPCUAClientDriver
                             //}
                         }
 
-                        // Log("4");
                         if (listWrites.Count > 0)
                         {
-                            Log("MongoDB - Bulk write " + listWrites.Count + " Data " + OPCDataQueue.Count);
+                            Log("MongoDB - Bulk writing " + listWrites.Count + ", Total enqueued data " + OPCDataQueue.Count);
                             var bulkWriteResult =
                                 await collection.BulkWriteAsync(listWrites);
                             listWrites.Clear();
+
+                            Log($"MongoDB - OK:{bulkWriteResult.IsAcknowledged} - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
 
                             //Thread.Yield();
                             //Thread.Sleep(1);
@@ -335,7 +282,6 @@ namespace OPCUAClientDriver
                         {
                             await Task.Delay(250);
                         }
-                        // Log("6");
                     }
                     while (true);
                 }
@@ -360,18 +306,9 @@ namespace OPCUAClientDriver
             }
             while (true);
         }
-
-        static Int64 HashStringToInt(string str)
-        {
-            MD5 md5Hasher = MD5.Create();
-            var hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(str));
-            return -1000 - Math.Abs(BitConverter.ToInt64(hashed, 0));
-        }
         static string TagFromOPCParameters(OPC_Value ov)
         {
             return ov.conn_name + ";" + ov.address;
         }
-
-        static public int AutoKeyMultiplier = 1000000;
     }
 }

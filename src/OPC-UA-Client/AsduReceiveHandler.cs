@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -47,7 +47,7 @@ namespace OPCUAClientDriver
         public class OPCUAClient
         {
             const int ReconnectPeriod = 10;
-            Session session;
+            public Session session;
             SessionReconnectHandler reconnectHandler;
             int conn_number = 0;
             string conn_name;
@@ -247,7 +247,7 @@ namespace OPCUAClientDriver
                 if (NodeIdsFromObjects.Contains(nodeid.ToString()))
                      return;
 
-                Log(conn_name + " Browse");
+                Log(conn_name + " - Browsing object: " + nodeid.ToString());
                 session.Browse(
                     null,
                     null,
@@ -260,7 +260,7 @@ namespace OPCUAClientDriver
                     out continuationPoint,
                     out references);
 
-                Log(references.Count.ToString());                
+                Log(conn_name + " - Found " + references.Count.ToString() + " refereces on object " + nodeid.ToString());
 
                 foreach (var rd in references)
                 {
