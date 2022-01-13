@@ -27,7 +27,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/DNP3-green "DNP3")
 ![](https://img.shields.io/badge/MQTT-green "MQTT")
 ![](https://img.shields.io/badge/Sparkplug--B-green "Sparkplug B")
-![](https://img.shields.io/badge/OPC--UA-yellow "OPC-UA")
+![](https://img.shields.io/badge/OPC--UA-green "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
 ![](https://img.shields.io/badge/license-GPL-green "License GPL")
@@ -119,7 +119,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [x] Telegraf Client (OPC-UA, MQTT, MODBUS, SNMP, ...)
-- [x] OPC UA Client (experimental)
+- [x] OPC UA Client
 - [x] OPC UA Server
 - [ ] OPC UA Historical Data Server
 - [ ] OPC DA Client
