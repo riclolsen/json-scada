@@ -238,7 +238,6 @@ namespace OPCUAClientDriver
             foreach (OPCUA_connection srv in OPCUAconns)
             {
                 srv.connection = new OPCUAClient(srv);
-                // srv.connection.Run();
                 srv.thrOPCStack = new Thread(() => srv.connection.Run());
                 srv.thrOPCStack.Start();
             }
@@ -249,6 +248,11 @@ namespace OPCUAClientDriver
             {
                 foreach (OPCUA_connection srv in OPCUAconns)
                 {
+                    if (srv.connection.failed)
+                    {
+                        Log(srv.name.ToString() + " - Failed!");
+                        srv.connection.Run();
+                    }
                 }
 
                 Thread.Sleep(1000);

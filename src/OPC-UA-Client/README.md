@@ -70,7 +70,7 @@ Parameters for communication with OPC-UA servers.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**endpointURLs**_ [Array of Strings] - Array of server endpoints URLs (only the first server is currently supported). **Mandatory parameter**.
 * _**configFileName**_ [String] - Name of the config file (with absolute path or relative to the bin folder). Default="../conf/Opc.Ua.DefaultClient.Config.xml". Use this file or crete new files to configure certificates and other OPC-UA parameters for a connection. **Optional parameter**.
-* _**autoCreateTags**_ [Boolean] - When true the driver will create tags for every data point found in the server, all point will be subscribed. When false, only preconfigured tags will be updated. **Mandatory parameter**.
+* _**autoCreateTags**_ [Boolean] - When true the driver will create tags for every data point found in the server, all points will be subscribed. When false, only preconfigured tags will be updated. **Mandatory parameter**.
 * _**autoCreateTagPublishingInterval**_ [Double] - Default publishing interval in seconds for subscription of auto created tags. **Mandatory parameter**.
 * _**autoCreateTagSamplingInterval**_ [Double] - Default sampling interval in seconds for subscription of auto created tags. **Mandatory parameter**.
 * _**autoCreateTagQueueSize**_ [Double] - Default queue size for subscription of auto created tags. **Mandatory parameter**.
@@ -78,7 +78,7 @@ Parameters for communication with OPC-UA servers.
 * _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
 * _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
-## Configure JSON-SCADA tags for update (read from OPC-UA Server)
+## Configure JSON-SCADA tags for update (reading from an OPC-UA Server)
 
 Each tag to be update on a connection must have a protocol source set configured. Only one source connection can update a tag.
 
@@ -102,13 +102,35 @@ Select a tag for a update on a connection as below.
 
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can update the tag. **Mandatory parameter**.
 * _**protocolSourceCommonAddress**_ [String] - Name of a subscription for grouping. Leave empty for not subscribing (just polling). **Mandatory parameter**.
-* _**protocolSourceObjectAddress**_ [String] - OPC-UA Node Id. This address must be unique for a connection. **Mandatory parameter**.
-* _**protocolSourceASDU**_ [String] - Data type: Boolean | SByte | Byte | Int16 | UInt16 | Int32 | UInt32, | StatusCode | Int64 | UInt64 | DateTime | Float | Double | String | ByteString | XmlElement | JSON (JSON in a string) | [, Array Range]. E.g. UInt64,0:10. **Mandatory parameter**.
+* _**protocolSourceObjectAddress**_ [String] - OPC-UA Node Id. This address must be unique in a connection (for supervised points). **Mandatory parameter**.
+* _**protocolSourceASDU**_ [String] - Data type: Boolean | SByte | Byte | Int16 | UInt16 | Int32 | UInt32, | StatusCode | Int64 | UInt64 | DateTime | Guid | Float | Double | String | ByteString | XmlElement | ExpandedNodeId | QualifiedName | LocalizedText | Number | Integer | UInteger | Enumeration | JSON (JSON in a string) | [, Array Range]. E.g. UInt64,0:10. **Mandatory parameter**.
 * _**protocolSourcePublishingInterval**_ [Double] - Publishing interval in seconds for the subscription group (repeat the same value for all members of a subscription). If not a subscription this is the polling interval. **Mandatory parameter**.
 * _**protocolSourceSamplingInterval**_ [Double] - Sampling interval in seconds requested for the server. Only meaningful for subscriptions. Use zero for auto adjust on the server. **Mandatory parameter**.
 * _**protocolSourceQueueSize**_ [Double] - Queue size for buffering of changes in the server between reports. Only meaningful for subscriptions. Use zero to avoid buffering. **Mandatory parameter**.
 * _**protocolSourceDiscardOldest**_ [Boolean] - What to do when changes queue overflows. Use true to discard oldest changes.Only meaningful for subscriptions. **Mandatory parameter**.
+* _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
+* _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 
+## Configure JSON-SCADA command tags (writing to an OPC-UA Server)
+
+Create a regular command tag. Configure the connection number, OPCUA node id (object address) and OPCUA type (ASDU).
+
+    use json_scada_db_name
+    db.realtimeData.updateOne({"tag":"a_command_tag"}, {
+        $set: {
+            protocolSourceConnectionNumber: 81.0,
+            protocolSourceCommonAddress: "",
+            protocolSourceObjectAddress: "ns=2;s=Demo.Dynamic.Scalar.Byte",
+            protocolSourceASDU: "Byte", 
+            kconv1: 1.0,
+            kconv2: 0.0
+            }
+    });
+
+* _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can command this tag. **Mandatory parameter**.
+* _**protocolSourceCommonAddress**_ [String] - Not used, keep as empty string. **Mandatory parameter**.
+* _**protocolSourceObjectAddress**_ [String] - OPC-UA Node Id. This address must be unique in a connection (for commands). **Mandatory parameter**.
+* _**protocolSourceASDU**_ [String] - Data type: Boolean | SByte | Byte | Int16 | UInt16 | Int32 | UInt32, | Int64 | UInt64 | DateTime | Float | Double | String.  **Mandatory parameter**.
 * _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 * _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 

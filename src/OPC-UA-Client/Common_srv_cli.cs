@@ -54,8 +54,6 @@ namespace OPCUAClientDriver
         public static String redundantIpAddress = "";
         public static ConcurrentQueue<OPC_Value>
             OPCDataQueue = new ConcurrentQueue<OPC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
-        public static ConcurrentQueue<IEC_CmdAck>
-            OPCCmdAckQueue = new ConcurrentQueue<IEC_CmdAck>(); // command acknowledges queue (to be updated in mongodb commands collection)
         public static List<OPCUA_connection>
             OPCUAconns = new List<OPCUA_connection>(); // list of RTU connections
 
@@ -147,22 +145,11 @@ namespace OPCUAClientDriver
             public string common_address;
             public string display_name;
         }
-        public struct IEC_CmdAck
-        {
-            public bool ack; // ack positive(true) or negative(false)
-            public int conn_number;
-            public int object_address;
-            public DateTime ack_time_tag;
-        }
-        public class rtFiltTag
-        {
-            public string tag;
-        }
         public class rtFilt
         {
             public int protocolSourceConnectionNumber;
-            public string protocolSourceCommonAddress;
             public string protocolSourceObjectAddress;
+            public string origin;
         }
         [BsonIgnoreExtraElements]
         public class rtCommand

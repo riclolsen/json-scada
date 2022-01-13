@@ -109,7 +109,7 @@ namespace OPCUAClientDriver
                                     // put the tag in the list of inserted, then insert it
 
                                     OPCUAconns[conn_index].InsertedTags.Add(tag);
-                                    
+
                                     Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
 
                                     // find a new freee _id key based on the connection number
@@ -137,9 +137,9 @@ namespace OPCUAClientDriver
                                     }
                                     else
                                         OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
-                                        
+
                                     var id = OPCUAconns[conn_index].LastNewKeyCreated;
-                                        
+
                                     // will enqueue to insert the new tag into mongo DB
                                     var insert = newRealtimeDoc(iv, id);
                                     insert.protocolSourcePublishingInterval = OPCUAconns[conn_index].autoCreateTagPublishingInterval;
@@ -147,7 +147,7 @@ namespace OPCUAClientDriver
                                     insert.protocolSourceQueueSize = OPCUAconns[conn_index].autoCreateTagQueueSize;
                                     listWrites
                                         .Add(new InsertOneModel<rtData>(insert));
-                                    
+
                                     // will imediatelly be followed by an update below (to the same tag)
                                 }
                             }
@@ -231,14 +231,14 @@ namespace OPCUAClientDriver
                                     }
                                 };
 
+                            // update filter, avoids updating commands that can have the same address as supervised points
                             var filt =
                                 new rtFilt
                                 {
                                     protocolSourceConnectionNumber =
                                         iv.conn_number,
-                                    protocolSourceCommonAddress =
-                                        iv.common_address,
-                                    protocolSourceObjectAddress = iv.address
+                                    protocolSourceObjectAddress = iv.address,
+                                    origin = "supervised"
                                 };
                             Log("MongoDB - ADD " + iv.address + " " + iv.value,
                             LogLevelDebug);
@@ -252,7 +252,7 @@ namespace OPCUAClientDriver
                                 break;
 
                             if (stopWatch.ElapsedMilliseconds > 400)
-                              break;
+                                break;
 
                             // Log("Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
 

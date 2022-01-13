@@ -89,9 +89,53 @@ namespace OPCUAClientDriver
                                         )
                                         {
                                             found = true;
+
+                                            int timeDif = DateTime
+                                                    .Now
+                                                    .ToLocalTime()
+                                                    .Subtract(change
+                                                        .FullDocument
+                                                        .timeTag
+                                                        .ToLocalTime(
+                                                        ))
+                                                    .Seconds;
+
+                                            // test for command expired
+                                            if ( timeDif > 10 )
+                                            {
+                                                // update as expired
+                                                Log("MongoDB CMD CS - " +
+                                                srv.name +
+                                                " - " +
+                                                " Address " +
+                                                change
+                                                    .FullDocument
+                                                    .protocolSourceObjectAddress +
+                                                " value " +
+                                                change
+                                                    .FullDocument
+                                                    .value +
+                                                " Expired, " + timeDif + " Seconds old");
+                                                var filter =
+                                                    new BsonDocument(new BsonDocument("_id",
+                                                            change
+                                                                .FullDocument
+                                                                .id));
+                                                var update =
+                                                    new BsonDocument("$set",
+                                                        new BsonDocument("cancelReason",
+                                                            "expired"));
+                                                var result =
+                                                    await collection
+                                                        .UpdateOneAsync(filter,
+                                                        update);
+                                            
+                                                break;
+                                            }
+
                                             if (
-                                                srv.connection.session.Connected &&
-                                                srv.commandsEnabled
+                                            srv.connection.session.Connected &&
+                                            srv.commandsEnabled
                                             )
                                             {
                                                 WriteValueCollection nodesToWrite = new WriteValueCollection();
@@ -124,6 +168,51 @@ namespace OPCUAClientDriver
                                                                 .Convert
                                                                 .ToInt16(change.FullDocument.value);
                                                         break;
+                                                    case "uint16":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToUInt16(change.FullDocument.value);
+                                                        break;
+                                                    case "int32":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToInt16(change.FullDocument.value);
+                                                        break;
+                                                    case "uint32":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToUInt16(change.FullDocument.value);
+                                                        break;
+                                                    case "int64":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToInt16(change.FullDocument.value);
+                                                        break;
+                                                    case "uint64":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToUInt16(change.FullDocument.value);
+                                                        break;
+                                                    case "float":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToSingle(change.FullDocument.value);
+                                                        break;
+                                                    case "double":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToDouble(change.FullDocument.value);
+                                                        break;
+                                                    case "datetime":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToDateTime(change.FullDocument.value);
+                                                        break;
+                                                    case "string":
+                                                        WriteVal.Value.Value = System
+                                                                .Convert
+                                                                .ToString(change.FullDocument.value);
+                                                        break;
                                                 }
 
                                                 nodesToWrite.Add(WriteVal);
@@ -140,66 +229,44 @@ namespace OPCUAClientDriver
                                                                 out results,
                                                                 out diagnosticInfos);
 
-                                                if (results.Count > 0 && StatusCode.IsGood(results[0]))
+                                                var okres = false;
+                                                var resultDescription = "";
+                                                if (results.Count > 0)
                                                 {
-                                                    Log("MongoDB CMD CS - " +
-                                                    srv.name +
-                                                    " - " +
-                                                    " Address: " +
-                                                    change
-                                                        .FullDocument
-                                                        .protocolSourceObjectAddress +
-                                                    " - Command delivered - " + results[0].ToString());
+                                                    resultDescription = results[0].ToString();
+                                                    if (StatusCode.IsGood(results[0]))
+                                                        okres = true;
+                                                }
 
-                                                    // update as delivered
-                                                    var filter =
-                                                        new BsonDocument(new BsonDocument("_id",
-                                                                change
-                                                                    .FullDocument
-                                                                    .id));
-                                                    var update =
-                                                        new BsonDocument
-                                                            { {"$set",
+                                                Log("MongoDB CMD CS - " +
+                                                srv.name +
+                                                " - " +
+                                                " Address: " +
+                                                change
+                                                    .FullDocument
+                                                    .protocolSourceObjectAddress +
+                                                " - Command delivered - " + results[0].ToString());
+
+                                                // update as delivered
+                                                var filter =
+                                                    new BsonDocument(new BsonDocument("_id",
+                                                            change
+                                                                .FullDocument
+                                                                .id));
+                                                var update =
+                                                    new BsonDocument
+                                                        { {"$set",
                                                                     new BsonDocument{
                                                                         { "delivered", true },
-                                                                        { "ack", true },
-                                                                        { "ackTimeDate", new BsonDateTime(DateTime.Now) }
+                                                                        { "ack", okres },
+                                                                        { "ackTimeTag", new BsonDateTime(DateTime.Now) },
+                                                                        { "resultDescription", resultDescription }
                                                                     }
                                                                 } };
-                                                    var result =
-                                                        await collection
-                                                            .UpdateOneAsync(filter,
-                                                            update);
-                                                }
-                                                else
-                                                {
-                                                    // update as expired
-                                                    Log("MongoDB CMD CS - " +
-                                                    srv.name +
-                                                    " - " +
-                                                    " OA " +
-                                                    change
-                                                        .FullDocument
-                                                        .protocolSourceObjectAddress +
-                                                    " value " +
-                                                    change
-                                                        .FullDocument
-                                                        .value +
-                                                    " Expired " + results[0].ToString());
-                                                    var filter =
-                                                        new BsonDocument(new BsonDocument("_id",
-                                                                change
-                                                                    .FullDocument
-                                                                    .id));
-                                                    var update =
-                                                        new BsonDocument("$set",
-                                                            new BsonDocument("cancelReason",
-                                                                "expired"));
-                                                    var result =
-                                                        await collection
-                                                            .UpdateOneAsync(filter,
-                                                            update);
-                                                }
+                                                var result =
+                                                    await collection
+                                                        .UpdateOneAsync(filter,
+                                                        update);
                                             }
                                             else
                                             {
@@ -241,19 +308,7 @@ namespace OPCUAClientDriver
                                     }
                                     if (!found)
                                     {
-                                        // update as canceled command (not found)
-                                        Log("MongoDB CMD CS - " +
-                                        change
-                                            .FullDocument
-                                            .protocolSourceConnectionNumber
-                                            .ToString() +
-                                        " OA " +
-                                        change
-                                            .FullDocument
-                                            .protocolSourceObjectAddress +
-                                        " value " +
-                                        change.FullDocument.value +
-                                        " Connection Not Found");
+                                        // not for a connection managed by this driver instance, just ignore
                                     }
                                 }
                             });

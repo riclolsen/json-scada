@@ -46,6 +46,7 @@ namespace OPCUAClientDriver
         };
         public class OPCUAClient
         {
+            public bool failed = false;
             const int ReconnectPeriod = 10;
             public Session session;
             SessionReconnectHandler reconnectHandler;
@@ -110,6 +111,7 @@ namespace OPCUAClientDriver
 
             private async Task ConsoleClient()
             {
+                failed = false;
                 Log(conn_name + " - " + "Create an Application Configuration...");
                 exitCode = ExitCode.ErrorCreateApplication;
 
@@ -194,7 +196,9 @@ namespace OPCUAClientDriver
                 if (session == null)
                 {
                     Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
-                    Environment.Exit(1);
+                    failed = true;
+                    // Environment.Exit(1);
+                    return;
                 }
 
                 Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
@@ -410,7 +414,7 @@ namespace OPCUAClientDriver
                                     strValue = value.Value.ToString();
                                     }
                                 }
-                                catch (Exception excpt)
+                                catch (Exception)
                                 {
                                 strValue = value.Value.ToString();
                                 }
