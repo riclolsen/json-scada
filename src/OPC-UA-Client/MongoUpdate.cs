@@ -41,6 +41,8 @@ namespace OPCUAClientDriver
                     var DB = Client.GetDatabase(jsConfig.mongoDatabaseName);
                     var collection =
                         DB.GetCollection<rtData>(RealtimeDataCollectionName);
+                    var collectionId =
+                        DB.GetCollection<rtDataId>(RealtimeDataCollectionName);
                     var collection_cmd =
                         DB
                             .GetCollection
@@ -116,13 +118,13 @@ namespace OPCUAClientDriver
                                     if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
                                     {
                                         Double AutoKeyId = iv.conn_number * AutoKeyMultiplier;
-                                        var results = collection.Find<rtData>(new BsonDocument {
+                                        var results = collectionId.Find<rtDataId>(new BsonDocument {
                                             { "_id", new BsonDocument{
                                                 { "$gt", AutoKeyId },
                                                 { "$lt", ( iv.conn_number + 1) * AutoKeyMultiplier }
                                                 }
                                             }
-                                            }).Sort(Builders<rtData>.Sort.Descending("_id"))
+                                            }).Sort(Builders<rtDataId>.Sort.Descending("_id"))
                                             .Limit(1)
                                             .ToList();
 

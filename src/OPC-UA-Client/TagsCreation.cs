@@ -26,6 +26,12 @@ namespace OPCUAClientDriver
     partial class MainClass
     {
         [BsonIgnoreExtraElements]
+        public class rtDataId
+        {
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
+            public BsonDouble _id;
+        }
+        [BsonIgnoreExtraElements]
         public class rtData
         {
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
@@ -243,7 +249,7 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0
                 };
             else
-            if (iv.asdu.ToLower() == "string")
+            if (iv.asdu.ToLower() == "string" || iv.asdu.ToLower() == "extensionobject")
                 return new rtData()
                 {
                     _id = _id,

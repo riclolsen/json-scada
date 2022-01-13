@@ -119,7 +119,7 @@ namespace OPCUAClientDriver
                 {
                     ApplicationName = "JSON-SCADA OPC-UA Client",
                     ApplicationType = ApplicationType.Client,
-                    ConfigSectionName = "",                    
+                    ConfigSectionName = "",
                 };
 
                 bool haveAppCertificate = false;
@@ -166,7 +166,7 @@ namespace OPCUAClientDriver
                     Environment.Exit(1);
                 }
 
-                try 
+                try
                 {
                     Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
                     exitCode = ExitCode.ErrorDiscoverEndpoints;
@@ -204,36 +204,39 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
                 exitCode = ExitCode.ErrorBrowseNamespace;
 
-                await FindObjects(session, ObjectIds.ObjectsFolder);
+                if (OPCUA_conn.autoCreateTags)
+                {
+                    await FindObjects(session, ObjectIds.ObjectsFolder);
 
-                await Task.Delay(50);
-                Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
-                exitCode = ExitCode.ErrorMonitoredItem;
-                ListMon.ForEach(i => i.Notification += OnNotification);
-                //ListMon.ForEach(i => i.SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000);
-                // ListMon.ForEach(i => Log(conn_name + " - " + i.DisplayName));
-                Log(conn_name + " - " + ListMon.Count + " Objects found");
+                    await Task.Delay(50);
+                    Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
+                    exitCode = ExitCode.ErrorMonitoredItem;
+                    ListMon.ForEach(i => i.Notification += OnNotification);
+                    //ListMon.ForEach(i => i.SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000);
+                    // ListMon.ForEach(i => Log(conn_name + " - " + i.DisplayName));
+                    Log(conn_name + " - " + ListMon.Count + " Objects found");
 
-                Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + "seconds");
-                exitCode = ExitCode.ErrorCreateSubscription;
-                var subscription = 
-                    new Subscription(session.DefaultSubscription) 
-                    { 
-                        PublishingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) *1000), 
-                        PublishingEnabled = true 
-                    };
+                    Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + "seconds");
+                    exitCode = ExitCode.ErrorCreateSubscription;
+                    var subscription =
+                        new Subscription(session.DefaultSubscription)
+                        {
+                            PublishingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) * 1000),
+                            PublishingEnabled = true
+                        };
 
-                await Task.Delay(50);
-                subscription.AddItems(ListMon);
+                    await Task.Delay(50);
+                    subscription.AddItems(ListMon);
 
-                await Task.Delay(50);
-                Log(conn_name + " - " + "Add the subscription to the session.");
-                Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items"); 
-                exitCode = ExitCode.ErrorAddSubscription;
-                session.AddSubscription(subscription);
-                subscription.Create();
+                    await Task.Delay(50);
+                    Log(conn_name + " - " + "Add the subscription to the session.");
+                    Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items");
+                    exitCode = ExitCode.ErrorAddSubscription;
+                    session.AddSubscription(subscription);
+                    subscription.Create();
 
-                subscription.ApplyChanges();
+                    subscription.ApplyChanges();
+                }
 
                 Log(conn_name + " - " + "Running...");
                 exitCode = ExitCode.ErrorRunning;
@@ -245,55 +248,55 @@ namespace OPCUAClientDriver
 
                 try
                 {
-                ReferenceDescriptionCollection references;
-                Byte[] continuationPoint;
+                    ReferenceDescriptionCollection references;
+                    Byte[] continuationPoint;
 
-                if (NodeIdsFromObjects.Contains(nodeid.ToString()))
-                     return;
+                    if (NodeIdsFromObjects.Contains(nodeid.ToString()))
+                        return;
 
-                Log(conn_name + " - Browsing object: " + nodeid.ToString());
-                session.Browse(
-                    null,
-                    null,
-                    nodeid,
-                    0u,
-                    BrowseDirection.Forward,
-                    ReferenceTypeIds.HierarchicalReferences,
-                    true,
-                    (uint)NodeClass.Variable | (uint)NodeClass.Object,
-                    out continuationPoint,
-                    out references);
+                    Log(conn_name + " - Browsing object: " + nodeid.ToString());
+                    session.Browse(
+                        null,
+                        null,
+                        nodeid,
+                        0u,
+                        BrowseDirection.Forward,
+                        ReferenceTypeIds.HierarchicalReferences,
+                        true,
+                        (uint)NodeClass.Variable | (uint)NodeClass.Object,
+                        out continuationPoint,
+                        out references);
 
-                Log(conn_name + " - Found " + references.Count.ToString() + " refereces on object " + nodeid.ToString());
+                    Log(conn_name + " - Found " + references.Count.ToString() + " refereces on object " + nodeid.ToString());
 
-                foreach (var rd in references)
-                {
-                    
-                    Log(conn_name + " - "  + rd.NodeId + ", " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
-                    if (rd.NodeClass == NodeClass.Variable && !NodeIds.Contains(rd.NodeId.ToString()))
+                    foreach (var rd in references)
                     {
-                        NodeIds.Add(rd.NodeId.ToString());
-                        ListMon.Add(
-                        new MonitoredItem()
+
+                        Log(conn_name + " - " + rd.NodeId + ", " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
+                        if (rd.NodeClass == NodeClass.Variable && !NodeIds.Contains(rd.NodeId.ToString()))
                         {
-                            DisplayName = rd.DisplayName.ToString(),
-                            StartNodeId = rd.NodeId.ToString(),
-                            SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
-                            QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
-                            MonitoringMode = MonitoringMode.Reporting,
-                            DiscardOldest = true,
-                            AttributeId = Attributes.Value
-                        });
-                    }
-                    else
-                    if (rd.NodeClass == NodeClass.Object)
+                            NodeIds.Add(rd.NodeId.ToString());
+                            ListMon.Add(
+                            new MonitoredItem()
+                            {
+                                DisplayName = rd.DisplayName.ToString(),
+                                StartNodeId = rd.NodeId.ToString(),
+                                SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
+                                QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
+                                MonitoringMode = MonitoringMode.Reporting,
+                                DiscardOldest = true,
+                                AttributeId = Attributes.Value
+                            });
+                        }
+                        else
+                        if (rd.NodeClass == NodeClass.Object)
                         {
                             NodeIdsFromObjects.Add(nodeid.ToString());
                             await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
                             //Thread.Yield();
                             //Thread.Sleep(1);
                             //await Task.Delay(1);
-                        }                            
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -342,6 +345,7 @@ namespace OPCUAClientDriver
                     if (value != null)
                     {
                         string tp = "unknown";
+                        bool isArray = false;
 
                         try
                         {
@@ -349,6 +353,7 @@ namespace OPCUAClientDriver
                             if (value.WrappedValue.TypeInfo != null)
                             {
                                 tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
+                                isArray = value.Value.GetType().ToString().Contains("[]");
                                 // Log(conn_name + " - " + item.ResolvedNodeId + "TYPE: " + tp, LogLevelDetailed);
                             }
                             else
@@ -365,7 +370,8 @@ namespace OPCUAClientDriver
 
                                 try
                                 {
-                                  if (tp == "Variant")
+
+                                    if (tp == "Variant")
                                     {
                                         try
                                         {
@@ -397,26 +403,40 @@ namespace OPCUAClientDriver
                                                     catch
                                                     {
                                                         strValue = value.Value.ToString();
-                                                    }                                                        
+                                                    }
                                                 }
-                                            }                                            
+                                            }
                                         }
                                     }
-                                  else                                        
-                                  if (tp == "DateTime") 
-                                    {                                    
-                                    dblValue = ((DateTimeOffset)System.Convert.ToDateTime(value.Value)).ToUnixTimeMilliseconds();
-                                    strValue = System.Convert.ToDateTime(value.Value).ToString("o");
-                                    }
-                                else
+                                    else
+                                    if (tp == "DateTime")
                                     {
-                                    dblValue = System.Convert.ToDouble(value.Value);
-                                    strValue = value.Value.ToString();
+                                        dblValue = ((DateTimeOffset)System.Convert.ToDateTime(value.Value)).ToUnixTimeMilliseconds();
+                                        strValue = System.Convert.ToDateTime(value.Value).ToString("o");
+                                    }
+                                    else if (tp == "String" || tp == "ExtensionObject" || isArray)
+                                    {
+                                        dblValue = 0;
+                                        strValue = System.Convert.ToString(value.Value);
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            dblValue = System.Convert.ToDouble(value.Value);
+                                            strValue = value.Value.ToString();
+                                        }
+                                        catch 
+                                        {
+                                            dblValue = 0;
+                                            strValue = value.Value.ToString();
+                                        }                                        
                                     }
                                 }
-                                catch (Exception)
+                                catch 
                                 {
-                                strValue = value.Value.ToString();
+                                    dblValue = 0;
+                                    strValue = value.Value.ToString();
                                 }
 
                                 var options = new JsonSerializerOptions
@@ -434,7 +454,7 @@ namespace OPCUAClientDriver
                                         isDigital = true,
                                         value = dblValue,
                                         valueString = strValue,
-                                        hasSourceTimestamp = value.SourceTimestamp!=DateTime.MinValue,
+                                        hasSourceTimestamp = value.SourceTimestamp != DateTime.MinValue,
                                         sourceTimestamp = value.SourceTimestamp,
                                         serverTimestamp = DateTime.Now,
                                         quality = StatusCode.IsGood(value.StatusCode),
@@ -458,7 +478,7 @@ namespace OPCUAClientDriver
                     {
                         Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " NULL VALUE!", LogLevelDetailed);
                     }
-                    
+
                     Thread.Yield();
                     Thread.Sleep(1);
                     //if ((OPCDataQueue.Count % 50) == 0)
