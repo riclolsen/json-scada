@@ -27,7 +27,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/DNP3-green "DNP3")
 ![](https://img.shields.io/badge/MQTT-green "MQTT")
 ![](https://img.shields.io/badge/Sparkplug--B-green "Sparkplug B")
-![](https://img.shields.io/badge/OPC--UA-green "OPC-UA")
+![](https://img.shields.io/badge/OPC--UA-yellow "OPC-UA")
 ![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
 ![](https://img.shields.io/badge/license-GPL-green "License GPL")
@@ -47,7 +47,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 * Event-based realtime async data processing with MongoDB Change Streams.
 * Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.18-alpha).
+* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.19-alpha).
 * Unlimited tags, servers, and users.
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -82,7 +82,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 * [Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.18-alpha)
+* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.19-alpha)
 * [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
 * [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
 * [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
@@ -119,7 +119,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [x] Telegraf Client (OPC-UA, MQTT, MODBUS, SNMP, ...)
-- [x] OPC UA Client
+- [x] OPC UA Client (experimental)
 - [x] OPC UA Server
 - [ ] OPC UA Historical Data Server
 - [ ] OPC DA Client

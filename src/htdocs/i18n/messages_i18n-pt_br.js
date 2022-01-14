@@ -1,10 +1,10 @@
 // Internationalization Messages
-// {json:scada} - Copyright (c) 2008-2021 - Ricardo L. Olsen
+// {json:scada} - Copyright (c) 2008-2022 - Ricardo L. Olsen
 
 var Msg =
 {
 NomeProduto: '{json:scada}',
-VersaoProduto: '0.18',
+VersaoProduto: '0.19',
     
 NomeVisorTelas:       'Visor de Telas',
 NomeVisorEventos:     'Visor de Eventos',
