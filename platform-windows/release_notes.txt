@@ -110,7 +110,7 @@ Recommended Operating Systems:
 Please use an updated OS.
 
 Can also run on:
-* Other Linux distros, Mac OSX, x86/64, ARM, (no installer provided).
+* Other Linux distros, Mac OSX, x86/64, ARM64, (no installer provided).
 * See documentation.
 
 Client user interface can be used on:
@@ -127,6 +127,25 @@ See official repo:
 
 Inkscape+SAGE:
 * See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.20:
+
+* Default login credentials: username=admin password=jsonscada.
+* Inkscape+SAGE: new build.
+* Grafana updated to 8.3.4.
+* Chromium: updated to 97.0.4692.71.
+* Telegraf runtime updated to 1.21.2.
+* Npm packages updated.
+
+Requirements:
+
+* Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 
