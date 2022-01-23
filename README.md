@@ -157,7 +157,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] PowerBI Integration (via PostgreSQL connector)
 - [ ] PowerBI Direct Integration
 - [ ] NodeRed Integration
-- [x] Metabase Integration (via PostgreSQL connector)
+- [x] Metabase Integration (via PostgreSQL/MongoDB connectors)
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] PLC4X Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
