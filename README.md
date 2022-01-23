@@ -119,7 +119,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [x] Telegraf Client (OPC-UA, MQTT, MODBUS, SNMP, ...)
-- [x] OPC UA Client (experimental)
+- [x] OPC UA Client
 - [x] OPC UA Server
 - [ ] OPC UA Historical Data Server
 - [ ] OPC DA Client
