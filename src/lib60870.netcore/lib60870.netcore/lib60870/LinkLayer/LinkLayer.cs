@@ -228,16 +228,24 @@ namespace lib60870.linklayer
             return 0;
         }
 
+        private int ownAddress = 0;
+
 
         public int OwnAddress
         {
             get
             {
-                return secondaryLinkLayer.Address;
+                if (secondaryLinkLayer is SecondaryLinkLayerUnbalanced)
+                    return secondaryLinkLayer.Address;
+                else
+                    return ownAddress;
             }
             set
             {
-                secondaryLinkLayer.Address = value;
+                if (secondaryLinkLayer is SecondaryLinkLayerUnbalanced)
+                    secondaryLinkLayer.Address = value;
+                else
+                    ownAddress = value;
             }
         }
 

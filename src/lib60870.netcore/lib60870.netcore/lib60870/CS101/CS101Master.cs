@@ -163,6 +163,8 @@ namespace lib60870.CS101
         private PrimaryLinkLayerUnbalanced linkLayerUnbalanced = null;
         private PrimaryLinkLayerBalanced primaryLinkLayer = null;
 
+        private SecondaryLinkLayer secondaryLinkLayer = null;
+
         private SerialTransceiverFT12 transceiver;
 
         /* selected slave address for unbalanced mode */
@@ -214,7 +216,8 @@ namespace lib60870.CS101
                 primaryLinkLayer = new PrimaryLinkLayerBalanced(linkLayer, GetUserData, DebugLog);
 
                 linkLayer.SetPrimaryLinkLayer(primaryLinkLayer);
-                linkLayer.SetSecondaryLinkLayer(new SecondaryLinkLayerBalanced(linkLayer, 0, HandleApplicationLayer, DebugLog));
+                secondaryLinkLayer = new SecondaryLinkLayerBalanced (linkLayer, 0, HandleApplicationLayer, DebugLog);
+                linkLayer.SetSecondaryLinkLayer(secondaryLinkLayer);
 
                 userDataQueue = new Queue<BufferFrame>();
             }
@@ -314,6 +317,9 @@ namespace lib60870.CS101
             set
             {
                 UseSlaveAddress(value);
+
+                if (secondaryLinkLayer != null)
+                    secondaryLinkLayer.Address = slaveAddress;
             }
 
             get
@@ -333,8 +339,8 @@ namespace lib60870.CS101
         {
             if (primaryLinkLayer != null)
                 primaryLinkLayer.LinkLayerAddressOtherStation = slaveAddress;
-            else
-                this.slaveAddress = slaveAddress;
+
+            this.slaveAddress = slaveAddress;
         }
 
         void IPrimaryLinkLayerCallbacks.AccessDemand(int slaveAddress)

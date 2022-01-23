@@ -1038,6 +1038,18 @@ namespace lib60870.CS104
             {
                 try
                 {
+                    if (unconfirmedReceivedIMessages > 0)
+                    {
+                        /* confirm all unconfirmed messages before stopping the connection */
+
+                        lastConfirmationTime = SystemUtils.currentTimeMillis();
+
+                        unconfirmedReceivedIMessages = 0;
+                        timeoutT2Triggered = false;
+
+                        SendSMessage();
+                    }
+
                     netStream.Write(STOPDT_ACT_MSG, 0, STOPDT_ACT_MSG.Length);
                 }
                 catch (Exception ex)
