@@ -3,7 +3,7 @@
 /*
  * A process that watches for raw data updates from protocols using a MongoDB change stream.
  * Convert raw values and update realtime values and statuses.
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 const APP_NAME = 'CS_DATA_PROCESSOR'
 const APP_MSG = '{json:scada} - Change Stream Data Processor'
-const VERSION = '0.1.2'
+const VERSION = '0.1.3'
 const Log = require('./simple-logger')
 let ProcessActive = false // for redundancy control
 var jsConfigFile = '../../conf/json-scada.json'
@@ -438,7 +438,7 @@ const pipeline = [
                   $expr: {
                     $and: [
                       { $eq: ['$origin', 'supervised'] },
-                      { $eq: ['$substituted', false] },
+                      { $ne: ['$substituted', true] },
                       { $eq: ['$invalid', false] },
                       {
                         $lt: [
