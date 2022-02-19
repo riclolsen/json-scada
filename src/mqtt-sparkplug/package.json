@@ -18,7 +18,7 @@
     "sparkplug-client": "^3.2.2",
     "streamifier": "^0.1.1",
     "timers": "^0.1.1",
-    "vm2": "^3.9.3",
-    "winston": "^3.3.0"
+    "vm2": "^3.9.8",
+    "winston": "^3.6.0"
   }
 }
