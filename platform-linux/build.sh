@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Required tools:
-# Dotnet Core SDK 6.0
+# Dotnet SDK 6.0
 # Golang 1.14+
 # Node.js 14+
 

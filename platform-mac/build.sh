@@ -1,17 +1,23 @@
 #!/bin/bash
 
+# Required tools:
+# Dotnet SDK 6.0
+# Golang 1.14+
+# Node.js 14+
+
 ARG1=${1:-osx-x64}
 
 cd ..
 mkdir bin
 
 cd src/lib60870.netcore
-dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
-dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
-#cd ../dnp3/Dnp3Client
+# Dnp3Client is Windows-only (must run under Wine on Linux)
+cd ../dnp3/Dnp3Client
 #dotnet publish --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../../bin/ Dnp3Client.csproj
 
 export GOBIN=~/json-scada/bin
@@ -48,7 +54,7 @@ npm install
 cd ../htdocs-admin
 npm install
 npm run build
-cd ../shell_api
+cd ../shell-api
 npm install
 cd ../alarm_beep
 npm install
