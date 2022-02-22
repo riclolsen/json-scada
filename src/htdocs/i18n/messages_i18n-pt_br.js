@@ -4,7 +4,7 @@
 var Msg =
 {
 NomeProduto: '{json:scada}',
-VersaoProduto: '0.20',
+VersaoProduto: '0.21',
     
 NomeVisorTelas:       'Visor de Telas',
 NomeVisorEventos:     'Visor de Eventos',
@@ -54,20 +54,20 @@ SPDATAINI:     'Data: ',
 SPHORAINI:     'Hora Inicial: ',
 SPFILTRO:      'Filtro: ',
 btBuscaHist:   'Buscar',
-EveNomesColunas: 'Data,Hora,ms,nponto,ID,Subest.,Descrição,Evento,Flags,Qualif.',
+EveNomesColunas: 'Data,Hora,ms,nponto,ID,Local,Descrição,Evento,Flags,Qualif.',
 ConfirmaSaida: 'Realmente deseja fechar o visor de eventos?',
 EveFiltradosSE:'FILTRADOS',
 
 // tabular.html
 SPCOMANDAVEIS: 'Comandáveis',
 SPANORMAIS:    'Alarmes',
-SPSUBEST:      'Subest',
+SPSUBEST:      'Local',
 SPMODULO:      'Módulo',
 SPFILTROID:    'Filtro (ID)',
-SELSE:         'Escolha a subestação',
+SELSE:         'Escolha a localização',
 SELMOD:        'Escolha o módulo para filtrar',
 Filtro:        'Filtra pelo ID', 
-TabNomesColunas: 'NPonto,ID,Subest.,Descr.,Est/Val Atual,Flg,Cmd,Qualif.,Nor,Hora Alarme,Hora Campo',
+TabNomesColunas: 'NPonto,ID,Local,Descr.,Est/Val Atual,Flg,Cmd,Qualif.,Nor,Hora Alarme,Hora Campo',
 SelectAll:     'Ver Nenhum',
 UnselectAll:   'Ver Todos',
 
@@ -194,7 +194,7 @@ imgGpsOnEsc:      'Eventos com hora do GPS. Clique para mostrar a hora local.',
 imgGpsOffEsc:     'Eventos com hora local. Clique para mostrar a hora do GPS.',
 imgGpsOnFx:       'Eventos com hora do GPS.',
 imgGpsOffFx:      'Eventos com hora local.',
-imgFilter:        'Filtro de eventos por subestação. Marcar as que se deseja observar.',
+imgFilter:        'Filtro de eventos por localização. Marcar as que se deseja observar.',
 imgClipboard:     'Copia para Área de Transferência.',
 
 // tabular.html

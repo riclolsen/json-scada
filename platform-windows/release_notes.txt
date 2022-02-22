@@ -1,6 +1,6 @@
     {json:scada} 
     
-    © 2008-2021* Ricardo L. Olsen 
+    © 2008-2022* Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify
@@ -127,6 +127,28 @@ See official repo:
 
 Inkscape+SAGE:
 * See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.21:
+
+* Default login credentials: username=admin password=jsonscada.
+* MongoDB Community Server updated to 5.0.6.
+* MongoDB Compass updated to 1.30.1.
+* Inkscape+SAGE: new build based on 1.2-dev.
+* Npm packages updated.
+* Chromium: updated to 98.0.4758.102.
+* Dotnet runtime updated to 6.0.2.
+* Grafana updated to 8.4.1.
+* Telegraf runtime updated to 1.21.4.
+
+Requirements:
+
+* Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 

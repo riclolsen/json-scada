@@ -4,7 +4,7 @@
 var Msg =
 {
 NomeProduto: '{json:scada}',
-VersaoProduto: '0.20',
+VersaoProduto: '0.21',
     
 NomeVisorTelas:       'Display Viewer',
 NomeVisorEventos:     'Events Viewer',
@@ -54,20 +54,20 @@ SPDATAINI:     'Date: ',
 SPHORAINI:     'Initial Time: ',
 SPFILTRO:      'Filter: ',
 btBuscaHist:   'Find',
-EveNomesColunas: 'Date,Time,ms,point#,ID,Subst.,Description,Event,Flags,Qualif.',
+EveNomesColunas: 'Date,Time,ms,point#,ID,Location,Description,Event,Flags,Qualif.',
 ConfirmaSaida: 'Close Events Viewer?',
 EveFiltradosSE:'FILTERED',
 
 // tabular.html
 SPCOMANDAVEIS: 'Commandable',
 SPANORMAIS:    'Alarms',
-SPSUBEST:      'Substation',
+SPSUBEST:      'Location',
 SPMODULO:      'Bay',
 SPFILTROID:    'Filter (ID)',
-SELSE:         'Choose substation',
+SELSE:         'Choose location',
 SELMOD:        'Choose bay',
 Filtro:        'Filter by ID', 
-TabNomesColunas: 'Point#,ID,Subst.,Descript.,Curr.St/Val,Flg,Cmd,Qualif.,Nor,Alarm time,Source Time',
+TabNomesColunas: 'Point#,ID,Location,Descript.,Curr.St/Val,Flg,Cmd,Qualif.,Nor,Alarm time,Source Time',
 SelectAll:     'Show None',
 UnselectAll:   'Show All',
 
@@ -193,7 +193,7 @@ imgGpsOnEsc:      'GPS time for events. Click to to show local time.',
 imgGpsOffEsc:     'Local time for events. Click to to show GPS time.',
 imgGpsOnFx:       'GPS time for events.',
 imgGpsOffFx:      'Local time for events.',
-imgFilter:        'Substation Filter. Mark what to show.',
+imgFilter:        'Location Filter. Mark what to show.',
 imgClipboard:     'Copy to Clipboard.',
 
 // tabular.html

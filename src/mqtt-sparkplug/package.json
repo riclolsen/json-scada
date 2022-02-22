@@ -13,6 +13,7 @@
     "gridfs-stream": "^1.1.1",
     "jsonpath-plus": "^6.0.1",
     "mongodb": "^3.6.5",
+    "mqtt": "^4.3.6",
     "queue-fifo": "^0.2.6",
     "relaxed-json": "^1.0.3",
     "sparkplug-client": "^3.2.2",
