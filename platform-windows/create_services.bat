@@ -62,7 +62,7 @@ rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.
 
 nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
 nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
-nssm set JSON_SCADA_demo_simul SERVICE_DEMAND_START
+nssm set JSON_SCADA_demo_simul Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_alarm_beep  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\alarm_beep\alarm_beep.js" 
 nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
