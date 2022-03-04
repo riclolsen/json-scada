@@ -11,7 +11,7 @@
     "@mdi/font": "^3.6.95",
     "core-js": "^3.9.1",
     "roboto-fontface": "*",
-    "url-parse": "^1.5.8",
+    "url-parse": "^1.5.9",
     "vue": "^2.6.11",
     "vue-clickaway": "^2.2.2",
     "vue-i18n": "^8.24.2",
