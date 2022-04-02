@@ -17,10 +17,10 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana >= 7")
 
 ![](https://img.shields.io/badge/linux-x86--64-green "Linux x86-64")
-![](https://img.shields.io/badge/linux-ARM-green "Linux ARM")
+![](https://img.shields.io/badge/linux-ARM-green "Linux ARM-64")
 ![](https://img.shields.io/badge/windows-x86--64-green "Windows x86-64")
 ![](https://img.shields.io/badge/macosx-x86--64-green "Mac OSX x86-64")
-![](https://img.shields.io/badge/macosx-ARM--M1-yellow "Mac ARM M1 x86-64")
+![](https://img.shields.io/badge/macosx-ARM--M1-yellow "Mac ARM M1")
 
 ![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
@@ -147,7 +147,6 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] Windows Installer
 - [x] Online Demo
 - [x] Docker Demo (docker-compose.yaml scripts)
-- [x] Dedicated Docker Containers
 - [ ] Linux Image / VM
 - [x] Supervisor (Linux process manager) examples
 - [ ] InfluxDB Integration
