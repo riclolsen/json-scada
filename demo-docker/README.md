@@ -15,25 +15,6 @@ It includes
 * A Node/Express webserver app for user interface.
 * Role based access control and admin management UI.
 
-## Method 1 (json-scada dedicated containers)
-
-To run this demo, a docker runtime is needed with docker-compose command available. 
-
-There is no need to extract the full JSON-SCADA repository, just download the [docker compose](https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml) file.
-
-    mkdir json-scada-demo
-	cd json-scada-demo
-	  wget https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml
-	     or 
-	  curl -LO https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml
-	     or 
-      Download using browser and save https://github.com/riclolsen/json-scada/raw/master/demo-docker/docker-compose.yaml 
-	docker-compose up
-
-See access instructions below.
-
-## Method 2 (mainstream containers)
-
 To run this demo, a docker runtime is needed with docker-compose command available. Git is also needed to extract the repository.
 
 It can run on any Linux x64 or Windows 10 x64 (use Docker/WSL2 on Windows 10 version 2004 for best performance on this platform).
@@ -52,9 +33,9 @@ Wait until the compilation process finishes.
 Go to the demo-docker folder and run the system.
 	
 	cd ../demo-docker
-	docker-compose -f docker-compose-method2.yaml up
+	docker-compose -f docker-compose.yaml up
 
-## Access Instructions (common for both methods)
+## Access Instructions
 
 Wait until images are pulled, the databases are seeded and the protocol communication begins.
 
