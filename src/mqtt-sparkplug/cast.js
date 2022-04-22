@@ -12,40 +12,31 @@ const Long = require("long");
  *
  * @param {string} type MQTT sparkplug metric datatype
  * @param {number|string|Long} value
- * @returns {number|Long|bigint|Date|string|Boolean}
+ * @returns {number|Long|Date|string|Boolean}
  */
 const castSparkplugValue = (type, value) => {
   switch (type.toLowerCase()) {
     case "int8":
     case "int16":
     case "int32":
-      return new Int32Array([value])[0]; // number -1
-      // return Long.fromValue(value, false).toSigned().toInt(); // number -1
+      return new Int32Array([value])[0];
 
     case "int64":
-      return Long.fromValue(value, false).toSigned(); // object Long { low: -1, high: -1, unsigned: false }
-      // return Long.fromValue(value, false).toSigned().toNumber(); // number -1
-      // return Long.fromValue(value, false).toSigned().toString(); // string "-1"
-      // return BigInt(Long.fromValue(value, false).toSigned().toString()); // bigint -1n
+      return Long.fromValue(value, false).toSigned();
 
     case "uint8":
     case "uint16":
     case "uint32":
-      return new Uint32Array([value])[0]; // number 4294967295
-      // return Long.fromValue(value, true).toUnsigned().toInt(); // number 4294967295
+      return new Uint32Array([value])[0];
 
     case "uint64":
-      return Long.fromValue(value, true).toUnsigned(); // object Long { low: -1, high: -1, unsigned: true }
-      // return Long.fromValue(value, true).toUnsigned().toNumber(); //         number  18446744073709552000  !!! warning number is truncated !!!
-      // return Long.fromValue(value, true).toUnsigned().toString(); //         string "18446744073709551615"
-      // return BigInt(Long.fromValue(value, true).toUnsigned().toString()); // bigint  18446744073709551615n
+      return Long.fromValue(value, true).toUnsigned();
 
     case "datetime":
-      return new Date(Long.fromValue(value, true).toUnsigned().toNumber()); // object Date
+      return new Date(Long.fromValue(value, true).toUnsigned().toNumber());
 
     case "boolean":
-      return Boolean(value); // boolean false or true
-      // return +Boolean(value); // number 0 or 1
+      return Boolean(value); // boolean false or true TODO return number 0 or 1 instead?
   }
   return value;
 };
