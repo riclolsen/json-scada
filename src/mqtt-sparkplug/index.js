@@ -665,18 +665,18 @@ function getMetricCommandPayload (cmd) {
   switch (cmd.protocolSourceASDU.toLowerCase()) {
     case 'int8':
       value = parseInt(cmd.value)
-      if (value > Math.pow(2, 8) - 1) value = Math.pow(2, 8) - 1
-      else if (value < Math.pow(2, 8)) value = Math.pow(2, 8)
+      if (value > Math.pow(2, 7) - 1) value = Math.pow(2, 7) - 1
+      else if (value < -Math.pow(2, 7)) value = -Math.pow(2, 7)
       break
     case 'int16':
       value = parseInt(cmd.value)
-      if (value > Math.pow(2, 16) - 1) value = Math.pow(2, 16) - 1
-      else if (value < Math.pow(2, 16)) value = Math.pow(2, 16)
+      if (value > Math.pow(2, 15) - 1) value = Math.pow(2, 15) - 1
+      else if (value < -Math.pow(2, 15)) value = -Math.pow(2, 15)
       break
     case 'int32':
       value = parseInt(cmd.value)
-      if (value > Math.pow(2, 32) - 1) value = Math.pow(2, 32) - 1
-      else if (value < Math.pow(2, 32)) value = Math.pow(2, 32)
+      if (value > Math.pow(2, 31) - 1) value = Math.pow(2, 31) - 1
+      else if (value < -Math.pow(2, 31)) value = -Math.pow(2, 31)
       break
     case 'int':
     case 'int64':
@@ -684,17 +684,17 @@ function getMetricCommandPayload (cmd) {
       break
     case 'uint8':
       value = parseInt(cmd.value)
-      if (value > Math.pow(2, 8)) value = Math.pow(2, 8)
+      if (value > Math.pow(2, 8) - 1) value = Math.pow(2, 8) - 1
       else if (value < 0) value = 0
       break
     case 'uint16':
       value = parseInt(cmd.value)
-      if (value > Math.pow(2, 16)) value = Math.pow(2, 16)
+      if (value > Math.pow(2, 16) - 1) value = Math.pow(2, 16) - 1
       else if (value < 0) value = 0
       break
     case 'uint32':
       value = parseInt(cmd.value)
-      if (value > Math.pow(2, 32)) value = Math.pow(2, 32)
+      if (value > Math.pow(2, 32) - 1) value = Math.pow(2, 32) - 1
       else if (value < 0) value = 0
       break
     case 'uint64':
