@@ -35,6 +35,7 @@ const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
 const { timeEnd } = require('console')
+const { castSparkplugValue: castSparkplugValue } = require('./cast')
 
 const SparkplugNS = 'spBv1.0'
 const DevicesList = []
@@ -1712,8 +1713,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
 
     // map alias to object address for later query
     if ('alias' in metric) {
-      let alias =
-        (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
+      let alias = metric.alias.toNumber() // warning numbers bigger than Number.MAX_SAFE_INTEGER are not safe
       let device = DevicesList[deviceLocator]
       if (!device) {
         // device not yet included
@@ -1722,8 +1722,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       device.mapAliasToObjectAddress['a' + alias.toString()] = objectAddress
     }
   } else if ('alias' in metric) {
-    let alias =
-      (metric.alias.low >>> 0) + (metric.alias.high >>> 0) * Math.pow(2, 32)
+    let alias = metric.alias.toNumber() // warning numbers bigger than Number.MAX_SAFE_INTEGER are not safe
     let device = DevicesList[deviceLocator]
     if (device)
       objectAddress =
@@ -1791,11 +1790,11 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
           for (let j = 0; j < metric.value.rows.length; j++) {
             let r = {}
             for (let i = 0; i < metric.value.numOfColumns; i++) {
-              let mv = metric.value.rows[j][i]
+              let mv = castSparkplugValue(metric.value.types[i], metric.value.rows[j][i])
               switch (metric.value.types[i].toLowerCase()) {
                 case 'int64':
                 case 'uint64':
-                  mv = (mv.low >>> 0) + (mv.high >>> 0) * Math.pow(2, 32)
+                  mv = mv.toNumber() // warning number may be truncated
                   break
                 default:
                   break
@@ -1845,6 +1844,10 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
         } catch (e) {}
       }
       break
+    case 'int8':
+    case 'uint8':
+    case 'int16':
+    case 'uint16':
     case 'int32':
     case 'uint32':
     case 'float':
@@ -1857,7 +1860,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
         valueJson = 0
       } else {
         // metric does have a value
-        value = metric.value
+        value = castSparkplugValue(metric.type, metric.value)
         valueString = value.toString()
         valueJson = metric
       }
@@ -1872,12 +1875,13 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
         valueJson = 0
       } else {
         // metric does have a value
-        value =
-          (metric.value.low >>> 0) + (metric.value.high >>> 0) * Math.pow(2, 32)
+        value = castSparkplugValue(metric.type, metric.value)
+        value = value.toNumber() // warning number may be truncated
         valueString = value.toString()
         valueJson = metric
       }
       break
+    // case 'datetime': // TODO ??
   }
 
   if ('properties' in metric) {
@@ -2017,23 +2021,28 @@ async function ProcessDeviceCommand (
             valueJson = JSON.parse(metric.value)
           } catch (e) {}
           break
+        case 'int8':
+        case 'int16':
+        case 'uint8':
+        case 'uint16':
         case 'int32':
         case 'uint32':
         case 'float':
         case 'double':
-          value = element.kconv1 * metric.value + element.kconv2
+          value = castSparkplugValue(metric.type, metric.value)
+          value = element.kconv1 * value + element.kconv2
           valueString = value.toString()
           valueJson = value
           break
         case 'int64':
         case 'uint64':
-          value =
-            (metric.value.low >>> 0) +
-            (metric.value.high >>> 0) * Math.pow(2, 32)
-          value = element.kconv1 * value + element.kconv2
+          value = castSparkplugValue(metric.type, metric.value)
+          value = value.mul(element.kconv1).add(element.kconv2) // safe Long object
+          value = value.toNumber() // warning unsafe number
           valueString = value.toString()
           valueJson = value
           break
+        // case 'datetime': 
         default:
           valueString = JSON.stringify(metric)
           valueJson = metric
