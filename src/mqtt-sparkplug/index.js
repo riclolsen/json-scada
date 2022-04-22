@@ -1713,7 +1713,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
 
     // map alias to object address for later query
     if ('alias' in metric) {
-      let alias = metric.alias.toNumber() // warning numbers bigger than Number.MAX_SAFE_INTEGER are not safe
+      let alias = metric.alias
       let device = DevicesList[deviceLocator]
       if (!device) {
         // device not yet included
@@ -1722,7 +1722,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       device.mapAliasToObjectAddress['a' + alias.toString()] = objectAddress
     }
   } else if ('alias' in metric) {
-    let alias = metric.alias.toNumber() // warning numbers bigger than Number.MAX_SAFE_INTEGER are not safe
+    let alias = metric.alias
     let device = DevicesList[deviceLocator]
     if (device)
       objectAddress =
@@ -1733,7 +1733,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       // alias not mapped
       Log.log(
         'Sparkplug - Unmapped metric alias=' +
-          alias +
+          alias.toString() +
           ' device=' +
           deviceLocator,
         Log.levelDetailed
