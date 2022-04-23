@@ -164,7 +164,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Online Demo (substations simulation)
 
-* http://vmi233205.contaboserver.net:8080/
+* http://150.230.171.172
 
 This demo provides a public IEC 60870-5-104 server port on IP address 207.180.242.96:2404 (common address = 1) for testing.
 
