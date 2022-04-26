@@ -41,7 +41,6 @@ const SparkplugNS = 'spBv1.0'
 const DevicesList = []
 const ValuesQueue = new Queue() // queue of values to update acquisition
 const SparkplugPublishQueue = new Queue() // queue of values to publish as Sparkplug-B
-const MqttPublishQueue = new Queue() // queue of values to publish as standard MQTT topics
 let SparkplugDeviceBirthed = false
 let AutoCreateTags = true
 
@@ -257,10 +256,12 @@ let AutoCreateTags = true
 
             // start listen to changes
             changeStream.on('change', change => {
-              // do not queue data changes until device connected and birthed
+              // do not queue data changes until device connected and sparkplug birthed
               if (
-                !SparkplugDeviceBirthed ||
-                !SparkplugClientObj.handle.connected
+                !SparkplugClientObj?.handle?.connected ||
+                (connection.groupId &&
+                  connection.groupId.trim() !== '' &&
+                  !SparkplugDeviceBirthed)
               )
                 return
 
@@ -1143,7 +1144,6 @@ async function sparkplugProcess (
           return
 
         SparkplugPublishQueue.clear() // clear old data
-        MqttPublishQueue.clear() // clear old data
 
         // Publish SCADA HOST BIRTH certificate (7.5.1)
         if (
