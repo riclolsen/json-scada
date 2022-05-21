@@ -130,6 +130,30 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.23:
+
+* Default login credentials: username=admin password=jsonscada.
+* MQTT Sparkplug-B: fixed problems decoding signed integers and huge numbers.
+* MQTT Sparkplug-B: fixed publishing only to vanilla MQTT topics.
+* Display Viewer: fixed errors when calling $W.directComandExec().
+* DNP3 Client updated Opendnp3 lib to 3.1.2.
+* C# Mongodb drivers updated to 2.15.0.
+* Grafana updated to 8.5.3.
+* Chromium updated to 101.0.4951.67.
+* MongoDB Compass updated to 1.31.2.
+* MongoDB Community Server updated to 5.0.8.
+* Dotnet runtime updated to 6.0.4.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
 Notes for version 0.22:
 
 * Default login credentials: username=admin password=jsonscada.
