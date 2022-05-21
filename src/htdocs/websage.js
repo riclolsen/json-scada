@@ -1281,6 +1281,9 @@ else
       }
     }
 
+    var ackCmdElem;
+    if (WebSAGE.g_win_cmd && WebSAGE.g_win_cmd.document && WebSAGE.g_win_cmd.document.getElementById)
+      ackCmdElem = WebSAGE.g_win_cmd.document.getElementById("ACK_CMD");
     fetchTimeout("/Invoke/", 1500, {
       method: "POST",
       body: JSON.stringify(req),
@@ -1296,19 +1299,22 @@ else
         if ( (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle || !data.Body.Results) ||
              (data.ServiceId !== OpcServiceCode.WriteResponse || data.Body.ResponseHeader.RequestHandle !== RequestHandle) ||
              (data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good)) {
-          CNPTO = 0;
-          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+          CNPTO = 0;          
+          if (ackCmdElem)
+            ackCmdElem.textContent = "Error!";
           return;
         }
         if ( data.Body.Results[0] !== OpcStatusCodes.Good ){
           CNPTO = 0;
-          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+          if (ackCmdElem)
+            ackCmdElem.textContent = "Error!";
         }
-
+    
         // success
-        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = " ... ";
+        if (ackCmdElem)
+          ackCmdElem.textContent = " ... ";
         CHANDLE = data.Body._CommandHandles[0];
-
+    
         // Command log in browser's localStorage
         if (storageAvailable("localStorage")) {
           var lastlogcnt = 0;
@@ -1323,9 +1329,10 @@ else
       })
       .catch(err => {
         CNPTO = 0;
-        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+        if (ackCmdElem)
+          ackCmdElem.textContent = "Error!";
       });
-  },
+    },
 
   executeCommand: function(cmd_val) {
     WebSAGE.directCommandExec(CNPTO, cmd_val);
