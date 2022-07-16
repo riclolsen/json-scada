@@ -63,6 +63,7 @@ var NUM_VAR = 0;        // aqui o servidor informa o número de variações digi
 var NUM_VAR_ANT = 0;    // estado anterior da variável NUM_VAR
 var GROUP1_LIST = []; // list of possible group1 values
 var ALARMBEEP = 0; // alarm beep status
+var ALARMBEEP_TYPE = 0; // alarm beep type
 var BEEP_POINTKEY = -1;
 var CNTUPDATES_POINTKEY = -2;
 
@@ -1610,7 +1611,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
 
           prop = element._Properties;          
           var pointKey = prop._id;
-
+		  
           var dateAlarm = "";
           if (prop.alarmed && prop.timeTagAlarm!==null)
           if ((new Date(prop.timeTagAlarm)).getFullYear()>1980){
@@ -1837,6 +1838,9 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
           return;
         prop = element._Properties;          
         var pointKey = prop._id;
+
+		if ( pointKey === BEEP_POINTKEY && "beepType" in prop )
+			ALARMBEEP_TYPE = prop.beepType;
 
         if (element.Value.Type === OpcValueTypes.Boolean) {
             V[pointKey] = element.Value.Body?0:1;
@@ -2990,6 +2994,30 @@ init: function()
 
     // desabilita o botão direito 
     document.oncontextmenu = function() { return false; };
+
+    // alarm beep sound
+    if (WebSAGE.isAlarmsViewer())
+      document.getElementById('btSound').style.display='';
+    document.getElementById('btSound').addEventListener("click", function () {      
+        if (document.getElementById('btSound').value === '🔊'){
+          document.getElementById('btSound').value = '🔈';
+          clearInterval(window.sndIntervalHandle);
+        } else {
+          document.getElementById('nonCriticalSound').play();
+          document.getElementById('btSound').value = '🔊';
+          window.sndIntervalHandle = setInterval( function(){        
+		  if (window.WebSAGE.getValue(BEEP_POINTKEY))
+            switch (ALARMBEEP_TYPE) {
+              default:
+                document.getElementById('nonCriticalSound').play();
+                break;
+              case 2:
+                document.getElementById('criticalSound').play();
+                break;                 
+            }
+          }, 1000);
+        }
+      });
     }
 };
 Core.start(WebSAGE);
@@ -3007,6 +3035,9 @@ Core.start(WebSAGE);
 <img id="imgFontSizeDown" alt='' src='' align='middle' width="27" height="27" onclick='WebSAGE.fontSize(0)' style='cursor:pointer;' />
 <img id='imgReconheceTudo' alt='' src='' align='middle' width="32" height="32" onclick='WebSAGE.ackAllAlarms(0);' style='cursor:pointer;display:none' />
 <img id='imgClipboard' alt='' src='' onclick='CopyClipboard("TBLEVE")' align='middle' border='0' width='32' height='32' style='cursor:pointer;' />
+<input id="btSound" title="Beep ON/OFF" style="display:none;cursor:pointer;vertical-align:middle;background:none;border:0px;font-size:20px;transform: translateY(3px);" type="button" value="🔈" />&nbsp;
+<audio id="criticalSound"><source src="sounds/critical.wav" muted type="audio/wav"></audio>
+<audio id="nonCriticalSound"><source src="sounds/nonCritical.wav" muted type="audio/wav"></audio>
 <img id='SILENCIA_ID' alt='' src='' align='middle' width="32" height="32" onclick='document.getElementById("SILENCIA_ID").style.display="none";WebSAGE.doSilenceBeep();' style='display:none; cursor:pointer;' />
 &nbsp;&nbsp;&nbsp;&nbsp;
 <div id='OPC_CMDANORM' style='display:none' >
