@@ -1230,7 +1230,8 @@ let pool = null
                   type: 1,
                   annotation: 1,
                   origin: 1,
-                  group1: 1
+                  group1: 1,
+                  beepType: 1,
                 }
               }
 
@@ -1437,7 +1438,8 @@ let pool = null
                             notes: pointInfo.notes,
                             commandOfSupervised: pointInfo.commandOfSupervised,
                             supervisedOfCommand: pointInfo.supervisedOfCommand,
-                            origin: pointInfo.origin
+                            origin: pointInfo.origin,
+                            beepType: pointInfo?.beepType,
                           }
                         }
                         if (pointInfo.type === 'string')
