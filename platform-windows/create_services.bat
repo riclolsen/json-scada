@@ -70,9 +70,12 @@ nssm install JSON_SCADA_alarm_beep  "C:\json-scada\platform-windows\nodejs-runti
 nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
 nssm set JSON_SCADA_alarm_beep Start SERVICE_AUTO_START
 
+rem WARNING! This service has no security access control, use with care.
 nssm install JSON_SCADA_config_server_excel  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\config_server_for_excel\index.js" 
 nssm set JSON_SCADA_config_server_excel AppDirectory "C:\json-scada\src\config_server_for_excel"
-nssm set JSON_SCADA_config_server_excel Start SERVICE_AUTO_START
+nssm set JSON_SCADA_config_server_excel Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_config_server_excel AppEnvironmentExtra JS_CSEXCEL_IP_BIND=0.0.0.0 JS_CSEXCEL_HTTP_PORT=10001
+rem JS_CSEXCEL_IP_BIND=127.0.0.1 to enable just local access
 
 rem For use with OSHMI HMI Shell
 rem nssm install JSON_SCADA_shell_api  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\shell-api\shell-api.js" 
