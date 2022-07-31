@@ -4,6 +4,8 @@
 
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
+SetCompressor LZMA 
+
 Unicode True
 ; RequestExecutionLevel user
 RequestExecutionLevel admin
