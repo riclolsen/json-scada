@@ -143,6 +143,14 @@ Notes for version 0.24:
 * MongoDB Community Server updated to 6.0.0.
 * Dotnet runtime updated to 6.0.7.
 
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
 -------------------------------------------------------------------
 
 Notes for version 0.23:
@@ -158,7 +166,7 @@ Notes for version 0.23:
 * MongoDB Compass updated to 1.31.2.
 * MongoDB Community Server updated to 5.0.8.
 * Dotnet runtime updated to 6.0.4.
-* Nodejs updated to 18.7.0.
+* Nodejs updated to 16.16.0.
 
 Requirements and recommendations:
 
