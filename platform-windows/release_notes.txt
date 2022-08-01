@@ -142,6 +142,7 @@ Notes for version 0.24:
 * MongoDB Compass updated to 1.32.5.
 * MongoDB Community Server updated to 6.0.0.
 * Dotnet runtime updated to 6.0.7.
+* Nodejs updated to 16.16.0.
 
 Requirements and recommendations:
 
@@ -166,7 +167,6 @@ Notes for version 0.23:
 * MongoDB Compass updated to 1.31.2.
 * MongoDB Community Server updated to 5.0.8.
 * Dotnet runtime updated to 6.0.4.
-* Nodejs updated to 16.16.0.
 
 Requirements and recommendations:
 
