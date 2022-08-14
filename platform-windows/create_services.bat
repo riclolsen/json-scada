@@ -42,7 +42,7 @@ REM nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nod
 REM nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
 REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
 rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-rem nssm set JSON_SCADA_server_realtime AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+rem nssm set JSON_SCADA_server_realtime AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 REM CREATE A RANDOM SECRET FOR JWT ENCRYPTION
 setlocal EnableDelayedExpansion
@@ -60,7 +60,7 @@ nssm set JSON_SCADA_server_realtime_auth AppDirectory "C:\json-scada\src\server_
 nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
 nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra JS_JWT_SECRET=%buffer%
 rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
 nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
@@ -86,13 +86,13 @@ nssm install JSON_SCADA_process_rtdata "C:\json-scada\sql\process_pg_rtdata.bat"
 nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\sql"
 nssm set JSON_SCADA_process_rtdata Start SERVICE_AUTO_START
 rem Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-rem nssm set JSON_SCADA_process_rtdata AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+rem nssm set JSON_SCADA_process_rtdata AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_process_hist "C:\json-scada\sql\process_pg_hist.bat"
 nssm set JSON_SCADA_process_hist AppDirectory "C:\json-scada\sql"
 nssm set JSON_SCADA_process_hist Start SERVICE_AUTO_START
 rem Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-rem nssm set JSON_SCADA_process_hist AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=27017 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+rem nssm set JSON_SCADA_process_hist AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_php "c:\json-scada\platform-windows\nginx_php-runtime\php\php-cgi.exe" -b 127.0.0.1:9000 -c c:\json-scada\conf\php.ini
 nssm set JSON_SCADA_php Start SERVICE_AUTO_START
