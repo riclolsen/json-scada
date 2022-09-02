@@ -682,6 +682,7 @@ db.realtimeData.createIndex({
   group2: 1
 })
 db.realtimeData.createIndex({
+  invalid: 1,
   alarmed: 1
 })
 
