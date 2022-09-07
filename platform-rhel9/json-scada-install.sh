@@ -74,6 +74,9 @@ sudo systemctl enable supervisor
 sudo dnf -y install grafana
 sudo systemctl enable grafana-server
 
+mkdir ~/metabase
+wget https://downloads.metabase.com/v0.44.2/metabase.jar -O ~/metabase/metabase.jar
+
 # install nvm to be able to choose a specific nodejs version
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
