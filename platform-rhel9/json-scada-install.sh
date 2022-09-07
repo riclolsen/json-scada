@@ -74,6 +74,8 @@ sudo systemctl enable supervisor
 sudo dnf -y install grafana
 sudo systemctl enable grafana-server
 
+sudo cp *.ini /etc/supervisord.d/
+
 mkdir ~/metabase
 wget https://downloads.metabase.com/v0.44.2/metabase.jar -O ~/metabase/metabase.jar
 
