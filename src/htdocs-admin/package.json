@@ -17,7 +17,7 @@
     "vue-i18n": "^8.24.2",
     "vue-router": "^3.5.1",
     "vue-translation-manager": "^1.2.0",
-    "vuetify": "^2.4.5"
+    "vuetify": "^2.6.10"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.5.11",
