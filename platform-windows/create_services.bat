@@ -13,7 +13,9 @@ nssm set JSON_SCADA_postgresql Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_grafana "C:\json-scada\platform-windows\grafana-runtime\bin\grafana-server.exe"
 nssm set JSON_SCADA_grafana AppDirectory "C:\json-scada\platform-windows\grafana-runtime\bin"
-nssm set JSON_SCADA_grafana AppEnvironmentExtra GF_SERVER_DOMAIN=127.0.0.1 GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:80/grafana/ GF_SERVER_SERVE_FROM_SUB_PATH=true GF_AUTH_PROXY_ENABLED=true GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN=true GF_AUTH_DISABLE_SIGNOUT_MENU=true
+nssm set JSON_SCADA_grafana AppEnvironmentExtra GF_SERVER_DOMAIN="127.0.0.1" GF_SERVER_ROOT_URL="%(protocol)s://%(domain)s:80/grafana/" GF_SERVER_SERVE_FROM_SUB_PATH="true" GF_AUTH_PROXY_ENABLED="true" GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN="true" GF_AUTH_DISABLE_SIGNOUT_MENU="true"
+rem example of using postgresql to host grafana config (necessary for multiple web servers):
+rem nssm set JSON_SCADA_grafana AppEnvironmentExtra GF_DATABASE_TYPE="postgres" GF_DATABASE_HOST="127.0.0.1" GF_DATABASE_USER="postgres" GF_SERVER_DOMAIN="127.0.0.1" GF_SERVER_ROOT_URL="%(protocol)s://%(domain)s:80/grafana/" GF_SERVER_SERVE_FROM_SUB_PATH="true" GF_AUTH_PROXY_ENABLED="true" GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN="true" GF_AUTH_DISABLE_SIGNOUT_MENU="true"
 REM nssm set JSON_SCADA_grafana AppStdout "C:\json-scada\log\grafana-stdout.log"
 REM nssm set JSON_SCADA_grafana AppStderr "C:\json-scada\log\grafana-stderr.log"
 nssm set JSON_SCADA_grafana Start SERVICE_AUTO_START

@@ -1,6 +1,6 @@
     {json:scada} 
     
-    © 2008-2022* Ricardo L. Olsen 
+    © 2008-2022 Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify
@@ -20,45 +20,45 @@ The system will install to "c:\json-scada\" (on Windows).
 
 Acknowledgements:
 
-  MongoDB* https://github.com/mongodb/mongo, https://www.mongodb.com/
-  PostgreSQL* https://www.postgresql.org/
-  TimescaleDB* https://github.com/timescale/timescaledb, https://www.timescale.com/
-  Grafana* https://github.com/grafana/grafana, https://grafana.com/
-  Lib60870 By MZ Automation* https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
-  ICCP Client by Fernando Covatti* https://github.com/fcovatti/iccp
-  Opendnp3* https://github.com/dnp3/opendnp3
-  PLC4X* https://github.com/apache/plc4x
-  Libplctag* https://github.com/libplctag/libplctag
-  Node-opcua* https://github.com/node-opcua/node-opcua
-  OPC-UA* https://github.com/OPCFoundation/UA-.NETStandard
-  Telegraf* https://github.com/influxdata/telegraf
-  Inkscape* https://inkscape.org
-  Inkscape + SAGE* https://sourceforge.net/projects/sage-scada
-  Inkscape + SAGE (updated)* https://gitlab.com/lvta0909/inkscape
-  Chromium* by "The Chromium Authors"
-  Chromium x86 binaries* http://chromium.woolyss.com/
-  NGINX* http://nginx.org/
-  Node.js* https://nodejs.org/
-  Express* https://expressjs.com/pt-br/
-  Dotnet* https://dotnet.microsoft.com/download
-  Golang* https://golang.org/
+  MongoDB - https://github.com/mongodb/mongo, https://www.mongodb.com/
+  PostgreSQL - https://www.postgresql.org/
+  TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
+  Grafana - https://github.com/grafana/grafana, https://grafana.com/
+  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
+  ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
+  Opendnp3 - https://github.com/dnp3/opendnp3
+  PLC4X - https://github.com/apache/plc4x
+  Libplctag - https://github.com/libplctag/libplctag
+  Node-opcua - https://github.com/node-opcua/node-opcua
+  OPC-UA - https://github.com/OPCFoundation/UA-.NETStandard
+  Telegraf - https://github.com/influxdata/telegraf
+  Inkscape - https://inkscape.org
+  Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
+  Inkscape + SAGE (updated) - https://gitlab.com/lvta0909/inkscape
+  Chromium by "The Chromium Authors"
+  Chromium x86 binaries - http://chromium.woolyss.com/
+  NGINX - http://nginx.org/
+  Node.js - https://nodejs.org/
+  Express - https://expressjs.com/pt-br/
+  Dotnet - https://dotnet.microsoft.com/download
+  Golang - https://golang.org/
   Open Sans Fonts by Steve Matteson
-  Source Sans Pro by Adobe Systems Incorporated. License* http://scripts.sil.org/OFL
-  Google Fonts* https://fonts.google.com/
-  JQuery* http://jquery.com
-  Shortcut* http://www.openjs.com/scripts/events/keyboard_shortcuts
-  Core JS* http://www.sitepoint.com
-  Modernzr* http://www.modernizr.com
-  Flot* http://www.flotcharts.org
-  Snap SVG* http://snapsvg.io
-  Chroma.js* https://github.com/gka/chroma.js
-  CSS Animation Cheat Sheet* http://www.justinaguilar.com/animations
-  D3JS* http://d3js.org
-  Radar-chart-d3* https://github.com/alangrafu/radar-chart-d3
-  Vega A Visualization Grammar* https://vega.github.io/vega
-  NSSM* The Non-Sucking Service Manager: http://nssm.cc
-  Some icons from* http://keyamoon.com/icomoon and http://raphaeljs.com/icons
-  CSS Loaders from Luke Haas* https://projects.lukehaas.me/css-loaders/
+  Source Sans Pro by Adobe Systems Incorporated. License - http://scripts.sil.org/OFL
+  Google Fonts - https://fonts.google.com/ 
+  JQuery - http://jquery.com
+  Shortcut - http://www.openjs.com/scripts/events/keyboard_shortcuts
+  Core JS - http://www.sitepoint.com
+  Modernzr - http://www.modernizr.com
+  Flot - http://www.flotcharts.org
+  Snap SVG - http://snapsvg.io
+  Chroma.js - https://github.com/gka/chroma.js
+  CSS Animation Cheat Sheet - http://www.justinaguilar.com/animations
+  D3JS - http://d3js.org
+  Radar-chart-d3 - https://github.com/alangrafu/radar-chart-d3
+  Vega A Visualization Grammar - https://vega.github.io/vega
+  NSSM - The Non-Sucking Service Manager: http://nssm.cc
+  Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
+  CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/
   
 -------------------------------------------------------------------
 
