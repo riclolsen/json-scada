@@ -131,6 +131,27 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.27:
+
+* Default login credentials: username=admin password=jsonscada.
+* Npm packages updated.
+* Fixed problem with the scripts tab in the SVG Editor.
+* Dotnet runtime updated to 6.0.10.
+* Grafana updated to 9.2.1.
+* Chromium updated to 106.0.5249.119.
+* MongoDB Community Server updated to 6.0.2.
+* Telegraf runtime updated to 1.24.2.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
 Notes for version 0.26:
 
 * Default login credentials: username=admin password=jsonscada.
