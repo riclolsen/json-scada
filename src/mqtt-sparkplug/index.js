@@ -1012,7 +1012,7 @@ function getSparkplugConfig (connection) {
 
   let secOpts = {}
   if (connection.useSecurity) {
-    certOpts = {}
+    let certOpts = {}
     if (connection.pfxFilePath !== '') {
       certOpts = {
         pfx: Fs.readFileSync(connection.pfxFilePath),
