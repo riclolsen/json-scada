@@ -1012,19 +1012,23 @@ function getSparkplugConfig (connection) {
 
   let secOpts = {}
   if (connection.useSecurity) {
-    certOpts = {}
-    if (connection.pfxFilePath !== '') {
+    let certOpts = {}
+    if ((connection.pfxFilePath !== '') && Fs.existsSync(connection.pfxFilePath)) {
       certOpts = {
         pfx: Fs.readFileSync(connection.pfxFilePath),
         passphrase: connection.passphrase
       }
     } else {
-      certOpts = {
-        ca: Fs.readFileSync(connection.rootCertFilePath),
-        key: Fs.readFileSync(connection.privateKeyFilePath),
-        cert: Fs.readFileSync(connection.localCertFilePath),
-        passphrase: connection.passphrase
+      if ((connection.rootCertFilePath !== '') && Fs.existsSync(connection.rootCertFilePath)) {
+        certOpts.ca = Fs.readFileSync(connection.rootCertFilePath)
       }
+      if ((connection.privateKeyFilePath !== '') && Fs.existsSync(connection.privateKeyFilePath)) {
+        certOpts.key = Fs.readFileSync(connection.privateKeyFilePath)
+      }
+      if ((connection.localCertFilePath !== '') && Fs.existsSync(connection.localCertFilePath)) {
+        certOpts.cert = Fs.readFileSync(connection.localCertFilePath)
+      }
+      certOpts.passphrase = connection.passphrase
     }
 
     secOpts = {
