@@ -699,6 +699,9 @@ const pipeline = [
                 let valueString =
                   change.updateDescription.updatedFields.sourceDataUpdate
                     ?.valueStringAtSource || ''
+                let valueJson =
+                change.updateDescription.updatedFields.sourceDataUpdate
+                  ?.valueJsonAtSource || []
                 let alarmed = change.fullDocument.alarmed
 
                 // avoid undefined, null or NaN values
@@ -763,6 +766,7 @@ const pipeline = [
                         ? ' ' + change.fullDocument.unit
                         : '') +
                       txtQualif
+                  valueJson = {s: valueString};
                 } else if (change.fullDocument.type === 'analog') {
                   if (txtQualif != '') txtQualif = ' ' + txtQualif
 
@@ -919,6 +923,19 @@ const pipeline = [
                         ack: 1 // enter as acknowledged as it is not an alarm
                       })
                     }
+                    valueJson = {s: valueString};
+                }
+                else if (change.fullDocument.type === 'json')
+                {
+                  const { kconv1 = 1.0, kconv2 = 0.0 } = change.fullDocument
+                  
+                  for (const row of valueJson) {
+                    for (const columnName in row) {
+                      row[columnName] = row[columnName] * kconv1 + kconv2
+                    }
+                  }
+                  valueString = JSON.stringify(valueJson)
+                  value = 0
                 }
 
                 let alarmTime = null
@@ -1022,6 +1039,7 @@ const pipeline = [
                     _id: change.fullDocument._id,
                     value: new Double(value),
                     valueString: valueString,
+                    valueJson: valueJson,
                     ...(change.fullDocument?.type === 'analog' &&
                     insertIntoHistorian
                       ? { historianLastValue: new Double(value) }
@@ -1110,9 +1128,7 @@ const pipeline = [
                         "'," +
                         value +
                         ',' +
-                        '\'{"s": "' +
-                        valueString +
-                        '"}\',' +
+                        "'" + JSON.stringify(valueJson) + "', " +
                         (update.timeTagAtSource !== null
                           ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
@@ -1135,6 +1151,7 @@ const pipeline = [
                   // update change.fullDocument with new data just to stringify it and queue update for postgresql update
                   change.fullDocument.value = value
                   change.fullDocument.valueString = valueString
+                  change.fullDocument.valueJson = valueJson
                   change.fullDocument.timeTag = dt
                   change.fullDocument.overflow = overflow
                   change.fullDocument.invalid = invalid

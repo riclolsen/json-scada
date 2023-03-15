@@ -83,6 +83,7 @@ function NewTag () {
     parcels: null,
     priority: new Mongo.Double(0.0),
     protocolDestinations: null,
+    samplingRate: null,
     sourceDataUpdate: null,
     supervisedOfCommand: new Mongo.Double(0.0),
     substituted: false,
@@ -157,6 +158,10 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
         newTag.eventTextTrue = "true"
         newTag.stateTextFalse = "false"
         newTag.stateTextTrue = "true"
+      }
+      if (newTag.type === 'json'){
+        newTag.unit = data?.unit || 'units'
+        newTag.samplingRate = data?.samplingRate
       }
       newTag.description = data?.description
       newTag.ungroupedDescription = data?.ungroupedDescription || data.protocolSourceObjectAddress

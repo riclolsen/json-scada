@@ -1911,16 +1911,25 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
       catalogProperties.description = metric.metadata.description
 
     if ('properties' in metric) {
-      if ('description' in metric.properties) {
-        catalogProperties.description = metric.properties.description.value
+      for (const prop in metric.properties) {
+        switch(prop) {
+          case 'description':
+          case 'ungroupedDescription':
+          case 'group1':
+          case 'group2':
+          case 'group3':
+            catalogProperties[prop] = metric.properties[prop].value
+            break
+          case 'engUnit':
+          case 'unit':
+            catalogProperties.unit = metric.properties[prop].value
+            break
+          case 'sampling rate':
+          case 'samplingRate':
+            catalogProperties.samplingRate = metric.properties[prop].value
+            break
+        }
       }
-      catalogProperties.ungroupedDescription =
-        metric.properties?.ungroupedDescription?.value || ''
-      catalogProperties.group1 = metric.properties?.group1?.value || ''
-      catalogProperties.group2 = metric.properties?.group2?.value || ''
-      catalogProperties.group3 = metric.properties?.group3?.value || ''
-      if ('engUnit' in metric.properties)
-        catalogProperties.unit = metric.properties.engUnit?.value || 'units'
     }
     catalogProperties.commissioningRemarks =
       'Auto created by Sparkplug B driver - ' + new Date().toISOString()
