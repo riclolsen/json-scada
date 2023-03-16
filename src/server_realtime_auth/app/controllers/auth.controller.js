@@ -1,4 +1,4 @@
-const Double = require('@mongoosejs/double');
+const Double = require('@mongoosejs/double')
 const config = require('../config/auth.config')
 const db = require('../models')
 const fs = require('fs')
@@ -17,8 +17,7 @@ var bcrypt = require('bcryptjs')
 // add header to identify json-scada user for Grafana auto-login (auth.proxy)
 exports.addXWebAuthUser = (req) => {
   let ck = checkToken(req)
-  if (ck !== false)
-    req.headers['X-WEBAUTH-USER'] = ck?.username
+  if (ck !== false) req.headers['X-WEBAUTH-USER'] = ck?.username
 }
 
 exports.listUserActions = async (req, res) => {
@@ -58,19 +57,18 @@ exports.createTag = async (req, res) => {
   // find biggest tag _id
   let biggestTagId = 0
   resBiggest = await Tag.find({ _id: { $gt: 0 } })
-    .select( "_id" )
+    .select('_id')
     .sort({ _id: -1 })
     .limit(1)
-  if (resBiggest && resBiggest.length > 0) 
-  if ("_id" in resBiggest[0])
-    biggestTagId = parseFloat(resBiggest[0]._id)
+  if (resBiggest && resBiggest.length > 0)
+    if ('_id' in resBiggest[0]) biggestTagId = parseFloat(resBiggest[0]._id)
   console.log(biggestTagId)
- 
+
   req.body._id = parseFloat(biggestTagId + 1)
-  req.body.tag = "new_tag_" + req.body._id
+  req.body.tag = 'new_tag_' + req.body._id
   console.log(req.body)
   const tag = new Tag(req.body)
-  tag.save(err => {
+  tag.save((err) => {
     if (err) {
       console.log(err)
       res.status(200).send({ error: err })
@@ -90,17 +88,19 @@ exports.updateTag = async (req, res) => {
     delete req.body._id
 
     var IsNumberVal = function (value) {
-      if(/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/
-        .test(value))
-        return true;
-    return false;
+      if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(value)) return true
+      return false
     }
 
-    if ( IsNumberVal(req.body.protocolSourceCommonAddress) )
-      req.body.protocolSourceCommonAddress = parseFloat(req.body.protocolSourceCommonAddress)
-    if ( IsNumberVal(req.body.protocolSourceObjectAddress) )
-      req.body.protocolSourceObjectAddress = parseFloat(req.body.protocolSourceObjectAddress)
-    if ( IsNumberVal(req.body.protocolSourceASDU) )
+    if (IsNumberVal(req.body.protocolSourceCommonAddress))
+      req.body.protocolSourceCommonAddress = parseFloat(
+        req.body.protocolSourceCommonAddress
+      )
+    if (IsNumberVal(req.body.protocolSourceObjectAddress))
+      req.body.protocolSourceObjectAddress = parseFloat(
+        req.body.protocolSourceObjectAddress
+      )
+    if (IsNumberVal(req.body.protocolSourceASDU))
       req.body.protocolSourceASDU = parseFloat(req.body.protocolSourceASDU)
 
     await Tag.findOneAndUpdate({ _id: _id }, req.body)
@@ -157,10 +157,11 @@ exports.updateProtocolConnection = async (req, res) => {
   if (
     [
       'IEC60870-5-104_SERVER',
+      'IEC61850_SERVER',
       'DNP3_SERVER',
       'I104M',
       'TELEGRAF-LISTENER',
-      'OPC-UA_SERVER'
+      'OPC-UA_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (
@@ -192,12 +193,14 @@ exports.updateProtocolConnection = async (req, res) => {
     [
       'IEC60870-5-104',
       'IEC60870-5-104_SERVER',
+      'IEC61850',
+      'IEC61850_SERVER',
       'DNP3',
       'DNP3_SERVER',
       'PLCTAG',
       'I104M',
       'TELEGRAF-LISTENER',
-      'OPC-UA_SERVER'
+      'OPC-UA_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('ipAddresses' in req.body)) {
@@ -205,22 +208,41 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['OPC-UA', 'TELEGRAF-LISTENER', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['OPC-UA', 'TELEGRAF-LISTENER', 'MQTT-SPARKPLUG-B', 'IEC61850'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
     if (!('autoCreateTags' in req.body)) {
       req.body.autoCreateTags = true
     }
   }
 
-  if (['MQTT-SPARKPLUG-B','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850'].includes(req?.body?.protocolDriver)
+  ) {
     if (!('topics' in req.body)) {
       req.body.topics = []
     }
+  }
+
+  if (
+    ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(req?.body?.protocolDriver)
+  ) {
     if (!('groupId' in req.body)) {
       req.body.groupId = ''
     }
   }
 
-  if (['MQTT-SPARKPLUG-B', 'IEC60870-5-104_SERVER', 'IEC60870-5-104'].includes(req?.body?.protocolDriver)) {
+  if (
+    [
+      'MQTT-SPARKPLUG-B',
+      'IEC60870-5-104_SERVER',
+      'IEC60870-5-104',
+      'IEC61850',
+      'IEC61850_SERVER',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('passphrase' in req.body)) {
       req.body.passphrase = ''
     }
@@ -259,19 +281,21 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['OPC-UA', 'MQTT-SPARKPLUG-B','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    [
+      'OPC-UA',
+      'MQTT-SPARKPLUG-B',
+      'OPC-UA_SERVER',
+      'IEC61850',
+      'IEC61850_SERVER',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('useSecurity' in req.body)) {
       req.body.useSecurity = false
     }
   }
 
-  if (['OPC-UA', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
-    if (!('useSecurity' in req.body)) {
-      req.body.useSecurity = false
-    }
-  }
-
-  if (['OPC-UA','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['OPC-UA', 'OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('timeoutMs' in req.body)) {
       req.body.timeoutMs = 20000.0
     }
@@ -300,7 +324,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-104_SERVER',
       'DNP3',
       'DNP3_SERVER',
-      'PLCTAG'
+      'PLCTAG',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('localLinkAddress' in req.body)) {
@@ -324,7 +348,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-101',
       'IEC60870-5-104',
       'IEC60870-5-101_SERVER',
-      'IEC60870-5-104_SERVER'
+      'IEC60870-5-104_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('sizeOfCOT' in req.body)) {
@@ -355,7 +379,7 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG'].includes(
+    ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG', 'IEC61850'].includes(
       req?.body?.protocolDriver
     )
   ) {
@@ -367,7 +391,11 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['IEC60870-5-104_SERVER', 'IEC61850_SERVER', 'OPC-UA_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
     if (!('serverModeMultiActive' in req.body)) {
       req.body.serverModeMultiActive = true
     }
@@ -376,25 +404,45 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3', 'MQTT-SPARKPLUG-B','OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    [
+      'IEC60870-5-104',
+      'IEC60870-5-104_SERVER',
+      'IEC61850',
+      'IEC61850_SERVER',
+      'DNP3',
+      'MQTT-SPARKPLUG-B',
+      'OPC-UA_SERVER',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('localCertFilePath' in req.body)) {
       req.body.localCertFilePath = ''
     }
   }
 
-  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(req?.body?.protocolDriver)) {
+  if (
+    [
+      'IEC60870-5-104',
+      'IEC60870-5-104_SERVER',
+      'IEC61850',
+      'IEC61850_SERVER',
+      'DNP3',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('peerCertFilePath' in req.body)) {
       req.body.peerCertFilePath = ''
     }
   }
 
-  if (['IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
-    if (!('peerCertFilesPaths' in req.body)) {
-      req.body.peerCertFilesPaths = ''
-    }
-  }
-
-  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (
+    [
+      'IEC60870-5-104',
+      'IEC60870-5-104_SERVER',
+      'MQTT-SPARKPLUG-B',
+      'IEC61850',
+      'IEC61850_SERVER',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('rootCertFilePath' in req.body)) {
       req.body.rootCertFilePath = ''
     }
@@ -403,13 +451,25 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
     if (!('allowOnlySpecificCertificates' in req.body)) {
       req.body.allowOnlySpecificCertificates = false
     }
   }
 
-  if (['DNP3', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    [
+      'DNP3',
+      'MQTT-SPARKPLUG-B',
+      'OPC-UA_SERVER',
+      'IEC61850',
+      'IEC61850_SERVER',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('privateKeyFilePath' in req.body)) {
       req.body.privateKeyFilePath = ''
     }
@@ -461,9 +521,11 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101_SERVER', 'IEC60870-5-104_SERVER'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-104_SERVER',
+      'IEC61850_SERVER',
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (!('maxQueueSize' in req.body)) {
       req.body.maxQueueSize = 5000
@@ -524,14 +586,14 @@ exports.createProtocolConnection = async (req, res) => {
       return
     }
     let connNumber = 0
-    protocolConnections.forEach(element => {
+    protocolConnections.forEach((element) => {
       if (element.protocolConnectionNumber > connNumber)
         connNumber = element.protocolConnectionNumber
     })
     const protocolConnection = new ProtocolConnection()
     protocolConnection.protocolConnectionNumber = connNumber + 1
     protocolConnection.DriverInstanceNumber = 1
-    protocolConnection.save(err => {
+    protocolConnection.save((err) => {
       if (err) {
         console.log(err)
         res.status(200).send({ error: err })
@@ -574,7 +636,7 @@ exports.listNodes = (req, res) => {
       return
     }
     let listNodes = []
-    driverInstances.map(element => {
+    driverInstances.map((element) => {
       listNodes = listNodes.concat(element.nodeNames)
     })
     res.status(200).send(listNodes)
@@ -583,7 +645,7 @@ exports.listNodes = (req, res) => {
 
 exports.createProtocolDriverInstance = async (req, res) => {
   const driverInstance = new ProtocolDriverInstance()
-  driverInstance.save(err => {
+  driverInstance.save((err) => {
     if (err) {
       console.log(err)
       res.status(200).send({ error: err })
@@ -610,11 +672,17 @@ exports.listProtocolDriverInstances = (req, res) => {
 
 exports.updateProtocolDriverInstance = async (req, res) => {
   try {
-    await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
-  }
-  catch (e){
-    req.body.protocolDriverInstanceNumber = req.body.protocolDriverInstanceNumber + 1
-    await ProtocolDriverInstance.findOneAndUpdate({ _id: req.body._id }, req.body)
+    await ProtocolDriverInstance.findOneAndUpdate(
+      { _id: req.body._id },
+      req.body
+    )
+  } catch (e) {
+    req.body.protocolDriverInstanceNumber =
+      req.body.protocolDriverInstanceNumber + 1
+    await ProtocolDriverInstance.findOneAndUpdate(
+      { _id: req.body._id },
+      req.body
+    )
   }
   registerUserAction(req, 'updateProtocolDriverInstance')
   res.status(200).send({})
@@ -631,7 +699,7 @@ exports.listUsers = (req, res) => {
         res.status(200).send({ error: err })
         return
       }
-      users.forEach(user => {
+      users.forEach((user) => {
         user.password = null
       })
       res.status(200).send(users)
@@ -745,7 +813,7 @@ exports.updateUser = async (req, res) => {
 
 exports.createRole = async (req, res) => {
   const role = new Role(req.body)
-  role.save(err => {
+  role.save((err) => {
     if (err) {
       console.log(err)
       res.status(200).send({ error: err })
@@ -761,7 +829,7 @@ exports.createUser = async (req, res) => {
   if (req.body.password && req.body.password !== '')
     req.body.password = bcrypt.hashSync(req.body.password, 8)
   const user = new User(req.body)
-  user.save(err => {
+  user.save((err) => {
     if (err) {
       console.log(err)
       res.status(200).send({ error: err })
@@ -792,7 +860,7 @@ exports.signup = (req, res) => {
   const user = new User({
     username: req.body.username,
     email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8)
+    password: bcrypt.hashSync(req.body.password, 8),
   })
 
   registerUserAction(req, 'signup')
@@ -807,7 +875,7 @@ exports.signup = (req, res) => {
     if (req.body.roles) {
       Role.find(
         {
-          name: { $in: req.body.roles }
+          name: { $in: req.body.roles },
         },
         (err, roles) => {
           if (err) {
@@ -816,8 +884,8 @@ exports.signup = (req, res) => {
             return
           }
 
-          user.roles = roles.map(role => role._id)
-          user.save(err => {
+          user.roles = roles.map((role) => role._id)
+          user.save((err) => {
             if (err) {
               console.log(err)
               res.status(500).send({ message: err })
@@ -837,7 +905,7 @@ exports.signup = (req, res) => {
         }
 
         user.roles = [role._id]
-        user.save(err => {
+        user.save((err) => {
           if (err) {
             console.log(err)
             res.status(500).send({ message: err })
@@ -855,7 +923,7 @@ exports.signup = (req, res) => {
 // Will check for valid user and then create a JWT access token
 exports.signin = (req, res) => {
   User.findOne({
-    username: req.body.username
+    username: req.body.username,
   })
     .populate('roles', '-__v')
     .exec((err, user) => {
@@ -872,13 +940,10 @@ exports.signin = (req, res) => {
       var passwordIsValid = bcrypt.compareSync(req.body.password, user.password)
 
       if (!passwordIsValid) {
-        return res
-          .status(200)
-          .cookie('x-access-token', null)
-          .send({
-            ok: false,
-            message: 'Invalid Password!'
-          })
+        return res.status(200).cookie('x-access-token', null).send({
+          ok: false,
+          message: 'Invalid Password!',
+        })
       }
 
       // Combines all roles rights for the user
@@ -898,7 +963,7 @@ exports.signin = (req, res) => {
         group1List: [],
         group1CommandList: [],
         displayList: [],
-        maxSessionDays: 0.0
+        maxSessionDays: 0.0,
       }
       for (let i = 0; i < user.roles.length; i++) {
         authorities.push(user.roles[i].name)
@@ -949,7 +1014,7 @@ exports.signin = (req, res) => {
         { id: user.id, username: user.username, rights: rights },
         config.secret,
         {
-          expiresIn: rights.maxSessionDays * 86400 // days*24 hours
+          expiresIn: rights.maxSessionDays * 86400, // days*24 hours
         }
       )
 
@@ -963,7 +1028,7 @@ exports.signin = (req, res) => {
         .cookie('x-access-token', token, {
           httpOnly: true,
           secure: false,
-          maxAge: (1 + rights.maxSessionDays) * 86400 * 1000
+          maxAge: (1 + rights.maxSessionDays) * 86400 * 1000,
         })
         .cookie(
           'json-scada-user',
@@ -972,12 +1037,12 @@ exports.signin = (req, res) => {
             username: user.username,
             email: user.email,
             roles: authorities,
-            rights: rights
+            rights: rights,
           }),
           {
             httpOnly: false,
             secure: false,
-            maxAge: (1 + 2 * rights.maxSessionDays) * 86400 * 1000
+            maxAge: (1 + 2 * rights.maxSessionDays) * 86400 * 1000,
           }
         )
         .send({ ok: true, message: 'Signed In' })
@@ -993,16 +1058,16 @@ exports.signout = (req, res) => {
     .cookie('x-access-token', null, {
       httpOnly: true,
       secure: false,
-      maxAge: 0
+      maxAge: 0,
     })
     .send({
       ok: true,
-      message: 'Signed Out!'
+      message: 'Signed Out!',
     })
 }
 
 // check and decoded token
-checkToken = req => {
+checkToken = (req) => {
   let res = false
   let token = req.headers['x-access-token'] || req.cookies['x-access-token']
   if (!token) {
@@ -1018,7 +1083,7 @@ checkToken = req => {
 }
 
 // enqueue use action for later insertion to mongodb
-function registerUserAction (req, actionName) {
+function registerUserAction(req, actionName) {
   let body = {}
   Object.assign(body, req.body)
 
@@ -1031,7 +1096,7 @@ function registerUserAction (req, actionName) {
       username: ck?.username,
       properties: body,
       action: actionName,
-      timeTag: new Date()
+      timeTag: new Date(),
     })
   } else {
     console.log(actionName + ' - ' + req.body?.username)
@@ -1041,7 +1106,7 @@ function registerUserAction (req, actionName) {
       username: req.body?.username,
       properties: body,
       action: actionName,
-      timeTag: new Date()
+      timeTag: new Date(),
     })
   }
 }

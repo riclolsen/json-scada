@@ -18,13 +18,13 @@ gpgcheck=1
 enabled=1
 gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
 EOF
-sudo tee /etc/yum.repos.d/influxdb.repo <<EOF
-[influxdb]
-name = InfluxDB Repository - RHEL 
-baseurl = https://repos.influxdata.com/rhel/\$releasever/\$basearch/stable/
+sudo tee /etc/yum.repos.d/influxdata.repo <<EOF
+[influxdata]
+name = InfluxData Repository - Stable
+baseurl = https://repos.influxdata.com/stable/\$basearch/main
 enabled = 1
 gpgcheck = 1
-gpgkey = https://repos.influxdata.com/influxdb.key
+gpgkey = https://repos.influxdata.com/influxdata-archive_compat.key
 EOF
 sudo tee /etc/yum.repos.d/grafana.repo <<EOF
 [grafana]
@@ -37,7 +37,7 @@ gpgkey=https://packages.grafana.com/gpg.key
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 EOF
-sudo tee /etc/yum.repos.d/timescale_timescaledb.repo <<EOL
+sudo tee /etc/yum.repos.d/timescale_timescaledb.repo <<EOF
 [timescale_timescaledb]
 name=timescale_timescaledb
 baseurl=https://packagecloud.io/timescale/timescaledb/el/$(rpm -E %{rhel})/\$basearch
@@ -48,7 +48,7 @@ gpgkey=https://packagecloud.io/timescale/timescaledb/gpgkey
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
-EOL
+EOF
 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 sudo dnf -y install timescaledb_14
@@ -83,6 +83,7 @@ wget https://downloads.metabase.com/v0.44.2/metabase.jar -O ~/metabase/metabase.
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
 nvm install 16.13.0
+npm install -g npm
 
 cd ../platform-linux 
 ./build.sh

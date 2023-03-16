@@ -2,7 +2,9 @@
   <v-card>
     <v-row class="pa-4" justify="space-between">
       <v-col>
-        <v-treeview style="max-height: 500px;min-width: 250px" class="overflow-y-auto overflow-x-hidden" 
+        <v-treeview
+          style="max-height: 500px; min-width: 250px"
+          class="overflow-y-auto overflow-x-hidden"
           :active.sync="active"
           :items="items"
           :load-children="fetchDriverInstances"
@@ -26,7 +28,7 @@
           @click="createDriverInstance($event)"
         >
           <v-icon dark> mdi-plus </v-icon>
-          {{$t("src\\components\\driverInstances.newDriverInstance")}}
+          {{ $t("src\\components\\driverInstances.newDriverInstance") }}
         </v-btn>
       </v-col>
 
@@ -39,14 +41,9 @@
             class="title grey--text text--lighten-1 font-weight-light"
             style="align-self: center"
           >
-            {{$t("src\\components\\driverInstances.selectDriverInstance")}}
+            {{ $t("src\\components\\driverInstances.selectDriverInstance") }}
           </div>
-          <v-card
-            v-else
-            :key="selected.id"
-            class="pt-6 mx-auto"
-            flat            
-          >
+          <v-card v-else :key="selected.id" class="pt-6 mx-auto" flat>
             <v-row class="mx-auto flex-nowrap" justify="space-between">
               <v-select
                 prepend-inner-icon="mdi-cogs"
@@ -54,7 +51,7 @@
                 :label="$t('src\\components\\driverInstances.protocolDriver')"
                 v-model="selected.protocolDriver"
                 outlined
-                @change="updateProtocolDriverInstance"                
+                @change="updateProtocolDriverInstance"
               ></v-select>
 
               <v-tooltip bottom>
@@ -72,24 +69,42 @@
                     <v-icon dark> mdi-minus </v-icon>
                   </v-btn>
                 </template>
-                <span>{{$t("src\\components\\driverInstances.deleteDriverInstance")}}</span>
+                <span>{{
+                  $t("src\\components\\driverInstances.deleteDriverInstance")
+                }}</span>
               </v-tooltip>
 
               <v-dialog v-model="dialogDelInst" max-width="290">
                 <v-card>
                   <v-card-title class="headline">
-                    {{$t("src\\components\\driverInstances.deleteDriverInstance")}}
+                    {{
+                      $t(
+                        "src\\components\\driverInstances.deleteDriverInstance"
+                      )
+                    }}
                   </v-card-title>
 
                   <v-card-text>
-                    {{$t("src\\components\\driverInstances.deleteDriverInstanceConfirm")}}
+                    {{
+                      $t(
+                        "src\\components\\driverInstances.deleteDriverInstanceConfirm"
+                      )
+                    }}
                   </v-card-text>
 
                   <v-card-actions>
                     <v-spacer></v-spacer>
 
-                    <v-btn color="green darken-1" text @click="dialogDelInst = false">
-                      {{$t("src\\components\\driverInstances.deleteDriverInstanceCancel")}}
+                    <v-btn
+                      color="green darken-1"
+                      text
+                      @click="dialogDelInst = false"
+                    >
+                      {{
+                        $t(
+                          "src\\components\\driverInstances.deleteDriverInstanceCancel"
+                        )
+                      }}
                     </v-btn>
 
                     <v-btn
@@ -100,7 +115,11 @@
                         deleteDriverInstance($event);
                       "
                     >
-                    {{$t("src\\components\\driverInstances.deleteDriverInstanceExecute")}}
+                      {{
+                        $t(
+                          "src\\components\\driverInstances.deleteDriverInstanceExecute"
+                        )
+                      }}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -111,7 +130,11 @@
               v-model="selected.enabled"
               inset
               color="primary"
-              :label="`${$t('src\\components\\driverInstances.enabled')}${selected.enabled?$t('src\\components\\driverInstances.enabledTrue'):$t('src\\components\\driverInstances.enabledFalse')}`"
+              :label="`${$t('src\\components\\driverInstances.enabled')}${
+                selected.enabled
+                  ? $t('src\\components\\driverInstances.enabledTrue')
+                  : $t('src\\components\\driverInstances.enabledFalse')
+              }`"
               @change="updateProtocolDriverInstance"
             ></v-switch>
 
@@ -171,11 +194,15 @@
                   <v-icon dark> mdi-plus </v-icon>
                 </v-btn>
               </template>
-              <span>{{$t("src\\components\\driverInstances.addNewNode")}}</span>
+              <span>{{
+                $t("src\\components\\driverInstances.addNewNode")
+              }}</span>
             </v-tooltip>
             <v-dialog v-model="dialogAddNode" max-width="400" class="pa-8">
               <v-card>
-                <v-card-title class="headline">{{$t("src\\components\\driverInstances.addNewNode")}}</v-card-title>
+                <v-card-title class="headline">{{
+                  $t("src\\components\\driverInstances.addNewNode")
+                }}</v-card-title>
 
                 <v-card-title class="headline">
                   <v-text-field
@@ -187,8 +214,14 @@
                 <v-card-actions>
                   <v-spacer></v-spacer>
 
-                  <v-btn color="green darken-1" text @click="dialogAddNode = false">
-                    {{$t("src\\components\\driverInstances.addNewNodeCancel")}}
+                  <v-btn
+                    color="green darken-1"
+                    text
+                    @click="dialogAddNode = false"
+                  >
+                    {{
+                      $t("src\\components\\driverInstances.addNewNodeCancel")
+                    }}
                   </v-btn>
 
                   <v-btn
@@ -199,7 +232,9 @@
                       addNewNode($event);
                     "
                   >
-                  {{$t("src\\components\\driverInstances.addNewNodeCancel")}}
+                    {{
+                      $t("src\\components\\driverInstances.addNewNodeExecute")
+                    }}
                   </v-btn>
                 </v-card-actions>
               </v-card>
@@ -228,6 +263,8 @@ export default {
       "IEC60870-5-104_SERVER",
       "IEC60870-5-101",
       "IEC60870-5-101_SERVER",
+      "IEC61850",
+      "IEC61850_SERVER",
       "DNP3",
       "MQTT-SPARKPLUG-B",
       "OPC-UA",
@@ -245,7 +282,7 @@ export default {
       return [
         {
           name: i18n.t("src\\components\\driverInstances.driverInstances"),
-          children: this.driverInstances
+          children: this.driverInstances,
         },
       ];
     },
@@ -342,8 +379,8 @@ export default {
         },
         body: JSON.stringify({
           protocolDriver: this.selected.protocolDriver,
-          protocolDriverInstanceNumber: this.selected
-            .protocolDriverInstanceNumber,
+          protocolDriverInstanceNumber:
+            this.selected.protocolDriverInstanceNumber,
           _id: this.selected._id,
         }),
       })

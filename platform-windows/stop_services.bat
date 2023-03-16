@@ -23,6 +23,7 @@ nssm stop JSON_SCADA_iec104client
 nssm stop JSON_SCADA_iec101client
 nssm stop JSON_SCADA_dnp3client
 nssm stop JSON_SCADA_opcuaclient
+nssm stop JSON_SCADA_iec61850client
 nssm stop JSON_SCADA_i104m
 nssm stop JSON_SCADA_plctags
 net stop JSON_SCADA_telegraf_runtime

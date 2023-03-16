@@ -226,17 +226,15 @@ namespace Dnp3Driver
         }
         static void Log(string str, int level = 1)
         {
-            var now = DateTime.Now;
             if (LogLevel >= level)
             {
+                var now = DateTime.Now;
                 LogMutex.WaitOne();
-                Console.Write(now + ":");
-                Console.Write("{0,3:D3}", now.Millisecond);
+                Console.Write($"[{now.ToString("o")}]"); // 2022-01-13T16:25:35.1250000+06:00
                 Console.WriteLine(" " + str);
                 LogMutex.ReleaseMutex();
             }
         }
-
         static void Log(System.Exception e, int level = 1)
         {
             Log(e.ToString(), level);

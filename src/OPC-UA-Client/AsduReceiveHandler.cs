@@ -48,7 +48,7 @@ namespace OPCUAClientDriver
         {
             public bool failed = false;
             const int ReconnectPeriod = 10;
-            public Session session;
+            public ISession session;
             SessionReconnectHandler reconnectHandler;
             int conn_number = 0;
             string conn_name;
@@ -241,7 +241,7 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "Running...");
                 exitCode = ExitCode.ErrorRunning;
             }
-            private async Task FindObjects(Opc.Ua.Client.Session session, NodeId nodeid)
+            private async Task FindObjects(Opc.Ua.Client.ISession session, NodeId nodeid)
             {
                 if (session == null)
                     return;
@@ -304,7 +304,7 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - " + ex.Message);
                 }
             }
-            private void Client_KeepAlive(Session sender, KeepAliveEventArgs e)
+            private void Client_KeepAlive(ISession sender, KeepAliveEventArgs e)
             {
                 if (e.Status != null && ServiceResult.IsNotGood(e.Status))
                 {

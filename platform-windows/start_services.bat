@@ -4,7 +4,7 @@ echo Please execute it as administrator.
 @echo off
 if not "%1"=="am_admin" (powershell start -verb runas '%0' am_admin & exit /b)
 
-rem Start services
+rem Start services, uncomment the services you need
 
 cd \json-scada\platform-windows
 
@@ -35,6 +35,7 @@ REM nssm start JSON_SCADA_iec101server
 REM nssm start JSON_SCADA_iec101client
 REM nssm start JSON_SCADA_dnp3client
 nssm start JSON_SCADA_opcuaclient
+REM nssm start JSON_SCADA_iec61850client
 REM nssm start JSON_SCADA_i104m
 REM nssm start JSON_SCADA_plctags
 REM nssm start JSON_SCADA_opcuaserver

@@ -108,9 +108,6 @@ namespace OPCUAClientDriver
             public Double LastNewKeyCreated;
             public SortedSet<string> InsertedTags = new SortedSet<string>();
             public OPCUAClient connection;
-            //public OPCUAClient conn1;
-            //public OPCUAClient conn2;
-            //public System.Timers.Timer TimerCnt;
             public Thread thrOPCStack;
         }
         [BsonIgnoreExtraElements]
@@ -260,12 +257,11 @@ namespace OPCUAClientDriver
 
         static void Log(string str, int level = 1)
         {
-            var now = DateTime.Now;
             if (LogLevel >= level)
             {
+                var now = DateTime.Now;
                 LogMutex.WaitOne();
-                Console.Write(now + ":");
-                Console.Write("{0,3:D3}", now.Millisecond);
+                Console.Write($"[{now.ToString("o")}]"); // 2022-01-13T16:25:35.1250000+06:00
                 Console.WriteLine(" " + str);
                 LogMutex.ReleaseMutex();
             }

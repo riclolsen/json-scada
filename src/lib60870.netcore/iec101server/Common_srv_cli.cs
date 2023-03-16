@@ -86,35 +86,6 @@ namespace Iec10XDriver
             public DateTime activeNodeKeepAliveTimeTag { get; set; } = DateTime.MinValue;
             public Boolean keepProtocolRunningWhileInactive { get; set; } = false;
         }
-        //public struct IEC_Value
-        //{
-        //    public int address;
-        //    public lib60870.CS101.TypeID asdu;
-        //    public bool isDigital;
-        //    public double value;
-        //    public int cot;
-        //    public DateTime serverTimestamp;
-        //    public bool hasSourceTimestampCP24;
-        //    public bool hasSourceTimestampCP56;
-        //    public CP24Time2a sourceTimestampCP24;
-        //    public CP56Time2a sourceTimestampCP56;
-        //    public lib60870.CS101.QualityDescriptor quality;
-        //    public int conn_number;
-        //    public int common_address;
-        //}
-        //public struct IEC_CmdAck
-        //{
-        //    public bool ack; // ack positive(true) or negative(false)
-        //    public int conn_number;
-        //    public int object_address;
-        //    public DateTime ack_time_tag;
-        //}
-        //public class rtFilt
-        //{
-        //    public int protocolSourceConnectionNumber;
-        //    public int protocolSourceCommonAddress;
-        //    public int protocolSourceObjectAddress;
-        //}
         [BsonIgnoreExtraElements]
         public class rtCommand
         {
@@ -221,15 +192,13 @@ namespace Iec10XDriver
             public BsonBoolean timeTagAtSourceOk { get; set; }
             public BsonDateTime timeTag { get; set; }
         }
-
         static void Log(string str, int level = 1)
         {
-            var now = DateTime.Now;
             if (LogLevel >= level)
             {
+                var now = DateTime.Now;
                 LogMutex.WaitOne();
-                Console.Write(now + ":");
-                Console.Write("{0,3:D3}", now.Millisecond);
+                Console.Write($"[{now.ToString("o")}]"); // 2022-01-13T16:25:35.1250000+06:00
                 Console.WriteLine(" " + str);
                 LogMutex.ReleaseMutex();
             }
