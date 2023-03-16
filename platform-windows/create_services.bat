@@ -126,6 +126,9 @@ nssm set JSON_SCADA_dnp3client Start SERVICE_DEMAND_START
 nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\OPC-UA-Client.exe" 1 1 
 nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
 
+nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 1 
+nssm set JSON_SCADA_iec61850client Start SERVICE_DEMAND_START
+
 nssm install JSON_SCADA_i104m "C:\json-scada\bin\i104m.exe" 1 1 
 nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
 

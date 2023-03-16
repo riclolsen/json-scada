@@ -12,7 +12,18 @@ copy \json-scada\src\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll bin\ /y
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 cd \json-scada\src\dnp3\Dnp3Client\ 
-dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ..\..\..\demo-docker\bin_win\
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ..\..\..\demo-docker\bin_win\ Dnp3Client.csproj
+
+cd \json-scada\src\libiec61850\build
+rem set VCTargetsPath=c:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
+dotnet publish --no-self-contained --runtime win-x64 -c Release
+copy \json-scada\src\libiec61850\build\src\Release\iec61850.dll \json-scada\bin
+
+cd \json-scada\src\libiec61850\dotnet\core\2.0\
+dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
+
+cd \json-scada\src\libiec61850\dotnet\core\2.0\iec61850_client
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\..\..\..\bin\ 
 
 cd \json-scada\src\lib60870.netcore\lib60870.netcore\
 dotnet build --no-self-contained --runtime win-x64 -c Release
@@ -25,14 +36,14 @@ cd \json-scada\src\lib60870.netcore\iec104client\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
 cd \json-scada\src\lib60870.netcore\iec104server\ 
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
-cd \json-scada\src\dnp3\Dnp3Client\ 
+cd \json-scada\src\dnp3\Dnp3Client\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ Dnp3Client.csproj
 cd \json-scada\src\OPC-UA-Client\ 
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\ OPC-UA-Client.csproj
 cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
 dotnet build --no-self-contained --runtime win-x64 -c Release -o ..\..\bin\
-cd \json-scada\src\libplctag\PLCTagsClient
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
+cd \json-scada\src\libplctag\PLCTagsClient 
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ PLCTagsClient.csproj
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
