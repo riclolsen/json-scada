@@ -1,6 +1,6 @@
 version: '2.1'
 
-# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2021 - Ricardo L. Olsen 
+# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2023 - Ricardo L. Olsen 
 # Requires Internet connection!
 
 services:
@@ -23,8 +23,17 @@ services:
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/libplctag/PLCTagsClient &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/"
-                    
+                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    apt-get update &&
+                    apt-get -y install gcc make &&
+                    cd /src/libiec61850 &&
+                    make &&
+                    make install &&
+                    cd dotnet/core/2.0 &&
+                    dotnet publish --no-self-contained --runtime linux-x64 -c Release IEC61850.NET.core.2.0 &&
+                    cd iec61850_client &&
+                    dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/
+                    "                    
 
     # NOTICE Dnp3Client is Windows-only, so it can only run in docker/linux using Wine.
     #               cd /src/dnp3/Dnp3Client/ && 
@@ -35,6 +44,7 @@ services:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
     #command: tail -f /dev/null
     volumes:
+      - ../src/libiec61850:/src/libiec61850
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/OPC-UA-Client:/src/OPC-UA-Client
       - ../src/libplctag:/src/libplctag
