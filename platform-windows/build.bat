@@ -20,8 +20,7 @@ dotnet publish --no-self-contained --runtime win-x64 -c Release
 copy \json-scada\src\libiec61850\build\src\Release\iec61850.dll \json-scada\bin
 
 cd \json-scada\src\libiec61850\dotnet\core\2.0\
-dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
-
+dotnet publish --no-self-contained --runtime win-x64 -c Release -o ..\..\..\..\..\bin\ IEC61850.NET.core.2.0 
 cd \json-scada\src\libiec61850\dotnet\core\2.0\iec61850_client
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\..\..\..\bin\ 
 
