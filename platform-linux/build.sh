@@ -16,19 +16,19 @@ mkdir bin-wine
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 # Dnp3Client is Windows-only (must run under Wine on Linux)
-copy ../src/dnp3/Dnp3Client/Dependencies/OpenSSL/*.dll bin-wine/ 
-cd ../src/dnp3/Dnp3Client
+cp src/dnp3/Dnp3Client/Dependencies/OpenSSL/*.dll bin-wine/ 
+cd src/dnp3/Dnp3Client
 dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ../../../bin-wine/ Dnp3Client.csproj
 
 cd ../../libiec61850
 make
 make install
 cd dotnet/core/2.0
-dotnet publish --no-self-contained --runtime $ARG1 Release -o 
+dotnet publish --no-self-contained --runtime $ARG1 -c Release IEC61850.NET.core.2.0
 cd iec61850_client
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../../../../../bin/ 
 
-cd src/lib60870.netcore
+cd ../../../../../lib60870.netcore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
@@ -37,7 +37,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
 
-cd ../../calculations
+cd ../calculations
 go get ./...
 go build
 cp calculations ../../bin/
