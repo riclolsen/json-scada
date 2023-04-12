@@ -36,6 +36,7 @@ const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
 const { timeEnd } = require('console')
 const { castSparkplugValue: castSparkplugValue } = require('./cast')
+const { camelCase } = require('lodash')
 
 const SparkplugNS = 'spBv1.0'
 const DevicesList = []
@@ -1912,7 +1913,7 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
 
     if ('properties' in metric) {
       for (const prop in metric.properties) {
-        switch(prop) {
+        switch(camelCase(prop)) {
           case 'description':
           case 'ungroupedDescription':
           case 'group1':
@@ -1924,7 +1925,6 @@ function queueMetric (metric, deviceLocator, isBirth, templateName) {
           case 'unit':
             catalogProperties.unit = metric.properties[prop].value
             break
-          case 'sampling rate':
           case 'samplingRate':
             catalogProperties.samplingRate = metric.properties[prop].value
             break

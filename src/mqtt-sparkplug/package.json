@@ -12,6 +12,7 @@
     "fs": "*",
     "gridfs-stream": "^1.1.1",
     "jsonpath-plus": "^6.0.1",
+    "lodash": "^4.17.21",
     "mongodb": "^3.6.5",
     "mqtt": "^4.3.6",
     "queue-fifo": "^0.2.6",
