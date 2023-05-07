@@ -699,6 +699,9 @@ const pipeline = [
                 let valueString =
                   change.updateDescription.updatedFields.sourceDataUpdate
                     ?.valueStringAtSource || ''
+                let valueJson =
+                    change.updateDescription.updatedFields.sourceDataUpdate
+                      ?.valueJsonAtSource || {}
                 let alarmed = change.fullDocument.alarmed
 
                 // avoid undefined, null or NaN values
@@ -1110,9 +1113,11 @@ const pipeline = [
                         "'," +
                         value +
                         ',' +
-                        '\'{"s": "' +
-                        valueString +
-                        '"}\',' +
+                        '\'{' +	
+                        '"v": ' + JSON.stringify(valueJson).replaceAll("'", " ") + ',' +
+                        '"s": "' +
+                        valueString.replaceAll("'", " ") +
+                        '"}\',' +                        
                         (update.timeTagAtSource !== null
                           ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
@@ -1135,6 +1140,7 @@ const pipeline = [
                   // update change.fullDocument with new data just to stringify it and queue update for postgresql update
                   change.fullDocument.value = value
                   change.fullDocument.valueString = valueString
+                  change.fullDocument.valueJson = valueJson
                   change.fullDocument.timeTag = dt
                   change.fullDocument.overflow = overflow
                   change.fullDocument.invalid = invalid
