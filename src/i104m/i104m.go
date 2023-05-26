@@ -24,7 +24,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -40,22 +39,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var softwareVersion string = "{json:scada} I104M Protocol Driver v.0.1.3 - Copyright 2020-2021 Ricardo L. Olsen"
+var softwareVersion string = "{json:scada} I104M Protocol Driver v.0.1.4 - Copyright 2020-2023 Ricardo L. Olsen"
 var driverName string = "I104M"
 var isActive bool = false
-
 var logLevel = 1
-
-const logLevelMin = 0
-const logLevelBasic = 1
-const logLevelDetailed = 2
-const logLevelDebug = 3
-
-const udpChannelSize = 1000
-const udpReadBufferPackets = 100
-
-var udpForwardAddress = "" // assing a forward address for I104M UDP messages
+var udpForwardAddress = "" // assign a forward address for I104M UDP messages
 var pointFilter uint32 = 0
+
+const (
+	logLevelMin          = 0
+	logLevelBasic        = 1
+	logLevelDetailed     = 2
+	logLevelDebug        = 3
+	udpChannelSize       = 1000
+	udpReadBufferPackets = 100
+)
 
 type configData struct {
 	NodeName                 string `json:"nodeName"`
@@ -314,7 +312,7 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 			}
 		}
 	}
-	
+
 	if err := stream.Err(); err != nil {
 		log.Fatal("Commands - Changestream error: ", err)
 	}
@@ -678,7 +676,7 @@ func main() {
 	if len(os.Args) > 3 {
 		cfgFileName = os.Args[3]
 	}
-	file, err := ioutil.ReadFile(cfgFileName)
+	file, err := os.ReadFile(cfgFileName)
 	if err != nil {
 		log.Printf("Failed to read file: %v", err)
 		os.Exit(1)
@@ -773,12 +771,11 @@ func main() {
 	err = ServerConn.SetReadBuffer(1500 * udpReadBufferPackets)
 	checkFatalError(err)
 
-	buf := make([]byte, 2048)
-
+	var buf []byte
 	tm := time.Now().Add(-6 * time.Second)
 
 	var waitGroup sync.WaitGroup
-	if protocolConn.CommandsEnabled == true {
+	if protocolConn.CommandsEnabled {
 		waitGroup.Add(1)
 		routineCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -814,7 +811,6 @@ func main() {
 
 		select {
 		case buf = <-chanBuf: // receive UDP packets via channel
-			break
 		case <-time.After(5 * time.Second):
 			continue
 		}
