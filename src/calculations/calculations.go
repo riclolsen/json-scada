@@ -1,7 +1,7 @@
 /*
  * This process calculates point values based of predefined formulas and configured parcels.
  * All data is read from and results are written to the MongoDB server.
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020 - 2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"math"
 	"math/rand"
@@ -38,7 +38,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const softwareVersion string = "0.1.1"
+const softwareVersion string = "0.1.2"
 const processName string = "CALCULATIONS"
 const appMsg string = "{json:scada} - " + processName + " - Version " + softwareVersion
 const appUsage string = "Usage: calculations [instance number] [log level] [period of calculation in seconds] [config file path/name]"
@@ -96,14 +96,6 @@ type processInstance struct {
 	PeriodOfCalculation        float64   `bson:"periodOfCalculation"`
 }
 
-// A Simple function to verify error
-func checkError(err error) {
-	if err != nil {
-		log.Println("Error: ", err)
-		os.Exit(0)
-	}
-}
-
 // Reads the config file
 func readConfigFile(cfg *config) {
 	if configFileCompletePath == "" {
@@ -116,7 +108,7 @@ func readConfigFile(cfg *config) {
 		log.Printf("Fail to read file: %v", err)
 		os.Exit(1)
 	}
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := io.ReadAll(jsonFile)
 
 	// unmarshals the json file's content into a config structure
 	err = json.Unmarshal(byteValue, &cfg)
@@ -222,7 +214,7 @@ func processRedundancy(cfg config) {
 				}
 				continue
 			} else {
-				if instance.Enabled == false {
+				if !instance.Enabled {
 					log.Println("Redundancy - Process instance disabled!")
 					os.Exit(0)
 				}
@@ -369,9 +361,7 @@ func main() {
 
 	go processRedundancy(cfg)
 
-	var calcs map[int]*pointCalc
-	calcs = make(map[int]*pointCalc)
-
+	calcs := make(map[int]*pointCalc)
 	var nponto int
 
 	projection := bson.D{
@@ -415,10 +405,8 @@ func main() {
 	}
 
 	// maps for values and flags of all parcels and calculated points
-	var vals map[int]float64
-	vals = make(map[int]float64)
-	var invalids map[int]bool
-	invalids = make(map[int]bool)
+	vals := make(map[int]float64)
+	invalids := make(map[int]bool)
 
 	// creates the find array for all parcels
 	barr := bson.A{}
@@ -435,7 +423,8 @@ func main() {
 		{Key: "invalid", Value: 1},
 	}
 	for {
-		if isActive == false {
+		if !isActive {
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		tbegin := time.Now()
@@ -446,7 +435,7 @@ func main() {
 		if errp != nil {
 			log.Printf("%s \n", err)
 			client.Disconnect(context.TODO())
-			client, collection, errp = mongoConnect(cfg)
+			client, collection, _ = mongoConnect(cfg)
 		}
 
 		// find all parcel and current calculated values
@@ -777,7 +766,7 @@ func main() {
 				invalid = invalids[p.idParcels[0]]
 				val = vals[p.idParcels[0]]
 				for _, elem := range p.idParcels {
-					if invalids[elem] == false {
+					if !invalids[elem] {
 						val = vals[elem]
 						invalid = false
 					}
@@ -787,7 +776,7 @@ func main() {
 				invalid = false
 				val = 0
 				for _, elem := range p.idParcels {
-					if invalids[elem] == false {
+					if !invalids[elem] {
 						val = 1
 					}
 				}
@@ -1192,11 +1181,11 @@ func main() {
 				log.Print("bulk")
 				log.Fatal(err)
 			}
-			log.Printf("Count %d Elapsed %s\n", res.MatchedCount, time.Now().Sub(tbegin))
+			log.Printf("Count %d Elapsed %s\n", res.MatchedCount, time.Since(tbegin))
 		}
 
 		// wait for calculation time period to end
-		for after.Sub(time.Now()) > 0 {
+		for time.Until(after) > 0 {
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
