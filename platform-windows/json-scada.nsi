@@ -126,6 +126,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iec101server'
   nsExec::Exec 'net stop JSON_SCADA_iec104client'
   nsExec::Exec 'net stop JSON_SCADA_iec104server'
+  nsExec::Exec 'net stop JSON_SCADA_iec61850client'
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
@@ -645,6 +646,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_iec104client"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_iec104client"`
+  ClearErrors
+  
+  ExecWait `"${SC}" stop "JSON_SCADA_iec61850client"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iec61850client"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_dnp3client"`
