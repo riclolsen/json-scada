@@ -3,13 +3,15 @@ if not "%1"=="am_admin" (powershell start -verb runas '%0' am_admin & exit /b)
 
 cd \json-scada\platform-windows\
 
+ping -n 2 127.0.0.1
 call postgresql-initdb.bat
 ping -n 15 127.0.0.1
 copy /Y ..\conf-templates\pg_hba.conf postgresql-data\
 copy /Y ..\conf-templates\postgresql.conf postgresql-data\
 call postgresql-create_service.bat
+ping -n 2 127.0.0.1
 call postgresql-start.bat
-ping -n 12 127.0.0.1
+ping -n 18 127.0.0.1
 postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\create_tables.sql template1
 
 call create_services.bat
