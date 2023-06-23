@@ -18,7 +18,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 # Dnp3Client is Windows-only (must run under Wine on Linux)
 cp src/dnp3/Dnp3Client/Dependencies/OpenSSL/*.dll bin-wine/ 
 cd src/dnp3/Dnp3Client
-dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ../../../bin-wine/ Dnp3Client.csproj
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin-wine/ Dnp3Client.csproj
 
 cd ../../libiec61850
 make
