@@ -525,13 +525,11 @@ function SparkplugClient(config) {
               return;
             }
 
-            var payload;
+            var payload, timestamp, splitTopic;
 
             try {
-                payload = maybeDecompressPayload(decodePayload(message)),
-                timestamp = payload.timestamp,
-                splitTopic,
-                metrics;
+                payload = maybeDecompressPayload(decodePayload(message));
+                timestamp = payload.timestamp;                
             }
             catch (e) {
                 logger.warn(e.message);
