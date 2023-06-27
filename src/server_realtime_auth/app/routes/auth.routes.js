@@ -1,6 +1,5 @@
 const { authJwt, verifySignUp } = require('../middlewares')
 const controller = require('../controllers/auth.controller')
-const cors = require('cors')
 
 module.exports = function (app, accessPoint) {
   app.use(function (req, res, next) {

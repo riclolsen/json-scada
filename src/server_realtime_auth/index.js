@@ -2,7 +2,7 @@
 
 /*
  * A realtime point data HTTP web server for JSON SCADA.
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -90,7 +90,7 @@ if (AUTHENTICATION) {
     .connect(jsConfig.mongoConnectionString, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      useFindAndModify: false
+      // useFindAndModify: false
     })
     .then(() => {
       console.log('Successfully connect to MongoDB (via mongoose).')
