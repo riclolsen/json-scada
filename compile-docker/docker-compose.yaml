@@ -32,13 +32,12 @@ services:
                     cd dotnet/core/2.0 &&
                     dotnet publish --no-self-contained --runtime linux-x64 -c Release IEC61850.NET.core.2.0 &&
                     cd iec61850_client &&
-                    dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/
-                    "                    
+                    dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/dnp3/Dnp3Client/ &&
+                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ Dnp3Client.csproj &&
+                    cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
 
     # NOTICE Dnp3Client is Windows-only, so it can only run in docker/linux using Wine.
-    #               cd /src/dnp3/Dnp3Client/ && 
-    #               dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o /publish_bin_win/ Dnp3Client.csproj &&
-    #               cp Dependencies/OpenSSL/*.dll /publish_bin_win/"
 
     environment:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
