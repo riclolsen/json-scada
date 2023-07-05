@@ -12,15 +12,16 @@ copy \json-scada\src\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll bin\ /y
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 cd \json-scada\src\dnp3\Dnp3Client\ 
-dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o ..\..\..\demo-docker\bin_win\ Dnp3Client.csproj
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\demo-docker\bin_win\ Dnp3Client.csproj
 
 cd \json-scada\src\libiec61850\build
+rem set VCTargetsPath=d:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
 rem set VCTargetsPath=c:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
-dotnet publish --no-self-contained --runtime win-x64 -c Release
+dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
 copy \json-scada\src\libiec61850\build\src\Release\iec61850.dll \json-scada\bin
 
 cd \json-scada\src\libiec61850\dotnet\core\2.0\
-dotnet publish --no-self-contained --runtime win-x64 -c Release
+dotnet publish --no-self-contained --runtime win-x64 -c Release -o ..\..\..\..\..\bin\ IEC61850.NET.core.2.0 
 
 cd \json-scada\src\libiec61850\dotnet\core\2.0\iec61850_client
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\..\..\..\bin\ 
@@ -61,7 +62,7 @@ rem copy /Y plc4x-client.exe ..\..\bin\
 cd \json-scada\src\i104m
 go get ./... 
 go build 
-copy /Y i104m ..\..\bin\
+copy /Y i104m.exe ..\..\bin\
 
 cd \json-scada\src\cs_data_processor
 call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
