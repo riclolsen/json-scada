@@ -213,14 +213,15 @@ namespace IEC61850_Client
                 Iec61850Connections.Add(conn);
                 // look for existing tags in this connections, missing tags will be inserted later when discovered
                 var results = collRtData.Find<rtData>(new BsonDocument {
-                                        { "protocolSourceConnectionNumber", conn.protocolConnectionNumber },
+                                        { "protocolSourceConnectionNumber",
+                                         BsonDouble.Create(conn.protocolConnectionNumber)},
                                     }).ToList();
 
                 for (int i = 0; i < results.Count; i++)
                 {
                     if (conn.autoCreateTags)
                         conn.InsertedTags.Add(results[i].tag.ToString());
-                    Enum.TryParse(results[i].protocolSourceCommonAddress.ToString().Trim(), out FunctionalConstraint fc);
+                    Enum.TryParse(results[i].protocolSourceCommonAddress.ToString().Trim().ToUpper(), out FunctionalConstraint fc);
                     Iec61850Entry entry = new Iec61850Entry()
                     {
                         path = results[i].protocolSourceObjectAddress.ToString().Trim(),
@@ -228,7 +229,7 @@ namespace IEC61850_Client
                         js_tag = results[i].tag.ToString(),
                         
                     };
-                    conn.entries[results[i].protocolSourceObjectAddress.ToString().Trim()+ results[i].protocolSourceCommonAddress.ToString().Trim()] = entry;
+                    conn.entries[results[i].protocolSourceObjectAddress.ToString().Trim()+ results[i].protocolSourceCommonAddress.ToString().Trim().ToUpper()] = entry;
                 }
 
                 conn.LastNewKeyCreated = 0;

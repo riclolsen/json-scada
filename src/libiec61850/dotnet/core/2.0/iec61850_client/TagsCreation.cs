@@ -46,7 +46,7 @@ namespace IEC61850_Client
             [BsonDefaultValue(false)]
             public BsonBoolean alerted { get; set; }
             [BsonDefaultValue("")]
-            public BsonString alertedState { get; set; }
+            public BsonString alertState { get; set; }
             [BsonDefaultValue("")]
             public BsonString annotation { get; set; }
             [BsonDefaultValue(false)]
@@ -164,7 +164,6 @@ namespace IEC61850_Client
             public BsonDouble value;
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble zeroDeadband;
-
         }
         public static rtData newRealtimeDoc(IECValue iv, double _id)
         {
@@ -174,7 +173,7 @@ namespace IEC61850_Client
                 {
                     _id = _id,
                     protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
+                    protocolSourceCommonAddress = iv.common_address.ToUpper(),
                     protocolSourceConnectionNumber = iv.conn_number,
                     protocolSourceObjectAddress = iv.address,
                     protocolSourceCommandUseSBO = false,
@@ -197,7 +196,7 @@ namespace IEC61850_Client
                     alarmDisabled = false,
                     alerted = false,
                     alarmed = false,
-                    alertedState = "",
+                    alertState = "",
                     annotation = "",
                     commandBlocked = false,
                     commandOfSupervised = 0.0,
@@ -243,7 +242,7 @@ namespace IEC61850_Client
                 {
                     _id = _id,
                     protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
+                    protocolSourceCommonAddress = iv.common_address.ToUpper(),
                     protocolSourceConnectionNumber = iv.conn_number,
                     protocolSourceObjectAddress = iv.address,
                     protocolSourceCommandUseSBO = false,
@@ -267,7 +266,7 @@ namespace IEC61850_Client
                     alarmDisabled = false,
                     alerted = false,
                     alarmed = false,
-                    alertedState = "",
+                    alertState = "",
                     annotation = "",
                     commandBlocked = false,
                     commandOfSupervised = 0.0,
@@ -312,7 +311,7 @@ namespace IEC61850_Client
             {
                 _id = _id,
                 protocolSourceASDU = iv.asdu,
-                protocolSourceCommonAddress = iv.common_address,
+                protocolSourceCommonAddress = iv.common_address.ToUpper(),
                 protocolSourceConnectionNumber = iv.conn_number,
                 protocolSourceObjectAddress = iv.address,
                 protocolSourceCommandUseSBO = false,
@@ -336,7 +335,7 @@ namespace IEC61850_Client
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
-                alertedState = "",
+                alertState = "",
                 annotation = "",
                 commandBlocked = false,
                 commandOfSupervised = 0.0,

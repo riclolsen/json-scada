@@ -138,7 +138,7 @@ namespace IEC61850_Client
                                             if (
                                             srv.connection.GetState() == IedConnectionState.IED_STATE_CONNECTED &&
                                             srv.commandsEnabled &&
-                                            srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() + change.FullDocument.protocolSourceCommonAddress.ToString())
+                                            srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() + change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper())
                                             )
                                             {
                                                 var con = srv.connection;
@@ -147,8 +147,8 @@ namespace IEC61850_Client
                                                     timestamp = change.FullDocument.timeTag.ToUniversalTime(),
                                                     js_cmd_tag = change.FullDocument.tag.ToString(),
                                                     value = change.FullDocument.value.ToDouble(),
-                                                    fc = change.FullDocument.protocolSourceCommonAddress.ToString(),
-                                                    iecEntry = srv.entries[change.FullDocument.protocolSourceObjectAddress.ToString() + change.FullDocument.protocolSourceCommonAddress.ToString()],
+                                                    fc = change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper(),
+                                                    iecEntry = srv.entries[change.FullDocument.protocolSourceObjectAddress.ToString() + change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper()],
                                                 };
 
                                                 var resultDescription = "";
@@ -345,7 +345,7 @@ namespace IEC61850_Client
                                                 !srv.commandsEnabled
                                                     ? " Commands Disabled"
                                                     : srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() + 
-                                                                              change.FullDocument.protocolSourceCommonAddress.ToString()) 
+                                                                              change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper()) 
                                                     ? " Not connected" : " Command not found!"
                                                 ));
                                                 var filter =
@@ -360,7 +360,7 @@ namespace IEC61850_Client
                                                             !srv.commandsEnabled
                                                                 ? "commands disabled"
                                                                 : srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() + 
-                                                                                          change.FullDocument.protocolSourceCommonAddress.ToString()) 
+                                                                                          change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper()) 
                                                                 ? "not connected" : "command not found!"
                                                             )));
                                                 var result =

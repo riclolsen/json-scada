@@ -570,6 +570,9 @@ namespace IEC61850_Client
                         Log("Model:    " + identity.modelName);
                         Log("Revision: " + identity.revision);
                         srv.connection = con;
+                        srv.datasets.Clear();
+                        srv.brcb.Clear();
+                        srv.urcb.Clear();
 
                         List<string> serverDirectory = con.GetServerDirectory(false);
 
@@ -616,7 +619,7 @@ namespace IEC61850_Client
                                 // discover data sets
                                 var dataSets =
                                     con.GetLogicalNodeDirectory(logicalNodeReference, ACSIClass.ACSI_CLASS_DATA_SET);
-                                srv.datasets.Clear();
+                                // srv.datasets.Clear();
 
                                 foreach (var dataSet in dataSets)
                                 {
@@ -669,7 +672,7 @@ namespace IEC61850_Client
                                     // discover unbuffered report control blocks
                                     List<string> urcbs =
                                         con.GetLogicalNodeDirectory(logicalNodeReference, ACSIClass.ACSI_CLASS_URCB);
-                                    srv.urcb.Clear();
+                                    //srv.urcb.Clear();
                                     foreach (string urcb in urcbs)
                                     {
                                         var rpname = logicalNodeReference + ".RP." + urcb;
@@ -703,8 +706,9 @@ namespace IEC61850_Client
                                             }
 
                                             rcb.InstallReportHandler(reportHandler, new ReptParam { srv = srv, rcb = rcb });
-                                            rcb.SetTrgOps(TriggerOptions.DATA_UPDATE | TriggerOptions.DATA_CHANGED | TriggerOptions.INTEGRITY);
-                                            rcb.SetIntgPd((uint)srv.class0ScanInterval * 1000);                                            
+                                            rcb.SetTrgOps(TriggerOptions.DATA_CHANGED | TriggerOptions.INTEGRITY);
+                                            rcb.SetIntgPd((uint)srv.class0ScanInterval * 1000);
+                                            rcb.SetRptEna(false);
                                             rcb.SetRptEna(true);
                                             // rcb.SetResv(true);
                                             try
@@ -725,7 +729,7 @@ namespace IEC61850_Client
                                     // discover buffered report control blocks
                                     List<string> brcbs =
                                         con.GetLogicalNodeDirectory(logicalNodeReference, ACSIClass.ACSI_CLASS_BRCB);
-                                    srv.brcb.Clear();
+                                    //srv.brcb.Clear();
                                     foreach (string brcb in brcbs)
                                     {
                                         var rpname = logicalNodeReference + ".BR." + brcb;
@@ -759,7 +763,7 @@ namespace IEC61850_Client
                                             }
 
                                             rcb.InstallReportHandler(reportHandler, new ReptParam { srv = srv, rcb = rcb });
-                                            rcb.SetTrgOps(TriggerOptions.DATA_UPDATE | TriggerOptions.DATA_CHANGED | TriggerOptions.INTEGRITY);
+                                            rcb.SetTrgOps(TriggerOptions.DATA_CHANGED | TriggerOptions.INTEGRITY);
                                             byte[] lastEntryId = { 0, 0, 0, 0, 0, 0, 0, 0 };
                                             if (srv.lastReportIds.ContainsKey(rpname))
                                             {
@@ -768,6 +772,7 @@ namespace IEC61850_Client
                                             }
                                             rcb.SetEntryID(lastEntryId);
                                             rcb.SetIntgPd((uint)srv.class0ScanInterval * 1000);
+                                            rcb.SetRptEna(false);
                                             rcb.SetRptEna(true);                                            
                                             try
                                             {                                                

@@ -222,8 +222,8 @@ namespace IEC61850_Client
             public BsonObjectId id { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
             public BsonDouble protocolSourceConnectionNumber { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
-            public BsonDouble protocolSourceCommonAddress { get; set; }
+            [BsonDefaultValue("")]
+            public BsonString protocolSourceCommonAddress { get; set; }
             [BsonDefaultValue("")]
             public BsonString protocolSourceObjectAddress { get; set; }
             [BsonDefaultValue("")]
@@ -312,6 +312,7 @@ namespace IEC61850_Client
         { // read most types as double, write to double
             public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, BsonDouble dval)
             {
+                if (dval == null) { dval = BsonDouble.Create(0); }
                 context.Writer.WriteDouble(dval.ToDouble());
             }
             public override BsonDouble Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -322,7 +323,7 @@ namespace IEC61850_Client
                 switch (type)
                 {
                     case BsonType.Double:
-                        return context.Reader.ReadDouble();
+                        return BsonDouble.Create(context.Reader.ReadDouble());
                     case BsonType.Null:
                         context.Reader.ReadNull();
                         break;
@@ -369,7 +370,7 @@ namespace IEC61850_Client
                         dval = context.Reader.ReadInt64();
                         break;
                 }
-                return dval;
+                return BsonDouble.Create(dval);
             }
         }
 

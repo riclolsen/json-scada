@@ -8,7 +8,7 @@ This driver uses the MZ-Automation's libiec61850 with .NET 6.0 target platform.
 
 The driver can have multiple connections to IEC61850 servers (IEDs).
 
-To configure the driver it is necessary to create one or more driver instances and at least one connection per instance, this can be accomplished using the Web interface (Admin UI) or programaticallly as below. Also the tags intended to be updated should be configured appropriately.
+To configure the driver it is necessary to create one or more driver instances and at least one connection per instance, this can be accomplished using the Web interface (Admin UI) or programaticallly as below. Also the tags intended to be updated should be configured appropriately. The AutoCreateTags feature can be used to create all tags for reports automatically (this can be overkill, it will create lots of unecessary data and traffic).
 
 
 ##  Configure a driver instance
