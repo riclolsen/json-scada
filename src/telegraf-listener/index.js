@@ -267,7 +267,7 @@ const rtData = function (measurement) {
     alarmDisabled: false,
     alerted: false,
     alarmed: false,
-    alertedState: '',
+    alertState: '',
     annotation: '',
     commandBlocked: false,
     commandOfSupervised: new Double(0.0),

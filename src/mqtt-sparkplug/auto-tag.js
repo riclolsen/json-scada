@@ -55,7 +55,7 @@ function NewTag () {
     alarmDisabled: false,
     alerted: false,
     alarmed: false,
-    alertedState: '',
+    alertState: '',
     annotation: '',
     commandBlocked: false,
     commandOfSupervised: new Mongo.Double(0.0),
