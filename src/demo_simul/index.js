@@ -3,7 +3,7 @@
 /*
  * This script can simulate events, values, respond to commands combined with the default demo database.
  * Convert raw values and update realtime values and statuses.
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,381 +19,434 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const APP_NAME = 'demo substation simul'
-const mongo = require('mongodb')
-const { MongoClient, ReadPreference } = require('mongodb')
-const fs = require('fs')
-
-const jsConfigFile = '../../conf/json-scada.json'
-const RealtimeDataCollectionName = 'realtimeData'
-const CommandsCollectionName = 'commandsQueue'
-const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
-
-let connOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  appname: APP_NAME,
-  poolSize: 20,
-  readPreference: ReadPreference.PRIMARY
-}
+const Log = require('./simple-logger')
+const AppDefs = require('./app-defs')
+const LoadConfig = require('./load-config')
+const { MongoClient } = require('mongodb')
 
 const pipeline = [
   {
-    $project: { documentKey: false }
+    $project: { documentKey: false },
   },
   {
     $match: {
       $and: [
         {
-          $or: [{ operationType: 'insert' }]
-        }
-      ]
-    }
-  }
+          $or: [{ operationType: 'insert' }],
+        },
+      ],
+    },
+  },
 ]
 
-let rawFileContents = fs.readFileSync(jsConfigFile)
-let jsConfig = JSON.parse(rawFileContents)
-if (
-  typeof jsConfig.mongoConnectionString != 'string' ||
-  jsConfig.mongoConnectionString === ''
-) {
-  console.log('Error reading config file.')
-  process.exit()
-}
-
-console.log('Connecting to ' + jsConfig.mongoConnectionString)
-if (
-  typeof jsConfig.tlsCaPemFile === 'string' &&
-  jsConfig.tlsCaPemFile.trim() !== ''
-) {
-  jsConfig.tlsClientKeyPassword = jsConfig.tlsClientKeyPassword || ''
-  jsConfig.tlsAllowInvalidHostnames = jsConfig.tlsAllowInvalidHostnames || false
-  jsConfig.tlsAllowChainErrors = jsConfig.tlsAllowChainErrors || false
-  jsConfig.tlsInsecure = jsConfig.tlsInsecure || false
-
-  connOptions.tls = true
-  connOptions.tlsCAFile = jsConfig.tlsCaPemFile
-  connOptions.tlsCertificateKeyFile = jsConfig.tlsClientPemFile
-  connOptions.tlsCertificateKeyFilePassword = jsConfig.tlsClientKeyPassword
-  connOptions.tlsAllowInvalidHostnames = jsConfig.tlsAllowInvalidHostnames
-  connOptions.tlsInsecure = jsConfig.tlsInsecure
-}
-
-; (async () => {
+const jsConfig = LoadConfig()
+Log.log('Connecting to ' + jsConfig.mongoConnectionString)
+;(async () => {
   let collection = null
-
   let cntUpd = 1
+  let clientMongo = null
 
   setInterval(async function () {
-    if (clientMongo !== null) {
-
-
+    if (clientMongo !== null && HintMongoIsConnected) {
       const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
       // fake IEC 104 driver running
-      await db.collection(ProtocolDriverInstancesCollectionName).updateOne(
-        {
-          protocolDriver: 'IEC60870-5-104',
-        },
-        [
+      await db
+        .collection(jsConfig.ProtocolDriverInstancesCollectionName)
+        .updateOne(
           {
-            $set: {
-              activeNodeKeepAliveTimeTag: '$$NOW'
-            }
+            protocolDriver: 'IEC60870-5-104',
+          },
+          [
+            {
+              $set: {
+                activeNodeKeepAliveTimeTag: '$$NOW',
+              },
+            },
+          ]
+        )
+        .catch((err) => {
+          Log.log(err)
+          if (err.message.indexOf('ECONNREFUSED') > -1) {
+            clientMongo = null
           }
-        ]
-      )
+        })
 
       // validates supervised data
-      await db.collection(RealtimeDataCollectionName).updateMany(
-        {
-          origin: 'supervised',
-        },
-        [
+      await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .updateMany(
           {
-            $set: {
-              invalid: false,
-              timeTag: '$$NOW',
-              'sourceDataUpdate.timeTag': '$$NOW'
-            }
+            origin: 'supervised',
+          },
+          [
+            {
+              $set: {
+                invalid: false,
+                timeTag: '$$NOW',
+                'sourceDataUpdate.timeTag': '$$NOW',
+              },
+            },
+          ]
+        )
+        .catch((err) => {
+          Log.log(err)
+          if (err.message.indexOf('ECONNREFUSED') > -1) {
+            clientMongo = null
           }
-        ]
-      )
-
+        })
 
       // simulate protocol writes of digital values
 
-      let res = await db.collection(RealtimeDataCollectionName).updateMany(
-        {
-          type: 'digital',
-          origin: 'supervised',
-          $expr: { $eq: [{ $indexOfBytes: ['$tag', 'XSWI'] }, -1] },
-          _id: { $mod: [Math.floor(Math.random() * 500) + 500, 0] }
-        },
-        [
+      let res = await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .updateMany(
           {
-            $set: {
-              sourceDataUpdate: {
-                valueAtSource: { $toDouble: { $not: '$value' } },
-                valueStringAtSource: '',
-                asduAtSource: 'M_SP_NA_1',
-                causeOfTransmissionAtSource: '3',
-                invalid: false,
-                timeTag: '$$NOW',
-                timeTagAtSource: '$$NOW',
-                timeTagAtSourceOk: true,
-                substitutedAtSource: false,
-                overflowAtSource: false,
-                blockedAtSource: false,
-                notTopicalAtSource: false,
-                test: true,
-                originator: APP_NAME,
-                CntUpd: cntUpd,                
-              }
-            }
-          }
-        ]
-      )
-      console.log(
-        'Digital matchedCount: ' +
-        res.matchedCount +
-        ' modifiedCount: ' +
-        res.modifiedCount
-      )
-
-      await db.collection(RealtimeDataCollectionName).find({
-        type: 'digital',
-        origin: 'supervised',
-        "sourceDataUpdate.CntUpd": cntUpd
-      }).toArray(async function (err, resarr) {
-        resarr.forEach(async element => {
-          element.sourceDataUpdate.CntUpd = 0
-          let res2 = await db.collection(RealtimeDataCollectionName).updateOne(
-            {
-              _id: element._id
-            },
+            type: 'digital',
+            origin: 'supervised',
+            $expr: { $eq: [{ $indexOfBytes: ['$tag', 'XSWI'] }, -1] },
+            _id: { $mod: [Math.floor(Math.random() * 500) + 500, 0] },
+          },
+          [
             {
               $set: {
-                sourceDataUpdate: element.sourceDataUpdate
-              }
-            }
-          )
-          console.log(
-            'Digital matchedCount: ' +
-            res2.matchedCount +
-            ' modifiedCount: ' +
-            res2.modifiedCount
-          )
+                sourceDataUpdate: {
+                  valueAtSource: { $toDouble: { $not: '$value' } },
+                  valueStringAtSource: '',
+                  asduAtSource: 'M_SP_NA_1',
+                  causeOfTransmissionAtSource: '3',
+                  invalid: false,
+                  timeTag: '$$NOW',
+                  timeTagAtSource: '$$NOW',
+                  timeTagAtSourceOk: true,
+                  substitutedAtSource: false,
+                  overflowAtSource: false,
+                  blockedAtSource: false,
+                  notTopicalAtSource: false,
+                  test: true,
+                  originator: AppDefs.NAME,
+                  CntUpd: cntUpd,
+                },
+              },
+            },
+          ]
+        )
+        .catch((err) => {
+          Log.log(err)
+          if (err.message.indexOf('ECONNREFUSED') > -1) {
+            clientMongo = null
+          }
+        })
 
-        });
-      })
+      Log.log(
+        'Digital matchedCount: ' +
+          res?.matchedCount +
+          ' modifiedCount: ' +
+          res?.modifiedCount
+      )
+
+      await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .find({
+          type: 'digital',
+          origin: 'supervised',
+          'sourceDataUpdate.CntUpd': cntUpd,
+        })
+        .toArray(async function (err, resarr) {
+          resarr.forEach(async (element) => {
+            element.sourceDataUpdate.CntUpd = 0
+            let res2 = await db
+              .collection(jsConfig.RealtimeDataCollectionName)
+              .updateOne(
+                {
+                  _id: element._id,
+                },
+                {
+                  $set: {
+                    sourceDataUpdate: element.sourceDataUpdate,
+                  },
+                }
+              )
+            Log.log(
+              'Digital matchedCount: ' +
+                res2?.matchedCount +
+                ' modifiedCount: ' +
+                res2?.modifiedCount
+            )
+          })
+        })
+        .catch((err) => {
+          Log.log(err)
+          if (err.message.indexOf('ECONNREFUSED') > -1) {
+            clientMongo = null
+          }
+        })
+
       cntUpd++
     }
   }, 5777)
 
   setInterval(async function () {
-    if (clientMongo !== null) {
+    if (clientMongo !== null && HintMongoIsConnected) {
       const db = clientMongo.db(jsConfig.mongoDatabaseName)
-      let res = await db.collection(RealtimeDataCollectionName).updateMany(
-        {
-          type: 'analog',
-          origin: 'supervised',
-          _id: {
-            $mod: [
-              1 +
-              Math.floor(Math.random() * 50) +
-              Math.floor(Math.random() * 10),
-              0
-            ]
-          }
-        },
-        [
+      let res = await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .updateMany(
           {
-            $set: {
-              sourceDataUpdate: {
-                valueAtSource: {
-                  $multiply: ['$valueDefault', 1 + 0.1 * Math.random() - 0.05]
-                },
-                valueStringAtSource: '',
-                asduAtSource: 'M_ME_NC_1',
-                causeOfTransmissionAtSource: '3',
-                invalid: false,
-                timeTag: '$$NOW',
-                timeTagAtSource: '$$NOW',
-                timeTagAtSourceOk: true,
-                substitutedAtSource: false,
-                overflowAtSource: false,
-                blockedAtSource: false,
-                notTopicalAtSource: false,
-                test: true,
-                originator: APP_NAME,
-                CntUpd: cntUpd
-              }
-            }
-          }
-        ]
-      )
-      console.log(
-        'Analog matchedCount: ' +
-        res.matchedCount +
-        ' modifiedCount: ' +
-        res.modifiedCount
-      )
-
-      await db.collection(RealtimeDataCollectionName).find({
-        type: 'analog',
-        origin: 'supervised',
-        "sourceDataUpdate.CntUpd": cntUpd
-      }).toArray(async function (err, resarr) {
-        resarr.forEach(async element => {
-          element.sourceDataUpdate.CntUpd = 0
-          let res2 = await db.collection(RealtimeDataCollectionName).updateOne(
-            {
-              _id: element._id
+            type: 'analog',
+            origin: 'supervised',
+            _id: {
+              $mod: [
+                1 +
+                  Math.floor(Math.random() * 50) +
+                  Math.floor(Math.random() * 10),
+                0,
+              ],
             },
+          },
+          [
             {
               $set: {
-                sourceDataUpdate: element.sourceDataUpdate
-              }
-            }
-          )
-          console.log(
-            'Analog matchedCount: ' +
-            res2.matchedCount +
-            ' modifiedCount: ' +
-            res2.modifiedCount
-          )
+                sourceDataUpdate: {
+                  valueAtSource: {
+                    $multiply: [
+                      '$valueDefault',
+                      1 + 0.1 * Math.random() - 0.05,
+                    ],
+                  },
+                  valueStringAtSource: '',
+                  asduAtSource: 'M_ME_NC_1',
+                  causeOfTransmissionAtSource: '3',
+                  invalid: false,
+                  timeTag: '$$NOW',
+                  timeTagAtSource: '$$NOW',
+                  timeTagAtSourceOk: true,
+                  substitutedAtSource: false,
+                  overflowAtSource: false,
+                  blockedAtSource: false,
+                  notTopicalAtSource: false,
+                  test: true,
+                  originator: AppDefs.NAME,
+                  CntUpd: cntUpd,
+                },
+              },
+            },
+          ]
+        )
+        .catch((err) => {
+          Log.log(err)
+          if (err.message.indexOf('ECONNREFUSED') > -1) {
+            clientMongo = null
+          }
+        })
 
-        });
-      })
+      Log.log(
+        'Analog matchedCount: ' +
+          res?.matchedCount +
+          ' modifiedCount: ' +
+          res?.modifiedCount
+      )
+
+      await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .find({
+          type: 'analog',
+          origin: 'supervised',
+          'sourceDataUpdate.CntUpd': cntUpd,
+        })
+        .toArray(async function (err, resarr) {
+          resarr.forEach(async (element) => {
+            element.sourceDataUpdate.CntUpd = 0
+            let res2 = await db
+              .collection(jsConfig.RealtimeDataCollectionName)
+              .updateOne(
+                {
+                  _id: element._id,
+                },
+                {
+                  $set: {
+                    sourceDataUpdate: element.sourceDataUpdate,
+                  },
+                }
+              )
+            Log.log(
+              'Analog matchedCount: ' +
+                res2.matchedCount +
+                ' modifiedCount: ' +
+                res2.modifiedCount
+            )
+          })
+        })
+        .catch((err) => {
+          Log.log(err)
+          if (err.message.indexOf('ECONNREFUSED') > -1) {
+            clientMongo = null
+          }
+        })
       cntUpd++
-
     }
   }, 2000)
 
-  let clientMongo = null
   while (true) {
     if (clientMongo === null)
-      await MongoClient.connect(jsConfig.mongoConnectionString, connOptions)
-        .then(async client => {
+      await MongoClient.connect(
+        jsConfig.mongoConnectionString,
+        jsConfig.MongoConnectionOptions
+      )
+        .then(async (client) => {
           clientMongo = client
-          console.log('Connected correctly to MongoDB server')
+          Log.log('Connected correctly to MongoDB server')
 
           // specify db and collections
           const db = client.db(jsConfig.mongoDatabaseName)
-          collection = db.collection(CommandsCollectionName)
+          collection = db.collection(jsConfig.CommandsQueueCollectionName)
 
           const changeStream = collection.watch(pipeline, {
-            fullDocument: 'updateLookup'
+            fullDocument: 'updateLookup',
           })
 
           // start listen to changes
-          changeStream.on('change', async change => {
-            if (change.operationType === 'delete') return
+          changeStream
+            .on('change', async (change) => {
+              if (change.operationType === 'delete') return
 
-            if (change.operationType === 'insert') {
-              // document inserted
-              console.log('INSERT ' + change.fullDocument.tag)
+              if (change.operationType === 'insert') {
+                // document inserted
+                Log.log('INSERT ' + change.fullDocument.tag)
 
-              let data = await db
-                .collection(RealtimeDataCollectionName)
-                .findOne({ tag: change.fullDocument.tag })
-              console.log('Supervised of command: ' + data.supervisedOfCommand)
-              console.log('Command value: ' + change.fullDocument.value)
-              let val = change.fullDocument.value
-              if (change.fullDocument.tag.indexOf("YTAP") !== -1) {
-                if (change.fullDocument.value === 0)
-                  val = { $add: ['$value', -1] }
-                else
-                  val = { $add: ['$value', 1] }
+                let data = await db
+                  .collection(jsConfig.RealtimeDataCollectionName)
+                  .findOne({ tag: change.fullDocument.tag })
+                Log.log('Supervised of command: ' + data.supervisedOfCommand)
+                Log.log('Command value: ' + change.fullDocument.value)
+                let val = change.fullDocument.value
+                if (change.fullDocument.tag.indexOf('YTAP') !== -1) {
+                  if (change.fullDocument.value === 0)
+                    val = { $add: ['$value', -1] }
+                  else val = { $add: ['$value', 1] }
+                }
+
+                let res = await db
+                  .collection(jsConfig.RealtimeDataCollectionName)
+                  .updateOne({ _id: data.supervisedOfCommand }, [
+                    {
+                      $set: {
+                        sourceDataUpdate: {
+                          valueAtSource: val,
+                          valueStringAtSource: '',
+                          asduAtSource: 'M_SP_NA_1',
+                          causeOfTransmissionAtSource: '3',
+                          invalid: false,
+                          timeTag: new Date(),
+                          timeTagAtSource: new Date(),
+                          timeTagAtSourceOk: true,
+                          substitutedAtSource: false,
+                          overflowAtSource: false,
+                          blockedAtSource: false,
+                          notTopicalAtSource: false,
+                          test: true,
+                          originator: AppDefs.NAME,
+                          CntUpd: cntUpd,
+                        },
+                      },
+                    },
+                  ])
+                Log.log(res?.matchedCount)
+                Log.log(res?.modifiedCount)
+                if (res?.matchedCount > 0) {
+                  Log.log('ACK')
+                  db.collection(jsConfig.CommandsQueueCollectionName).updateOne(
+                    { _id: change.fullDocument._id },
+                    { $set: { ack: true, ackTimeTag: new Date() } }
+                  )
+                }
+
+                await db
+                  .collection(jsConfig.RealtimeDataCollectionName)
+                  .find({
+                    origin: 'supervised',
+                    'sourceDataUpdate.CntUpd': cntUpd,
+                  })
+                  .toArray(async function (err, resarr) {
+                    resarr.forEach(async (element) => {
+                      element.sourceDataUpdate.CntUpd = 0
+                      let res2 = await db
+                        .collection(jsConfig.RealtimeDataCollectionName)
+                        .updateOne(
+                          { _id: element._id },
+                          {
+                            $set: {
+                              sourceDataUpdate: element.sourceDataUpdate,
+                            },
+                          }
+                        )
+                      Log.log(
+                        'Digital matchedCount: ' +
+                          res2?.matchedCount +
+                          ' modifiedCount: ' +
+                          res2?.modifiedCount
+                      )
+                    })
+                  })
+                cntUpd++
               }
-
-              let res = await db
-                .collection(RealtimeDataCollectionName)
-                .updateOne(
-                  { _id: data.supervisedOfCommand },
-                  [{
-                    $set: {
-                      sourceDataUpdate: {
-                        valueAtSource: val,
-                        valueStringAtSource: '',
-                        asduAtSource: 'M_SP_NA_1',
-                        causeOfTransmissionAtSource: '3',
-                        invalid: false,
-                        timeTag: new Date(),
-                        timeTagAtSource: new Date(),
-                        timeTagAtSourceOk: true,
-                        substitutedAtSource: false,
-                        overflowAtSource: false,
-                        blockedAtSource: false,
-                        notTopicalAtSource: false,
-                        test: true,
-                        originator: APP_NAME,
-                        CntUpd: cntUpd
-                      }
-                    }
-                  }]
-                )
-              console.log(res.matchedCount)
-              console.log(res.modifiedCount)
-              if (res.matchedCount > 0) {
-                console.log('ACK')
-                db.collection(CommandsCollectionName).updateOne(
-                  { _id: change.fullDocument._id },
-                  { $set: { ack: true, ackTimeTag: new Date() } }
-                )
-              }
-              
-                            await db.collection(RealtimeDataCollectionName).find({
-                              origin: 'supervised',
-                              "sourceDataUpdate.CntUpd": cntUpd
-                            }).toArray(async function (err, resarr){
-                              resarr.forEach(async element => {
-                                element.sourceDataUpdate.CntUpd = 0
-                                let res2 = await db.collection(RealtimeDataCollectionName).updateOne(
-                                  { _id: element._id 
-                                  },
-                                  {
-                                    $set: {
-                                      sourceDataUpdate: element.sourceDataUpdate
-                                    }
-                                  }
-                                )
-                                console.log(
-                                  'Digital matchedCount: ' +
-                                  res2.matchedCount +
-                                  ' modifiedCount: ' +
-                                  res2.modifiedCount
-                                ) 
-                                  
-                              });
-                            })
-                            cntUpd++
-              
-            }
-          })
+            })
+            .on('error', (err) => {
+              if (clientMongo) clientMongo.close()
+              clientMongo = null
+                  Log.log(err)
+            })
         })
         .catch(function (err) {
           if (clientMongo) clientMongo.close()
           clientMongo = null
-          console.log(err)
+          Log.log(err)
         })
 
     // wait 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     // detect connection problems, if error will null the client to later reconnect
     if (clientMongo === undefined) {
-      console.log('Disconnected Mongodb!')
+      Log.log('Disconnected Mongodb!')
       clientMongo = null
     }
     if (clientMongo)
-      if (!clientMongo.isConnected()) {
+      if (!(await checkConnectedMongo(clientMongo))) {
         // not anymore connected, will retry
-        console.log('Disconnected Mongodb!')
-        clientMongo.close()
+        Log.log('Disconnected Mongodb!')
+        if (clientMongo) clientMongo.close()
         clientMongo = null
       }
   }
 })()
+
+// test mongoDB connectivity
+const CheckMongoConnectionTimeout = 1000
+let HintMongoIsConnected = true
+async function checkConnectedMongo(client) {
+  if (!client) {
+    return false
+  }
+
+  const tr = setTimeout(() => {
+    Log.log('Mongo ping timeout error!')
+    HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    Log.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    HintMongoIsConnected = true
+    return true
+  } else {
+    HintMongoIsConnected = false
+    return false
+  }
+}
