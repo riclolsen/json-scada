@@ -1,7 +1,7 @@
 'use strict'
 
 /*
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -67,6 +67,7 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
   Log.log('Config - Instance: ' + configObj.Instance)
   Log.log('Config - Log level: ' + Log.levelCurrent)
 
+  configObj.MongoConnectionOptions = getMongoConnectionOptions(configObj)
   return configObj
 }
 
@@ -106,4 +107,4 @@ function getMongoConnectionOptions (configObj) {
   return connOptions
 }
 
-module.exports = { LoadConfig, getMongoConnectionOptions }
+module.exports = { LoadConfig }

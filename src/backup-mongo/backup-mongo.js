@@ -3,7 +3,7 @@
 /*
  * Command line tool to create backup scripts for later restore.
  *
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 const Log = require('./simple-logger.js')
 const MongoClient = require('mongodb').MongoClient
-const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
+const { LoadConfig } = require('./load-config')
 const fs = require('fs')
 const OutputDir = 'output'
 
@@ -40,10 +40,10 @@ String.prototype.escapeSpecialChars = function() {
   const args = process.argv.slice(2)
 
   if (args.length > 2) {
-    console.log(
+    Log.log(
       'This tool can be used to create JSON-SCADA backup scripts (javascript files for mongo/mongosh tool).'
     )
-    console.log(
+    Log.log(
       'Usage: ' +
         process.argv[0] +
         ' ' +
@@ -64,11 +64,11 @@ String.prototype.escapeSpecialChars = function() {
   // connect to mongodb
   MongoClient.connect(
     jsConfig.mongoConnectionString,
-    getMongoConnectionOptions(jsConfig)
+    jsConfig.MongoConnectionOptions
   ).then(async client => {
     // connected
 
-    console.log('Connected to MongoDB.')
+    Log.log('Connected to MongoDB.')
 
     const db = client.db(jsConfig.mongoDatabaseName)
 
@@ -141,5 +141,5 @@ String.prototype.escapeSpecialChars = function() {
 
     process.exit()
   })
-//  process.exit()
+
 })()
