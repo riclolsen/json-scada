@@ -40,11 +40,13 @@ const pipeline = [
 ]
 
 const jsConfig = LoadConfig()
+let HintMongoIsConnected = true
 Log.log('Connecting to ' + jsConfig.mongoConnectionString)
 ;(async () => {
   let collection = null
   let cntUpd = 1
   let clientMongo = null
+  HintMongoIsConnected = true
 
   setInterval(async function () {
     if (clientMongo !== null && HintMongoIsConnected) {
@@ -167,6 +169,12 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
                   },
                 }
               )
+              .catch((err) => {
+                Log.log(err)
+                if (err.message.indexOf('ECONNREFUSED') > -1) {
+                  clientMongo = null
+                }
+              })
             Log.log(
               'Digital matchedCount: ' +
                 res2?.matchedCount +
@@ -394,7 +402,7 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
             .on('error', (err) => {
               if (clientMongo) clientMongo.close()
               clientMongo = null
-                  Log.log(err)
+              Log.log(err)
             })
         })
         .catch(function (err) {
@@ -422,13 +430,11 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
 })()
 
 // test mongoDB connectivity
-const CheckMongoConnectionTimeout = 1000
-let HintMongoIsConnected = true
 async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-
+  const CheckMongoConnectionTimeout = 1000
   const tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false
