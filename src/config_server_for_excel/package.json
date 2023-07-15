@@ -11,6 +11,6 @@
   "dependencies": {
     "express": "^4.17.1",
     "json2csv": "^5.0.6",
-    "mongodb": "^4.1.0"
+    "mongodb": "^5.7.0"
   }
 }
