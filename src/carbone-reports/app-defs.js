@@ -1,7 +1,7 @@
 'use strict'
 
 /*
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'CARBONE_REPORTS',
   ENV_PREFIX: 'JS_CARBONE_',
   MSG: '{json:scada} - Carbone Reports',
-  VERSION: '0.1.0',
+  VERSION: '0.1.1',
 }

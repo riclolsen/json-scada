@@ -72,6 +72,7 @@ function LoadConfig () {
   Log.log('Config - Instance: ' + configObj.Instance)
   Log.log('Config - Log level: ' + Log.levelCurrent)
 
+  configObj.MongoConnectionOptions = getMongoConnectionOptions(configObj)
   return configObj
 }
 
@@ -111,4 +112,4 @@ function getMongoConnectionOptions (configObj) {
   return connOptions
 }
 
-module.exports = { LoadConfig, getMongoConnectionOptions }
+module.exports = { LoadConfig }
