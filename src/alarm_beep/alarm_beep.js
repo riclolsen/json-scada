@@ -23,7 +23,6 @@ const CHECK_PERIOD = 1000
 
 const Log = require('./simple-logger')
 const LoadConfig = require('./load-config')
-const mongo = require('mongodb')
 const { MongoClient } = require('mongodb')
 const { setInterval } = require('timers')
 const sys = require('child_process')

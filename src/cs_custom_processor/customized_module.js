@@ -5,7 +5,7 @@
  *
  * THIS FILE IS INTENDED TO BE CUSTOMIZED BY USERS TO DO SPECIAL PROCESSING
  *
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,8 +21,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+const Log = require('./simple-logger')
 const { Double } = require('mongodb')
-const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
 const UserActionsCollectionName = 'userActions'
@@ -36,27 +36,37 @@ const ProtocolConnectionsCollectionName = 'protocolConnections'
 let CyclicIntervalHandle = null
 
 // this will be called by the main module when mongo is connected (or reconnected)
-module.exports.CustomProcessor = function (clientMongo, jsConfig) {
+module.exports.CustomProcessor = function (
+  clientMongo,
+  jsConfig,
+  Redundancy,
+  MongoStatus
+) {
   if (clientMongo === null) return
   const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
-  /*
   // -------------------------------------------------------------------------------------------
   // EXAMPLE OF CYCLIC PROCESSING AT INTERVALS
   // BEGIN EXAMPLE
 
   let CyclicProcess = async function () {
     // do cyclic processing at each CyclicInterval ms
-  
-    if (!jsConfig.processActive) return // do nothing if process is inactive
 
-    let res = await db
-      .collection(RealtimeDataCollectionName)
-      .findOne({ _id: -2 }) // id of point tag with number of digital updates
+    if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
+      return // do nothing if process is inactive
 
-    console.log(
-      'Custom Process - Checking number of digital updates: ' + res.valueString
-    )
+    try {
+      let res = await db
+        .collection(RealtimeDataCollectionName)
+        .findOne({ _id: -2 }) // id of point tag with number of digital updates
+
+      Log.log(
+        'Custom Process - Checking number of digital updates: ' +
+          res.valueString
+      )
+    } catch (err) {
+      Log.log(err)
+    }
 
     return
   }
@@ -67,8 +77,8 @@ module.exports.CustomProcessor = function (clientMongo, jsConfig) {
   // EXAMPLE OF CYCLIC PROCESSING AT INTERVALS
   // END EXAMPLE
   // -------------------------------------------------------------------------------------------
-  */
-
+  
+  
   /*
   // -------------------------------------------------------------------------------------------
   // EXAMPLE OF CHANGE STREAM PROCESSING (MONITORING OF CHANGES IN MONGODB COLLECTIONS)
@@ -87,29 +97,27 @@ module.exports.CustomProcessor = function (clientMongo, jsConfig) {
     changeStreamUserActions.on('error', change => {
       if (clientMongo) clientMongo.close()
       clientMongo = null
-      console.log('Custom Process - Error on changeStreamUserActions!')
+      Log.log('Custom Process - Error on changeStreamUserActions!')
     })
     changeStreamUserActions.on('close', change => {
-      if (clientMongo) clientMongo.close()
-      clientMongo = null
-      console.log('Custom Process - Closed changeStreamUserActions!')
+      Log.log('Custom Process - Closed changeStreamUserActions!')
     })
     changeStreamUserActions.on('end', change => {
       if (clientMongo) clientMongo.close()
       clientMongo = null
-      console.log('Custom Process - Ended changeStreamUserActions!')
+      Log.log('Custom Process - Ended changeStreamUserActions!')
     })
 
     // start listen to changes
     changeStreamUserActions.on('change', change => {
-      // console.log(change.fullDocument)
+      // Log.log(change.fullDocument)
 
-      if (!jsConfig.processActive) return // do nothing if process is inactive
+      if (!Redundancy.ProcessStateIsActive()) return // do nothing if process is inactive
       if (change.operationType != 'insert') return // do nothing if operation is not insert
 
       // when operator acks all alarms
       if (change.fullDocument?.action === 'Ack All Alarms') {
-        console.log('Custom Process - Generating Interrogation Requests')
+        Log.log('Custom Process - Generating Interrogation Request')
 
         // insert a command for requesting general interrogation on a IEC 104 connection
         db.collection(CommandsQueueCollectionName).insertOne({
@@ -135,7 +143,7 @@ module.exports.CustomProcessor = function (clientMongo, jsConfig) {
       }
     })
   } catch (e) {
-    console.log('Custom Process - Error: ' + e)
+    Log.log('Custom Process - Error: ' + e)
   }
 
   // -------------------------------------------------------------------------------------------
