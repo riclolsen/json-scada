@@ -1,7 +1,7 @@
 'use strict'
 
 /*
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ module.exports = {
   ENV_PREFIX: 'JS_MQTTSPB_',
   AUTOTAG_PREFIX: 'MQTT',
   MSG: '{json:scada} - MQTT-Sparkplug-B Client Driver',
-  VERSION: '0.1.4',
+  VERSION: '0.1.5',
   MAX_QUEUEDMETRICS: 10000,
   SPARKPLUG_PUBLISH_INTERVAL: 777,
   SPARKPLUG_COMPRESS_DBIRTH: false,

@@ -1,7 +1,7 @@
 'use strict'
 
 /*
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 const fs = require('fs')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
+const { ReadPreference } = require('mongodb')
 
 // load and parse config file
 function LoadConfig () {
@@ -71,7 +72,43 @@ function LoadConfig () {
   Log.log('Config - Instance: ' + configObj.Instance)
   Log.log('Config - Log level: ' + Log.levelCurrent)
 
+  configObj.MongoConnectionOptions = getMongoConnectionOptions(configObj)
   return configObj
+}
+
+// prepare mongo connection options
+function getMongoConnectionOptions(configObj) {
+  let connOptions = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    appname:
+      AppDefs.NAME +
+      ' Version:' +
+      AppDefs.VERSION +
+      ' Instance:' +
+      configObj.Instance,
+    readPreference: ReadPreference.PRIMARY,
+  }
+
+  if (
+    typeof configObj.tlsCaPemFile === 'string' &&
+    configObj.tlsCaPemFile.trim() !== ''
+  ) {
+    configObj.tlsClientKeyPassword = configObj.tlsClientKeyPassword || ''
+    configObj.tlsAllowInvalidHostnames =
+      configObj.tlsAllowInvalidHostnames || false
+    configObj.tlsAllowChainErrors = configObj.tlsAllowChainErrors || false
+    configObj.tlsInsecure = configObj.tlsInsecure || false
+
+    connOptions.tls = true
+    connOptions.tlsCAFile = configObj.tlsCaPemFile
+    connOptions.tlsCertificateKeyFile = configObj.tlsClientPemFile
+    connOptions.tlsCertificateKeyFilePassword = configObj.tlsClientKeyPassword
+    connOptions.tlsAllowInvalidHostnames = configObj.tlsAllowInvalidHostnames
+    connOptions.tlsInsecure = configObj.tlsInsecure
+  }
+
+  return connOptions
 }
 
 module.exports = LoadConfig
