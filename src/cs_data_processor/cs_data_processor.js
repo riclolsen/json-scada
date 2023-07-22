@@ -19,6 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+const AppDefs = require('./app-defs')
 const Log = require('./simple-logger')
 const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
@@ -44,12 +45,12 @@ const jsConfig = LoadConfig(confFile, logLevel, inst)
 
 let DivideProcessingExpression = {}
 if (
-  'JS_CSDATAPROC_DIVIDE_EXP' in process.env &&
-  process.env.JS_CSDATAPROC_DIVIDE_EXP.trim() !== ''
+  AppDefs.ENV_PREFIX+'DIVIDE_EXP' in process.env &&
+  process.env[AppDefs.ENV_PREFIX+DIVIDE_EXP].trim() !== ''
 ) {
   try {
     DivideProcessingExpression = JSON.parse(
-      process.env.JS_CSDATAPROC_DIVIDE_EXP
+      process.env[AppDefs.ENV_PREFIX+'DIVIDE_EXP']
     )
     Log.log(
       'Divide Processing Expression: ' +
@@ -61,7 +62,7 @@ if (
     process.exit(1)
   }
 }
-
+ 
 const beepPointKey = -1
 const cntUpdatesPointKey = -2
 const invalidDetectCycle = 15000

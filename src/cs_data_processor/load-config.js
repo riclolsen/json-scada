@@ -74,8 +74,8 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
 
 let ReadFromSecondary = false
 if (
-  'JS_CSDATAPROC_READ_FROM_SECONDARY' in process.env &&
-  process.env.JS_CSDATAPROC_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
+  AppDefs.ENV_PREFIX+'READ_FROM_SECONDARY' in process.env &&
+  process.env[AppDefs.ENV_PREFIX+'READ_FROM_SECONDARY'].toUpperCase() === 'TRUE'
 ) {
   Log.log('Read From Secondary (Preferred): TRUE')
   ReadFromSecondary = true
