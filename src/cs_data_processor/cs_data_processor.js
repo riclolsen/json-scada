@@ -3,7 +3,7 @@
 /*
  * A process that watches for raw data updates from protocols using a MongoDB change stream.
  * Convert raw values and update realtime values and statuses.
- * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,52 +19,28 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const APP_NAME = 'CS_DATA_PROCESSOR'
-const APP_MSG = '{json:scada} - Change Stream Data Processor'
-const VERSION = '0.1.3'
 const Log = require('./simple-logger')
-let ProcessActive = false // for redundancy control
-var jsConfigFile = '../../conf/json-scada.json'
+const LoadConfig = require('./load-config')
+const Redundancy = require('./redundancy')
 const sqlFilesPath = '../../sql/'
 const fs = require('fs')
-const { MongoClient, Double, ReadPreference } = require('mongodb')
+const { MongoClient, Double } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 
-const SoeDataCollectionName = 'soeData'
+const MongoStatus = { HintMongoIsConnected: false }
 const LowestPriorityThatBeeps = 1 // will beep for priorities zero and one
 
 const args = process.argv.slice(2)
 var inst = null
 if (args.length > 0) inst = parseInt(args[0])
-const Instance = inst || process.env.JS_CSDATAPROC_INSTANCE || 1
 
 var logLevel = null
 if (args.length > 1) logLevel = parseInt(args[1])
-Log.levelCurrent = logLevel || process.env.JS_CSDATAPROC_LOGLEVEL || 1
-
 var confFile = null
 if (args.length > 2) confFile = args[2]
-jsConfigFile = confFile || process.env.JS_CONFIG_FILE || jsConfigFile
 
-Log.log(APP_MSG + ' Version ' + VERSION)
-Log.log('Instance: ' + Instance)
-Log.log('Log level: ' + Log.levelCurrent)
-Log.log('Config File: ' + jsConfigFile)
-
-if (!fs.existsSync(jsConfigFile)) {
-  Log.log('Error: config file not found!', Log.levelMin)
-  process.exit()
-}
-
-let ReadFromSecondary = false
-if (
-  'JS_CSDATAPROC_READ_FROM_SECONDARY' in process.env &&
-  process.env.JS_CSDATAPROC_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
-) {
-  Log.log('Read From Secondary (Preferred): TRUE')
-  ReadFromSecondary = true
-}
+const jsConfig = LoadConfig(confFile, logLevel, inst)
 
 let DivideProcessingExpression = {}
 if (
@@ -86,29 +62,15 @@ if (
   }
 }
 
-const RealtimeDataCollectionName = 'realtimeData'
-const ProcessInstancesCollectionName = 'processInstances'
-const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
-const ProtocolConnectionsCollectionName = 'protocolConnections'
 const beepPointKey = -1
 const cntUpdatesPointKey = -2
 const invalidDetectCycle = 15000
-
-let rawFileContents = fs.readFileSync(jsConfigFile)
-let jsConfig = JSON.parse(rawFileContents)
-if (
-  typeof jsConfig.mongoConnectionString != 'string' ||
-  jsConfig.mongoConnectionString === ''
-) {
-  Log.log('Error reading config file.', Log.levelMin)
-  process.exit()
-}
 
 Log.log('Connecting to MongoDB server...')
 
 const pipeline = [
   {
-    $project: { documentKey: false }
+    $project: { documentKey: false },
   },
   {
     $match: {
@@ -116,14 +78,14 @@ const pipeline = [
         { 'fullDocument.value': { $exists: true } },
         DivideProcessingExpression,
         {
-          'updateDescription.updatedFields.sourceDataUpdate': { $exists: true }
+          'updateDescription.updatedFields.sourceDataUpdate': { $exists: true },
         },
         {
-          $or: [{ operationType: 'update' }]
-        }
-      ]
-    }
-  }
+          $or: [{ operationType: 'update' }],
+        },
+      ],
+    },
+  },
 ]
 
 ;(async () => {
@@ -135,46 +97,54 @@ const pipeline = [
 
   // mark as frozen unchanged analog values greater than 1 after timeout
   setInterval(async function () {
-    if (collection) {
-      collection.updateMany(
-        {
-          $and: [
-            { type: 'analog' },
-            { invalid: false },
-            { frozen: false },
-            { frozenDetectTimeout: { $gt: 0.0 } },
-            { timeTag: { $ne: null } },
-            { $expr: { $gt: [{ $abs: '$value' }, 1.0] } },
-            {
-              $expr: {
-                $lt: [
-                  '$timeTag',
-                  {
-                    $subtract: [
-                      new Date(),
-                      { $multiply: ['$frozenDetectTimeout', 1000.0] }
-                    ]
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        { $set: { frozen: true } }
-      )
+    if (collection && MongoStatus.HintMongoIsConnected) {
+      collection
+        .updateMany(
+          {
+            $and: [
+              { type: 'analog' },
+              { invalid: false },
+              { frozen: false },
+              { frozenDetectTimeout: { $gt: 0.0 } },
+              { timeTag: { $ne: null } },
+              { $expr: { $gt: [{ $abs: '$value' }, 1.0] } },
+              {
+                $expr: {
+                  $lt: [
+                    '$timeTag',
+                    {
+                      $subtract: [
+                        new Date(),
+                        { $multiply: ['$frozenDetectTimeout', 1000.0] },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          { $set: { frozen: true } }
+        )
+        .catch(function (err) {
+          Log.log('Error on Mongodb query!', err)
+        })
     }
   }, 17317)
 
   setInterval(async function () {
     let cnt = 0
-    if (collection)
+    if (collection && MongoStatus.HintMongoIsConnected)
       while (!mongoRtDataQueue.isEmpty()) {
         let upd = mongoRtDataQueue.peek()
         let where = { _id: upd._id }
         delete upd._id // remove _id for update
-        collection.updateOne(where, {
-          $set: upd
-        })
+        collection
+          .updateOne(where, {
+            $set: upd,
+          })
+          .catch(function (err) {
+            Log.log('Error on Mongodb query!', err)
+          })
         mongoRtDataQueue.dequeue()
         cnt++
       }
@@ -199,7 +169,7 @@ const pipeline = [
     if (cntH) Log.log('PGSQL Hist updates ' + cntH)
 
     if (doInsertData) {
-      sqlTransaction = sqlTransaction.substr(0, sqlTransaction.length - 1) // remove last comma
+      sqlTransaction = sqlTransaction.substring(0, sqlTransaction.length - 1) // remove last comma
       sqlTransaction = sqlTransaction + ' \n'
       // this cause problems when tag/time repeated on same transaction
       // sqlTransaction = sqlTransaction + "ON CONFLICT (tag, time_tag) DO UPDATE SET value=EXCLUDED.value, value_json=EXCLUDED.value_json, time_tag_at_source=EXCLUDED.time_tag_at_source, flags=EXCLUDED.flags;\n";
@@ -211,10 +181,10 @@ const pipeline = [
           'pg_hist_' +
           new Date().getTime() +
           '_' +
-          Instance +
+          jsConfig.Instance +
           '.sql',
         sqlTransaction,
-        err => {
+        (err) => {
           if (err) Log.log('Error writing SQL file!')
         }
       )
@@ -245,54 +215,32 @@ const pipeline = [
           'pg_rtdata_' +
           new Date().getTime() +
           '_' +
-          Instance +
+          jsConfig.Instance +
           '.sql',
         sqlTransaction,
-        err => {
+        (err) => {
           if (err) Log.log('Error writing SQL file!')
         }
       )
     }
   }, 1000)
 
-  let connOptions = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
-    poolSize: 20,
-    readPreference: ReadFromSecondary
-      ? ReadPreference.SECONDARY_PREFERRED
-      : ReadPreference.PRIMARY
-    // readConcern: { level: 'majority' }
-  }
-
-  if (
-    typeof jsConfig.tlsCaPemFile === 'string' &&
-    jsConfig.tlsCaPemFile.trim() !== ''
-  ) {
-    jsConfig.tlsClientKeyPassword = jsConfig.tlsClientKeyPassword || ''
-    jsConfig.tlsAllowInvalidHostnames =
-      jsConfig.tlsAllowInvalidHostnames || false
-    jsConfig.tlsAllowChainErrors = jsConfig.tlsAllowChainErrors || false
-    jsConfig.tlsInsecure = jsConfig.tlsInsecure || false
-
-    connOptions.tls = true
-    connOptions.tlsCAFile = jsConfig.tlsCaPemFile
-    connOptions.tlsCertificateKeyFile = jsConfig.tlsClientPemFile
-    connOptions.tlsCertificateKeyFilePassword = jsConfig.tlsClientKeyPassword
-    connOptions.tlsAllowInvalidHostnames = jsConfig.tlsAllowInvalidHostnames
-    connOptions.tlsInsecure = jsConfig.tlsInsecure
-  }
-
   let clientMongo = null
   let invalidDetectIntervalHandle = null
-  let redundancyIntervalHandle = null
   let latencyIntervalHandle = null
   while (true) {
     if (clientMongo === null)
-      await MongoClient.connect(jsConfig.mongoConnectionString, connOptions)
-        .then(async client => {
+      await MongoClient.connect(
+        jsConfig.mongoConnectionString,
+        jsConfig.MongoConnectionOptions
+      )
+        .then(async (client) => {
           clientMongo = client
+          clientMongo.on('topologyClosed', (_) => {
+            MongoStatus.HintMongoIsConnected = false
+            Log.log('MongoDB server topologyClosed')
+          })
+          MongoStatus.HintMongoIsConnected = true
           Log.log('Connected correctly to MongoDB server')
 
           let latencyAccTotal = 0
@@ -308,240 +256,179 @@ const pipeline = [
 
           // specify db and collections
           const db = client.db(jsConfig.mongoDatabaseName)
-          collection = db.collection(RealtimeDataCollectionName)
+          collection = db.collection(jsConfig.RealtimeDataCollectionName)
           const changeStream = collection.watch(pipeline, {
-            fullDocument: 'updateLookup'
+            fullDocument: 'updateLookup',
           })
 
-          let lastActiveNodeKeepAliveTimeTag = null
-          let countKeepAliveNotUpdated = 0
-          let countKeepAliveUpdatesLimit = 4
-          async function ProcessRedundancy () {
-            if (!clientMongo) return
-            // look for process instance entry, if not found create a new entry
-            db.collection(ProcessInstancesCollectionName)
-              .find({
-                processName: APP_NAME,
-                processInstanceNumber: Instance
-              })
-              .toArray(function (err, results) {
-                if (err) Log.log(err)
-                else if (results) {
-                  if (results.length == 0) {
-                    // not found, then create
-                    ProcessActive = true
-                    Log.log('Instance config not found, creating one...')
-                    db.collection(ProcessInstancesCollectionName).insertOne({
-                      processName: APP_NAME,
-                      processInstanceNumber: new Double(Instance),
-                      enabled: true,
-                      logLevel: new Double(1),
-                      nodeNames: [],
-                      activeNodeName: jsConfig.nodeName,
-                      activeNodeKeepAliveTimeTag: new Date()
-                    })
-                  } else {
-                    // check for disabled or node not allowed
-                    let instance = results[0]
-                    if (instance?.enabled === false) {
-                      Log.log('Instance disabled, exiting...')
-                      process.exit()
-                    }
-                    if (
-                      instance?.nodeNames !== null &&
-                      instance.nodeNames.length > 0
-                    ) {
-                      if (!instance.nodeNames.includes(jsConfig.nodeName)) {
-                        Log.log('Node name not allowed, exiting...')
-                        process.exit()
-                      }
-                    }
-                    if (instance?.activeNodeName === jsConfig.nodeName) {
-                      if (!ProcessActive) Log.log('Node activated!')
-                      countKeepAliveNotUpdated = 0
-                      ProcessActive = true
-                    } else {
-                      // other node active
-                      if (ProcessActive) {
-                        Log.log('Node deactivated!')
-                        countKeepAliveNotUpdated = 0
-                      }
-                      ProcessActive = false
-                      if (
-                        lastActiveNodeKeepAliveTimeTag ===
-                        instance.activeNodeKeepAliveTimeTag.toISOString()
-                      ) {
-                        countKeepAliveNotUpdated++
-                        Log.log(
-                          'Keep-alive from active node not updated. ' +
-                            countKeepAliveNotUpdated
-                        )
-                      } else {
-                        countKeepAliveNotUpdated = 0
-                        Log.log(
-                          'Keep-alive updated by active node. Staying inactive.'
-                        )
-                      }
-                      lastActiveNodeKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
-                      if (
-                        countKeepAliveNotUpdated > countKeepAliveUpdatesLimit
-                      ) {
-                        // cnt exceeded, be active
-                        countKeepAliveNotUpdated = 0
-                        Log.log('Node activated!')
-                        ProcessActive = true
-                      }
-                    }
-
-                    if (ProcessActive) {
-                      // process active, then update keep alive
-                      db.collection(ProcessInstancesCollectionName).updateOne(
-                        {
-                          processName: APP_NAME,
-                          processInstanceNumber: new Double(Instance)
-                        },
-                        {
-                          $set: {
-                            activeNodeName: jsConfig.nodeName,
-                            activeNodeKeepAliveTimeTag: new Date(),
-                            softwareVersion: VERSION,
-                            stats: {
-                              latencyAvg: new Double(
-                                latencyAccTotal / latencyTotalCnt
-                              ),
-                              latencyAvgMinute: new Double(
-                                latencyAccMinute / latencyMinuteCnt
-                              ),
-                              latencyPeak: new Double(latencyPeak)
-                            }
-                          }
-                        }
-                      )
-                    }
-                  }
-                }
-              })
-          }
-
-          // check and update redundancy control
-          ProcessRedundancy()
-          clearInterval(redundancyIntervalHandle)
-          redundancyIntervalHandle = setInterval(ProcessRedundancy, 5000)
+          Redundancy.Start(5000, clientMongo, db, jsConfig, MongoStatus)
 
           // periodically, mark invalid data when supervised points not updated within specified period (invalidDetectTimeout) for the point
           // check also stopped protocol driver instances
           clearInterval(invalidDetectIntervalHandle)
-          invalidDetectIntervalHandle = setInterval(function () {
-            if (clientMongo !== null) {
-              collection.updateMany(
-                {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$origin', 'supervised'] },
-                      { $ne: ['$substituted', true] },
-                      { $eq: ['$invalid', false] },
-                      {
-                        $lt: [
-                          '$sourceDataUpdate.timeTag',
-                          {
-                            $subtract: [
-                              new Date(),
-                              { $multiply: [1000, '$invalidDetectTimeout'] }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                },
-                { $set: { invalid: true } }
-              )
+          invalidDetectIntervalHandle = setInterval(async function () {
+            if (clientMongo !== null && MongoStatus.HintMongoIsConnected) {
+              collection
+                .updateMany(
+                  {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$origin', 'supervised'] },
+                        { $ne: ['$substituted', true] },
+                        { $eq: ['$invalid', false] },
+                        {
+                          $lt: [
+                            '$sourceDataUpdate.timeTag',
+                            {
+                              $subtract: [
+                                new Date(),
+                                { $multiply: [1000, '$invalidDetectTimeout'] },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                  { $set: { invalid: true } }
+                )
+                .catch(function (err) {
+                  Log.log('Error on Mongodb query!', err)
+                })
 
               // look for client drivers instance not updating keep alive, if found invalidate all related data points of all its connections
-              db.collection(ProtocolDriverInstancesCollectionName)
+              const results = await db
+                .collection(jsConfig.ProtocolDriverInstancesCollectionName)
                 .find({
                   $expr: {
                     $and: [
-                      { $in: ['$protocolDriver', ['IEC60870-5-104']] },
+                      {
+                        $in: [
+                          '$protocolDriver',
+                          [
+                            'IEC60870-5-104',
+                            'IEC60870-5-101',
+                            'IEC60870-5-103',
+                            'DNP3',
+                            'MQTT-SPARKPLUG-B',
+                            'OPC-UA',
+                            'OPC-DA',
+                            'TELEGRAF-LISTENER',
+                            'PLCTAG',
+                            'PLC4X',
+                            'MODBUS',	
+                            'IEC61850',
+                          ],
+                        ],
+                      },
                       { $eq: ['$enabled', true] },
                       {
                         $lt: [
                           '$activeNodeKeepAliveTimeTag',
                           {
-                            $subtract: [new Date(), { $multiply: [1000, 15] }]
-                          }
-                        ]
-                      }
-                    ]
-                  }
+                            $subtract: [new Date(), { $multiply: [1000, 15] }],
+                          },
+                        ],
+                      },
+                    ],
+                  },
                 })
-                .toArray(function (err, results) {
-                  if (results)
-                    for (let i = 0; i < results.length; i++) {
-                      Log.log('PROTOCOL INSTANCE NOT RUNNING DETECTED!')
-                      let instance = results[i]
+                .toArray()
+
+              if (results && results.length > 0)
+                for (let i = 0; i < results.length; i++) {
+                  Log.log('PROTOCOL INSTANCE NOT RUNNING DETECTED!')
+                  let instance = results[i]
+                  Log.log(
+                    'Driver Name: ' +
+                      instance?.protocolDriver +
+                      ' Instance Number: ' +
+                      instance?.protocolDriverInstanceNumber
+                  )
+                  // find all connections related to his instance
+                  const res = db
+                    .collection(jsConfig.ProtocolConnectionsCollectionName)
+                    .find({
+                      protocolDriver: instance?.protocolDriver,
+                      protocolDriverInstanceNumber:
+                        instance?.protocolDriverInstanceNumber,
+                    })
+                    .toArray()
+
+                  if (res && res.length > 0)
+                    for (let i = 0; i < res.length; i++) {
+                      let connection = res[i]
                       Log.log(
-                        'Driver Name: ' +
-                          instance?.protocolDriver +
-                          ' Instance Number: ' +
-                          instance?.protocolDriverInstanceNumber
+                        'Data invalidated for connection: ' +
+                          connection?.protocolConnectionNumber
                       )
-                      // find all connections related to his instance
-                      db.collection(ProtocolConnectionsCollectionName)
-                        .find({
-                          protocolDriver: instance?.protocolDriver,
-                          protocolDriverInstanceNumber:
-                            instance?.protocolDriverInstanceNumber
-                        })
-                        .toArray(function (err, results) {
-                          if (results)
-                            for (let i = 0; i < results.length; i++) {
-                              let connection = results[i]
-                              Log.log(
-                                'Data invalidated for connection: ' +
-                                  connection?.protocolConnectionNumber
-                              )
-                              db.collection(
-                                RealtimeDataCollectionName
-                              ).updateMany(
-                                {
-                                  origin: 'supervised',
-                                  protocolSourceConnectionNumber:
-                                    connection?.protocolConnectionNumber,
-                                  invalid: false
-                                },
-                                {
-                                  $set: {
-                                    invalid: true
-                                  }
-                                }
-                              )
-                            }
-                        })
                     }
-                })
+                }
+              for (let i = 0; i < results.length; i++) {
+                Log.log('PROTOCOL INSTANCE NOT RUNNING DETECTED!')
+                let instance = results[i]
+                Log.log(
+                  'Driver Name: ' +
+                    instance?.protocolDriver +
+                    ' Instance Number: ' +
+                    instance?.protocolDriverInstanceNumber
+                )
+                // find all connections related to his instance
+                db.collection(jsConfig.ProtocolConnectionsCollectionName)
+                  .find({
+                    protocolDriver: instance?.protocolDriver,
+                    protocolDriverInstanceNumber:
+                      instance?.protocolDriverInstanceNumber,
+                  })
+                  .toArray(function (err, results) {
+                    if (results)
+                      for (let i = 0; i < results.length; i++) {
+                        let connection = results[i]
+                        Log.log(
+                          'Data invalidated for connection: ' +
+                            connection?.protocolConnectionNumber
+                        )
+                        db.collection(jsConfig.RealtimeDataCollectionName)
+                          .updateMany(
+                            {
+                              origin: 'supervised',
+                              protocolSourceConnectionNumber:
+                                connection?.protocolConnectionNumber,
+                              invalid: false,
+                            },
+                            {
+                              $set: {
+                                invalid: true,
+                              },
+                            }
+                          )
+                          .catch(function (err) {
+                            Log.log('Error on Mongodb query!', err)
+                          })
+                      }
+                  })
+              }
             }
           }, invalidDetectCycle)
 
           try {
-            changeStream.on('error', change => {
+            changeStream.on('error', (change) => {
               if (clientMongo) clientMongo.close()
               clientMongo = null
               Log.log('Error on ChangeStream!')
             })
-            changeStream.on('close', change => {
-              if (clientMongo) clientMongo.close()
+            changeStream.on('close', (change) => {
               clientMongo = null
               Log.log('Closed ChangeStream!')
             })
-            changeStream.on('end', change => {
+            changeStream.on('end', (change) => {
               if (clientMongo) clientMongo.close()
               clientMongo = null
               Log.log('Ended ChangeStream!')
             })
 
             // start listen to changes
-            changeStream.on('change', change => {
+            changeStream.on('change', (change) => {
               try {
                 if (change.operationType === 'delete') return
 
@@ -572,7 +459,7 @@ const pipeline = [
                   )
                 }
 
-                if (!ProcessActive)
+                if (!Redundancy.ProcessStateIsActive())
                   // when inactive, ignore changes
                   return
 
@@ -700,8 +587,8 @@ const pipeline = [
                   change.updateDescription.updatedFields.sourceDataUpdate
                     ?.valueStringAtSource || ''
                 let valueJson =
-                    change.updateDescription.updatedFields.sourceDataUpdate
-                      ?.valueJsonAtSource || {}
+                  change.updateDescription.updatedFields.sourceDataUpdate
+                    ?.valueJsonAtSource || {}
                 let alarmed = change.fullDocument.alarmed
 
                 // avoid undefined, null or NaN values
@@ -868,19 +755,23 @@ const pipeline = [
                             ? ' ⤈'
                             : '') +
                           (alarmed ? ' 🚩' : ' 🆗')
-                        db.collection(SoeDataCollectionName).insertOne({
-                          tag: change.fullDocument.tag,
-                          pointKey: change.fullDocument._id,
-                          group1: change.fullDocument.group1,
-                          description: change.fullDocument.description,
-                          eventText: eventText,
-                          invalid: false,
-                          priority: change.fullDocument.priority,
-                          timeTag: eventDate,
-                          timeTagAtSource: eventDate,
-                          timeTagAtSourceOk: true,
-                          ack: alarmed ? 0 : 1 // enter as acknowledged when normalized
-                        })
+                        db.collection(jsConfig.SoeDataCollectionName)
+                          .insertOne({
+                            tag: change.fullDocument.tag,
+                            pointKey: change.fullDocument._id,
+                            group1: change.fullDocument.group1,
+                            description: change.fullDocument.description,
+                            eventText: eventText,
+                            invalid: false,
+                            priority: change.fullDocument.priority,
+                            timeTag: eventDate,
+                            timeTagAtSource: eventDate,
+                            timeTagAtSourceOk: true,
+                            ack: alarmed ? 0 : 1, // enter as acknowledged when normalized
+                          })
+                          .catch(function (err) {
+                            Log.log('Error on Mongodb query!', err)
+                          })
                       }
                   }
 
@@ -902,25 +793,29 @@ const pipeline = [
                             Math.abs(change.fullDocument?.value)
                           ? ' ↓'
                           : '')
-                      db.collection(SoeDataCollectionName).insertOne({
-                        tag: change.fullDocument.tag,
-                        pointKey: change.fullDocument._id,
-                        group1: change.fullDocument.group1,
-                        description: change.fullDocument.description,
-                        eventText: eventText,
-                        invalid: false,
-                        priority: change.fullDocument.priority,
-                        timeTag: new Date(),
-                        timeTagAtSource: isSOE
-                          ? change.updateDescription.updatedFields
-                              .sourceDataUpdate.timeTagAtSource
-                          : new Date(),
-                        timeTagAtSourceOk: isSOE
-                          ? change.updateDescription.updatedFields
-                              .sourceDataUpdate.timeTagAtSourceOk
-                          : false,
-                        ack: 1 // enter as acknowledged as it is not an alarm
-                      })
+                      db.collection(jsConfig.SoeDataCollectionName)
+                        .insertOne({
+                          tag: change.fullDocument.tag,
+                          pointKey: change.fullDocument._id,
+                          group1: change.fullDocument.group1,
+                          description: change.fullDocument.description,
+                          eventText: eventText,
+                          invalid: false,
+                          priority: change.fullDocument.priority,
+                          timeTag: new Date(),
+                          timeTagAtSource: isSOE
+                            ? change.updateDescription.updatedFields
+                                .sourceDataUpdate.timeTagAtSource
+                            : new Date(),
+                          timeTagAtSourceOk: isSOE
+                            ? change.updateDescription.updatedFields
+                                .sourceDataUpdate.timeTagAtSourceOk
+                            : false,
+                          ack: 1, // enter as acknowledged as it is not an alarm
+                        })
+                        .catch(function (err) {
+                          Log.log('Error on Mongodb query!', err)
+                        })
                     }
                 }
 
@@ -969,7 +864,7 @@ const pipeline = [
                           beepType: new Double(2), // this is an important beep
                           value: new Double(1),
                           valueString: 'Beep Active',
-                          timeTag: dt
+                          timeTag: dt,
                         })
                       else if (
                         change.fullDocument.priority <= LowestPriorityThatBeeps
@@ -978,7 +873,7 @@ const pipeline = [
                           _id: beepPointKey,
                           value: new Double(1),
                           valueString: 'Beep Active',
-                          timeTag: dt
+                          timeTag: dt,
                         })
                     }
                     if (change.fullDocument.type === 'digital') {
@@ -987,7 +882,7 @@ const pipeline = [
                         _id: cntUpdatesPointKey,
                         value: new Double(digitalUpdatesCount),
                         valueString: '' + digitalUpdatesCount + ' Updates',
-                        timeTag: dt
+                        timeTag: dt,
                       })
                     }
                   }
@@ -1041,7 +936,7 @@ const pipeline = [
                     alarmed:
                       change.fullDocument?.alarmDisabled === true
                         ? false
-                        : alarmed
+                        : alarmed,
                   }
                   if (alarmTime !== null) update.timeTagAlarm = alarmTime
 
@@ -1113,11 +1008,13 @@ const pipeline = [
                         "'," +
                         value +
                         ',' +
-                        '\'{' +	
-                        '"v": ' + JSON.stringify(valueJson).replaceAll("'", " ") + ',' +
+                        "'{" +
+                        '"v": ' +
+                        JSON.stringify(valueJson).replaceAll("'", ' ') +
+                        ',' +
                         '"s": "' +
-                        valueString.replaceAll("'", " ") +
-                        '"}\',' +                        
+                        valueString.replaceAll("'", ' ') +
+                        '"}\',' +
                         (update.timeTagAtSource !== null
                           ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
@@ -1178,23 +1075,27 @@ const pipeline = [
                       eventText = change.fullDocument.eventTextTrue
                     }
 
-                    db.collection(SoeDataCollectionName).insertOne({
-                      tag: change.fullDocument.tag,
-                      pointKey: change.fullDocument._id,
-                      group1: change.fullDocument.group1,
-                      description: change.fullDocument.description,
-                      eventText: eventText,
-                      invalid: invalid,
-                      priority: change.fullDocument.priority,
-                      timeTag: new Date(),
-                      timeTagAtSource:
-                        change.updateDescription.updatedFields.sourceDataUpdate
-                          .timeTagAtSource,
-                      timeTagAtSourceOk:
-                        change.updateDescription.updatedFields.sourceDataUpdate
-                          .timeTagAtSourceOk,
-                      ack: 0
-                    })
+                    db.collection(jsConfig.SoeDataCollectionName)
+                      .insertOne({
+                        tag: change.fullDocument.tag,
+                        pointKey: change.fullDocument._id,
+                        group1: change.fullDocument.group1,
+                        description: change.fullDocument.description,
+                        eventText: eventText,
+                        invalid: invalid,
+                        priority: change.fullDocument.priority,
+                        timeTag: new Date(),
+                        timeTagAtSource:
+                          change.updateDescription.updatedFields
+                            .sourceDataUpdate.timeTagAtSource,
+                        timeTagAtSourceOk:
+                          change.updateDescription.updatedFields
+                            .sourceDataUpdate.timeTagAtSourceOk,
+                        ack: 0,
+                      })
+                      .catch(function (err) {
+                        Log.log('Error on Mongodb query!', err)
+                      })
                     Log.log(
                       'SOE ' +
                         change.fullDocument._id +
@@ -1224,7 +1125,7 @@ const pipeline = [
         })
 
     // wait 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     // detect connection problems, if error will null the client to later reconnect
     if (clientMongo === undefined) {
@@ -1232,11 +1133,39 @@ const pipeline = [
       clientMongo = null
     }
     if (clientMongo)
-      if (!clientMongo.isConnected()) {
+      if (!(await checkConnectedMongo(clientMongo))) {
         // not anymore connected, will retry
         Log.log('Disconnected Mongodb!')
-        clientMongo.close()
+        if (clientMongo) clientMongo.close()
         clientMongo = null
       }
   }
 })()
+
+// test mongoDB connectivity
+async function checkConnectedMongo(client) {
+  if (!client) {
+    return false
+  }
+  const CheckMongoConnectionTimeout = 1000
+  let tr = setTimeout(() => {
+    Log.log('Mongo ping timeout error!')
+    MongoStatus.HintMongoIsConnected = false
+  }, CheckMongoConnectionTimeout)
+
+  let res = null
+  try {
+    res = await client.db('admin').command({ ping: 1 })
+    clearTimeout(tr)
+  } catch (e) {
+    Log.log('Error on mongodb connection!')
+    return false
+  }
+  if ('ok' in res && res.ok) {
+    MongoStatus.HintMongoIsConnected = true
+    return true
+  } else {
+    MongoStatus.HintMongoIsConnected = false
+    return false
+  }
+}

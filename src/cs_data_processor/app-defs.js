@@ -17,19 +17,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const Log = {
-    // simple message logger
-    levelMin: 0,
-    levelNormal: 1,
-    levelDetailed: 2,
-    levelDebug: 3,
-    levelCurrent: 1,
-    log: function (msg, level = 1) {
-      if (level <= this.levelCurrent) {
-        let dt = new Date()
-        console.log(dt.toISOString() + ' - ' + msg)
-      }
-    }
-  }
-
-module.exports = Log
+module.exports = {
+  NAME: 'CS_DATA_PROCESSOR',
+  ENV_PREFIX: 'JS_CS_DATA_PROCESSOR',
+  MSG: '{json:scada} - Change Stream Data Processor',
+  VERSION: '0.1.4',
+}
