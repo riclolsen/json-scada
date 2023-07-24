@@ -19,7 +19,7 @@
  */
 
 let AUTHENTICATION = process.env.JS_AUTHENTICATION === 'NOAUTH' ? false : true
-const IP_BIND = process.env.JS_IP_BIND || 'localhost'
+const IP_BIND = process.env.JS_IP_BIND || '127.0.0.1'
 const HTTP_PORT = process.env.JS_HTTP_PORT || 8080
 const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || 'http://127.0.0.1:3000'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
