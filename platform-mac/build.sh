@@ -64,6 +64,7 @@ npm install
 cd ../oshmi_sync
 npm install
 cd ../htdocs-admin
+export NODE_OPTIONS=--openssl-legacy-provider
 npm install
 npm run build
 cd ../shell-api

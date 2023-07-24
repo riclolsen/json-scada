@@ -92,6 +92,7 @@ cd \json-scada\src\shell-api
 call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
 call \json-scada\platform-windows\nodejs-runtime\npm update
 cd \json-scada\src\htdocs-admin
+set NODE_OPTIONS=--openssl-legacy-provider
 call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
 call \json-scada\platform-windows\nodejs-runtime\npm update
 call \json-scada\platform-windows\nodejs-runtime\npm run build

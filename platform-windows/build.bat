@@ -40,6 +40,8 @@ dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -
 cd \json-scada\src\dnp3\Dnp3Client\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ Dnp3Client.csproj
 cd \json-scada\src\OPC-UA-Client\ 
+rmdir obj /S /Q
+rmdir bin /S /Q
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\ OPC-UA-Client.csproj
 cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
 dotnet build --no-self-contained --runtime win-x64 -c Release -o ..\..\bin\
@@ -92,6 +94,7 @@ cd \json-scada\src\shell-api
 call \json-scada\platform-windows\nodejs-runtime\npm install
 
 cd \json-scada\src\htdocs-admin
+set NODE_OPTIONS=--openssl-legacy-provider
 call \json-scada\platform-windows\nodejs-runtime\npm install
 call \json-scada\platform-windows\nodejs-runtime\npm run build
 

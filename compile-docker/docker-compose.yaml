@@ -120,6 +120,8 @@ services:
     command:  sh -c "npm install -g npm && cd /htdocs-admin && npm install && npm run build"
     volumes:
       - ../src/htdocs-admin:/htdocs-admin
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
 
   alarm_beep_update:
     image: node:16.13.0-alpine
