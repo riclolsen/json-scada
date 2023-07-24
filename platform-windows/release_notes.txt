@@ -24,7 +24,7 @@ Acknowledgements:
   PostgreSQL - https://www.postgresql.org/
   TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
   Grafana - https://github.com/grafana/grafana, https://grafana.com/
-  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
+  Lib60870, Lib61850 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
   ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
   Opendnp3 - https://github.com/dnp3/opendnp3
   PLC4X - https://github.com/apache/plc4x
@@ -35,6 +35,7 @@ Acknowledgements:
   Inkscape - https://inkscape.org
   Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
   Inkscape + SAGE (updated) - https://gitlab.com/lvta0909/inkscape
+  Inkscape + SAGE (rebased) - https://gitlab.com/ricardolo/inkscape-rebased
   Chromium by "The Chromium Authors"
   Chromium x86 binaries - http://chromium.woolyss.com/
   NGINX - http://nginx.org/
@@ -128,6 +129,31 @@ See official repo:
 
 Inkscape+SAGE:
 * See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.29:
+
+* Default login credentials: username=admin password=jsonscada.
+* New IEC61850 Client protocol driver.
+* C# MongoDB drivers updated.
+* Npm packages updated.
+* Refactored Nodejs code for updated mongodb driver.
+* MongoDB Compass updated to 1.39.0.
+* MongoDB Community Server updated to 6.0.8.
+* Grafana updated to 9.5.6.
+* Chromium updated to 115.0.5790.102.
+* Telegraf runtime updated to 1.27.2.
+* Dotnet runtime updated to 6.0.19.
+* Nodejs runtime updated to 20.5.0.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 -------------------------------------------------------------------
 

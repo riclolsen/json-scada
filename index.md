@@ -22,6 +22,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/macosx-x86--64-green "Mac OSX x86-64")
 ![](https://img.shields.io/badge/macosx-ARM--M1-yellow "Mac ARM M1")
 
+![](https://img.shields.io/badge/IEC61850-green "IEC61850")
 ![](https://img.shields.io/badge/IEC60870--5--104-green "IEC60870-5-104")
 ![](https://img.shields.io/badge/IEC60870--5--101-green "IEC60870-5-101")
 ![](https://img.shields.io/badge/DNP3-green "DNP3")
@@ -47,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 * Event-based realtime async data processing with MongoDB Change Streams.
 * Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.28-alpha).
+* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.29-alpha).
 * Unlimited tags, servers, and users.
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -82,7 +83,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 * [Install Guide](docs/install.md)
-* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.28-alpha)
+* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.29-alpha)
 * [Docker Demo](demo-docker/README.md)
 * [Schema Documentation](docs/schema.md)
 * [Config File](conf/README.md)
@@ -125,7 +126,8 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] OPC UA Server
 - [ ] OPC DA Client
 - [ ] Modbus Client
-- [ ] IEC 61850 MMS Client
+- [x] IEC 61850 MMS Client
+- [ ] IEC 61850 MMS Server
 - [ ] IEC 61850 GOOSE Client
 - [x] CIP Ethernet/IP (libplctag, experimental)
 - [ ] Siemens S7
