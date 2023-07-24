@@ -25,21 +25,19 @@ const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || 'http://127.0.0.1:3000'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
-const APP_NAME = 'server_realtime_auth'
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
 const COLL_COMMANDS = 'commandsQueue'
 const COLL_ACTIONS = 'userActions'
-const jsConfigFile = process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
+const LoadConfig = require('./load-config')
+const Log = require('./simple-logger')
 const express = require('express')
 const httpProxy = require('express-http-proxy')
 const path = require('path')
 const cors = require('cors')
 const app = express()
-var cookieParser = require('cookie-parser')
-const fs = require('fs')
-const { MongoClient, ObjectId, Double, GridFSBucket, ReadPreference } = require('mongodb')
-var Grid = require('gridfs-stream')
+const cookieParser = require('cookie-parser')
+const { MongoClient, ObjectId, Double, GridFSBucket } = require('mongodb')
 const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 const UserActionsQueue = require('./userActionsQueue')
@@ -50,9 +48,7 @@ if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
 
 const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
-const { AsyncLocalStorage } = require('async_hooks')
 const { canSendCommands } = require('./app/middlewares/authJwt.js')
-const { query } = require('express')
 
 // Argument NOAUTH disables user authentication
 var args = process.argv.slice(2)
@@ -65,38 +61,18 @@ const opcIdTypeString = 1
 const beepPointKey = -1
 const EventsRemoveGuardSeconds = 20
 
-let rawFileContents = fs.readFileSync(jsConfigFile)
-let jsConfig = JSON.parse(rawFileContents)
-if (
-  typeof jsConfig.mongoConnectionString != 'string' ||
-  jsConfig.mongoConnectionString === ''
-) {
-  console.log('Error reading config file.')
-  process.exit(-1)
-}
-
-let ReadFromSecondary = false
-if (
-  'JS_READ_FROM_SECONDARY' in process.env &&
-  process.env.JS_READ_FROM_SECONDARY.toUpperCase() === 'TRUE'
-) {
-  console.log("Read From Secondary (Preferred): TRUE")
-  ReadFromSecondary = true
-}
+const jsConfig = LoadConfig()
+let HintMongoIsConnected = true
 
 if (AUTHENTICATION) {
   // JWT Auth Mongo Express https://bezkoder.com/node-js-mongodb-auth-jwt/
   dbAuth.mongoose
-    .connect(jsConfig.mongoConnectionString, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      // useFindAndModify: false
-    })
+    .connect(jsConfig.mongoConnectionString, jsConfig.MongoConnectionOptions)
     .then(() => {
-      console.log('Successfully connect to MongoDB (via mongoose).')
+      Log.log('Successfully connect to MongoDB (via mongoose).')
       // initial();
     })
-    .catch(err => {
+    .catch((err) => {
       console.error('Connection error', err)
       process.exit()
     })
@@ -106,11 +82,11 @@ if (AUTHENTICATION) {
   app.use(express.json())
   app.use(
     express.urlencoded({
-      extended: true
+      extended: true,
     })
   )
 } else {
-  console.log('******* DISABLED AUTHENTICATION! ********')
+  Log.log('******* DISABLED AUTHENTICATION! ********')
 
   // reverse proxy for grafana
   app.use('/grafana', httpProxy(GRAFANA_SERVER))
@@ -123,7 +99,7 @@ if (AUTHENTICATION) {
         if (/.*\.html/.test(path)) {
           res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
         }
-      }
+      },
     })
   )
   app.use(express.static('../htdocs')) // serve static files
@@ -131,7 +107,7 @@ if (AUTHENTICATION) {
   app.use(express.json())
   app.use(
     express.urlencoded({
-      extended: true
+      extended: true,
     })
   )
   // Here we serve up the index page
@@ -146,7 +122,7 @@ let pool = null
 
 ;(async () => {
   app.listen(HTTP_PORT, IP_BIND, () => {
-    console.log('listening on ' + HTTP_PORT)
+    Log.log('listening on ' + HTTP_PORT)
   })
 
   // if env variables defined use them, if not set local defaults
@@ -158,7 +134,7 @@ let pool = null
       database: 'json_scada',
       user: 'json_scada',
       password: 'json_scada',
-      port: 5432
+      port: 5432,
     }
 
   if (pool == null) {
@@ -189,27 +165,26 @@ let pool = null
     app.get(QUERYJSON_AP, queryJSON)
   }
 
-  async function queryJSON(req, res){
-
+  async function queryJSON(req, res) {
     let queryname = req.query?.query || ''
-    console.log("queryJSON " + queryname)
+    Log.log('queryJSON ' + queryname)
     res.setHeader('Content-type', 'application/json')
 
-    if (queryname===''){
-      res.send({error:'Missing "query" parameter!'})
+    if (queryname === '') {
+      res.send({ error: 'Missing "query" parameter!' })
       return
     }
-    
+
     let query = GetQueryPostgresql(queryname)
-    if (query===''){
-      res.send({error:'Unknown query name!'})
+    if (query === '') {
+      res.send({ error: 'Unknown query name!' })
       return
     }
 
     // read data from postgreSQL
     pool.query(query, (err, resp) => {
       if (err) {
-        res.send({error:'Query error!'})
+        res.send({ error: 'Query error!' })
         return
       }
 
@@ -219,7 +194,7 @@ let pool = null
   }
 
   // find file on mongodb gridfs and return it
-  async function getFileApi (req, res) {
+  async function getFileApi(req, res) {
     let filename = req.query?.name || ''
     let bucketName = req.query?.bucket || 'fs'
     let mimeType = req.query?.mime || path.basename(filename)
@@ -233,7 +208,7 @@ let pool = null
       let gfs = new GridFSBucket(db, { bucketName: bucketName })
       let f = await gfs.find({ filename: filename }).toArray()
       if (f.length === 0) {
-        console.log('File not found ' + filename)
+        Log.log('File not found ' + filename)
         res.setHeader('Content-type', 'application/json')
         res.send("{ error: 'File not found' }")
         return
@@ -247,14 +222,14 @@ let pool = null
       if (refresh) res.setHeader('Refresh', refresh)
       readstream.pipe(res)
     } catch (e) {
-      console.log('File not found: ' + filename + ' ' + e.message)
+      Log.log('File not found: ' + filename + ' ' + e.message)
       res.setHeader('Content-type', 'application/json')
       res.send("{ error: 'File not found' }")
     }
   }
 
   // OPC WEB HMI API
-  async function opcApi (req, res) {
+  async function opcApi(req, res) {
     let tini = new Date().getTime()
 
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -279,7 +254,7 @@ let pool = null
       NamespaceUris: [
         'urn:opcf-apps-01:UA:Quickstarts:ReferenceServer',
         'http://opcfoundation.org/Quickstarts/ReferenceApplications',
-        'http://opcfoundation.org/UA/Diagnostics'
+        'http://opcfoundation.org/UA/Diagnostics',
       ],
       ServerUris: [],
       ServiceId: ServiceId,
@@ -288,12 +263,12 @@ let pool = null
           RequestHandle: RequestHandle,
           Timestamp: Timestamp,
           ServiceDiagnostics: {
-            LocalizedText: 0
+            LocalizedText: 0,
           },
-          StringTable: []
-        }
+          StringTable: [],
+        },
         //, "DiagnosticInfos": []
-      }
+      },
     }
 
     let username = 'unknown'
@@ -302,7 +277,7 @@ let pool = null
     // handle auth here
     if (AUTHENTICATION) {
       let rslt = authJwt.checkToken(req)
-      // console.log(rslt)
+      // Log.log(rslt)
       if (rslt === false) {
         // fail if not connected to database server
         OpcResp.ServiceId = opc.ServiceCode.ServiceFault
@@ -311,7 +286,7 @@ let pool = null
         OpcResp.Body.ResponseHeader.StringTable = [
           opc.getStatusCodeName(opc.StatusCode.BadIdentityTokenRejected),
           opc.getStatusCodeText(opc.StatusCode.BadIdentityTokenRejected),
-          'Access denied (absent or invalid access token)!'
+          'Access denied (absent or invalid access token)!',
         ]
         res.send(OpcResp)
         return
@@ -329,7 +304,7 @@ let pool = null
       OpcResp.Body.ResponseHeader.StringTable = [
         opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
         opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
-        'Database disconnected!'
+        'Database disconnected!',
       ]
       res.send(OpcResp)
       return
@@ -343,7 +318,7 @@ let pool = null
       OpcResp.Body.ResponseHeader.StringTable = [
         opc.getStatusCodeName(opc.StatusCode.BadRequestHeaderInvalid),
         opc.getStatusCodeText(opc.StatusCode.BadRequestHeaderInvalid),
-        'No ServiceID'
+        'No ServiceID',
       ]
       res.send(OpcResp)
       return
@@ -357,7 +332,7 @@ let pool = null
       OpcResp.Body.ResponseHeader.StringTable = [
         opc.getStatusCodeName(opc.StatusCode.BadRequestHeaderInvalid),
         opc.getStatusCodeText(opc.StatusCode.BadRequestHeaderInvalid),
-        'No RequestHandle'
+        'No RequestHandle',
       ]
       res.send(OpcResp)
       return
@@ -373,7 +348,7 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.GoodNoData),
               opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-              'No NodesToWrite'
+              'No NodesToWrite',
             ]
             res.send(OpcResp)
             return
@@ -399,7 +374,7 @@ let pool = null
                       node.Value.Body & opc.Acknowledge.AckPointEvents)
                   ) {
                     // ACTION DENIED
-                    console.log(
+                    Log.log(
                       `User has no right to ack/remove events! [${username}]`
                     )
                     OpcResp.Body.ResponseHeader.ServiceResult =
@@ -407,7 +382,7 @@ let pool = null
                     OpcResp.Body.ResponseHeader.StringTable = [
                       opc.getStatusCodeName(opc.StatusCode.BadUserAccessDenied),
                       opc.getStatusCodeText(opc.StatusCode.BadUserAccessDenied),
-                      'User has no right to ack/remove events!'
+                      'User has no right to ack/remove events!',
                     ]
                     res.send(OpcResp)
                     return
@@ -419,7 +394,7 @@ let pool = null
                       node.Value.Body & opc.Acknowledge.SilenceBeep)
                   ) {
                     // ACTION DENIED
-                    console.log(
+                    Log.log(
                       `User has no right to ack or silence alarms! [${username}]`
                     )
                     OpcResp.Body.ResponseHeader.ServiceResult =
@@ -427,7 +402,7 @@ let pool = null
                     OpcResp.Body.ResponseHeader.StringTable = [
                       opc.getStatusCodeName(opc.StatusCode.BadUserAccessDenied),
                       opc.getStatusCodeText(opc.StatusCode.BadUserAccessDenied),
-                      'User has no right to ack or silence alarms!'
+                      'User has no right to ack or silence alarms!',
                     ]
                     res.send(OpcResp)
                     return
@@ -442,82 +417,90 @@ let pool = null
                 }
 
                 if (node.Value.Body & opc.Acknowledge.RemoveAllEvents) {
-                  console.log('Remove All Events')
-                  let fromDate = new Date(Date.now() - EventsRemoveGuardSeconds * 1000)
+                  Log.log('Remove All Events')
+                  let fromDate = new Date(
+                    Date.now() - EventsRemoveGuardSeconds * 1000
+                  )
                   let result = await db.collection(COLL_SOE).updateMany(
-                    { ack: { $lte: 1 }, timeTag: { $lte: fromDate} },
+                    { ack: { $lte: 1 }, timeTag: { $lte: fromDate } },
                     {
                       $set: {
-                        ack: 2
-                      }
+                        ack: 2,
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove All Events',
-                    timeTag: fromDate
+                    timeTag: fromDate,
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckAllEvents) {
-                  console.log('Ack All Events')
+                  Log.log('Ack All Events')
                   let result = await db.collection(COLL_SOE).updateMany(
                     { ack: 0 },
                     {
                       $set: {
-                        ack: 1
-                      }
+                        ack: 1,
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Events',
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 } else if (
                   node.Value.Body & opc.Acknowledge.RemovePointEvents
                 ) {
-                  console.log('Remove Point Events: ' + node.NodeId.Id)
-                  let fromDate = new Date(Date.now() - EventsRemoveGuardSeconds * 1000)
+                  Log.log('Remove Point Events: ' + node.NodeId.Id)
+                  let fromDate = new Date(
+                    Date.now() - EventsRemoveGuardSeconds * 1000
+                  )
                   let result = await db.collection(COLL_SOE).updateMany(
-                    { tag: node.NodeId.Id, ack: { $lte: 1 }, timeTag: { $lte: fromDate} },
+                    {
+                      tag: node.NodeId.Id,
+                      ack: { $lte: 1 },
+                      timeTag: { $lte: fromDate },
+                    },
                     {
                       $set: {
-                        ack: 2
-                      }
+                        ack: 2,
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Remove Point Events',
                     tag: node.NodeId.Id,
-                    timeTag: fromDate
+                    timeTag: fromDate,
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckPointEvents) {
-                  console.log('Ack Point Events: ' + node.NodeId.Id)
+                  Log.log('Ack Point Events: ' + node.NodeId.Id)
                   let result = await db.collection(COLL_SOE).updateMany(
                     { tag: node.NodeId.Id, ack: 0 },
                     {
                       $set: {
-                        ack: 1
-                      }
+                        ack: 1,
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Events',
                     tag: node.NodeId.Id,
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 } else if (node.Value.Body & opc.Acknowledge.RemoveOneEvent) {
-                  console.log('Remove One Event: ' + node.NodeId.Id)
+                  Log.log('Remove One Event: ' + node.NodeId.Id)
                   let result = await db.collection(COLL_SOE).updateMany(
                     {
                       _id: new ObjectId(node._Properties.event_id),
-                      ack: { $lte: 1 }
+                      ack: { $lte: 1 },
                     },
                     {
                       $set: {
-                        ack: 2
-                      }
+                        ack: 2,
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
@@ -525,19 +508,19 @@ let pool = null
                     action: 'Remove One Event',
                     tag: node.NodeId.Id,
                     eventId: new ObjectId(node._Properties.event_id),
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckOneEvent) {
-                  console.log('Ack One Event: ' + node.NodeId.Id)
-                  let result = await db.collection(COLL_SOE).updateMany(
+                  Log.log('Ack One Event: ' + node.NodeId.Id)
+                  await db.collection(COLL_SOE).updateMany(
                     {
                       _id: new ObjectId(node._Properties.event_id),
-                      ack: 0
+                      ack: 0,
                     },
                     {
                       $set: {
-                        ack: 1
-                      }
+                        ack: 1,
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
@@ -545,113 +528,109 @@ let pool = null
                     action: 'Ack One Event',
                     tag: node.NodeId.Id,
                     eventId: new ObjectId(node._Properties.event_id),
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 }
 
                 if (node.Value.Body & opc.Acknowledge.AckAllAlarms) {
-                  console.log('Ack All Alarms')
+                  Log.log('Ack All Alarms')
                   let result = await db.collection(COLL_REALTIME).updateMany(
                     {},
                     {
                       $set: {
-                        alarmed: false
-                      }
+                        alarmed: false,
+                      },
                     }
                   )
                   // make digital event tags return to zero after acknowledged
-                  result = await db
-                    .collection(COLL_REALTIME)
-                    .updateMany(
-                      {
-                        $and: [
-                          { type: 'digital' },
-                          { isEvent: true },
-                          { value: 1 },
-                          {
-                            $or: [
-                              { origin: 'supervised' },
-                              { origin: 'calculated' }
-                            ]
-                          }
-                        ]
-                      },
-                      [
+                  result = await db.collection(COLL_REALTIME).updateMany(
+                    {
+                      $and: [
+                        { type: 'digital' },
+                        { isEvent: true },
+                        { value: 1 },
                         {
-                          $set: {
-                            value: 0,
-                            valueString: '$stateTextFalse',
-                            timeTagAtSource: null,
-                            TimeTagAtSourceOk: null
-                          }
-                        }
-                      ]
-                    )
+                          $or: [
+                            { origin: 'supervised' },
+                            { origin: 'calculated' },
+                          ],
+                        },
+                      ],
+                    },
+                    [
+                      {
+                        $set: {
+                          value: 0,
+                          valueString: '$stateTextFalse',
+                          timeTagAtSource: null,
+                          TimeTagAtSourceOk: null,
+                        },
+                      },
+                    ]
+                  )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack All Alarms',
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckOneAlarm) {
-                  console.log('Ack alarm: ' + node.NodeId.Id)
+                  Log.log('Ack alarm: ' + node.NodeId.Id)
                   let result = await db
                     .collection(COLL_REALTIME)
                     .updateOne(findPoint, {
                       $set: {
-                        alarmed: false
-                      }
+                        alarmed: false,
+                      },
                     })
                   // make digital event tag return to zero after acknowledged
-                  result = await db
-                    .collection(COLL_REALTIME)
-                    .updateOne(
-                      {
-                        $and: [
-                          findPoint,
-                          { type: 'digital' },
-                          { isEvent: true },
-                          {
-                            $or: [
-                              { origin: 'supervised' },
-                              { origin: 'calculated' }
-                            ]
-                          }
-                        ]
-                      },
-                      [
+                  result = await db.collection(COLL_REALTIME).updateOne(
+                    {
+                      $and: [
+                        findPoint,
+                        { type: 'digital' },
+                        { isEvent: true },
                         {
-                          $set: {
-                            value: 0,
-                            valueString: '$stateTextFalse',
-                            timeTagAtSource: null,
-                            TimeTagAtSourceOk: null
-                          }
-                        }
-                      ]
-                    )
+                          $or: [
+                            { origin: 'supervised' },
+                            { origin: 'calculated' },
+                          ],
+                        },
+                      ],
+                    },
+                    [
+                      {
+                        $set: {
+                          value: 0,
+                          valueString: '$stateTextFalse',
+                          timeTagAtSource: null,
+                          TimeTagAtSourceOk: null,
+                        },
+                      },
+                    ]
+                  )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Ack Point Alarm',
                     pointKey: node.NodeId.Id,
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 }
                 if (node.Value.Body & opc.Acknowledge.SilenceBeep) {
-                  console.log('Silence Beep')
-                  let result = await db.collection(COLL_REALTIME).updateOne(
+                  Log.log('Silence Beep')
+                  await db.collection(COLL_REALTIME).updateOne(
                     { _id: beepPointKey },
                     {
                       $set: {
                         value: new Double(0),
                         valueString: '0',
-                        beepType: new Double(0)
-                      }
+                        beepType: new Double(0),
+                      },
                     }
                   )
                   UserActionsQueue.enqueue({
                     username: username,
                     action: 'Silence Beep',
-                    timeTag: new Date()
+                    timeTag: new Date(),
                   })
                 }
 
@@ -663,10 +642,10 @@ let pool = null
                   opc.getStatusCodeText(opc.StatusCode.GoodNoData),
                   'Ok, no data returned. Query time: ' +
                     (new Date().getTime() - tini) +
-                    ' ms'
+                    ' ms',
                 ]
                 res.send(OpcResp)
-                console.log(
+                Log.log(
                   'Write. Elapsed ' + (new Date().getTime() - tini) + ' ms'
                 )
                 return
@@ -679,7 +658,7 @@ let pool = null
                   // go check user right for command in mongodb (not just in the token for better security)
                   if (!(await canSendCommands(req))) {
                     // ACTION DENIED
-                    console.log(
+                    Log.log(
                       `User has no right to issue commands! [${username}]`
                     )
                     OpcResp.Body.ResponseHeader.ServiceResult =
@@ -687,14 +666,12 @@ let pool = null
                     OpcResp.Body.ResponseHeader.StringTable = [
                       opc.getStatusCodeName(opc.StatusCode.BadUserAccessDenied),
                       opc.getStatusCodeText(opc.StatusCode.BadUserAccessDenied),
-                      'User has no right to issue commands!'
+                      'User has no right to issue commands!',
                     ]
                     res.send(OpcResp)
                     return
                   } else {
-                    console.log(
-                      `User authorized to issue commands! [${username}]`
-                    )
+                    Log.log(`User authorized to issue commands! [${username}]`)
                   }
                 }
 
@@ -715,7 +692,7 @@ let pool = null
                         opc.getStatusCodeText(
                           opc.StatusCode.BadNodeAttributesInvalid
                         ),
-                        'Invalid command type, malformed or missing information!'
+                        'Invalid command type, malformed or missing information!',
                       ]
                       res.send(OpcResp)
                       return
@@ -733,13 +710,13 @@ let pool = null
 
                     if (data === null || typeof data._id !== 'number') {
                       // command not found, abort
-                      console.log('Command not found!')
+                      Log.log('Command not found!')
                       OpcResp.Body.ResponseHeader.ServiceResult =
                         opc.StatusCode.BadNodeIdUnknown
                       OpcResp.Body.ResponseHeader.StringTable = [
                         opc.getStatusCodeName(opc.StatusCode.BadNodeIdUnknown),
                         opc.getStatusCodeText(opc.StatusCode.BadNodeIdUnknown),
-                        'Command point not found!'
+                        'Command point not found!',
                       ]
                       res.send(OpcResp)
                       return
@@ -749,7 +726,7 @@ let pool = null
                       // check if user has group1 list it can command
                       if (!(await canSendCommandTo(req, data.group1))) {
                         // ACTION DENIED
-                        console.log(
+                        Log.log(
                           `User has no right to issue commands to the group1 destination! [${username}] [${data.group1}]`
                         )
                         OpcResp.Body.ResponseHeader.ServiceResult =
@@ -761,12 +738,12 @@ let pool = null
                           opc.getStatusCodeText(
                             opc.StatusCode.BadUserAccessDenied
                           ),
-                          'User has no right to issue commands to the group1 destination!'
+                          'User has no right to issue commands to the group1 destination!',
                         ]
                         res.send(OpcResp)
                         return
                       } else {
-                        console.log(
+                        Log.log(
                           `User authorized to issue commands to the group1 destination! [${username}]`
                         )
                       }
@@ -784,7 +761,7 @@ let pool = null
                           data.protocolSourceCommonAddress,
                         protocolSourceObjectAddress:
                           data.protocolSourceObjectAddress,
-                        protocolSourceASDU: data.protocolSourceASDU
+                        protocolSourceASDU: data.protocolSourceASDU,
                       }
                     } else {
                       // numerical addressing: force data type as BSON double
@@ -795,7 +772,7 @@ let pool = null
                         protocolSourceObjectAddress: new Double(
                           data.protocolSourceObjectAddress
                         ),
-                        protocolSourceASDU: new Double(data.protocolSourceASDU)
+                        protocolSourceASDU: new Double(data.protocolSourceASDU),
                       }
                     }
 
@@ -818,7 +795,7 @@ let pool = null
                       originatorIpAddress:
                         req.headers['x-real-ip'] ||
                         req.headers['x-forwarded-for'] ||
-                        req.socket.remoteAddress
+                        req.socket.remoteAddress,
                     })
 
                     if (!result.acknowledged) {
@@ -831,7 +808,7 @@ let pool = null
                         opc.getStatusCodeText(
                           opc.StatusCode.BadUnexpectedError
                         ),
-                        'Could not queue command!'
+                        'Could not queue command!',
                       ]
                       res.send(OpcResp)
                       return
@@ -855,7 +832,7 @@ let pool = null
                         timeTag: new Date(),
                         timeTagAtSource: new Date(),
                         timeTagAtSourceOk: true,
-                        ack: 1
+                        ack: 1,
                       })
                     }
 
@@ -866,9 +843,9 @@ let pool = null
                       action: 'Command',
                       properties: {
                         value: new Double(cmd_val),
-                        valueString: parseFloat(cmd_val).toString()
+                        valueString: parseFloat(cmd_val).toString(),
                       },
-                      timeTag: new Date()
+                      timeTag: new Date(),
                     })
 
                     OpcResp.Body.Results.push(opc.StatusCode.Good) // write ok
@@ -893,7 +870,7 @@ let pool = null
                       OpcResp.Body.ResponseHeader.StringTable = [
                         opc.getStatusCodeName(opc.StatusCode.BadNodeIdInvalid),
                         opc.getStatusCodeText(opc.StatusCode.BadNodeIdInvalid),
-                        'Invalid IdType!'
+                        'Invalid IdType!',
                       ]
                       res.send(OpcResp)
                       return
@@ -911,7 +888,8 @@ let pool = null
                           node.Value._Properties?.alarmDisabled
                         )
                           alarmDisableNew = {
-                            alarmDisabled: node.Value._Properties?.alarmDisabled
+                            alarmDisabled:
+                              node.Value._Properties?.alarmDisabled,
                           }
 
                       let annotationNew = {}
@@ -921,7 +899,7 @@ let pool = null
                           node.Value._Properties?.annotation
                         )
                           annotationNew = {
-                            annotation: node.Value._Properties?.annotation
+                            annotation: node.Value._Properties?.annotation,
                           }
 
                       let loLimitNew = {}
@@ -930,7 +908,7 @@ let pool = null
                           prevData?.loLimit !== node.Value._Properties?.loLimit
                         )
                           loLimitNew = {
-                            loLimit: new Double(node.Value._Properties.loLimit)
+                            loLimit: new Double(node.Value._Properties.loLimit),
                           }
 
                       let hiLimitNew = {}
@@ -939,7 +917,7 @@ let pool = null
                           prevData?.hiLimit !== node.Value._Properties?.hiLimit
                         )
                           hiLimitNew = {
-                            hiLimit: new Double(node.Value._Properties.hiLimit)
+                            hiLimit: new Double(node.Value._Properties.hiLimit),
                           }
 
                       let hysteresisNew = {}
@@ -951,7 +929,7 @@ let pool = null
                           hysteresisNew = {
                             hysteresis: new Double(
                               node.Value._Properties.hysteresis
-                            )
+                            ),
                           }
 
                       // loloLimit: node.Value._Properties.loLimit,
@@ -963,7 +941,7 @@ let pool = null
                       if (!AUTHENTICATION || userRights?.enterNotes)
                         if (prevData?.notes !== node.Value._Properties?.notes)
                           notesNew = {
-                            notes: node.Value._Properties.notes
+                            notes: node.Value._Properties.notes,
                           }
 
                       let valueNew = {}
@@ -976,7 +954,9 @@ let pool = null
                             prevData?.value !== node.Value._Properties.newValue
                           )
                             valueNew = {
-                              value: new Double(node.Value._Properties.newValue)
+                              value: new Double(
+                                node.Value._Properties.newValue
+                              ),
                             }
 
                       let set = {
@@ -987,8 +967,8 @@ let pool = null
                           ...hiLimitNew,
                           ...hysteresisNew,
                           ...notesNew,
-                          ...valueNew
-                        }
+                          ...valueNew,
+                        },
                       }
 
                       let result = await db
@@ -997,13 +977,13 @@ let pool = null
                       if (result.acknowledged) {
                         // updateOne ok
                         OpcResp.Body.Results.push(opc.StatusCode.Good)
-                        console.log('update ok id: ' + node.NodeId.Id)
+                        Log.log('update ok id: ' + node.NodeId.Id)
                         UserActionsQueue.enqueue({
                           username: username,
                           pointKey: node.NodeId.Id,
                           action: 'Update Properties',
                           properties: set['$set'],
-                          timeTag: new Date()
+                          timeTag: new Date(),
                         })
 
                         // if changed limits force an updated to recheck range
@@ -1014,16 +994,14 @@ let pool = null
                             'loLimit' in loLimitNew ||
                             'hysteresis' in hysteresisNew
                           ) {
-                            console.log(
-                              'Update for range check: ' + node.NodeId.Id
-                            )
+                            Log.log('Update for range check: ' + node.NodeId.Id)
                             db.collection(COLL_REALTIME).updateOne(findPoint, {
                               $set: {
                                 sourceDataUpdate: {
                                   ...prevData.sourceDataUpdate,
-                                  rangeCheck: new Date().getTime()
-                                }
-                              }
+                                  rangeCheck: new Date().getTime(),
+                                },
+                              },
                             })
                           }
                         }
@@ -1045,7 +1023,7 @@ let pool = null
                             timeTag: eventDate,
                             timeTagAtSource: eventDate,
                             timeTagAtSourceOk: true,
-                            ack: 1
+                            ack: 1,
                           })
                         }
 
@@ -1072,7 +1050,7 @@ let pool = null
                             timeTag: eventDate,
                             timeTagAtSource: eventDate,
                             timeTagAtSourceOk: true,
-                            ack: 1
+                            ack: 1,
                           })
                         }
                       } else {
@@ -1080,7 +1058,7 @@ let pool = null
                         OpcResp.Body.Results.push(
                           opc.StatusCode.BadNodeIdUnknown
                         )
-                        console.log('update error id: ' + node.NodeId.Id)
+                        Log.log('update error id: ' + node.NodeId.Id)
                       }
                     }
                   } else
@@ -1104,7 +1082,7 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.GoodNoData),
               opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-              'No NodesToRead nor Content Filter'
+              'No NodesToRead nor Content Filter',
             ]
             res.send(OpcResp)
             return
@@ -1116,7 +1094,7 @@ let pool = null
             info = false,
             ack = false
           if ('NodesToRead' in req.body.Body)
-            req.body.Body.NodesToRead.map(node => {
+            req.body.Body.NodesToRead.map((node) => {
               if ('AttributeId' in node) {
                 if (node.AttributeId == opc.AttributeId.EventNotifier) {
                   if ('ClientHandle' in node) {
@@ -1140,7 +1118,7 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.GoodNoData),
               opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-              'No NodeId.Id found'
+              'No NodeId.Id found',
             ]
             res.send(OpcResp)
             return
@@ -1148,7 +1126,7 @@ let pool = null
 
           if (ack) {
             // look for command ack
-            // console.log(cmdHandles[0])
+            // Log.log(cmdHandles[0])
             if (
               typeof cmdHandles[0] !== 'string' ||
               cmdHandles[0].length < 24
@@ -1158,7 +1136,7 @@ let pool = null
               OpcResp.Body.ResponseHeader.StringTable = [
                 opc.getStatusCodeName(opc.StatusCode.BadRequestNotAllowed),
                 opc.getStatusCodeText(opc.StatusCode.BadRequestNotAllowed),
-                'Missing or invalid ClientHandle.'
+                'Missing or invalid ClientHandle.',
               ]
               res.send(OpcResp)
               return
@@ -1168,7 +1146,7 @@ let pool = null
               .collection(COLL_COMMANDS)
               .findOne({ _id: new ObjectId(cmdHandles[0]) })
 
-            // console.log(data);
+            // Log.log(data);
             let status = -1,
               ackTime,
               cmdTime
@@ -1188,14 +1166,14 @@ let pool = null
                   Value: data.value,
                   StatusCode: status,
                   SourceTimestamp: cmdTime,
-                  ServerTimestamp: ackTime
+                  ServerTimestamp: ackTime,
                 },
                 NodeId: {
                   IdType: opcIdTypeString,
                   Id: data.tag,
-                  Namespace: opc.NamespaceMongodb
-                }
-              }
+                  Namespace: opc.NamespaceMongodb,
+                },
+              },
             ]
             OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
             res.send(OpcResp)
@@ -1232,26 +1210,26 @@ let pool = null
                   origin: 1,
                   group1: 1,
                   beepType: 1,
-                }
+                },
               }
 
           // optimize query for better performance
           // there is a cost to query empty $in lists!
           let findTags = {
             tag: {
-              $in: tags
-            }
+              $in: tags,
+            },
           }
           let findKeys = {
             _id: {
-              $in: npts
-            }
+              $in: npts,
+            },
           }
           let query = findTags
           if (npts.length > 0 && tags.length > 0)
             query = {
               // use $or only to find tags and _id keys
-              $or: [findKeys, findTags]
+              $or: [findKeys, findTags],
             }
           else if (npts.length > 0) query = findKeys
 
@@ -1264,7 +1242,7 @@ let pool = null
             query = {}
             let grp1 = null
             let grp2 = null
-            req.body.Body.ContentFilter.map(contentFilter => {
+            req.body.Body.ContentFilter.map((contentFilter) => {
               // supports attribute (operand) Equals (operator) to a literal value (operand)
               if (contentFilter.FilterOperator === opc.FilterOperator.Equals) {
                 if (
@@ -1294,8 +1272,8 @@ let pool = null
                             { alarmed: true },
                             { invalid: false },
                             { ...(grp1 !== null ? grp1 : {}) },
-                            { ...(grp2 !== null ? grp2 : {}) }
-                          ]
+                            { ...(grp2 !== null ? grp2 : {}) },
+                          ],
                         },
                         {
                           $and: [
@@ -1304,8 +1282,8 @@ let pool = null
                             { alarmRange: { $exists: true, $ne: 0 } },
                             { invalid: false },
                             { ...(grp1 !== null ? grp1 : {}) },
-                            { ...(grp2 !== null ? grp2 : {}) }
-                          ]
+                            { ...(grp2 !== null ? grp2 : {}) },
+                          ],
                         },
                         {
                           $and: [
@@ -1315,8 +1293,8 @@ let pool = null
                             { value: 0 },
                             { invalid: false },
                             { ...(grp1 !== null ? grp1 : {}) },
-                            { ...(grp2 !== null ? grp2 : {}) }
-                          ]
+                            { ...(grp2 !== null ? grp2 : {}) },
+                          ],
                         },
                         {
                           $and: [
@@ -1326,11 +1304,11 @@ let pool = null
                             { value: 1 },
                             { invalid: false },
                             { ...(grp1 !== null ? grp1 : {}) },
-                            { ...(grp2 !== null ? grp2 : {}) }
-                          ]
+                            { ...(grp2 !== null ? grp2 : {}) },
+                          ],
                         },
-                        query
-                      ]
+                        query,
+                      ],
                     }
                   } else
                     query[contentFilter.FilterOperands[0].Value] =
@@ -1341,61 +1319,78 @@ let pool = null
             })
           }
 
-          db.collection(COLL_REALTIME)
-            .find(query, projection)
-            .sort(sort)
-            .toArray(function (err, results) {
-              if (results) {
-                if (results.length == 0) {
-                  OpcResp.Body.ResponseHeader.ServiceResult =
-                    opc.StatusCode.GoodNoData
-                  OpcResp.Body.ResponseHeader.StringTable = [
-                    opc.getStatusCodeName(opc.StatusCode.GoodNoData),
-                    opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-                    'No NodeId.Id requested found on realtimeDatabase'
-                  ]
-                  res.send(OpcResp)
-                  return
-                }
+          try {
+            const results = await db
+              .collection(COLL_REALTIME)
+              .find(query, projection)
+              .sort(sort)
+              .toArray()
 
-                let Results = []
-                if ('NodesToRead' in req.body.Body) {
-                  req.body.Body.NodesToRead.map(node => {
-                    let Result = {
-                      // will return this if point not found or access denied
-                      StatusCode: opc.StatusCode.BadNotFound,
-                      NodeId: node.NodeId,
-                      Value: null,
-                      _Properties: null
-                    }
+            if (results) {
+              if (results.length == 0) {
+                OpcResp.Body.ResponseHeader.ServiceResult =
+                  opc.StatusCode.GoodNoData
+                OpcResp.Body.ResponseHeader.StringTable = [
+                  opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+                  opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+                  'No NodeId.Id requested found on realtimeDatabase',
+                ]
+                res.send(OpcResp)
+                return
+              }
 
-                    for (let i = 0; i < results.length; i++) {
-                      let pointInfo = results[i]
+              let Results = []
+              if ('NodesToRead' in req.body.Body) {
+                req.body.Body.NodesToRead.map((node) => {
+                  let Result = {
+                    // will return this if point not found or access denied
+                    StatusCode: opc.StatusCode.BadNotFound,
+                    NodeId: node.NodeId,
+                    Value: null,
+                    _Properties: null,
+                  }
 
-                      if (
-                        node.NodeId.Id === pointInfo.tag ||
-                        node.NodeId.Id === pointInfo._id
-                      ) {
-                        // check for group1 list in user rights (from token)
+                  for (let i = 0; i < results.length; i++) {
+                    let pointInfo = results[i]
+
+                    if (
+                      node.NodeId.Id === pointInfo.tag ||
+                      node.NodeId.Id === pointInfo._id
+                    ) {
+                      // check for group1 list in user rights (from token)
+                      if (AUTHENTICATION && userRights.group1List.length > 0) {
                         if (
-                          AUTHENTICATION &&
-                          userRights.group1List.length > 0
+                          ![-1, -2].includes(pointInfo._id) &&
+                          !userRights.group1List.includes(pointInfo.group1)
                         ) {
-                          if (
-                            ![-1, -2].includes(pointInfo._id) &&
-                            !userRights.group1List.includes(pointInfo.group1)
-                          ) {
-                            // Access to data denied! (return null value and properties)
-                            Result.StatusCode =
-                              opc.StatusCode.BadUserAccessDenied
-                            break
-                          }
+                          // Access to data denied! (return null value and properties)
+                          Result.StatusCode = opc.StatusCode.BadUserAccessDenied
+                          break
                         }
+                      }
 
-                        Result.StatusCode = opc.StatusCode.Good
+                      Result.StatusCode = opc.StatusCode.Good
+                      Result._Properties = {
+                        _id: pointInfo._id,
+                        valueString: pointInfo.valueString,
+                        alarmed: pointInfo.alarmed,
+                        ...(pointInfo.type === 'analog'
+                          ? { alarmRange: pointInfo?.alarmRange }
+                          : {}),
+                        ...(pointInfo.type === 'analog'
+                          ? { frozen: pointInfo?.frozen }
+                          : {}),
+                        alarmDisabled: pointInfo.alarmDisabled,
+                        transit: pointInfo.transit,
+                        annotation: pointInfo.annotation,
+                        notes: pointInfo.notes,
+                        origin: pointInfo.origin,
+                      }
+                      if (info) {
                         Result._Properties = {
                           _id: pointInfo._id,
                           valueString: pointInfo.valueString,
+                          valueDefault: pointInfo.valueDefault,
                           alarmed: pointInfo.alarmed,
                           ...(pointInfo.type === 'analog'
                             ? { alarmRange: pointInfo?.alarmRange }
@@ -1405,190 +1400,181 @@ let pool = null
                             : {}),
                           alarmDisabled: pointInfo.alarmDisabled,
                           transit: pointInfo.transit,
+                          group1: pointInfo.group1,
+                          group2: pointInfo.group2,
+                          description: pointInfo.description,
+                          ungroupedDescription: pointInfo.ungroupedDescription,
+                          hiLimit: pointInfo.hiLimit,
+                          loLimit: pointInfo.loLimit,
+                          hysteresis: pointInfo.hysteresis,
+                          stateTextTrue: pointInfo.stateTextTrue,
+                          stateTextFalse: pointInfo.stateTextFalse,
+                          unit: pointInfo.unit,
                           annotation: pointInfo.annotation,
                           notes: pointInfo.notes,
-                          origin: pointInfo.origin
+                          commandOfSupervised: pointInfo.commandOfSupervised,
+                          supervisedOfCommand: pointInfo.supervisedOfCommand,
+                          origin: pointInfo.origin,
+                          beepType: pointInfo?.beepType,
                         }
-                        if (info) {
-                          Result._Properties = {
-                            _id: pointInfo._id,
-                            valueString: pointInfo.valueString,
-                            valueDefault: pointInfo.valueDefault,
-                            alarmed: pointInfo.alarmed,
-                            ...(pointInfo.type === 'analog'
-                              ? { alarmRange: pointInfo?.alarmRange }
-                              : {}),
-                            ...(pointInfo.type === 'analog'
-                              ? { frozen: pointInfo?.frozen }
-                              : {}),
-                            alarmDisabled: pointInfo.alarmDisabled,
-                            transit: pointInfo.transit,
-                            group1: pointInfo.group1,
-                            group2: pointInfo.group2,
-                            description: pointInfo.description,
-                            ungroupedDescription:
-                              pointInfo.ungroupedDescription,
-                            hiLimit: pointInfo.hiLimit,
-                            loLimit: pointInfo.loLimit,
-                            hysteresis: pointInfo.hysteresis,
-                            stateTextTrue: pointInfo.stateTextTrue,
-                            stateTextFalse: pointInfo.stateTextFalse,
-                            unit: pointInfo.unit,
-                            annotation: pointInfo.annotation,
-                            notes: pointInfo.notes,
-                            commandOfSupervised: pointInfo.commandOfSupervised,
-                            supervisedOfCommand: pointInfo.supervisedOfCommand,
-                            origin: pointInfo.origin,
-                            beepType: pointInfo?.beepType,
-                          }
+                      }
+                      if (pointInfo.type === 'string')
+                        Result.Value = {
+                          Type: opc.DataType.String,
+                          Body: pointInfo.valueString,
+                          Quality: pointInfo.invalid
+                            ? opc.StatusCode.Bad
+                            : opc.StatusCode.Good,
                         }
-                        if (pointInfo.type === 'string')
-                          Result.Value = {
-                            Type: opc.DataType.String,
-                            Body: pointInfo.valueString,
-                            Quality: pointInfo.invalid
-                              ? opc.StatusCode.Bad
-                              : opc.StatusCode.Good
-                          }
-                        else
-                          Result.Value = {
-                            Type:
-                              pointInfo.type === 'digital'
-                                ? opc.DataType.Boolean
-                                : opc.DataType.Double,
-                            Body:
-                              pointInfo.type === 'digital'
-                                ? pointInfo.value !== 0
-                                  ? true
-                                  : false
-                                : parseFloat(pointInfo.value),
-                            Quality: pointInfo.invalid
-                              ? opc.StatusCode.Bad
-                              : opc.StatusCode.Good
-                          }
-                        Result.NodeId = {
-                          IdType: opcIdTypeString,
-                          Id: pointInfo.tag,
-                          Namespace: opc.NamespaceMongodb
+                      else
+                        Result.Value = {
+                          Type:
+                            pointInfo.type === 'digital'
+                              ? opc.DataType.Boolean
+                              : opc.DataType.Double,
+                          Body:
+                            pointInfo.type === 'digital'
+                              ? pointInfo.value !== 0
+                                ? true
+                                : false
+                              : parseFloat(pointInfo.value),
+                          Quality: pointInfo.invalid
+                            ? opc.StatusCode.Bad
+                            : opc.StatusCode.Good,
                         }
-                        Result.SourceTimestamp = pointInfo.timeTag
-                        break
-                      }
-                    }
-                    Results.push(Result)
-                  })
-                } else {
-                  // no NodesToRead so it is a filtered query
-                  results.map(node => {
-                    let Value = {}
-                    if (node.type === 'string')
-                      Value = {
-                        Type: opc.DataType.String,
-                        Body: node.valueString,
-                        Quality: node.invalid
-                          ? opc.StatusCode.Bad
-                          : opc.StatusCode.Good
-                      }
-                    else
-                      Value = {
-                        Type:
-                          node.type === 'digital'
-                            ? opc.DataType.Boolean
-                            : opc.DataType.Double,
-                        Body:
-                          node.type === 'digital'
-                            ? node.value !== 0
-                              ? true
-                              : false
-                            : node.value,
-                        Quality: node.invalid
-                          ? opc.StatusCode.Bad
-                          : opc.StatusCode.Good
-                      }
-
-                    let Result = {
-                      StatusCode: opc.StatusCode.Good,
-                      NodeId: {
+                      Result.NodeId = {
                         IdType: opcIdTypeString,
-                        Id: node.tag
-                      },
-                      Value: Value,
-                      _Properties: {
-                        _id: node._id,
-                        valueString: node.valueString,
-                        valueDefault: node.valueDefault,
-                        alarmed: node.alarmed,
-                        ...(node.type === 'analog'
-                          ? { alarmRange: node?.alarmRange }
-                          : {}),
-                        ...(node.type === 'analog'
-                          ? { frozen: node?.frozen }
-                          : {}),
-                        alarmDisabled: node.alarmDisabled,
-                        alarmState: node.alarmState,
-                        isEvent: node.isEvent,
-                        transit: node.transit,
-                        group1: node.group1,
-                        group2: node.group2,
-                        description: node.description,
-                        ungroupedDescription: node.ungroupedDescription,
-                        hiLimit: node.hiLimit,
-                        loLimit: node.loLimit,
-                        hysteresis: node.hysteresis,
-                        stateTextTrue: node.stateTextTrue,
-                        stateTextFalse: node.stateTextFalse,
-                        unit: node.unit,
-                        annotation: node.annotation,
-                        notes: node.notes,
-                        commandOfSupervised: node.commandOfSupervised,
-                        supervisedOfCommand: node.supervisedOfCommand,
-                        origin: node.origin,
-                        timeTagAlarm: node.timeTagAlarm,
-                        priority: node.priority,
-                        origin: node.origin,
-                        timeTagAtSourceOk:
-                          'timeTagAtSourceOk' in node
-                            ? node.TimeTagAtSourceOk
-                            : null
+                        Id: pointInfo.tag,
+                        Namespace: opc.NamespaceMongodb,
                       }
+                      Result.SourceTimestamp = pointInfo.timeTag
+                      break
                     }
-                    Result.ServerTimestamp = node.timeTag
-                    Result.SourceTimestamp =
-                      'timeTagAtSource' in node && node.timeTagAtSource !== null
-                        ? node.timeTagAtSource
-                        : null
-
-                    // check for group1 list in user rights (from token)
-                    if (AUTHENTICATION && userRights.group1List.length > 0) {
-                      if (!userRights.group1List.includes(node.group1)) {
-                        // Access to data denied!
-                        return node
-                      }
+                  }
+                  Results.push(Result)
+                })
+              } else {
+                // no NodesToRead so it is a filtered query
+                results.map((node) => {
+                  let Value = {}
+                  if (node.type === 'string')
+                    Value = {
+                      Type: opc.DataType.String,
+                      Body: node.valueString,
+                      Quality: node.invalid
+                        ? opc.StatusCode.Bad
+                        : opc.StatusCode.Good,
+                    }
+                  else
+                    Value = {
+                      Type:
+                        node.type === 'digital'
+                          ? opc.DataType.Boolean
+                          : opc.DataType.Double,
+                      Body:
+                        node.type === 'digital'
+                          ? node.value !== 0
+                            ? true
+                            : false
+                          : node.value,
+                      Quality: node.invalid
+                        ? opc.StatusCode.Bad
+                        : opc.StatusCode.Good,
                     }
 
-                    Results.push(Result)
+                  let Result = {
+                    StatusCode: opc.StatusCode.Good,
+                    NodeId: {
+                      IdType: opcIdTypeString,
+                      Id: node.tag,
+                    },
+                    Value: Value,
+                    _Properties: {
+                      _id: node._id,
+                      valueString: node.valueString,
+                      valueDefault: node.valueDefault,
+                      alarmed: node.alarmed,
+                      ...(node.type === 'analog'
+                        ? { alarmRange: node?.alarmRange }
+                        : {}),
+                      ...(node.type === 'analog'
+                        ? { frozen: node?.frozen }
+                        : {}),
+                      alarmDisabled: node.alarmDisabled,
+                      alarmState: node.alarmState,
+                      isEvent: node.isEvent,
+                      transit: node.transit,
+                      group1: node.group1,
+                      group2: node.group2,
+                      description: node.description,
+                      ungroupedDescription: node.ungroupedDescription,
+                      hiLimit: node.hiLimit,
+                      loLimit: node.loLimit,
+                      hysteresis: node.hysteresis,
+                      stateTextTrue: node.stateTextTrue,
+                      stateTextFalse: node.stateTextFalse,
+                      unit: node.unit,
+                      annotation: node.annotation,
+                      notes: node.notes,
+                      commandOfSupervised: node.commandOfSupervised,
+                      supervisedOfCommand: node.supervisedOfCommand,
+                      origin: node.origin,
+                      timeTagAlarm: node.timeTagAlarm,
+                      priority: node.priority,
+                      origin: node.origin,
+                      timeTagAtSourceOk:
+                        'timeTagAtSourceOk' in node
+                          ? node.TimeTagAtSourceOk
+                          : null,
+                    },
+                  }
+                  Result.ServerTimestamp = node.timeTag
+                  Result.SourceTimestamp =
+                    'timeTagAtSource' in node && node.timeTagAtSource !== null
+                      ? node.timeTagAtSource
+                      : null
 
-                    return node
-                  })
-                }
+                  // check for group1 list in user rights (from token)
+                  if (AUTHENTICATION && userRights.group1List.length > 0) {
+                    if (!userRights.group1List.includes(node.group1)) {
+                      // Access to data denied!
+                      return node
+                    }
+                  }
 
-                OpcResp.Body.Results = Results
-                OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
-                OpcResp.Body.ResponseHeader.StringTable = [
-                  opc.getStatusCodeName(opc.StatusCode.Good),
-                  opc.getStatusCodeText(opc.StatusCode.Good),
-                  'Query time: ' + (new Date().getTime() - tini) + ' ms'
-                ]
-                res.send(OpcResp)
-                console.log(
-                  'Read returned ' +
-                    results.length +
-                    ' values. Elapsed ' +
-                    (new Date().getTime() - tini) +
-                    ' ms'
-                )
+                  Results.push(Result)
+
+                  return node
+                })
               }
-            })
+
+              OpcResp.Body.Results = Results
+              OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.Good),
+                opc.getStatusCodeText(opc.StatusCode.Good),
+                'Query time: ' + (new Date().getTime() - tini) + ' ms',
+              ]
+              res.send(OpcResp)
+              Log.log(
+                'Read returned ' +
+                  results.length +
+                  ' values. Elapsed ' +
+                  (new Date().getTime() - tini) +
+                  ' ms'
+              )
+            }
+          } catch (error) {
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.BadInvalidState
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.BadInvalidState),
+              opc.getStatusCodeText(opc.StatusCode.BadInvalidState),
+              'Error reading realtimeDatabase',
+            ]
+            res.send(OpcResp)
+            return
+          }
         }
         return
       case opc.ServiceCode.HistoryReadRequest: // HISTORY READ SERVICE
@@ -1605,7 +1591,7 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.BadHistoryOperationInvalid),
               opc.getStatusCodeText(opc.StatusCode.BadHistoryOperationInvalid),
-              'Invalid HistoryReadDetails option'
+              'Invalid HistoryReadDetails option',
             ]
             res.send(OpcResp)
             return
@@ -1641,7 +1627,7 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.GoodNoData),
               opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-              'No NodesToRead'
+              'No NodesToRead',
             ]
             res.send(OpcResp)
             return
@@ -1649,7 +1635,7 @@ let pool = null
 
           let tags = []
           if ('NodesToRead' in req.body.Body) {
-            req.body.Body.NodesToRead.map(node => {
+            req.body.Body.NodesToRead.map((node) => {
               if ('AttributeId' in node) {
                 if (node.AttributeId == opc.AttributeId.Value) {
                   if ('NodeId' in node)
@@ -1669,7 +1655,7 @@ let pool = null
               OpcResp.Body.ResponseHeader.StringTable = [
                 opc.getStatusCodeName(opc.StatusCode.GoodNoData),
                 opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-                'No valid NodeId.Ids/Attribute request found'
+                'No valid NodeId.Ids/Attribute request found',
               ]
               res.send(OpcResp)
               return
@@ -1713,7 +1699,7 @@ let pool = null
                 opc.getStatusCodeText(
                   opc.StatusCode.BadHistoryOperationUnsupported
                 ),
-                'Invalid ReadRawModifiedDetails/isReadModified option (must be false)'
+                'Invalid ReadRawModifiedDetails/isReadModified option (must be false)',
               ]
               res.send(OpcResp)
               return
@@ -1738,16 +1724,16 @@ let pool = null
               // &&
               // req.body.Body.ContentFilter[0].FilterOperands.length > 0
             )
-              req.body.Body.ContentFilter.map(node => {
+              req.body.Body.ContentFilter.map((node) => {
                 if (node.FilterOperator === opc.FilterOperator.LessThanOrEqual)
                   // priority filter
                   filterPriority = {
-                    priority: { $lte: node.FilterOperands[0] }
+                    priority: { $lte: node.FilterOperands[0] },
                   }
 
                 if (node.FilterOperator === opc.FilterOperator.InList)
                   // group1 list filter
-                  node.FilterOperands.map(element => {
+                  node.FilterOperands.map((element) => {
                     if (element.FilterOperand === opc.Operand.Literal)
                       if (typeof element.Value === 'string') {
                         group1Filter.push(element.Value)
@@ -1759,10 +1745,10 @@ let pool = null
               })
 
             let filterDateGte = {
-              timeTag: { $gte: new Date(startDateTime) }
+              timeTag: { $gte: new Date(startDateTime) },
             }
             let filterDateLte = {
-              timeTag: { $lte: new Date(endDateTime) }
+              timeTag: { $lte: new Date(endDateTime) },
             }
             let sort = { timeTag: -1, timeTagAtSource: -1, tag: -1 }
             if (endDateTime !== null && startDateTime !== null)
@@ -1773,10 +1759,10 @@ let pool = null
               if (endDateTime !== null && startDateTime !== null)
                 sort = { timeTagAtSource: 1, timeTag: 1, tag: 1 }
               filterDateGte = {
-                timeTagAtSource: { $gte: new Date(startDateTime) }
+                timeTagAtSource: { $gte: new Date(startDateTime) },
               }
               filterDateLte = {
-                timeTagAtSource: { $lte: new Date(endDateTime) }
+                timeTagAtSource: { $lte: new Date(endDateTime) },
               }
             }
 
@@ -1793,15 +1779,15 @@ let pool = null
                 $or: [
                   {
                     group1: {
-                      $in: group1Filter
-                    }
+                      $in: group1Filter,
+                    },
                   },
                   {
                     tag: {
-                      $in: tags
-                    }
-                  }
-                ]
+                      $in: tags,
+                    },
+                  },
+                ],
               }
 
             // depending on aggregation do a aggregate (more expensive) or a simple find
@@ -1811,62 +1797,77 @@ let pool = null
               'AggregateType' in req.body.Body.AggregateFilter &&
               req.body.Body.AggregateFilter.AggregateType === 'Count'
             ) {
-              db.collection(COLL_SOE)
-                .aggregate([
-                  {
-                    $match: {
+              let results = []
+              try {
+                results = await db
+                  .collection(COLL_SOE)
+                  .aggregate([
+                    {
+                      $match: {
+                        $and: [
+                          filterDateGte,
+                          filterDateLte,
+                          filterGroup,
+                          filterPriority,
+                          { ack: { $lte: 1 } },
+                        ],
+                      },
+                    },
+                    {
+                      $group: {
+                        _id: '$tag',
+                        tag: { $last: '$tag' },
+                        pointKey: { $last: '$pointKey' },
+                        group1: { $last: '$group1' },
+                        description: { $last: '$description' },
+                        eventText: { $last: '$eventText' },
+                        description: { $last: '$description' },
+                        invalid: { $last: '$invalid' },
+                        priority: { $last: '$priority' },
+                        timeTag: { $last: '$timeTag' },
+                        timeTagAtSource: { $last: '$timeTagAtSource' },
+                        timeTagAtSourceOk: { $last: '$timeTagAtSourceOk' },
+                        ack: { $last: '$ack' },
+                        count: { $sum: 1 },
+                        event_id: { $last: '$_id' },
+                      },
+                    },
+                  ])
+                  .sort(sort)
+                  .limit(limitValues)
+                  .toArray()
+              } catch (err) {
+                Log.log(err)
+                results = []
+              }
+              procArrayResults(results)
+            } else {
+              let results = []
+              try {
+                results = await db
+                  .collection(COLL_SOE)
+                  .find(
+                    {
                       $and: [
                         filterDateGte,
                         filterDateLte,
                         filterGroup,
                         filterPriority,
-                        { ack: { $lte: 1 } }
-                      ]
-                    }
-                  },
-                  {
-                    $group: {
-                      _id: '$tag',
-                      tag: { $last: '$tag' },
-                      pointKey: { $last: '$pointKey' },
-                      group1: { $last: '$group1' },
-                      description: { $last: '$description' },
-                      eventText: { $last: '$eventText' },
-                      description: { $last: '$description' },
-                      invalid: { $last: '$invalid' },
-                      priority: { $last: '$priority' },
-                      timeTag: { $last: '$timeTag' },
-                      timeTagAtSource: { $last: '$timeTagAtSource' },
-                      timeTagAtSourceOk: { $last: '$timeTagAtSourceOk' },
-                      ack: { $last: '$ack' },
-                      count: { $sum: 1 },
-                      event_id: { $last: '$_id' }
-                    }
-                  }
-                ])
-                .sort(sort)
-                .limit(limitValues)
-                .toArray(procArrayResults)
-            } else {
-              db.collection(COLL_SOE)
-                .find(
-                  {
-                    $and: [
-                      filterDateGte,
-                      filterDateLte,
-                      filterGroup,
-                      filterPriority,
-                      { ack: { $lte: endDateTime !== null ? 2 : 1 } } // when realtime query (endDate=null) filter out eliminated (ack=2) events
-                    ]
-                  },
-                  {}
-                )
-                .sort(sort)
-                .limit(limitValues)
-                .toArray(procArrayResults)
+                        { ack: { $lte: endDateTime !== null ? 2 : 1 } }, // when realtime query (endDate=null) filter out eliminated (ack=2) events
+                      ],
+                    },
+                    {}
+                  )
+                  .sort(sort)
+                  .limit(limitValues)
+                  .toArray()
+              } catch (err) {
+                results = []
+              }
+              procArrayResults(results)
             }
 
-            function procArrayResults (err, results) {
+            function procArrayResults(results) {
               if (results) {
                 if (results.length == 0) {
                   OpcResp.Body.ResponseHeader.ServiceResult =
@@ -1874,18 +1875,18 @@ let pool = null
                   OpcResp.Body.ResponseHeader.StringTable = [
                     opc.getStatusCodeName(opc.StatusCode.GoodNoData),
                     opc.getStatusCodeText(opc.StatusCode.GoodNoData),
-                    'No NodeId.Id requested found on soeData'
+                    'No NodeId.Id requested found on soeData',
                   ]
                   res.send(OpcResp)
                   return
                 }
 
                 let Results = []
-                results.map(node => {
+                results.map((node) => {
                   let NodeId = {
                     IdType: opcIdTypeString,
                     Id: node.tag,
-                    Namespace: opc.NamespaceMongodb
+                    Namespace: opc.NamespaceMongodb,
                   }
 
                   let HistoryData = {
@@ -1895,12 +1896,12 @@ let pool = null
                       Quality: node.invalid
                         ? opc.StatusCode.Bad
                         : opc.StatusCode.Good,
-                      Count: typeof node.count === 'number' ? node.count : 1
+                      Count: typeof node.count === 'number' ? node.count : 1,
                     },
                     ServerTimestamp: node.timeTag,
                     SourceTimestamp: node.timeTagAtSource,
                     SourceTimestampOk: node.timeTagAtSourceOk,
-                    Acknowledge: node.ack
+                    Acknowledge: node.ack,
                   }
 
                   let _Properties = {
@@ -1908,7 +1909,7 @@ let pool = null
                     description: node.description,
                     priority: node.priority,
                     pointKey: node.pointKey,
-                    event_id: node._id === node.tag ? node.event_id : node._id
+                    event_id: node._id === node.tag ? node.event_id : node._id,
                   }
 
                   let HistoryReadResult = {
@@ -1916,7 +1917,7 @@ let pool = null
                     HistoryData: [HistoryData],
                     // ContinuationPoint: null,
                     NodeId: NodeId,
-                    _Properties: _Properties
+                    _Properties: _Properties,
                   }
                   Results.push(HistoryReadResult)
                   return node
@@ -1927,10 +1928,10 @@ let pool = null
                 OpcResp.Body.ResponseHeader.StringTable = [
                   opc.getStatusCodeName(opc.StatusCode.Good),
                   opc.getStatusCodeText(opc.StatusCode.Good),
-                  'Query time: ' + (new Date().getTime() - tini) + ' ms'
+                  'Query time: ' + (new Date().getTime() - tini) + ' ms',
                 ]
                 res.send(OpcResp)
-                console.log(
+                Log.log(
                   'HistoryRead (Events) returned ' +
                     Results.length +
                     ' values. Elapsed ' +
@@ -1988,19 +1989,19 @@ let pool = null
               OpcResp.Body.ResponseHeader.StringTable = [
                 opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
                 opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
-                'Database error!'
+                'Database error!',
               ]
               res.send(OpcResp)
               return
             }
 
             let Results = [] // [{ StatusCode, ContinuationPoint, HistoryData[], NodeId }]
-            req.body.Body.NodesToRead.map(node => {
+            req.body.Body.NodesToRead.map((node) => {
               let HistoryReadResult = {
                 StatusCode: opc.StatusCode.BadNotFound,
                 HistoryData: [],
                 ContinuationPoint: null,
-                NodeId: null
+                NodeId: null,
               }
               if ('AttributeId' in node) {
                 if (node.AttributeId == opc.AttributeId.Value) {
@@ -2010,7 +2011,7 @@ let pool = null
                         if ('Id' in node.NodeId) {
                           // only string keys supported here
                           HistoryReadResult.NodeId = node.NodeId
-                          resp.rows.map(node => {
+                          resp.rows.map((node) => {
                             if (node.tag === HistoryReadResult.NodeId.Id) {
                               HistoryReadResult.StatusCode = opc.StatusCode.Good
                               HistoryReadResult.HistoryData.push({
@@ -2028,14 +2029,14 @@ let pool = null
                                   Quality:
                                     node.flags.charAt(0) === '0'
                                       ? opc.StatusCode.Good
-                                      : opc.StatusCode.Bad
+                                      : opc.StatusCode.Bad,
                                 },
                                 SourceTimestamp: returnSourceTimestamp
                                   ? node.time_tag_at_source
                                   : undefined,
                                 ServerTimestamp: returnServerTimestamp
                                   ? node.time_tag
-                                  : undefined
+                                  : undefined,
                               })
                             }
                             return node
@@ -2052,10 +2053,10 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.Good),
               opc.getStatusCodeText(opc.StatusCode.Good),
-              'Query time: ' + (new Date().getTime() - tini) + ' ms'
+              'Query time: ' + (new Date().getTime() - tini) + ' ms',
             ]
             res.send(OpcResp)
-            console.log(
+            Log.log(
               'HistoryRead returned ' +
                 resp.rows.length +
                 ' values. Elapsed ' +
@@ -2076,54 +2077,60 @@ let pool = null
             OpcResp.Body.ResponseHeader.StringTable = [
               opc.getStatusCodeName(opc.StatusCode.BadAttributeIdInvalid),
               opc.getStatusCodeText(opc.StatusCode.BadAttributeIdInvalid),
-              'Requested attribute not supported!'
+              'Requested attribute not supported!',
             ]
             res.send(OpcResp)
             return
           }
 
-          db.collection(COLL_REALTIME)
+          let results = []
+          try {
+          results = await db
+            .collection(COLL_REALTIME)
             .aggregate([
               {
                 $group: {
                   _id: '$group1',
                   group1: { $last: '$group1' },
-                  count: { $sum: 1 }
-                }
-              }
+                  count: { $sum: 1 },
+                },
+              },
             ])
             .sort({ group1: 1 })
-            .toArray(function (err, results) {
-              let Results = []
-              results.map(node => {
-                let Value = {
-                  Value: {
-                    Type: opc.DataType.String,
-                    Body: node.group1,
-                    Count: node.count
-                  }
-                }
-                Results.push(Value)
-                return node
-              })
+            .toArray()
+          } catch (err) {
+            Log.log(err)
+            results = []
+          }
 
-              OpcResp.Body.Results = Results
-              OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
-              OpcResp.Body.ResponseHeader.StringTable = [
-                opc.getStatusCodeName(opc.StatusCode.Good),
-                opc.getStatusCodeText(opc.StatusCode.Good),
-                'Query time: ' + (new Date().getTime() - tini) + ' ms'
-              ]
-              res.send(OpcResp)
-              console.log(
-                'Unique attribute values returned ' +
-                  Results.length +
-                  ' values. Elapsed ' +
-                  (new Date().getTime() - tini) +
-                  ' ms'
-              )
-              return
-            })
+          let Results = []
+          await results.map((node) => {
+            let Value = {
+              Value: {
+                Type: opc.DataType.String,
+                Body: node.group1,
+                Count: node.count,
+              },
+            }
+            Results.push(Value)
+            return node
+          })
+
+          OpcResp.Body.Results = Results
+          OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+          OpcResp.Body.ResponseHeader.StringTable = [
+            opc.getStatusCodeName(opc.StatusCode.Good),
+            opc.getStatusCodeText(opc.StatusCode.Good),
+            'Query time: ' + (new Date().getTime() - tini) + ' ms',
+          ]
+          res.send(OpcResp)
+          Log.log(
+            'Unique attribute values returned ' +
+              Results.length +
+              ' values. Elapsed ' +
+              (new Date().getTime() - tini) +
+              ' ms'
+          )
         }
         return
       default:
@@ -2133,7 +2140,7 @@ let pool = null
         OpcResp.Body.ResponseHeader.StringTable = [
           opc.getStatusCodeName(opc.StatusCode.BadServiceUnsupported),
           opc.getStatusCodeText(opc.StatusCode.BadServiceUnsupported),
-          'Existing services: 629=ReadRequest, 671=WriteRequest, 100000001=Extended_RequestListUniqueAttributeValues'
+          'Existing services: 629=ReadRequest, 671=WriteRequest, 100000001=Extended_RequestListUniqueAttributeValues',
         ]
         res.send(OpcResp)
         return
@@ -2159,62 +2166,33 @@ let pool = null
       }
 
       if (!clientMongo) {
-        let connOptions = {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-          appname: APP_NAME,
-          maxPoolSize: 20,
-          readPreference: ReadFromSecondary? ReadPreference.SECONDARY_PREFERRED : ReadPreference.PRIMARY,
-        }
-
-        if (
-          typeof jsConfig.tlsCaPemFile === 'string' &&
-          jsConfig.tlsCaPemFile.trim() !== ''
-        ) {
-          jsConfig.tlsClientKeyPassword = jsConfig.tlsClientKeyPassword || ''
-          jsConfig.tlsAllowInvalidHostnames =
-            jsConfig.tlsAllowInvalidHostnames || false
-          jsConfig.tlsAllowChainErrors = jsConfig.tlsAllowChainErrors || false
-          jsConfig.tlsInsecure = jsConfig.tlsInsecure || false
-
-          connOptions.tls = true
-          connOptions.tlsCAFile = jsConfig.tlsCaPemFile
-          connOptions.tlsCertificateKeyFile = jsConfig.tlsClientPemFile
-          connOptions.tlsCertificateKeyFilePassword =
-            jsConfig.tlsClientKeyPassword
-          connOptions.tlsAllowInvalidHostnames =
-            jsConfig.tlsAllowInvalidHostnames
-          connOptions.tlsInsecure = jsConfig.tlsInsecure
-        }
-
         // new connection
-        console.log('Connecting to ' + jsConfig.mongoConnectionString)
-        MongoClient.connect(
+        Log.log('Connecting to ' + jsConfig.mongoConnectionString)
+        await MongoClient.connect(
           jsConfig.mongoConnectionString,
-          connOptions,
-          async (err, client) => {
-            if (err) {
-              db = null
-              clientMongo = null
-              console.log(err)
-              if (err.name == 'MongoParseError') process.exit(-1)
-              return
-            }
-            console.log('Connected to MongoDB')
-            db = client.db(jsConfig.mongoDatabaseName)
-            clientMongo = client
-          }
+          jsConfig.MongoConnectionOptions
         )
+          .then(async (client) => {
+            clientMongo = client
+            HintMongoIsConnected = true
+            db = clientMongo.db(jsConfig.mongoDatabaseName)
+          })
+          .catch(function (err) {
+            db = null
+            clientMongo = null
+            Log.log(err)
+            if (err.name == 'MongoParseError') process.exit(-1)
+          })
       }
     } catch (e) {
       if (clientMongo) clientMongo.close()
       db = null
       clientMongo = null
-      console.log(e)
+      Log.log(e)
     }
 
     // wait 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     if (!(await checkConnectedMongo(clientMongo))) {
       clientMongo = null
@@ -2223,15 +2201,13 @@ let pool = null
 })()
 
 // test mongoDB connectivity
-let CheckMongoConnectionTimeout = 1000
-let HintMongoIsConnected = true
-async function checkConnectedMongo (client) {
+async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-
+  const CheckMongoConnectionTimeout = 1000
   let tr = setTimeout(() => {
-    console.log('Mongo ping timeout error!')
+    Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false
   }, CheckMongoConnectionTimeout)
 
@@ -2240,7 +2216,7 @@ async function checkConnectedMongo (client) {
     res = await client.db('admin').command({ ping: 1 })
     clearTimeout(tr)
   } catch (e) {
-    console.log('Error on mongodb connection!')
+    Log.log('Error on mongodb connection!')
     return false
   }
   if ('ok' in res && res.ok) {

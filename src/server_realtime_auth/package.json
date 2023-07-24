@@ -11,10 +11,9 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-http-proxy": "^1.6.2",
-    "gridfs-stream": "^1.1.1",
     "jsonwebtoken": "^9.0.0",
-    "mongodb": "^4.1.0",
-    "mongoose": "^6.11.2",
+    "mongodb": "^5.7.0",
+    "mongoose": "^6.11.4",
     "pg": "^8.5.1",
     "queue-fifo": "^0.2.6"
   },

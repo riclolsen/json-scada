@@ -1,3 +1,4 @@
+const Log = require('../../simple-logger')
 const jwt = require('jsonwebtoken')
 const config = require('../config/auth.config.js')
 const db = require('../models')
@@ -24,7 +25,7 @@ let OpcResp = {
 }
 
 verifyToken = (req, res, next) => {
-  console.log('Verify ' + req.originalUrl)
+  Log.log('Verify ' + req.originalUrl)
 
   let reqHandle = null
   if (req.method === 'POST')
@@ -70,7 +71,7 @@ verifyToken = (req, res, next) => {
 }
 
 isAdmin = (req, res, next) => {
-  console.log('isAdmin')
+  Log.log('isAdmin')
 
   let tok = checkToken(req)
   if (tok === false) return false
@@ -109,7 +110,7 @@ isAdmin = (req, res, next) => {
 checkToken = req => {
   let res = false
 
-  console.log('CheckToken')
+  Log.log('CheckToken')
   let token = req.headers['x-access-token'] || req.cookies['x-access-token']
 
   if (!token) {
@@ -128,7 +129,7 @@ checkToken = req => {
 
 // User in request can send commands?
 canSendCommands = async req => {
-  console.log('canSendCommands?')
+  Log.log('canSendCommands?')
 
   try {
     const user = await User.findById(req.userId).exec()
@@ -143,7 +144,7 @@ canSendCommands = async req => {
       }
     }
   } catch (err) {
-    console.log(err)
+    Log.log(err)
   }
 
   return false
@@ -151,7 +152,7 @@ canSendCommands = async req => {
 
 // User in request can send commands to a group1 location?
 canSendCommandTo = async (req, group1) => {
-  console.log('canSendCommandTo?')
+  Log.log('canSendCommandTo?')
   let result = true
 
   try {
@@ -169,26 +170,26 @@ canSendCommandTo = async (req, group1) => {
         result = false
       }
       if ( roles[i].group1CommandList.includes(group1) ){
-        console.log('User can command!')
+        Log.log('User can command!')
         return true
       }
     }
     if (result)
-       console.log('User can command!')
+       Log.log('User can command!')
     else
-       console.log('User has no right to issue commands!')
+       Log.log('User has no right to issue commands!')
     return result
   } catch (err) {
-    console.log(err)
+    Log.log(err)
   }
 
-  console.log('User has no right to issue commands!')
+  Log.log('User has no right to issue commands!')
   return false
 }
 
 // test user right
 hasRight = (req, right) => {
-  console.log('hasRight')
+  Log.log('hasRight')
 
   let res = this.checkToken(req)
   if (res === false) return res

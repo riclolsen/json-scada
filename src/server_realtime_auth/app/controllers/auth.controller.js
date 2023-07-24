@@ -1,7 +1,8 @@
+const Log = require('../../simple-logger')
 const config = require('../config/auth.config')
 const db = require('../models')
 const fs = require('fs')
-var path = require('path')
+const path = require('path')
 const User = db.user
 const Role = db.role
 const Tag = db.tag
@@ -9,9 +10,8 @@ const ProtocolDriverInstance = db.protocolDriverInstance
 const ProtocolConnection = db.protocolConnection
 const UserAction = db.userAction
 const UserActionsQueue = require('../../userActionsQueue')
-
-var jwt = require('jsonwebtoken')
-var bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 
 // add header to identify json-scada user for Grafana auto-login (auth.proxy)
 exports.addXWebAuthUser = (req) => {
@@ -20,7 +20,7 @@ exports.addXWebAuthUser = (req) => {
 }
 
 exports.listUserActions = async (req, res) => {
-  console.log('listUserActions')
+  Log.log('listUserActions')
 
   let skip = 0
   if ('page' in req.body && 'itemsPerPage' in req.body)
@@ -43,7 +43,7 @@ exports.listUserActions = async (req, res) => {
     .sort(orderby)
     .exec(function (err, userActions) {
       if (err) {
-        console.log(err)
+        Log.log(err)
         res.status(200).send({ error: err })
         return
       }
@@ -61,15 +61,15 @@ exports.createTag = async (req, res) => {
     .limit(1)
   if (resBiggest && resBiggest.length > 0)
     if ('_id' in resBiggest[0]) biggestTagId = parseFloat(resBiggest[0]._id)
-  console.log(biggestTagId)
+  Log.log(biggestTagId)
 
   req.body._id = parseFloat(biggestTagId + 1)
   req.body.tag = 'new_tag_' + req.body._id
-  console.log(req.body)
+  Log.log(req.body)
   const tag = new Tag(req.body)
   tag.save((err) => {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -117,7 +117,7 @@ exports.deleteTag = async (req, res) => {
 }
 
 exports.listTags = async (req, res) => {
-  console.log('listTags')
+  Log.log('listTags')
 
   let skip = 0
   if ('page' in req.body && 'itemsPerPage' in req.body)
@@ -140,7 +140,7 @@ exports.listTags = async (req, res) => {
     .sort(orderby)
     .exec(function (err, tags) {
       if (err) {
-        console.log(err)
+        Log.log(err)
         res.status(200).send({ error: err })
         return
       }
@@ -580,7 +580,7 @@ exports.createProtocolConnection = async (req, res) => {
   // find the biggest connection number and increment for the new connection
   await ProtocolConnection.find({}).exec(function (err, protocolConnections) {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -594,7 +594,7 @@ exports.createProtocolConnection = async (req, res) => {
     protocolConnection.DriverInstanceNumber = 1
     protocolConnection.save((err) => {
       if (err) {
-        console.log(err)
+        Log.log(err)
         res.status(200).send({ error: err })
         return
       }
@@ -606,11 +606,11 @@ exports.createProtocolConnection = async (req, res) => {
 }
 
 exports.listProtocolConnections = (req, res) => {
-  console.log('listProtocolConnections')
+  Log.log('listProtocolConnections')
 
   ProtocolConnection.find({}).exec(function (err, protocolConnections) {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -626,11 +626,11 @@ exports.deleteProtocolDriverInstance = async (req, res) => {
 }
 
 exports.listNodes = (req, res) => {
-  console.log('listNodes')
+  Log.log('listNodes')
 
   ProtocolDriverInstance.find({}).exec(function (err, driverInstances) {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -646,7 +646,7 @@ exports.createProtocolDriverInstance = async (req, res) => {
   const driverInstance = new ProtocolDriverInstance()
   driverInstance.save((err) => {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -657,11 +657,11 @@ exports.createProtocolDriverInstance = async (req, res) => {
 }
 
 exports.listProtocolDriverInstances = (req, res) => {
-  console.log('listProtocolDriverInstances')
+  Log.log('listProtocolDriverInstances')
 
   ProtocolDriverInstance.find({}).exec(function (err, driverInstances) {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -688,13 +688,13 @@ exports.updateProtocolDriverInstance = async (req, res) => {
 }
 
 exports.listUsers = (req, res) => {
-  console.log('listUsers')
+  Log.log('listUsers')
 
   User.find({})
     .populate('roles')
     .exec(function (err, users) {
       if (err) {
-        console.log(err)
+        Log.log(err)
         res.status(200).send({ error: err })
         return
       }
@@ -706,11 +706,11 @@ exports.listUsers = (req, res) => {
 }
 
 exports.listRoles = (req, res) => {
-  console.log('listRoles')
+  Log.log('listRoles')
 
   Role.find({}).exec(function (err, roles) {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -758,11 +758,11 @@ exports.userRemoveRole = (req, res) => {
 }
 
 exports.listGroup1 = (req, res) => {
-  console.log('listGroup1')
+  Log.log('listGroup1')
 
   Tag.find().distinct('group1', function (err, groups) {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -771,12 +771,12 @@ exports.listGroup1 = (req, res) => {
 }
 
 exports.listDisplays = (req, res) => {
-  console.log('listDisplays')
+  Log.log('listDisplays')
 
   fs.readdir('../htdocs/svg', function (err, files) {
     //handling error
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -814,7 +814,7 @@ exports.createRole = async (req, res) => {
   const role = new Role(req.body)
   role.save((err) => {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -830,7 +830,7 @@ exports.createUser = async (req, res) => {
   const user = new User(req.body)
   user.save((err) => {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(200).send({ error: err })
       return
     }
@@ -866,7 +866,7 @@ exports.signup = (req, res) => {
 
   user.save((err, user) => {
     if (err) {
-      console.log(err)
+      Log.log(err)
       res.status(500).send({ message: err })
       return
     }
@@ -878,7 +878,7 @@ exports.signup = (req, res) => {
         },
         (err, roles) => {
           if (err) {
-            console.log(err)
+            Log.log(err)
             res.status(500).send({ message: err })
             return
           }
@@ -886,7 +886,7 @@ exports.signup = (req, res) => {
           user.roles = roles.map((role) => role._id)
           user.save((err) => {
             if (err) {
-              console.log(err)
+              Log.log(err)
               res.status(500).send({ message: err })
               return
             }
@@ -898,7 +898,7 @@ exports.signup = (req, res) => {
     } else {
       Role.findOne({ name: 'user' }, (err, role) => {
         if (err) {
-          console.log(err)
+          Log.log(err)
           res.status(500).send({ message: err })
           return
         }
@@ -906,7 +906,7 @@ exports.signup = (req, res) => {
         user.roles = [role._id]
         user.save((err) => {
           if (err) {
-            console.log(err)
+            Log.log(err)
             res.status(500).send({ message: err })
             return
           }
@@ -927,7 +927,7 @@ exports.signin = (req, res) => {
     .populate('roles', '-__v')
     .exec((err, user) => {
       if (err) {
-        console.log(err)
+        Log.log(err)
         res.status(200).send({ ok: false, message: err })
         return
       }
@@ -1088,7 +1088,7 @@ function registerUserAction(req, actionName) {
 
   let ck = checkToken(req)
   if (ck !== false) {
-    console.log(actionName + ' - ' + ck?.username)
+    Log.log(actionName + ' - ' + ck?.username)
     delete body['password']
     // register user action
     UserActionsQueue.enqueue({
@@ -1098,7 +1098,7 @@ function registerUserAction(req, actionName) {
       timeTag: new Date(),
     })
   } else {
-    console.log(actionName + ' - ' + req.body?.username)
+    Log.log(actionName + ' - ' + req.body?.username)
     delete body['password']
     // register user action
     UserActionsQueue.enqueue({
