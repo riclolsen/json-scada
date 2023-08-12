@@ -346,7 +346,7 @@ namespace IEC61850_Client
                     log += " SubSeqNumb:" + report.GetSubSeqNum();
                 log += "\n";
             }
-            byte[] entryId = report.GetEntryId().ToArray();
+            byte[] entryId = report.GetEntryId();
             if (entryId != null)
             {
                 if (LogLevel > LogLevelNoLog)

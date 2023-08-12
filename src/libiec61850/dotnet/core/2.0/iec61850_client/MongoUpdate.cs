@@ -148,7 +148,7 @@ namespace IEC61850_Client
                                     listWrites
                                         .Add(new InsertOneModel<rtData>(insert));
 
-                                    // will imediatelly be followed by an update below (to the same tag)
+                                    // will immediately be followed by an update below (to the same tag)
                                 }
                             }
 

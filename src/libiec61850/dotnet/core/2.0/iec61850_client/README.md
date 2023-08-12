@@ -77,7 +77,7 @@ Parameters for communication with IEC61850 servers.
 
 ## Configure JSON-SCADA tags for update (reading from an IEC61850 Server)
 
-Each tag to be update on a connection must have a protocol source set configured. Only one source connection can update a tag.
+Each tag to be update on a connection must have a protocol source configured. Only one source connection can update a tag.
 
 Select a tag for a update on a connection as below.
 
@@ -88,10 +88,6 @@ Select a tag for a update on a connection as below.
             protocolSourceCommonAddress: "ST",
             protocolSourceObjectAddress: "DemoProtCtrl/Obj1XCBR1.Pos",
             protocolSourceASDU: "", 
-            protocolSourcePublishingInterval: 5.0,
-            protocolSourceSamplingInterval: 0.0,
-            protocolSourceQueueSize: 5.0,
-            protocolSourceDiscardOldest: true,
             kconv1: 1.0,
             kconv2: 0.0
             }
@@ -101,10 +97,6 @@ Select a tag for a update on a connection as below.
 * _**protocolSourceCommonAddress**_ [String] - Functional contraint (ST, MX, CF, etc.). **Mandatory parameter**.
 * _**protocolSourceObjectAddress**_ [String] -  IEC61850 element address. This address must be unique in a connection (for supervised points). **Mandatory parameter**.
 * _**protocolSourceASDU**_ [String] - Unused. **Optional parameter**.
-* _**protocolSourcePublishingInterval**_ [Double] - Publishing interval in seconds for the subscription group (repeat the same value for all members of a subscription). If not a subscription this is the polling interval. **Mandatory parameter**.
-* _**protocolSourceSamplingInterval**_ [Double] - Sampling interval in seconds requested for the server. Only meaningful for subscriptions. Use zero for auto adjust on the server. **Mandatory parameter**.
-* _**protocolSourceQueueSize**_ [Double] - Queue size for buffering of changes in the server between reports. Only meaningful for subscriptions. Use zero to avoid buffering. **Mandatory parameter**.
-* _**protocolSourceDiscardOldest**_ [Boolean] - What to do when changes queue overflows. Use true to discard oldest changes.Only meaningful for subscriptions. **Mandatory parameter**.
 * _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 * _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 
