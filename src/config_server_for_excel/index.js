@@ -314,7 +314,7 @@ MongoClient.connect(
       elem.protocolSourceConnectionNumber = toMongoDouble(
         elem.protocolSourceConnectionNumber
       )
-      elem.protocolSourceCommonAddress = toMongoDouble(
+      elem.protocolSourceCommonAddress = toMongoDoubleOrString(
         elem.protocolSourceCommonAddress
       )
       elem.protocolSourceObjectAddress = toMongoDoubleOrString(
@@ -333,7 +333,7 @@ MongoClient.connect(
         pd.protocolDestinationConnectionNumber = toMongoDouble(
           pd.protocolDestinationConnectionNumber
         )
-        pd.protocolDestinationCommonAddress = toMongoDouble(
+        pd.protocolDestinationCommonAddress = toMongoDoubleOrString(
           pd.protocolDestinationCommonAddress
         )
         pd.protocolDestinationObjectAddress = toMongoDoubleOrString(
@@ -357,7 +357,7 @@ MongoClient.connect(
           pd.protocolDestinationKConv2,
           0
         )
-        pd.protocolDestinationGroup = toMongoDouble(
+        pd.protocolDestinationGroup = toMongoDoubleOrString(
           pd.protocolDestinationGroup,
           0
         )

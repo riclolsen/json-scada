@@ -158,6 +158,16 @@ Example document.
 * _**_protocolSourceCommandDuration_**_ [Double] - Additional command specification. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolSourceCommandUseSBO_**_ [Boolean] - Use or not Select Before Operate for commands. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or empty array when not point is not to be distributed. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationConnectionNumber_**_ [Double] - Indicates the protocol connection that will monitor updates to the point. Should contain only integer values. **Mandatory parameter**.
+* _**_protocolDestinationCommonAddress_**_ [Double or String] - Protocol common address (device address). See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationObjectAddress_**_ [Double or String] -  Protocol object address. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationASDU_**_ [Double or String] - Protocol information ASDU TI type. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationCommandDuration_**_ [Double] - Additional command specification. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationCommandUseSBO_**_ [Boolean] - Use or not Select Before Operate for commands. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationKConv1_**_ [Double] - Conversion factor 1 (multiplier). **Mandatory parameter**.
+* _**_protocolDestinationKConv2_**_ [Double] - Conversion factor 2 (adder). **Mandatory parameter**.
+* _**_protocolDestinationGroup_**_ [Double or String] - Group number or dataset id of points. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinationHoursShift_**_ [Double] - Number of hours to add to timestamps. **Mandatory parameter**.
 
 ### Fields that can be configured and altered by the operators.
 
