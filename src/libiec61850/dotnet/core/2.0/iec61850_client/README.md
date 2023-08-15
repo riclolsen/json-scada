@@ -70,7 +70,7 @@ Parameters for communication with IEC61850 servers.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**ipAddresses**_ [Array of Strings] - Array of server IP addresses (or hostnames) and TCP ports  (only the first server is currently supported). **Mandatory parameter**.
 * _**topics**_ [Array of Strings] - Array of report names to be activated (will activate all if none was specified). *Mandatory parameter**.
-* _**autoCreateTags**_ [Boolean] - When true the driver will create tags for every data point found in the server, all points will be subscribed. When false, only preconfigured tags will be updated. **Mandatory parameter**.
+* _**autoCreateTags**_ [Boolean] - When true the driver will auto create tags for every data point found in activated reports in the server. When false, only preconfigured tags will be updated. **Mandatory parameter**.
 * _**giInterval**_ [Double] - Scan interval in seconds for data not in reports. **Mandatory parameter**.
 * _**class0ScanInterval**_ [Double] - Integrity interval in seconds for data in reports. **Mandatory parameter**.
 * _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.

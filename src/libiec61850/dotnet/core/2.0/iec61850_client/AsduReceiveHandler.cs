@@ -304,7 +304,7 @@ namespace IEC61850_Client
         {
             string ret = dataRef;
             fc = FunctionalConstraint.NONE;
-            for (int i = 0; i < 17; i++)
+            for (int i = 0; i <= 17; i++)
             {
                 var sfc = "$" + ((FunctionalConstraint)i).ToString() + "$";
                 if (dataRef.Contains(sfc))
@@ -320,7 +320,7 @@ namespace IEC61850_Client
         {
             string ret = dataRef;
             fc = FunctionalConstraint.NONE;
-            for (int i = 0; i < 17; i++)
+            for (int i = 0; i <= 17; i++)
             {
                 var sfc = "[" + ((FunctionalConstraint)i).ToString() + "]";
                 if (dataRef.Contains(sfc))
@@ -335,202 +335,215 @@ namespace IEC61850_Client
         private static void reportHandler(Report report, object parameter)
         { // handle reports, forward values when desired
             ReptParam rp = (ReptParam)parameter;
-
             string log = "";
-            if (LogLevel > LogLevelNoLog)
-            {
-                log = rp.srv.name + " Report RCB: " + report.GetRcbReference();
-                if (report.HasSeqNum())
-                    log += " SeqNumb:" + report.GetSeqNum();
-                if (report.HasSubSeqNum())
-                    log += " SubSeqNumb:" + report.GetSubSeqNum();
-                log += "\n";
-            }
-            byte[] entryId = report.GetEntryId();
-            if (entryId != null)
+
+            try
             {
                 if (LogLevel > LogLevelNoLog)
-                    log += "  entryID: " + BitConverter.ToString(entryId) + " \n";
-                if (rp.srv.brcb.Contains(report.GetRcbReference()))
                 {
-                    if (rp.srv.lastReportIds.ContainsKey(report.GetRcbReference()))
-                        if (BitConverter.ToString(rp.srv.lastReportIds[report.GetRcbReference()]) == BitConverter.ToString(entryId))
-                        {
-                            if (LogLevel > LogLevelNoLog)
-                                log += "Repeated report!\n";
-                            Log(log);
-                            return;
-                        }
-                    rp.srv.lastReportIds[report.GetRcbReference()] = entryId.ToArray();
-                    rp.srv.brcbCount++;
+                    log = rp.srv.name + " Report RCB: " + report.GetRcbReference();
+                    if (report.HasSeqNum())
+                        log += " SeqNumb:" + report.GetSeqNum();
+                    if (report.HasSubSeqNum())
+                        log += " SubSeqNumb:" + report.GetSubSeqNum();
+                    log += "\n";
                 }
-            }
-            if (LogLevel > LogLevelNoLog && report.HasDataSetName())
-                log += "  data-set: " + rp.rcb.GetDataSetReference() + "\n";
-
-            if (report.HasTimestamp() && LogLevel > LogLevelNoLog)
-                log += "  timestamp: " + MmsValue.MsTimeToDateTimeOffset(report.GetTimestamp()).ToString() + "\n";
-
-            MmsValue values = report.GetDataSetValues();
-
-            if (LogLevel > LogLevelNoLog)
-                log += "  report dataset contains " + values.Size() + " elements" + "\n";
-
-            for (int k = 0; k < values.Size(); k++)
-            {
-                if (report.HasReasonForInclusion())
-                    if (report.GetReasonForInclusion(k) != ReasonForInclusion.REASON_NOT_INCLUDED)
+                byte[] entryId = report.GetEntryId();
+                if (entryId != null)
+                {
+                    if (LogLevel > LogLevelNoLog)
+                        log += "  entryID: " + BitConverter.ToString(entryId) + " \n";
+                    if (rp.srv.brcb.Contains(report.GetRcbReference()))
                     {
-                        var dataRef = getRefFc(report.GetDataReference(k), out FunctionalConstraint fc);
-
-                        if (!rp.srv.autoCreateTags && !rp.srv.entries.ContainsKey(dataRef + fc)) continue; // when no autoTag do not forward data for tags undefined
-                        Iec61850Entry entry = new Iec61850Entry();
-                        if (rp.srv.entries.ContainsKey(dataRef + fc))
-                            entry = rp.srv.entries[dataRef + fc];
-                        else
-                        {  // autoTag undefined json scada tag with server name plus 61850 path
-                            entry.path = dataRef;
-                            entry.js_tag = rp.srv.name + ":" + dataRef;
-                            entry.childs.Clear();
-                            entry.fc = fc;
-                        }
-                        entry.rcbName = report.GetRcbReference();
-                        entry.dataSetName = rp.rcb.GetDataSetReference();
-
-                        log += "\nElement " + k + " , path " + entry.path + " [" + fc + "] , js_tag " + entry.js_tag + "\n";
-
-                        if (LogLevel > LogLevelNoLog)
-                            log += " Included for reason " + report.GetReasonForInclusion(k).ToString() + " \n";
-                        string tag = entry.js_tag;
-                        var value = values.GetElement(k);
-                        double v;
-                        bool failed;
-                        ulong timestamp;
-                        Boolean isBinary = false;
-
-                        if (value.GetType() == MmsType.MMS_STRUCTURE)
-                        {
-                            if (LogLevel > LogLevelNoLog)
-                            {
-                                log += " Value is of complex type [";
-                                foreach (var item in entry.childs)
-                                {
-                                    log += item + " ";
-                                }
-                                log += "]\n";
-                            }
-                            v = MMSGetNumericVal(value, out isBinary);
-                            failed = MMSGetQualityFailed(value);
-                            timestamp = MMSGetTimestamp(value);
-
-                            for (int i = 0; i < value.Size(); i++)
+                        if (rp.srv.lastReportIds.ContainsKey(report.GetRcbReference()))
+                            if (BitConverter.ToString(rp.srv.lastReportIds[report.GetRcbReference()]) == BitConverter.ToString(entryId))
                             {
                                 if (LogLevel > LogLevelNoLog)
-                                    log += "  " + value.GetElement(i).GetType();
+                                    log += "Repeated report!\n";
+                                Log(log);
+                                return;
+                            }
+                        rp.srv.lastReportIds[report.GetRcbReference()] = entryId.ToArray();
+                        rp.srv.brcbCount++;
+                    }
+                }
+                if (LogLevel > LogLevelNoLog && report.HasDataSetName())
+                    log += "  data-set: " + rp.rcb.GetDataSetReference() + "\n";
 
-                                if (value.GetElement(i).GetType() == MmsType.MMS_STRUCTURE)
+                if (report.HasTimestamp() && LogLevel > LogLevelNoLog)
+                    log += "  timestamp: " + MmsValue.MsTimeToDateTimeOffset(report.GetTimestamp()).ToString() + "\n";
+
+                MmsValue values = report.GetDataSetValues();
+
+                if (LogLevel > LogLevelNoLog)
+                    log += "  report dataset contains " + values.Size() + " elements" + "\n";
+
+                for (int k = 0; k < values.Size(); k++)
+                {
+                    if (report.HasReasonForInclusion())
+                        if (report.GetReasonForInclusion(k) != ReasonForInclusion.REASON_NOT_INCLUDED)
+                        {
+                            var dr = report.GetDataReference(k);
+                            if (dr == null) 
+                            {
+                                log += "Can't get data reference for element " + k + " of report! Skipping element...\n";
+                                continue;
+                            }
+                            var dataRef = getRefFc(dr, out FunctionalConstraint fc);
+
+                            if (!rp.srv.autoCreateTags && !rp.srv.entries.ContainsKey(dataRef + fc)) continue; // when no autoTag do not forward data for tags undefined
+                            Iec61850Entry entry = new Iec61850Entry();
+                            if (rp.srv.entries.ContainsKey(dataRef + fc))
+                                entry = rp.srv.entries[dataRef + fc];
+                            else
+                            {  // autoTag undefined json scada tag with server name plus 61850 path
+                                entry.path = dataRef;
+                                entry.js_tag = rp.srv.name + ":" + dataRef;
+                                entry.childs.Clear();
+                                entry.fc = fc;
+                            }
+                            entry.rcbName = report.GetRcbReference();
+                            entry.dataSetName = rp.rcb.GetDataSetReference();
+
+                            log += "\nElement " + k + " , path " + entry.path + " [" + fc + "] , js_tag " + entry.js_tag + "\n";
+
+                            if (LogLevel > LogLevelNoLog)
+                                log += " Included for reason " + report.GetReasonForInclusion(k).ToString() + " \n";
+                            string tag = entry.js_tag;
+                            var value = values.GetElement(k);
+                            double v;
+                            bool failed;
+                            ulong timestamp;
+                            Boolean isBinary = false;
+
+                            if (value.GetType() == MmsType.MMS_STRUCTURE)
+                            {
+                                if (LogLevel > LogLevelNoLog)
                                 {
-                                    v = MMSGetNumericVal(value.GetElement(i), out isBinary);
-                                    for (int j = 0; j < value.GetElement(i).Size(); j++)
+                                    log += " Value is of complex type [";
+                                    foreach (var item in entry.childs)
+                                    {
+                                        log += item + " ";
+                                    }
+                                    log += "]\n";
+                                }
+                                v = MMSGetNumericVal(value, out isBinary);
+                                failed = MMSGetQualityFailed(value);
+                                timestamp = MMSGetTimestamp(value);
+
+                                for (int i = 0; i < value.Size(); i++)
+                                {
+                                    if (LogLevel > LogLevelNoLog)
+                                        log += "  " + value.GetElement(i).GetType();
+
+                                    if (value.GetElement(i).GetType() == MmsType.MMS_STRUCTURE)
+                                    {
+                                        v = MMSGetNumericVal(value.GetElement(i), out isBinary);
+                                        for (int j = 0; j < value.GetElement(i).Size(); j++)
+                                        {
+                                            if (LogLevel > LogLevelNoLog)
+                                                log += "  " + value.GetElement(i).GetElement(j).GetType();
+                                            if (LogLevel > LogLevelNoLog)
+                                                log += "     -> " + value.GetElement(i).GetElement(j).ToString() + "\n";
+                                            v = MMSGetNumericVal(value.GetElement(i).GetElement(j), out isBinary);
+                                        }
+                                    }
+                                    failed = MMSGetQualityFailed(value.GetElement(i));
+                                    timestamp = MMSGetTimestamp(value.GetElement(i));
+                                    if (value.GetElement(i).GetType() == MmsType.MMS_BIT_STRING)
                                     {
                                         if (LogLevel > LogLevelNoLog)
-                                            log += "  " + value.GetElement(i).GetElement(j).GetType();
+                                            log += "   -> " + value.GetElement(i).ToString() + "\n";
+                                    }
+                                    else
+                                    if (value.GetElement(i).GetType() == MmsType.MMS_UTC_TIME)
+                                    {
                                         if (LogLevel > LogLevelNoLog)
-                                            log += "     -> " + value.GetElement(i).GetElement(j).ToString() + "\n";
-                                        v = MMSGetNumericVal(value.GetElement(i).GetElement(j), out isBinary);
+                                            log += "   -> " + value.GetElement(i).GetUtcTimeAsDateTimeOffset() + "\n";
+                                    }
+                                    else
+                                    {
+                                        if (LogLevel > LogLevelNoLog)
+                                            log += "   -> " + v + "\n";
                                     }
                                 }
-                                failed = MMSGetQualityFailed(value.GetElement(i));
-                                timestamp = MMSGetTimestamp(value.GetElement(i));
-                                if (value.GetElement(i).GetType() == MmsType.MMS_BIT_STRING)
-                                {
-                                    if (LogLevel > LogLevelNoLog)
-                                        log += "   -> " + value.GetElement(i).ToString() + "\n";
-                                }
+
+                                string vstr;
+                                if (isBinary)
+                                    vstr = v != 0 ? "true" : "false";
                                 else
-                                if (value.GetElement(i).GetType() == MmsType.MMS_UTC_TIME)
+                                    vstr = v.ToString("G", CultureInfo.CreateSpecificCulture("en-US"));
+
+                                var iv = new IECValue
                                 {
-                                    if (LogLevel > LogLevelNoLog)
-                                        log += "   -> " + value.GetElement(i).GetUtcTimeAsDateTimeOffset() + "\n";
+                                    isDigital = isBinary,
+                                    value = v,
+                                    valueString = vstr,
+                                    valueJson = MMSGetStringValue(value),
+                                    serverTimestamp = DateTime.Now,
+                                    sourceTimestamp = DateTime.MinValue,
+                                    hasSourceTimestamp = false,
+                                    cot = 20,
+                                    common_address = entry.fc.ToString(),
+                                    address = entry.path,
+                                    asdu = value.GetType().ToString(),
+                                    quality = !failed,
+                                    selfPublish = rp.srv.autoCreateTags,
+                                    conn_name = rp.srv.name,
+                                    conn_number = rp.srv.protocolConnectionNumber,
+                                    display_name = entry.path,
+                                };
+                                if (report.GetReasonForInclusion(k) == ReasonForInclusion.REASON_DATA_CHANGE && timestamp != 0)
+                                {
+                                    iv.hasSourceTimestamp = true;
+                                    iv.sourceTimestamp = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp).UtcDateTime;
                                 }
+                                IECDataQueue.Enqueue(iv);
+                            }
+                            else
+                            {
+                                v = MMSGetDoubleVal(value, out isBinary);
+                                if (LogLevel > LogLevelNoLog)
+                                {
+                                    log += " Value is of simple type " + value.GetType() + " " + v;
+                                }
+                                failed = false;
+                                if (MMSTestDoubleStateFailed(value)) failed = true; // double state inconsistent status
+                                string vstr;
+                                if (isBinary)
+                                    vstr = v != 0 ? "true" : "false";
                                 else
+                                    vstr = v.ToString("G", CultureInfo.CreateSpecificCulture("en-US"));
+
+                                var iv = new IECValue
                                 {
-                                    if (LogLevel > LogLevelNoLog)
-                                        log += "   -> " + v + "\n";
-                                }
+                                    isDigital = isBinary,
+                                    value = v,
+                                    valueString = vstr,
+                                    valueJson = MMSGetStringValue(value),
+                                    serverTimestamp = DateTime.Now,
+                                    sourceTimestamp = DateTime.MinValue,
+                                    hasSourceTimestamp = false,
+                                    cot = 20,
+                                    common_address = entry.fc.ToString(),
+                                    address = entry.path,
+                                    asdu = value.GetType().ToString(),
+                                    quality = !failed,
+                                    selfPublish = rp.srv.autoCreateTags,
+                                    conn_name = rp.srv.name,
+                                    conn_number = rp.srv.protocolConnectionNumber,
+                                    display_name = entry.path,
+                                };
+                                IECDataQueue.Enqueue(iv);
                             }
-
-                            string vstr;
-                            if (isBinary)
-                                vstr = v != 0 ? "true" : "false";
-                            else
-                                vstr = v.ToString("G", CultureInfo.CreateSpecificCulture("en-US"));
-
-                            var iv = new IECValue
-                            {
-                                isDigital = isBinary,
-                                value = v,
-                                valueString = vstr,
-                                valueJson = MMSGetStringValue(value),
-                                serverTimestamp = DateTime.Now,
-                                sourceTimestamp = DateTime.MinValue,
-                                hasSourceTimestamp = false,
-                                cot = 20,
-                                common_address = entry.fc.ToString(),
-                                address = entry.path,
-                                asdu = value.GetType().ToString(),
-                                quality = !failed,
-                                selfPublish = true,
-                                conn_name = rp.srv.name,
-                                conn_number = rp.srv.protocolConnectionNumber,
-                                display_name = entry.path,
-                            };
-                            if (report.GetReasonForInclusion(k) == ReasonForInclusion.REASON_DATA_CHANGE && timestamp != 0)
-                            {
-                                iv.hasSourceTimestamp = true;
-                                iv.sourceTimestamp = DateTimeOffset.FromUnixTimeMilliseconds((long)timestamp).UtcDateTime;
-                            }
-                            IECDataQueue.Enqueue(iv);
                         }
-                        else
-                        {
-                            v = MMSGetDoubleVal(value, out isBinary);
-                            if (LogLevel > LogLevelNoLog)
-                            {
-                                log += " Value is of simple type " + value.GetType() + " " + v;
-                            }
-                            failed = false;
-                            if (MMSTestDoubleStateFailed(value)) failed = true; // double state inconsistent status
-                            string vstr;
-                            if (isBinary)
-                                vstr = v != 0 ? "true" : "false";
-                            else
-                                vstr = v.ToString("G", CultureInfo.CreateSpecificCulture("en-US"));
-
-                            var iv = new IECValue
-                            {
-                                isDigital = isBinary,
-                                value = v,
-                                valueString = vstr,
-                                valueJson = MMSGetStringValue(value),
-                                serverTimestamp = DateTime.Now,
-                                sourceTimestamp = DateTime.MinValue,
-                                hasSourceTimestamp = false,
-                                cot = 20,
-                                common_address = entry.fc.ToString(),
-                                address = entry.path,
-                                asdu = value.GetType().ToString(),
-                                quality = !failed,
-                                selfPublish = true,
-                                conn_name = rp.srv.name,
-                                conn_number = rp.srv.protocolConnectionNumber,
-                                display_name = entry.path,
-                            };
-                            IECDataQueue.Enqueue(iv);
-                        }
-                    }
+                }
+                Log(log);
             }
-            Log(log);
+            catch (Exception e) {
+                Log(log);
+                Log(e); 
+            }
         }
 
         static void Process(Iec61850Connection srv)
@@ -708,8 +721,14 @@ namespace IEC61850_Client
                                             rcb.InstallReportHandler(reportHandler, new ReptParam { srv = srv, rcb = rcb });
                                             rcb.SetTrgOps(TriggerOptions.DATA_CHANGED | TriggerOptions.INTEGRITY);
                                             rcb.SetIntgPd((uint)srv.class0ScanInterval * 1000);
+                                            rcb.SetOptFlds(ReportOptions.SEQ_NUM |
+                                                           ReportOptions.TIME_STAMP |
+                                                           ReportOptions.REASON_FOR_INCLUSION |
+                                                           ReportOptions.DATA_SET |
+                                                           ReportOptions.DATA_REFERENCE |
+                                                           ReportOptions.CONF_REV);
                                             rcb.SetRptEna(false);
-                                            rcb.SetRptEna(true);
+                                            rcb.SetRptEna(true);                                            
                                             // rcb.SetResv(true);
                                             try
                                             {                                                
@@ -772,6 +791,13 @@ namespace IEC61850_Client
                                             }
                                             rcb.SetEntryID(lastEntryId);
                                             rcb.SetIntgPd((uint)srv.class0ScanInterval * 1000);
+                                            rcb.SetOptFlds(ReportOptions.SEQ_NUM |
+                                                           ReportOptions.TIME_STAMP |
+                                                           ReportOptions.REASON_FOR_INCLUSION |
+                                                           ReportOptions.DATA_SET |
+                                                           ReportOptions.DATA_REFERENCE |
+                                                           ReportOptions.CONF_REV |
+                                                           ReportOptions.ENTRY_ID);
                                             rcb.SetRptEna(false);
                                             rcb.SetRptEna(true);                                            
                                             try
