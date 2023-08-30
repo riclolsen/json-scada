@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "mongodb": "^4.1.0"
+    "mongodb": "^4.17.0"
   }
 }
