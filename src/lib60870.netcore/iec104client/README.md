@@ -86,7 +86,7 @@ Each instance for this driver can have many client connection defined that must 
 * _**t1**_ [Double] - Protocol _t1_ timeout in seconds. **Mandatory parameter**.
 * _**t2**_ [Double] - Protocol _t2_ timeout in seconds. **Mandatory parameter**.
 * _**t3**_ [Double] - Protocol _t3_ timeout in seconds. **Mandatory parameter**.
-* _**stats**_ [Double] - Protocol statistics updated by the driver. **Mandatory parameter**.
+* _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 Parameters needed only for TLS encrypted connections (when there are redundant servers, the same set of certificates is applied to connections to both servers).
 
@@ -139,9 +139,9 @@ Select a tag for a update on a connection as below.
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can update the tag. **Mandatory parameter**.
 * _**protocolSourceCommonAddress**_ [Double] - Common Address of ASDU. There can be more than one common address in the same connection. **Mandatory parameter**.
 * _**protocolSourceObjectAddress**_ [Double] - Object address. This address combined with _protocolSourceCommonAddress_ must be unique for the connection. **Mandatory parameter**.
-* _**protocolSourceASDU**_ [Double] - Source ASDU TI type. This is documental, the protocol driver will update the tag using any supported ASDU type. **Mandatory parameter**.
+* _**protocolSourceASDU**_ [Double] - Source ASDU TI type. This is documental for supervised points, the protocol driver will update the tag using any supported ASDU type. This parameter is important for command points. **Mandatory parameter**.
 * _**protocolSourceCommandDuration**_ [Double] - Command options, IEC-104 QU field: 0=Unspecified, 1=Short Pulse, 2=Long Pulse, 3=Persistent. Just meaningful for commands. **Mandatory parameter**.
-* _**protocolSourceCommandUseSBO**_ [Double] - Use Select-Before-Operate control sequence. Just meaningful for commands. **Mandatory parameter**.
+* _**protocolSourceCommandUseSBO**_ [Boolean] - Use Select-Before-Operate control sequence. Just meaningful for commands. **Mandatory parameter**.
 * _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 * _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 
