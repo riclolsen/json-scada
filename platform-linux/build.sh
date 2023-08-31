@@ -87,5 +87,7 @@ cd ../OPC-UA-Server
 npm install
 cd ../carbone-reports
 npm install
+cd ../backup-mongo
+npm install
 cd ../..
 

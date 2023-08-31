@@ -116,5 +116,11 @@ call \json-scada\platform-windows\nodejs-runtime\npm install
 cd \json-scada\src\carbone-reports
 call \json-scada\platform-windows\nodejs-runtime\npm install
 
+cd \json-scada\src\demo_simul
+call \json-scada\platform-windows\nodejs-runtime\npm install
+
+cd \json-scada\src\backup-mongo
+call \json-scada\platform-windows\nodejs-runtime\npm install
+
 cd ..\..\platform-windows
 
