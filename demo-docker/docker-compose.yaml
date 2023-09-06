@@ -12,7 +12,7 @@ services:
 
   # must create a mongodb instance or cluster with a replica set
   jsdemo_mongorsn1:
-    image: mongo:6.0
+    image: mongo:7.0
     container_name: jsdemo_mongors1
     hostname: jsdemo_mongorsn1
     restart: unless-stopped
@@ -100,7 +100,7 @@ services:
       - jsdemo_net
 
   grafana:
-    image: grafana/grafana:9.5.5
+    image: grafana/grafana:9.5.9
     container_name: jsdemo_grafana
     # you may need to set the docker user:group to be able to write grafana folder 
     # set UID and GID variables 
@@ -167,7 +167,7 @@ services:
 
   # process incoming data 
   cs_data_processor:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_cs_data_processor
     command:  sh -c "cd /cs_data_processor && sleep 10 && node cs_data_processor.js"
     restart: unless-stopped
@@ -182,7 +182,7 @@ services:
 
   # custom script processor
   cs_custom_processor:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_cs_custom_processor
     command:  sh -c "cd /cs_custom_processor && sleep 10 && node cs_custom_processor.js"
     restart: unless-stopped
@@ -196,7 +196,7 @@ services:
 
   # config server for excel
   config_server_excel:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_config_server_excel
     command:  sh -c "cd /config_server_for_excel && sleep 10 && node index.js"
     restart: unless-stopped
@@ -217,7 +217,7 @@ services:
 
   # mqtt sparkplug-b driver
   mqtt-sparkplug:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_mqtt-sparkplug
     command:  sh -c "cd /mqtt-sparkplug && sleep 20 && node index.js"
     restart: unless-stopped
@@ -232,7 +232,7 @@ services:
 
   # OPC-UA Server
   opcua_server:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_opcua_server
     command:  sh -c "cd /OPC-UA-Server && sleep 10 && node index.js"
     restart: unless-stopped
@@ -250,7 +250,7 @@ services:
 
   # realtime web server, will listen on some HTTP port NO AUTH/RBAC
   #server_realtime:
-  #  image: node:16.13.0-alpine
+  #  image: node:20-alpine
   #  container_name: jsdemo_server_realtime
   #  command:  sh -c "cd /server_realtime && sleep 10 && node index.js"
   #  restart: unless-stopped
@@ -280,7 +280,7 @@ services:
 
   # realtime web server, will listen on some HTTP port with auth, RBAC management UI
   server_realtime:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_server_realtime_auth
     command:  sh -c "cd /server_realtime_auth && sleep 10 && node index.js"
     restart: unless-stopped
@@ -311,7 +311,7 @@ services:
     
   # calculation process
   calculations:
-    image: node:16.13.0-alpine
+    image: node:20-alpine
     container_name: jsdemo_calculations
     command:  sh -c "sleep 15 && cd /jsonscada_bin/ && ./calculations"
     restart: unless-stopped
