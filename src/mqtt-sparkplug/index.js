@@ -912,7 +912,7 @@ async function processMongoUpdates(
   MongoStatus
 ) {
   let cnt = 0
-  if (clientMongo && collection && !MongoStatus.HintMongoIsConnected)
+  if (clientMongo && collection && MongoStatus.HintMongoIsConnected)
     while (!ValuesQueue.isEmpty()) {
       try {
         let data = ValuesQueue.peek()
