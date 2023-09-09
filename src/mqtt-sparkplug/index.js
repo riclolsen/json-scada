@@ -2093,8 +2093,7 @@ async function ProcessDeviceCommand(
     }
 
     let rIns = await cmdQueue.insertOne(cmd)
-    // if (rIns.acknowledged) // change for mongo driver >= 4.0
-    if (rIns.insertedCount)
+    if (rIns.acknowledged)
       Log.log(
         'MongoDB - Command Queued: ' + JSON.stringify(cmd),
         Log.levelDetailed
