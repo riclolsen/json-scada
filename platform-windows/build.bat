@@ -47,6 +47,8 @@ cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
 dotnet build --no-self-contained --runtime win-x64 -c Release -o ..\..\bin\
 cd \json-scada\src\libplctag\PLCTagsClient 
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ PLCTagsClient.csproj
+cd \json-scada\src\logrotate\  
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\ logrotate.csproj
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin

@@ -132,6 +132,31 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.30:
+
+* Default login credentials: username=admin password=jsonscada.
+* Fixed data update problem with the MQTT-Sparkplug driver.
+* Force data references in reports for the IEC61850 driver.
+* Fixed problems with data types in Excel config_server_for_excel/sheet.
+* Added logging/rotation by default to some services. 
+* Npm packages updated.
+* MongoDB Community Server updated to 7.0.1.
+* MongoDB Compass updated to 1.39.4.
+* Grafana updated to 9.5.9.
+* Chromium updated to 116.0.5845.180.
+* Telegraf runtime updated to 1.27.4.
+* Dotnet runtime updated to 6.0.21.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
 Notes for version 0.29:
 
 * Default login credentials: username=admin password=jsonscada.
