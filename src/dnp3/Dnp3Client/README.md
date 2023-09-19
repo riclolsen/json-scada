@@ -224,6 +224,28 @@ PULSE 1=OFF,TRIP  0=OFF,CLOSE | 20
 
 Currently, pulse CROB controls have a fixed time of 100ms hardcoded in the source code.
 
+## Firing Commands Directly via MongoDB
+
+Is is possible to fire commands over a running protocol connection just by inserting documents like below into the _commandsQueue_ collection.
+
+    {
+        "protocolSourceConnectionNumber": 1.0,          // [double]  protocolConnectionNumber of the scanned dnp3 device
+        "protocolSourceCommonAddress": 12.0,            // [double]  DNP3 object group of command: 12.0 (CROB) or 43.0 (analog) 
+        "protocolSourceObjectAddress": 1.0,             // [double]  DNP3 object address: 0.0 ... 65535.0
+        "protocolSourceASDU": 0.0,                      // [double]  DNP3 variation: 0.0 ... 4.0
+        "protocolSourceCommandDuration": 1.0,           // [double]  Operation Type for CROB 0.0 ... 23.0 see table above, use 0.0 if analog
+        "protocolSourceCommandUseSBO": false,           // [boolean] Use SBO 
+        "pointKey": 0.0,                                // [double]  _id of command point, put 0.0 if not created a command point 
+        "tag": "",                                      // [string]  Tag of command point, leave empty if not created a command point 
+        "timeTag": new Date(),                          // [date]    Must put current date/time here, the command will expire in 10 seconds
+        "value": 1.0                                    // [double]  Command value, 0.0 or 1.0 for digital
+        "valueString": "PULSE 1=ON",                    // [string]  Not used by this driver, just document value as a string
+        "originatorUserName": "Protocol connection: 1", // [string]  Just document the originator of command
+        "originatorIpAddress": "127.0.0.1:58446"        // [string]  Just document the originator IP
+    }
+
+The DNP3 client driver will consume each inserted document and will fire a command in the protocol connection.
+
 ## Process Command Line Arguments
 
 This driver has the following command line arguments.
