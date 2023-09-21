@@ -67,6 +67,7 @@ cd ../htdocs-admin
 export NODE_OPTIONS=--openssl-legacy-provider
 npm install
 npm run build
+export NODE_OPTIONS=
 cd ../shell-api
 npm install
 cd ../alarm_beep
@@ -81,5 +82,14 @@ cd ../carbone-reports
 npm install
 cd ../backup-mongo
 npm install
-cd ../..
+cd ../log-io/ui
+npm install
+npm run build
+cd ../server
+npm install
+npm run build
+cd ../inputs/file
+npm install
+npm run build
 
+cd ../../../..

@@ -105,6 +105,7 @@ cd %SRCPATH%\htdocs-admin
 set NODE_OPTIONS=--openssl-legacy-provider
 call %NPM% install
 call %NPM% run build
+set NODE_OPTIONS=
 
 cd %SRCPATH%\grafana_alert2event
 call %NPM% install

@@ -6,7 +6,7 @@
 
 sudo dnf -y update 
 sudo dnf -y install epel-release 
-sudo dnf -y install tar nodejs golang nginx wget chkconfig
+sudo dnf -y install tar nodejs npm golang nginx wget chkconfig
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo update-crypto-policies --set LEGACY
 
