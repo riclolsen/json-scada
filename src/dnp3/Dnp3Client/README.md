@@ -230,7 +230,7 @@ Is is possible to fire commands over a running protocol connection just by inser
 
     {
         "protocolSourceConnectionNumber": 1.0,          // [double]  protocolConnectionNumber of the scanned dnp3 device
-        "protocolSourceCommonAddress": 12.0,            // [double]  DNP3 object group of command: 12.0 (CROB) or 43.0 (analog) 
+        "protocolSourceCommonAddress": 12.0,            // [double]  DNP3 object group of command: 12.0 (CROB) or 41.0 (analog) 
         "protocolSourceObjectAddress": 1.0,             // [double]  DNP3 object address: 0.0 ... 65535.0
         "protocolSourceASDU": 0.0,                      // [double]  DNP3 variation: 0.0 ... 4.0
         "protocolSourceCommandDuration": 1.0,           // [double]  Operation Type for CROB 0.0 ... 23.0 see table above, use 0.0 if analog
