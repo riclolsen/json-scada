@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.30"
-!define VERSION_ "0.30.0.0"
+!define VERSION "v.0.31"
+!define VERSION_ "0.31.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -86,8 +86,6 @@ Page instfiles
 UninstPage uninstConfirm
 UninstPage instfiles
 
-; LoadLanguageFile "${NSISDIR}\Contrib\Language files\PortugueseBR.nlf"
-
 ;--------------------------------
 
 AutoCloseWindow false
@@ -136,11 +134,11 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_telegraf_listener'
   nsExec::Exec 'net stop JSON_SCADA_nginx'
   nsExec::Exec 'net stop JSON_SCADA_php'
+  nsExec::Exec 'net stop JSON_SCADA_log_io_file'
+  nsExec::Exec 'net stop JSON_SCADA_log_io_server'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
   nsExec::Exec '"c:\json-scada\platform-windows\postgresql-runtime\bin\pg_ctl" stop -D c:\json-scada\platform-windows\postgresql-runtime'
   nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
-  ; nsExec::Exec 'taskkill /F /IM mon_proc.exe'
-  ; nsExec::Exec `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
   SetOverwrite on
 
   var /GLOBAL NAVWINCMD
@@ -159,12 +157,9 @@ SetRegView 64
     
   # PROTOCOL://IP:PORT  
   StrCpy $HTTPSRV   "http://127.0.0.1" 
- #StrCpy $HTTPSRV   "https://127.0.0.1"
   StrCpy $NAVWINCMD "platform-windows\browser-runtime\chrome.exe"
   StrCpy $NAVDATDIR "--user-data-dir=$INSTDIR\platform-windows\browser-data"
- #StrCpy $NAVPREOPT "--process-per-site --no-sandbox"
-  StrCpy $NAVPREOPT "--process-per-site"
- #StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi --disable-extensions --disable-sync --no-first-run"
+  StrCpy $NAVPREOPT ""
   StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi"
   StrCpy $NAVINDEX  "/"
   StrCpy $NAVVISABO "/about.html"
@@ -198,9 +193,8 @@ SetRegView 64
   CreateDirectory "$INSTDIR\docs"
   CreateDirectory "$INSTDIR\log"
   CreateDirectory "$INSTDIR\mongo_seed"
-; CreateDirectory "$INSTDIR\sql"
+  CreateDirectory "$INSTDIR\sql"
   CreateDirectory "$INSTDIR\src"
-; CreateDirectory "$INSTDIR\PowerBI"
 ; CreateDirectory "$INSTDIR\Opc.Ua.CertificateGenerator"
   CreateDirectory "$INSTDIR\platform-windows"
   CreateDirectory "$INSTDIR\platform-windows\grafana-runtime"
@@ -260,9 +254,6 @@ SetRegView 64
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
-
-  ;SetOutPath $INSTDIR\platform-windows\ruby-runtime
-  ;File /a /r "..\platform-windows\ruby-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\telegraf-runtime
   File /a "..\platform-windows\telegraf-runtime\telegraf.exe"
@@ -372,7 +363,6 @@ SetRegView 64
   File /a "..\src\config_server_for_excel\README.md"
   File /a "..\src\config_server_for_excel\*.js"
   File /a "..\src\config_server_for_excel\*.json"
-  ;File /a "..\src\config_server_for_excel\json-scada-config.xlsm"
   SetOutPath $INSTDIR\src\config_server_for_excel\node_modules
   File /a /r "..\src\config_Server_for_excel\node_modules\*.*"
 
@@ -405,7 +395,20 @@ SetRegView 64
   SetOutPath $INSTDIR\src\carbone-reports
   File /a /r "..\src\carbone-reports\*.*"
 
-  ;SetOutPath $INSTDIR\extprogs
+  SetOutPath $INSTDIR\src\log-io
+  File /a "..\src\log-io\*.*"
+  SetOutPath $INSTDIR\src\log-io\inputs\file
+  File /a /r "..\src\log-io\inputs\file\*.*"
+  SetOutPath $INSTDIR\src\log-io\server
+  File /a /r "..\src\log-io\server\*.*"
+  SetOutPath $INSTDIR\src\log-io\ui
+  File /a "..\src\log-io\ui\*.*"
+  SetOutPath $INSTDIR\src\log-io\ui\src
+  File /a /r "..\src\log-io\ui\src\*.*"
+  SetOutPath $INSTDIR\src\log-io\ui\public
+  File /a /r "..\src\log-io\ui\public\*.*"
+  SetOutPath $INSTDIR\src\log-io\ui\build
+  File /a /r "..\src\log-io\ui\build\*.*"
 
   SetOutPath $INSTDIR\platform-windows\browser-runtime
   File /a /r "..\platform-windows\browser-runtime\*.*"
@@ -451,43 +454,33 @@ SetRegView 64
   File /a "..\conf-templates\Opc.Ua.DefaultClient.Config.xml"
   File /a "..\conf-templates\telegraf.conf"
   File /a "..\conf-templates\json-scada-config.xlsm"
+  File /a "..\conf-templates\log.io-file.json"
 
-; Aqui ficam todos os atalhos no Desktop, apagando os antigos
+; Desktop shortcuts
   Delete "$DESKTOP\JSON-SCADA\*.*"
   CreateDirectory "$DESKTOP\JSON-SCADA"
 
-; Cria atalhos para os aplicativos
+; App shortcuts 
   CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"               "$INSTDIR\platform-windows\start_services.bat"  
   CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                "$INSTDIR\platform-windows\stop_services.bat"  
   CreateShortCut "$DESKTOP\JSON-SCADA\Windows Services.lnk"              "services.msc"  
   CreateShortCut "$DESKTOP\JSON-SCADA\_JSON SCADA WEB.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
-
-; CreateShortCut "$DESKTOP\JSON-SCADA\Clean Browser Cache.lnk"           "$INSTDIR\platform-windows\cache_clean.bat"  
   CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
-
-; CreateShortCut "$DESKTOP\JSON-SCADA\About.lnk"                         "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISABO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
-
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Display.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tela.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Events.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\src\htdocs\images\chrono.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Historical.lnk"           "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\src\htdocs\images\calendar.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Tabular.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tabular.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Alarms.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\firstaid.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Grafana.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\src\htdocs\images\grafana.ico" 
-
-; CreateShortCut "$DESKTOP\JSON-SCADA\Operation Manual.lnk"              "$INSTDIR\bin\operation_manual.bat"
-; CreateShortCut "$DESKTOP\JSON-SCADA\Configuration Manual.lnk"          "$INSTDIR\bin\configuration_manual.bat"
-
   CreateShortCut "$DESKTOP\JSON-SCADA\Excel Config Spreadsheet.lnk"      "$INSTDIR\conf\json-scada-config.xlsm"
-
   CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                     "$INSTDIR\bt-uninst.exe"
 
 
-; apaga o cache do chrome
+  ; clear chromium cache
   Delete "$INSTDIR\platform-windows\browser-data\Default\Cache\*.*"
   RMDir /r "$INSTDIR\platform-windows\browser-data\Default\Web Aplications"
-
   
   ; Verify system locale to set HMI language
   !define LOCALE_ILANGUAGE '0x1' ;System Language Resource ID     
@@ -502,49 +495,13 @@ SetRegView 64
   !define LOCALE_IDEFAULTCOUNTRY  '0xA' ;System default country code
   !define LOCALE_IDEFAULTCODEPAGE '0xB' ;System default oem code page
 
-;  System::Call 'kernel32::GetSystemDefaultLangID() i .r0'
-;  System::Call 'kernel32::GetLocaleInfoA(i 1024, i ${LOCALE_SNATIVELANGNAME}, t .r1, i ${NSIS_MAX_STRLEN}) i r0'
-;  System::Call 'kernel32::GetLocaleInfoA(i 1024, i ${LOCALE_SNATIVECTRYNAME}, t .r2, i ${NSIS_MAX_STRLEN}) i r0'
-;  System::Call 'kernel32::GetLocaleInfoA(i 1024, i ${LOCALE_SLANGUAGE}, t .r3, i ${NSIS_MAX_STRLEN}) i r0'
-;  ;MessageBox MB_OK|MB_ICONINFORMATION "Your System LANG Code is: $0. $\r$\nYour system language is: $1. $\r$\nYour system language is: $2. $\r$\nSystem Locale INFO: $3."
-;  IntOp $R0 $0 & 0xFFFF
-;  ;MessageBox MB_OK|MB_ICONINFORMATION "$R0"
-;  IntCmp $R0 1046 lang_portuguese
-;  IntCmp $R0 1033 lang_english
-;
-;  ; default is english - us
-;  Goto lang_english
-;  
-;lang_portuguese:
-;;  MessageBox MB_OK|MB_ICONINFORMATION "Portuguese"
-;  nsExec::Exec '$INSTDIR\i18n\go-pt_br.bat'
-;  Goto lang_end
-;  
-;lang_english:
-;;  MessageBox MB_OK|MB_ICONINFORMATION "English"
-;  nsExec::Exec '$INSTDIR\i18n\go-en_us.bat'
-;  Goto lang_end
-;
-;  lang_end:    
-
   WriteUninstaller "bt-uninst.exe"
-
 
 ; If database data empty (no previous installation), then do initial setup for MongoDB and PostgreSQL
 IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
 
   ExpandEnvStrings $0 %COMSPEC%
   ExecWait '"$0" /C "$INSTDIR\platform-windows\initial_setup.bat"'
-
-;
-;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-initdb.bat"'
-;  ;SetOutPath $INSTDIR\postgresql-data
-;  ;File /a "..\conf-templates\pg_hba.conf"
-;  ;File /a "..\conf-templates\postgresql.conf"
-;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-create_service.bat"'
-;  ;ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-start.bat"'
-;  ;ExecWait '"$0" /C "$INSTDIR\\platform-windows\postgresql-runtime\bin\psql" -U json_scada -h localhost -f c:\json-scada\sq\create_tables.sql template1'
-;
 
 pgDatabaseExists:
 
@@ -558,33 +515,8 @@ UninstallText "JSON SCADA Uninstall. All files will be removed from $INSTDIR !"
 UninstallIcon "${NSISDIR}\Contrib\Graphics\Icons\nsis1-uninstall.ico"
 
 Section "Uninstall"
-
-; Remove an application from the firewall exception list
-; SimpleFC::RemoveApplication "$INSTDIR\bin\hmishell.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\mon_proc.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\QTester104.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\dnp3.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\modbus.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\iccp_client.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication  "$INSTDIR\platform-windows\nginx_php-runtime\nginx.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\platform-windows\nginx_php-runtime\php\php-cgi.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\opc_client.exe"
-; Pop $0 ; return error(1)/success(0)
-; SimpleFC::RemoveApplication "$INSTDIR\bin\s7client.exe"
-; Pop $0 ; return error(1)/success(0)
-
-; WriteRegStr  HKCU "Software\Microsoft\Windows NT\CurrentVersion\Winlogon" "Shell" "explorer.exe"
-; WriteRegDword HKCU "Software\Microsoft\Windows\CurrentVersion\Policies\System" "DisableTaskMgr" 0x00
   
-; Fecha processos
+  ; Close processes
 
   !define SC  `$SYSDIR\sc.exe`
 
@@ -741,6 +673,16 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_postgresql"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_postgresql"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_log_io_file"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_log_io_file"`
+  ClearErrors
+  
+  ExecWait `"${SC}" stop "JSON_SCADA_log_io_server"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_log_io_server"`
   ClearErrors
 
   ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'

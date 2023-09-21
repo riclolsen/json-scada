@@ -51,3 +51,5 @@ nssm stop JSON_SCADA_grafana
 nssm stop JSON_SCADA_mongodb 
 net stop JSON_SCADA_postgresql 
 
+nssm stop JSON_SCADA_log_io_file
+nssm stop JSON_SCADA_log_io_server

@@ -2,128 +2,145 @@ echo This script builds JSON-SCADA Windows x64 binaries and restores NodeJS NPM 
 echo Required tools:
 echo - Dotnet Core SDK 6.0
 echo - Golang 1.14+
-echo - Node.js 14+
+echo - Node.js 20+
 
-cd c:\json-scada
+set JSPATH=c:\json-scada
+set SRCPATH=%JSPATH%\src
+set BINPATH=%JSPATH%\bin
+set BINWINPATH=%JSPATH%\demo-docker\bin_win
+set NPM=%JSPATH%\platform-windows\nodejs-runtime\npm
+
+cd %JSPATH%
 mkdir bin
 
-copy \json-scada\src\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll bin\ /y
+copy %SRCPATH%\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll %BINPATH% /y
 
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
-cd \json-scada\src\dnp3\Dnp3Client\ 
-dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\demo-docker\bin_win\ Dnp3Client.csproj
+cd %SRCPATH%\dnp3\Dnp3Client\ 
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINWINPATH% Dnp3Client.csproj
 
-cd \json-scada\src\libiec61850\build
+cd %SRCPATH%\libiec61850\build
 rem set VCTargetsPath=d:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
 rem set VCTargetsPath=c:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
 dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
-copy \json-scada\src\libiec61850\build\src\Release\iec61850.dll \json-scada\bin
+copy %SRCPATH%\libiec61850\build\src\Release\iec61850.dll %BINPATH%
 
-cd \json-scada\src\libiec61850\dotnet\core\2.0\
-dotnet publish --no-self-contained --runtime win-x64 -c Release -o ..\..\..\..\..\bin\ IEC61850.NET.core.2.0 
+cd %SRCPATH%\libiec61850\dotnet\core\2.0\
+dotnet publish --no-self-contained --runtime win-x64 -c Release -o %BINPATH% IEC61850.NET.core.2.0 
 
-cd \json-scada\src\libiec61850\dotnet\core\2.0\iec61850_client
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\..\..\..\bin\ 
+cd %SRCPATH%\libiec61850\dotnet\core\2.0\iec61850_client
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
 
-cd \json-scada\src\lib60870.netcore\lib60870.netcore\
+cd %SRCPATH%\lib60870.netcore\lib60870.netcore\
 dotnet build --no-self-contained --runtime win-x64 -c Release
-dotnet build --no-self-contained --runtime win-x64 -c Release -o ..\..\..\bin\ 
-cd \json-scada\src\lib60870.netcore\iec101client\
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ 
-cd \json-scada\src\lib60870.netcore\iec101server\
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
-cd \json-scada\src\lib60870.netcore\iec104client\ 
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
-cd \json-scada\src\lib60870.netcore\iec104server\ 
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\
-cd \json-scada\src\dnp3\Dnp3Client\ 
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ Dnp3Client.csproj
-cd \json-scada\src\OPC-UA-Client\  
+dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
+cd %SRCPATH%\lib60870.netcore\iec101client\
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
+cd %SRCPATH%\lib60870.netcore\iec101server\
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
+cd %SRCPATH%\lib60870.netcore\iec104client\ 
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
+cd %SRCPATH%\lib60870.netcore\iec104server\ 
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
+cd %SRCPATH%\dnp3\Dnp3Client\ 
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% Dnp3Client.csproj
+cd %SRCPATH%\OPC-UA-Client\  
 rmdir obj /S /Q
 rmdir bin /S /Q
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\ OPC-UA-Client.csproj
-cd \json-scada\src\libplctag\libplctag.NET\src\libplctag
-dotnet build --no-self-contained --runtime win-x64 -c Release -o ..\..\bin\
-cd \json-scada\src\libplctag\PLCTagsClient
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\..\bin\ PLCTagsClient.csproj
-cd \json-scada\src\logrotate\  
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ..\..\bin\ logrotate.csproj
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% OPC-UA-Client.csproj
+cd %SRCPATH%\libplctag\libplctag.NET\src\libplctag
+dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
+cd %SRCPATH%\libplctag\PLCTagsClient
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% PLCTagsClient.csproj
+cd %SRCPATH%\logrotate\  
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% logrotate.csproj
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
-cd \json-scada\src\calculations
+cd %SRCPATH%\calculations
 go get ./... 
 go build 
-copy /Y calculations ..\..\bin\
+copy /Y calculations %BINPATH%
 
-rem cd \json-scada\src\plc4x-client
+rem cd %SRCPATH%\plc4x-client
 rem go get "github.com/icza/bitio"
 rem go get ./... 
 rem go build 
-rem copy /Y plc4x-client.exe ..\..\bin\
+rem copy /Y plc4x-client.exe %BINPATH%
 
-cd \json-scada\src\i104m
+cd %SRCPATH%\i104m
 go get ./... 
 go build 
-copy /Y i104m.exe ..\..\bin\
+copy /Y i104m.exe %BINPATH%
 
-cd \json-scada\src\cs_data_processor
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\cs_custom_processor
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\oshmi2json
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\oshmi_sync
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\alarm_beep
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\server_realtime
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\server_realtime_auth
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\updateUser
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\shell-api
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\htdocs-admin
+cd %SRCPATH%\cs_data_processor
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\cs_custom_processor
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\oshmi2json
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\oshmi_sync
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\alarm_beep
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\server_realtime
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\server_realtime_auth
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\updateUser
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\shell-api
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\htdocs-admin
 set NODE_OPTIONS=--openssl-legacy-provider
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-call \json-scada\platform-windows\nodejs-runtime\npm run build
-cd \json-scada\src\grafana_alert2event
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\telegraf-listener
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\mqtt-sparkplug
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\config_server_for_excel
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\OPC-UA-Server
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\carbone-reports
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\demo_simul
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
-cd \json-scada\src\backup-mongo
-call \json-scada\platform-windows\nodejs-runtime\npm i --package-lock-only
-call \json-scada\platform-windows\nodejs-runtime\npm update
+call %NPM% i --package-lock-only
+call %NPM% update
+call %NPM% run build
+cd %SRCPATH%\grafana_alert2event
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\telegraf-listener
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\mqtt-sparkplug
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\config_server_for_excel
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\OPC-UA-Server
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\carbone-reports
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\demo_simul
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\backup-mongo
+call %NPM% i --package-lock-only
+call %NPM% update
+cd %SRCPATH%\log-io\ui
+call %NPM% i --package-lock-only
+call %NPM% update
+call %NPM% run build
+cd %SRCPATH%\log-io\server
+call %NPM% i --package-lock-only
+call %NPM% update
+call %NPM% run build
+cd %SRCPATH%\log-io\inputs\file
+call %NPM% i --package-lock-only
+call %NPM% update
+call %NPM% run build
 
-cd ..\..\platform-windows
-
+cd %JSPATH%\platform-windows

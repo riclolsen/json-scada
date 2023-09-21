@@ -1,0 +1,138 @@
+{
+  "messageServer": {
+    "host": "127.0.0.1",
+    "port": 6689
+  },
+  "inputs": [
+    {
+      "source": "node1",
+      "stream": "calculations",
+      "config": {
+        "path": "/json-scada/log/calculations.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "cs_custom_processor",
+      "config": {
+        "path": "/json-scada/log/cs_custom_processor.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "cs_data_processor",
+      "config": {
+        "path": "/json-scada/log/cs_data_processor.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "server_realtime_auth",
+      "config": {
+        "path": "/json-scada/log/server_realtime_auth.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "iec101client",
+      "config": {
+        "path": "/json-scada/log/iec101client.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "iec101server",
+      "config": {
+        "path": "/json-scada/log/iec101server.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "iec104client",
+      "config": {
+        "path": "/json-scada/log/iec104client.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "iec104server",
+      "config": {
+        "path": "/json-scada/log/iec104server.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "dnp3client",
+      "config": {
+        "path": "/json-scada/log/dnp3client.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "mqttsparkplugclient",
+      "config": {
+        "path": "/json-scada/log/mqttsparkplugclient.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "opcuaclient",
+      "config": {
+        "path": "/json-scada/log/opcuaclient.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "opcuaserver",
+      "config": {
+        "path": "/json-scada/log/opcuaserver.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "telegraf_listener",
+      "config": {
+        "path": "/json-scada/log/telegraf_listener.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    }
+  ]
+}

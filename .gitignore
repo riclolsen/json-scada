@@ -113,6 +113,5 @@ src/log-io/ui/build/
 /platform-linux-mint-20
 /libplctags-runtime
 /demo-docker
-/conf-templates
 /conf
 old/

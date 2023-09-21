@@ -1,6 +1,7 @@
 const path = require('path')
 const express = require('express')
 const httpProxy = require('express-http-proxy')
+const { createProxyMiddleware } = require('http-proxy-middleware')
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/user.controller')
 const authController = require('../controllers/auth.controller')
@@ -10,10 +11,11 @@ module.exports = function (
   accessPoint,
   opcApi,
   accessPointGetFile,
-  getFileApi,  
+  getFileApi,
   grafanaServer,
   customJsonQueryAP,
-  customJsonQuery
+  customJsonQuery,
+  logioServer
 ) {
   app.use(function (req, res, next) {
     res.header(
@@ -23,7 +25,7 @@ module.exports = function (
     next()
   })
 
-  function sendFavicon (req, res) {
+  function sendFavicon(req, res) {
     res
       .status(200)
       .sendFile(
@@ -31,7 +33,7 @@ module.exports = function (
       )
   }
 
-  function redirectLogin (req, res) {
+  function redirectLogin(req, res) {
     res.redirect('/login/login.html')
   }
 
@@ -55,7 +57,7 @@ module.exports = function (
         if (/.*\.html/.test(path)) {
           res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
         }
-      }
+      },
     })
   )
   app.use([authJwt.verifyToken], express.static('../htdocs')) // serve static files
@@ -70,6 +72,31 @@ module.exports = function (
     },
     httpProxy(grafanaServer)
   )
+
+  // reverse proxy for log.io
+  app.use(
+    '/log-io',
+    [authJwt.verifyToken],
+    function (req, _, next) {
+      authController.addXWebAuthUser(req)
+      next()
+    },
+    httpProxy(logioServer)
+  )
+  const wsProxy = createProxyMiddleware({
+    target: logioServer,
+    ws: true, // enable websocket proxy
+  })
+  app.use(
+    '/socket.io',
+    [authJwt.verifyToken],
+    function (req, _, next) {
+      authController.addXWebAuthUser(req)
+      next()
+    },
+    wsProxy
+  )
+  app.on('upgrade', wsProxy.upgrade)
 
   app.post(accessPoint, opcApi) // realtime data API
 

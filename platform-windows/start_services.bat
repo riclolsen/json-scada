@@ -8,9 +8,11 @@ rem Start services, uncomment the services you need
 
 cd \json-scada\platform-windows
 
+nssm start JSON_SCADA_log_io_server
 net start JSON_SCADA_postgresql 
 nssm start JSON_SCADA_grafana
 nssm start JSON_SCADA_mongodb 
+nssm start JSON_SCADA_log_io_file
 nssm start JSON_SCADA_cs_data_processor
 nssm start JSON_SCADA_cs_custom_processor
 rem nssm start JSON_SCADA_server_realtime

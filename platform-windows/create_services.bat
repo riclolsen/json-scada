@@ -204,3 +204,17 @@ C:\json-scada\platform-windows\telegraf-runtime\telegraf --service install --ser
 rem Create scheduled task for log rotation (alternative log rotator), configure with logrotate.conf
 rem Should stop services to force log file to close. See https://sourceforge.net/p/logrotatewin/wiki/LogRotate/
 rem SCHTASKS /CREATE /SC DAILY /TN "MyTasks\JSON-SCADA logrotate task" /TR "C:\json-scada\bin\logrotate C:\json-scada\platform-windows\logrotate.conf" /ST 04:00
+
+REM Log.io file monitor service
+nssm install JSON_SCADA_log_io_file "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\log-io\inputs\file\lib\index.js" 
+nssm set JSON_SCADA_log_io_file AppDirectory "C:\json-scada\src\log-io"
+nssm set JSON_SCADA_log_io_file AppEnvironmentExtra LOGIO_FILE_INPUT_CONFIG_PATH="c:\json-scada\conf\log.io-file.json"
+nssm set JSON_SCADA_log_io_file Start SERVICE_AUTO_START
+rem set LOGIO_FILE_INPUT_CONFIG_PATH=c:\json-scada\conf\log.io-file.json
+
+REM Log.io main service
+nssm install JSON_SCADA_log_io_server "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\log-io\server\lib\index.js" 
+nssm set JSON_SCADA_log_io_server AppDirectory "C:\json-scada\src\log-io"
+nssm set JSON_SCADA_log_io_server AppEnvironmentExtra LOGIO_SERVER_UI_BUILD_PATH="C:\json-scada\src\log-io\ui\build"
+nssm set JSON_SCADA_log_io_server Start SERVICE_AUTO_START
+rem set LOGIO_SERVER_UI_BUILD_PATH=C:\json-scada\src\log-io\ui\build
