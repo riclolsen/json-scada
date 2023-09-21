@@ -1,45 +1,67 @@
-conf/json-scada.json
-
-bin/
-!bin/Readme.md
 
 temp/
-mongodb-data/
-mongodb-runtime/
-postgresql-data/
-postgresql-runtime/
-grafana-runtime/
-nodejs-runtime/
-nginx_php/
-platform-windows/browser-runtime/
-platform-windows/browser-data/
+data/
+platform-windows/nginx_php/
 platform-windows/installer-release/
-platform-windows/inkscape-runtime/
-platform-windows/mongodb-compass-runtime/
-platform-windows/mongodb-data/
-platform-windows/mongodb-runtime/
-platform-windows/postgresql-data/
-platform-windows/postgresql-data/
-platform-windows/grafana-runtime/
-platform-windows/nodejs-runtime/
-platform-windows/nginx_php-runtime/
+platform-windows/inkscape-runtime*/
+platform-windows/*-data/
+platform-windows/*-runtime/
 
 src/htdocs/htdocs
+src/clients/
 
+src/backup-mongo/output/
+src/plc4x-client/
 src/calculations/calculations
 src/i104m/i104m
+src/i104m/json-scada.json
 src/dnp3/opendnp3-3.0.4/
-src/dnp3/Dnp3Client/bin/
-src/dnp3/Dnp3Client/obj/
+src/dnp3/opendnp3/
+src/dnp3/Dnp3Client - Copia/
+src/carbone-reports/point_list.ods
 src/dnp3/Dnp3Client/Properties/
-demo-docker/bin/
+src/htdocs-admin/translate.bat
+src/htdocs/sage-cepel-displays/Tela_*.*
+src/htdocs/sage-cepel-displays/css/
+src/htdocs/sage-cepel-displays/scripts/
+src/mqtt-sparkplug/mqtt-cli-shell.cmd
+src/mqtt-sparkplug/root.srl
+src/mqtt-sparkplug/scada.js
+src/mqtt-sparkplug/test.js
 *.exclusivelock
 pg_hist_*.sql
 pg_rtdata_*.sql
+demo-docker/grafana_data/grafana.db
+src/config_server_for_excel/json-scada-config.xlsx
+src/config_server_for_excel/JsonConverter.bas
+src/certificate-creator/certs/
+platform-windows/create_mongo_serv_arb_services.bat
+platform-windows/mongodb-conf/a_rs-init.js
+platform-windows/mongodb-conf/mongod_a1.cfg
+platform-windows/mongodb-conf/mongod_m1.cfg
 
+[Dd]ebug/
+[Rr]elease/
+publish/
+bin/
+!bin/Readme.md
 obj/
 vendor/
 node_modules/
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# testing
+/coverage
+/.pnp
+.pnp.js
+
 src/lib60870.netcore/.vs/
 src/lib60870.netcore/iec101client/bin/
 src/lib60870.netcore/iec101server/bin/
@@ -47,18 +69,30 @@ src/lib60870.netcore/iec104client/bin/
 src/lib60870.netcore/iec104server/bin/
 src/lib60870.netcore/lib60870.netcore/bin/
 
-[Dd]ebug/
-[Rr]elease/
-publish/
+src/libiec61850/.install/
+src/libiec61850/build/
+src/libiec61850/dotnet/core/2.0/iec61850_server/
+
+src/log-io/inputs/file/lib/
+src/log-io/server/lib/
+src/log-io/server/build/
+src/log-io/ui/lib/
+src/log-io/ui/build/
 
 .vs/
+.vscode/
 
 # Binaries for programs and plugins
 *.exe
 *.exe~
+*.*~
+*.bak
+*.backup
 *.dll
 *.so
 *.dylib
+*- Copia.*
+*- Copia (*).*
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
@@ -70,6 +104,15 @@ publish/
 *.obj
 
 *.log
+*.key
+*.pem
+*.csr
+*.pdf
 
 
-
+/platform-linux-mint-20
+/libplctags-runtime
+/demo-docker
+/conf-templates
+/conf
+old/
