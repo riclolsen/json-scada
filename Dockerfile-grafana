@@ -1,6 +1,6 @@
-# {json:scada} Grafana docker container - (c) 2021 - Ricardo L. Olsen 
+# {json:scada} Grafana docker container - (c) 2023 - Ricardo L. Olsen 
 
-FROM grafana/grafana:latest
+FROM grafana/grafana:9.5.10
 COPY ./demo-docker/grafana_data /var/lib/grafana
 ENV GF_SERVER_DOMAIN=127.0.0.1
 ENV GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/

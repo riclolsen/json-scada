@@ -1,6 +1,6 @@
-# {json:scada} Main build docker container - (c) 2021 - Ricardo L. Olsen 
+# {json:scada} Main build docker container - (c) 2023 - Ricardo L. Olsen 
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine3.12 AS dotnetDrivers
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS dotnetDrivers
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 COPY src/lib60870.netcore /json-scada/src/lib60870.netcore
 COPY src/dnp3 /json-scada/src/dnp3
@@ -23,7 +23,7 @@ RUN sh -c "cd /json-scada/src/lib60870.netcore/lib60870.netcore/ && \
            cd /json-scada/src/libplctag/PLCTagsClient && \
            dotnet publish --runtime linux-musl-x64 -p:PublishReadyToRun=true -c Release -o /json-scada/bin/"
 
-FROM golang:alpine3.12 AS golangProgs
+FROM golang:alpine AS golangProgs
 COPY src/calculations /go/src/calculations
 COPY src/i104m /go/src/i104m
 COPY --from=dotnetDrivers /json-scada/bin /json-scada/bin
@@ -41,7 +41,7 @@ RUN sh -c "apk add --no-cache git && \
            go build && \
            cp i104m /json-scada/bin/"
 
-FROM node:current-alpine3.12 AS nodejsProgs
+FROM node:current-alpine AS nodejsProgs
 RUN sh -c "apk add --no-cache postgresql-client bash git"
 RUN sh -c "npm install -g npm"
 COPY --from=golangProgs /json-scada/bin /json-scada/bin
@@ -67,7 +67,7 @@ RUN sh -c "cd /json-scada/src/cs_custom_processor && npm install"
 RUN sh -c "cd /json-scada/src/server_realtime && npm install"
 RUN sh -c "cd /json-scada/src/server_realtime_auth && npm update"
 RUN sh -c "cd /json-scada/src/updateUser && npm update"
-RUN sh -c "cd /json-scada/src/htdocs-admin && npm install && npm run build"
+RUN sh -c "export NODE_OPTIONS=--openssl-legacy-provider && cd /json-scada/src/htdocs-admin && npm install && npm run build && export NODE_OPTIONS="
 RUN sh -c "cd /json-scada/src/alarm_beep && npm install"
 RUN sh -c "cd /json-scada/src/oshmi2json && npm install"
 RUN sh -c "cd /json-scada/src/telegraf-listener && npm install"
@@ -98,13 +98,13 @@ ENV \
 # Install .NET
 # from https://github.com/dotnet/dotnet-docker/blob/master/src/runtime/5.0/alpine3.12/amd64/Dockerfile
 
-ENV DOTNET_VERSION=5.0.6
+ENV DOTNET_VERSION=6.0.22
 
 RUN wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Runtime/$DOTNET_VERSION/dotnet-runtime-$DOTNET_VERSION-linux-musl-x64.tar.gz \
-    && dotnet_sha512='13316e039b04b04c9def1f3a17c6391fd2fe6a6264528eba24b9cf6967ab292e4c4c8adc4ab2e032586f94e5f0ef0dfcf7315cb5cc324ec672bede0f16713f41' \
+    && dotnet_sha512='89ed90be247136f205ae1f51ad932fc9ae04ff6b235a08564902f1327074704935850e573f550c404c5c53abde77fc51c222a2a5d94402d48ae379a42a004d88' \
     && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
     && mkdir -p /usr/share/dotnet \
-    && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
-    && rm dotnet.tar.gz
-
+    && tar -oxzf dotnet.tar.gz -C /usr/share/dotnet \
+    && rm dotnet.tar.gz \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+    
