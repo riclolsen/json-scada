@@ -339,7 +339,7 @@ services:
 #                    cd /root &&
 #                    wget -nc https://download.visualstudio.microsoft.com/download/pr/7bb7f85b-9bf0-4c6f-b3e4-a3832720f162/73e280cfd7f686c34748e0bf98d879c7/dotnet-runtime-6.0.19-win-x64.exe &&
 #                    sleep 2 &&
-#                    protonup -y &&
+#                    protonup -t 8.4 -y &&
 #                    echo 555337b3129e4544846342bd94c9a8ac > /etc/machine-id &&
 #                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 dotnet-runtime-6.0.19-win-x64.exe /q &&
 #                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 ../jsonscada_bin/Dnp3Client.exe "
