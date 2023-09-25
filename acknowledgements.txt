@@ -35,9 +35,14 @@ Languages and frameworks
 Protocol libraries
   
   Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de
+  Libiec61850 - https://github.com/mz-automation/libiec61850
   Opendnp3 - https://www.automatak.com/opendnp3/
   Libplctag - https://github.com/libplctag/libplctag
   ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
+  Eclipse Tahu (MQTT/Sparkplug) - https://github.com/eclipse/tahu
+  Telegraf - https://github.com/influxdata/telegraf
+  Node OPC-UA - https://github.com/node-opcua/node-opcua
+  OPC UA Dotnet Standard - https://github.com/OPCFoundation/UA-.NETStandard
 
 Other libraries
 
@@ -59,6 +64,8 @@ Other libraries
   Vega A Visualization Grammar - https://vega.github.io/vega
   Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
   CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/
+  Log.io  - https://github.com/NarrativeScience-old/log.io
+
 
 Other tools
 
