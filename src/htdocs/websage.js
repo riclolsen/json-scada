@@ -6,7 +6,7 @@
 //
 // DEPENDENCIES : opc-codes.js, util.js, jquery.js, jquery.ui, core.js, shortcut.js, messages.js, config_viewers.js  (must be include before this script)
 
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2023 - Ricardo L. Olsen
 // Derived from OSHMI/Open Substation HMI - Copyright 2008-2020 - Ricardo L. Olsen
 
 /*jslint browser: true, bitwise: true, devel: true */
@@ -1242,13 +1242,15 @@ else
   },
 
   directCommandExec: function(point, value) {
-    if  (typeof value !== "number"){
+    if  (isNaN(parseFloat(value))){
     if (value === "ON" || value === "on" || value === true || value === "TRUE" || value == "true" ) value = 1;
     else if (value === "OFF" || value === "off" || value === false || value === "FALSE" || value == "false" ) value = 0;
     else {
       console.log("Invalid command value!");
       return;
       } 
+    } else {
+      value = parseFloat(value)
     }
 
     // use OPC web hmi protocol https://prototyping.opcfoundation.org/
