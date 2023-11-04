@@ -197,239 +197,251 @@ const MongoStatus = { HintMongoIsConnected: false }
         // try to (re)connect
         jsConfig.mongoConnectionString,
         jsConfig.MongoConnectionOptions
-      ).then(async (client) => {
-        // connected
-        clientMongo = client
-        MongoStatus.HintMongoIsConnected = true
-        Log.log('MongoDB - Connected correctly to MongoDB server', Log.levelMin)
+      )
+        .then(async (client) => {
+          // connected
+          clientMongo = client
+          MongoStatus.HintMongoIsConnected = true
+          Log.log(
+            'MongoDB - Connected correctly to MongoDB server',
+            Log.levelMin
+          )
 
-        // specify db and collections
-        const db = client.db(jsConfig.mongoDatabaseName)
-        rtCollection = db.collection(jsConfig.RealtimeDataCollectionName)
-        cmdCollection = db.collection(jsConfig.CommandsQueueCollectionName)
+          // specify db and collections
+          const db = client.db(jsConfig.mongoDatabaseName)
+          rtCollection = db.collection(jsConfig.RealtimeDataCollectionName)
+          cmdCollection = db.collection(jsConfig.CommandsQueueCollectionName)
 
-        // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
-        connection = await getConnection(
-          db.collection(jsConfig.ProtocolConnectionsCollectionName),
-          jsConfig
-        )
-        jsConfig.ConnectionNumber = connection.protocolConnectionNumber
-        Log.log('Connection - Connection Number: ' + jsConfig.ConnectionNumber)
-        if ('autoCreateTags' in connection) {
-          AutoCreateTags = connection.autoCreateTags ? true : false
-        }
-
-        let autoKeyId = await AutoTag.GetAutoKeyInitialValue(
-          rtCollection,
-          jsConfig
-        )
-        Log.log('Auto Key - Initial value: ' + autoKeyId)
-
-        Redundancy.Start(5000, clientMongo, db, jsConfig, MongoStatus)
-
-        // start a changestream monitor on realtimeData only if configured some MQTT publishing
-        if (
-          (connection.publishTopicRoot &&
-            connection.publishTopicRoot.length > 0) ||
-          (connection.groupId && connection.groupId.length > 0)
-        ) {
-          const changeStream = rtCollection.watch(csPipeline, {
-            fullDocument: 'updateLookup',
-          })
-
-          try {
-            changeStream.on('error', (change) => {
-              if (clientMongo) clientMongo.close()
-              clientMongo = null
-              Log.log('MongoDB - Error on ChangeStream!')
-            })
-            changeStream.on('close', (change) => {
-              Log.log('MongoDB - Closed ChangeStream!')
-            })
-            changeStream.on('end', (change) => {
-              clientMongo = null
-              Log.log('MongoDB - Ended ChangeStream!')
-            })
-
-            // start listen to changes
-            changeStream.on('change', (change) => {
-              // do not queue data changes until device connected and sparkplug birthed
-              if (
-                !SparkplugClientObj?.handle?.connected ||
-                (connection.groupId &&
-                  connection.groupId.trim() !== '' &&
-                  !SparkplugDeviceBirthed)
-              )
-                return
-
-              let data = getMetricPayload(change.fullDocument, connection)
-              if (data) SparkplugPublishQueue.enqueue(data)
-            })
-          } catch (e) {
-            Log.log('MongoDB - CS Error: ' + e, Log.levelMin)
+          // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
+          connection = await getConnection(
+            db.collection(jsConfig.ProtocolConnectionsCollectionName),
+            jsConfig
+          )
+          jsConfig.ConnectionNumber = connection.protocolConnectionNumber
+          Log.log(
+            'Connection - Connection Number: ' + jsConfig.ConnectionNumber
+          )
+          if ('autoCreateTags' in connection) {
+            AutoCreateTags = connection.autoCreateTags ? true : false
           }
-        }
 
-        if (connection.commandsEnabled) {
-          const csCmdPipeline = [
-            {
-              $project: { documentKey: false },
-            },
-            {
-              $match: {
-                $and: [
-                  {
-                    'fullDocument.protocolSourceConnectionNumber': {
-                      $eq: connection.protocolConnectionNumber,
-                    },
-                  },
-                  { operationType: 'insert' },
-                ],
-              },
-            },
-          ]
+          let autoKeyId = await AutoTag.GetAutoKeyInitialValue(
+            rtCollection,
+            jsConfig
+          )
+          Log.log('Auto Key - Initial value: ' + autoKeyId)
 
-          const changeStreamCmd = cmdCollection.watch(csCmdPipeline, {
-            fullDocument: 'updateLookup',
-          })
-          try {
-            changeStreamCmd.on('error', (change) => {
-              if (clientMongo) clientMongo.close()
-              clientMongo = null
-              Log.log('MongoDB - Error on ChangeStream Cmd!')
-            })
-            changeStreamCmd.on('close', (change) => {
-              Log.log('MongoDB - Closed ChangeStream Cmd!')
-            })
-            changeStreamCmd.on('end', (change) => {
-              clientMongo = null
-              Log.log('MongoDB - Ended ChangeStream Cmd!')
+          Redundancy.Start(5000, clientMongo, db, jsConfig, MongoStatus)
+
+          // start a changestream monitor on realtimeData only if configured some MQTT publishing
+          if (
+            (connection.publishTopicRoot &&
+              connection.publishTopicRoot.length > 0) ||
+            (connection.groupId && connection.groupId.length > 0)
+          ) {
+            const changeStream = rtCollection.watch(csPipeline, {
+              fullDocument: 'updateLookup',
             })
 
-            // start listen to changes
-            changeStreamCmd.on('change', (change) => {
-              // do not queue data changes until device connected and birthed
-              if (
-                !SparkplugDeviceBirthed ||
-                !SparkplugClientObj.handle.connected
-              )
-                return
+            try {
+              changeStream.on('error', (change) => {
+                if (clientMongo) clientMongo.close()
+                clientMongo = null
+                Log.log('MongoDB - Error on ChangeStream!')
+              })
+              changeStream.on('close', (change) => {
+                Log.log('MongoDB - Closed ChangeStream!')
+              })
+              changeStream.on('end', (change) => {
+                clientMongo = null
+                Log.log('MongoDB - Ended ChangeStream!')
+              })
 
-              if (
-                change.fullDocument?.protocolSourceConnectionNumber !==
-                connection.protocolConnectionNumber
-              )
-                return // not for this connection
-
-              let data = getMetricCommandPayload(change.fullDocument)
-              if (!data) return
-
-              if (data.deviceId) {
-                data.metric.timestamp = new Date(
-                  change.fullDocument.timeTag
-                ).getTime()
-                SparkplugClientObj.handle.publishDeviceCmd(
-                  data.groupId,
-                  data.edgeNodeId,
-                  data.deviceId,
-                  {
-                    timestamp: new Date(change.fullDocument.timeTag).getTime(),
-                    metrics: [data.metric],
-                  },
-                  {},
-                  (err) => {
-                    if (!err) {
-                      cmdCollection.updateOne(
-                        { _id: change.fullDocument._id },
-                        { $set: { ack: true, timeTag: new Date() } }
-                      )
-                    } else {
-                      cmdCollection.updateOne(
-                        { _id: change.fullDocument._id },
-                        { $set: { ack: false, timeTag: new Date() } }
-                      )
-                      Log.log(
-                        'Sparkplug Command Error, Tag: ' +
-                          change.fullDocument.tag
-                      )
-                    }
-                  }
-                )
-              } else if (data.groupId) {
-                data.metric.timestamp = new Date(
-                  change.fullDocument.timeTag
-                ).getTime()
-                SparkplugClientObj.handle.publishNodeCmd(
-                  data.groupId,
-                  data.edgeNodeId,
-                  {
-                    timestamp: new Date(change.fullDocument.timeTag).getTime(),
-                    metrics: [data.metric],
-                  },
-                  {},
-                  (err) => {
-                    if (!err) {
-                      cmdCollection.updateOne(
-                        { _id: change.fullDocument._id },
-                        { $set: { ack: true, timeTag: new Date() } }
-                      )
-                    } else {
-                      cmdCollection.updateOne(
-                        { _id: change.fullDocument._id },
-                        { $set: { ack: false, timeTag: new Date() } }
-                      )
-                      Log.log(
-                        'Sparkplug Command Error, Tag: ' +
-                          change.fullDocument.tag
-                      )
-                    }
-                  }
-                )
-              } else {
-                let qos = 0,
-                  retain = false
-                if (!isNaN(change.fullDocument?.protocolSourceCommandDuration))
-                  qos = parseInt(
-                    change.fullDocument.protocolSourceCommandDuration
-                  )
+              // start listen to changes
+              changeStream.on('change', (change) => {
+                // do not queue data changes until device connected and sparkplug birthed
                 if (
-                  typeof change.fullDocument?.protocolSourceCommandUseSBO ===
-                  'boolean'
+                  !SparkplugClientObj?.handle?.connected ||
+                  (connection.groupId &&
+                    connection.groupId.trim() !== '' &&
+                    !SparkplugDeviceBirthed)
                 )
-                  retain = change.fullDocument.protocolSourceCommandUseSBO
-                SparkplugClientObj.handle.client.publish(
-                  data.topic,
-                  data.value.toString(),
-                  { qos: qos, retain: retain },
-                  (err) => {
-                    if (!err) {
-                      cmdCollection.updateOne(
-                        { _id: change.fullDocument._id },
-                        { $set: { ack: true, timeTag: new Date() } }
-                      )
-                    } else {
-                      cmdCollection.updateOne(
-                        { _id: change.fullDocument._id },
-                        { $set: { ack: false, timeTag: new Date() } }
-                      )
-                      Log.log(
-                        'MQTT Command Error, Tag: ' + change.fullDocument.tag
-                      )
-                    }
-                  }
-                )
-              }
-            })
-          } catch (e) {
-            Log.log('MongoDB - CS CMD Error: ' + e, Log.levelMin)
+                  return
+
+                let data = getMetricPayload(change.fullDocument, connection)
+                if (data) SparkplugPublishQueue.enqueue(data)
+              })
+            } catch (e) {
+              Log.log('MongoDB - CS Error: ' + e, Log.levelMin)
+            }
           }
-        }
-      })
-      .catch(function (err) {
-        if (clientMongo) clientMongo.close()
-        clientMongo = null
-        Log.log(err)
-      })
+
+          if (connection.commandsEnabled) {
+            const csCmdPipeline = [
+              {
+                $project: { documentKey: false },
+              },
+              {
+                $match: {
+                  $and: [
+                    {
+                      'fullDocument.protocolSourceConnectionNumber': {
+                        $eq: connection.protocolConnectionNumber,
+                      },
+                    },
+                    { operationType: 'insert' },
+                  ],
+                },
+              },
+            ]
+
+            const changeStreamCmd = cmdCollection.watch(csCmdPipeline, {
+              fullDocument: 'updateLookup',
+            })
+            try {
+              changeStreamCmd.on('error', (change) => {
+                if (clientMongo) clientMongo.close()
+                clientMongo = null
+                Log.log('MongoDB - Error on ChangeStream Cmd!')
+              })
+              changeStreamCmd.on('close', (change) => {
+                Log.log('MongoDB - Closed ChangeStream Cmd!')
+              })
+              changeStreamCmd.on('end', (change) => {
+                clientMongo = null
+                Log.log('MongoDB - Ended ChangeStream Cmd!')
+              })
+
+              // start listen to changes
+              changeStreamCmd.on('change', (change) => {
+                // do not queue data changes until device connected, and birthed (when sparkplug used)
+                if (
+                  (connection.groupId != '' && !SparkplugDeviceBirthed) ||
+                  !SparkplugClientObj.handle.connected
+                )
+                  return
+
+                if (
+                  change.fullDocument?.protocolSourceConnectionNumber !==
+                  connection.protocolConnectionNumber
+                )
+                  return // not for this connection
+
+                let data = getMetricCommandPayload(change.fullDocument)
+                if (!data) return
+
+                if (data.deviceId) {
+                  data.metric.timestamp = new Date(
+                    change.fullDocument.timeTag
+                  ).getTime()
+                  SparkplugClientObj.handle.publishDeviceCmd(
+                    data.groupId,
+                    data.edgeNodeId,
+                    data.deviceId,
+                    {
+                      timestamp: new Date(
+                        change.fullDocument.timeTag
+                      ).getTime(),
+                      metrics: [data.metric],
+                    },
+                    {},
+                    (err) => {
+                      if (!err) {
+                        cmdCollection.updateOne(
+                          { _id: change.fullDocument._id },
+                          { $set: { ack: true, timeTag: new Date() } }
+                        )
+                      } else {
+                        cmdCollection.updateOne(
+                          { _id: change.fullDocument._id },
+                          { $set: { ack: false, timeTag: new Date() } }
+                        )
+                        Log.log(
+                          'Sparkplug Command Error, Tag: ' +
+                            change.fullDocument.tag
+                        )
+                      }
+                    }
+                  )
+                } else if (data.groupId) {
+                  data.metric.timestamp = new Date(
+                    change.fullDocument.timeTag
+                  ).getTime()
+                  SparkplugClientObj.handle.publishNodeCmd(
+                    data.groupId,
+                    data.edgeNodeId,
+                    {
+                      timestamp: new Date(
+                        change.fullDocument.timeTag
+                      ).getTime(),
+                      metrics: [data.metric],
+                    },
+                    {},
+                    (err) => {
+                      if (!err) {
+                        cmdCollection.updateOne(
+                          { _id: change.fullDocument._id },
+                          { $set: { ack: true, timeTag: new Date() } }
+                        )
+                      } else {
+                        cmdCollection.updateOne(
+                          { _id: change.fullDocument._id },
+                          { $set: { ack: false, timeTag: new Date() } }
+                        )
+                        Log.log(
+                          'Sparkplug Command Error, Tag: ' +
+                            change.fullDocument.tag
+                        )
+                      }
+                    }
+                  )
+                } else {
+                  let qos = 0,
+                    retain = false
+                  if (
+                    !isNaN(change.fullDocument?.protocolSourceCommandDuration)
+                  )
+                    qos = parseInt(
+                      change.fullDocument.protocolSourceCommandDuration
+                    )
+                  if (
+                    typeof change.fullDocument?.protocolSourceCommandUseSBO ===
+                    'boolean'
+                  )
+                    retain = change.fullDocument.protocolSourceCommandUseSBO
+                  SparkplugClientObj.handle.client.publish(
+                    data.topic,
+                    data.value.toString(),
+                    { qos: qos, retain: retain },
+                    (err) => {
+                      if (!err) {
+                        cmdCollection.updateOne(
+                          { _id: change.fullDocument._id },
+                          { $set: { ack: true, timeTag: new Date() } }
+                        )
+                      } else {
+                        cmdCollection.updateOne(
+                          { _id: change.fullDocument._id },
+                          { $set: { ack: false, timeTag: new Date() } }
+                        )
+                        Log.log(
+                          'MQTT Command Error, Tag: ' + change.fullDocument.tag
+                        )
+                      }
+                    }
+                  )
+                }
+              })
+            } catch (e) {
+              Log.log('MongoDB - CS CMD Error: ' + e, Log.levelMin)
+            }
+          }
+        })
+        .catch(function (err) {
+          if (clientMongo) clientMongo.close()
+          clientMongo = null
+          Log.log(err)
+        })
 
     // wait 5 seconds
     await new Promise((resolve) => setTimeout(resolve, 5000))
