@@ -709,7 +709,7 @@ let pool = null
                       return
                     }
 
-                    // look for the the command info in the database
+                    // look for the command info in the database
 
                     let cmd_id = node.NodeId.Id
                     let cmd_val = node.Value.Body
@@ -762,7 +762,7 @@ let pool = null
 
                     let addressing = {}
                     if (
-                      isNaN(data.protocolSourceCommonAddress) ||
+                      data.protocolSourceCommonAddress!="" && isNaN(data.protocolSourceCommonAddress) ||
                       isNaN(data.protocolSourceObjectAddress) ||
                       isNaN(data.protocolSourceASDU)
                     ) {
