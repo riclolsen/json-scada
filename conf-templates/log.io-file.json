@@ -86,6 +86,16 @@
     },
     {
       "source": "node1",
+      "stream": "iec61850client",
+      "config": {
+        "path": "/json-scada/log/iec61850client.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "dnp3client",
       "config": {
         "path": "/json-scada/log/dnp3client.log",
