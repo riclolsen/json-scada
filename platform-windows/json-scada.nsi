@@ -52,7 +52,7 @@ VIProductVersion ${VERSION_}
 VIAddVersionKey ProductName "JSON SCADA"
 VIAddVersionKey Comments "SCADA IIoT Software"
 VIAddVersionKey CompanyName "Ricardo Olsen"
-VIAddVersionKey LegalCopyright "Copyright 2020-2022 Ricardo L. Olsen"
+VIAddVersionKey LegalCopyright "Copyright 2020-2023 Ricardo L. Olsen"
 VIAddVersionKey FileDescription "JSON SCADA Installer"
 VIAddVersionKey FileVersion ${VERSION}
 VIAddVersionKey ProductVersion ${VERSION}
@@ -236,7 +236,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-6.0.21-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-6.0.24-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -250,7 +250,7 @@ SetRegView 64
   Sleep 1000
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.21-win-x64.exe" /install /passive /quiet'
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.24-win-x64.exe" /install /passive /quiet'
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
