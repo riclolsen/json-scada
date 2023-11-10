@@ -245,8 +245,9 @@ namespace IEC61850_Client
                                                             control.SetTestMode(false);
 
                                                             ControlModel controlModel = control.GetControlModel();
+                                                            MmsType controlType = control.GetCtlValType();
                                                             Log(ic.iecEntry.path + " has control model " + controlModel.ToString());
-                                                            Log("  type of ctlVal: " + control.GetCtlValType().ToString());
+                                                            Log("  type of ctlVal: " + controlType.ToString());
 
                                                             switch (controlModel)
                                                             {
@@ -255,31 +256,99 @@ namespace IEC61850_Client
                                                                     Log("Control is status-only!");
                                                                     break;
                                                                 case ControlModel.DIRECT_NORMAL:
-                                                                case ControlModel.DIRECT_ENHANCED:
-                                                                    if (!control.Operate(ic.value != 0))
+                                                                case ControlModel.DIRECT_ENHANCED:                                                     
+                                                                    switch (controlType)
                                                                     {
-                                                                        okres = false;
-                                                                        Log("Operate failed!");
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        okres = true;
-                                                                        Log("Operated successfully!");
+                                                                        case MmsType.MMS_BOOLEAN:
+                                                                            if (control.Operate(ic.value != 0))
+                                                                                if (control.Operate(ic.value != 0))
+                                                                                {
+                                                                                    okres = true;
+                                                                                    Log("Operated successfully!");
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log("Operate failed!");
+                                                                                }
+                                                                            break;
+                                                                        case MmsType.MMS_UNSIGNED:
+                                                                        case MmsType.MMS_INTEGER:
+                                                                            if (control.Operate(ic.value != 0))
+                                                                            {
+                                                                                okres = true;
+                                                                                Log("Operated successfully!");
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                okres = false;
+                                                                                Log("Operate failed!");
+                                                                            }
+                                                                            break;
+                                                                        case MmsType.MMS_FLOAT:
+                                                                            if (control.Operate(ic.value != 0))
+                                                                            {
+                                                                                okres = true;
+                                                                                Log("Operated successfully!");
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                okres = false;
+                                                                                Log("Operate failed!");
+                                                                            }
+                                                                            break;
+                                                                        default:
+                                                                            Log("Unsupported Command Type!");
+                                                                            break;
                                                                     }
                                                                     break;
                                                                 case ControlModel.SBO_NORMAL:
                                                                 case ControlModel.SBO_ENHANCED:
                                                                     if (control.Select())
                                                                     {
-                                                                        if (!control.Operate(ic.value != 0))
+                                                                        switch (controlType)
                                                                         {
-                                                                            okres = false;
-                                                                            Log("Operate failed!");
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            okres = true;
-                                                                            Log("Operated successfully!");
+                                                                            case MmsType.MMS_BOOLEAN:
+                                                                                if (control.Operate(ic.value != 0))
+                                                                                    if (control.Operate(ic.value != 0))
+                                                                                    {
+                                                                                        okres = true;
+                                                                                        Log("Operated successfully!");
+                                                                                    }
+                                                                                    else
+                                                                                    {
+                                                                                        okres = false;
+                                                                                        Log("Operate failed!");
+                                                                                    }
+                                                                                break;
+                                                                            case MmsType.MMS_UNSIGNED:
+                                                                            case MmsType.MMS_INTEGER:
+                                                                                if (control.Operate(ic.value != 0))
+                                                                                {
+                                                                                    okres = true;
+                                                                                    Log("Operated successfully!");
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log("Operate failed!");
+                                                                                }
+                                                                                break;
+                                                                            case MmsType.MMS_FLOAT:
+                                                                                if (control.Operate(ic.value != 0))
+                                                                                {
+                                                                                    okres = true;
+                                                                                    Log("Operated successfully!");
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log("Operate failed!");
+                                                                                }
+                                                                                break;
+                                                                            default:
+                                                                                Log("Unsupported Command Type!");
+                                                                                break;
                                                                         }
                                                                     }
                                                                     else
@@ -295,7 +364,7 @@ namespace IEC61850_Client
                                                     catch (IedConnectionException ex)
                                                     {
                                                         okres = false;
-                                                        Log(srv.name + " Control object not found! " + ic.iecEntry.path);
+                                                        Log(srv.name + " Control object exception! " + ic.iecEntry.path);
                                                         return;
                                                     }
                                                 }
