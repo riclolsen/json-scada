@@ -148,6 +148,7 @@ namespace IEC61850_Client
                                                     js_cmd_tag = change.FullDocument.tag.ToString(),
                                                     value = change.FullDocument.value.ToDouble(),
                                                     fc = change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper(),
+                                                    useSelectWithValue = change.FullDocument.protocolSourceCommandUseSBO.AsBoolean,
                                                     iecEntry = srv.entries[change.FullDocument.protocolSourceObjectAddress.ToString() + change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper()],
                                                 };
 
@@ -246,17 +247,17 @@ namespace IEC61850_Client
 
                                                             ControlModel controlModel = control.GetControlModel();
                                                             MmsType controlType = control.GetCtlValType();
-                                                            Log(ic.iecEntry.path + " has control model " + controlModel.ToString());
-                                                            Log("  type of ctlVal: " + controlType.ToString());
+                                                            Log(srv.name + " " + ic.iecEntry.path + " has control model " + controlModel.ToString());
+                                                            Log(srv.name + "  type of ctlVal: " + controlType.ToString());
 
                                                             switch (controlModel)
                                                             {
                                                                 case ControlModel.STATUS_ONLY:
                                                                     okres = false;
-                                                                    Log("Control is status-only!");
+                                                                    Log(srv.name + " Control is status-only!");
                                                                     break;
                                                                 case ControlModel.DIRECT_NORMAL:
-                                                                case ControlModel.DIRECT_ENHANCED:                                                     
+                                                                case ControlModel.DIRECT_ENHANCED:
                                                                     switch (controlType)
                                                                     {
                                                                         case MmsType.MMS_BOOLEAN:
@@ -264,12 +265,14 @@ namespace IEC61850_Client
                                                                                 if (control.Operate(ic.value != 0))
                                                                                 {
                                                                                     okres = true;
-                                                                                    Log("Operated successfully!");
+                                                                                    Log(srv.name + " Operated successfully!");
                                                                                 }
                                                                                 else
                                                                                 {
                                                                                     okres = false;
-                                                                                    Log("Operate failed!");
+                                                                                    Log(srv.name + " Operate failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
                                                                                 }
                                                                             break;
                                                                         case MmsType.MMS_UNSIGNED:
@@ -277,85 +280,165 @@ namespace IEC61850_Client
                                                                             if (control.Operate(ic.value != 0))
                                                                             {
                                                                                 okres = true;
-                                                                                Log("Operated successfully!");
+                                                                                Log(srv.name + " Operated successfully!");
                                                                             }
                                                                             else
                                                                             {
                                                                                 okres = false;
-                                                                                Log("Operate failed!");
+                                                                                Log(srv.name + " Operate failed!");
+                                                                                Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
                                                                             }
                                                                             break;
                                                                         case MmsType.MMS_FLOAT:
                                                                             if (control.Operate(ic.value != 0))
                                                                             {
                                                                                 okres = true;
-                                                                                Log("Operated successfully!");
+                                                                                Log(srv.name + " Operated successfully!");
                                                                             }
                                                                             else
                                                                             {
                                                                                 okres = false;
-                                                                                Log("Operate failed!");
+                                                                                Log(srv.name + " Operate failed!");
+                                                                                Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
                                                                             }
                                                                             break;
                                                                         default:
-                                                                            Log("Unsupported Command Type!");
+                                                                            Log(srv.name + " Unsupported Command Type!");
                                                                             break;
                                                                     }
                                                                     break;
                                                                 case ControlModel.SBO_NORMAL:
                                                                 case ControlModel.SBO_ENHANCED:
-                                                                    if (control.Select())
+                                                                    switch (controlType)
                                                                     {
-                                                                        switch (controlType)
-                                                                        {
-                                                                            case MmsType.MMS_BOOLEAN:
-                                                                                if (control.Operate(ic.value != 0))
-                                                                                    if (control.Operate(ic.value != 0))
-                                                                                    {
-                                                                                        okres = true;
-                                                                                        Log("Operated successfully!");
-                                                                                    }
-                                                                                    else
-                                                                                    {
-                                                                                        okres = false;
-                                                                                        Log("Operate failed!");
-                                                                                    }
-                                                                                break;
-                                                                            case MmsType.MMS_UNSIGNED:
-                                                                            case MmsType.MMS_INTEGER:
-                                                                                if (control.Operate(ic.value != 0))
-                                                                                {
-                                                                                    okres = true;
-                                                                                    Log("Operated successfully!");
-                                                                                }
-                                                                                else
+                                                                        case MmsType.MMS_BOOLEAN:
+                                                                            if (ic.useSelectWithValue)
+                                                                            {
+                                                                                Log(srv.name + " Selecting with value...");
+                                                                                if (!control.SelectWithValue(ic.value != 0))
                                                                                 {
                                                                                     okres = false;
-                                                                                    Log("Operate failed!");
+                                                                                    Log(srv.name + " Select with value failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                                    break;
                                                                                 }
-                                                                                break;
-                                                                            case MmsType.MMS_FLOAT:
-                                                                                if (control.Operate(ic.value != 0))
-                                                                                {
-                                                                                    okres = true;
-                                                                                    Log("Operated successfully!");
-                                                                                }
-                                                                                else
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                Log(srv.name + " Selecting without value...");
+                                                                                if (!control.Select())
                                                                                 {
                                                                                     okres = false;
-                                                                                    Log("Operate failed!");
+                                                                                    Log(srv.name + " Select without value failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                                    break;
                                                                                 }
-                                                                                break;
-                                                                            default:
-                                                                                Log("Unsupported Command Type!");
-                                                                                break;
-                                                                        }
+                                                                            }
+                                                                            Log(srv.name + " Selected successfully!");
+                                                                            Thread.Sleep(100);
+                                                                            if (control.Operate(ic.value != 0))
+                                                                            {
+                                                                                okres = true;
+                                                                                Log(srv.name + " Operated successfully!");
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                okres = false;
+                                                                                Log(srv.name + " Operate failed!");
+                                                                                Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                            }
+                                                                            break;
+                                                                        case MmsType.MMS_UNSIGNED:
+                                                                        case MmsType.MMS_INTEGER:
+                                                                            if (ic.useSelectWithValue)
+                                                                            {
+                                                                                Log(srv.name + " Selecting with value...");
+                                                                                if (!control.SelectWithValue((int)ic.value))
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log(srv.name + " Select with value failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                Log(srv.name + " Selecting without value...");
+                                                                                if (!control.Select())
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log(srv.name + " Select without value failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            Log(srv.name + " Selected successfully!");
+                                                                            Thread.Sleep(100);
+                                                                            if (control.Operate((int)ic.value))
+                                                                            {
+                                                                                okres = true;
+                                                                                Log(srv.name + " Operated successfully!");
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                okres = false;
+                                                                                Log(srv.name + " Operate failed!");
+                                                                                Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                            }
+                                                                            break;
+                                                                        case MmsType.MMS_FLOAT:
+                                                                            if (ic.useSelectWithValue)
+                                                                            {
+                                                                                Log(srv.name + " Selecting with value...");
+                                                                                if (!control.SelectWithValue((float)ic.value))
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log(srv.name + " Select with value failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                Log(srv.name + " Selecting without value...");
+                                                                                if (!control.Select())
+                                                                                {
+                                                                                    okres = false;
+                                                                                    Log(srv.name + " Select without value failed!");
+                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            Log(srv.name + " Selected successfully!");
+                                                                            Thread.Sleep(100);
+                                                                            if (control.Operate((float)ic.value))
+                                                                            {
+                                                                                okres = true;
+                                                                                Log(srv.name + " Operated successfully!");
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                okres = false;
+                                                                                Log(srv.name + " Operate failed!");
+                                                                                Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                            }
+                                                                            break;
+                                                                        default:
+                                                                            Log(srv.name + " Unsupported Command Type!");
+                                                                            break;
                                                                     }
-                                                                    else
-                                                                    {
-                                                                        okres = false;
-                                                                        Log("Select failed!");
-                                                                    }
+
                                                                     break;
                                                             }
                                                             control.Dispose();
@@ -413,8 +496,8 @@ namespace IEC61850_Client
                                                 (
                                                 !srv.commandsEnabled
                                                     ? " Commands Disabled"
-                                                    : srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() + 
-                                                                              change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper()) 
+                                                    : srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() +
+                                                                              change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper())
                                                     ? " Not connected" : " Command not found!"
                                                 ));
                                                 var filter =
@@ -428,8 +511,8 @@ namespace IEC61850_Client
                                                             (
                                                             !srv.commandsEnabled
                                                                 ? "commands disabled"
-                                                                : srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() + 
-                                                                                          change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper()) 
+                                                                : srv.entries.ContainsKey(change.FullDocument.protocolSourceObjectAddress.ToString() +
+                                                                                          change.FullDocument.protocolSourceCommonAddress.ToString().ToUpper())
                                                                 ? "not connected" : "command not found!"
                                                             )));
                                                 var result =

@@ -49,6 +49,7 @@ namespace IEC61850_Client
             public string js_cmd_tag; // tag name on json scada 
             public double value; // command value
             public string fc; // command fc
+            public bool useSelectWithValue; // will use select with value when kconv1=1 on point_list and SBO control mode 
             public DateTime timestamp; // timestamp
             public Iec61850Entry iecEntry; // iec61850 object entry
         }
