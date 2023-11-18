@@ -385,7 +385,7 @@ namespace IEC61850_Client
                         if (report.GetReasonForInclusion(k) != ReasonForInclusion.REASON_NOT_INCLUDED)
                         {
                             var dr = report.GetDataReference(k);
-                            if (dr == null) 
+                            if (dr == null)
                             {
                                 log += "Can't get data reference for element " + k + " of report! Skipping element...\n";
                                 continue;
@@ -541,9 +541,10 @@ namespace IEC61850_Client
                 }
                 Log(log);
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 Log(log);
-                Log(e); 
+                Log(e);
             }
         }
 
@@ -729,10 +730,10 @@ namespace IEC61850_Client
                                                            ReportOptions.DATA_REFERENCE |
                                                            ReportOptions.CONF_REV);
                                             rcb.SetRptEna(false);
-                                            rcb.SetRptEna(true);                                            
+                                            rcb.SetRptEna(true);
                                             // rcb.SetResv(true);
                                             try
-                                            {                                                
+                                            {
                                                 rcb.SetRCBValues();
                                                 rcb.SetGI(true);
                                             }
@@ -800,15 +801,15 @@ namespace IEC61850_Client
                                                            ReportOptions.CONF_REV |
                                                            ReportOptions.ENTRY_ID);
                                             rcb.SetRptEna(false);
-                                            rcb.SetRptEna(true);                                            
+                                            rcb.SetRptEna(true);
                                             try
-                                            {                                                
+                                            {
                                                 rcb.SetRCBValues();
                                                 rcb.SetGI(true);
                                             }
                                             catch (IedConnectionException e)
                                             {
-                                                Log(srv.name + " BRCB: IED SetRCB exception - " + e.Message + " Code:" + e.GetErrorCode());                                               
+                                                Log(srv.name + " BRCB: IED SetRCB exception - " + e.Message + " Code:" + e.GetErrorCode());
                                             }
                                         }
                                     }
@@ -983,6 +984,13 @@ namespace IEC61850_Client
                                 {
                                     throw new Exception(srv.name + " Node inactive! Disconnecting ...");
                                 }
+
+                                // when device disconnected, will abort and keep trying to reconnect
+                                if (con.GetState() != IedConnectionState.IED_STATE_CONNECTED)
+                                {
+                                    throw new Exception(srv.name + " Connection error detected!");
+                                }
+
                                 // wait 1/10 second
                                 Thread.Sleep(100);
                             }
