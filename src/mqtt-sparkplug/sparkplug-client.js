@@ -1,7 +1,7 @@
 /*
  * MQTT-Sparkplug B Client Lib Adapter for JSON-SCADA
  * 
- * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * Derived from https://github.com/Cirrus-Link/Sparkplug/tree/master/client_libraries/javascript/sparkplug-client
@@ -532,7 +532,9 @@ function SparkplugClient(config) {
                 timestamp = payload.timestamp;                
             }
             catch (e) {
+                logger.warn("Payload decode error for topic: "+ topic);
                 logger.warn(e.message);
+                return
             }
 
             if (logger.level === 'debug')
