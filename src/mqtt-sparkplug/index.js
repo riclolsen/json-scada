@@ -1773,6 +1773,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     valueJson = {},
     type = 'digital',
     invalid = false,
+    isNull = false,
     timestamp,
     timestampGood = true,
     catalogProperties = {},
@@ -2014,7 +2015,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     timeTagAtSource: new Date(timestamp),
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
-    isNull: metric?.isNull === true,
+    isNull: isNull,
     ...catalogProperties,
   })
 }
