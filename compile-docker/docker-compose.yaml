@@ -58,7 +58,7 @@ services:
                     apk add --no-cache git && 
                     go env -w GO111MODULE=auto &&
                     cd /go/src/calculations/ && 
-                    go get ./... && 
+                    go mod tidy && 
                     go build && 
                     cp calculations /publish_bin/"
     volumes:
@@ -72,7 +72,7 @@ services:
                     apk add --no-cache git && 
                     go env -w GO111MODULE=auto &&
                     cd /go/src/i104m/ &&
-                    go get ./... && 
+                    go mod tidy && 
                     go build && 
                     cp i104m /publish_bin/"
     volumes:

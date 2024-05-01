@@ -38,18 +38,18 @@ export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
 
 cd ../calculations
-go get ./...
+go go mod tidy 
 go build
 cp calculations ../../bin/
 
 # cd ../plc4x-client
 # go get "github.com/icza/bitio"
-# go get ./... 
+# go mod tidy 
 # go build 
 # cp plc4x-client ../../bin/
 
 cd ../i104m
-go get ./...
+go mod tidy 
 go build
 cp i104m ../../bin/
 

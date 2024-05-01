@@ -59,18 +59,18 @@ dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
 cd %SRCPATH%\calculations
-go get ./... 
+go mod tidy 
 go build 
 copy /Y calculations %BINPATH%
 
 rem cd %SRCPATH%\plc4x-client
 rem go get "github.com/icza/bitio"
-rem go get ./... 
+rem go mod tidy
 rem go build 
 rem copy /Y plc4x-client.exe %BINPATH%
 
 cd %SRCPATH%\i104m
-go get ./... 
+go mod tidy
 go build 
 copy /Y i104m.exe %BINPATH%
 

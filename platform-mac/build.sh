@@ -36,12 +36,12 @@ export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
 
 cd ../calculations
-go get ./...
+go mod tidy 
 go build
 cp calculations ../../bin/
 
 cd ../i104m
-go get ./...
+go mod tidy 
 go build
 cp i104m ../../bin/
 
