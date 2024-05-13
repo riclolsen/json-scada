@@ -262,18 +262,17 @@ namespace IEC61850_Client
                                                                     {
                                                                         case MmsType.MMS_BOOLEAN:
                                                                             if (control.Operate(ic.value != 0))
-                                                                                if (control.Operate(ic.value != 0))
-                                                                                {
-                                                                                    okres = true;
-                                                                                    Log(srv.name + " Operated successfully!");
-                                                                                }
-                                                                                else
-                                                                                {
-                                                                                    okres = false;
-                                                                                    Log(srv.name + " Operate failed!");
-                                                                                    Log(srv.name + " Error: " + control.GetLastApplError().error);
-                                                                                    Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
-                                                                                }
+                                                                            {
+                                                                                okres = true;
+                                                                                Log(srv.name + " Operated successfully!");
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                okres = false;
+                                                                                Log(srv.name + " Operate failed!");
+                                                                                Log(srv.name + " Error: " + control.GetLastApplError().error);
+                                                                                Log(srv.name + " Addit.Cause: " + control.GetLastApplError().addCause);
+                                                                            }
                                                                             break;
                                                                         case MmsType.MMS_UNSIGNED:
                                                                         case MmsType.MMS_INTEGER:
