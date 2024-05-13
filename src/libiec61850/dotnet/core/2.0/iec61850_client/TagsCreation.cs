@@ -1,6 +1,6 @@
 ﻿/* 
  * This software implements a IEC61850 driver for JSON SCADA.
- * Copyright - 2020-2023 - Ricardo Lastra Olsen
+ * Copyright - 2020-2024 - Ricardo Lastra Olsen
  * 
  * Requires libiec61850 from MZ Automation.
  * 

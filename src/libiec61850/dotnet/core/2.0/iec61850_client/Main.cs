@@ -1,6 +1,6 @@
 /* 
  * This software implements a IEC61850 driver for JSON SCADA.
- * Copyright - 2020-2023 - Ricardo Lastra Olsen
+ * Copyright - 2020-2024 - Ricardo Lastra Olsen
  * 
  * Requires libiec61850 from MZ Automation.
  *
@@ -35,7 +35,7 @@ namespace IEC61850_Client
     {
         public static String CopyrightMessage = "{json:scada} IEC61850 Client Driver - Copyright 2023 Ricardo Olsen";
         public static String ProtocolDriverName = "IEC61850";
-        public static String DriverVersion = "0.1.5";
+        public static String DriverVersion = "0.1.6";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static Int32 BulkWriteLimit = 1250; // limit of each bulk write to mongodb

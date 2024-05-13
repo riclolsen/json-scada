@@ -9,6 +9,7 @@ set SRCPATH=%JSPATH%\src
 set BINPATH=%JSPATH%\bin
 set BINWINPATH=%JSPATH%\demo-docker\bin_win
 set NPM=%JSPATH%\platform-windows\nodejs-runtime\npm
+rem _set NPM="%programfiles%\nodejs\npm"
 
 cd %JSPATH%
 mkdir bin
@@ -21,8 +22,11 @@ cd %SRCPATH%\dnp3\Dnp3Client\
 dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINWINPATH% Dnp3Client.csproj
 
 cd %SRCPATH%\libiec61850\build
-rem set VCTargetsPath=d:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
-rem set VCTargetsPath=c:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
+rem set VCTargetsPath="C:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\"
+rem set VCTargetsPath="D:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\"
+rem set VCToolsInstallDir="D:\ProgramFiles\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\"
+rem dotnet clean -c Release libiec61850.sln
+
 dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
 copy %SRCPATH%\libiec61850\build\src\Release\iec61850.dll %BINPATH%
 
@@ -61,7 +65,7 @@ set GOBIN=c:\json-scada\bin
 cd %SRCPATH%\calculations
 go mod tidy 
 go build 
-copy /Y calculations %BINPATH%
+copy /Y calculations.exe %BINPATH%
 
 rem cd %SRCPATH%\plc4x-client
 rem go get "github.com/icza/bitio"
