@@ -103,7 +103,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
 * [Change Stream Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_data_processor/README.md)
 * [Custom Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_custom_processor/README.md)
-* [Realtime Data Server](https://github.com/riclolsen/json-scada/blob/master/src/server_realtime/README.md)
+* [Realtime Data Server](https://github.com/riclolsen/json-scada/blob/master/src/server_realtime_auth/README.md)
 * [OSHMI2JSON Tool](https://github.com/riclolsen/json-scada/blob/master/src/oshmi2json/README.md)
 * [Report Generators](https://github.com/riclolsen/json-scada/blob/master/docs/report_generators.md)
 * [SAGE-web Displays](https://github.com/riclolsen/json-scada/blob/master/src/htdocs/sage-cepel-displays/README.md)

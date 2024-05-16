@@ -103,7 +103,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * [Calculations](src/calculations/README.md)
 * [Change Stream Data Processor](src/cs_data_processor/README.md)
 * [Custom Data Processor](src/cs_custom_processor/README.md)
-* [Realtime Data Server](src/server_realtime/README.md)
+* [Realtime Data Server](src/server_realtime_auth/README.md)
 * [OSHMI2JSON Tool](src/oshmi2json/README.md)
 * [Report Generators](docs/report_generators.md)
 * [SAGE-web Displays](src/htdocs/sage-cepel-displays/README.md)
