@@ -2,7 +2,7 @@
 
 /*
  * A realtime point data HTTP web server for JSON SCADA.
- * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,7 @@ const IP_BIND = process.env.JS_IP_BIND || '127.0.0.1'
 const HTTP_PORT = process.env.JS_HTTP_PORT || 8080
 const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || 'http://127.0.0.1:3000'
 const LOGIO_SERVER = process.env.JS_LOGIO_SERVER || 'http://127.0.0.1:6688'
+const METABASE_SERVER = process.env.JS_METABASE_SERVER || 'http://127.0.0.1:3001'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
@@ -92,6 +93,8 @@ if (AUTHENTICATION) {
 
   // reverse proxy for grafana
   app.use('/grafana', httpProxy(GRAFANA_SERVER))
+  // reverse proxy for grafana
+  app.use('/metabase', httpProxy(METABASE_SERVER))
   // reverse proxy for log.io
   app.use('/log-io', httpProxy(LOGIO_SERVER))
   const wsProxy = createProxyMiddleware({
@@ -168,7 +171,8 @@ let pool = null
       GRAFANA_SERVER,
       QUERYJSON_AP,
       queryJSON,
-      LOGIO_SERVER
+      LOGIO_SERVER,
+      METABASE_SERVER,
     )
   } else {
     app.post(OPCAPI_AP, opcApi)

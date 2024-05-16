@@ -1,6 +1,6 @@
 ; json-scada.nsi
 ; {json:scada} installer script
-; Copyright 2020-2023 - Ricardo L. Olsen
+; Copyright 2020-2024 - Ricardo L. Olsen
 
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.31"
-!define VERSION_ "0.31.0.0"
+!define VERSION "v.0.32"
+!define VERSION_ "0.32.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -109,6 +109,7 @@ SetRegView 64
 
 ; Closes all processes
   nsExec::Exec 'net stop JSON_SCADA_grafana'
+  nsExec::Exec 'net stop JSON_SCADA_metabase'
   nsExec::Exec 'net stop JSON_SCADA_mongodb'
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
@@ -153,6 +154,7 @@ SetRegView 64
   var /GLOBAL NAVVISANO
   var /GLOBAL NAVVISTEL
   var /GLOBAL NAVGRAFAN
+  var /GLOBAL NAVMETABA
   var /GLOBAL HTTPSRV
     
   # PROTOCOL://IP:PORT  
@@ -169,6 +171,7 @@ SetRegView 64
   StrCpy $NAVVISANO "/tabular.html?SELMODULO=ALARMS_VIEWER"
   StrCpy $NAVVISTEL "/display.html"
   StrCpy $NAVGRAFAN "/grafana"
+  StrCpy $NAVMETABA "/metabase"
 
   ; write reg info
   WriteRegStr HKLM SOFTWARE\JSON_SCADA "Install_Dir" "$INSTDIR"
@@ -197,6 +200,8 @@ SetRegView 64
   CreateDirectory "$INSTDIR\src"
 ; CreateDirectory "$INSTDIR\Opc.Ua.CertificateGenerator"
   CreateDirectory "$INSTDIR\platform-windows"
+  CreateDirectory "$INSTDIR\platform-windows\jdk-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\metabase-runtime"
   CreateDirectory "$INSTDIR\platform-windows\grafana-runtime"
   CreateDirectory "$INSTDIR\platform-windows\browser-runtime"
   CreateDirectory "$INSTDIR\platform-windows\browser-data"
@@ -236,7 +241,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-6.0.24-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-6.0.29-win-x64.exe"
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -250,7 +255,7 @@ SetRegView 64
   Sleep 1000
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.24-win-x64.exe" /install /passive /quiet'
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.29-win-x64.exe" /install /passive /quiet'
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
@@ -260,6 +265,12 @@ SetRegView 64
 
   SetOutPath $INSTDIR\docs
   File /a /r "..\docs\*.*"
+  
+  SetOutPath $INSTDIR\platform-windows\jdk-runtime
+  File /a /r "..\platform-windows\jdk-runtime\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\metabase-runtime
+  File /a /r "..\platform-windows\metabase-runtime\metabase.jar"
 
   SetOutPath $INSTDIR\platform-windows\grafana-runtime
   File /a /r "..\platform-windows\grafana-runtime\*.*"
@@ -288,6 +299,8 @@ SetRegView 64
   SetOutPath $INSTDIR\sql
   File /a "..\sql\*.bat"
   File /a "..\sql\create_tables.sql"
+  File /a "..\sql\metabaseappdb.sql"
+  File /a "..\sql\grafanaappdb.sql"
   File /a "..\sql\*.md"
 
   SetOutPath $INSTDIR\platform-windows\nginx_php-runtime
@@ -472,6 +485,7 @@ SetRegView 64
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Tabular.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tabular.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Alarms.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\firstaid.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Grafana.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\src\htdocs\images\grafana.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Metabase.lnk"             "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVMETABA $NAVPOSOPT" "$INSTDIR\src\htdocs\images\metabase.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Excel Config Spreadsheet.lnk"      "$INSTDIR\conf\json-scada-config.xlsm"
   CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
@@ -645,6 +659,11 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_grafana"`
   ClearErrors
 
+  ExecWait `"${SC}" stop "JSON_SCADA_metabase"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_metabase"`
+  ClearErrors
+
   ExecWait `"${SC}" stop "JSON_SCADA_mongodb"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_mongodb"`
@@ -691,6 +710,7 @@ Section "Uninstall"
   Sleep 5000
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
   Sleep 1000
+  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\jdk-runtime\\bin\\%'" CALL TERMINATE`
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\grafana-runtime\\bin\\%'" CALL TERMINATE`
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\php\\%'" CALL TERMINATE`
   ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\%'" CALL TERMINATE`

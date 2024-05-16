@@ -10,8 +10,10 @@ cd \json-scada\platform-windows
 
 nssm start JSON_SCADA_log_io_server
 net start JSON_SCADA_postgresql 
-nssm start JSON_SCADA_grafana
 nssm start JSON_SCADA_mongodb 
+
+ping -n 5 127.0.0.1
+
 nssm start JSON_SCADA_log_io_file
 nssm start JSON_SCADA_cs_data_processor
 nssm start JSON_SCADA_cs_custom_processor
@@ -23,9 +25,6 @@ nssm start JSON_SCADA_process_hist
 REM nssm start JSON_SCADA_config_server_excel
 REM nssm start JSON_SCADA_alarm_beep
 REM nssm start JSON_SCADA_shell_api
-
-nssm start JSON_SCADA_php
-nssm start JSON_SCADA_nginx
 
 REM SELECT PROTOCOLS TO START
 nssm start JSON_SCADA_iec104client
@@ -41,3 +40,9 @@ REM nssm start JSON_SCADA_iec61850client
 REM nssm start JSON_SCADA_i104m
 REM nssm start JSON_SCADA_plctags
 REM nssm start JSON_SCADA_opcuaserver
+
+nssm start JSON_SCADA_grafana
+nssm start JSON_SCADA_metabase
+
+nssm start JSON_SCADA_php
+nssm start JSON_SCADA_nginx

@@ -13,6 +13,8 @@ ping -n 2 127.0.0.1
 call postgresql-start.bat
 ping -n 18 127.0.0.1
 postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\create_tables.sql template1
+postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\metabaseappdb.sql metabaseappdb
+postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\grafanaappdb.sql grafanaappdb
 
 call create_services.bat
 ping -n 10 127.0.0.1

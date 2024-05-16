@@ -46,8 +46,9 @@ nssm stop JSON_SCADA_process_rtdata
 nssm stop JSON_SCADA_process_hist 
 ping -n 3
 
-REM STOP GRAFANA AND DATABASE SERVERS
+REM STOP GRAFANA/METABASE AND DATABASE SERVERS
 nssm stop JSON_SCADA_grafana
+nssm stop JSON_SCADA_metabase
 nssm stop JSON_SCADA_mongodb 
 net stop JSON_SCADA_postgresql 
 

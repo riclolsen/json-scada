@@ -1,5 +1,5 @@
 // OPC UA Standard Codes (and some extensions)
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020 - 2024 - Ricardo L. Olsen
 
 let NamespaceMongodb = 2; // first user namespace
 let NamespacePostgresql = 3; // second user namespace

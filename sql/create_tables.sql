@@ -1,6 +1,20 @@
 
 -- psql -h 127.0.0.1 -U postgres -w -f create_tables.sql
 
+CREATE DATABASE "grafanaappdb"
+    WITH OWNER "postgres"
+    ENCODING 'UTF8'
+    -- LC_COLLATE = 'en-US.UTF8' -- can cause errors sometimes
+    -- LC_CTYPE = 'en-US.UTF8' 
+    TEMPLATE template0;
+
+CREATE DATABASE "metabaseappdb"
+    WITH OWNER "postgres"
+    ENCODING 'UTF8'
+    -- LC_COLLATE = 'en-US.UTF8' -- can cause errors sometimes
+    -- LC_CTYPE = 'en-US.UTF8' 
+    TEMPLATE template0;
+
 CREATE DATABASE "json_scada"
     WITH OWNER "postgres"
     ENCODING 'UTF8'

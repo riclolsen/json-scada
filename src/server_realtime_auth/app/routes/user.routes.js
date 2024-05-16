@@ -15,7 +15,8 @@ module.exports = function (
   grafanaServer,
   customJsonQueryAP,
   customJsonQuery,
-  logioServer
+  logioServer,
+  metabaseServer
 ) {
   app.use(function (req, res, next) {
     res.header(
@@ -71,6 +72,17 @@ module.exports = function (
       next()
     },
     httpProxy(grafanaServer)
+  )
+
+  // reverse proxy for metabase
+  app.use(
+    '/metabase',
+    [authJwt.verifyToken],
+    function (req, _, next) {
+      authController.addXWebAuthUser(req)
+      next()
+    },
+    httpProxy(metabaseServer)
   )
 
   // reverse proxy for log.io
