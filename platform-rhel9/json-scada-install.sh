@@ -7,9 +7,14 @@
 
 sudo dnf -y update 
 sudo dnf -y install epel-release 
-sudo dnf -y install tar vim nano golang nginx wget chkconfig dotnet-sdk-6.0
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo update-crypto-policies --set LEGACY
+
+wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc
 
 sudo tee /etc/yum.repos.d/mongodb-org-7.0.repo <<EOF
 [mongodb-org-7.0]
