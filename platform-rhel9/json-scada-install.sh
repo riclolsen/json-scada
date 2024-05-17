@@ -6,17 +6,17 @@
 
 sudo dnf -y update 
 sudo dnf -y install epel-release 
-sudo dnf -y install tar nodejs npm golang nginx wget chkconfig
+sudo dnf -y install tar vim nano golang nginx wget chkconfig dotnet-sdk-6.0
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo update-crypto-policies --set LEGACY
 
-sudo tee /etc/yum.repos.d/mongodb-org-6.0.repo <<EOF
-[mongodb-org-6.0]
+sudo tee /etc/yum.repos.d/mongodb-org-7.0.repo <<EOF
+[mongodb-org-7.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/8/mongodb-org/6.0/\$basearch/
+baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/\$basearch/
 gpgcheck=1
 enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
+gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
 EOF
 sudo tee /etc/yum.repos.d/influxdata.repo <<EOF
 [influxdata]
@@ -37,7 +37,7 @@ gpgkey=https://packages.grafana.com/gpg.key
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 EOF
-sudo tee /etc/yum.repos.d/timescale_timescaledb.repo <<EOF
+sudo tee /etc/yum.repos.d/timescale_timescaledb.repo <<EOL
 [timescale_timescaledb]
 name=timescale_timescaledb
 baseurl=https://packagecloud.io/timescale/timescaledb/el/$(rpm -E %{rhel})/\$basearch
@@ -48,17 +48,16 @@ gpgkey=https://packagecloud.io/timescale/timescaledb/gpgkey
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
-EOF
-
+EOL
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo dnf -y install timescaledb_14
-sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
+sudo dnf -y install timescaledb-2-postgresql-16 postgresql16
+sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/14/data/
-sudo chown postgres:postgres /var/lib/pgsql/14/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/14/data/
-sudo chown postgres:postgres /var/lib/pgsql/14/data/postgresql.conf
-sudo systemctl enable postgresql-14
+sudo cp pg_hba.conf /var/lib/pgsql/16/data/
+sudo chown postgres:postgres /var/lib/pgsql/16/data/pg_hba.conf
+sudo cp postgresql.conf /var/lib/pgsql/16/data/
+sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
+sudo systemctl enable postgresql-16
 
 sudo dnf -y install mongodb-org 
 sudo cp mongod.conf /etc/
@@ -77,19 +76,19 @@ sudo systemctl enable grafana-server
 sudo cp *.ini /etc/supervisord.d/
 
 mkdir ~/metabase
-wget https://downloads.metabase.com/v0.44.2/metabase.jar -O ~/metabase/metabase.jar
+wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ~/metabase/metabase.jar
 
 # install nvm to be able to choose a specific nodejs version
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
-nvm install 16.13.0
+nvm install 20.13.1
 npm install -g npm
 
 cd ../platform-linux 
 ./build.sh
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-14
+sudo systemctl start postgresql-16
 sudo systemctl start mongod
 #sudo systemctl start grafana
 #sudo systemctl start supervisor
