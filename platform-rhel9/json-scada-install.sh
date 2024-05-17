@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #cd
+#sudo dnf -y install git
 #git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 #cd json-scada/platform-rhel9
 
@@ -49,6 +50,7 @@ sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 EOL
+sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 sudo dnf -y install timescaledb-2-postgresql-16 postgresql16
 sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
