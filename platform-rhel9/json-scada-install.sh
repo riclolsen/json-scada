@@ -1,11 +1,14 @@
 #!/bin/bash
 
+# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
+
 #cd
 #sudo dnf -y install git
 #git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 #cd json-scada/platform-rhel9
 
 sudo dnf -y update 
+sudo dnf -y remove golang nodejs
 sudo dnf -y install epel-release 
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
