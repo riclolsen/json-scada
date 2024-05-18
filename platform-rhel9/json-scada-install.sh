@@ -13,9 +13,9 @@
 mkdir ../log 
 
 sudo dnf -y update 
-sudo dnf -y remove golang nodejs
+sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless
 sudo dnf -y install epel-release 
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 php
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo update-crypto-policies --set LEGACY
 
@@ -30,7 +30,7 @@ name=MongoDB Repository
 baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/\$basearch/
 gpgcheck=1
 enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+gpgkey=https://pgp.mongodb.com/server-7.0.asc
 EOF
 sudo tee /etc/yum.repos.d/influxdata.repo <<EOF
 [influxdata]
@@ -65,7 +65,7 @@ metadata_expire=300
 EOL
 sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo dnf -y install timescaledb-2-postgresql-16 postgresql16
+sudo dnf -y install timescaledb-2-postgresql-16 postgresql16 postgresql16-contrib
 sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
 # config postgresql local connections with trust method
 sudo cp pg_hba.conf /var/lib/pgsql/16/data/
@@ -78,6 +78,8 @@ sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo systemctl enable nginx
 
 sudo dnf -y install mongodb-org 
+sudo rpm -e mongodb-org mongodb-mongosh
+sudo dnf -y install mongodb-org mongodb-mongosh-shared-openssl3
 sudo cp mongod.conf /etc/
 sudo systemctl enable mongod
 
@@ -120,7 +122,7 @@ mongoimport --db json_scada --collection users --type json --file ../demo-docker
 mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
 mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 
-sudo systemctl start grafana
+sudo systemctl start grafana-server
 
 cd ../platform-linux 
 ./build.sh
