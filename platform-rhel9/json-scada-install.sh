@@ -76,6 +76,7 @@ sudo systemctl enable postgresql-16
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
+sudo setsebool -P httpd_can_network_connect 1
 sudo systemctl enable nginx
 
 sudo dnf -y install mongodb-org 
@@ -92,7 +93,7 @@ sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
 sudo systemctl enable supervisord
 
-sudo dnf -y install grafana
+sudo dnf -y install grafana-9.5.18
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
