@@ -90,8 +90,13 @@ sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
+<<<<<<< HEAD
 mkdir ../metabase
 wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar
+=======
+mkdir ~/metabase
+wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ~/metabase/metabase.jar
+>>>>>>> 91c079cc16d8f300fb2726fc124ba14b0b9e0bee
 
 # install nvm to be able to choose a specific nodejs version
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
