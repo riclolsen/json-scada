@@ -81,6 +81,7 @@ sudo dnf -y install supervisor
 sudo systemctl enable supervisor
 
 sudo dnf -y install grafana
+sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo cp *.ini /etc/supervisord.d/
@@ -94,17 +95,18 @@ source ~/.bashrc
 nvm install 20.13.1
 npm install -g npm
 
-cd ../platform-linux 
-./build.sh
-
 sudo systemctl daemon-reload
 sudo systemctl start postgresql-16
 sudo systemctl start mongod
-#sudo systemctl start grafana
+
+psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
+psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
+psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
+sudo systemctl start grafana
+
 #sudo systemctl start supervisor
 #sudo systemctl start telegraf
 
-psql -U postgres -h 127.0.0.1 -f ../sql/create_tables.sql template1
 mongosh json_scada < ../mongo_seed/a_rs-init.js
 mongosh json_scada < ../mongo_seed/b_create-db.js
 mongoimport --db json_scada --collection protocolDriverInstances --type json --file ../demo-docker/mongo_seed/files/demo_instances.json 
@@ -115,3 +117,5 @@ mongoimport --db json_scada --collection users --type json --file ../demo-docker
 mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
 mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 
+cd ../platform-linux 
+./build.sh
