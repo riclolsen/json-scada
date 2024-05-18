@@ -89,7 +89,7 @@ sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
-sudo systemctl enable supervisor
+sudo systemctl enable supervisord
 
 sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
@@ -99,7 +99,7 @@ mkdir ../metabase
 wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar
 
 # install nvm to be able to choose a specific nodejs version
-curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source ~/.bashrc
 nvm install 20.13.1
 npm install -g npm
@@ -127,5 +127,5 @@ sudo systemctl start grafana-server
 cd ../platform-linux 
 ./build.sh
 
-sudo systemctl start supervisor
+sudo systemctl start supervisord
 sudo systemctl start telegraf
