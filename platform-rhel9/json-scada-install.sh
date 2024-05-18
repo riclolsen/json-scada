@@ -75,6 +75,7 @@ sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
 sudo systemctl enable postgresql-16
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
+sudo cp nginx.conf /etc/nginx/
 sudo systemctl enable nginx
 
 sudo dnf -y install mongodb-org 
