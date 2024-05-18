@@ -1,11 +1,16 @@
 #!/bin/bash
 
 # INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
+# username is suppposed to be jsonscada
+# use git clone to extract repo to /home/jsonscada/json-scada
+# go to ~/json-scada/platform-rhel9 and run this script
 
-#cd
 #sudo dnf -y install git
+#cd
 #git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 #cd json-scada/platform-rhel9
+
+mkdir ../log 
 
 sudo dnf -y update 
 sudo dnf -y remove golang nodejs
@@ -78,16 +83,15 @@ sudo cp telegraf-*.conf /etc/telegraf/telegraf.d/
 sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
+sudo cp *.ini /etc/supervisord.d/
 sudo systemctl enable supervisor
 
 sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
-sudo cp *.ini /etc/supervisord.d/
-
-mkdir ~/metabase
-wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ~/metabase/metabase.jar
+mkdir ../metabase
+wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar
 
 # install nvm to be able to choose a specific nodejs version
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
@@ -102,10 +106,6 @@ sudo systemctl start mongod
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
 psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
 psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
-sudo systemctl start grafana
-
-#sudo systemctl start supervisor
-#sudo systemctl start telegraf
 
 mongosh json_scada < ../mongo_seed/a_rs-init.js
 mongosh json_scada < ../mongo_seed/b_create-db.js
@@ -117,5 +117,10 @@ mongoimport --db json_scada --collection users --type json --file ../demo-docker
 mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
 mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 
+sudo systemctl start grafana
+
 cd ../platform-linux 
 ./build.sh
+
+sudo systemctl start supervisor
+sudo systemctl start telegraf
