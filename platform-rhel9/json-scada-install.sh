@@ -78,13 +78,12 @@ sudo cp telegraf-*.conf /etc/telegraf/telegraf.d/
 sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
+sudo cp *.ini /etc/supervisord.d/
 sudo systemctl enable supervisor
 
 sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
-
-sudo cp *.ini /etc/supervisord.d/
 
 mkdir ~/metabase
 wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ~/metabase/metabase.jar
@@ -102,10 +101,6 @@ sudo systemctl start mongod
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
 psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
 psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
-sudo systemctl start grafana
-
-#sudo systemctl start supervisor
-#sudo systemctl start telegraf
 
 mongosh json_scada < ../mongo_seed/a_rs-init.js
 mongosh json_scada < ../mongo_seed/b_create-db.js
@@ -117,5 +112,10 @@ mongoimport --db json_scada --collection users --type json --file ../demo-docker
 mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
 mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 
+sudo systemctl start grafana
+
 cd ../platform-linux 
 ./build.sh
+
+sudo systemctl start supervisor
+sudo systemctl start telegraf
