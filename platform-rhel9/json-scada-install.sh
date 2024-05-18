@@ -15,7 +15,7 @@ mkdir ../log
 sudo dnf -y update 
 sudo dnf -y remove golang nodejs
 sudo dnf -y install epel-release 
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 php
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo update-crypto-policies --set LEGACY
 
@@ -74,6 +74,9 @@ sudo cp postgresql.conf /var/lib/pgsql/16/data/
 sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
 sudo systemctl enable postgresql-16
 
+sudo cp json_scada_*.conf //etc/nginx/conf.d/
+sudo systemctl enable nginx
+
 sudo dnf -y install mongodb-org 
 sudo cp mongod.conf /etc/
 sudo systemctl enable mongod
@@ -90,13 +93,8 @@ sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
-<<<<<<< HEAD
 mkdir ../metabase
 wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar
-=======
-mkdir ~/metabase
-wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ~/metabase/metabase.jar
->>>>>>> 91c079cc16d8f300fb2726fc124ba14b0b9e0bee
 
 # install nvm to be able to choose a specific nodejs version
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
