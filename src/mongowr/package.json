@@ -1,0 +1,15 @@
+{
+  "name": "mongowr",
+  "version": "0.1.0",
+  "description": "{json:scada} - Mongowr - write protocol data forwarded by another JSON-SCADA installation.",
+  "main": "index",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ricardo Lastra Olsen",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "mongodb": "^6.6.2"
+  }
+}

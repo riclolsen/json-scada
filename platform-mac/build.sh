@@ -82,6 +82,10 @@ cd ../carbone-reports
 npm install
 cd ../backup-mongo
 npm install
+cd ../mongofw
+npm install
+cd ../mongowr
+npm install
 cd ../log-io/ui
 npm install
 npm run build

@@ -1,0 +1,15 @@
+{
+  "name": "mongofw",
+  "version": "0.1.0",
+  "description": "{json:scada} - Mongofw - forward data from protocol drivers to another JSON-SCADA installation.",
+  "main": "index",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ricardo Lastra Olsen",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "mongodb": "^6.6.2"
+  }
+}

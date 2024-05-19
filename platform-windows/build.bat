@@ -135,6 +135,12 @@ call %NPM% install
 cd %SRCPATH%\backup-mongo
 call %NPM% install
 
+cd %SRCPATH\mongofw
+call %NPM% install
+
+cd %SRCPATH\mongowr
+call %NPM% install
+
 cd %SRCPATH%\log-io\ui
 call %NPM% install
 call %NPM% run build
