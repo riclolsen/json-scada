@@ -131,6 +131,8 @@ var processInstancesValidator = {
           'ALARM_BEEP',
           'DYNAMIC_CALCULATIONS',
           'ALARM_PROCESSOR',
+          'MONGOFW',
+          'MONGOWR',
         ],
         description: 'Process name. Required.',
       },
