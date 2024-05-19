@@ -24,22 +24,21 @@
 const Log = require('./simple-logger')
 const { Double } = require('mongodb')
 const { setInterval } = require('timers')
-const dgram = require('dgram');
+const dgram = require('dgram')
 
 // UDP broadcast options
-const udpPort = 12345;
-const udpHostDst = "192.168.0.255";
+const udpPort = 12345
+const udpHostDst = '192.168.0.255'
 // Create a UDP socket
-const udpSocket = dgram.createSocket('udp4');
+const udpSocket = dgram.createSocket('udp4')
 
 udpSocket.bind(udpPort, () => {
   udpSocket.setBroadcast(true)
   // udpSocket.setMulticastInterface('::%eth1');
-});
+})
 
-
-let maxSz = 0;
-let cnt = 0;
+let maxSz = 0
+let cnt = 0
 
 const UserActionsCollectionName = 'userActions'
 const RealtimeDataCollectionName = 'realtimeData'
@@ -93,71 +92,80 @@ module.exports.CustomProcessor = function (
   // EXAMPLE OF CYCLIC PROCESSING AT INTERVALS
   // END EXAMPLE
   // -------------------------------------------------------------------------------------------
-  
+
   const changeStreamUserActions = db
     .collection(RealtimeDataCollectionName)
     .watch(
-      { $match: { operationType: 'update' } }, 
+      { $match: { operationType: 'update' } },
       {
-        fullDocument: 'updateLookup'
+        fullDocument: 'updateLookup',
       }
     )
 
   try {
-    changeStreamUserActions.on('error', change => {
+    changeStreamUserActions.on('error', (change) => {
       if (clientMongo) clientMongo.close()
       clientMongo = null
       Log.log('Custom Process - Error on changeStreamUserActions!')
     })
-    changeStreamUserActions.on('close', change => {
+    changeStreamUserActions.on('close', (change) => {
       Log.log('Custom Process - Closed changeStreamUserActions!')
     })
-    changeStreamUserActions.on('end', change => {
+    changeStreamUserActions.on('end', (change) => {
       if (clientMongo) clientMongo.close()
       clientMongo = null
       Log.log('Custom Process - Ended changeStreamUserActions!')
     })
 
     // start listen to changes
-    changeStreamUserActions.on('change', change => {
+    changeStreamUserActions.on('change', (change) => {
       // Log.log(change.fullDocument)
-      if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
+      if (
+        !Redundancy.ProcessStateIsActive() ||
+        !MongoStatus.HintMongoIsConnected
+      )
         return // do nothing if process is inactive
-  
-      // will send only update data from drivers 
-      if (!change.updateDescription.updatedFields?.sourceDataUpdate)
-        return;
-      if (change.updateDescription.updatedFields?.sourceDataUpdate?.valueBsonAtSource)
-        delete change.updateDescription.updatedFields.sourceDataUpdate.valueBsonAtSource;
+
+      // will send only update data from drivers
+      if (!change.updateDescription.updatedFields?.sourceDataUpdate) return
+      if (
+        change.updateDescription.updatedFields?.sourceDataUpdate
+          ?.valueBsonAtSource
+      )
+        delete change.updateDescription.updatedFields.sourceDataUpdate
+          .valueBsonAtSource
       if (!Redundancy.ProcessStateIsActive()) return // do nothing if process is inactive
       const fwObj = {
         cnt: cnt++,
         operationType: change.operationType,
         documentKey: change.documentKey,
-        updateDescription: change.updateDescription
+        updateDescription: change.updateDescription,
       }
-      const opData = JSON.stringify(fwObj);
-      const message = Buffer.from(opData);
-      if (message.length > maxSz) maxSz = message.length;
-  
+      const opData = JSON.stringify(fwObj)
+      const message = Buffer.from(opData)
+      if (message.length > maxSz) maxSz = message.length
+
       if (message.length > 60000) {
-        console.log('Message too large: ', opData);
-      }
-      else
-      udpSocket.send(message, 0, message.length, udpPort, udpHostDst, (err, bytes) => {
-        if (err) {
-          console.log('UDP error:', err);
-        } else {
-          // console.log('Data sent via UDP', opData);
-          //console.log('Size: ', message.length);
-          //console.log('Max: ', maxSz);
-        }
-        
-      });
-  
+        console.log('Message too large: ', opData)
+      } else
+        udpSocket.send(
+          message,
+          0,
+          message.length,
+          udpPort,
+          udpHostDst,
+          (err, bytes) => {
+            if (err) {
+              console.log('UDP error:', err)
+            } else {
+              // console.log('Data sent via UDP', opData);
+              //console.log('Size: ', message.length);
+              //console.log('Max: ', maxSz);
+            }
+          }
+        )
     })
   } catch (e) {
     Log.log('Custom Process - Error: ' + e)
   }
-
 }

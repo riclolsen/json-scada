@@ -24,11 +24,12 @@
 const Log = require('./simple-logger')
 const { Double } = require('mongodb')
 const { setInterval } = require('timers')
-const dgram = require('node:dgram');
+const dgram = require('node:dgram')
+const Queue = require('queue-fifo')
 
 // UDP broadcast options
-const udpPort = 12345;
-const udpBind = "0.0.0.0";
+const udpPort = 12345
+const udpBind = '0.0.0.0'
 
 const UserActionsCollectionName = 'userActions'
 const RealtimeDataCollectionName = 'realtimeData'
@@ -39,9 +40,11 @@ const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
 const ProtocolConnectionsCollectionName = 'protocolConnections'
 
 let CyclicIntervalHandle = null
+let msgQueue = new Queue() // queue of messages
+let collection = null
 
 // this will be called by the main module when mongo is connected (or reconnected)
-module.exports.CustomProcessor = function (
+module.exports.CustomProcessor = async function (
   clientMongo,
   jsConfig,
   Redundancy,
@@ -49,55 +52,68 @@ module.exports.CustomProcessor = function (
 ) {
   if (clientMongo === null) return
   const db = clientMongo.db(jsConfig.mongoDatabaseName)
-  const collection = db.collection(RealtimeDataCollectionName)
-      
-  const server = dgram.createSocket('udp4');
+  collection = db.collection(RealtimeDataCollectionName)
 
-  let maxSz = 0;
+  const server = dgram.createSocket('udp4')
 
   server.on('error', (err) => {
-    console.error(`server error:\n${err.stack}`);
-    server.close();
-  });
+    console.error(`server error:\n${err.stack}`)
+    server.close()
+  })
 
   server.on('message', (msg, rinfo) => {
     if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
       return // do nothing if process is inactive
 
+    msgQueue.enqueue(msg)
+  })
+
+  server.on('listening', () => {
+    const address = server.address()
+    console.log(`server listening ${address.address}:${address.port}`)
+  })
+
+  server.bind(udpPort, udpBind)
+}
+
+let maxSz = 0
+setInterval(async function () {
+  while (!msgQueue.isEmpty()) {
+    let msg = msgQueue.peek()
+    msgQueue.dequeue()
 
     // console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
-    if (msg.length > maxSz) maxSz = msg.length;
-    console.log('Size: ', msg.length);
-    console.log('Max: ', maxSz);
+    if (msg.length > maxSz) maxSz = msg.length
+    console.log('Size: ', msg.length)
+    console.log('Max: ', maxSz)
 
     try {
-      let dataObj = JSON.parse(msg);
-      // will process only update data from drivers 
-      if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate)
-        return;
+      let dataObj = JSON.parse(msg)
+      // will process only update data from drivers
+      if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate) return
 
       if (dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTag)
-        dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag = new Date(dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag)
-      if (dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTagAtSource)
-        dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource = new Date(dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource)
+        dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
+          new Date(
+            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
+          )
+      if (
+        dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
+          .timeTagAtSource
+      )
+        dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
+          new Date(
+            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
+          )
 
       collection.updateOne(
         {
-          ... dataObj.documentKey
+          ...dataObj.documentKey,
         },
-        { $set: { ... dataObj.updateDescription.updatedFields } }
+        { $set: { ...dataObj.updateDescription.updatedFields } }
       )
-      
-    } catch (e) { 
+    } catch (e) {
       console.log(e)
     }
-
-  });
-
-  server.on('listening', () => {
-    const address = server.address();
-    console.log(`server listening ${address.address}:${address.port}`);
-  });
-
-  server.bind(udpPort, udpBind);
-}
+  }
+}, 100)
