@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
-# username is suppposed to be jsonscada
+# username is supposed to be jsonscada
 # use git clone to extract repo to /home/jsonscada/json-scada
 # go to ~/json-scada/platform-rhel9 and run this script
 
@@ -10,11 +10,12 @@
 # Default credentials: admin / jsonscada
 # Metabase credentials: json@scada.com / jsonscada123
 
-#sudo dnf -y install git
-#cd
-#git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
-#cd json-scada/platform-rhel9
-#sudo sh ./json-scada-install.sh
+# Execute commands below to prepare for this script:
+# sudo dnf -y install git
+# cd /home/jsonscada
+# git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+# cd json-scada/platform-rhel9
+# sudo sh ./json-scada-install.sh
 
 mkdir ../log 
 
