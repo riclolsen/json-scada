@@ -5,6 +5,11 @@
 # use git clone to extract repo to /home/jsonscada/json-scada
 # go to ~/json-scada/platform-rhel9 and run this script
 
+# AFTER INSTALLATION
+# OPEN BROWSER AT http://localhost (must allow popups for issuing controls)
+# Default credentials: admin / jsonscada
+# Metabase credentials: json@scada.com / jsonscada123
+
 #sudo dnf -y install git
 #cd
 #git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
@@ -157,3 +162,5 @@ cd ../platform-linux
 sudo systemctl start supervisord
 sudo systemctl start telegraf
 sudo supervisorctl status
+firefox http://localhost &
+
