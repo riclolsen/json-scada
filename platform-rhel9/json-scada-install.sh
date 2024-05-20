@@ -9,16 +9,17 @@
 #cd
 #git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
 #cd json-scada/platform-rhel9
+#sudo sh ./json-scada-install.sh
 
 mkdir ../log 
 
 sudo dnf -y update 
+sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php
-sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
 sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
