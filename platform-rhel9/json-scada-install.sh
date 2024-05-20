@@ -24,6 +24,25 @@ sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.ta
 export PATH=$PATH:/usr/local/go/bin
 echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc
 
+# for mongodb 
+# https://www.mongodb.com/docs/manual/tutorial/transparent-huge-pages/
+# https://www.mongodb.com/docs/manual/administration/production-checklist-operations/
+sudo sh -c 'echo "vm.max_map_count=102400" >> /etc/sysctl.conf'
+sudo tee /etc/systemd/system/disable-transparent-huge-pages.service  <<EOF
+Description=Disable Transparent Huge Pages (THP)
+DefaultDependencies=no
+After=sysinit.target local-fs.target
+Before=mongod.service
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo never | tee /sys/kernel/mm/transparent_hugepage/enabled > /dev/null'
+[Install]
+WantedBy=basic.target
+EOF
+sudo systemctl enable disable-transparent-huge-pages
+sudo systemctl daemon-reload
+sudo systemctl start disable-transparent-huge-pages
+
 sudo tee /etc/yum.repos.d/mongodb-org-7.0.repo <<EOF
 [mongodb-org-7.0]
 name=MongoDB Repository
