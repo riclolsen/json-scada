@@ -106,9 +106,6 @@ sudo rpm -e mongodb-org mongodb-mongosh
 sudo dnf -y install mongodb-org mongodb-mongosh-shared-openssl3
 sudo cp mongod.conf /etc/
 sudo systemctl enable mongod
-sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
-sudo semodule -X 300 -i my-mongod.pp
-
 
 sudo dnf -y install telegraf
 sudo cp telegraf-*.conf /etc/telegraf/telegraf.d/
@@ -151,8 +148,12 @@ mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbI
 
 sudo systemctl start grafana-server
 
+sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
+sudo semodule -X 300 -i my-mongod.pp
+
 cd ../platform-linux 
 ./build.sh
 
 sudo systemctl start supervisord
 sudo systemctl start telegraf
+sudo supervisorctl status
