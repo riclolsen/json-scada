@@ -106,6 +106,9 @@ sudo rpm -e mongodb-org mongodb-mongosh
 sudo dnf -y install mongodb-org mongodb-mongosh-shared-openssl3
 sudo cp mongod.conf /etc/
 sudo systemctl enable mongod
+sudo ausearch -c 'mongod' --raw | auditlog2allow -M my-mongod
+sudo semodule -X 300 -i my-mongod.pp
+
 
 sudo dnf -y install telegraf
 sudo cp telegraf-*.conf /etc/telegraf/telegraf.d/
