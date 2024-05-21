@@ -130,7 +130,7 @@ sudo -u jsonscada sh -c 'wget https://downloads.metabase.com/v0.49.10/metabase.j
 
 # install nvm (for the jsonscada user) to be able to choose a specific nodejs version
 sudo -u jsonscada sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
-sudo -u jsonscada sh -c 'source ~/.bashrc; nvm install 20.13.1; npm install -g npm'
+sudo -u jsonscada sh -c 'source ~/.bashrc; nvm install 20.13.1; npm install -g npm; source ~/.bashrc;'
 
 sudo systemctl daemon-reload
 sudo systemctl start postgresql-16
@@ -156,10 +156,12 @@ sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
 
 cd ../platform-linux 
-sudo -u jsonscada sh -c './build.sh'
+sudo -u jsonscada sh -c 'source ~/.bashrc;./build.sh'
 
 sudo systemctl start supervisord
 sudo systemctl start telegraf
+
+sleep 10
 sudo supervisorctl status
 sudo -u jsonscada sh -c 'firefox http://localhost &'
 
