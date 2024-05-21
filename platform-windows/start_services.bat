@@ -25,6 +25,9 @@ nssm start JSON_SCADA_process_hist
 REM nssm start JSON_SCADA_config_server_excel
 REM nssm start JSON_SCADA_alarm_beep
 REM nssm start JSON_SCADA_shell_api
+REM nssm start JSON_SCADA_demo_simul
+REM nssm start JSON_SCADA_mongofw
+REM nssm start JSON_SCADA_mongowr
 
 REM SELECT PROTOCOLS TO START
 nssm start JSON_SCADA_iec104client

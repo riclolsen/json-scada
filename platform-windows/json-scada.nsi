@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.32"
-!define VERSION_ "0.32.0.0"
+!define VERSION "v.0.33"
+!define VERSION_ "0.33.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -117,6 +117,9 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
   nsExec::Exec 'net stop JSON_SCADA_config_server_excel'
+  nsExec::Exec 'net stop JSON_SCADA_demo_simul'
+  nsExec::Exec 'net stop JSON_SCADA_mongofw'
+  nsExec::Exec 'net stop JSON_SCADA_mongowr'
   nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
   nsExec::Exec 'net stop JSON_SCADA_shell_api'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
@@ -343,6 +346,12 @@ SetRegView 64
   SetOutPath $INSTDIR\src\demo_simul
   File /a /r "..\src\demo_simul\*.*"
 
+  SetOutPath $INSTDIR\src\mongofw
+  File /a /r "..\src\mongofw\*.*"
+
+  SetOutPath $INSTDIR\src\mongowr
+  File /a /r "..\src\mongowr\*.*"
+
   SetOutPath $INSTDIR\src\grafana_alert2event
   File /a /r "..\src\grafana_alert2event\*.*"
 
@@ -552,6 +561,16 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_demo_simul"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_demo_simul"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_mongofw"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_mongofw"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_mongowr"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_mongowr"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_alarm_beep"`

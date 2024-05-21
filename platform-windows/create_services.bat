@@ -29,7 +29,7 @@ rem nssm set JSON_SCADA_metabase AppEnvironmentExtra MB_JWT_ENABLED="true"
 nssm set JSON_SCADA_metabase Start SERVICE_DELAYED_AUTO_START
 
 rem MONGODB
-nssm install JSON_SCADA_mongodb "C:\json-scada\platform-windows\mongodb-runtime\bin\mongod.exe" --config  "c:\json-scada\platform-windows\mongodb-conf\mongod.cfg" 
+nssm install JSON_SCADA_mongodb "C:\json-scada\platform-windows\mongodb-runtime\bin\mongod.exe" --config "c:\json-scada\platform-windows\mongodb-conf\mongod.cfg" 
 nssm set JSON_SCADA_mongodb Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe" 1 1 2.0 "c:\json-scada\conf\json-scada.json"
@@ -41,14 +41,14 @@ nssm set JSON_SCADA_calculations Start SERVICE_AUTO_START
 REM See log rotation options https://nssm.cc/usage#io
 
 nssm install JSON_SCADA_cs_data_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_data_processor\cs_data_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
-nssm set JSON_SCADA_cs_data_processor AppDirectory  "C:\json-scada\src\cs_data_processor"
+nssm set JSON_SCADA_cs_data_processor AppDirectory "C:\json-scada\src\cs_data_processor"
 nssm set JSON_SCADA_cs_data_processor AppStdout C:\json-scada\log\cs_data_processor.log
 nssm set JSON_SCADA_cs_data_processor AppRotateOnline 1
 nssm set JSON_SCADA_cs_data_processor AppRotateBytes 10000000
 nssm set JSON_SCADA_cs_data_processor Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_cs_custom_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_custom_processor\cs_custom_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
-nssm set JSON_SCADA_cs_custom_processor AppDirectory  "C:\json-scada\src\cs_custom_processor"
+nssm set JSON_SCADA_cs_custom_processor AppDirectory "C:\json-scada\src\cs_custom_processor"
 nssm set JSON_SCADA_cs_custom_processor AppStdout C:\json-scada\log\cs_custom_processor.log
 nssm set JSON_SCADA_cs_custom_processor AppRotateOnline 1
 nssm set JSON_SCADA_cs_custom_processor AppRotateBytes 10000000
@@ -57,7 +57,7 @@ nssm set JSON_SCADA_cs_custom_processor Start SERVICE_AUTO_START
 
 REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token based auth and RBAC)
 
-REM nssm install JSON_SCADA_server_realtime  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
+REM nssm install JSON_SCADA_server_realtime "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
 REM nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
 REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
 rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
@@ -74,7 +74,7 @@ set /a rand=%Random%%%62
 set buffer=!buffer!!char:~%rand%,1!
 if !count! leq !length! goto Loop
 
-nssm install JSON_SCADA_server_realtime_auth  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime_auth\index.js" 
+nssm install JSON_SCADA_server_realtime_auth "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime_auth\index.js" 
 nssm set JSON_SCADA_server_realtime_auth AppDirectory "C:\json-scada\src\server_realtime_auth"
 nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
 nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra JS_JWT_SECRET=%buffer%
@@ -85,11 +85,21 @@ nssm set JSON_SCADA_server_realtime_auth AppRotateBytes 10000000
 rem Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
 rem nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
-nssm install JSON_SCADA_demo_simul  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
+nssm install JSON_SCADA_demo_simul "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
 nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
 nssm set JSON_SCADA_demo_simul Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_alarm_beep  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\alarm_beep\alarm_beep.js" 
+rem Service to send protocol data updates on mongodb to another JSON-SCADA instance (one-way via UDP)
+nssm install JSON_SCADA_mongofw "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\mongofw\index.js" 
+nssm set JSON_SCADA_mongofw AppDirectory "C:\json-scada\src\mongofw"
+nssm set JSON_SCADA_mongofw Start SERVICE_DEMAND_START
+
+rem Service to receive protocol data updates from another JSON-SCADA instance (one-way via UDP)
+nssm install JSON_SCADA_mongowr "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\mongowr\index.js" 
+nssm set JSON_SCADA_mongowr AppDirectory "C:\json-scada\src\mongowr"
+nssm set JSON_SCADA_mongowr Start SERVICE_DEMAND_START
+
+nssm install JSON_SCADA_alarm_beep "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\alarm_beep\alarm_beep.js" 
 nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
 nssm set JSON_SCADA_alarm_beep_auth AppStdout C:\json-scada\log\alarm_beep.log
 nssm set JSON_SCADA_alarm_beep AppRotateOnline 1
@@ -97,14 +107,14 @@ nssm set JSON_SCADA_alarm_beep AppRotateBytes 10000000
 nssm set JSON_SCADA_alarm_beep Start SERVICE_AUTO_START
 
 rem WARNING! This service has no security access control, use with care.
-nssm install JSON_SCADA_config_server_excel  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\config_server_for_excel\index.js" 
+nssm install JSON_SCADA_config_server_excel "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\config_server_for_excel\index.js" 
 nssm set JSON_SCADA_config_server_excel AppDirectory "C:\json-scada\src\config_server_for_excel"
 nssm set JSON_SCADA_config_server_excel Start SERVICE_DEMAND_START
 nssm set JSON_SCADA_config_server_excel AppEnvironmentExtra JS_CSEXCEL_IP_BIND=0.0.0.0 JS_CSEXCEL_HTTP_PORT=10001
 rem JS_CSEXCEL_IP_BIND=127.0.0.1 to enable just local access
 
 rem For use with OSHMI HMI Shell
-rem nssm install JSON_SCADA_shell_api  "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\shell-api\shell-api.js" 
+rem nssm install JSON_SCADA_shell_api "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\shell-api\shell-api.js" 
 rem nssm set JSON_SCADA_shell_api AppDirectory "C:\json-scada\src\shell-api"
 rem nssm set JSON_SCADA_shell_api Start SERVICE_AUTO_START
 
@@ -190,7 +200,7 @@ nssm set JSON_SCADA_plctags AppRotateBytes 10000000
 nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
 
 REM service for OPC-UA Server
-nssm install JSON_SCADA_opcuaserver "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\OPC-UA-Server\index.js"  1 1 "c:\json-scada\conf\json-scada.json"
+nssm install JSON_SCADA_opcuaserver "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\OPC-UA-Server\index.js" 1 1 "c:\json-scada\conf\json-scada.json"
 nssm set JSON_SCADA_opcuaserver AppDirectory "C:\json-scada\src\OPC-UA-Server"
 nssm set JSON_SCADA_opcuaserver AppStdout C:\json-scada\log\opcuaserver.log
 nssm set JSON_SCADA_opcuaserver AppRotateOnline 1
