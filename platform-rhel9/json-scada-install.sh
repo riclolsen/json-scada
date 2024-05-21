@@ -2,13 +2,7 @@
 
 # INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
 # username is supposed to be jsonscada
-# use git clone to extract repo to /home/jsonscada/json-scada
-# go to ~/json-scada/platform-rhel9 and run this script
-
-# AFTER INSTALLATION
-# OPEN BROWSER AT http://localhost (must allow popups for issuing controls)
-# Default credentials: admin / jsonscada
-# Metabase credentials: json@scada.com / jsonscada123
+JS_USERNAME=jsonscada
 
 # Execute commands below to prepare for this script:
 # sudo dnf -y install git
@@ -17,7 +11,12 @@
 # cd json-scada/platform-rhel9
 # sudo sh ./json-scada-install.sh
 
-sudo -u jsonscada sh -c 'mkdir ../log'
+# AFTER INSTALLATION
+# OPEN BROWSER AT http://localhost (must allow popups for issuing controls)
+# Default credentials: admin / jsonscada
+# Metabase credentials: json@scada.com / jsonscada123
+
+sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
@@ -30,8 +29,8 @@ sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
-sudo -u jsonscada sh -c 'export PATH=$PATH:/usr/local/go/bin'
-sudo -u jsonscada sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
+sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
+sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 
 # for mongodb 
 # https://www.mongodb.com/docs/manual/tutorial/transparent-huge-pages/
@@ -106,6 +105,7 @@ sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
 sudo setsebool -P httpd_can_network_connect 1
 sudo systemctl enable nginx
+sudo systemctl enable php-fpm
 
 sudo dnf -y install mongodb-org 
 sudo rpm -e mongodb-org mongodb-mongosh
@@ -125,12 +125,12 @@ sudo dnf -y install grafana-9.5.18
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
-sudo -u jsonscada sh -c 'mkdir ../metabase'
-sudo -u jsonscada sh -c 'wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
+sudo -u $JS_USERNAME sh -c 'wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
 
 # install nvm (for the jsonscada user) to be able to choose a specific nodejs version
-sudo -u jsonscada sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
-sudo -u jsonscada sh -c 'source ~/.bashrc; nvm install 20.13.1; npm install -g npm; source ~/.bashrc;'
+sudo -u $JS_USERNAME sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
+sudo -u $JS_USERNAME sh -c 'source ~/.bashrc; nvm install 20.13.1; npm install -g npm; source ~/.bashrc;'
 
 sudo systemctl daemon-reload
 sudo systemctl start postgresql-16
@@ -156,12 +156,14 @@ sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
 
 cd ../platform-linux 
-sudo -u jsonscada sh -c 'source ~/.bashrc;./build.sh'
+sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh'
 
+sudo systemctl start php-fpm
+sudo systemctl start nginx
 sudo systemctl start supervisord
 sudo systemctl start telegraf
 
 sleep 10
 sudo supervisorctl status
-sudo -u jsonscada sh -c 'firefox http://localhost &'
+sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
 
