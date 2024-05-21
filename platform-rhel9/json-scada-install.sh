@@ -30,8 +30,8 @@ sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc
+sudo -u jsonscada sh -c 'export PATH=$PATH:/usr/local/go/bin'
+sudo -u jsonscada sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 
 # for mongodb 
 # https://www.mongodb.com/docs/manual/tutorial/transparent-huge-pages/
@@ -158,10 +158,10 @@ sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
 
 cd ../platform-linux 
-./build.sh
+sudo -u jsonscada sh -c './build.sh'
 
 sudo systemctl start supervisord
 sudo systemctl start telegraf
 sudo supervisorctl status
-firefox http://localhost &
+sudo -u jsonscada sh -c 'firefox http://localhost &'
 
