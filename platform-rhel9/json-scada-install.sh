@@ -17,7 +17,7 @@
 # cd json-scada/platform-rhel9
 # sudo sh ./json-scada-install.sh
 
-mkdir ../log 
+sudo -u jsonscada sh -c 'mkdir ../log'
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
@@ -125,8 +125,8 @@ sudo dnf -y install grafana-9.5.18
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
-mkdir ../metabase
-wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar
+sudo -u jsonscada sh -c 'mkdir ../metabase'
+sudo -u jsonscada sh -c 'wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
 
 # install nvm (for the jsonscada user) to be able to choose a specific nodejs version
 sudo -u jsonscada sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
