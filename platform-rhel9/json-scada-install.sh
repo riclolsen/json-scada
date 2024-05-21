@@ -128,11 +128,11 @@ sudo systemctl enable grafana-server
 mkdir ../metabase
 wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar
 
-# install nvm to be able to choose a specific nodejs version
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-source ~/.bashrc
-nvm install 20.13.1
-npm install -g npm
+# install nvm (for the jsonscada user) to be able to choose a specific nodejs version
+sudo -u jsonscada sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
+sudo -u jsonscada sh -c 'source ~/.bashrc'
+sudo -u jsonscada sh -c 'nvm install 20.13.1'
+sudo -u jsonscada sh -c 'npm install -g npm'
 
 sudo systemctl daemon-reload
 sudo systemctl start postgresql-16
