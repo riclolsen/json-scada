@@ -121,7 +121,7 @@ sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
 sudo systemctl enable supervisord
 
-sudo dnf -y install grafana-9.5.18
+sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
