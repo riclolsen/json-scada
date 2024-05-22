@@ -108,8 +108,8 @@ namespace Iec10XDriver
                         throw new Exception("Error on connection " + jsConfig.mongoConnectionString);
 
                     Log("MongoDB CMD CS - Start listening for realtime data updates via changestream...");
-                    // observe updates and replaces, avoid updates with sourceDataUpdateField (those are handled by cs_data_processor.js)
-                    var filter = "{ $or: [{ $and:[{ 'updateDescription.updatedFields.sourceDataUpdate': { $exists: false } },{ operationType: 'update' }] }, { operationType: 'replace'}] }";
+                    // observe updates and replaces, avoid updates with sourceDataUpdateField (those are handled by cs_data_processor.js), require protocolDestinations not null
+                    var filter = "{ $or: [{ $and:[{ 'fullDocument.protocolDestinations': { $ne: null } },{ 'updateDescription.updatedFields.sourceDataUpdate': { $exists: false } },{ operationType: 'update' }] }, { operationType: 'replace'}] }";
 
                     var pipeline =
                         new EmptyPipelineDefinition<ChangeStreamDocument<rtData
