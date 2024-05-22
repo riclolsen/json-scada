@@ -3,7 +3,7 @@
 /*
  * Telegraf listener driver.
  *
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -244,6 +244,8 @@ const rtData = function (measurement) {
     protocolSourceCommonAddress: '',
     protocolSourceConnectionNumber: new Double(ConnectionNumber),
     protocolSourceObjectAddress: measurement?.tag,
+    protocolSourceCommandDuration: new Double(0),
+    protocolSourceCommandUseSBO: false,
     alarmState: new Double(-1.0),
     alarmRange: new Double(0.0),
     description: measurement?.description,
@@ -296,6 +298,7 @@ const rtData = function (measurement) {
     priority: new Double(0.0),
     protocolDestinations: null,
     sourceDataUpdate: null,
+    substituted: false,
     supervisedOfCommand: new Double(0.0),
     timeTag: null,
     timeTagAlarm: null,

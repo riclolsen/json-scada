@@ -142,6 +142,8 @@ namespace OPCUAClientDriver
             public BsonString stateTextFalse { get; set; }
             [BsonDefaultValue("")]
             public BsonString stateTextTrue { get; set; }
+            [BsonDefaultValue(false)]
+            public BsonBoolean substituted { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble supervisedOfCommand;
             [BsonDefaultValue("")]
@@ -312,6 +314,7 @@ namespace OPCUAClientDriver
                     protocolDestinations = BsonNull.Value,
                     sourceDataUpdate = BsonNull.Value,
                     supervisedOfCommand = 0.0,
+                    substituted = false,
                     timeTag = BsonNull.Value,
                     timeTagAlarm = BsonNull.Value,
                     timeTagAtSource = BsonNull.Value,
