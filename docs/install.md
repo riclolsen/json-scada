@@ -2,19 +2,25 @@
 
 ## Compatible Hardware/OS Platforms
 
-* Windows 10 or Server x86-64 bits (installer available).
+* Windows 10/11 (Home, Pro, Enterprise or IoT) or Server 2019+ x86-64 bits (installer available).
 
-* Most modern Linux x86-64 bits. Recommend Centos/Redhat 8.2, Oracle Linux 8 or equivalent.
+* Most modern Linux x86-64 bits. Recommend Redhat 9.4 or equivalent such as Rocky, Alma or Oracle Linux (installer script).
 
 * Linux ARM 64 bits.
 
-* Linux ARM 32 bits (only protocol drivers). MongoDB does not support any 32 bit OS.
+* Linux ARM 32 bits (only for protocol drivers). MongoDB does not support any 32 bit OS.
 
 * Mac OSX (x64 Intel or M1).
 
-A full system can run on a single commodity x86 computer but for high performance and high availability on big systems (> 10.000 tags) it is strongly recommended the following hardware
+* If using VirtualBox, configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
 
-* Recent Intel Xeon, AMD Epyc or Threadripper server processors.
+* MongoDB requires AVX instructions on x86 CPU.
+
+* At least 8 GB of RAM and 15 GB of free disk space, dual core CPU.
+
+A full system can run on a single commodity x86 computer but for high performance and high availability on big systems (> 50.000 tags) it is strongly recommended the following hardware
+
+* Modern Intel Xeon, AMD Epyc or Threadripper server processors with 8+ cores.
 
 * 32 GB RAM or more.
 
@@ -22,23 +28,23 @@ A full system can run on a single commodity x86 computer but for high performanc
 
 * Exclusive data disks on 1TB+ NVMe SSDs for PostgreSQL (RAID-1 mirrored for high availability).
 
-* MongoDB replica set cluster with 3 servers.
+* MongoDB replica set cluster with at least 3 servers (one node can be just arbiter). See https://www.mongodb.com/docs/manual/core/replica-set-architectures/.
 
 * 2 PostgreSQL servers with replication.
 
-For large systems (like with more than 200.000 tags), a MongoDB sharded cluster may be needed.
+For very large systems (like with more than 200.000 tags), a MongoDB sharded cluster may be needed.
 
 ## Windows Installer
 
-The Windows Installer has everything needed to run the system (MongoDB, PostgreSQL, Grafana, etc.). It is available in the [releases section](https://github.com/riclolsen/json-scada/releases/).
+The Windows Installer has everything needed to run the system (MongoDB, PostgreSQL, Grafana, Metabase, Nginx, etc.). It is available in the [releases section](https://github.com/riclolsen/json-scada/releases/).
 
 ### REQUIREMENTS
 
-* Windows 10 or Server 2016/2019 (x86-64 bits), 8GB+ RAM.
-* Admin privileges.
-* Windows PowerShell.
-* DotNet Core 5.0.x x64 Runtime.
-* Open SSL 1.1.1m binaries for 64-bit Windows: https://slproweb.com/products/Win32OpenSSL.html.
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 
 ### QUICKSTART
 
@@ -47,11 +53,11 @@ To quickly run the system after installed, open the JSON-SCADA desktop folder an
   - On the JSON-SCADA desktop folder: execute "_Start_Services".
   - On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
 
-The default credentials are user=admin, password=jsonscada.
+The default credentials are user=admin, password=jsonscada. Metabase credentials: username=json@scada.com password=jsonscada123.
 
 The system is preconfigured to connect to a online demo simulation via IEC60870-5-104 protocol with an example point list and some displays.
 
-To issue a command, open the Display Viewer, click on a breaker and push the "Command" button then choose   an action like "open" or "close" and push the action button.
+To issue a command, open the Display Viewer, click on a breaker and push the "Command" button then choose an action like "open" or "close" and push the action button.
 
 The SVG display files are in "c:\json-scada\src\htdocs\svg\". The configuration files are in "c:\json-scada\conf\".
 
@@ -59,9 +65,21 @@ To edit and create new SVG displays, use the Inkscape+SAGE (shortcut in the JSON
 
 By default, the system is configured to allow HTTP access only by the local machine.
 To allow other IP addresses edit the "c:\json-scada\conf\nginx_access_control.conf" file.
-To configure safe remote client access, configure IP address access control, HTTPS, client certificates and user authentication directly in the Nginx configuration files.
+To configure safe remote client access, configure IP address access control, HTTPS, client certificates directly in the Nginx configuration files in "c:\json-scada\conf\".
 
-For more info about configuration please read the documentation.
+For more info about configuration please read the protocols documentation.
+
+## RHEL9.4 and compatible systems (automated installation)
+
+Execute commands below for scripted installation:
+
+    # firstly create a user named "jsonscada" that can do "sudo". Login as "jsonscada".
+
+    sudo dnf -y install git
+    cd /home/jsonscada
+    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+    cd json-scada/platform-rhel9
+    sudo sh ./json-scada-install.sh
 
 ## Manual Installation
 
@@ -69,7 +87,7 @@ To install JSON-SCADA manually, it is required to install all the requirements f
 
 ### 1. MongoDB Server
 
-Versions 4.2.x, 4.4.x or 5.0.x - Lower versions are not supported.
+Versions 6.x.x or 7.x.x - Lower versions are not tested or supported. Newer versions can work but were not tested.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
@@ -80,15 +98,14 @@ The _Replica Set_ feature must be enabled, even when just one server is used bec
 
 MongoDB supports many architectures, it is very flexible. You can deploy on just one server, on the classic 3 member replica set or on a big sharded cluster (with MongoS and config servers).
 
-* https://docs.mongodb.com/manual/core/sharded-cluster-components/
-
-For not trusted or open to Internet networks it is important to use TLS for MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates.
+For not trusted or open to Internet networks it is important to use TLS for MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates. Configure "c:\json-scada\conf\json-scada.json" accordingly. Mongodb user auth is optional.
 
 * https://docs.mongodb.com/manual/tutorial/configure-ssl/
+* https://www.mongodb.com/docs/manual/core/authentication/
 
 ### 2. PostgreSQL / TimescaleDB
 
-PostgreSQL version 12, 13 or 14. TimescaleDB version 1.7 to 2.2.1 or newer. Previous versions can work but are not recommended. Newer versions can work but were not tested.
+PostgreSQL version 12 - 16. TimescaleDB version 2.x.x. Previous versions can work but are not recommended. Newer versions can work but were not tested.
 
 * https://www.timescale.com/products
 * https://docs.timescale.com/latest/getting-started/installation
@@ -105,7 +122,7 @@ Replication to a Standby server is recommended for high availability.
 
 ### 3. Grafana
 
-Grafana version 8.x.x. Previous versions can work but are not recommended.
+Grafana version 9.x.x, 10.x.x or 11.x.x, OSS or Enterprise editions. Previous versions may work but are not recommended.
 
 * https://grafana.com/grafana/download
 * https://grafana.com/docs/grafana/latest/installation/
@@ -114,29 +131,31 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 4. Node.js
 
-* Node.js version 14.x. Previous versions are not tested or supported.
+* Node.js version 20.x.x. Previous versions may work, but are not tested or supported.
 * https://nodejs.org/en/
 
 ### 5. Golang
 
-* Golang version 1.14.x. Previous versions are not tested or supported.
+* Golang version 1.22.x. Previous versions may work, but are not tested or supported.
 * https://golang.org/dl/
 
-### 6. DotNet Core
+### 6. DotNet
 
-* DotNet Core version 5.0.x. Previous versions are not tested or supported.
+* DotNet version 6.0.x. Previous versions are not tested or supported.
 * https://dotnet.microsoft.com/download
 
 ### 7. Other recommended software tools
 
-* Open SSL Light 1.1.1m (for Windows) - https://slproweb.com/download/Win64OpenSSL_Light-1_1_1m.msi.
-* Nginx or some other web server - https://nginx.org/.
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://sourceforge.net/projects/oshmiopensubstationhmi/ or https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
+* Open SSL Light 1.1.1m (for Windows) - https://slproweb.com/download/Win64OpenSSL_Light-1_1_1m.msi.
+* NSSM (for Windows) - https://nssm.cc/
+* Visual Studio Community (for Windows) - https://visualstudio.microsoft.com/vs/community/
+* Supervisor (for Linux) - http://supervisord.org/installing.html
+* Visual Studio Code - https://code.visualstudio.com/
+* Nginx or some other web server - https://nginx.org/.
 * MongoDB Compass - https://www.mongodb.com/products/compass
 * Git - https://git-scm.com/
-* Visual Studio Code - https://code.visualstudio.com/
-* Supervisor (for Linux) - http://supervisord.org/installing.html
-* NSSM (for Windows) - https://nssm.cc/
+* Metabase - https://www.metabase.com/start/oss/
 
 ## JSON-SCADA Processes - Build and Setup
 
@@ -344,9 +363,9 @@ Use the manager tool to start, stop and monitor the system
 
 ### NSSM Configuration on Windows (not necessary if used the Windows installer)
 
-Install the NSSM tool. It can be installed in c:\json-scada\bin\ .
+Install the NSSM tool. It can be installed in "c:\json-scada\platform-windows\".
 
-Use the tool create necessary services.
+Use the tool to create necessary services. See "C:\json-scada\platform-windows\create_services.bat".
 
     cd c:\json-scada\bin
     nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe"
