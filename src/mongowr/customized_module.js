@@ -80,24 +80,29 @@ let maxSz = 0
 let cnt = -1
 let cntLost = 0
 let cntPrMx = 0
-setInterval(async function () {
+
+setTimeout(procQueue, 1000)
+async function procQueue() {
   let cntPr = 0
   while (!msgQueue.isEmpty()) {
     cntPr++
     if (cntPr > cntPrMx) cntPrMx = cntPr
-    if (cntPr > 50) return
-    const msgRaw = msgQueue.peek()
-    msgQueue.dequeue()
-
-    const buffer = zlib.inflateSync(msgRaw)
-    const msg = buffer.toString('utf8')
-
-    if (msg.length > maxSz) maxSz = msg.length
-    Log.log('Size: ' + msg.length)
-    Log.log('Max: ' + maxSz)
-    Log.log('CntPrMx: ' + cntPrMx)
-
+    if (cntPr > 50) {
+      setTimeout(procQueue, 100)
+      return
+    }
     try {
+      const msgRaw = msgQueue.peek()
+      msgQueue.dequeue()
+
+      const buffer = zlib.inflateSync(msgRaw)
+      const msg = buffer.toString('utf8')
+
+      if (msg.length > maxSz) maxSz = msg.length
+      Log.log('Size: ' + msg.length)
+      Log.log('Max: ' + maxSz)
+      Log.log('CntPrMx: ' + cntPrMx)
+
       const dataObj = JSON.parse(msg)
       if (!dataObj?.cnt) {
         Log.log('Unexpected format')
@@ -137,4 +142,6 @@ setInterval(async function () {
       Log.log('Error: ' + e)
     }
   }
-}, 100)
+
+  setTimeout(procQueue, 100)
+}

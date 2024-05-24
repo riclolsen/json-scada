@@ -27,7 +27,6 @@ const { setInterval } = require('timers')
 const dgram = require('dgram')
 const Queue = require('queue-fifo')
 const zlib = require('zlib')
-// const { setTimeout } = require('timers/promises')
 
 // UDP broadcast options
 const udpPort = 12345
@@ -108,7 +107,8 @@ module.exports.CustomProcessor = function (
 let maxSz = 0
 let cnt = 0
 
-setInterval(async function () {
+setTimeout(procQueue, 1000)
+async function procQueue() {
   let cntSeq = 0
   while (!chgQueue.isEmpty()) {
     const change = chgQueue.peek()
@@ -138,6 +138,7 @@ setInterval(async function () {
     if (message.length > 60000) {
       Log.log('Message too large: ' + message.length)
       cnt--
+      setTimeout(procQueue, 100)
       return
     }
     const buff = Buffer.from(message)
@@ -156,8 +157,13 @@ setInterval(async function () {
     // Log.log('Data sent via UDP' + opData);
     Log.log('Size: ' + buff.length)
     Log.log('Message count ' + fwObj.cnt)
-    Log.log('Max: ' + maxSz);
+    Log.log('Max: ' + maxSz)
     Log.log('Seq count ' + cntSeq++)
-    if (cntSeq > 75) return
+    if (cntSeq > 75) {
+      setTimeout(procQueue, 100)
+      return
+    }
   }
-}, 100)
+
+  setTimeout(procQueue, 100)
+}
