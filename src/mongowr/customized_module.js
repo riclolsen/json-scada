@@ -26,6 +26,7 @@ const { Double } = require('mongodb')
 const { setInterval } = require('timers')
 const dgram = require('node:dgram')
 const Queue = require('queue-fifo')
+const zlib = require('zlib')
 
 // UDP broadcast options
 const udpPort = 12345
@@ -39,7 +40,6 @@ const ProcessInstancesCollectionName = 'processInstances'
 const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
 const ProtocolConnectionsCollectionName = 'protocolConnections'
 
-let CyclicIntervalHandle = null
 let msgQueue = new Queue() // queue of messages
 let collection = null
 
@@ -57,7 +57,7 @@ module.exports.CustomProcessor = async function (
   const server = dgram.createSocket('udp4')
 
   server.on('error', (err) => {
-    console.error(`server error:\n${err.stack}`)
+    Log.log(`Server error:\n${err.stack}`)
     server.close()
   })
 
@@ -65,12 +65,18 @@ module.exports.CustomProcessor = async function (
     if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
       return // do nothing if process is inactive
 
-    msgQueue.enqueue(msg)
+    zlib.inflate(msg, (err, buffer) => {
+      if (err) { 
+        Log.log('Error decompressing')
+        return
+      }
+      msgQueue.enqueue(buffer.toString('utf8'))
+    })
   })
 
   server.on('listening', () => {
     const address = server.address()
-    console.log(`server listening ${address.address}:${address.port}`)
+    Log.log(`server listening ${address.address}:${address.port}`)
   })
 
   server.bind(udpPort, udpBind)
@@ -82,10 +88,10 @@ setInterval(async function () {
     let msg = msgQueue.peek()
     msgQueue.dequeue()
 
-    // console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
+    // Log.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
     if (msg.length > maxSz) maxSz = msg.length
-    console.log('Size: ', msg.length)
-    console.log('Max: ', maxSz)
+    Log.log('Size: ' + msg.length)
+    Log.log('Max: ' + maxSz)
 
     try {
       let dataObj = JSON.parse(msg)
@@ -113,7 +119,7 @@ setInterval(async function () {
         { $set: { ...dataObj.updateDescription.updatedFields } }
       )
     } catch (e) {
-      console.log(e)
+      Log.log(e)
     }
   }
 }, 100)

@@ -25,6 +25,7 @@ const Log = require('./simple-logger')
 const { Double } = require('mongodb')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
+const zlib = require('zlib')
 
 // UDP broadcast options
 const udpPort = 12345
@@ -97,9 +98,7 @@ module.exports.CustomProcessor = function (
     .collection(RealtimeDataCollectionName)
     .watch(
       { $match: { operationType: 'update' } },
-      {
-        fullDocument: 'updateLookup',
-      }
+      { fullDocument: 'updateLookup' }
     )
 
   try {
@@ -119,7 +118,7 @@ module.exports.CustomProcessor = function (
 
     // start listen to changes
     changeStreamUserActions.on('change', (change) => {
-      // Log.log(change.fullDocument)
+      // Log.log(JSON.stringify(change.fullDocument))
       if (
         !Redundancy.ProcessStateIsActive() ||
         !MongoStatus.HintMongoIsConnected
@@ -127,43 +126,49 @@ module.exports.CustomProcessor = function (
         return // do nothing if process is inactive
 
       // will send only update data from drivers
-      if (!change.updateDescription.updatedFields?.sourceDataUpdate) return
+      if (!change?.updateDescription?.updatedFields?.sourceDataUpdate) return
       if (
-        change.updateDescription.updatedFields?.sourceDataUpdate
+        change?.updateDescription?.updatedFields?.sourceDataUpdate
           ?.valueBsonAtSource
       )
         delete change.updateDescription.updatedFields.sourceDataUpdate
           .valueBsonAtSource
-      if (!Redundancy.ProcessStateIsActive()) return // do nothing if process is inactive
+      if (change?.updateDescription?.truncatedArrays)
+        delete change.updateDescription.truncatedArrays
+
       const fwObj = {
         cnt: cnt++,
+        tag: change?.fullDocument?.tag,
         operationType: change.operationType,
         documentKey: change.documentKey,
         updateDescription: change.updateDescription,
       }
       const opData = JSON.stringify(fwObj)
-      const message = Buffer.from(opData)
-      if (message.length > maxSz) maxSz = message.length
-
-      if (message.length > 60000) {
-        console.log('Message too large: ', opData)
-      } else
+      zlib.deflate(opData, (err, message) => {
+        Log.log(opData.length + ' ' + message.length)
+        if (message.length > maxSz) maxSz = message.length
+        if (message.length > 60000) {
+          Log.log('Message too large: ' + message.length)
+          return
+        }
+        const buff = Buffer.from(message)
         udpSocket.send(
-          message,
+          buff,
           0,
-          message.length,
+          buff.length,
           udpPort,
           udpHostDst,
           (err, bytes) => {
             if (err) {
-              console.log('UDP error:', err)
+              Log.log('UDP error:' + err)
             } else {
-              // console.log('Data sent via UDP', opData);
-              //console.log('Size: ', message.length);
-              //console.log('Max: ', maxSz);
+              // Log.log('Data sent via UDP' + opData);
+              Log.log('Size: ' + buff.length)
+              // Log.log('Max: ' + maxSz);
             }
           }
         )
+      })
     })
   } catch (e) {
     Log.log('Custom Process - Error: ' + e)
