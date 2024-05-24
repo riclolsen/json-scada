@@ -61,10 +61,12 @@ module.exports.CustomProcessor = async function (
     server.close()
   })
 
-  server.on('message', (msg, rinfo) => {
+  server.on('message', (msgRaw, rinfo) => {
     if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
       return // do nothing if process is inactive
 
+    const buffer = zlib.inflateSync(msgRaw)
+    const msg = buffer.toString('utf8')
     msgQueue.enqueue(msg)
   })
 
@@ -87,16 +89,16 @@ async function procQueue() {
   while (!msgQueue.isEmpty()) {
     cntPr++
     if (cntPr > cntPrMx) cntPrMx = cntPr
-    if (cntPr > 50) {
+    if (cntPr > 200) {
       setTimeout(procQueue, 100)
       return
     }
     try {
-      const msgRaw = msgQueue.peek()
+      const msg = msgQueue.peek()
       msgQueue.dequeue()
 
-      const buffer = zlib.inflateSync(msgRaw)
-      const msg = buffer.toString('utf8')
+      //const buffer = zlib.inflateSync(msgRaw)
+      //const msg = buffer.toString('utf8')
 
       if (msg.length > maxSz) maxSz = msg.length
       Log.log('Size: ' + msg.length)
