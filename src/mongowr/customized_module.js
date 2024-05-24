@@ -65,13 +65,7 @@ module.exports.CustomProcessor = async function (
     if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
       return // do nothing if process is inactive
 
-    zlib.inflate(msg, (err, buffer) => {
-      if (err) { 
-        Log.log('Error decompressing')
-        return
-      }
-      msgQueue.enqueue(buffer.toString('utf8'))
-    })
+    msgQueue.enqueue(msg)
   })
 
   server.on('listening', () => {
@@ -83,18 +77,39 @@ module.exports.CustomProcessor = async function (
 }
 
 let maxSz = 0
+let cnt = -1
+let cntLost = 0
+let cntPrMx = 0
 setInterval(async function () {
+  let cntPr = 0
   while (!msgQueue.isEmpty()) {
-    let msg = msgQueue.peek()
+    cntPr++
+    if (cntPr > cntPrMx) cntPrMx = cntPr
+    if (cntPr > 50) return
+    const msgRaw = msgQueue.peek()
     msgQueue.dequeue()
 
-    // Log.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
+    const buffer = zlib.inflateSync(msgRaw)
+    const msg = buffer.toString('utf8')
+
     if (msg.length > maxSz) maxSz = msg.length
     Log.log('Size: ' + msg.length)
     Log.log('Max: ' + maxSz)
+    Log.log('CntPrMx: ' + cntPrMx)
 
     try {
-      let dataObj = JSON.parse(msg)
+      const dataObj = JSON.parse(msg)
+      if (!dataObj?.cnt) {
+        Log.log('Unexpected format')
+      }
+      if (dataObj.cnt - cnt > 1 && cnt != -1) {
+        Log.log('Message lost # ' + (dataObj.cnt - 1))
+        cntLost += dataObj.cnt - cnt
+      }
+      cnt = dataObj.cnt
+      Log.log('Total lost: ' + cntLost)
+      Log.log('                 Cnt: ' + dataObj.cnt)
+
       // will process only update data from drivers
       if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate) return
 
@@ -112,14 +127,14 @@ setInterval(async function () {
             dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
           )
 
-      collection.updateOne(
+      await collection.updateOne(
         {
           ...dataObj.documentKey,
         },
         { $set: { ...dataObj.updateDescription.updatedFields } }
       )
     } catch (e) {
-      Log.log(e)
+      Log.log('Error: ' + e)
     }
   }
 }, 100)
