@@ -67,7 +67,8 @@ module.exports.CustomProcessor = async function (
 
     const buffer = zlib.inflateSync(msgRaw)
     const msg = buffer.toString('utf8')
-    msgQueue.enqueue(msg)
+    const dataObj = JSON.parse(msg)
+    msgQueue.enqueue(dataObj)
   })
 
   server.on('listening', () => {
@@ -94,18 +95,16 @@ async function procQueue() {
       return
     }
     try {
-      const msg = msgQueue.peek()
+      const dataObj = msgQueue.peek()
       msgQueue.dequeue()
 
-      //const buffer = zlib.inflateSync(msgRaw)
-      //const msg = buffer.toString('utf8')
+      //if (msg.length > maxSz) maxSz = msg.length
+      //Log.log('Size: ' + msg.length)
+      //Log.log('Max: ' + maxSz)
+      //Log.log('CntPrMx: ' + cntPrMx)
+      Log.log('Queue Size: ' + msgQueue.size())
 
-      if (msg.length > maxSz) maxSz = msg.length
-      Log.log('Size: ' + msg.length)
-      Log.log('Max: ' + maxSz)
-      Log.log('CntPrMx: ' + cntPrMx)
-
-      const dataObj = JSON.parse(msg)
+      // const dataObj = JSON.parse(msg)
       if (!dataObj?.cnt) {
         Log.log('Unexpected format')
       }
