@@ -103,7 +103,10 @@ async function procQueue() {
       //Log.log('Max: ' + maxSz)
       //Log.log('CntPrMx: ' + cntPrMx)
       Log.log('Queue Size: ' + msgQueue.size())
-
+      if (msgQueue.size() > 5000) {
+        msgQueue.clear()
+        Log.log('Queue too large! Emptied!')
+      }
       // const dataObj = JSON.parse(msg)
       if (!dataObj?.cnt) {
         Log.log('Unexpected format')
@@ -134,10 +137,9 @@ async function procQueue() {
           )
 
       await collection.updateOne(
-        {
-          ...dataObj.documentKey,
-        },
-        { $set: { ...dataObj.updateDescription.updatedFields } }
+        { ...dataObj.documentKey },
+        { $set: { ...dataObj.updateDescription.updatedFields } },
+        { writeConcern: { w: 0 } }
       )
     } catch (e) {
       Log.log('Error: ' + e)
