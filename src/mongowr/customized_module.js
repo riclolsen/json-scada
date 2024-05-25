@@ -79,17 +79,21 @@ module.exports.CustomProcessor = async function (
   server.bind(udpPort, udpBind)
 }
 
-let maxSz = 0
 let cnt = -1
 let cntLost = 0
-let cntPrMx = 0
 
 setTimeout(procQueue, 1000)
 async function procQueue() {
   let cntPr = 0
+
+  if (msgQueue.size() > 5000) {
+    msgQueue.clear()
+    Log.log('Queue too large! Emptied!')
+  }
+
+  const updateOps = []
   while (!msgQueue.isEmpty()) {
     cntPr++
-    if (cntPr > cntPrMx) cntPrMx = cntPr
     if (cntPr > 200) {
       setTimeout(procQueue, 100)
       return
@@ -101,7 +105,6 @@ async function procQueue() {
       //if (msg.length > maxSz) maxSz = msg.length
       //Log.log('Size: ' + msg.length)
       //Log.log('Max: ' + maxSz)
-      //Log.log('CntPrMx: ' + cntPrMx)
       Log.log('Queue Size: ' + msgQueue.size())
 
       if (!dataObj?.cnt) {
@@ -132,20 +135,20 @@ async function procQueue() {
             dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
           )
 
-      await collection.updateOne(
-        { ...dataObj.documentKey },
-        { $set: { ...dataObj.updateDescription.updatedFields } },
-        { writeConcern: { w: 0 } }
-      )
+      updateOps.push({
+        updateOne: {
+          filter: { ...dataObj.documentKey },
+          update: { $set: { ...dataObj.updateDescription.updatedFields } },
+        },
+      })     
     } catch (e) {
       Log.log('Error: ' + e)
     }
   }
 
-  if (msgQueue.size() > 5000) {
-    msgQueue.clear()
-    Log.log('Queue too large! Emptied!')
+  if (updateOps.length > 0) {
+    const result = await collection.bulkWrite(updateOps)
+    Log.log(JSON.stringify(result))
   }
-
   setTimeout(procQueue, 100)
 }

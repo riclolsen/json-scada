@@ -159,8 +159,8 @@ async function procQueue() {
     Log.log('Message count ' + fwObj.cnt)
     Log.log('Max: ' + maxSz)
     Log.log('Seq count ' + cntSeq++)
-    if (cntSeq > 75) {
-      setTimeout(procQueue, 100)
+    if (cntSeq > 75 || buff.length > 6000) {
+      setTimeout(procQueue, 100+100*parseInt(buff.length/1500))
       return
     }
   }
