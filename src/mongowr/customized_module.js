@@ -65,10 +65,7 @@ module.exports.CustomProcessor = async function (
     if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
       return // do nothing if process is inactive
 
-    const buffer = zlib.inflateSync(msgRaw)
-    const msg = buffer.toString('utf8')
-    const dataObj = JSON.parse(msg)
-    msgQueue.enqueue(dataObj)
+    msgQueue.enqueue(msgRaw)
   })
 
   server.on('listening', () => {
@@ -97,9 +94,13 @@ async function procQueue() {
       break
     }
     try {
-      const arrObj = msgQueue.peek()
+      const msgRaw = msgQueue.peek()
       msgQueue.dequeue()
 
+      const buffer = zlib.inflateSync(msgRaw)
+      const msg = buffer.toString('utf8')
+      const arrObj = JSON.parse(msg)
+  
       if (arrObj.length)
       for (let i = 0; i < arrObj.length; i++) {
         const dataObj = arrObj[i]
