@@ -103,11 +103,7 @@ async function procQueue() {
       //Log.log('Max: ' + maxSz)
       //Log.log('CntPrMx: ' + cntPrMx)
       Log.log('Queue Size: ' + msgQueue.size())
-      if (msgQueue.size() > 5000) {
-        msgQueue.clear()
-        Log.log('Queue too large! Emptied!')
-      }
-      // const dataObj = JSON.parse(msg)
+
       if (!dataObj?.cnt) {
         Log.log('Unexpected format')
       }
@@ -144,6 +140,11 @@ async function procQueue() {
     } catch (e) {
       Log.log('Error: ' + e)
     }
+  }
+
+  if (msgQueue.size() > 5000) {
+    msgQueue.clear()
+    Log.log('Queue too large! Emptied!')
   }
 
   setTimeout(procQueue, 100)
