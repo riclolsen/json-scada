@@ -106,7 +106,8 @@ module.exports.CustomProcessor = function (
 }
 
 let maxSz = 0
-let cnt = 0
+let cntChg = 0
+let pktCnt = 0
 
 setTimeout(procQueue, 1000)
 async function procQueue() {
@@ -128,7 +129,7 @@ async function procQueue() {
         delete change.updateDescription.truncatedArrays
 
       const obj = {
-        cnt: cnt++,
+        cnt: cntChg++,
         tag: change?.fullDocument?.tag,
         operationType: change.operationType,
         documentKey: change.documentKey,
@@ -137,12 +138,12 @@ async function procQueue() {
       const chgLen = JSON.stringify(obj).length
       if (chgLen > 60000) {
         Log.log('Discarded change too large: ' + chgLen)
-        cnt--
+        cntChg--
         continue
       }
       strSz += chgLen
       fwArr.push(obj)
-      if (strSz > 5000) break
+      if (strSz > 7000) break
     }
     const opData = JSON.stringify(fwArr)
     const message = zlib.deflateSync(opData)
@@ -163,13 +164,15 @@ async function procQueue() {
         }
       }
     )
-    await sleep(15)
+    pktCnt++
+    await sleep(20)
     // Log.log('Data sent via UDP' + opData);
     Log.log('Queue Size: ' + chgQueue.size())
     Log.log('Size: ' + buff.length)
-    Log.log('Change count ' + cnt)
     Log.log('Max: ' + maxSz)
     Log.log('Seq count ' + cntSeq++)
+    Log.log('                  Chg count ' + cntChg)
+    Log.log('                  Pkt count ' + pktCnt)
     if (cntSeq > 50 || buff.length > 6000) {
       setTimeout(procQueue, 100 + 100 * parseInt(buff.length / 1500))
       return

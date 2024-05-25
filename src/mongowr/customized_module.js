@@ -42,6 +42,7 @@ const ProtocolConnectionsCollectionName = 'protocolConnections'
 
 let msgQueue = new Queue() // queue of messages
 let collection = null
+let pktCnt = 0
 
 // this will be called by the main module when mongo is connected (or reconnected)
 module.exports.CustomProcessor = async function (
@@ -66,6 +67,7 @@ module.exports.CustomProcessor = async function (
       return // do nothing if process is inactive
 
     msgQueue.enqueue(msgRaw)
+    pktCnt++
   })
 
   server.on('listening', () => {
@@ -115,7 +117,8 @@ async function procQueue() {
         }
         cnt = dataObj.cnt
         Log.log('Total lost: ' + cntLost)
-        Log.log('                 Cnt: ' + dataObj.cnt)
+        Log.log('                 Chg count: ' + dataObj.cnt)
+        Log.log('                 Pkt count: ' + pktCnt)
 
         // will process only update data from drivers
         if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate) return
@@ -150,5 +153,5 @@ async function procQueue() {
     const result = await collection.bulkWrite(updateOps)
     Log.log(JSON.stringify(result))
   }
-  setTimeout(procQueue, 100)
+  setTimeout(procQueue, 150)
 }
