@@ -84,63 +84,62 @@ let cntLost = 0
 
 setTimeout(procQueue, 1000)
 async function procQueue() {
-  let cntPr = 0
-
   if (msgQueue.size() > 5000) {
     msgQueue.clear()
     Log.log('Queue too large! Emptied!')
   }
 
+  let cntPr = 0
   const updateOps = []
   while (!msgQueue.isEmpty()) {
     cntPr++
-    if (cntPr > 200) {
-      setTimeout(procQueue, 100)
-      return
+    if (cntPr > 50) {
+      break
     }
     try {
-      const dataObj = msgQueue.peek()
+      const arrObj = msgQueue.peek()
       msgQueue.dequeue()
 
-      //if (msg.length > maxSz) maxSz = msg.length
-      //Log.log('Size: ' + msg.length)
-      //Log.log('Max: ' + maxSz)
-      Log.log('Queue Size: ' + msgQueue.size())
+      if (arrObj.length)
+      for (let i = 0; i < arrObj.length; i++) {
+        const dataObj = arrObj[i]
+        Log.log('Queue Size: ' + msgQueue.size())
 
-      if (!dataObj?.cnt) {
-        Log.log('Unexpected format')
+        if (!dataObj?.cnt) {
+          Log.log('Unexpected format')
+        }
+        if (dataObj.cnt - cnt > 1 && cnt != -1) {
+          Log.log('Message lost # ' + (dataObj.cnt - 1))
+          cntLost += dataObj.cnt - cnt
+        }
+        cnt = dataObj.cnt
+        Log.log('Total lost: ' + cntLost)
+        Log.log('                 Cnt: ' + dataObj.cnt)
+
+        // will process only update data from drivers
+        if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate) return
+
+        if (dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTag)
+          dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
+            new Date(
+              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
+            )
+        if (
+          dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
+            .timeTagAtSource
+        )
+          dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
+            new Date(
+              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
+            )
+
+        updateOps.push({
+          updateOne: {
+            filter: { ...dataObj.documentKey },
+            update: { $set: { ...dataObj.updateDescription.updatedFields } },
+          },
+        })
       }
-      if (dataObj.cnt - cnt > 1 && cnt != -1) {
-        Log.log('Message lost # ' + (dataObj.cnt - 1))
-        cntLost += dataObj.cnt - cnt
-      }
-      cnt = dataObj.cnt
-      Log.log('Total lost: ' + cntLost)
-      Log.log('                 Cnt: ' + dataObj.cnt)
-
-      // will process only update data from drivers
-      if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate) return
-
-      if (dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTag)
-        dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
-          new Date(
-            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
-          )
-      if (
-        dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
-          .timeTagAtSource
-      )
-        dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
-          new Date(
-            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
-          )
-
-      updateOps.push({
-        updateOne: {
-          filter: { ...dataObj.documentKey },
-          update: { $set: { ...dataObj.updateDescription.updatedFields } },
-        },
-      })     
     } catch (e) {
       Log.log('Error: ' + e)
     }

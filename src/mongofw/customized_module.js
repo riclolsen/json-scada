@@ -96,6 +96,7 @@ module.exports.CustomProcessor = function (
 
       // will send only update data from drivers
       if (!change?.updateDescription?.updatedFields?.sourceDataUpdate) return
+      if (!change?.operationType) return
 
       chgQueue.enqueue(change)
     })
@@ -111,36 +112,44 @@ setTimeout(procQueue, 1000)
 async function procQueue() {
   let cntSeq = 0
   while (!chgQueue.isEmpty()) {
-    const change = chgQueue.peek()
-    chgQueue.dequeue()
+    let fwArr = []
+    let strSz = 0
+    while (!chgQueue.isEmpty()) {
+      const change = chgQueue.peek()
+      chgQueue.dequeue()
 
-    if (
-      change?.updateDescription?.updatedFields?.sourceDataUpdate
-        ?.valueBsonAtSource
-    )
-      delete change.updateDescription.updatedFields.sourceDataUpdate
-        .valueBsonAtSource
-    if (change?.updateDescription?.truncatedArrays)
-      delete change.updateDescription.truncatedArrays
+      if (
+        change?.updateDescription?.updatedFields?.sourceDataUpdate
+          ?.valueBsonAtSource
+      )
+        delete change.updateDescription.updatedFields.sourceDataUpdate
+          .valueBsonAtSource
+      if (change?.updateDescription?.truncatedArrays)
+        delete change.updateDescription.truncatedArrays
 
-    const fwObj = {
-      cnt: cnt++,
-      tag: change?.fullDocument?.tag,
-      operationType: change.operationType,
-      documentKey: change.documentKey,
-      updateDescription: change.updateDescription,
+      const obj = {
+        cnt: cnt++,
+        tag: change?.fullDocument?.tag,
+        operationType: change.operationType,
+        documentKey: change.documentKey,
+        updateDescription: change.updateDescription,
+      }
+      const chgLen = JSON.stringify(obj).length
+      if (chgLen > 60000) {
+        Log.log('Discarded change too large: ' + chgLen)
+        cnt--
+        continue
+      }
+      strSz += chgLen
+      fwArr.push(obj)
+      if (strSz > 5000) break
     }
-    const opData = JSON.stringify(fwObj)
+    const opData = JSON.stringify(fwArr)
     const message = zlib.deflateSync(opData)
 
     Log.log(opData.length + ' ' + message.length)
-    if (message.length > maxSz) maxSz = message.length
-    if (message.length > 60000) {
-      Log.log('Message too large: ' + message.length)
-      cnt--
-      setTimeout(procQueue, 100)
-      return
-    }
+    Log.log('Objects: ' + fwArr.length)
+
     const buff = Buffer.from(message)
     await udpSocket.send(
       buff,
@@ -154,16 +163,22 @@ async function procQueue() {
         }
       }
     )
+    await sleep(15)
     // Log.log('Data sent via UDP' + opData);
+    Log.log('Queue Size: ' + chgQueue.size())
     Log.log('Size: ' + buff.length)
-    Log.log('Message count ' + fwObj.cnt)
+    Log.log('Change count ' + cnt)
     Log.log('Max: ' + maxSz)
     Log.log('Seq count ' + cntSeq++)
-    if (cntSeq > 75 || buff.length > 6000) {
-      setTimeout(procQueue, 100+100*parseInt(buff.length/1500))
+    if (cntSeq > 50 || buff.length > 6000) {
+      setTimeout(procQueue, 100 + 100 * parseInt(buff.length / 1500))
       return
     }
   }
 
   setTimeout(procQueue, 100)
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
