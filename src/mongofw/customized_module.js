@@ -26,7 +26,7 @@ const { Double } = require('mongodb')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
 const Queue = require('queue-fifo')
-const zlib = require('zlib')
+const zlib = require('fast-zlib')
 
 // UDP broadcast options
 const udpPort = 12345
@@ -146,7 +146,8 @@ async function procQueue() {
       if (strSz > 7000) break
     }
     const opData = JSON.stringify(fwArr)
-    const message = zlib.deflateSync(opData)
+    const deflate = new zlib.Deflate()
+    const message = deflate.process(opData)
 
     Log.log(opData.length + ' ' + message.length)
     Log.log('Objects: ' + fwArr.length)

@@ -26,13 +26,13 @@ const { Double } = require('mongodb')
 const { setInterval } = require('timers')
 const dgram = require('node:dgram')
 const Queue = require('queue-fifo')
-const zlib = require('zlib')
+const zlib = require('fast-zlib')
 
 // UDP broadcast options
 const udpPort = 12345
 const udpBind = '0.0.0.0'
 
-const UserActionsCollectionName = 'userActions'
+const UserAcinfltionsCollectionName = 'userActions'
 const RealtimeDataCollectionName = 'realtimeData'
 const CommandsQueueCollectionName = 'commandsQueue'
 const SoeDataCollectionName = 'soeData'
@@ -99,51 +99,55 @@ async function procQueue() {
       const msgRaw = msgQueue.peek()
       msgQueue.dequeue()
 
-      const buffer = zlib.inflateSync(msgRaw)
+      const inflate = new zlib.Inflate()
+      const buffer = inflate.process(msgRaw)
       const msg = buffer.toString('utf8')
       const arrObj = JSON.parse(msg)
-  
+
       if (arrObj.length)
-      for (let i = 0; i < arrObj.length; i++) {
-        const dataObj = arrObj[i]
-        Log.log('Queue Size: ' + msgQueue.size())
+        for (let i = 0; i < arrObj.length; i++) {
+          const dataObj = arrObj[i]
+          Log.log('Queue Size: ' + msgQueue.size())
 
-        if (!dataObj?.cnt) {
-          Log.log('Unexpected format')
+          if (!dataObj?.cnt) {
+            Log.log('Unexpected format')
+          }
+          if (dataObj.cnt - cnt > 1 && cnt != -1) {
+            Log.log('Message lost # ' + (dataObj.cnt - 1))
+            cntLost += dataObj.cnt - cnt
+          }
+          cnt = dataObj.cnt
+          Log.log('Total lost: ' + cntLost)
+          Log.log('                 Chg count: ' + dataObj.cnt)
+          Log.log('                 Pkt count: ' + pktCnt)
+
+          // will process only update data from drivers
+          if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate)
+            return
+
+          if (
+            dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTag
+          )
+            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
+              new Date(
+                dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
+              )
+          if (
+            dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
+              .timeTagAtSource
+          )
+            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
+              new Date(
+                dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
+              )
+
+          updateOps.push({
+            updateOne: {
+              filter: { ...dataObj.documentKey },
+              update: { $set: { ...dataObj.updateDescription.updatedFields } },
+            },
+          })
         }
-        if (dataObj.cnt - cnt > 1 && cnt != -1) {
-          Log.log('Message lost # ' + (dataObj.cnt - 1))
-          cntLost += dataObj.cnt - cnt
-        }
-        cnt = dataObj.cnt
-        Log.log('Total lost: ' + cntLost)
-        Log.log('                 Chg count: ' + dataObj.cnt)
-        Log.log('                 Pkt count: ' + pktCnt)
-
-        // will process only update data from drivers
-        if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate) return
-
-        if (dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTag)
-          dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
-            new Date(
-              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
-            )
-        if (
-          dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
-            .timeTagAtSource
-        )
-          dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
-            new Date(
-              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
-            )
-
-        updateOps.push({
-          updateOne: {
-            filter: { ...dataObj.documentKey },
-            update: { $set: { ...dataObj.updateDescription.updatedFields } },
-          },
-        })
-      }
     } catch (e) {
       Log.log('Error: ' + e)
     }
