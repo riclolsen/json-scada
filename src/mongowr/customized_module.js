@@ -26,7 +26,8 @@ const { Double } = require('mongodb')
 const { setInterval } = require('timers')
 const dgram = require('node:dgram')
 const Queue = require('queue-fifo')
-const zlib = require('fast-zlib')
+// const zlib = require('fast-zlib')
+const zlib = require('zlib')
 
 // UDP broadcast options
 const udpPort = 12345
@@ -78,7 +79,7 @@ module.exports.CustomProcessor = async function (
   server.bind(udpPort, udpBind)
 }
 
-let cnt = -1
+let cntChg = -1
 let cntLost = 0
 
 setTimeout(procQueue, 1000)
@@ -99,27 +100,24 @@ async function procQueue() {
       const msgRaw = msgQueue.peek()
       msgQueue.dequeue()
 
-      const inflate = new zlib.Inflate()
-      const buffer = inflate.process(msgRaw)
+      //const inflate = new zlib.Inflate()
+      //const buffer = inflate.process(msgRaw)
+      const buffer = zlib.inflateSync(msgRaw)
       const msg = buffer.toString('utf8')
       const arrObj = JSON.parse(msg)
 
       if (arrObj.length)
         for (let i = 0; i < arrObj.length; i++) {
           const dataObj = arrObj[i]
-          Log.log('Queue Size: ' + msgQueue.size())
-
+          
           if (!dataObj?.cnt) {
             Log.log('Unexpected format')
           }
-          if (dataObj.cnt - cnt > 1 && cnt != -1) {
+          if (dataObj.cnt - cntChg > 1 && cntChg != -1) {
             Log.log('Message lost # ' + (dataObj.cnt - 1))
-            cntLost += dataObj.cnt - cnt
+            cntLost += dataObj.cnt - cntChg
           }
-          cnt = dataObj.cnt
-          Log.log('Total lost: ' + cntLost)
-          Log.log('                 Chg count: ' + dataObj.cnt)
-          Log.log('                 Pkt count: ' + pktCnt)
+          cntChg = dataObj.cnt
 
           // will process only update data from drivers
           if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate)
@@ -143,7 +141,7 @@ async function procQueue() {
 
           updateOps.push({
             updateOne: {
-              filter: { ...dataObj.documentKey },
+              filter: { tag: dataObj.tag },
               update: { $set: { ...dataObj.updateDescription.updatedFields } },
             },
           })
@@ -151,11 +149,21 @@ async function procQueue() {
     } catch (e) {
       Log.log('Error: ' + e)
     }
+    await sleep(1)
   }
 
   if (updateOps.length > 0) {
     const result = await collection.bulkWrite(updateOps)
     Log.log(JSON.stringify(result))
-  }
-  setTimeout(procQueue, 150)
+    Log.log('Queue Size: ' + msgQueue.size())
+    Log.log('Total lost: ' + cntLost)
+    Log.log('                 Chg count: ' + cntChg)
+    Log.log('                 Pkt count: ' + pktCnt)
+    }
+
+  setTimeout(procQueue, 100)
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }

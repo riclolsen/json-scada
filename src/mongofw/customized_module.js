@@ -26,7 +26,8 @@ const { Double } = require('mongodb')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
 const Queue = require('queue-fifo')
-const zlib = require('fast-zlib')
+// const zlib = require('fast-zlib')
+const zlib = require('zlib')
 
 // UDP broadcast options
 const udpPort = 12345
@@ -66,7 +67,7 @@ module.exports.CustomProcessor = function (
   const changeStreamUserActions = db
     .collection(RealtimeDataCollectionName)
     .watch(
-      { $match: { operationType: 'update' } },
+      [{ $match: { operationType: 'update' } }],
       { fullDocument: 'updateLookup' }
     )
 
@@ -146,8 +147,9 @@ async function procQueue() {
       if (strSz > 7000) break
     }
     const opData = JSON.stringify(fwArr)
-    const deflate = new zlib.Deflate()
-    const message = deflate.process(opData)
+    // const deflate = new zlib.Deflate()
+    // const message = deflate.process(opData)
+    const message = zlib.deflateSync(opData)
 
     Log.log(opData.length + ' ' + message.length)
     Log.log('Objects: ' + fwArr.length)
