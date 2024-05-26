@@ -22,16 +22,17 @@
  */
 
 const Log = require('./simple-logger')
-const { Double } = require('mongodb')
-const { setInterval } = require('timers')
-const dgram = require('dgram')
+const AppDefs = require('./app-defs')
+// const { Double } = require('mongodb')
+const { setTimeout } = require('node:timers')
+const dgram = require('node:dgram')
 const Queue = require('queue-fifo')
 // const zlib = require('fast-zlib')
 const zlib = require('zlib')
 
 // UDP broadcast options
-const udpPort = 12345
-const udpHostDst = '192.168.0.255'
+const udpPort = AppDefs.UDP_PORT
+const udpHostDst = AppDefs.IP_DESTINATION
 // Create a UDP socket
 const udpSocket = dgram.createSocket('udp4')
 
@@ -60,15 +61,31 @@ module.exports.CustomProcessor = function (
   if (clientMongo === null) return
   const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
-  // EXAMPLE OF CYCLIC PROCESSING AT INTERVALS
-  // END EXAMPLE
-  // -------------------------------------------------------------------------------------------
+  pointDatabaseSync(db)
 
+  // set up change streams monitoring for updates
   const changeStreamUserActions = db
     .collection(RealtimeDataCollectionName)
     .watch(
-      [{ $match: { operationType: 'update' } }],
-      { fullDocument: 'updateLookup' }
+      [
+        {
+          $match: {
+            $and: [
+              // { 'fullDocument.value': { $exists: true } },
+              // DivideProcessingExpression,
+              {
+                'updateDescription.updatedFields.sourceDataUpdate': {
+                  $exists: true,
+                },
+              },
+              { operationType: 'update' },
+            ],
+          },
+        },
+      ],
+      {
+        fullDocument: 'updateLookup',
+      }
     )
 
   try {
@@ -95,7 +112,7 @@ module.exports.CustomProcessor = function (
       )
         return // do nothing if process is inactive
 
-      // will send only update data from drivers
+      // will process only update data from drivers
       if (!change?.updateDescription?.updatedFields?.sourceDataUpdate) return
       if (!change?.operationType) return
 
@@ -129,22 +146,23 @@ async function procQueue() {
       if (change?.updateDescription?.truncatedArrays)
         delete change.updateDescription.truncatedArrays
 
+      cntChg++
       const obj = {
-        cnt: cntChg++,
+        cnt: cntChg,
         tag: change?.fullDocument?.tag,
         operationType: change.operationType,
         documentKey: change.documentKey,
         updateDescription: change.updateDescription,
       }
       const chgLen = JSON.stringify(obj).length
-      if (chgLen > 60000) {
+      if (chgLen > AppDefs.MAX_LENGTH_JSON) {
         Log.log('Discarded change too large: ' + chgLen)
         cntChg--
         continue
       }
       strSz += chgLen
       fwArr.push(obj)
-      if (strSz > 7000) break
+      if (strSz > AppDefs.PACKET_SIZE_THRESHOLD) break
     }
     const opData = JSON.stringify(fwArr)
     // const deflate = new zlib.Deflate()
@@ -167,8 +185,11 @@ async function procQueue() {
         }
       }
     )
+    if (buff.length > maxSz) maxSz = buff.length
     pktCnt++
-    await sleep(20)
+    if (AppDefs.PACKETS_INTERVAL > 0) {
+      await sleep(AppDefs.PACKETS_INTERVAL)
+    }
     // Log.log('Data sent via UDP' + opData);
     Log.log('Queue Size: ' + chgQueue.size())
     Log.log('Size: ' + buff.length)
@@ -176,15 +197,48 @@ async function procQueue() {
     Log.log('Seq count ' + cntSeq++)
     Log.log('                  Chg count ' + cntChg)
     Log.log('                  Pkt count ' + pktCnt)
-    if (cntSeq > 50 || buff.length > 6000) {
-      setTimeout(procQueue, 100 + 100 * parseInt(buff.length / 1500))
+    if (
+      cntSeq > AppDefs.MAX_SEQUENCE_OF_PACKETS ||
+      buff.length > AppDefs.PACKET_SIZE_BREAK_SEQ
+    ) {
+      setTimeout(
+        procQueue,
+        AppDefs.INTERVAL_AFTER_PACKETS_SEQ + 100 * parseInt(buff.length / 1500)
+      )
       return
     }
   }
 
-  setTimeout(procQueue, 100)
+  setTimeout(procQueue, AppDefs.INTERVAL_AFTER_EMPTY_QUEUE)
 }
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function pointDatabaseSync(db) {
+  // fetch all documents from realtimeData and queue data to forward via UDP
+
+  const findResult = db.collection(RealtimeDataCollectionName).find({})
+  for await (const doc of findResult) {
+    if (doc?.sourceDataUpdate) delete doc.sourceDataUpdate
+    if (doc?.protocolDestinations) delete doc.protocolDestinations
+
+    const strDoc = JSON.stringify(doc)
+    if (strDoc.length > AppDefs.MAX_LENGTH_JSON) {
+      Log.log(
+        'Ignored document too large on ' +
+          RealtimeDataCollectionName +
+          ': ' +
+          strDoc
+      )
+      continue
+    }
+    chgQueue.enqueue({
+      operationType: 'integrity',
+      fullDocument: { tag: doc.tag },
+      documentKey: { _id: doc._id },
+      updateDescription: { updatedFields: {...doc} },
+    })
+  }
 }

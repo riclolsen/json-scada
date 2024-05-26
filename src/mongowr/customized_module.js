@@ -22,16 +22,17 @@
  */
 
 const Log = require('./simple-logger')
+const AppDefs = require('./app-defs')
 const { Double } = require('mongodb')
-const { setInterval } = require('timers')
+const { setTimeout } = require('node:timers')
 const dgram = require('node:dgram')
 const Queue = require('queue-fifo')
 // const zlib = require('fast-zlib')
 const zlib = require('zlib')
 
 // UDP broadcast options
-const udpPort = 12345
-const udpBind = '0.0.0.0'
+const udpPort = AppDefs.UDP_PORT
+const udpBind = AppDefs.IP_BIND
 
 const UserAcinfltionsCollectionName = 'userActions'
 const RealtimeDataCollectionName = 'realtimeData'
@@ -84,16 +85,16 @@ let cntLost = 0
 
 setTimeout(procQueue, 1000)
 async function procQueue() {
-  if (msgQueue.size() > 5000) {
+  if (msgQueue.size() > AppDefs.MAX_QUEUE) {
     msgQueue.clear()
     Log.log('Queue too large! Emptied!')
   }
 
   let cntPr = 0
-  const updateOps = []
+  const bulkOps = []
   while (!msgQueue.isEmpty()) {
     cntPr++
-    if (cntPr > 50) {
+    if (cntPr > AppDefs.MAX_MSG_SEQ) {
       break
     }
     try {
@@ -109,9 +110,14 @@ async function procQueue() {
       if (arrObj.length)
         for (let i = 0; i < arrObj.length; i++) {
           const dataObj = arrObj[i]
-          
-          if (!dataObj?.cnt) {
-            Log.log('Unexpected format')
+
+          if (
+            !('cnt' in dataObj) ||
+            !('operationType' in dataObj) ||
+            !('updateDescription' in dataObj)
+          ) {
+            Log.log('Unexpected format:' + JSON.stringify(dataObj))
+            continue
           }
           if (dataObj.cnt - cntChg > 1 && cntChg != -1) {
             Log.log('Message lost # ' + (dataObj.cnt - 1))
@@ -119,49 +125,100 @@ async function procQueue() {
           }
           cntChg = dataObj.cnt
 
-          // will process only update data from drivers
-          if (!dataObj?.updateDescription?.updatedFields?.sourceDataUpdate)
-            return
-
           if (
-            dataObj?.updateDescription?.updatedFields?.sourceDataUpdate.timeTag
-          )
-            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
-              new Date(
-                dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
+            dataObj.operationType === 'integrity' &&
+            dataObj?.updateDescription?.updatedFields &&
+            dataObj?.updateDescription?.updatedFields?._id &&
+            dataObj?.tag 
+          ) {
+            // will process integrity of realtimeData (tag list)
+            if (dataObj?.updateDescription?.updatedFields?.timeTag)
+              dataObj.updateDescription.updatedFields.timeTag = new Date(
+                dataObj.updateDescription.updatedFields.timeTag
               )
-          if (
+
+            if (dataObj?.updateDescription?.updatedFields?.timeTagAtSource)
+              dataObj.updateDescription.updatedFields.timeTagAtSource =
+                new Date(
+                  dataObj.updateDescription.updatedFields.timeTagAtSource
+                )
+
+            if (dataObj?.updateDescription?.updatedFields?.timeTagAlarm)
+              dataObj.updateDescription.updatedFields.timeTagAlarm = new Date(
+                dataObj.updateDescription.updatedFields.timeTagAlarm
+              )
+
+            const _id = dataObj.updateDescription.updatedFields._id
+            delete dataObj.updateDescription.updatedFields._id
+
+            bulkOps.push({
+              updateOne: {
+                filter: { tag: dataObj.tag },
+                // filter: { _id: _id },
+                update: {
+                  $set: dataObj.updateDescription.updatedFields,
+                  $setOnInsert: {
+                    _id: new Double(_id),
+                    // ...dataObj.updateDescription.updatedFields,
+                  },
+                },
+                upsert: true,
+              },
+            })
+          // console.log(dataObj.updateDescription.updatedFields)
+          } else if (
+            dataObj.operationType === 'update' &&
             dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
-              .timeTagAtSource
-          )
-            dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
-              new Date(
-                dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
-              )
+          ) {
+            // will process update data from drivers
+            if (
+              dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
+                .timeTag
+            )
+              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
+                new Date(
+                  dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
+                )
+            if (
+              dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
+                .timeTagAtSource
+            )
+              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
+                new Date(
+                  dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
+                )
 
-          updateOps.push({
-            updateOne: {
-              filter: { tag: dataObj.tag },
-              update: { $set: { ...dataObj.updateDescription.updatedFields } },
-            },
-          })
+            bulkOps.push({
+              updateOne: {
+                filter: { tag: dataObj.tag },
+                update: {
+                  $set: { ...dataObj.updateDescription.updatedFields },
+                },
+              },
+            })
+          }
         }
     } catch (e) {
       Log.log('Error: ' + e)
     }
-    await sleep(1)
+    await sleep(1) // yield to allow packets to be collected and queued
   }
 
-  if (updateOps.length > 0) {
-    const result = await collection.bulkWrite(updateOps)
-    Log.log(JSON.stringify(result))
-    Log.log('Queue Size: ' + msgQueue.size())
-    Log.log('Total lost: ' + cntLost)
-    Log.log('                 Chg count: ' + cntChg)
-    Log.log('                 Pkt count: ' + pktCnt)
+  if (bulkOps.length > 0) {
+    try {
+      const result = await collection.bulkWrite(bulkOps)
+      // Log.log(JSON.stringify(bulkOps))
+      Log.log(JSON.stringify(result))
+      Log.log('Queue Size: ' + msgQueue.size())
+      Log.log('Total lost: ' + cntLost)
+      Log.log('                 Chg count: ' + cntChg)
+      Log.log('                 Pkt count: ' + pktCnt)
+    } catch (e) {
+      Log.log('Error: ' + e)
     }
+  }
 
-  setTimeout(procQueue, 100)
+  setTimeout(procQueue, AppDefs.INTERVAL_AFTER_WRITE)
 }
 
 function sleep(ms) {

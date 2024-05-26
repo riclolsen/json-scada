@@ -22,4 +22,9 @@ module.exports = {
   ENV_PREFIX: 'JS_MONGOWR',
   MSG: '{json:scada} - Mongowr - write protocol data forwarded by another JSON-SCADA installation.',
   VERSION: '0.1.0',
+  IP_BIND: '0.0.0.0', // IP address for binding to listen UDP messages
+  UDP_PORT: 12345, // UDP port to receive packets
+  MAX_QUEUE: 5000, // max size for the queue of messages, messages will be discarded after limit exceeded
+  MAX_MSG_SEQ: 50, // max messages in sequence to be accumulated for a bulk write
+  INTERVAL_AFTER_WRITE: 100, // ms of interval to be respected after a bulk write or empty queue
 }
