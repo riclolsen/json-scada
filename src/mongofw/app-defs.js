@@ -32,4 +32,5 @@ module.exports = {
   INTERVAL_AFTER_UDPMSGS_SEQ: 100, // min interval after MAX_SEQUENCE_OF_UDPMSGS exceeded
   PACKET_SIZE_BREAK_SEQ: 6000, // packets large than this limit will break a fast sequence
   INTERVAL_INTEGRITY: 3600, // interval in minutes for point database integrity 
+  BACKFILL_EXPIRATION: 7, // time to preserve backfill data in days
 }

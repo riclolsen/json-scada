@@ -219,7 +219,7 @@ async function procQueue() {
       Log.log('Queue Size: ' + msgQueue.size())
       Log.log('Total lost: ' + cntLost)
       Log.log('                 Chg count: ' + cntChg)
-      Log.log('                 Pkt count: ' + pktCnt)
+      Log.log('                 UDP count: ' + pktCnt)
     } catch (e) {
       Log.log('Error: ' + e)
     }

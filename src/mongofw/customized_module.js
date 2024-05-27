@@ -48,8 +48,10 @@ const SoeDataCollectionName = 'soeData'
 const ProcessInstancesCollectionName = 'processInstances'
 const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
 const ProtocolConnectionsCollectionName = 'protocolConnections'
+const BackfillDataCollectionName = 'backfillData'
 
 const chgQueue = new Queue() // queue of changes
+const backfillQueue = new Queue() // queue of backfill data
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -65,18 +67,43 @@ module.exports.CustomProcessor = async function (
   if (clientMongo === null) return
   const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
-  while (!Redundancy.ProcessStateIsActive()){
-    if (!MongoStatus.HintMongoIsConnected)
-      return // exit if mongo is not connected
+  while (!Redundancy.ProcessStateIsActive()) {
+    if (!MongoStatus.HintMongoIsConnected) return // exit if mongo is not connected
     Log.log('Custom Process - Waiting for process to be active...')
     await sleep(1000)
-  } 
+  }
 
-  const dbSync = () =>{
+  // create time series collection for backfilling
+  await db
+    .createCollection(BackfillDataCollectionName, {
+      timeseries: {
+        timeField: 'timestamp',
+        metaField: 'metadata',
+        // granularity: 'minutes',
+        bucketMaxSpanSeconds: 3600,
+        bucketRoundingSeconds: 3600,
+      },
+      expireAfterSeconds: 24 * 60 * 60 * AppDefs.BACKFILL_EXPIRATION,
+    })
+    .then(() => {
+      Log.log('Created backfillData collection.')
+    })
+    .catch((e) => {
+      Log.log('Collection backfillData already exists or error creating.')
+    })
+
+  // queue point database sync data
+  const dbSync = () => {
     pointDatabaseSync(db, Redundancy, MongoStatus)
-    setTimeout(dbSync, 1000*AppDefs.INTERVAL_INTEGRITY)
+    setTimeout(dbSync, 1000 * AppDefs.INTERVAL_INTEGRITY)
   }
   dbSync()
+
+  const procBackfill = () => {
+    backfillQueueProcess(db, Redundancy, MongoStatus)
+    setTimeout(procBackfill, 1000)
+  }
+  procBackfill()
 
   // set up change streams monitoring for updates
   const changeStreamUserActions = db
@@ -147,6 +174,7 @@ async function procQueue() {
   let cntSeq = 0
   while (!chgQueue.isEmpty()) {
     let fwArr = []
+    let bfArr = []
     let strSz = 0
     while (!chgQueue.isEmpty()) {
       const change = chgQueue.peek()
@@ -154,12 +182,26 @@ async function procQueue() {
 
       if (
         change?.updateDescription?.updatedFields?.sourceDataUpdate
+          ?.valueJsonAtSource &&
+        change.updateDescription.updatedFields.sourceDataUpdate
+          .valueJsonAtSource?.length &&
+        change.updateDescription.updatedFields.sourceDataUpdate
+          .valueJsonAtSource.length >
+          AppDefs.MAX_LENGTH_JSON / 2
+      ) {
+        delete change.updateDescription.updatedFields.sourceDataUpdate
+          .valueJsonAtSource // remove this field that can be too large to send via UDP
+      }
+      if (
+        change?.updateDescription?.updatedFields?.sourceDataUpdate
           ?.valueBsonAtSource
       )
         delete change.updateDescription.updatedFields.sourceDataUpdate
-          .valueBsonAtSource
+          .valueBsonAtSource // remove this field that can be too large to send via UDP
       if (change?.updateDescription?.truncatedArrays)
         delete change.updateDescription.truncatedArrays
+      if (change?.updateDescription?.removedFields)
+        delete change.updateDescription.removedFields
 
       cntChg++
       const obj = {
@@ -177,8 +219,10 @@ async function procQueue() {
       }
       strSz += chgLen
       fwArr.push(obj)
+      if (change.operationType === 'update') bfArr.push(obj)
       if (strSz > AppDefs.PACKET_SIZE_THRESHOLD) break
     }
+    if (bfArr.length > 0) backfillQueue.enqueue(bfArr)
     const opData = JSON.stringify(fwArr)
     // const deflate = new zlib.Deflate()
     // const message = deflate.process(opData)
@@ -206,12 +250,13 @@ async function procQueue() {
       await sleep(AppDefs.PACKETS_INTERVAL)
     }
     // Log.log('Data sent via UDP' + opData);
-    Log.log('Queue Size: ' + chgQueue.size())
-    Log.log('Size: ' + buff.length)
-    Log.log('Max: ' + maxSz)
+    Log.log('Backfill Queue Size: ' + backfillQueue.size())
+    Log.log('Changes Queue Size: ' + chgQueue.size())
+    Log.log('UDP Msg Size: ' + buff.length)
+    Log.log('MaxMsg Size: ' + maxSz)
     Log.log('Seq count ' + cntSeq++)
     Log.log('                  Chg count ' + cntChg)
-    Log.log('                  Pkt count ' + pktCnt)
+    Log.log('                  UDP count ' + pktCnt)
     if (
       cntSeq > AppDefs.MAX_SEQUENCE_OF_UDPMSGS ||
       buff.length > AppDefs.PACKET_SIZE_BREAK_SEQ
@@ -254,4 +299,29 @@ async function pointDatabaseSync(db, Redundancy, MongoStatus) {
       updateDescription: { updatedFields: { ...doc } },
     })
   }
+}
+
+// insert documents queued in backfillQueue collection
+async function backfillQueueProcess(db, Redundancy, MongoStatus) {
+  if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
+    return // do nothing if process is inactive
+
+  const backfillArr = []
+  while (!backfillQueue.isEmpty()) {
+    const bf = backfillQueue.peek()
+    backfillQueue.dequeue()
+
+    for (const obj of bf) {
+      backfillArr.push({
+        timestamp: obj.updateDescription.updatedFields.timestamp || new Date(),
+        metadata: { tag: obj.tag },
+        data: obj,
+      })
+    }
+  }
+  if (backfillArr.length === 0) return
+  const result = await db
+    .collection(BackfillDataCollectionName)
+    .insertMany(backfillArr)
+  Log.log('Backfill: Inserted ' + result.insertedCount + ' documents.')
 }
