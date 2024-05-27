@@ -46,6 +46,10 @@ let msgQueue = new Queue() // queue of messages
 let collection = null
 let pktCnt = 0
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 // this will be called by the main module when mongo is connected (or reconnected)
 module.exports.CustomProcessor = async function (
   clientMongo,
@@ -222,8 +226,4 @@ async function procQueue() {
   }
 
   setTimeout(procQueue, AppDefs.INTERVAL_AFTER_WRITE)
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
