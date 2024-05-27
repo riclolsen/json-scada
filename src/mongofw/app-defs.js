@@ -25,11 +25,11 @@ module.exports = {
   IP_DESTINATION: '255.255.255.255', // IP address for the destination of packets 
   UDP_PORT: 12345, // UDP port to send packets
   PACKETS_INTERVAL: 1, // ms of minimal interval between packets
-  MAX_LENGTH_JSON: 60000, // max size of serialized JSON that can be forwarded
-  PACKET_SIZE_THRESHOLD: 7000, // limit of serialized JSON to break array of objects to the next packet
+  MAX_LENGTH_JSON: 60000, // max size of serialized JSON (before compression) that can be forwarded on a UDP message
+  PACKET_SIZE_THRESHOLD: 7000, // limit of serialized JSON to break array of objects to the next UDP message
   INTERVAL_AFTER_EMPTY_QUEUE: 250, // ms of interval respected after queue of changes emptied
-  MAX_SEQUENCE_OF_PACKETS: 50, // max number of packets in fast sequence
-  INTERVAL_AFTER_PACKETS_SEQ: 100, // min interval after MAX_SEQUENCE_OF_PACKETS exceeded
+  MAX_SEQUENCE_OF_UDPMSGS: 50, // max number of packets in fast sequence
+  INTERVAL_AFTER_UDPMSGS_SEQ: 100, // min interval after MAX_SEQUENCE_OF_UDPMSGS exceeded
   PACKET_SIZE_BREAK_SEQ: 6000, // packets large than this limit will break a fast sequence
   INTERVAL_INTEGRITY: 3600, // interval in minutes for point database integrity 
 }

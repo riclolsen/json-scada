@@ -213,12 +213,12 @@ async function procQueue() {
     Log.log('                  Chg count ' + cntChg)
     Log.log('                  Pkt count ' + pktCnt)
     if (
-      cntSeq > AppDefs.MAX_SEQUENCE_OF_PACKETS ||
+      cntSeq > AppDefs.MAX_SEQUENCE_OF_UDPMSGS ||
       buff.length > AppDefs.PACKET_SIZE_BREAK_SEQ
     ) {
       setTimeout(
         procQueue,
-        AppDefs.INTERVAL_AFTER_PACKETS_SEQ + 100 * parseInt(buff.length / 1500)
+        AppDefs.INTERVAL_AFTER_UDPMSGS_SEQ + 100 * parseInt(buff.length / 1500)
       )
       return
     }
