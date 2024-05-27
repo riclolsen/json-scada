@@ -51,8 +51,12 @@ const ProtocolConnectionsCollectionName = 'protocolConnections'
 
 const chgQueue = new Queue() // queue of changes
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 // this will be called by the main module when mongo is connected (or reconnected)
-module.exports.CustomProcessor = function (
+module.exports.CustomProcessor = async function (
   clientMongo,
   jsConfig,
   Redundancy,
@@ -61,7 +65,18 @@ module.exports.CustomProcessor = function (
   if (clientMongo === null) return
   const db = clientMongo.db(jsConfig.mongoDatabaseName)
 
-  pointDatabaseSync(db)
+  while (!Redundancy.ProcessStateIsActive()){
+    if (!MongoStatus.HintMongoIsConnected)
+      return // exit if mongo is not connected
+    Log.log('Custom Process - Waiting for process to be active...')
+    await sleep(1000)
+  } 
+
+  const dbSync = () =>{
+    pointDatabaseSync(db, Redundancy, MongoStatus)
+    setTimeout(dbSync, 1000*AppDefs.INTERVAL_INTEGRITY)
+  }
+  dbSync()
 
   // set up change streams monitoring for updates
   const changeStreamUserActions = db
@@ -212,12 +227,10 @@ async function procQueue() {
   setTimeout(procQueue, AppDefs.INTERVAL_AFTER_EMPTY_QUEUE)
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-async function pointDatabaseSync(db) {
-  // fetch all documents from realtimeData and queue data to forward via UDP
+// fetch all documents from realtimeData and queue data to forward via UDP
+async function pointDatabaseSync(db, Redundancy, MongoStatus) {
+  if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
+    return // do nothing if process is inactive
 
   const findResult = db.collection(RealtimeDataCollectionName).find({})
   for await (const doc of findResult) {
@@ -238,7 +251,7 @@ async function pointDatabaseSync(db) {
       operationType: 'integrity',
       fullDocument: { tag: doc.tag },
       documentKey: { _id: doc._id },
-      updateDescription: { updatedFields: {...doc} },
+      updateDescription: { updatedFields: { ...doc } },
     })
   }
 }
