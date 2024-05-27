@@ -129,7 +129,7 @@ async function procQueue() {
             dataObj.operationType === 'integrity' &&
             dataObj?.updateDescription?.updatedFields &&
             dataObj?.updateDescription?.updatedFields?._id &&
-            dataObj?.tag 
+            dataObj?.tag
           ) {
             // will process integrity of realtimeData (tag list)
             if (dataObj?.updateDescription?.updatedFields?.timeTag)
@@ -165,7 +165,7 @@ async function procQueue() {
                 upsert: true,
               },
             })
-          // console.log(dataObj.updateDescription.updatedFields)
+            // console.log(dataObj.updateDescription.updatedFields)
           } else if (
             dataObj.operationType === 'update' &&
             dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
@@ -206,7 +206,10 @@ async function procQueue() {
 
   if (bulkOps.length > 0) {
     try {
-      const result = await collection.bulkWrite(bulkOps)
+      const result = await collection.bulkWrite(bulkOps, {
+        ordered: false, // may run ops in parallel, do all ops even when some operation fail
+        writeConcern: { w: 1 }, // wait for just 1 node to complete the ops (put zero here to not wait, in this case it won't detect write errors)
+      })
       // Log.log(JSON.stringify(bulkOps))
       Log.log(JSON.stringify(result))
       Log.log('Queue Size: ' + msgQueue.size())
