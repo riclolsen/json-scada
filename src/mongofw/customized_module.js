@@ -1,26 +1,27 @@
-'use strict'
-
-/*
- * Customizable processor of mongodb changes via change streams.
- *
- * THIS FILE IS INTENDED TO BE CUSTOMIZED BY USERS TO DO SPECIAL PROCESSING
- *
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
- * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+/* 
+* One way replication mechanism (mongofw/mongowr)
+* Watch for changes via changestream of realtimeData/sourceDataUpdate, send changes via UDP.
+* Query realtimeData for full point list sync.
+* Store changes on backfillData (timeseries collection) to keep replaying previous changes from a defined period.
+* Replayed changes are marked by the isHistorical=true flag.
+*
+* {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+* This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
+'use strict'
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 // const { Double } = require('mongodb')
@@ -92,18 +93,26 @@ module.exports.CustomProcessor = async function (
       Log.log('Collection backfillData already exists or error creating.')
     })
 
-  // queue point database sync data
-  const dbSync = () => {
-    pointDatabaseSync(db, Redundancy, MongoStatus)
-    setTimeout(dbSync, 1000 * AppDefs.INTERVAL_INTEGRITY)
-  }
-  dbSync()
+  // enqueue point database sync data
+  ;(function callEnqueueDbSync() {
+    if (clientMongo === null) return
+    enqueueDbSync(db, Redundancy, MongoStatus)
+    setTimeout(callEnqueueDbSync, 1000 * AppDefs.INTERVAL_INTEGRITY)
+  })()
 
-  const procBackfill = () => {
-    backfillQueueProcess(db, Redundancy, MongoStatus)
-    setTimeout(procBackfill, 1000)
-  }
-  procBackfill()
+  // consume queue of historical backfill changes, writing to mongodb backfillData collection
+  ;(function callBackfillDequeue() {
+    if (clientMongo === null) return
+    backfillDequeue(db, Redundancy, MongoStatus)
+    setTimeout(callBackfillDequeue, 1013)
+  })()
+
+  // replay backfill data, enqueue to changes queue
+  ;(function callReplayBackfill() {
+    if (clientMongo === null) return
+    replayBackfill(db, Redundancy, MongoStatus)
+    setTimeout(callReplayBackfill, 1000 * AppDefs.INTERVAL_INTEGRITY)
+  })()
 
   // set up change streams monitoring for updates
   const changeStreamUserActions = db
@@ -165,12 +174,65 @@ module.exports.CustomProcessor = async function (
   }
 }
 
+// fetch all documents from realtimeData and enqueue data to forward via UDP
+async function enqueueDbSync(db, Redundancy, MongoStatus) {
+  if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
+    return // do nothing if process is inactive
+
+  const findResult = db.collection(RealtimeDataCollectionName).find({})
+  for await (const doc of findResult) {
+    if (doc?.sourceDataUpdate) delete doc.sourceDataUpdate
+    if (doc?.protocolDestinations) delete doc.protocolDestinations
+
+    const strDoc = JSON.stringify(doc)
+    if (strDoc.length > AppDefs.MAX_LENGTH_JSON) {
+      Log.log(
+        'Ignored document too large on ' +
+          RealtimeDataCollectionName +
+          ': ' +
+          strDoc
+      )
+      continue
+    }
+    chgQueue.enqueue({
+      operationType: 'integrity',
+      fullDocument: { tag: doc.tag },
+      documentKey: { _id: doc._id },
+      updateDescription: { updatedFields: { ...doc } },
+    })
+  }
+}
+
+// insert documents queued in backfillQueue collection
+async function backfillDequeue(db, Redundancy, MongoStatus) {
+  if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
+    return // do nothing if process is inactive
+
+  const backfillArr = []
+  while (!backfillQueue.isEmpty()) {
+    const bf = backfillQueue.peek()
+    backfillQueue.dequeue()
+
+    for (const obj of bf) {
+      backfillArr.push({
+        timestamp: obj.updateDescription.updatedFields.timestamp || new Date(),
+        metadata: { tag: obj.tag },
+        data: obj,
+      })
+    }
+  }
+  if (backfillArr.length === 0) return
+  const result = await db
+    .collection(BackfillDataCollectionName)
+    .insertMany(backfillArr)
+  Log.log('Backfill: Inserted ' + result.insertedCount + ' documents.')
+}
+
+// dequeue changes and send via UDP
 let maxSz = 0
 let cntChg = 0
 let pktCnt = 0
-
-setTimeout(procQueue, 1000)
-async function procQueue() {
+;(async function dequeueChangesSend() {
   let cntSeq = 0
   while (!chgQueue.isEmpty()) {
     let fwArr = []
@@ -219,7 +281,11 @@ async function procQueue() {
       }
       strSz += chgLen
       fwArr.push(obj)
-      if (change.operationType === 'update') bfArr.push(obj)
+      if (
+        change.operationType === 'update' &&
+        !change.updateDescription.updatedFields.sourceDataUpdate?.isHistorical
+      )
+        bfArr.push(obj)
       if (strSz > AppDefs.PACKET_SIZE_THRESHOLD) break
     }
     if (bfArr.length > 0) backfillQueue.enqueue(bfArr)
@@ -262,66 +328,52 @@ async function procQueue() {
       buff.length > AppDefs.PACKET_SIZE_BREAK_SEQ
     ) {
       setTimeout(
-        procQueue,
+        dequeueChangesSend,
         AppDefs.INTERVAL_AFTER_UDPMSGS_SEQ + 100 * parseInt(buff.length / 1500)
       )
       return
     }
   }
 
-  setTimeout(procQueue, AppDefs.INTERVAL_AFTER_EMPTY_QUEUE)
-}
+  setTimeout(dequeueChangesSend, AppDefs.INTERVAL_AFTER_EMPTY_QUEUE)
+})()
 
-// fetch all documents from realtimeData and queue data to forward via UDP
-async function pointDatabaseSync(db, Redundancy, MongoStatus) {
-  if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
-    return // do nothing if process is inactive
+// replay backfill data from archived mongodb backfillData collection, enqueue to changes queue
+async function replayBackfill(db, Redundancy, MongoStatus) {
+  let replayBegin = new Date()
+  replayBegin.setDate(replayBegin.getDate() - AppDefs.BACKFILL_REPLAY_INTERVAL)
+  const replayEnd = new Date()
+  const limit = AppDefs.BACKFILL_DOCS_PER_SEC
 
-  const findResult = db.collection(RealtimeDataCollectionName).find({})
-  for await (const doc of findResult) {
-    if (doc?.sourceDataUpdate) delete doc.sourceDataUpdate
-    if (doc?.protocolDestinations) delete doc.protocolDestinations
+  Log.log('Begin replaying backfill data from ' + replayBegin.toISOString())
 
-    const strDoc = JSON.stringify(doc)
-    if (strDoc.length > AppDefs.MAX_LENGTH_JSON) {
-      Log.log(
-        'Ignored document too large on ' +
-          RealtimeDataCollectionName +
-          ': ' +
-          strDoc
+  // retrieve and enqueue data from moving window of 'limit' entries
+  let skip = 0
+  for (;;) {
+
+    // query from backfillData up to 'limit' entries, when change queue empty double enqueue rate
+    const findResult = db
+      .collection(BackfillDataCollectionName)
+      .find(
+        { timestamp: { $gt: replayBegin, $lte: replayEnd } },
+        { sort: { timestamp: 1 }, limit: limit + (chgQueue.isEmpty()?limit:0), skip: skip }
       )
-      continue
+
+    let cntDocs = 0
+    let timestamp
+    for await (const doc of findResult) {
+      skip++
+      cntDocs++
+      if (!doc?.data?.updateDescription?.updatedFields?.sourceDataUpdate)
+        continue
+      timestamp = doc?.timestamp      
+      console.log(">>>>>> " + skip + " - " + timestamp)
+      doc.data.updateDescription.updatedFields.sourceDataUpdate.isHistorical = true
+      chgQueue.enqueue(doc.data)
     }
-    chgQueue.enqueue({
-      operationType: 'integrity',
-      fullDocument: { tag: doc.tag },
-      documentKey: { _id: doc._id },
-      updateDescription: { updatedFields: { ...doc } },
-    })
+    if (cntDocs === 0) break // when no more docs, end this cycle of replay
+    Log.log('Replayed ' + skip + ' documents. ' + timestamp)
+    await sleep(1000) // wait 1 second before next query
   }
-}
-
-// insert documents queued in backfillQueue collection
-async function backfillQueueProcess(db, Redundancy, MongoStatus) {
-  if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
-    return // do nothing if process is inactive
-
-  const backfillArr = []
-  while (!backfillQueue.isEmpty()) {
-    const bf = backfillQueue.peek()
-    backfillQueue.dequeue()
-
-    for (const obj of bf) {
-      backfillArr.push({
-        timestamp: obj.updateDescription.updatedFields.timestamp || new Date(),
-        metadata: { tag: obj.tag },
-        data: obj,
-      })
-    }
-  }
-  if (backfillArr.length === 0) return
-  const result = await db
-    .collection(BackfillDataCollectionName)
-    .insertMany(backfillArr)
-  Log.log('Backfill: Inserted ' + result.insertedCount + ' documents.')
+  Log.log('End replaying backfill data from ' + replayEnd.toISOString())
 }

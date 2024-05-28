@@ -31,6 +31,8 @@ module.exports = {
   MAX_SEQUENCE_OF_UDPMSGS: 50, // max number of packets in fast sequence
   INTERVAL_AFTER_UDPMSGS_SEQ: 100, // min interval after MAX_SEQUENCE_OF_UDPMSGS exceeded
   PACKET_SIZE_BREAK_SEQ: 6000, // packets large than this limit will break a fast sequence
-  INTERVAL_INTEGRITY: 3600, // interval in minutes for point database integrity 
+  INTERVAL_INTEGRITY: 60*60, // interval in seconds for point database integrity 
   BACKFILL_EXPIRATION: 7, // time to preserve backfill data in days
+  BACKFILL_REPLAY_INTERVAL: 3, // time to auto replay backfill data in days
+  BACKFILL_DOCS_PER_SEC: 1000, // max number of documents per second to replay backfill data
 }
