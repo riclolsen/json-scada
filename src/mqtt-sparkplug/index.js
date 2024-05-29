@@ -1765,9 +1765,6 @@ function ProcessNodeBirthOrData(nodeLocator, payload, isBirth) {
 
 // obtain information from sparkplug-b decoded payload and queue for mongo tag updates
 function queueMetric(metric, deviceLocator, isBirth, templateName) {
-  if (metric?.isHistorical === true) return // when historical, discard
-  if (metric?.isTransient === true) return // when transient, discard
-
   let value = 0,
     valueString = '',
     valueJson = {},
@@ -1777,7 +1774,9 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     timestamp,
     timestampGood = true,
     catalogProperties = {},
-    objectAddress = null
+    objectAddress = null,
+    isHistorical = null,
+    isNotForHistorical = null
 
   //if (typeof queueMetric.MapAliasToObjectAddress === 'undefined')
   //  queueMetric.MapAliasToObjectAddress = []
@@ -1826,6 +1825,18 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     return false
   }
 
+  if (metric?.is_historical ||
+      metric?.isHistorical
+  ) {
+      isHistorical = true
+  }
+
+  if (metric?.is_transient || 
+      metric?.isTransient
+  ) {
+      isNotForHistorical = true
+  }
+  
   if ('timestamp' in metric) {
     timestamp = metric.timestamp
   } else {
@@ -1835,6 +1846,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
 
   if (
     metric?.value === null ||
+    metric?.is_null === true ||
     metric?.isNull === true ||
     !('value' in metric)
   ) {
@@ -1950,6 +1962,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
       break
     case 'int64':
     case 'uint64':
+    case 'datetime':
       type = 'analog'
       if (!('value' in metric) || metric.value === null) {
         // metric does not have a value
@@ -1964,12 +1977,17 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
         valueJson = metric
       }
       break
-    // case 'datetime': // TODO ??
   }
 
   if ('properties' in metric) {
     if ('good' in metric.properties) {
       invalid = !metric.properties.good.value
+    }
+    if ('quality' in metric.properties) {
+      invalid = metric.properties.quality.value !== 192
+    }
+    if ('Quality' in metric.properties) {
+      invalid = metric.properties.Quality.value !== 192
     }
     if ('timestampGood' in metric.properties) {
       timestampGood = !metric.properties.timestampGood.value
@@ -2016,6 +2034,8 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
     isNull: isNull,
+    isHistorical: isHistorical,
+    isNotForHistorical: isNotForHistorical,    
     ...catalogProperties,
   })
 }
