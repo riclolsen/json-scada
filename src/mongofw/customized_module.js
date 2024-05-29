@@ -367,7 +367,7 @@ async function replayBackfill(db, Redundancy, MongoStatus) {
       if (!doc?.data?.updateDescription?.updatedFields?.sourceDataUpdate)
         continue
       timestamp = doc?.timestamp      
-      console.log(">>>>>> " + skip + " - " + timestamp)
+      // console.log(">>>>>> " + skip + " - " + timestamp)
       doc.data.updateDescription.updatedFields.sourceDataUpdate.isHistorical = true
       chgQueue.enqueue(doc.data)
     }
@@ -375,5 +375,5 @@ async function replayBackfill(db, Redundancy, MongoStatus) {
     Log.log('Replayed ' + skip + ' documents. ' + timestamp)
     await sleep(1000) // wait 1 second before next query
   }
-  Log.log('End replaying backfill data from ' + replayEnd.toISOString())
+  Log.log('End replaying backfill data to ' + replayEnd.toISOString())
 }
