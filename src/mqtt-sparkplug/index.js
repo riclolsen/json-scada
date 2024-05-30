@@ -1395,35 +1395,68 @@ async function sparkplugProcess(
 
           if (match) return
 
+          // try to match topics including those that have JSONPathPlus syntax
           if (jscadaConnection?.topics instanceof Array)
             jscadaConnection.topics.forEach((elem) => {
               if (elem) {
+                // test if published topic matches subscribed element
+                if (topic == elem) {
+                  let JsonValue = TryPayloadAsRJson(payload)
+                  EnqueueJsonValue(JsonValue, topic)
+                  // match = true
+                }
+
+                // keep testing for match when JSONPathPlus syntax is used
+                if (elem.indexOf('$.') === -1) return
+
+                // when used '*~' at the end of JSONPathPlus explode property names
+                if (elem.endsWith('*~')) {
+                  let jpt = JsonPathTopic(elem)
+                  if (jpt.jsonPath !== '' && topicMatchSub(topic)(jpt.topic)) {
+                    const jpPropNames = JSONPath({
+                      path: jpt.jsonPath,
+                      json: TryPayloadAsRJson(payload),
+                      wrap: false,
+                    })
+                    jpPropNames.forEach((propName) => {
+                      let newTopic = elem.replace('*~', propName)
+                      let jptNew = JsonPathTopic(newTopic)
+                      // extract value from payload using JSON PATH
+                      const jpRes = JSONPath({
+                        path: jptNew.jsonPath,
+                        json: TryPayloadAsRJson(payload),
+                        wrap: false,
+                      })
+                      EnqueueJsonValue(jpRes, newTopic)
+                    })
+                  }
+                }
+
                 let jpt = JsonPathTopic(elem)
                 if (jpt.jsonPath !== '' && topicMatchSub(topic)(jpt.topic)) {
                   // extract value from payload using JSON PATH
-                  let JsonPayload = TryPayloadAsRJson(payload)
                   const jpRes = JSONPath({
                     path: jpt.jsonPath,
-                    json: JsonPayload,
+                    json: TryPayloadAsRJson(payload),
                     wrap: false,
                   })
                   EnqueueJsonValue(jpRes, elem)
-                  match = true
+                  // match = true
                 }
               }
             })
 
-          if (match) return
+          //   if (match) return
 
-          // try to detect payload as JSON or RJSON
+          //   // try to detect payload as JSON or RJSON
 
-          if (payload.length > 10000) {
-            Log.log(logMod + 'Payload too big!')
-            return
-          }
+          //   if (payload.length > 20000) {
+          //     Log.log(logMod + 'Payload too big!')
+          //     return
+          //   }
 
-          let JsonValue = TryPayloadAsRJson(payload)
-          EnqueueJsonValue(JsonValue, topic)
+          //   let JsonValue = TryPayloadAsRJson(payload)
+          //   EnqueueJsonValue(JsonValue, topic)
         }
       )
 
@@ -1642,10 +1675,7 @@ async function sparkplugProcess(
               break
             case 'NBIRTH':
               // on node birth all associated data is invalidated (7.1.2)
-              Log.log(
-                logModS + 'Node BIRTH: ' + nodeLocator,
-                Log.levelDetailed
-              )
+              Log.log(logModS + 'Node BIRTH: ' + nodeLocator, Log.levelDetailed)
               ProcessNodeBirthOrData(nodeLocator, payload, true)
               if (sparkplugProcess.mongoClient)
                 InvalidatePathTags(
@@ -1825,18 +1855,14 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     return false
   }
 
-  if (metric?.is_historical ||
-      metric?.isHistorical
-  ) {
-      isHistorical = true
+  if (metric?.is_historical || metric?.isHistorical) {
+    isHistorical = true
   }
 
-  if (metric?.is_transient || 
-      metric?.isTransient
-  ) {
-      isNotForHistorical = true
+  if (metric?.is_transient || metric?.isTransient) {
+    isNotForHistorical = true
   }
-  
+
   if ('timestamp' in metric) {
     timestamp = metric.timestamp
   } else {
@@ -2035,7 +2061,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     asduAtSource: type,
     isNull: isNull,
     isHistorical: isHistorical,
-    isNotForHistorical: isNotForHistorical,    
+    isNotForHistorical: isNotForHistorical,
     ...catalogProperties,
   })
 }
@@ -2118,7 +2144,7 @@ async function ProcessDeviceCommand(
           valueString = value ? 'true' : 'false'
           valueJson = value ? true : false
           break
-        case 'uuid':        
+        case 'uuid':
         case 'text':
         case 'string':
           valueString = metric.value
@@ -2218,10 +2244,7 @@ function InvalidatePathTags(
     )
   } catch (e) {
     Log.log(
-      'MongoDB - Error invalidating tags from ' +
-        topicPath +
-        ' - ' +
-        e.message
+      'MongoDB - Error invalidating tags from ' + topicPath + ' - ' + e.message
     )
   }
 }

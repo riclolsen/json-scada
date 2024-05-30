@@ -99,7 +99,7 @@ Each instance for this driver can have just one connection defined that must be 
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (publishing messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 * _**autoCreateTags**_ [Boolean] - Enables automatic creation of all discovered tags. **Mandatory parameter**.
 * _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. **Mandatory parameter**.
-* _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. JSON Path Plus can be used to extract values from MQTT JSON payloads, add a JSONPath query to the topic string, e.g. "root_topic/subtopic/$.property1" this will extract the value of _property1_ from the JSON payload. Regular MQTT topics will be converted to tags with the full topic name as the object address (including JSONPath, when used). **Mandatory parameter**.
+* _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. JSON Path Plus can be used to extract values from MQTT JSON payloads, add a JSONPath query to the topic string, e.g. "root_topic/subtopic/$.property1" this will extract the value of _property1_ from the JSON payload. Regular MQTT topics will be converted to tags with the full topic name as the object address (including JSONPath, when used). To explode a JSON payload auto expanding properties as tags, use JSONPathPlus syntax ending as '*~' as in "root_topic/subtopic/$.*~", this will create a tag for each property in the JSON payload. **Mandatory parameter**.
 * _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
 * _**topicsScripted**_ [Array of Objects] - List of topics to subscribe on MQTT broker to be treated with dedicated scripts to extract data. **Mandatory parameter**.
 * _**clientId**_ [String] - MQTT Client Id for the connection. If configured, it should be unique over all MQTT clients. Leave empty to to be automatically assigned by the broker. **Optional parameter**.
@@ -152,11 +152,11 @@ The tag to be updated in the _realtimeData_ collection must have the _protocolSo
             "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/device_id/metric_name", // Sparkplug addressing
             "kconv1": 1.0,
             "kconv2": 0.0,
-        });
+        }});
 
 ## Configuring Tags for Update by regular MQTT Topics
 
-The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_. Use JSONPath syntax to extract property values of a JSON payload (e.g. "root_topic/subtopic/$.property1").
+The tag to be updated in the _realtimeData_ collection must have the _protocolSourceConnectionNumber_ set to the number of the respective connection and _protocolSourceObjectAddress_ must be configured with the topic name published by the originator device. If _autoCreateTags_ is set to true for the connection, the tags will be auto created when not found by _protocolSourceConnectionNumber/protocolSourceObjectAddress_. Use JSONPath syntax to extract property values of a JSON payload (e.g. "root_topic/subtopic/$.property1"), in this case the topic name with JSONPath must also be in the _topics_ list of the _protocolConnections_ entry.
 
 Tags can also be configured via the Admin Management UI.
 
@@ -166,7 +166,7 @@ Tags can also be configured via the Admin Management UI.
             "protocolSourceObjectAddress": "enterprise_name/area_name/device_name/metric_name", // topic name
             "kconv1": 1.0,
             "kconv2": 0.0,
-        });
+        }});
 
     db.realtimeData.updateOne({"tag":"MQTT_TAG_NAME_JSONPATH"}, {
         $set: {
@@ -174,7 +174,7 @@ Tags can also be configured via the Admin Management UI.
             "protocolSourceObjectAddress": "/root_topic/subtopic/$.property1", // topic name as JSONPath syntax
             "kconv1": 1.0,
             "kconv2": 0.0,
-        });
+        }});
 
 The data type is automatically detected and converted by the driver. If the data published is not to be interpreted as a number, boolean, JSON or string, it should be subscribed as a _Scripted Topic_ so data will be extracted by the dedicated script.
 
@@ -193,7 +193,7 @@ To send commands as a regular MQTT topic, configure the command tag as below. Ta
             "protocolSourceCommandUseSBO": false, // retain flag
             "kconv1": 1.0, // conversion factor: multiplier
             "kconv2": 0.0, // conversion factor: adder
-        });
+        }});
 
 ## Send Commands Via Sparkplug B
 
@@ -209,7 +209,7 @@ To send commands via Sparkplug B, configure the command tag as below. Tags can a
             "protocolSourceCommandUseSBO": false, // no effect for sparkplug B
             "kconv1": 1.0, // conversion factor: multiplier
             "kconv2": 0.0, // conversion factor: adder
-        });
+        }});
 
 ## Receive (Device) Commands Via Sparkplug B
 
