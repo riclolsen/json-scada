@@ -7,14 +7,14 @@
 
 A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB database server.
 
-![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js >= 14")
-![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go >= 1.14")
-![](https://img.shields.io/badge/dotnet-%3E%3D5.0-green "Dotnet >=5.0")
+![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js 20+")
+![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go 1.21+")
+![](https://img.shields.io/badge/dotnet-%3E%3D5.0-green "Dotnet 6.0")
 
-![](https://img.shields.io/badge/mongodb-%3E%3D4.2-green "MongoDB >= 4.2")
-![](https://img.shields.io/badge/postgresql-12-green "PostgreSQL 12")
+![](https://img.shields.io/badge/mongodb-%3E%3D4.2-green "MongoDB 6.0+")
+![](https://img.shields.io/badge/postgresql-12-green "PostgreSQL 12+")
 ![](https://img.shields.io/badge/timescaledb-2.0-green "TimescaleDB 2.0")
-![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana >= 7")
+![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana 9+")
 
 ![](https://img.shields.io/badge/linux-x86--64-green "Linux x86-64")
 ![](https://img.shields.io/badge/linux-ARM-green "Linux ARM-64")
@@ -29,7 +29,6 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/MQTT-green "MQTT")
 ![](https://img.shields.io/badge/Sparkplug--B-green "Sparkplug B")
 ![](https://img.shields.io/badge/OPC--UA-green "OPC-UA")
-![](https://img.shields.io/badge/CIP.Ethernet/IP-yellow "CIP Ethernet/IP")
 
 ![](https://img.shields.io/badge/license-GPL-green "License GPL")
 ![](https://img.shields.io/badge/contributors-welcome-green "Contributors Welcome")
@@ -82,8 +81,9 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Documentation
 
-* [Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-* [Windows installer](https://github.com/riclolsen/json-scada/releases/tag/V0.33-alpha)
+* [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
+* [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.33-alpha)
+* [RedHat/Rocky Linux Installer](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#rhel94-and-compatible-systems-automated-installation)
 * [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
 * [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
 * [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
@@ -147,10 +147,12 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] Advanced Alarms Processor 
 - [x] PostgreSQL/TimescaleDB Historian
 - [x] Grafana Integration 
-- [x] Grafana Alerting Integration (w/ Events Viewer)
+- [x] Metabase Integration (via PostgreSQL/MongoDB connectors)
+- [x] One-way realtime replication (over eth diode/tap device) w/ point db sync and historical backfill
 - [x] Windows Installer
 - [x] Online Demo
 - [x] Docker Demo (docker-compose.yaml scripts)
+- [x] Install Script for RedHat/Rocky 9.4 Linux
 - [ ] Linux Image / VM
 - [x] Supervisor (Linux process manager) examples
 - [ ] InfluxDB Integration
@@ -159,7 +161,6 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] PowerBI Integration (via PostgreSQL connector)
 - [ ] PowerBI Direct Integration
 - [ ] NodeRed Integration
-- [x] Metabase Integration (via PostgreSQL/MongoDB connectors)
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] PLC4X Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
