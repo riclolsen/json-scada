@@ -7,14 +7,14 @@
 
 A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB database server.
 
-![](https://img.shields.io/badge/node-%3E%3D14-green "Node.js 20+")
-![](https://img.shields.io/badge/golang-%3E%3D1.14-green "Go 1.21+")
-![](https://img.shields.io/badge/dotnet-%3E%3D5.0-green "Dotnet 6.0")
+![](https://img.shields.io/badge/nodejs-20-green "Node.js 20+")
+![](https://img.shields.io/badge/golang-1.21-green "Go 1.21+")
+![](https://img.shields.io/badge/dotnet-6.0-green "Dotnet 6.0")
 
-![](https://img.shields.io/badge/mongodb-%3E%3D4.2-green "MongoDB 6.0+")
+![](https://img.shields.io/badge/mongodb-6.0-green "MongoDB 6.0+")
 ![](https://img.shields.io/badge/postgresql-12-green "PostgreSQL 12+")
 ![](https://img.shields.io/badge/timescaledb-2.0-green "TimescaleDB 2.0")
-![](https://img.shields.io/badge/grafana-%3E%3D7-green "Grafana 9+")
+![](https://img.shields.io/badge/grafana-9-green "Grafana 9+")
 
 ![](https://img.shields.io/badge/linux-x86--64-green "Linux x86-64")
 ![](https://img.shields.io/badge/linux-ARM-green "Linux ARM-64")
