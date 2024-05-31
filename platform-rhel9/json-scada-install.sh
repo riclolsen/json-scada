@@ -24,7 +24,7 @@ sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php curl
 sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
@@ -128,9 +128,9 @@ sudo systemctl enable grafana-server
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
 sudo -u $JS_USERNAME sh -c 'wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
 
-# install nvm (for the jsonscada user) to be able to choose a specific nodejs version
-sudo -u $JS_USERNAME sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash'
-sudo -u $JS_USERNAME sh -c 'source ~/.bashrc; nvm install 20.13.1; npm install -g npm; source ~/.bashrc;'
+sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_20.x -o nodesource_setup.sh'
+sudo bash nodesource_setup.sh
+sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
 sudo systemctl start postgresql-16
@@ -165,5 +165,5 @@ sudo systemctl start telegraf
 
 sleep 10
 sudo supervisorctl status
-sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
+# sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
 
