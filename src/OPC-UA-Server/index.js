@@ -1,9 +1,7 @@
-'use strict'
-
 /*
  * OPC-UA Server Driver for JSON-SCADA
  *
- * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 const { OPCUAServer, Variant, DataType, StatusCodes } = require('node-opcua')
 const { MongoClient, Double } = require('mongodb')

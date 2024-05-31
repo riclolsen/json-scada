@@ -1,5 +1,3 @@
-'use strict'
-
 /*
  * Telegraf listener driver.
  *
@@ -18,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 const APP_NAME = 'TELEGRAF-LISTENER'
 const APP_MSG = '{json:scada} - Telegraf UDP JSON Client Driver'

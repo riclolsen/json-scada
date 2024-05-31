@@ -1,8 +1,6 @@
-'use strict'
-
 /*
  * A process that beeps when there are new alarms present on the system.
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 const IP_BIND = process.env.JS_SHELLAPI_IP_BIND || 'localhost'
 const HTTP_PORT = process.env.JS_SHELLAPI_HTTP_PORT || 51910

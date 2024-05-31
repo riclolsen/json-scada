@@ -1,5 +1,3 @@
-'use strict'
-
 /*
  * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
@@ -16,6 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 const fs = require('fs')
 const Log = require('./simple-logger')
@@ -84,8 +84,8 @@ if (
 // prepare mongo connection options
 function getMongoConnectionOptions (configObj) {
   let connOptions = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    // useNewUrlParser: true,
+    // useUnifiedTopology: true,
     appname:
       AppDefs.NAME +
       ' Version:' +

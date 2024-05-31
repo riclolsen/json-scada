@@ -1,5 +1,3 @@
-'use strict'
-
 /*
  * MQTT-Sparkplug B Client Driver for JSON-SCADA
  *
@@ -18,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 const RJSON = require('relaxed-json')
 const { JSONPath } = require('jsonpath-plus')

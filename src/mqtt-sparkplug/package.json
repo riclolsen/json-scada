@@ -10,15 +10,15 @@
   "license": "ISC",
   "dependencies": {
     "fs": "*",
-    "jsonpath-plus": "^7.2.0",
-    "mongodb": "^5.7.0",
-    "mqtt": "^4.3.6",
+    "jsonpath-plus": "^9.0.0",
+    "mongodb": "^6.7.0",
+    "mqtt": "^5.7.0",
     "queue-fifo": "^0.2.6",
     "relaxed-json": "^1.0.3",
     "sparkplug-client": "^3.2.2",
     "streamifier": "^0.1.1",
     "timers": "^0.1.1",
     "vm2": "^3.9.8",
-    "winston": "^3.6.0"
+    "winston": "^3.13.0"
   }
 }

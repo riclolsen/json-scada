@@ -1,9 +1,7 @@
-'use strict'
-
 /*
  * A process that watches for raw data updates from protocols using a MongoDB change stream.
- * Convert raw values and update realtime values and statuses.
- * {json:scada} - Copyright (c) 2020-2023 - Ricardo L. Olsen
+ * Converts raw protocol values into analogs/statuses then updates realtime, soe and historical data.
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 const AppDefs = require('./app-defs')
 const Log = require('./simple-logger')
@@ -45,12 +45,12 @@ const jsConfig = LoadConfig(confFile, logLevel, inst)
 
 let DivideProcessingExpression = {}
 if (
-  AppDefs.ENV_PREFIX+'DIVIDE_EXP' in process.env &&
-  process.env[AppDefs.ENV_PREFIX+DIVIDE_EXP].trim() !== ''
+  AppDefs.ENV_PREFIX + 'DIVIDE_EXP' in process.env &&
+  process.env[AppDefs.ENV_PREFIX + DIVIDE_EXP].trim() !== ''
 ) {
   try {
     DivideProcessingExpression = JSON.parse(
-      process.env[AppDefs.ENV_PREFIX+'DIVIDE_EXP']
+      process.env[AppDefs.ENV_PREFIX + 'DIVIDE_EXP']
     )
     Log.log(
       'Divide Processing Expression: ' +
@@ -62,7 +62,7 @@ if (
     process.exit(1)
   }
 }
- 
+
 const beepPointKey = -1
 const cntUpdatesPointKey = -2
 const invalidDetectCycle = 15000
@@ -317,7 +317,7 @@ const pipeline = [
                             'TELEGRAF-LISTENER',
                             'PLCTAG',
                             'PLC4X',
-                            'MODBUS',	
+                            'MODBUS',
                             'IEC61850',
                           ],
                         ],
@@ -833,14 +833,16 @@ const pipeline = [
                   }
                 }
 
-                // update only if changed or for SOE
+                // update only realtimeData if changed or for SOE, must not be historical backfill
                 if (
-                  isSOE ||
-                  change.updateDescription.updatedFields.sourceDataUpdate
-                    ?.rangeCheck ||
-                  value !== change.fullDocument.value ||
-                  valueString !== change.fullDocument.valueString ||
-                  invalid !== change.fullDocument.invalid
+                  (isSOE ||
+                    change.updateDescription.updatedFields.sourceDataUpdate
+                      ?.rangeCheck ||
+                    value !== change.fullDocument.value ||
+                    valueString !== change.fullDocument.valueString ||
+                    invalid !== change.fullDocument.invalid) &&
+                  !change.updateDescription.updatedFields.sourceDataUpdate
+                    ?.isHistorical
                 ) {
                   let dt = new Date()
 
@@ -888,12 +890,16 @@ const pipeline = [
                     }
                   }
 
-                  // historianPeriod<0 excludes from historian
+                  // historianPeriod<0 or update is not for historical record, excludes from historian
                   let insertIntoHistorian = true
                   if ('historianPeriod' in change.fullDocument) {
-                    if (change.fullDocument.historianPeriod < 0)
+                    if (
+                      change.fullDocument.historianPeriod < 0 ||
+                      !change.updateDescription.updatedFields.sourceDataUpdate
+                        ?.isNotForHistorical
+                    ) {
                       insertIntoHistorian = false
-                    else {
+                    } else {
                       // historianPeriod >= 0, will test dead band for analogs
                       if (
                         change.fullDocument?.type === 'analog' &&
@@ -954,14 +960,16 @@ const pipeline = [
                       change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSourceOk
                   }
 
+                  // do not update protection-like events for state OFF, do not update when not for historical backfill
                   if (
                     !(
                       change.fullDocument.isEvent &&
                       change.fullDocument.type === 'digital' &&
-                      value === 0
+                      value === 0 &&
+                      !change.updateDescription.updatedFields.sourceDataUpdate
+                        ?.isHistorical
                     )
                   ) {
-                    // do not update protection-like events for state OFF
                     mongoRtDataQueue.enqueue(update)
 
                     Log.log(
@@ -1068,8 +1076,13 @@ const pipeline = [
                     Log.levelDetailed
                   )
 
-                // prepare update to soeData collection
-                if (isSOE && !change.fullDocument.alarmDisabled)
+                // prepare update to soeData collection, do not put into SOE when alarm disabled or update is not for historical record
+                if (
+                  isSOE &&
+                  !change.fullDocument.alarmDisabled &&
+                  !change.updateDescription.updatedFields.sourceDataUpdate
+                    ?.isNotForHistorical
+                )
                   if (!(value === 0 && change.fullDocument.isEvent)) {
                     let eventText = change.fullDocument.eventTextFalse
                     if (value !== 0) {

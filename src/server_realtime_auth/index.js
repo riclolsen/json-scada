@@ -1,5 +1,3 @@
-'use strict'
-
 /*
  * A realtime point data HTTP web server for JSON SCADA.
  * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
@@ -17,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+'use strict'
 
 let AUTHENTICATION = process.env.JS_AUTHENTICATION === 'NOAUTH' ? false : true
 const IP_BIND = process.env.JS_IP_BIND || '127.0.0.1'

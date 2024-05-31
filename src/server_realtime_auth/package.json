@@ -9,13 +9,13 @@
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
-    "express": "^4.17.1",
+    "express": "^4.19.2",
     "express-http-proxy": "^1.6.2",
     "http-proxy-middleware": "^2.0.6",
     "jsonwebtoken": "^9.0.0",
-    "mongodb": "^5.7.0",
+    "mongodb": "^6.7.0",
     "mongoose": "^6.11.4",
-    "pg": "^8.5.1",
+    "pg": "^8.11.5",
     "queue-fifo": "^0.2.6"
   },
   "scripts": {
