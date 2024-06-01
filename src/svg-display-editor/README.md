@@ -5,7 +5,7 @@ Any graphics properties can be animated with live data, such as fill/stroke colo
 
 ## Source Code
 
-* [Display Editor Source Code](https://gitlab.com/ricardolo/inkscape)
+* [Display Editor Source Code](https://gitlab.com/ricardolo/inkscape-rebased)
 
 ## Installers
 
