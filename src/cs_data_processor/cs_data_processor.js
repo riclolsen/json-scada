@@ -895,7 +895,7 @@ const pipeline = [
                   if ('historianPeriod' in change.fullDocument) {
                     if (
                       change.fullDocument.historianPeriod < 0 ||
-                      !change.updateDescription.updatedFields.sourceDataUpdate
+                      change.updateDescription.updatedFields.sourceDataUpdate
                         ?.isNotForHistorical
                     ) {
                       insertIntoHistorian = false
