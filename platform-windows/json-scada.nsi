@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.33"
-!define VERSION_ "0.33.0.0"
+!define VERSION "v.0.34"
+!define VERSION_ "0.34.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'

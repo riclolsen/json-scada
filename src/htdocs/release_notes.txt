@@ -1,6 +1,6 @@
     {json:scada} 
     
-    © 2008-2022 Ricardo L. Olsen 
+    © 2008-2024 Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@ Acknowledgements:
   PostgreSQL - https://www.postgresql.org/
   TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
   Grafana - https://github.com/grafana/grafana, https://grafana.com/
-  Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
+  Lib60870, Lib61850 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de/
   ICCP Client by Fernando Covatti - https://github.com/fcovatti/iccp
   Opendnp3 - https://github.com/dnp3/opendnp3
   PLC4X - https://github.com/apache/plc4x
@@ -35,6 +35,7 @@ Acknowledgements:
   Inkscape - https://inkscape.org
   Inkscape + SAGE - https://sourceforge.net/projects/sage-scada
   Inkscape + SAGE (updated) - https://gitlab.com/lvta0909/inkscape
+  Inkscape + SAGE (rebased) - https://gitlab.com/ricardolo/inkscape-rebased
   Chromium by "The Chromium Authors"
   Chromium x86 binaries - http://chromium.woolyss.com/
   NGINX - http://nginx.org/
@@ -131,6 +132,150 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.34:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* Mongofw and Mongowr processes for one-way data replication, point list sync and backfill of historical data over instances.
+* Possibility of auto expansion of JSON payload properties as tags on the MQTT-Sparkplug driver.
+* Enhancements on treatment of Sparkplug properties on the MQTT-Sparkplug driver.
+* Fixed missing field 'substituted' when auto creating tags for some protocol drivers.
+* MongoDB Community Server updated to 7.0.11.
+* Grafana updated to 11.0.0.
+* Nginx updated to 1.25.5.
+* NPM packages updated.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
+Notes for version 0.33:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* Added Mongofw and Mongowr processes for data replication over instances.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+
+-------------------------------------------------------------------
+
+Notes for version 0.32:
+
+* Default login credentials: username=admin password=jsonscada.
+* Enhancements and bug fixes on IEC61850 controls.
+* Added processing of NDATA messages of MQTT/Sparkplug.
+* Added Metabase 0.49.10 connected to the local PostgreSQL. Credentials: username=json@scada.com password=jsonscada123.
+* Added OpenJDK 22.0.1.
+* Telegraf runtime updated to 1.30.2.
+* MongoDB Community Server updated to 7.0.9.
+* MongoDB Compass updated to 1.44.0.
+* Grafana updated to 9.5.18, now connect to local PostgreSQL.
+* Dotnet runtime updated to 6.0.29.
+* Nodejs runtime updated to 20.13.1.
+* Npm packages updated.
+* Chromium updated to 124.0.6367.202.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+
+-------------------------------------------------------------------
+
+Notes for version 0.31:
+
+* Default login credentials: username=admin password=jsonscada.
+* New web interface for realtime log viewing (log.io).
+* Fixed problems with analog commands.
+* Chromium updated to 119.0.6045.106.
+* MongoDB Community Server updated to 7.0.2.
+* MongoDB Compass updated to 1.40.4.
+* Grafana updated to 9.5.13.
+* Dotnet runtime updated to 6.0.24.
+* Telegraf runtime updated to 1.28.3.
+* Nodejs runtime updated to 20.9.0.
+* Npm packages updated.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
+Notes for version 0.30:
+
+* Default login credentials: username=admin password=jsonscada.
+* Fixed data update problem with the MQTT-Sparkplug driver.
+* Force data references in reports for the IEC61850 driver.
+* Fixed problems with data types in Excel config_server_for_excel/sheet.
+* Added logging/rotation by default to some services. 
+* Npm packages updated.
+* MongoDB Community Server updated to 7.0.1.
+* MongoDB Compass updated to 1.39.4.
+* Grafana updated to 9.5.9.
+* Chromium updated to 116.0.5845.180.
+* Telegraf runtime updated to 1.27.4.
+* Dotnet runtime updated to 6.0.21.
+* Nodejs runtime updated to 20.5.0.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
+Notes for version 0.29:
+
+* Default login credentials: username=admin password=jsonscada.
+* New IEC61850 Client protocol driver.
+* C# MongoDB drivers updated.
+* Npm packages updated.
+* Refactored Nodejs code for updated mongodb driver.
+* MongoDB Compass updated to 1.39.0.
+* MongoDB Community Server updated to 6.0.8.
+* Grafana updated to 9.5.6.
+* Chromium updated to 115.0.5790.102.
+* Telegraf runtime updated to 1.27.2.
+* Dotnet runtime updated to 6.0.19.
+* Nodejs runtime updated to 20.5.0.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+
+-------------------------------------------------------------------
+
 Notes for version 0.28:
 
 * Default login credentials: username=admin password=jsonscada.
@@ -147,7 +292,7 @@ Notes for version 0.28:
 Requirements and recommendations:
 
 * Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -168,7 +313,7 @@ Notes for version 0.27:
 Requirements and recommendations:
 
 * Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -188,7 +333,7 @@ Notes for version 0.26:
 Requirements and recommendations:
 
 * Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -210,7 +355,7 @@ Notes for version 0.25:
 Requirements and recommendations:
 
 * Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -233,7 +378,7 @@ Notes for version 0.24:
 Requirements and recommendations:
 
 * Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -257,7 +402,7 @@ Notes for version 0.23:
 Requirements and recommendations:
 
 * Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -280,7 +425,7 @@ Notes for version 0.22:
 Requirements:
 
 * Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -302,7 +447,7 @@ Notes for version 0.21:
 Requirements:
 
 * Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -321,7 +466,7 @@ Notes for version 0.20:
 Requirements:
 
 * Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -336,7 +481,7 @@ Notes for version 0.19:
 Requirements:
 
 * Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -362,7 +507,7 @@ Notes for version 0.18:
 Requirements:
 
 * Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -389,7 +534,7 @@ Notes for version 0.17:
 Requirements:
 
 * Windows 10/11 64 bits or Server 2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -411,7 +556,7 @@ Notes for version 0.16:
 Requirements:
 
 * Windows 10 64 bits or Server 2016, Windows PowerShell.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the use of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -434,7 +579,7 @@ Notes for version 0.15:
 Requirements:
 
 * Windows 10 64 bits or Server 2016, Windows PowerShell.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and the use of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the use of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
@@ -461,7 +606,7 @@ Requirements:
 
 * Windows 10 64 bits or Server 2016, Windows PowerShell.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
-* Administrative rights. Corporative Windows policies may cause problems with the creation of services and use of TCP ports.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and use of TCP ports.
 
 -------------------------------------------------------------------
 

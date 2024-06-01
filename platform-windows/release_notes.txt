@@ -132,6 +132,31 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.34:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* Mongofw and Mongowr processes for one-way data replication, point list sync and backfill of historical data over instances.
+* Possibility of auto expansion of JSON payload properties as tags on the MQTT-Sparkplug driver.
+* Enhancements on treatment of Sparkplug properties on the MQTT-Sparkplug driver.
+* Fixed missing field 'substituted' when auto creating tags for some protocol drivers.
+* MongoDB Community Server updated to 7.0.11.
+* Grafana updated to 11.0.0.
+* Nginx updated to 1.25.5.
+* NPM packages updated.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
 Notes for version 0.33:
 
 * Default login credentials: username=admin password=jsonscada.
@@ -140,9 +165,9 @@ Notes for version 0.33:
 
 Requirements and recommendations:
 
-* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
 * Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
-* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 * If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
@@ -167,9 +192,9 @@ Notes for version 0.32:
 
 Requirements and recommendations:
 
-* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
 * Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
-* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
 * Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
 * If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
@@ -192,7 +217,7 @@ Notes for version 0.31:
 
 Requirements and recommendations:
 
-* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 15GB of free space in the "C:" drive.
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 15GB of free space in the "C:" drive.
 * Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
@@ -218,7 +243,7 @@ Notes for version 0.30:
 
 Requirements and recommendations:
 
-* Windows 10/11 64 bits or Server >=2016, Windows PowerShell. At least 10GB of free space in the "C:" drive.
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 10GB of free space in the "C:" drive.
 * Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 27017, 5432, 80, 8080, 3000, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.

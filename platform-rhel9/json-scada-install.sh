@@ -30,7 +30,9 @@ wget https://dl.rockylinux.org/pub/rocky/9/devel/x86_64/os/Packages/p/potrace-de
 wget https://gitlab.com/inkscape/lib2geom/-/archive/master/lib2geom-master.zip
 unzip lib2geom-master.zip
 sudp rpm -ivh potrace-devel-1.16-7.el9.x86_64.rpm
-sudo dnf -y install gtkmm30-devel gspell-devel boost-devel poppler-devel gtest-devel harfbuzz-devel pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
+sudo dnf -y install gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
+sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
+sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
 sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
@@ -177,3 +179,5 @@ sudo supervisorctl status
 # cd /home/jsonscada
 # sudo -u $JS_USERNAME sh -c 'git clone --recurse-submodules https://gitlab.com/ricardolo/inkscape-rebased.git'
 # sudo -u $JS_USERNAME sh -c 'ln -s /home/jsonscada/json-scada/platform-rhel9/lib2geom-master/src/2geom /home/jsonscada/inkscape-rebased/src/3rdparty/2geom'
+# sudo -u $JS_USERNAME sh -c 'cmake -DENABLE_POPPLER_CAIRO=OFF  ..'
+# sudo -u $JS_USERNAME sh -c 'make'
