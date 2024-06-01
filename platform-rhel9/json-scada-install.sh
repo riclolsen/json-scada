@@ -25,6 +25,12 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rp
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php curl
+# to compile inkscape
+wget https://dl.rockylinux.org/pub/rocky/9/devel/x86_64/os/Packages/p/potrace-devel-1.16-7.el9.x86_64.rpm
+wget https://gitlab.com/inkscape/lib2geom/-/archive/master/lib2geom-master.zip
+unzip lib2geom-master.zip
+sudp rpm -ivh potrace-devel-1.16-7.el9.x86_64.rpm
+sudo dnf -y install gtkmm30-devel gspell-devel boost-devel poppler-devel gtest-devel harfbuzz-devel pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
 sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
@@ -167,3 +173,7 @@ sleep 10
 sudo supervisorctl status
 # sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
 
+# to compile inkscape
+# cd /home/jsonscada
+# sudo -u $JS_USERNAME sh -c 'git clone --recurse-submodules https://gitlab.com/ricardolo/inkscape-rebased.git'
+# sudo -u $JS_USERNAME sh -c 'ln -s /home/jsonscada/json-scada/platform-rhel9/lib2geom-master/src/2geom /home/jsonscada/inkscape-rebased/src/3rdparty/2geom'
