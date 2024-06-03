@@ -30,9 +30,10 @@ wget https://dl.rockylinux.org/pub/rocky/9/devel/x86_64/os/Packages/p/potrace-de
 wget https://gitlab.com/inkscape/lib2geom/-/archive/master/lib2geom-master.zip
 unzip lib2geom-master.zip
 sudp rpm -ivh potrace-devel-1.16-7.el9.x86_64.rpm
-sudo dnf -y install gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
+sudo dnf -y install ninja-build gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
 sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
+
 sudo update-crypto-policies --set LEGACY
 
 wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
@@ -171,6 +172,7 @@ sudo systemctl start nginx
 sudo systemctl start supervisord
 sudo systemctl start telegraf
 
+cd /home/jsonscada
 sleep 10
 sudo supervisorctl status
 # sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
@@ -178,6 +180,17 @@ sudo supervisorctl status
 # to compile inkscape
 # cd /home/jsonscada
 # sudo -u $JS_USERNAME sh -c 'git clone --recurse-submodules https://gitlab.com/ricardolo/inkscape-rebased.git'
-# sudo -u $JS_USERNAME sh -c 'ln -s /home/jsonscada/json-scada/platform-rhel9/lib2geom-master/src/2geom /home/jsonscada/inkscape-rebased/src/3rdparty/2geom'
-# sudo -u $JS_USERNAME sh -c 'cmake -DENABLE_POPPLER_CAIRO=OFF  ..'
-# sudo -u $JS_USERNAME sh -c 'make'
+# cd inkscape-rebased
+# sudo -u $JS_USERNAME sh -c 'mkdir build'
+# cd build
+# sudo -u $JS_USERNAME sh -c 'cmake -G Ninja -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=20 ..'
+# sudo -u $JS_USERNAME sh -c 'ninja -j4'
+# sudo ninja install
+## sudo -u $JS_USERNAME sh -c 'cmake -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=20 ..'
+## sudo -u $JS_USERNAME sh -c 'make'
+## sudo make install
+
+echo "To compile and install Inkscape+SAGE, run the following command: sudo sh ./inkscape-plus-sage.sh"
+echo "To open web interface run: firefox http://localhost"
+echo "Default credentials: admin / jsonscada"
+echo "Default Metabase credentials: json@scada.com / jsonscada123"
