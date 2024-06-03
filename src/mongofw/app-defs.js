@@ -34,5 +34,5 @@ module.exports = {
   INTERVAL_INTEGRITY: 60*60, // interval in seconds for point database integrity 
   BACKFILL_EXPIRATION: 7, // time to preserve backfill data in days
   BACKFILL_REPLAY_INTERVAL: 3, // time to auto replay backfill data in days
-  BACKFILL_DOCS_PER_SEC: 1000, // max number of documents per second to replay backfill data
+  BACKFILL_DOCS_PER_SEC: 500, // max number of documents per second to replay backfill data
 }
