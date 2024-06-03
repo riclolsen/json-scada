@@ -322,10 +322,17 @@ let pktCnt = 0
     if (AppDefs.PACKETS_INTERVAL > 0) {
       await sleep(AppDefs.PACKETS_INTERVAL)
     }
+    cntSeq++
     if (
       cntSeq > AppDefs.MAX_SEQUENCE_OF_UDPMSGS ||
       buff.length > AppDefs.PACKET_SIZE_BREAK_SEQ
     ) {
+      Log.log('Backfill Queue Size: ' + backfillQueue.size())
+      Log.log('Changes Queue Size: ' + chgQueue.size())
+      Log.log('MaxMsg Size: ' + maxSz)
+      Log.log('Seq count ' + cntSeq)
+      Log.log('                  Chg count ' + cntChg)
+      Log.log('                  UDP count ' + pktCnt)
       setTimeout(
         dequeueChangesSend,
         AppDefs.INTERVAL_AFTER_UDPMSGS_SEQ + 100 * parseInt(buff.length / 1500)
@@ -333,14 +340,15 @@ let pktCnt = 0
       return
     }
   }
-  
-  // Log.log('Data sent via UDP' + opData);
-  Log.log('Backfill Queue Size: ' + backfillQueue.size())
-  Log.log('Changes Queue Size: ' + chgQueue.size())
-  Log.log('MaxMsg Size: ' + maxSz)
-  Log.log('Seq count ' + cntSeq++)
-  Log.log('                  Chg count ' + cntChg)
-  Log.log('                  UDP count ' + pktCnt)
+
+  if (cntSeq > 0) {
+    Log.log('Backfill Queue Size: ' + backfillQueue.size())
+    Log.log('Changes Queue Size: ' + chgQueue.size())
+    Log.log('MaxMsg Size: ' + maxSz)
+    Log.log('Seq count ' + cntSeq)
+    Log.log('                  Chg count ' + cntChg)
+    Log.log('                  UDP count ' + pktCnt)
+  }
 
   setTimeout(dequeueChangesSend, AppDefs.INTERVAL_AFTER_EMPTY_QUEUE)
 })()
@@ -358,16 +366,14 @@ async function replayBackfill(db, Redundancy, MongoStatus) {
   let skip = 0
   for (;;) {
     // query from backfillData up to 'limit' entries, when change queue empty double enqueue rate
-    const findResult = db
-      .collection(BackfillDataCollectionName)
-      .find(
-        { timestamp: { $gt: replayBegin, $lte: replayEnd } },
-        {
-          sort: { timestamp: 1 },
-          limit: limit + (chgQueue.isEmpty() ? limit : 0),
-          skip: skip,
-        }
-      )
+    const findResult = db.collection(BackfillDataCollectionName).find(
+      { timestamp: { $gt: replayBegin, $lte: replayEnd } },
+      {
+        sort: { timestamp: 1 },
+        limit: limit + (chgQueue.isEmpty() ? limit : 0),
+        skip: skip,
+      }
+    )
 
     let cntDocs = 0
     let timestamp
