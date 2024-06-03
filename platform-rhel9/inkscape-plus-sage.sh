@@ -1,4 +1,9 @@
 # to compile inkscape
+
+# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
+# username is supposed to be jsonscada
+JS_USERNAME=jsonscada
+
 cd /home/jsonscada
 sudo -u $JS_USERNAME sh -c 'git clone --recurse-submodules https://gitlab.com/ricardolo/inkscape-rebased.git'
 cd inkscape-rebased
