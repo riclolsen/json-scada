@@ -93,26 +93,29 @@ module.exports.CustomProcessor = async function (
       Log.log('Collection backfillData already exists or error creating.')
     })
 
-  // enqueue point database sync data
-  ;(function callEnqueueDbSync() {
+  // enqueue point database sync data for UDP sending
+  async function callEnqueueDbSync() {
     if (clientMongo === null) return
-    enqueueDbSync(db, Redundancy, MongoStatus)
+    await enqueueDbSync(db, Redundancy, MongoStatus)
     setTimeout(callEnqueueDbSync, 1000 * AppDefs.INTERVAL_INTEGRITY)
-  })()
+  }
+  await callEnqueueDbSync()
 
   // consume queue of historical backfill changes, writing to mongodb backfillData collection
-  ;(function callBackfillDequeue() {
+  function callBackfillDequeue() {
     if (clientMongo === null) return
     backfillDequeue(db, Redundancy, MongoStatus)
     setTimeout(callBackfillDequeue, 1013)
-  })()
+  }
+  callBackfillDequeue()
 
-  // replay backfill data, enqueue to changes queue
-  ;(function callReplayBackfill() {
+  // replay backfill data (from mongodb backfillData collection), enqueue to changes queue for UDP sending 
+  function callReplayBackfill() {
     if (clientMongo === null) return
     replayBackfill(db, Redundancy, MongoStatus)
     setTimeout(callReplayBackfill, 1000 * AppDefs.INTERVAL_INTEGRITY)
-  })()
+  }
+  callReplayBackfill()
 
   // set up change streams monitoring for updates
   const changeStreamUserActions = db
@@ -179,6 +182,8 @@ async function enqueueDbSync(db, Redundancy, MongoStatus) {
   if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
     return // do nothing if process is inactive
 
+  Log.log('Begin enqueue of db sync data...')
+  let cnt = 0
   const findResult = db.collection(RealtimeDataCollectionName).find({})
   for await (const doc of findResult) {
     if (doc?.sourceDataUpdate) delete doc.sourceDataUpdate
@@ -200,7 +205,9 @@ async function enqueueDbSync(db, Redundancy, MongoStatus) {
       documentKey: { _id: doc._id },
       updateDescription: { updatedFields: { ...doc } },
     })
+    cnt++
   }
+  Log.log('End enqueueing of db sync data - ' + cnt + ' entries')
 }
 
 // insert documents queued in backfillQueue collection
