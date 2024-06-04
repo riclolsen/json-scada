@@ -20,7 +20,7 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
-sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless
+sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless inkscape
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
