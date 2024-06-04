@@ -27,10 +27,8 @@ sudo dnf -y install epel-release
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php curl
 # to compile inkscape
 wget https://dl.rockylinux.org/pub/rocky/9/devel/x86_64/os/Packages/p/potrace-devel-1.16-7.el9.x86_64.rpm
-wget https://gitlab.com/inkscape/lib2geom/-/archive/master/lib2geom-master.zip
-unzip lib2geom-master.zip
 sudp rpm -ivh potrace-devel-1.16-7.el9.x86_64.rpm
-sudo dnf -y install ninja-build gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
+sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
 sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
 
