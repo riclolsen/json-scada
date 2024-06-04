@@ -81,6 +81,9 @@ Execute commands below for scripted installation:
     cd json-scada/platform-rhel9
     sudo sh ./json-scada-install.sh
 
+    # to compile and install Inkscape+SAGE, run the following command: 
+    sudo sh ./inkscape-plus-sage.sh
+
 ## Manual Installation
 
 To install JSON-SCADA manually, it is required to install all the requirements first. There is no point reproducing original installation instructions for each upstream project. Here are links and relevant information specific to JSON-SCADA.
