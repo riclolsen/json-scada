@@ -9,9 +9,13 @@ sudo -u $JS_USERNAME sh -c 'git clone --recurse-submodules https://gitlab.com/ri
 cd inkscape-rebased
 sudo -u $JS_USERNAME sh -c 'mkdir build'
 cd build
-#sudo -u $JS_USERNAME sh -c 'cmake -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=20 ..'
+
+# to compile on Windows with msys2, use -DCMAKE_CXX_STANDARD=20
+# to compile on Linux, use -DCMAKE_CXX_STANDARD=17
+
+#sudo -u $JS_USERNAME sh -c 'cmake -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=17 ..'
 #sudo -u $JS_USERNAME sh -c 'make'
 #sudo make install
-sudo -u $JS_USERNAME sh -c 'cmake -G Ninja -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=20 ..'
+sudo -u $JS_USERNAME sh -c 'cmake -G Ninja -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=17 ..'
 sudo -u $JS_USERNAME sh -c 'ninja -j4'
 sudo ninja install

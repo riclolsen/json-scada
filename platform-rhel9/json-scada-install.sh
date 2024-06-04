@@ -177,19 +177,6 @@ sleep 10
 sudo supervisorctl status
 # sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
 
-# to compile inkscape
-# cd /home/jsonscada
-# sudo -u $JS_USERNAME sh -c 'git clone --recurse-submodules https://gitlab.com/ricardolo/inkscape-rebased.git'
-# cd inkscape-rebased
-# sudo -u $JS_USERNAME sh -c 'mkdir build'
-# cd build
-# sudo -u $JS_USERNAME sh -c 'cmake -G Ninja -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=20 ..'
-# sudo -u $JS_USERNAME sh -c 'ninja -j4'
-# sudo ninja install
-## sudo -u $JS_USERNAME sh -c 'cmake -DENABLE_POPPLER_CAIRO=OFF -DCMAKE_CXX_STANDARD=20 ..'
-## sudo -u $JS_USERNAME sh -c 'make'
-## sudo make install
-
 echo "To compile and install Inkscape+SAGE, run the following command: sudo sh ./inkscape-plus-sage.sh"
 echo "To open web interface run: firefox http://localhost"
 echo "Default credentials: admin / jsonscada"
