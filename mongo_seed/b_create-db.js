@@ -622,9 +622,9 @@ var protocolConnectionsValidator = {
   },
 }
 
-// if server is >= 5.0 enable new feature set and create hist time series collection
+// if server is >= 5.0 enable new feature set create hist time series collection
 if (db.version().charAt(0) >= 5) {
-  db.adminCommand({ setFeatureCompatibilityVersion: '5.0' })
+  // db.adminCommand({ setFeatureCompatibilityVersion: '7.0' })
   db.createCollection('hist', {
     timeseries: {
       timeField: 'timeTag',
