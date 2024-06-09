@@ -729,6 +729,8 @@
                         'IEC61850',
                         'DNP3',
                         'I104M',
+                        'PI_DATA_ARCHIVE_INJECTOR',
+                        'PI_DATA_ARCHIVE_CLIENT',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1186,6 +1188,8 @@
                         'IEC60870-5-104_SERVER',
                         'IEC60870-5-101_SERVER',
                         'IEC61850_SERVER',
+                        'PI_DATA_ARCHIVE_INJECTOR',
+                        'PI_DATA_ARCHIVE_CLIENT',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2241,7 +2245,12 @@
                 <v-list-item-group>
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850'].includes(
+                      ['MQTT-SPARKPLUG-B',
+                       'OPC-UA_SERVER',
+                       'IEC61850',
+                       'PI_DATA_ARCHIVE_INJECTOR',
+                       'PI_DATA_ARCHIVE_CLIENT',
+                       ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2506,7 +2515,10 @@
                   <v-list-item
                     class="mt-4"
                     v-if="
-                      ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
+                      ['MQTT-SPARKPLUG-B',
+                       'PI_DATA_ARCHIVE_INJECTOR',
+                       'PI_DATA_ARCHIVE_CLIENT',
+                      ].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -2620,7 +2632,7 @@
 
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B'].includes(selected.protocolDriver)
+                      ['MQTT-SPARKPLUG-B', 'PI_DATA_ARCHIVE_INJECTOR', 'PI_DATA_ARCHIVE_CLIENT'].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -3010,6 +3022,8 @@ export default {
       "PLC4X",
       "TELEGRAF-LISTENER",
       "I104M",
+      "PI_DATA_ARCHIVE_INJECTOR",
+      "PI_DATA_ARCHIVE_CLIENT",
     ],
     parityItems: ["None", "Even", "Odd", "Mark", "Space"],
     stopBitsItems: ["One", "One5", "Two"],

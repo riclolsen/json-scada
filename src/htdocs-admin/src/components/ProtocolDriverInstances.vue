@@ -273,6 +273,8 @@ export default {
       "PLC4X",
       "TELEGRAF-LISTENER",
       "I104M",
+      "PI_DATA_ARCHIVE_INJECTOR",
+      "PI_DATA_ARCHIVE_CLIENT",
     ],
     driverInstances: [],
   }),
