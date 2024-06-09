@@ -123,6 +123,7 @@ const MongoStatus = { HintMongoIsConnected: false }
               valueJson: data?.properties?.valueJson?.value,
               type: data?.type,
               ...('timestamp' in data ? { timestamp: data.timestamp } : {}),
+              ...('quality' in data ? { quality: data.quality } : {}),
               ...('good' in data.properties
                 ? { good: data.properties.good.value }
                 : {}),
