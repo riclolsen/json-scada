@@ -55,6 +55,7 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
 
   configObj.GridFsCollectionName = 'files'
   configObj.RealtimeDataCollectionName = 'realtimeData'
+  configObj.HistCollectionName = 'hist'
   configObj.UsersCollectionName = 'users'
   configObj.SoeDataCollectionName = 'soeData'
   configObj.CommandsQueueCollectionName = 'commandsQueue'

@@ -91,6 +91,7 @@ const pipeline = [
 
 ;(async () => {
   let collection = null
+  let histCollection = null
   let sqlHistQueue = new Queue() // queue of historical values to insert on postgreSQL
   let sqlRtDataQueue = new Queue() // queue of realtime values to insert on postgreSQL
   let mongoRtDataQueue = new Queue() // queue of realtime values to insert on MongoDB
@@ -133,43 +134,58 @@ const pipeline = [
   }, 17317)
 
   setInterval(async function () {
+    if (!collection || !MongoStatus.HintMongoIsConnected) return
     let cnt = 0
-    if (collection && MongoStatus.HintMongoIsConnected)
-      while (!mongoRtDataQueue.isEmpty()) {
-        let upd = mongoRtDataQueue.peek()
-        let where = { _id: upd._id }
-        delete upd._id // remove _id for update
-        collection
-          .updateOne(where, {
+    while (!mongoRtDataQueue.isEmpty()) {
+      let upd = mongoRtDataQueue.peek()
+      delete upd._id // remove _id for update
+      collection
+        .updateOne(
+          { _id: upd._id },
+          {
             $set: upd,
-          })
-          .catch(function (err) {
-            Log.log('Error on Mongodb query!', err)
-          })
-        mongoRtDataQueue.dequeue()
-        cnt++
-      }
+          },
+          {
+            writeConcern: {
+              w: 0,
+            },
+          }
+        )
+        .catch(function (err) {
+          Log.log('Error on Mongodb query!', err)
+        })
+      mongoRtDataQueue.dequeue()
+      cnt++
+    }
     if (cnt) Log.log('Mongo Updates ' + cnt)
   }, 150)
 
   // write values to sql files for later insertion on postgreSQL
   setInterval(async function () {
+    if (!histCollection || !MongoStatus.HintMongoIsConnected) return
     let doInsertData = false
     let sqlTransaction =
       'START TRANSACTION;\n' +
       'INSERT INTO hist (tag, time_tag, value, value_json, time_tag_at_source, flags) VALUES '
 
     let cntH = 0
+    let insertArr = []
     while (!sqlHistQueue.isEmpty()) {
       doInsertData = true
-      let sql = sqlHistQueue.peek()
+      let entry = sqlHistQueue.peek()
       sqlHistQueue.dequeue()
-      sqlTransaction = sqlTransaction + '\n(' + sql + '),'
+      sqlTransaction = sqlTransaction + '\n(' + entry.sql + '),'
+      insertArr.push(entry.obj)
       cntH++
     }
-    if (cntH) Log.log('PGSQL Hist updates ' + cntH)
+    if (cntH) Log.log('PGSQL/Mongo Hist updates ' + cntH)
 
     if (doInsertData) {
+      histCollection
+        .insertMany(insertArr, { ordered: false, writeConcern: { w: 0 } })
+        .catch(function (err) {
+          Log.log('Error on Mongodb query!', err)
+        })
       sqlTransaction = sqlTransaction.substring(0, sqlTransaction.length - 1) // remove last comma
       sqlTransaction = sqlTransaction + ' \n'
       // this cause problems when tag/time repeated on same transaction
@@ -258,6 +274,7 @@ const pipeline = [
           // specify db and collections
           const db = client.db(jsConfig.mongoDatabaseName)
           collection = db.collection(jsConfig.RealtimeDataCollectionName)
+          histCollection = db.collection(jsConfig.HistCollectionName)
           const changeStream = collection.watch(pipeline, {
             fullDocument: 'updateLookup',
           })
@@ -757,19 +774,26 @@ const pipeline = [
                             : '') +
                           (alarmed ? ' 🚩' : ' 🆗')
                         db.collection(jsConfig.SoeDataCollectionName)
-                          .insertOne({
-                            tag: change.fullDocument.tag,
-                            pointKey: change.fullDocument._id,
-                            group1: change.fullDocument.group1,
-                            description: change.fullDocument.description,
-                            eventText: eventText,
-                            invalid: false,
-                            priority: change.fullDocument.priority,
-                            timeTag: eventDate,
-                            timeTagAtSource: eventDate,
-                            timeTagAtSourceOk: true,
-                            ack: alarmed ? 0 : 1, // enter as acknowledged when normalized
-                          })
+                          .insertOne(
+                            {
+                              tag: change.fullDocument.tag,
+                              pointKey: change.fullDocument._id,
+                              group1: change.fullDocument.group1,
+                              description: change.fullDocument.description,
+                              eventText: eventText,
+                              invalid: false,
+                              priority: change.fullDocument.priority,
+                              timeTag: eventDate,
+                              timeTagAtSource: eventDate,
+                              timeTagAtSourceOk: true,
+                              ack: alarmed ? 0 : 1, // enter as acknowledged when normalized
+                            },
+                            {
+                              writeConcern: {
+                                w: 0,
+                              },
+                            }
+                          )
                           .catch(function (err) {
                             Log.log('Error on Mongodb query!', err)
                           })
@@ -795,25 +819,32 @@ const pipeline = [
                           ? ' ↓'
                           : '')
                       db.collection(jsConfig.SoeDataCollectionName)
-                        .insertOne({
-                          tag: change.fullDocument.tag,
-                          pointKey: change.fullDocument._id,
-                          group1: change.fullDocument.group1,
-                          description: change.fullDocument.description,
-                          eventText: eventText,
-                          invalid: false,
-                          priority: change.fullDocument.priority,
-                          timeTag: new Date(),
-                          timeTagAtSource: isSOE
-                            ? change.updateDescription.updatedFields
-                                .sourceDataUpdate.timeTagAtSource
-                            : new Date(),
-                          timeTagAtSourceOk: isSOE
-                            ? change.updateDescription.updatedFields
-                                .sourceDataUpdate.timeTagAtSourceOk
-                            : false,
-                          ack: 1, // enter as acknowledged as it is not an alarm
-                        })
+                        .insertOne(
+                          {
+                            tag: change.fullDocument.tag,
+                            pointKey: change.fullDocument._id,
+                            group1: change.fullDocument.group1,
+                            description: change.fullDocument.description,
+                            eventText: eventText,
+                            invalid: false,
+                            priority: change.fullDocument.priority,
+                            timeTag: new Date(),
+                            timeTagAtSource: isSOE
+                              ? change.updateDescription.updatedFields
+                                  .sourceDataUpdate.timeTagAtSource
+                              : new Date(),
+                            timeTagAtSourceOk: isSOE
+                              ? change.updateDescription.updatedFields
+                                  .sourceDataUpdate.timeTagAtSourceOk
+                              : false,
+                            ack: 1, // enter as acknowledged as it is not an alarm
+                          },
+                          {
+                            writeConcern: {
+                              w: 0,
+                            },
+                          }
+                        )
                         .catch(function (err) {
                           Log.log('Error on Mongodb query!', err)
                         })
@@ -1008,8 +1039,9 @@ const pipeline = [
                       b2 = '0', // reserved
                       b1 = '0', // reserved
                       b0 = '0' // reserved
-                    sqlHistQueue.enqueue(
-                      "'" +
+                    sqlHistQueue.enqueue({
+                      sql:
+                        "'" +
                         change.fullDocument.tag +
                         "'," +
                         "'" +
@@ -1039,8 +1071,34 @@ const pipeline = [
                         b2 +
                         b1 +
                         b0 +
-                        "'"
-                    )
+                        "'",
+                      obj: {
+                        tag: change.fullDocument.tag,
+                        timeTag:
+                          change.updateDescription.updatedFields
+                            .sourceDataUpdate.timeTag,
+                        value:
+                          change.fullDocument.type === 'string'
+                            ? valueString
+                            : change.fullDocument.type === 'json'
+                            ? valueJson
+                            : value,
+                        invalid: invalid,
+                        ...(update.timeTagAtSource !== null
+                          ? { timeTagAtSource: update.timeTagAtSource }
+                          : {}),
+                        ...(update.timeTagAtSourceOk !== null
+                          ? { timeTagAtSourceOk: update.timeTagAtSourceOk }
+                          : {}),
+                        ...(change.updateDescription.updatedFields
+                          .sourceDataUpdate?.causeOfTransmissionAtSource
+                          ? {
+                              cot: change.updateDescription.updatedFields
+                                .sourceDataUpdate.causeOfTransmissionAtSource,
+                            }
+                          : {}),
+                      },
+                    })
                   }
 
                   // update change.fullDocument with new data just to stringify it and queue update for postgresql update
@@ -1090,23 +1148,30 @@ const pipeline = [
                     }
 
                     db.collection(jsConfig.SoeDataCollectionName)
-                      .insertOne({
-                        tag: change.fullDocument.tag,
-                        pointKey: change.fullDocument._id,
-                        group1: change.fullDocument.group1,
-                        description: change.fullDocument.description,
-                        eventText: eventText,
-                        invalid: invalid,
-                        priority: change.fullDocument.priority,
-                        timeTag: new Date(),
-                        timeTagAtSource:
-                          change.updateDescription.updatedFields
-                            .sourceDataUpdate.timeTagAtSource,
-                        timeTagAtSourceOk:
-                          change.updateDescription.updatedFields
-                            .sourceDataUpdate.timeTagAtSourceOk,
-                        ack: 0,
-                      })
+                      .insertOne(
+                        {
+                          tag: change.fullDocument.tag,
+                          pointKey: change.fullDocument._id,
+                          group1: change.fullDocument.group1,
+                          description: change.fullDocument.description,
+                          eventText: eventText,
+                          invalid: invalid,
+                          priority: change.fullDocument.priority,
+                          timeTag: new Date(),
+                          timeTagAtSource:
+                            change.updateDescription.updatedFields
+                              .sourceDataUpdate.timeTagAtSource,
+                          timeTagAtSourceOk:
+                            change.updateDescription.updatedFields
+                              .sourceDataUpdate.timeTagAtSourceOk,
+                          ack: 0,
+                        },
+                        {
+                          writeConcern: {
+                            w: 0,
+                          },
+                        }
+                      )
                       .catch(function (err) {
                         Log.log('Error on Mongodb query!', err)
                       })

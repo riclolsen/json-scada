@@ -27,6 +27,10 @@ var protocolDriverNames = [
   'SPA-BUS',
   'BACNET',
   'ICCP',
+  'PI_DATA_ARCHIVE_INJECTOR',
+  'PI_DATA_ARCHIVE_CLIENT',
+  'INFLUXDB_INJECTOR',
+  'INFLUXDB_CLIENT',
   'UNDEFINED',
 ]
 
@@ -622,19 +626,17 @@ var protocolConnectionsValidator = {
   },
 }
 
-// if server is >= 5.0 enable new feature set create hist time series collection
-if (db.version().charAt(0) >= 5) {
-  // db.adminCommand({ setFeatureCompatibilityVersion: '7.0' })
-  db.createCollection('hist', {
-    timeseries: {
-      timeField: 'timeTag',
-      metaField: 'tag',
-      granularity: 'seconds',
-    },
-    expireAfterSeconds: 60 * 60 * 24 * 30 * 2,
-  })
-  db.hist.createIndex({ tag: 1, timeTag: 1 })
-}
+// create hist time series collection
+db.createCollection('hist', {
+  timeseries: {
+    timeField: 'timeTag',
+    metaField: 'tag',
+    // granularity: 'minutes',
+    bucketMaxSpanSeconds: 3600,
+    bucketRoundingSeconds: 3600,
+  },
+  expireAfterSeconds: 60 * 60 * 24 * 30 * 2, // 2 months
+})
 
 db.createCollection('protocolDriverInstances', {
   validationLevel: validationLevel,

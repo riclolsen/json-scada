@@ -18,3 +18,12 @@ db.createCollection('roles')
 db.roles.createIndex({ name: 1 }, { name: 'roleNameIndex', unique: true })
 db.createCollection('users')
 db.users.createIndex({ username: 1 }, { name: 'userNameIndex', unique: true })
+db.createCollection('hist', {
+  timeseries: {
+    timeField: 'timeTag',
+    metaField: 'tag',
+    bucketMaxSpanSeconds: 3600,
+    bucketRoundingSeconds: 3600,
+  },
+  expireAfterSeconds: 60 * 60 * 24 * 30 * 2,
+})
