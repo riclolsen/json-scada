@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
+# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 ARM64 AND COMPATIBLE PLATFORMS
 # username is supposed to be jsonscada
 JS_USERNAME=jsonscada
 
@@ -32,11 +32,12 @@ sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel re
 sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
 wget https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.$(arch).rpm
 sudo dnf -y install ./potrace-devel-1.16-7.el9.$(arch).rpm
+sudo dnf remove -y python3-circuitbreaker
 
 sudo update-crypto-policies --set LEGACY
 
-wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.22.3.linux-arm64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-arm64.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 
@@ -99,17 +100,20 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 EOL
 sudo dnf -y update 
-sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo dnf -y install timescaledb-2-postgresql-16 postgresql16 postgresql16-contrib
+sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
+sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew  /etc/yum.repos.d/pgdg-redhat-all.repo
+sudo dnf -y --enablerepo=pgdg16 update
+curl -s https://packagecloud.io/install/repositories/timescale/timescaledb/script.rpm.sh | sudo bash
+sudo dnf -y install timescaledb_16 postgresql16 postgresql16-contrib
 sudo dnf -y install timescaledb-toolkit-postgresql-16
-sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
+# sudo timescaledb-tune --pg-config=/usr/pgsql-16/bin/pg_config
 # config postgresql local connections with trust method
 sudo cp pg_hba.conf /var/lib/pgsql/16/data/
 sudo chown postgres:postgres /var/lib/pgsql/16/data/pg_hba.conf
 sudo cp postgresql.conf /var/lib/pgsql/16/data/
 sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
 sudo systemctl enable postgresql-16
-sudo timescaledb-tune --pg-config=/usr/pgsql-16/bin/pg_config
+sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -149,7 +153,7 @@ sudo systemctl start mongod
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
 psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
 psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
-psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
+# psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
 
 mongosh json_scada < ../mongo_seed/a_rs-init.js
 mongosh json_scada < ../mongo_seed/b_create-db.js
@@ -166,8 +170,8 @@ sudo systemctl start grafana-server
 sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
 
-cd ../platform-linux 
-sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh'
+cd ../platform-linux
+sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh linux-arm64'
 
 sudo systemctl start php-fpm
 sudo systemctl start nginx

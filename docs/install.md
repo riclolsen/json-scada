@@ -79,7 +79,12 @@ Execute commands below for scripted installation:
     cd /home/jsonscada
     git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
     cd json-scada/platform-rhel9
+
+    # on x86-64 platform run
     sudo sh ./json-scada-install.sh
+
+    # on ARM64 platform instead run
+    # sudo sh ./json-scada-install-aarch64.sh 
 
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh

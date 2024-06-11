@@ -25,6 +25,11 @@ CREATE DATABASE "json_scada"
 \c json_scada
 
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+-- CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit CASCADE;
+
+-- after timescaledb updates
+-- ALTER EXTENSION timescaledb UPDATE;
+-- ALTER EXTENSION timescaledb_toolkit UPDATE;
 
 -- disable timescaledb telemetry
 ALTER SYSTEM SET timescaledb.telemetry_level=off;
