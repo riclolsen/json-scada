@@ -134,29 +134,38 @@ const pipeline = [
   }, 17317)
 
   setInterval(async function () {
-    if (!collection || !MongoStatus.HintMongoIsConnected) return
+    if (
+      !collection ||
+      !MongoStatus.HintMongoIsConnected ||
+      mongoRtDataQueue.isEmpty()
+    )
+      return
     let cnt = 0
+    let updArr = []
     while (!mongoRtDataQueue.isEmpty()) {
-      let upd = mongoRtDataQueue.peek()
-      delete upd._id // remove _id for update
-      collection
-        .updateOne(
-          { _id: upd._id },
-          {
-            $set: upd,
-          },
-          {
-            writeConcern: {
-              w: 0,
-            },
-          }
-        )
-        .catch(function (err) {
-          Log.log('Error on Mongodb query!', err)
-        })
+      const upd = mongoRtDataQueue.peek()
       mongoRtDataQueue.dequeue()
+      const _id = upd._id
+      delete upd._id // remove _id for update
+      updArr.push({
+        updateOne: {
+          filter: { _id: _id },
+          update: { $set: upd },
+        },
+      })
       cnt++
     }
+    const res = await collection
+      .bulkWrite(updArr, {
+        ordered: false,
+        writeConcern: {
+          w: 0,
+        },
+      })
+      .catch(function (err) {
+        Log.log('Error on Mongodb query!', err)
+      })
+    // Log.log(JSON.stringify(res))
     if (cnt) Log.log('Mongo Updates ' + cnt)
   }, 150)
 
