@@ -233,7 +233,8 @@ rem set LOGIO_SERVER_UI_BUILD_PATH=C:\json-scada\src\log-io\ui\build
 cd \json-scada\platform-windows\telegraf-runtime
 
 REM service for telegraf runtime
-C:\json-scada\platform-windows\telegraf-runtime\telegraf --service install --service-name="JSON_SCADA_telegraf_runtime" --service-display-name="JSON_SCADA_telegraf_runtime" --config "C:\json-scada\conf\telegraf.conf"
+reg delete "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Application\JSON_SCADA_telegraf_runtime" /f
+C:\json-scada\platform-windows\telegraf-runtime\telegraf --service-name JSON_SCADA_telegraf_runtime --service-display-name JSON_SCADA_telegraf_runtime --config C:\json-scada\conf\telegraf.conf service install
 
 rem Create scheduled task for log rotation (alternative log rotator), configure with logrotate.conf
 rem Should stop services to force log file to close. See https://sourceforge.net/p/logrotatewin/wiki/LogRotate/
