@@ -231,8 +231,8 @@ async function backfillDequeue(db, Redundancy, MongoStatus) {
   if (backfillArr.length === 0) return
   const result = await db
     .collection(BackfillDataCollectionName)
-    .insertMany(backfillArr)
-  Log.log('Backfill: Inserted ' + result.insertedCount + ' documents.')
+    .insertMany(backfillArr, { ordered: false, writeConcern: { w: 0 } })
+  // Log.log('Backfill: Inserted ' + result.insertedCount + ' documents.')
 }
 
 // dequeue changes and send via UDP

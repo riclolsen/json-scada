@@ -132,6 +132,34 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.35:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* Added timeseries 'hist' collection on MongoDB for historical archival.
+* Fixed Telegraf service creation.
+* Optimized mongo inserts and updates on cs_data_processor.
+* Optimizations on Mongofw/Mongowr one-way replication processes.
+* Inkscape+SAGE: new build based on 1.2-dev.
+* PostgreSQL updated to 16.3-2.
+* TimescaleDB updated to 2.15.2.
+* Telegraf runtime updated to 1.31.0.
+* Nodejs runtime updated to 20.14.0.
+* Dotnet runtime updated to 6.0.31.
+* Chromium updated to 126.0.6478.57.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
 Notes for version 0.34:
 
 * Default login credentials: username=admin password=jsonscada.
