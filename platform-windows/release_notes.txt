@@ -84,6 +84,9 @@ To allow other IP addresses edit the "c:\json-scada\conf\nginx_access_control.co
 To configure safe remote client access, configure IP address access control, HTTPS, 
   client certificates and user authentication directly in the Nginx configuration files.
 
+Locally installed databases MongoDB and Postgresql are configured for local access only with relaxed access control 
+  and authorization. The system can be reconfigured to access databases on external servers with full security.
+
 -------------------------------------------------------------------
 
 The customized Inkscape SVG graphics editor is a derivative of the Inkscape Project
@@ -99,25 +102,24 @@ We respect the GPL license of the upstream work by making the source code of the
   modifications to the original Inkscape and SAGE code available at:
 
 Source Code:
-  https://sourceforge.net/p/oshmiopensubstationhmi/mercurial/ci/default/tree/inkscape_sage_src/
+  https://gitlab.com/ricardolo/inkscape-rebased/
 
 -------------------------------------------------------------------
   
 Recommended Operating Systems:
 
-* Windows 10 Pro/Home/Enterprise, 64 bits.
-* Modern 64bit Windows server OSs.
-
-Please use an updated OS.
+* Windows 10/11 Pro/Home/Enterprise, 64 bit only.
+* Windows Server 2019+.
 
 Can also run on:
+* RHEL/Rocky/Oracle/Alma Linux 9.4 x86/64 or ARM64 (scripted installation).
 * Other Linux distros, Mac OSX, x86/64, ARM64, (no installer provided).
 * See documentation.
 
 Client user interface can be used on:
 * Modern IOS and Android devices.
 * Any device with an updated HTML5 browser like Chrome, Chromium, Firefox, Edge, Safari, Brave, Opera, Vivaldi.
-* Internet Explorer and non-Chromium based Edge are strictly not supported!
+* Internet Explorer and non-Chromium based Edge are explicitly not supported!
 
 -------------------------------------------------------------------
 
