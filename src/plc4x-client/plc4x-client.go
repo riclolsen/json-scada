@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -614,12 +615,35 @@ func main() {
 		}
 
 		// Prepare a read-request
-		protocolConn.ReadRequest, err = protocolConn.PlcConn.ReadRequestBuilder().
-			AddTagAddress("field1", "holding-register:1:INT").
-			AddTagAddress("field5", "holding-register:5:INT").
-			Build()
+		//protocolConn.ReadRequest, err = protocolConn.PlcConn.ReadRequestBuilder().
+		//	AddTagAddress("field1", "holding-register:1:INT").
+		//	AddTagAddress("field5", "holding-register:5:INT").
+		//	Build()
+		reqBld := protocolConn.PlcConn.ReadRequestBuilder()
+		for _, topic := range protocolConn.Topics {
+			spl := strings.Split(topic, ":")
+			jsTagname, plc4xTagname, plc4xAddress := "", "", ""
+
+			switch len(spl) {
+			case 3:
+				jsTagname = fmt.Sprintf("PLC4X_%d_%s", protocolConn.ProtocolConnectionNumber, spl[0]+"."+spl[1]+"."+spl[2])
+				plc4xAddress = spl[0] + ":" + spl[1] + ":" + spl[2]
+				plc4xTagname = plc4xAddress
+			case 4:
+				jsTagname = spl[0]
+				plc4xAddress = spl[1] + ":" + spl[2] + ":" + spl[3]
+				plc4xTagname = plc4xAddress
+			default:
+				log.Printf(protocolConn.Name+": error: wrong topic format: %s", topic)
+				continue
+			}
+			_ = jsTagname
+			log.Printf(protocolConn.Name+": tagName: %s address: %s", plc4xTagname, plc4xAddress)
+			reqBld.AddTagAddress(plc4xTagname, plc4xAddress)
+		}
+		protocolConn.ReadRequest, err = reqBld.Build()
 		if err != nil {
-			log.Printf("error preparing read-request: %s", connectionResult.GetErr().Error())
+			log.Printf(protocolConn.Name+": error preparing read-request: %s", connectionResult.GetErr().Error())
 			return
 		}
 
@@ -637,15 +661,58 @@ func main() {
 			}
 
 			// Do something with the response
-			value1 := readRequestResult.GetResponse().GetValue("field1")
-			log.Printf(protocolConn.Name+": Result field1: %d\n", value1.GetInt16())
-			value5 := readRequestResult.GetResponse().GetValue("field5")
-			log.Printf(protocolConn.Name+": Result field5: %d\n", value5.GetInt16())
+			for _, plc4xTagName := range readRequestResult.GetResponse().GetTagNames() {
+				v := readRequestResult.GetResponse().GetValue(plc4xTagName)
+				var valDbl float64 = 0
+				var valStr string = ""
+				switch v.GetPlcValueType().String() {
+				case "Unknown":
+				case "NULL":
+				case "BOOL":
+				case "BYTE":
+				case "WORD":
+				case "DWORD":
+				case "LWORD":
+				case "USINT":
+				case "UINT":
+				case "UDINT":
+				case "ULINT":
+				case "SINT":
+				case "INT":
+					log.Printf(protocolConn.Name+": Result '%s': %04xh %d\n", plc4xTagName, v.GetInt16(), v.GetInt16())
+					valDbl = float64(v.GetInt16())
+				case "DINT":
+				case "LINT":
+				case "REAL":
+				case "LREAL":
+				case "CHAR":
+				case "WCHAR":
+				case "STRING":
+					valStr = v.GetString()
+					log.Printf(protocolConn.Name+": Result '%s': %s\n", plc4xTagName, valStr)
+				case "WSTRING":
+				case "TIME":
+				case "LTIME":
+				case "DATE":
+				case "LDATE":
+				case "TIME_OF_DAY":
+				case "LTIME_OF_DAY":
+				case "DATE_AND_TIME":
+				case "DATE_AND_LTIME":
+				case "LDATE_AND_TIME":
+				case "Struct":
+				case "List":
+				case "RAW_BYTE_ARRAY":
+				}
+				_ = valDbl
+			}
 		}
 		go func() {
 			execRead()
 			for range time.Tick(time.Millisecond * 100) {
-				execRead()
+				if protocolConn.PlcConn.IsConnected() {
+					execRead()
+				}
 			}
 		}()
 	}
