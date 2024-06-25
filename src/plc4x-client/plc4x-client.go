@@ -26,8 +26,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -35,141 +33,19 @@ import (
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/config"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
-	"github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/pkg/api/transports"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var softwareVersion string = "{json:scada} PLC4X Generic PlC Protocol Driver v.0.1.0 - Copyright 2020-2024 Ricardo L. Olsen"
-var driverName string = "PLC4X"
-var isActive bool = false
-
-var logLevel = 1
-
-const logLevelMin = 0
-const logLevelBasic = 1
-const logLevelDetailed = 2
-const logLevelDebug = 3
-
-const udpChannelSize = 1000
-const udpReadBufferPackets = 100
-
-var pointFilter uint32 = 0
-
-type configData struct {
-	NodeName                 string `json:"nodeName"`
-	MongoConnectionString    string `json:"mongoConnectionString"`
-	MongoDatabaseName        string `json:"mongoDatabaseName"`
-	TLSCaPemFile             string `json:"tlsCaPemFile"`
-	TLSClientPemFile         string `json:"tlsClientPemFile"`
-	TLSClientPfxFile         string `json:"tlsClientPfxFile"`
-	TLSClientKeyPassword     string `json:"tlsClientKeyPassword"`
-	TLSAllowInvalidHostnames bool   `json:"tlsAllowInvalidHostnames"`
-	TLSAllowChainErrors      bool   `json:"tlsAllowChainErrors"`
-	TLSInsecure              bool   `json:"tlsInsecure"`
-}
-
-type commandQueueEntry struct {
-	ID                             primitive.ObjectID `json:"_id" bson:"_id"`
-	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
-	ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
-	ProtocolSourceObjectAddress    int                `json:"protocolSourceObjectAddress"`
-	ProtocolSourceASDU             int                `json:"protocolSourceASDU"`
-	ProtocolSourceCommandDuration  int                `json:"protocolSourceCommandDuration"`
-	ProtocolSourceCommandUseSBO    bool               `json:"protocolSourceCommandUseSBO"`
-	PointKey                       int                `json:"pointKey"`
-	Tag                            string             `json:"tag"`
-	TimeTag                        time.Time          `json:"timeTag"`
-	Value                          float64            `json:"value"`
-	ValueString                    string             `json:"valueString"`
-	OriginatorUserName             string             `json:"originatorUserName"`
-	OriginatorIPAddress            string             `json:"originatorIpAddress"`
-}
-
-type insertChange struct {
-	FullDocument  commandQueueEntry `json:"fullDocument"`
-	OperationType string            `json:"operationType"`
-}
-
-type protocolDriverInstance struct {
-	ID                               primitive.ObjectID `json:"_id" bson:"_id"`
-	ProtocolDriver                   string             `json:"protocolDriver"`
-	ProtocolDriverInstanceNumber     int                `json:"protocolDriverInstanceNumber"`
-	Enabled                          bool               `json:"enabled"`
-	LogLevel                         int                `json:"logLevel"`
-	NodeNames                        []string           `json:"nodeNames"`
-	ActiveNodeName                   string             `json:"activeNodeName"`
-	ActiveNodeKeepAliveTimeTag       time.Time          `json:"activeNodeKeepAliveTimeTag"`
-	KeepProtocolRunningWhileInactive bool               `json:"keepProtocolRunningWhileInactive"`
-}
-
-type protocolConnection struct {
-	ProtocolDriver               string   `json:"protocolDriver"`
-	ProtocolDriverInstanceNumber int      `json:"protocolDriverInstanceNumber"`
-	ProtocolConnectionNumber     int      `json:"protocolConnectionNumber"`
-	Name                         string   `json:"name"`
-	Description                  string   `json:"description"`
-	Enabled                      bool     `json:"enabled"`
-	CommandsEnabled              bool     `json:"commandsEnabled"`
-	IPAddressLocalBind           string   `json:"ipAddressLocalBind"`
-	IPAddresses                  []string `json:"ipAddresses"`
-	EndpointURLs                 []string `json:"endpointURLs"`
-	Topics                       []string `json:"topics"`
-	GiInterval                   float32  `json:"giInterval"`
-	PlcConn                      plc4go.PlcConnection
-	ReadRequest                  model.PlcReadRequest
-}
-
-// check error, terminate app if error
-func checkFatalError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-// connects to mongodb database
-func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collection, collInsts *mongo.Collection, collConns *mongo.Collection, collCmds *mongo.Collection, err error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-
-	if cfg.TLSCaPemFile != "" || cfg.TLSClientPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tls=true"
-	}
-	if cfg.TLSCaPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCAFile=" + cfg.TLSCaPemFile
-	}
-	if cfg.TLSClientPemFile != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFile=" + cfg.TLSClientPemFile
-	}
-	if cfg.TLSClientKeyPassword != "" {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsCertificateKeyFilePassword=" + cfg.TLSClientKeyPassword
-	}
-	if cfg.TLSInsecure {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsInsecure=true"
-	}
-	if cfg.TLSAllowChainErrors {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsInsecure=true"
-	}
-	if cfg.TLSAllowInvalidHostnames {
-		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
-	}
-
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoConnectionString))
-	if err != nil {
-		return client, collRTD, collInsts, collConns, collCmds, err
-	}
-	collRTD = client.Database(cfg.MongoDatabaseName).Collection("realtimeData")
-	collInsts = client.Database(cfg.MongoDatabaseName).Collection("protocolDriverInstances")
-	collConns = client.Database(cfg.MongoDatabaseName).Collection("protocolConnections")
-	collCmds = client.Database(cfg.MongoDatabaseName).Collection("commandsQueue")
-
-	return client, collRTD, collInsts, collConns, collCmds, err
-}
+var (
+	SoftwareVersion string = "{json:scada} PLC4X Generic PlC Protocol Driver v.0.1.0 - Copyright 2020-2024 Ricardo L. Olsen"
+	DriverName      string = "PLC4X"
+	IsActive        bool   = false
+	PointFilter     uint32 = 0
+)
 
 // cancel a command on commandsQueue collection
 func commandCancel(collectionCommands *mongo.Collection, ID primitive.ObjectID, cancelReason string) {
@@ -200,11 +76,11 @@ func commandDelivered(collectionCommands *mongo.Collection, ID primitive.ObjectI
 }
 
 // process commands from change stream, forward commands
-func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, stream *mongo.ChangeStream, protConns []*protocolConnection, collectionCommands *mongo.Collection) {
+func iterateCommandsChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, stream *mongo.ChangeStream, protConns []*protocolConnection, collectionCommands *mongo.Collection) {
 	defer stream.Close(routineCtx)
 	defer waitGroup.Done()
 	for stream.Next(routineCtx) {
-		if !isActive {
+		if !IsActive {
 			return
 		}
 
@@ -323,85 +199,10 @@ func iterateChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, 
 	}
 }
 
-var countKeepAliveUpdates = 0
-var countKeepAliveUpdatesLimit = 4
-var lastActiveNodeKeepAliveTimeTag time.Time
-
-func processRedundancy(collectionInstances *mongo.Collection, id primitive.ObjectID, cfg configData) {
-
-	var instance protocolDriverInstance
-	filter := bson.D{{Key: "_id", Value: id}}
-	err := collectionInstances.FindOne(context.TODO(), filter).Decode(&instance)
-	if err != nil {
-		log.Println("Redundancy - Error querying protocolDriverInstances!")
-		log.Println(err)
-	}
-	if instance.ProtocolDriver == "" {
-		log.Println("Redundancy - No driver instance found!")
-	}
-
-	if !contains(instance.NodeNames, cfg.NodeName) {
-		log.Fatal("Redundancy - This node name not in the list of nodes from driver instance!")
-	}
-
-	if instance.ActiveNodeName == cfg.NodeName {
-		if !isActive {
-			log.Println("Redundancy - ACTIVATING this Node!")
-		}
-		isActive = true
-	} else {
-		if isActive { // was active, other node assumed, so be inactive and wait a random time
-			log.Println("Redundancy - DEACTIVATING this Node (other node active)!")
-			countKeepAliveUpdates = 0
-			isActive = false
-			time.Sleep(time.Duration(1000) * time.Millisecond)
-		}
-		isActive = false
-		if lastActiveNodeKeepAliveTimeTag == instance.ActiveNodeKeepAliveTimeTag {
-			countKeepAliveUpdates++
-		}
-		lastActiveNodeKeepAliveTimeTag = instance.ActiveNodeKeepAliveTimeTag
-		if countKeepAliveUpdates > countKeepAliveUpdatesLimit { // time exceeded, be active
-			log.Println("Redundancy - ACTIVATING this Node!")
-			isActive = true
-		}
-
-	}
-
-	if isActive {
-		log.Println("Redundancy - This node is active.")
-
-		// update keep alive time and node name
-		result, err := collectionInstances.UpdateOne(
-			context.TODO(),
-			bson.M{"_id": bson.M{"$eq": id}},
-			bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now())}},
-		)
-		if err != nil {
-			log.Println(err)
-		} else {
-			if logLevel >= logLevelDebug {
-				log.Println("Redundancy - Update result: ", result)
-			}
-		}
-	}
-}
-
-// find if array contains a string
-func contains(a []string, str string) bool {
-	tStr := strings.TrimSpace(str)
-	for _, n := range a {
-		if tStr == strings.TrimSpace(n) {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
 	log.SetOutput(os.Stdout) // log to standard output
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.Println(softwareVersion)
+	log.Println(SoftwareVersion)
 	log.Println("Usage plc4x-client [instance number] [log level] [config file name]")
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -430,133 +231,21 @@ func main() {
 
 	var client *mongo.Client
 	var err error
-	var collectionInstances, collectionConnections, collectionCommands *mongo.Collection
-	var csCommands *mongo.ChangeStream
+	var collectionRtData, collectionInstances, collectionConnections, collectionCommands *mongo.Collection
 	someConnectionHasCommandsEnabled := false
 
-	instanceNumber := 1
-	if os.Getenv("JS_PLC4X_INSTANCE") != "" {
-		i, err := strconv.Atoi(os.Getenv("JS_PLC4X_INSTANCE"))
-		if err != nil {
-			log.Println("JS_PLC4X_INSTANCE environment variable should be a number!")
-			os.Exit(2)
-		}
-		instanceNumber = i
-	}
-	if len(os.Args) > 1 {
-		i, err := strconv.Atoi(os.Args[1])
-		if err != nil {
-			log.Println("Instance parameter should be a number!")
-			os.Exit(2)
-		}
-		instanceNumber = i
-	}
-
-	if os.Getenv("JS_PLC4X_LOGLEVEL") != "" {
-		i, err := strconv.Atoi(os.Getenv("JS_I104M_LOGLEVEL"))
-		if err != nil {
-			log.Println("JS_PLC4X_LOGLEVEL environment variable should be a number!")
-			os.Exit(2)
-		}
-		logLevel = i
-	}
-	if len(os.Args) > 2 {
-		logLevel, err = strconv.Atoi(os.Args[2])
-		if err != nil {
-			log.Println("Log Level parameter should be a number!")
-			os.Exit(2)
-		}
-	}
-
-	cfgFileName := filepath.Join("..", "conf", "json-scada.json")
-	if _, err := os.Stat(cfgFileName); err != nil {
-		cfgFileName = filepath.Join("c:\\", "json-scada", "conf", "json-scada.json")
-	}
-	cfg := configData{}
-	if os.Getenv("JS_CONFIG_FILE") != "" {
-		cfgFileName = os.Getenv("JS_CONFIG_FILE")
-	}
-	if len(os.Args) > 3 {
-		cfgFileName = os.Args[3]
-	}
-	file, err := os.ReadFile(cfgFileName)
-	if err != nil {
-		log.Printf("Failed to read file: %v", err)
-		os.Exit(1)
-	}
-
-	if len(os.Args) > 4 {
-		ipf, _ := strconv.Atoi(os.Args[4])
-		pointFilter = uint32(ipf)
-		log.Printf("Point filter set to: %d", pointFilter)
-	}
-
-	_ = json.Unmarshal([]byte(file), &cfg)
-	cfg.MongoConnectionString = strings.TrimSpace(cfg.MongoConnectionString)
-	cfg.MongoDatabaseName = strings.TrimSpace(cfg.MongoDatabaseName)
-	cfg.NodeName = strings.TrimSpace(cfg.NodeName)
-
-	if cfg.MongoConnectionString == "" || cfg.MongoDatabaseName == "" || cfg.NodeName == "" {
-		log.Printf("Empty string in config file.")
-		os.Exit(1)
-	}
+	cfg, instanceNumber, ll := readConfigFile()
+	logLevel = ll
 
 	log.Print("Mongodb - Try to connect server...")
-	client, _, collectionInstances, collectionConnections, collectionCommands, err = mongoConnect(cfg)
+	client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err = mongoConnect(cfg)
 	checkFatalError(err)
 	defer client.Disconnect(context.TODO())
-
-	// Check the connection
-	err = client.Ping(context.TODO(), nil)
-	checkFatalError(err)
-	log.Print("Mongodb - Connected to server.")
-
-	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	csCommands, err = collectionCommands.Watch(context.TODO(), mongo.Pipeline{bson.D{
-		{
-			Key: "$match", Value: bson.D{
-				{Key: "operationType", Value: "insert"},
-			},
-		},
-	}}, opts)
-	checkFatalError(err)
-	defer csCommands.Close(context.TODO())
-
-	// read instances config
-	var instance protocolDriverInstance
-	filter := bson.D{
-		{Key: "protocolDriver", Value: driverName},
-		{Key: "protocolDriverInstanceNumber", Value: instanceNumber},
-		{Key: "enabled", Value: true},
-	}
-	err = collectionInstances.FindOne(context.TODO(), filter).Decode(&instance)
-	if err != nil || instance.ProtocolDriver == "" {
-		log.Fatal("No driver instance found on configuration! Driver Name: ", driverName, " Instance number: ", instanceNumber)
-	}
-
-	// read connections config
-	filter = bson.D{
-		{Key: "protocolDriver", Value: driverName},
-		{Key: "protocolDriverInstanceNumber", Value: instanceNumber},
-		{Key: "enabled", Value: true},
-	}
-	var protocolConns []*protocolConnection
-	cursor, err := collectionConnections.Find(context.TODO(), filter)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer cursor.Close(context.TODO())
-	count := 0
-	for cursor.Next(context.TODO()) {
-		var protocolConn protocolConnection
-		if err = cursor.Decode(&protocolConn); err != nil {
-			log.Fatal(err)
-		}
-		protocolConns = append(protocolConns, &protocolConn)
-		count++
-	}
+	protocolConns, csCommands := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
 
 	for _, protocolConn := range protocolConns {
+		protocolConn.GetAutoKeyInitialValueConn(collectionRtData, protocolConn.ProtocolConnectionNumber)
+
 		if len(protocolConn.EndpointURLs) == 0 {
 			log.Printf("No server endpoint for connection %s!", protocolConn.Name)
 			continue
@@ -679,8 +368,23 @@ func main() {
 				case "ULINT":
 				case "SINT":
 				case "INT":
-					log.Printf(protocolConn.Name+": Result '%s': %04xh %d\n", plc4xTagName, v.GetInt16(), v.GetInt16())
+					log.Printf(protocolConn.Name+": Read result '%s': %04xh %d\n", plc4xTagName, v.GetInt16(), v.GetInt16())
 					valDbl = float64(v.GetInt16())
+					/*
+						wReqBld := protocolConn.PlcConn.WriteRequestBuilder()
+						wReqBld.AddTagAddress(plc4xTagName, plc4xTagName, v.GetInt16()+1)
+						if wReq, err := wReqBld.Build(); err != nil {
+							log.Printf(protocolConn.Name+": error preparing write-request: %s", err.Error())
+						} else {
+							// Execute a write-request
+							resChan := wReq.Execute()
+							// Wait for the response to finish
+							wResponse := <-resChan
+							log.Println(wResponse.GetResponse().GetResponseCode(plc4xTagName))
+							log.Println(wResponse.String())
+						}
+					*/
+
 				case "DINT":
 				case "LINT":
 				case "REAL":
@@ -689,7 +393,7 @@ func main() {
 				case "WCHAR":
 				case "STRING":
 					valStr = v.GetString()
-					log.Printf(protocolConn.Name+": Result '%s': %s\n", plc4xTagName, valStr)
+					log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, valStr)
 				case "WSTRING":
 				case "TIME":
 				case "LTIME":
@@ -722,7 +426,7 @@ func main() {
 		waitGroup.Add(1)
 		routineCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		go iterateChangeStream(routineCtx, &waitGroup, csCommands, protocolConns, collectionCommands)
+		go iterateCommandsChangeStream(routineCtx, &waitGroup, csCommands, protocolConns, collectionCommands)
 	}
 
 	// wait forever
