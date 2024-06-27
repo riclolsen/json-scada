@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/IBM/netaddr v1.5.0 // indirect
-	github.com/apache/plc4x/plc4go v0.0.0-20240621143148-fecd23ece900 // indirect
+	github.com/apache/plc4x/plc4go v0.0.0-20240625160523-4cd4ff14565d // indirect
 	github.com/dchest/uniuri v1.2.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
