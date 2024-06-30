@@ -223,7 +223,11 @@ func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collecti
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
 	}
 
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoConnectionString))
+	bsonOpts := &options.BSONOptions{
+		// UseJSONStructTags:       true,
+		// StringifyMapKeysWithFmt: true,
+	}
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoConnectionString).SetBSONOptions(bsonOpts))
 	if err != nil {
 		return client, collRTD, collInsts, collConns, collCmds, err
 	}

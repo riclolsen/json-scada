@@ -21,6 +21,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -30,72 +31,72 @@ import (
 )
 
 type RtDataTag struct {
-	Id                             float64   `json:"_id"`
-	ProtocolSourceASDU             string    `json:"protocolSourceASDU"`
-	ProtocolSourceCommonAddress    string    `json:"protocolSourceCommonAddress"`
-	ProtocolSourceConnectionNumber float64   `json:"protocolSourceConnectionNumber"`
-	ProtocolSourceObjectAddress    string    `json:"protocolSourceObjectAddress"`
-	ProtocolSourceCommandUseSBO    bool      `json:"protocolSourceCommandUseSBO"`
-	ProtocolSourceCommandDuration  float64   `json:"protocolSourceCommandDuration"`
-	AlarmState                     float64   `json:"alarmState"`
-	AlarmRange                     float64   `json:"alarmRange"`
-	Description                    string    `json:"description"`
-	UngroupedDescription           string    `json:"ungroupedDescription"`
-	Group1                         string    `json:"group1"`
-	Group2                         string    `json:"group2"`
-	Group3                         string    `json:"group3"`
-	StateTextFalse                 string    `json:"stateTextFalse"`
-	StateTextTrue                  string    `json:"stateTextTrue"`
-	EventTextFalse                 string    `json:"eventTextFalse"`
-	EventTextTrue                  string    `json:"eventTextTrue"`
-	Origin                         string    `json:"origin"`
-	Tag                            string    `json:"tag"`
-	Type                           string    `json:"type"`
-	Value                          float64   `json:"value"`
-	ValueString                    string    `json:"valueString"`
-	ValueJson                      bson.M    `json:"valueJson"`
-	AlarmDisabled                  bool      `json:"alarmDisabled"`
-	Alerted                        bool      `json:"alerted"`
-	Alarmed                        bool      `json:"alarmed"`
-	Annotation                     string    `json:"annotation"`
-	CommandBlocked                 bool      `json:"commandBlocked"`
-	CommandOfSupervised            float64   `json:"commandOfSupervised"`
-	CommissioningRemarks           string    `json:"commissioningRemarks"`
-	Formula                        float64   `json:"formula"`
-	Frozen                         bool      `json:"frozen"`
-	FrozenDetectTimeout            float64   `json:"frozenDetectTimeout"`
-	HiLimit                        float64   `json:"hiLimit"`
-	HihiLimit                      float64   `json:"hihiLimit"`
-	HihihiLimit                    float64   `json:"hihihiLimit"`
-	HistorianDeadBand              float64   `json:"historianDeadBand"`
-	HistorianPeriod                float64   `json:"historianPeriod"`
-	Hysteresis                     float64   `json:"hysteresis"`
-	Invalid                        bool      `json:"invalid"`
-	InvalidDetectTimeout           float64   `json:"invalidDetectTimeout"`
-	IsEvent                        bool      `json:"isEvent"`
-	Kconv1                         float64   `json:"kconv1"`
-	Kconv2                         float64   `json:"kconv2"`
-	Location                       bson.M    `json:"location"`
-	LoLimit                        float64   `json:"loLimit"`
-	LoloLimit                      float64   `json:"loloLimit"`
-	LololoLimit                    float64   `json:"lololoLimit"`
-	Notes                          string    `json:"notes"`
-	Overflow                       bool      `json:"overflow"`
-	Parcels                        []float64 `json:"parcels"`
-	Priority                       float64   `json:"priority"`
-	ProtocolDestinations           bson.M    `json:"protocolDestinations"`
-	SourceDataUpdate               bson.M    `json:"sourceDataUpdate"`
-	SupervisedOfCommand            float64   `json:"supervisedOfCommand"`
-	Substituted                    bool      `json:"substituted"`
-	TimeTag                        time.Time `json:"timeTag"`
-	TimeTagAlarm                   time.Time `json:"timeTagAlarm"`
-	TimeTagAtSource                time.Time `json:"timeTagAtSource"`
-	TimeTagAtSourceOk              time.Time `json:"timeTagAtSourceOk"`
-	Transient                      bool      `json:"transient"`
-	Unit                           string    `json:"unit"`
-	UpdatesCnt                     float64   `json:"updatesCnt"`
-	ValueDefault                   float64   `json:"valueDefault"`
-	ZeroDeadband                   float64   `json:"zeroDeadband"`
+	Id                             float64   `bson:"_id" json:"_id"`
+	ProtocolSourceASDU             string    `bson:"protocolSourceASDU" json:"protocolSourceASDU"`
+	ProtocolSourceCommonAddress    string    `bson:"protocolSourceCommonAddress" json:"protocolSourceCommonAddress"`
+	ProtocolSourceConnectionNumber float64   `bson:"protocolSourceConnectionNumber" json:"protocolSourceConnectionNumber"`
+	ProtocolSourceObjectAddress    string    `bson:"protocolSourceObjectAddress" json:"protocolSourceObjectAddress"`
+	ProtocolSourceCommandUseSBO    bool      `bson:"protocolSourceCommandUseSBO" json:"protocolSourceCommandUseSBO"`
+	ProtocolSourceCommandDuration  float64   `bson:"protocolSourceCommandDuration" json:"protocolSourceCommandDuration"`
+	AlarmState                     float64   `bson:"alarmState" json:"alarmState"`
+	AlarmRange                     float64   `bson:"alarmRange" json:"alarmRange"`
+	Description                    string    `bson:"description" json:"description"`
+	UngroupedDescription           string    `bson:"ungroupedDescription" json:"ungroupedDescription"`
+	Group1                         string    `bson:"group1" json:"group1"`
+	Group2                         string    `bson:"group2" json:"group2"`
+	Group3                         string    `bson:"group3" json:"group3"`
+	StateTextFalse                 string    `bson:"stateTextFalse" json:"stateTextFalse"`
+	StateTextTrue                  string    `bson:"stateTextTrue" json:"stateTextTrue"`
+	EventTextFalse                 string    `bson:"eventTextFalse" json:"eventTextFalse"`
+	EventTextTrue                  string    `bson:"eventTextTrue" json:"eventTextTrue"`
+	Origin                         string    `bson:"origin" json:"origin"`
+	Tag                            string    `bson:"tag" json:"tag"`
+	Type                           string    `bson:"type" json:"type"`
+	Value                          float64   `bson:"value" json:"value"`
+	ValueString                    string    `bson:"valueString" json:"valueString"`
+	ValueJson                      bson.M    `bson:"valueJson" json:"valueJson"`
+	AlarmDisabled                  bool      `bson:"alarmDisabled" json:"alarmDisabled"`
+	Alerted                        bool      `bson:"alerted" json:"alerted"`
+	Alarmed                        bool      `bson:"alarmed" json:"alarmed"`
+	Annotation                     string    `bson:"annotation" json:"annotation"`
+	CommandBlocked                 bool      `bson:"commandBlocked" json:"commandBlocked"`
+	CommandOfSupervised            float64   `bson:"commandOfSupervised" json:"commandOfSupervised"`
+	CommissioningRemarks           string    `bson:"commissioningRemarks" json:"commissioningRemarks"`
+	Formula                        float64   `bson:"formula" json:"formula"`
+	Frozen                         bool      `bson:"frozen" json:"frozen"`
+	FrozenDetectTimeout            float64   `bson:"frozenDetectTimeout" json:"frozenDetectTimeout"`
+	HiLimit                        float64   `bson:"hiLimit" json:"hiLimit"`
+	HihiLimit                      float64   `bson:"hihiLimit" json:"hihiLimit"`
+	HihihiLimit                    float64   `bson:"hihihiLimit" json:"hihihiLimit"`
+	HistorianDeadBand              float64   `bson:"historianDeadBand" json:"historianDeadBand"`
+	HistorianPeriod                float64   `bson:"historianPeriod" json:"historianPeriod"`
+	Hysteresis                     float64   `bson:"hysteresis" json:"hysteresis"`
+	Invalid                        bool      `bson:"invalid" json:"invalid"`
+	InvalidDetectTimeout           float64   `bson:"invalidDetectTimeout" json:"invalidDetectTimeout"`
+	IsEvent                        bool      `bson:"isEvent" json:"isEvent"`
+	Kconv1                         float64   `bson:"kconv1" json:"kconv1"`
+	Kconv2                         float64   `bson:"kconv2" json:"kconv2"`
+	Location                       bson.M    `bson:"location" json:"location"`
+	LoLimit                        float64   `bson:"loLimit" json:"loLimit"`
+	LoloLimit                      float64   `bson:"loloLimit" json:"loloLimit"`
+	LololoLimit                    float64   `bson:"lololoLimit" json:"lololoLimit"`
+	Notes                          string    `bson:"notes" json:"notes"`
+	Overflow                       bool      `bson:"overflow" json:"overflow"`
+	Parcels                        []float64 `bson:"parcels" json:"parcels"`
+	Priority                       float64   `bson:"priority" json:"priority"`
+	ProtocolDestinations           bson.M    `bson:"protocolDestinations" json:"protocolDestinations"`
+	SourceDataUpdate               bson.M    `bson:"sourceDataUpdate" json:"sourceDataUpdate"`
+	SupervisedOfCommand            float64   `bson:"supervisedOfCommand" json:"supervisedOfCommand"`
+	Substituted                    bool      `bson:"substituted" json:"substituted"`
+	TimeTag                        time.Time `bson:"timeTag" json:"timeTag"`
+	TimeTagAlarm                   time.Time `bson:"timeTagAlarm" json:"timeTagAlarm"`
+	TimeTagAtSource                time.Time `bson:"timeTagAtSource" json:"timeTagAtSource"`
+	TimeTagAtSourceOk              time.Time `bson:"timeTagAtSourceOk" json:"timeTagAtSourceOk"`
+	Transient                      bool      `bson:"transient" json:"transient"`
+	Unit                           string    `bson:"unit" json:"unit"`
+	UpdatesCnt                     float64   `bson:"updatesCnt" json:"updatesCnt"`
+	ValueDefault                   float64   `bson:"valueDefault" json:"valueDefault"`
+	ZeroDeadband                   float64   `bson:"zeroDeadband" json:"zeroDeadband"`
 }
 
 const _AutoKeyMultiplier = 1000000 // should be more than estimated maximum points on a connection
@@ -180,6 +181,8 @@ func (pc *protocolConnection) AutoCreateTag(rtData *RtDataTag, rtDataCollection 
 	rtData.StateTextTrue = "ON"
 	rtData.Origin = "supervised"
 	rtData.Unit = ""
-	rtDataCollection.InsertOne(context.TODO(), rtData)
+	if _, err := rtDataCollection.InsertOne(context.TODO(), rtData); err != nil {
+		log.Println("Mongodb: Error inserting tag", rtData.Tag, err)
+	}
 	_ListCreatedTags[rtData.Tag] = rtData.Type
 }

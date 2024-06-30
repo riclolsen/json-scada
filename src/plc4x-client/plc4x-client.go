@@ -416,7 +416,7 @@ func main() {
 					rtd.ProtocolSourceObjectAddress = plc4xAddress
 					rtd.Group1 = DriverName
 					rtd.Group2 = protocolConn.Name
-					rtd.Group3 = topic
+					rtd.Group3 = plc4xAddress
 					rtd.Type = typeJsTag
 					protocolConn.AutoCreateTag(&rtd, collectionRtData)
 					if logLevel >= logLevelBasic {
@@ -463,22 +463,23 @@ func main() {
 
 					updOper.SetUpdate(bson.D{
 						{Key: "$set", Value: bson.D{
-							{Key: "sourceDataUpdate", Value: bson.D{}},
-							{Key: "valueAtSource", Value: float64(valDbl)},
-							{Key: "valueStringAtSource", Value: valStr},
-							{Key: "valueJsonAtSource", Value: valJson},
-							{Key: "invalidAtSource", Value: false},
-							{Key: "notTopicalAtSource", Value: false},
-							{Key: "substitutedAtSource", Value: false},
-							{Key: "blockedAtSource", Value: false},
-							{Key: "overflowAtSource", Value: false},
-							{Key: "transientAtSource", Value: false},
-							{Key: "carryAtSource", Value: false},
-							{Key: "asduAtSource", Value: v.GetPlcValueType().String()},
-							{Key: "causeOfTransmissionAtSource", Value: 20},
-							{Key: "timeTag", Value: time.Now()},
-							//{Key: "timeTagAtSource", Value: time.Now()},
-							//{Key: "timeTagAtSourceOk", Value: false},
+							{Key: "sourceDataUpdate", Value: bson.D{
+								{Key: "valueAtSource", Value: float64(valDbl)},
+								{Key: "valueStringAtSource", Value: valStr},
+								{Key: "valueJsonAtSource", Value: valJson},
+								{Key: "invalidAtSource", Value: false},
+								{Key: "notTopicalAtSource", Value: false},
+								{Key: "substitutedAtSource", Value: false},
+								{Key: "blockedAtSource", Value: false},
+								{Key: "overflowAtSource", Value: false},
+								{Key: "transientAtSource", Value: false},
+								{Key: "carryAtSource", Value: false},
+								{Key: "asduAtSource", Value: v.GetPlcValueType().String()},
+								{Key: "causeOfTransmissionAtSource", Value: 20},
+								{Key: "timeTag", Value: time.Now()},
+								//{Key: "timeTagAtSource", Value: time.Now()},
+								//{Key: "timeTagAtSourceOk", Value: false},
+							}},
 						}},
 					})
 					updOpers = append(updOpers, updOper)
