@@ -174,14 +174,12 @@ func (pc *protocolConnection) AutoCreateTag(rtData *RtDataTag, rtDataCollection 
 	rtData.Id = float64(pc.AutoKeyId)
 	rtData.Description = rtData.Tag
 	rtData.UngroupedDescription = rtData.ProtocolSourceObjectAddress
-	rtData.Type = "analog" // default type
 	rtData.EventTextFalse = "OFF"
 	rtData.EventTextTrue = "ON"
 	rtData.StateTextFalse = "OFF"
 	rtData.StateTextTrue = "ON"
 	rtData.Origin = "supervised"
-	rtData.Unit = "" // default unit
+	rtData.Unit = ""
 	rtDataCollection.InsertOne(context.TODO(), rtData)
-	_ListCreatedTags[rtData.Tag] = "analog"
-	return
+	_ListCreatedTags[rtData.Tag] = rtData.Type
 }

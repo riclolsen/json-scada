@@ -36,8 +36,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var logLevel = 1
-
 const (
 	logLevelMin      = 0
 	logLevelBasic    = 1
@@ -47,6 +45,8 @@ const (
 
 //const udpChannelSize = 1000
 //const udpReadBufferPackets = 100
+
+var logLevel = logLevelBasic
 
 type configData struct {
 	NodeName                 string `json:"nodeName"`
@@ -121,9 +121,10 @@ func checkFatalError(err error) {
 	}
 }
 
-func readConfigFile() (cfg configData, instanceNumber int, logLevel int) {
+func readConfigFile() (cfg configData, instanceNumber int, instLogLevel int) {
 	var err error
 	instanceNumber = 1
+	instLogLevel = logLevelBasic
 	if os.Getenv("JS_"+DriverName+"_INSTANCE") != "" {
 		i, err := strconv.Atoi(os.Getenv("JS_PLC4X_INSTANCE"))
 		if err != nil {
@@ -147,10 +148,10 @@ func readConfigFile() (cfg configData, instanceNumber int, logLevel int) {
 			log.Println("JS_" + DriverName + "_LOGLEVEL environment variable should be a number!")
 			os.Exit(2)
 		}
-		logLevel = i
+		instLogLevel = i
 	}
 	if len(os.Args) > 2 {
-		logLevel, err = strconv.Atoi(os.Args[2])
+		instLogLevel, err = strconv.Atoi(os.Args[2])
 		if err != nil {
 			log.Println("Log Level parameter should be a number!")
 			os.Exit(2)
