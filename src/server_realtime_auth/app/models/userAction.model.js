@@ -1,17 +1,17 @@
-const mongoose = require("mongoose");
-const Double = require('@mongoosejs/double');
+const mongoose = require('mongoose')
+const Double = require('./double')
 
 const UserAction = mongoose.model(
-  "UserAction",  
+  'UserAction',
   new mongoose.Schema({
-    username: {type: String},
-    pointKey: {type: Double},
-    tag: {type: String},
-    properties: {type: Object},
-    action: {type: String},
-    timeTag: {type: Date}
+    username: { type: String },
+    pointKey: { type: Double },
+    tag: { type: String },
+    properties: { type: Object },
+    action: { type: String },
+    timeTag: { type: Date },
   }),
-  "userActions"
-);
+  'userActions'
+)
 
-module.exports = UserAction;
+module.exports = UserAction

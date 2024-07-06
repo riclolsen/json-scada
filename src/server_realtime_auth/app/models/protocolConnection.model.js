@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const Double = require('@mongoosejs/double')
+const Double = require('./double')
 
 const ProtocolConnection = mongoose.model(
   'ProtocolConnection',
@@ -8,14 +8,14 @@ const ProtocolConnection = mongoose.model(
     protocolDriverInstanceNumber: {
       type: Double,
       required: true,
-      default: 1.0
+      default: 1.0,
     },
     protocolConnectionNumber: {
       type: Double,
       required: true,
       unique: true,
       min: 1,
-      default: 1.0
+      default: 1.0,
     },
     name: { type: String, required: true, default: 'NEW_CONNECTION' },
     description: { type: String, required: true, default: 'NEW CONNECTION' },
@@ -35,25 +35,25 @@ const ProtocolConnection = mongoose.model(
     groupId: { type: String },
 
     // MQTT-SPARKPLUG-B, IEC 104 Server, IEC 104 Client
-    passphrase: { type: String, default: '' }, 
+    passphrase: { type: String, default: '' },
 
     // MQTT-SPARKPLUG-B
     topicsAsFiles: { type: [String], default: [] },
-    topicsScripted: { type: [Object], default: [] },  
+    topicsScripted: { type: [Object], default: [] },
     clientId: { type: String },
     edgeNodeId: { type: String },
     deviceId: { type: String },
     scadaHostId: { type: String },
     publishTopicRoot: { type: String },
-    pfxFilePath: { type: String, default: '' }, 
+    pfxFilePath: { type: String, default: '' },
     username: { type: String },
-    
+
     // MQTT-SPARKPLUG-B, IEC61850 Client and Server
     password: { type: String },
-    
+
     // OPC-UA Client, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850 Client
     autoCreateTags: { type: Boolean, default: true },
-  
+
     // OPC-UA Client
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
     autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
@@ -69,12 +69,15 @@ const ProtocolConnection = mongoose.model(
     timeoutMs: { type: Double, min: 0, default: 20000 },
 
     // OPC-UA Client
-    configFileName: { type: String, default: "../conf/Opc.Ua.DefaultClient.Config.xml" },
+    configFileName: {
+      type: String,
+      default: '../conf/Opc.Ua.DefaultClient.Config.xml',
+    },
 
     // IEC 104 Server and Client, DNP3, PLCTag, I104M
     localLinkAddress: { type: Double, min: 0, default: 1.0 },
     remoteLinkAddress: { type: Double, min: 0, default: 1.0 },
-    
+
     // IEC 104 Server and Client, DNP3, PLCTag, I104M, IEC61850 Client
     giInterval: { type: Double, min: 0, default: 300.0 },
 
@@ -106,35 +109,35 @@ const ProtocolConnection = mongoose.model(
     localCertFilePath: { type: String, default: '' },
 
     // IEC 104 Client/Server, DNP3 Client, IEC61850 Client and Server
-    peerCertFilePath: { type: String, default: '' }, 
+    peerCertFilePath: { type: String, default: '' },
 
     // IEC 104 Server, IEC61850 Client and Server
-    peerCertFilesPaths: { type: [String], default: [] }, 
+    peerCertFilesPaths: { type: [String], default: [] },
 
     // IEC 104 Client/Server, MQTT-SPARKPLUG-B, IEC61850 Client and Server
-    rootCertFilePath: { type: String, default: '' }, 
-    chainValidation: { type: Boolean, default: false }, 
+    rootCertFilePath: { type: String, default: '' },
+    chainValidation: { type: Boolean, default: false },
 
     // IEC 104 Client/Server, IEC61850 Client and Server
     allowOnlySpecificCertificates: { type: Boolean, default: false },
 
     // DNP3 Client, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850 Client and Server
-    privateKeyFilePath: { type: String, default: '' }, 
-    allowTLSv10: { type: Boolean, default: false }, 
-    allowTLSv11: { type: Boolean, default: false }, 
-    allowTLSv12: { type: Boolean, default: true }, 
-    allowTLSv13: { type: Boolean, default: true }, 
-    cipherList: { type: String, default: '' },  
+    privateKeyFilePath: { type: String, default: '' },
+    allowTLSv10: { type: Boolean, default: false },
+    allowTLSv11: { type: Boolean, default: false },
+    allowTLSv12: { type: Boolean, default: true },
+    allowTLSv13: { type: Boolean, default: true },
+    cipherList: { type: String, default: '' },
 
     // DNP3 Client
-    asyncOpenDelay: { type: Double, min: 0.0, default: 0.0 }, 
-    timeSyncMode: { type: Double, min: 0.0, max: 2.0, default: 0.0 }, 
-    class0ScanInterval: { type: Double, min: 0.0, default: 0.0 }, 
-    class1ScanInterval: { type: Double, min: 0.0, default: 0.0 }, 
-    class2ScanInterval: { type: Double, min: 0.0, default: 0.0 }, 
-    class3ScanInterval: { type: Double, min: 0.0, default: 0.0 }, 
-    enableUnsolicited: { type: Boolean, default: true }, 
-    rangeScans: { type: Array, default: [] },  
+    asyncOpenDelay: { type: Double, min: 0.0, default: 0.0 },
+    timeSyncMode: { type: Double, min: 0.0, max: 2.0, default: 0.0 },
+    class0ScanInterval: { type: Double, min: 0.0, default: 0.0 },
+    class1ScanInterval: { type: Double, min: 0.0, default: 0.0 },
+    class2ScanInterval: { type: Double, min: 0.0, default: 0.0 },
+    class3ScanInterval: { type: Double, min: 0.0, default: 0.0 },
+    enableUnsolicited: { type: Boolean, default: true },
+    rangeScans: { type: Array, default: [] },
 
     // IEC 101 Server and Client, DNP3 Client
     portName: { type: String },
@@ -147,8 +150,7 @@ const ProtocolConnection = mongoose.model(
     timeoutForACK: { type: Double, min: 1, default: 1000 },
     timeoutRepeat: { type: Double, min: 1, default: 1000 },
     useSingleCharACK: { type: Boolean, default: true },
-    sizeOfLinkAddress : { type: Double, min: 0, default: 1 },
-
+    sizeOfLinkAddress: { type: Double, min: 0, default: 1 },
   }),
   'protocolConnections'
 )

@@ -9,7 +9,7 @@ let OpcResp = {
   NamespaceUris: [
     'urn:opcf-apps-01:UA:Quickstarts:ReferenceServer',
     'http://opcfoundation.org/Quickstarts/ReferenceApplications',
-    'http://opcfoundation.org/UA/Diagnostics'
+    'http://opcfoundation.org/UA/Diagnostics',
   ],
   ServerUris: [],
   ServiceId: 395,
@@ -19,9 +19,9 @@ let OpcResp = {
       Timestamp: '',
       ServiceDiagnostics: { LocalizedText: 0 },
       StringTable: [],
-      ServiceResult: 0
-    }
-  }
+      ServiceResult: 0,
+    },
+  },
 }
 
 verifyToken = (req, res, next) => {
@@ -38,7 +38,7 @@ verifyToken = (req, res, next) => {
       OpcResp.Body.ResponseHeader.RequestHandle = reqHandle
       OpcResp.Body.ResponseHeader.StringTable = [
         'BadIdentityTokenInvalid',
-        'Access denied (absent access token)!'
+        'Access denied (absent access token)!',
       ]
       OpcResp.Body.ResponseHeader.ServiceResult = 0x80200000 // BadIdentityTokenInvalid
       return res.status(200).send(OpcResp)
@@ -54,7 +54,7 @@ verifyToken = (req, res, next) => {
         OpcResp.Body.ResponseHeader.RequestHandle = reqHandle
         OpcResp.Body.ResponseHeader.StringTable = [
           'BadIdentityTokenRejected',
-          'Access denied (access token rejected)!'
+          'Access denied (access token rejected)!',
         ]
         OpcResp.Body.ResponseHeader.ServiceResult = 0x80210000 // BadIdentityTokenRejected
         return res.status(200).send(OpcResp)
@@ -62,7 +62,7 @@ verifyToken = (req, res, next) => {
       return res.status(200).send({
         ok: false,
         message: 'Access not allowed. ' + err,
-        decoded: decoded
+        decoded: decoded,
       })
     }
     req.userId = decoded.id
@@ -70,44 +70,40 @@ verifyToken = (req, res, next) => {
   })
 }
 
-isAdmin = (req, res, next) => {
+isAdmin = async (req, res, next) => {
   Log.log('isAdmin')
 
   let tok = checkToken(req)
   if (tok === false) return false
 
-  User.findOne({ username: tok.username }).exec((err, user) => {
-    if (err) {
-      res.status(500).send({ message: err })
+  try {
+    let user = await User.findOne({ username: tok.username }).exec()
+    if (!user) {
+      res.status(403).send({ message: 'Require isAdmin rights!' })
       return
     }
 
-    Role.find(
-      {
-        _id: { $in: user.roles }
-      },
-      (err, roles) => {
-        if (err) {
-          res.status(500).send({ message: err })
-          return
-        }
+    let roles = await Role.find({
+      _id: { $in: user.roles },
+    }).exec()
 
-        for (let i = 0; i < roles.length; i++) {
-          if (roles[i].isAdmin) {
-            next()
-            return
-          }
-        }
-
-        res.status(403).send({ message: 'Require isAdmin rights!' })
+    for (let i = 0; i < roles.length; i++) {
+      if (roles[i].isAdmin) {
+        next()
         return
       }
-    )
-  })
+    }
+
+    res.status(403).send({ message: 'Require isAdmin rights!' })
+    return
+  } catch (err) {
+    res.status(500).send({ message: err })
+    return
+  }
 }
 
 // check and decoded token
-checkToken = req => {
+checkToken = (req) => {
   let res = false
 
   Log.log('CheckToken')
@@ -128,15 +124,17 @@ checkToken = req => {
 }
 
 // User in request can send commands?
-canSendCommands = async req => {
+canSendCommands = async (req) => {
   Log.log('canSendCommands?')
 
   try {
     const user = await User.findById(req.userId).exec()
+    if (!user) return false
 
     const roles = await Role.find({
-      _id: { $in: user.roles }
+      _id: { $in: user.roles },
     }).exec()
+    if (!roles || roles.length == 0) return false
 
     for (let i = 0; i < roles.length; i++) {
       if (roles[i].sendCommands) {
@@ -157,27 +155,26 @@ canSendCommandTo = async (req, group1) => {
 
   try {
     const user = await User.findById(req.userId).exec()
+    if (!user) return false
 
     const roles = await Role.find({
-      _id: { $in: user.roles }
+      _id: { $in: user.roles },
     }).exec()
 
-    if (roles.length == 0) return false
+    if (!roles || roles.length == 0) return false
 
     for (let i = 0; i < roles.length; i++) {
       if (roles[i].group1CommandList.length > 0) {
         // has a list, so in principle deny command
         result = false
       }
-      if ( roles[i].group1CommandList.includes(group1) ){
+      if (roles[i].group1CommandList.includes(group1)) {
         Log.log('User can command!')
         return true
       }
     }
-    if (result)
-       Log.log('User can command!')
-    else
-       Log.log('User has no right to issue commands!')
+    if (result) Log.log('User can command!')
+    else Log.log('User has no right to issue commands!')
     return result
   } catch (err) {
     Log.log(err)
@@ -205,6 +202,6 @@ const authJwt = {
   hasRight,
   isAdmin,
   canSendCommands,
-  canSendCommandTo
+  canSendCommandTo,
 }
 module.exports = authJwt
