@@ -28,7 +28,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
@@ -79,9 +78,9 @@ func commandDelivered(collectionCommands *mongo.Collection, ID primitive.ObjectI
 }
 
 // process commands from change stream, forward commands
-func iterateCommandsChangeStream(routineCtx context.Context, waitGroup *sync.WaitGroup, stream *mongo.ChangeStream, protConns []*protocolConnection, collectionCommands *mongo.Collection) {
+func iterateCommandsChangeStream(routineCtx context.Context /*waitGroup *sync.WaitGroup, */, stream *mongo.ChangeStream, protConns []*protocolConnection, collectionCommands *mongo.Collection) {
 	defer stream.Close(routineCtx)
-	defer waitGroup.Done()
+	// defer waitGroup.Done()
 	for stream.Next(routineCtx) {
 		if !IsActive {
 			return
@@ -232,8 +231,7 @@ func main() {
 	var client *mongo.Client
 	var err error
 	var collectionRtData, collectionInstances, collectionConnections, collectionCommands *mongo.Collection
-	someConnectionHasCommandsEnabled := false
-
+	// someConnectionHasCommandsEnabled := false
 	cfg, instanceNumber, ll := readConfigFile()
 	logLevel := ll
 
@@ -241,7 +239,7 @@ func main() {
 	client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err = mongoConnect(cfg)
 	checkFatalError(err)
 	defer client.Disconnect(context.TODO())
-	protocolConns, csCommands := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
+	protocolConns, _ := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	if logLevel >= logLevelDebug {
@@ -253,13 +251,8 @@ func main() {
 	}
 	log.Println("Log level set to:", logLevel)
 
-	var waitGroup sync.WaitGroup
-	if someConnectionHasCommandsEnabled {
-		waitGroup.Add(1)
-		routineCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		go iterateCommandsChangeStream(routineCtx, &waitGroup, csCommands, protocolConns, collectionCommands)
-	}
+	chMongoBw := make(chan []mongo.WriteModel, 1000)
+	go mongoSetupWriter(cfg, instanceNumber, chMongoBw, logLevel)
 
 	// keep retrying reconnection when disconnected
 	for {
@@ -279,9 +272,9 @@ func main() {
 				log.Fatal("No server endpoint for connection: ", protocolConn.Name)
 			}
 
-			if protocolConn.CommandsEnabled {
-				someConnectionHasCommandsEnabled = true
-			}
+			//if protocolConn.CommandsEnabled {
+			//	someConnectionHasCommandsEnabled = true
+			//}
 
 			// log connection info
 			log.Printf("Instance: %d Connection: %d %s", protocolConn.ProtocolDriverInstanceNumber, protocolConn.ProtocolConnectionNumber, protocolConn.Name)
@@ -460,13 +453,15 @@ func main() {
 					v := readRequestResult.GetResponse().GetValue(plc4xTagName)
 
 					valDbl, valStr, valJson := extractValue(v, protocolConn, plc4xTagName, logLevel)
-
+					var valBson bson.D
+					bson.Unmarshal([]byte(valJson), &valBson)
 					updOper.SetUpdate(bson.D{
 						{Key: "$set", Value: bson.D{
 							{Key: "sourceDataUpdate", Value: bson.D{
 								{Key: "valueAtSource", Value: float64(valDbl)},
 								{Key: "valueStringAtSource", Value: valStr},
 								{Key: "valueJsonAtSource", Value: valJson},
+								{Key: "valueBsonAtSource", Value: valBson},
 								{Key: "invalidAtSource", Value: false},
 								{Key: "notTopicalAtSource", Value: false},
 								{Key: "substitutedAtSource", Value: false},
@@ -485,17 +480,10 @@ func main() {
 					updOpers = append(updOpers, updOper)
 				}
 				if len(updOpers) > 0 {
-					res, err := collectionRtData.BulkWrite(
-						context.Background(),
-						updOpers,
-						options.BulkWrite().SetOrdered(false),
-					)
-					if res == nil || err != nil {
-						log.Println("Mongodb - bulk error!")
-						log.Println(err)
-					}
-					if logLevel >= logLevelDetailed {
-						log.Printf("Mongodb - Matched count: %d, Updated Count: %d", res.MatchedCount, res.ModifiedCount)
+					select {
+					case chMongoBw <- updOpers: // Put values in the channel unless it is full
+					default:
+						fmt.Println("Error: mongo write channel full. Discarding values!")
 					}
 				}
 				return nil
@@ -640,4 +628,39 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 		}
 	}
 	return
+}
+
+func mongoSetupWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo.WriteModel, logLevel int) {
+	for {
+		log.Print("Mongodb - Try to connect server...")
+		client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err := mongoConnect(cfg)
+		_, _, _ = collectionInstances, collectionConnections, collectionCommands
+		if err != nil {
+			log.Println("Mongodb - error connecting!")
+			log.Println(err)
+			time.Sleep(10 * time.Second)
+			continue
+			// defer client.Disconnect(context.TODO())
+		}
+		protocolConns, csCommands := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
+		go iterateCommandsChangeStream(context.Background() /* &waitGroup, */, csCommands, protocolConns, collectionCommands)
+
+		for updOpers := range chMongoBw {
+			if len(updOpers) > 0 {
+				res, err := collectionRtData.BulkWrite(
+					context.Background(),
+					updOpers,
+					options.BulkWrite().SetOrdered(false),
+				)
+				if res == nil || err != nil {
+					log.Println("Mongodb - bulk error!")
+					log.Println(err)
+					break
+				}
+				if logLevel >= logLevelDetailed {
+					log.Printf("Mongodb - Matched count: %d, Updated Count: %d", res.MatchedCount, res.ModifiedCount)
+				}
+			}
+		}
+	}
 }
