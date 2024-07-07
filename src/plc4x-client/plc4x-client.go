@@ -19,9 +19,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -33,6 +31,7 @@ import (
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/config"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
+	"github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/pkg/api/transports"
 	"github.com/apache/plc4x/plc4go/pkg/api/values"
 	"github.com/rs/zerolog"
@@ -78,13 +77,12 @@ func commandDelivered(collectionCommands *mongo.Collection, ID primitive.ObjectI
 }
 
 // process commands from change stream, forward commands
-func iterateCommandsChangeStream(routineCtx context.Context /*waitGroup *sync.WaitGroup, */, stream *mongo.ChangeStream, protConns []*protocolConnection, collectionCommands *mongo.Collection) {
-	defer stream.Close(routineCtx)
-	// defer waitGroup.Done()
-	for stream.Next(routineCtx) {
-		if !IsActive {
-			return
-		}
+func iterateCommandsChangeStream(stream *mongo.ChangeStream, protConns []*protocolConnection, collectionCommands *mongo.Collection) {
+	defer stream.Close(context.TODO())
+	for stream.Next(context.TODO()) {
+		//if !IsActive {
+		//	continue
+		//}
 
 		var insDoc insertChange
 		if err := stream.Decode(&insDoc); err != nil {
@@ -92,9 +90,9 @@ func iterateCommandsChangeStream(routineCtx context.Context /*waitGroup *sync.Wa
 			continue
 		}
 
-		for _, protCon := range protConns {
+		for _, protocolConn := range protConns {
 
-			if insDoc.OperationType == "insert" && insDoc.FullDocument.ProtocolSourceConnectionNumber == protCon.ProtocolConnectionNumber {
+			if insDoc.OperationType == "insert" && insDoc.FullDocument.ProtocolSourceConnectionNumber == protocolConn.ProtocolConnectionNumber {
 				log.Printf("Commands - Command received on connection %d, %s %f", insDoc.FullDocument.ProtocolSourceConnectionNumber, insDoc.FullDocument.Tag, insDoc.FullDocument.Value)
 
 				// test for time expired, if too old command (> 10s) then cancel it
@@ -102,103 +100,45 @@ func iterateCommandsChangeStream(routineCtx context.Context /*waitGroup *sync.Wa
 					log.Println("Commands - Command expired ", time.Since(insDoc.FullDocument.TimeTag))
 					// write cancel to the command in mongo
 					commandCancel(collectionCommands, insDoc.FullDocument.ID, "expired")
-					continue
+					break
 				}
 
-				// All is ok, so send command to I104M UPD
+				// All is ok, so send command
+				wrBld := protocolConn.PlcConn.WriteRequestBuilder()
+				var plc4xTagName, plc4xAddress string
+				plc4xAddress = insDoc.FullDocument.ProtocolSourceObjectAddress
+				plc4xTagName = plc4xAddress
+				addr := strings.ToUpper(plc4xAddress)
+				var wrReq model.PlcWriteRequest
+				var err error
 
-				buf := new(bytes.Buffer)
-				var cmdSig uint32 = 0x4b4b4b4b
-				err := binary.Write(buf, binary.LittleEndian, cmdSig)
+				// write based on type of address
+				switch {
+				case strings.Contains(addr, protocolConn.AddrSeparator+"STRING"), strings.Contains(addr, protocolConn.AddrSeparator+"CHAR"):
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, insDoc.FullDocument.ValueString).Build()
+				// case strings.HasSuffix(addr, "Struct"), strings.HasSuffix(addr, "LIST"), strings.HasSuffix(addr, "RAW_BYTE_ARRAY"):
+				default:
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, insDoc.FullDocument.Value).Build()
+				}
 				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
+					commandCancel(collectionCommands, insDoc.FullDocument.ID, err.Error())
+					log.Println("Commands - Command canceled!", insDoc.FullDocument.ID, err)
+					break
 				}
-				var addr uint32 = uint32(insDoc.FullDocument.ProtocolSourceObjectAddress)
-				err = binary.Write(buf, binary.LittleEndian, addr)
-				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
+				ch := wrReq.Execute()
+				wrReqResult := <-ch
+				if wrReqResult.GetErr() != nil {
+					commandCancel(collectionCommands, insDoc.FullDocument.ID, wrReqResult.GetErr().Error())
+					log.Println("Commands - Command error executing!", insDoc.FullDocument.ID, err)
+					break
 				}
-				var tiType uint32 = uint32(insDoc.FullDocument.ProtocolSourceASDU)
-				err = binary.Write(buf, binary.LittleEndian, tiType)
-				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
-				}
-				var value uint32 = uint32(insDoc.FullDocument.Value)
-				err = binary.Write(buf, binary.LittleEndian, value)
-				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
-				}
-				var sbo uint32 = 0
-				if insDoc.FullDocument.ProtocolSourceCommandUseSBO {
-					sbo = 1
-				}
-				err = binary.Write(buf, binary.LittleEndian, sbo)
-				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
-				}
-				var qu uint32 = uint32(insDoc.FullDocument.ProtocolSourceCommandDuration)
-				err = binary.Write(buf, binary.LittleEndian, qu)
-				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
-				}
-				var ca uint32 = uint32(insDoc.FullDocument.ProtocolSourceCommonAddress)
-				err = binary.Write(buf, binary.LittleEndian, ca)
-				if err != nil {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, "udp buffer write error")
-					log.Println("Commands - binary.Write failed:", err)
-					continue
-				}
-
-				errMsg := ""
-				ok := false
-				for i, ipAddressDest := range protCon.IPAddresses {
-
-					if i >= 2 { // only send to the first 2 addresses
-						break
-					}
-
-					if strings.TrimSpace(ipAddressDest) == "" {
-						errMsg = "no IP destination"
-						continue
-					}
-					//udpAddr, err := net.ResolveUDPAddr("udp", ipAddressDest)
-					//if err != nil {
-					//	errMsg = "IP address error"
-					//	log.Println("Commands - Error on IP: ", err)
-					//	continue
-					//}
-					//_, err = UdpConn.WriteToUDP(buf.Bytes(), udpAddr)
-					//if err != nil {
-					//	errMsg = "UDP send error"
-					//	log.Println("Commands - Error on IP: ", err)
-					//	continue
-					//}
-					// success delivering command
-					log.Println("Commands - Command sent to: ", ipAddressDest)
-					ok = true
-					// log.Println(buf.Bytes())
-				}
-				if ok {
-					commandDelivered(collectionCommands, insDoc.FullDocument.ID)
-				} else {
-					commandCancel(collectionCommands, insDoc.FullDocument.ID, errMsg)
-					log.Println("Commands - Command canceled!")
-				}
+				log.Println("Commands - Command executed successfully!", insDoc.FullDocument.ID)
+				commandDelivered(collectionCommands, insDoc.FullDocument.ID)
+				break
 			}
 		}
 	}
+	log.Println("Commands - Exit change stream monitoring!")
 }
 
 func main() {
@@ -224,22 +164,14 @@ func main() {
 	drivers.RegisterOpcuaDriver(driverManager)
 	drivers.RegisterS7Driver(driverManager)
 
-	//driverManager.Discover(func(event model.PlcDiscoveryItem) {
-	//	log.Printf("Driver Event: %s", event)
-	//}, plc4go.WithDiscoveryOptionRemoteAddress("opcua:tcp://opcua.demo-this.com:51210/UA/SampleServer"))
-
-	var client *mongo.Client
-	var err error
-	var collectionRtData, collectionInstances, collectionConnections, collectionCommands *mongo.Collection
-	// someConnectionHasCommandsEnabled := false
 	cfg, instanceNumber, ll := readConfigFile()
 	logLevel := ll
 
-	log.Print("Mongodb - Try to connect server...")
-	client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err = mongoConnect(cfg)
-	checkFatalError(err)
-	defer client.Disconnect(context.TODO())
-	protocolConns, _ := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
+	//log.Print("Mongodb - Try to connect server...")
+	//client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err := mongoConnect(cfg)
+	//checkFatalError(err)
+	//defer client.Disconnect(context.TODO())
+	//protocolConns, _ := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	if logLevel >= logLevelDebug {
@@ -252,10 +184,25 @@ func main() {
 	log.Println("Log level set to:", logLevel)
 
 	chMongoBw := make(chan []mongo.WriteModel, 1000)
-	go mongoSetupWriter(cfg, instanceNumber, chMongoBw, logLevel)
+	chProtConns := make(chan []*protocolConnection)
+	chRtDataColl := make(chan *mongo.Collection)
 
-	// keep retrying reconnection when disconnected
+	// start a go routine to handle commands from mongo
+	go mongoWriter(cfg, instanceNumber, chMongoBw, chProtConns, chRtDataColl, logLevel)
+	var protocolConns []*protocolConnection = []*protocolConnection{}
+	var collectionRtData *mongo.Collection
+	// keep retrying protocol reconnection when disconnected
 	for {
+		select {
+		case protocolConns = <-chProtConns:
+		case collectionRtData = <-chRtDataColl:
+		default:
+		}
+		if len(protocolConns) == 0 || collectionRtData == nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
 		for _, protocolConn := range protocolConns {
 			if protocolConn.PlcConn != nil && protocolConn.PlcConn.IsConnected() {
 				continue
@@ -271,10 +218,6 @@ func main() {
 			if len(protocolConn.EndpointURLs) == 0 {
 				log.Fatal("No server endpoint for connection: ", protocolConn.Name)
 			}
-
-			//if protocolConn.CommandsEnabled {
-			//	someConnectionHasCommandsEnabled = true
-			//}
 
 			// log connection info
 			log.Printf("Instance: %d Connection: %d %s", protocolConn.ProtocolDriverInstanceNumber, protocolConn.ProtocolConnectionNumber, protocolConn.Name)
@@ -311,7 +254,7 @@ func main() {
 				log.Fatal(protocolConn.Name + ": Unsupported protocol - " + protocolConn.EndpointURLs[0])
 				continue
 			}
-			_, _ = addrSep, addrParts
+			protocolConn.AddrSeparator, _ = addrSep, addrParts
 
 			// try to connect to plc
 			connectionRequestChanel := driverManager.GetConnection(protocolConn.EndpointURLs[0])
@@ -370,36 +313,13 @@ func main() {
 				typeJsTag := "analog"
 				addr := strings.ToUpper(plc4xAddress)
 				switch {
-				case strings.HasSuffix(addr, "BOOL"):
+				case strings.Contains(addr, addrSep+"BOOL"):
 					typeJsTag = "digital"
-				case strings.HasSuffix(addr, "STRING"), strings.HasSuffix(addr, "CHAR"):
+				case strings.Contains(addr, addrSep+"STRING"), strings.Contains(addr, addrSep+"CHAR"):
 					typeJsTag = "string"
-				case strings.HasSuffix(addr, "Struct"), strings.HasSuffix(addr, "LIST"), strings.HasSuffix(addr, "RAW_BYTE_ARRAY"):
+				case strings.Contains(addr, addrSep+"Struct"), strings.Contains(addr, addrSep+"LIST"), strings.Contains(addr, addrSep+"RAW_BYTE_ARRAY"):
 					typeJsTag = "json"
 				}
-				/*
-					switch len(spl) {
-					case 1:
-						//jsTagName = fmt.Sprintf("PLC4X_%d_%s", protocolConn.ProtocolConnectionNumber, spl[0])
-						plc4xAddress = spl[0]
-						plc4xTagName = plc4xAddress
-					case 2:
-						//jsTagName = fmt.Sprintf("PLC4X_%d_%s.%s", protocolConn.ProtocolConnectionNumber, spl[0], spl[1])
-						plc4xAddress = spl[0] + addrSep + spl[1]
-						plc4xTagName = plc4xAddress
-					case 3:
-						//jsTagName = fmt.Sprintf("PLC4X_%d_%s.%s.%s", protocolConn.ProtocolConnectionNumber, spl[0], spl[1], spl[2])
-						plc4xAddress = spl[0] + ":" + spl[1] + addrSep + spl[2]
-						plc4xTagName = plc4xAddress
-					case 4:
-						//jsTagName = spl[0]
-						plc4xAddress = spl[1] + addrSep + spl[2] + addrSep + spl[3]
-						plc4xTagName = plc4xAddress
-					default:
-						log.Printf(protocolConn.Name+": error: wrong topic format: %s", topic)
-						continue
-					}
-				*/
 				reqBld.AddTagAddress(plc4xTagName, plc4xAddress)
 
 				if protocolConn.AutoCreateTags {
@@ -421,6 +341,7 @@ func main() {
 					}
 				}
 			}
+			var err error
 			protocolConn.ReadRequest, err = reqBld.Build()
 			if err != nil {
 				log.Printf(protocolConn.Name+": error preparing read-request: %s", connectionResult.GetErr().Error())
@@ -490,7 +411,7 @@ func main() {
 			}
 			go func() {
 				execRead()
-				for range time.Tick(time.Millisecond * 100) {
+				for range time.Tick(time.Second * time.Duration(protocolConn.GiInterval)) {
 					if protocolConn.PlcConn != nil && protocolConn.PlcConn.IsConnected() {
 						err := execRead()
 						if err == nil {
@@ -630,7 +551,7 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 	return
 }
 
-func mongoSetupWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo.WriteModel, logLevel int) {
+func mongoWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo.WriteModel, chProtConns chan []*protocolConnection, chRtData chan *mongo.Collection, logLevel int) {
 	for {
 		log.Print("Mongodb - Try to connect server...")
 		client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err := mongoConnect(cfg)
@@ -640,10 +561,12 @@ func mongoSetupWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo
 			log.Println(err)
 			time.Sleep(10 * time.Second)
 			continue
-			// defer client.Disconnect(context.TODO())
 		}
+		defer client.Disconnect(context.TODO())
 		protocolConns, csCommands := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
-		go iterateCommandsChangeStream(context.Background() /* &waitGroup, */, csCommands, protocolConns, collectionCommands)
+		chProtConns <- protocolConns
+		chRtData <- collectionRtData
+		go iterateCommandsChangeStream(csCommands, protocolConns, collectionCommands)
 
 		for updOpers := range chMongoBw {
 			if len(updOpers) > 0 {

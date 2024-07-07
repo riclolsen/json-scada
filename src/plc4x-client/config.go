@@ -43,9 +43,6 @@ const (
 	logLevelDebug    = 3
 )
 
-//const udpChannelSize = 1000
-//const udpReadBufferPackets = 100
-
 var logLevel = logLevelBasic
 
 type configData struct {
@@ -64,18 +61,18 @@ type configData struct {
 type commandQueueEntry struct {
 	ID                             primitive.ObjectID `json:"_id" bson:"_id"`
 	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
-	ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
-	ProtocolSourceObjectAddress    int                `json:"protocolSourceObjectAddress"`
-	ProtocolSourceASDU             int                `json:"protocolSourceASDU"`
-	ProtocolSourceCommandDuration  int                `json:"protocolSourceCommandDuration"`
-	ProtocolSourceCommandUseSBO    bool               `json:"protocolSourceCommandUseSBO"`
-	PointKey                       int                `json:"pointKey"`
-	Tag                            string             `json:"tag"`
-	TimeTag                        time.Time          `json:"timeTag"`
-	Value                          float64            `json:"value"`
-	ValueString                    string             `json:"valueString"`
-	OriginatorUserName             string             `json:"originatorUserName"`
-	OriginatorIPAddress            string             `json:"originatorIpAddress"`
+	//ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
+	ProtocolSourceObjectAddress string `json:"protocolSourceObjectAddress"`
+	//ProtocolSourceASDU             int                `json:"protocolSourceASDU"`
+	//ProtocolSourceCommandDuration  int                `json:"protocolSourceCommandDuration"`
+	//ProtocolSourceCommandUseSBO    bool               `json:"protocolSourceCommandUseSBO"`
+	PointKey            int       `json:"pointKey"`
+	Tag                 string    `json:"tag"`
+	TimeTag             time.Time `json:"timeTag"`
+	Value               float64   `json:"value"`
+	ValueString         string    `json:"valueString"`
+	OriginatorUserName  string    `json:"originatorUserName"`
+	OriginatorIPAddress string    `json:"originatorIpAddress"`
 }
 
 type insertChange struct {
@@ -111,6 +108,7 @@ type protocolConnection struct {
 	GiInterval                   float32  `json:"giInterval"`
 	PlcConn                      plc4go.PlcConnection
 	ReadRequest                  model.PlcReadRequest
+	AddrSeparator                string
 	AutoKeyId                    int
 }
 
@@ -330,7 +328,6 @@ func configInstance(client *mongo.Client, collectionInstances, collectionConnect
 		},
 	}}, opts)
 	checkFatalError(err)
-	defer csCommands.Close(context.TODO())
 
 	// read instances config
 	var instance protocolDriverInstance
