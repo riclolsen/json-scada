@@ -110,6 +110,7 @@ type protocolConnection struct {
 	ReadRequest                  model.PlcReadRequest
 	AddrSeparator                string
 	AutoKeyId                    int
+	ReconnectCount               int
 }
 
 // check error, terminate app if error
