@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -170,19 +171,50 @@ func (pc *protocolConnection) AutoCreateTag(rtData *RtDataTag, rtDataCollection 
 		return
 	}
 
-	// not found, so insert a new tag
-	pc.AutoKeyId++
-	rtData.Id = float64(pc.AutoKeyId)
-	rtData.Description = rtData.Tag
-	rtData.UngroupedDescription = rtData.ProtocolSourceObjectAddress
-	rtData.EventTextFalse = "OFF"
-	rtData.EventTextTrue = "ON"
-	rtData.StateTextFalse = "OFF"
-	rtData.StateTextTrue = "ON"
-	rtData.Origin = "supervised"
-	rtData.Unit = ""
-	if _, err := rtDataCollection.InsertOne(context.TODO(), rtData); err != nil {
-		log.Println("Mongodb: Error inserting tag", rtData.Tag, err)
+	for {
+		// not found, so insert a new tag
+		pc.AutoKeyId++
+		rtData.Id = float64(pc.AutoKeyId)
+		rtData.Description = rtData.Tag
+		rtData.UngroupedDescription = rtData.ProtocolSourceObjectAddress
+		rtData.EventTextFalse = "OFF"
+		rtData.EventTextTrue = "ON"
+		rtData.StateTextFalse = "OFF"
+		rtData.StateTextTrue = "ON"
+		rtData.Origin = "supervised"
+		rtData.Unit = ""
+		if _, err = rtDataCollection.InsertOne(context.TODO(), rtData); err == nil { // insert ok: finish loop
+			log.Println("Mongodb: new tag inserted -", rtData.Tag)
+			break
+		}
+
+		if strings.Contains(err.Error(), "E11000") && strings.Contains(err.Error(), "_id:") { // duplicate _id error, inc _id
+			log.Println("Mongodb: duplicated _id while inserting new tag -", rtData.Tag, rtData.Id)
+			continue
+		}
+
+		if strings.Contains(err.Error(), "E11000") && strings.Contains(err.Error(), "tag:") { // duplicate tag error
+			log.Println("Mongodb: duplicated tag while inserting new tag -", rtData.Tag, rtData.Id)
+			// existing tag, update it (object address)
+			if _, err = rtDataCollection.UpdateOne(context.TODO(),
+				bson.D{
+					{Key: "tag", Value: rtData.Tag},
+					{Key: "protocolSourceConnectionNumber", Value: rtData.ProtocolSourceConnectionNumber},
+				},
+				bson.D{{Key: "$set", Value: bson.D{
+					{Key: "protocolSourceObjectAddress", Value: rtData.ProtocolSourceObjectAddress},
+					{Key: "origin", Value: rtData.Origin},
+				}}},
+				options.Update().SetUpsert(true)); err != nil {
+				log.Println("Mongodb: Error updating tag -", rtData.Tag, err)
+				return
+			}
+			log.Println("Mongodb: updated tag -", rtData.Tag, "protocolSourceObjectAddress=", rtData.ProtocolSourceObjectAddress)
+			break
+		}
+		// some other error: give up creating tag
+		log.Println("Mongodb: error while inserting new tag -", rtData.Tag, rtData.Id, err)
+		return
 	}
 	_ListCreatedTags[rtData.Tag] = rtData.Type
 }

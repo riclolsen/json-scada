@@ -377,7 +377,7 @@ func main() {
 			var err error
 			protocolConn.ReadRequest, err = reqBld.Build()
 			if err != nil {
-				log.Printf(protocolConn.Name+": error preparing read-request: %s", connectionResult.GetErr().Error())
+				log.Printf(protocolConn.Name + ": error preparing read-request: %s")
 				log.Fatal(err)
 			}
 
@@ -407,7 +407,7 @@ func main() {
 							valJson = valStr
 							//var valBson bson.D
 							//bson.Unmarshal([]byte(valJson), &valBson)
-							updOper := mongo.NewUpdateOneModel() // update one
+							updOper := mongo.NewUpdateManyModel() // update one
 							updOper.SetFilter(bson.D{
 								{Key: "protocolSourceConnectionNumber", Value: protocolConn.ProtocolConnectionNumber},
 								{Key: "protocolSourceObjectAddress", Value: plc4xTagName + "[" + fmt.Sprint(i) + "]"},
@@ -439,7 +439,7 @@ func main() {
 					} else {
 						var valBson bson.D
 						bson.Unmarshal([]byte(valJson), &valBson)
-						updOper := mongo.NewUpdateOneModel() // update one
+						updOper := mongo.NewUpdateManyModel() // update one
 						updOper.SetFilter(bson.D{
 							{Key: "protocolSourceConnectionNumber", Value: protocolConn.ProtocolConnectionNumber},
 							{Key: "protocolSourceObjectAddress", Value: plc4xTagName},
@@ -513,7 +513,7 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 		if ba, err := json.Marshal(v); err == nil {
 			valJson = string(ba)
 		}
-		if logLevel >= logLevelDebug {
+		if logLevel >= logLevelDetailed {
 			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, valStr)
 		}
 	case "BOOL":
@@ -527,7 +527,7 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 		if ba, err := json.Marshal(v.GetBool()); err == nil {
 			valJson = string(ba)
 		}
-		if logLevel >= logLevelDebug {
+		if logLevel >= logLevelDetailed {
 			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, valStr)
 		}
 	case "BYTE",
@@ -583,7 +583,7 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 		}
 	case "Struct":
 		if ba, err := json.Marshal(v.GetStruct()); err != nil {
-			log.Printf(protocolConn.Name+": error marshalling struct: %s", err.Error())
+			log.Printf(protocolConn.Name+": error marshalling struct: %s\n", err.Error())
 		} else {
 			valJson = string(ba)
 			valStr = valJson
@@ -600,7 +600,7 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 			}
 		}
 		if ba, err := json.Marshal(valArrDbl); err != nil {
-			log.Printf(protocolConn.Name+": error marshalling list: %s", err.Error())
+			log.Printf(protocolConn.Name+": error marshalling list: %s\n", err.Error())
 		} else {
 			valJson = string(ba)
 			valStr = valJson
@@ -617,7 +617,7 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 			}
 		}
 		if ba, err := json.Marshal(valArrDbl); err != nil {
-			log.Printf(protocolConn.Name+": error marshalling raw array: %s", err.Error())
+			log.Printf(protocolConn.Name+": error marshalling raw array: %s\n", err.Error())
 		} else {
 			valJson = string(ba)
 			valStr = valJson
@@ -659,7 +659,7 @@ func mongoWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo.Writ
 					break
 				}
 				if logLevel >= logLevelDetailed {
-					log.Printf("Mongodb - Opers: %d, Matched count: %d, Updated Count: %d", len(updOpers), res.MatchedCount, res.ModifiedCount)
+					log.Printf("Mongodb - Opers: %d, Matched count: %d, Updated Count: %d\n", len(updOpers), res.MatchedCount, res.ModifiedCount)
 				}
 			}
 		}
