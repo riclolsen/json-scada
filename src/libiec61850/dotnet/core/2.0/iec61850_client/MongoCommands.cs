@@ -240,7 +240,7 @@ namespace IEC61850_Client
                                                         }
                                                         else
                                                         {
-                                                            control.SetOrigin(CopyrightMessage, OrCat.STATION_CONTROL);
+                                                            control.SetOrigin("JsonScada", OrCat.STATION_CONTROL);
                                                             control.SetInterlockCheck(true);
                                                             control.SetSynchroCheck(true);
                                                             control.SetTestMode(false);
