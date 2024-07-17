@@ -303,15 +303,21 @@ func main() {
 			// build a read-request
 			reqBld := protocolConn.PlcConn.ReadRequestBuilder()
 			for _, topic := range protocolConn.Topics {
-				var plc4xTagName, plc4xAddress, jsTagName string
+				var plc4xTagName, plc4xAddress, jsTagName, endianess string
 				splNameAddr := strings.Split(topic, "|")
-				if len(splNameAddr) > 1 {
+				if len(splNameAddr) > 2 {
+					jsTagName = splNameAddr[0]
+					plc4xAddress = splNameAddr[1]
+					plc4xTagName = plc4xAddress
+					endianess = splNameAddr[2]
+				} else if len(splNameAddr) > 1 {
 					jsTagName = splNameAddr[0]
 					plc4xAddress = splNameAddr[1]
 					plc4xTagName = plc4xAddress
 				} else {
 					plc4xAddress = topic
 				}
+				protocolConn.Endianess = append(protocolConn.Endianess, endianess)
 				plc4xTagName = plc4xAddress
 				typeJsTag := "analog"
 				addr := strings.ToUpper(plc4xAddress)
@@ -398,9 +404,9 @@ func main() {
 
 				// Do something with the response
 				var updOpers []mongo.WriteModel
-				for _, plc4xTagName := range readRequestResult.GetResponse().GetTagNames() {
+				for i, plc4xTagName := range readRequestResult.GetResponse().GetTagNames() {
 					v := readRequestResult.GetResponse().GetValue(plc4xTagName)
-					valDbl, valStr, valJson, valArrDbl := extractValue(v, protocolConn, plc4xTagName, logLevel)
+					valDbl, valStr, valJson, valArrDbl, bad := extractValue(v, protocolConn.Endianess[i], protocolConn, plc4xTagName, logLevel)
 					if len(valArrDbl) > 1 {
 						for i := 0; i < len(valArrDbl); i++ {
 							valStr = fmt.Sprintf("%f", valArrDbl[i])
@@ -419,7 +425,7 @@ func main() {
 										{Key: "valueStringAtSource", Value: valStr},
 										{Key: "valueJsonAtSource", Value: valJson},
 										//{Key: "valueBsonAtSource", Value: valBson},
-										{Key: "invalidAtSource", Value: false},
+										{Key: "invalidAtSource", Value: bad},
 										{Key: "notTopicalAtSource", Value: false},
 										{Key: "substitutedAtSource", Value: false},
 										{Key: "blockedAtSource", Value: false},
@@ -451,7 +457,7 @@ func main() {
 									{Key: "valueStringAtSource", Value: valStr},
 									{Key: "valueJsonAtSource", Value: valJson},
 									{Key: "valueBsonAtSource", Value: valBson},
-									{Key: "invalidAtSource", Value: false},
+									{Key: "invalidAtSource", Value: bad},
 									{Key: "notTopicalAtSource", Value: false},
 									{Key: "substitutedAtSource", Value: false},
 									{Key: "blockedAtSource", Value: false},
@@ -504,53 +510,220 @@ func main() {
 	}
 }
 
-func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagName string, logLevel int) (valDbl float64, valStr string, valJson string, valArrDbl []float64) {
+func extractValue(v values.PlcValue, endianess string, protocolConn *protocolConnection, plc4xTagName string, logLevel int) (valDbl float64, valStr string, valJson string, valArrDbl []float64, bad bool) {
 	valArrDbl = []float64{}
 	valJson = "{}"
 	switch v.GetPlcValueType().String() {
+	default:
+		bad = true
+		if logLevel >= logLevelDetailed {
+			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Invalid type!")
+		}
 	case "Unknown", "NULL":
+		bad = true
 		valStr = v.GetPlcValueType().String()
 		if ba, err := json.Marshal(v); err == nil {
 			valJson = string(ba)
 		}
 		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, valStr)
+			log.Printf(protocolConn.Name+": Read result '%s': '%s'\n", plc4xTagName, valStr)
 		}
 	case "BOOL":
-		if v.GetBool() {
-			valDbl = 1
-			valStr = "true"
+		if v.IsBool() {
+			if v.GetBool() {
+				valDbl = 1
+				valStr = "true"
+			} else {
+				valDbl = 0
+				valStr = "false"
+			}
+			if ba, err := json.Marshal(v.GetBool()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': '%s'\n", plc4xTagName, valStr)
+			}
 		} else {
-			valDbl = 0
-			valStr = "false"
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading bool!")
+			}
 		}
-		if ba, err := json.Marshal(v.GetBool()); err == nil {
-			valJson = string(ba)
+	case "BYTE":
+		if v.IsByte() {
+			valDbl = float64(v.GetByte())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetByte()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading byte!")
+			}
 		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, valStr)
+	case "USINT":
+		if v.IsUint8() {
+			valDbl = float64(v.GetUint8())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetUint8()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint8!")
+			}
 		}
-	case "BYTE",
-		"WORD",
-		"DWORD",
-		"LWORD",
-		"USINT",
-		"UINT",
-		"UDINT",
-		"ULINT",
-		"SINT",
-		"INT",
-		"DINT",
-		"LINT",
-		"REAL",
-		"LREAL":
-		valDbl = float64(v.GetFloat64())
-		valStr = fmt.Sprintf("%f", valDbl)
-		if ba, err := json.Marshal(valDbl); err == nil {
-			valJson = string(ba)
+	case "SINT":
+		if v.IsInt8() {
+			valDbl = float64(v.GetInt8())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetInt8()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int8!")
+			}
 		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': %08xh %18.6f\n", plc4xTagName, uint64(valDbl), valDbl)
+	case "UINT", "WORD":
+		if v.IsUint16() {
+			valDbl = float64(v.GetUint16())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetUint16()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint16!")
+			}
+		}
+	case "INT":
+		if v.IsInt16() {
+			valDbl = float64(v.GetInt16())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetInt16()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int16!")
+			}
+		}
+	case "DINT":
+		if v.IsInt32() {
+			valDbl = float64(v.GetInt32())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetInt32()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int32!")
+			}
+		}
+	case "UDINT", "DWORD":
+		if v.IsUint32() {
+			valDbl = float64(v.GetUint32())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetUint32()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint32!")
+			}
+		}
+	case "LINT":
+		if v.IsInt64() {
+			valDbl = float64(v.GetInt64())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetInt64()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int64!")
+			}
+		}
+	case "ULINT", "LWORD":
+		if v.IsUint64() {
+			valDbl = float64(v.GetUint64())
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetUint64()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint64!")
+			}
+		}
+	case "REAL":
+		if v.IsFloat32() {
+			valDbl = float64(v.GetFloat32())
+			valStr = fmt.Sprintf("%f", valDbl)
+			if ba, err := json.Marshal(v.GetFloat32()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading float32!")
+			}
+		}
+	case "LREAL":
+		if v.IsFloat64() {
+			valDbl = v.GetFloat64()
+			valStr = fmt.Sprintf("%f", valDbl)
+			if ba, err := json.Marshal(v.GetFloat64()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %f '%s'\n", plc4xTagName, valDbl, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading float64!")
+			}
 		}
 	case "TIME",
 		"LTIME",
@@ -573,57 +746,83 @@ func extractValue(v values.PlcValue, protocolConn *protocolConnection, plc4xTagN
 	case "WCHAR":
 	case "STRING":
 	case "WSTRING":
-		valStr := v.GetString()
-		valDbl, _ = strconv.ParseFloat(valStr, 64)
-		if ba, err := json.Marshal(valStr); err == nil {
-			valJson = string(ba)
-		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, valStr)
+		if v.IsString() {
+			valStr := v.GetString()
+			valDbl, _ = strconv.ParseFloat(valStr, 64)
+			if ba, err := json.Marshal(valStr); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': '%s'\n", plc4xTagName, valStr)
+			}
+		} else {
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading string!")
+			}
 		}
 	case "Struct":
-		if ba, err := json.Marshal(v.GetStruct()); err != nil {
-			log.Printf(protocolConn.Name+": error marshalling struct: %s\n", err.Error())
+		if v.IsStruct() {
+			valStr = fmt.Sprintf("%v", v.GetStruct())
+			if ba, err := json.Marshal(v.GetStruct()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': '%s'\n", plc4xTagName, valStr)
+			}
 		} else {
-			valJson = string(ba)
-			valStr = valJson
-		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read struct result '%s': %s\n", plc4xTagName, valStr)
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading struct!")
+			}
 		}
 	case "List":
-		for i := 0; i < len(v.GetList()); i++ {
-			vd, _, _, _ := extractValue(v.GetList()[i], protocolConn, plc4xTagName, logLevel)
-			valArrDbl = append(valArrDbl, float64(vd))
-			if i == 0 {
-				valDbl = vd
+		if v.IsList() {
+			for i := 0; i < len(v.GetList()); i++ {
+				vd, _, _, _, _ := extractValue(v.GetList()[i], endianess, protocolConn, plc4xTagName, logLevel)
+				valArrDbl = append(valArrDbl, float64(vd))
+				if i == 0 {
+					valDbl = vd
+				}
 			}
-		}
-		if ba, err := json.Marshal(valArrDbl); err != nil {
-			log.Printf(protocolConn.Name+": error marshalling list: %s\n", err.Error())
+			if ba, err := json.Marshal(valArrDbl); err != nil {
+				log.Printf(protocolConn.Name+": error marshalling list: %s\n", err.Error())
+			} else {
+				valJson = string(ba)
+				valStr = valJson
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read list result '%s': '%s'\n", plc4xTagName, valStr)
+			}
 		} else {
-			valJson = string(ba)
-			valStr = valJson
-		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read list result '%s': %s\n", plc4xTagName, valStr)
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading list!")
+			}
 		}
 	case "RAW_BYTE_ARRAY":
-		vdArr := []float64{}
-		for i := 0; i < len(v.GetRaw()); i++ {
-			valArrDbl = append(vdArr, float64(v.GetRaw()[i]))
-			if i == 0 {
-				valDbl = float64(v.GetRaw()[i])
+		if v.IsRaw() {
+			vdArr := []float64{}
+			for i := 0; i < len(v.GetRaw()); i++ {
+				valArrDbl = append(vdArr, float64(v.GetRaw()[i]))
+				if i == 0 {
+					valDbl = float64(v.GetRaw()[i])
+				}
 			}
-		}
-		if ba, err := json.Marshal(valArrDbl); err != nil {
-			log.Printf(protocolConn.Name+": error marshalling raw array: %s\n", err.Error())
+			if ba, err := json.Marshal(valArrDbl); err != nil {
+				log.Printf(protocolConn.Name+": error marshalling raw array: %s\n", err.Error())
+			} else {
+				valJson = string(ba)
+				valStr = valJson
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read raw array result '%s': '%s'\n", plc4xTagName, valStr)
+			}
 		} else {
-			valJson = string(ba)
-			valStr = valJson
-		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read raw array result '%s': %s\n", plc4xTagName, valStr)
+			bad = true
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading raw array!")
+			}
 		}
 	}
 	return

@@ -111,6 +111,7 @@ type protocolConnection struct {
 	AddrSeparator                string
 	AutoKeyId                    int
 	ReconnectCount               int
+	Endianess                    []string
 }
 
 // check error, terminate app if error
