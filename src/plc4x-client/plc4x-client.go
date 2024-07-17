@@ -20,9 +20,11 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -516,17 +518,11 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	switch v.GetPlcValueType().String() {
 	default:
 		bad = true
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Invalid type!")
-		}
 	case "Unknown", "NULL":
 		bad = true
 		valStr = v.GetPlcValueType().String()
 		if ba, err := json.Marshal(v); err == nil {
 			valJson = string(ba)
-		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': '%s'\n", plc4xTagName, valStr)
 		}
 	case "BOOL":
 		if v.IsBool() {
@@ -545,9 +541,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading bool!")
-			}
 		}
 	case "BYTE":
 		if v.IsByte() {
@@ -561,9 +554,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading byte!")
-			}
 		}
 	case "USINT":
 		if v.IsUint8() {
@@ -577,9 +567,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint8!")
-			}
 		}
 	case "SINT":
 		if v.IsInt8() {
@@ -593,15 +580,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int8!")
-			}
 		}
 	case "UINT", "WORD":
 		if v.IsUint16() {
-			valDbl = float64(v.GetUint16())
+			var vlAux uint16
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b2 := make([]byte, 2)
+				binary.BigEndian.PutUint16(b2, v.GetUint16())
+				vlAux = binary.LittleEndian.Uint16(b2)
+			} else {
+				vlAux = v.GetUint16()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%.0f", valDbl)
-			if ba, err := json.Marshal(v.GetUint16()); err == nil {
+			if ba, err := json.Marshal(vlAux); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -609,15 +601,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint16!")
-			}
 		}
 	case "INT":
 		if v.IsInt16() {
-			valDbl = float64(v.GetInt16())
+			var vlAux int16
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b2 := make([]byte, 2)
+				binary.BigEndian.PutUint16(b2, uint16(v.GetInt16()))
+				vlAux = int16(binary.LittleEndian.Uint16(b2))
+			} else {
+				vlAux = v.GetInt16()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%.0f", valDbl)
-			if ba, err := json.Marshal(v.GetInt16()); err == nil {
+			if ba, err := json.Marshal(vlAux); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -625,15 +622,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int16!")
-			}
 		}
 	case "DINT":
 		if v.IsInt32() {
-			valDbl = float64(v.GetInt32())
+			var vlAux int32
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b4 := make([]byte, 4)
+				binary.BigEndian.PutUint32(b4, uint32(v.GetInt32()))
+				vlAux = int32(binary.LittleEndian.Uint32(b4))
+			} else {
+				vlAux = v.GetInt32()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%.0f", valDbl)
-			if ba, err := json.Marshal(v.GetInt32()); err == nil {
+			if ba, err := json.Marshal(vlAux); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -641,15 +643,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int32!")
-			}
 		}
 	case "UDINT", "DWORD":
 		if v.IsUint32() {
-			valDbl = float64(v.GetUint32())
+			var vlAux uint32
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b4 := make([]byte, 4)
+				binary.BigEndian.PutUint32(b4, v.GetUint32())
+				vlAux = binary.LittleEndian.Uint32(b4)
+			} else {
+				vlAux = v.GetUint32()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%.0f", valDbl)
-			if ba, err := json.Marshal(v.GetUint32()); err == nil {
+			if ba, err := json.Marshal(vlAux); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -657,15 +664,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint32!")
-			}
 		}
 	case "LINT":
 		if v.IsInt64() {
-			valDbl = float64(v.GetInt64())
+			var vlAux int64
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b8 := make([]byte, 8)
+				binary.BigEndian.PutUint64(b8, uint64(v.GetInt64()))
+				vlAux = int64(binary.LittleEndian.Uint64(b8))
+			} else {
+				vlAux = v.GetInt64()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%.0f", valDbl)
-			if ba, err := json.Marshal(v.GetInt64()); err == nil {
+			if ba, err := json.Marshal(vlAux); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -673,15 +685,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading int64!")
-			}
 		}
 	case "ULINT", "LWORD":
 		if v.IsUint64() {
-			valDbl = float64(v.GetUint64())
+			var vlAux uint64
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b8 := make([]byte, 8)
+				binary.BigEndian.PutUint64(b8, v.GetUint64())
+				vlAux = binary.LittleEndian.Uint64(b8)
+			} else {
+				vlAux = v.GetUint64()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%.0f", valDbl)
-			if ba, err := json.Marshal(v.GetUint64()); err == nil {
+			if ba, err := json.Marshal(vlAux); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -689,15 +706,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading uint64!")
-			}
 		}
 	case "REAL":
 		if v.IsFloat32() {
-			valDbl = float64(v.GetFloat32())
+			var vlAux float32
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b4 := make([]byte, 4)
+				binary.BigEndian.PutUint32(b4, v.GetUint32())
+				vlAux = math.Float32frombits(binary.LittleEndian.Uint32(b4))
+			} else {
+				vlAux = v.GetFloat32()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%f", valDbl)
-			if ba, err := json.Marshal(v.GetFloat32()); err == nil {
+			if ba, err := json.Marshal(valDbl); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -705,15 +727,20 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading float32!")
-			}
 		}
 	case "LREAL":
 		if v.IsFloat64() {
-			valDbl = v.GetFloat64()
+			var vlAux float64
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b8 := make([]byte, 8)
+				binary.BigEndian.PutUint64(b8, v.GetUint64())
+				vlAux = math.Float64frombits(binary.LittleEndian.Uint64(b8))
+			} else {
+				vlAux = v.GetFloat64()
+			}
+			valDbl = float64(vlAux)
 			valStr = fmt.Sprintf("%f", valDbl)
-			if ba, err := json.Marshal(v.GetFloat64()); err == nil {
+			if ba, err := json.Marshal(valDbl); err == nil {
 				valJson = string(ba)
 			}
 			if logLevel >= logLevelDetailed {
@@ -721,9 +748,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading float64!")
-			}
 		}
 	case "TIME",
 		"LTIME",
@@ -734,13 +758,26 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 		"DATE_AND_TIME",
 		"DATE_AND_LTIME",
 		"LDATE_AND_TIME":
-		valDbl := float64(v.GetDateTime().UnixMilli())
-		valStr = fmt.Sprintf("%f", valDbl)
-		if ba, err := json.Marshal(v.GetDateTime()); err == nil {
-			valJson = string(ba)
-		}
-		if logLevel >= logLevelDetailed {
-			log.Printf(protocolConn.Name+": Read result '%s': %f %s\n", plc4xTagName, valDbl, v.GetDateTime())
+		if v.IsTime() || v.IsDate() || v.IsDateTime() || v.IsDuration() {
+			var vlAux int64
+			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+				b8 := make([]byte, 8)
+				binary.BigEndian.PutUint64(b8, uint64(v.GetDateTime().UnixMilli()))
+				vlAux = int64(binary.LittleEndian.Uint64(b8))
+			} else {
+				vlAux = v.GetDateTime().UnixMilli()
+			}
+
+			valDbl := float64(vlAux)
+			valStr = fmt.Sprintf("%.0f", valDbl)
+			if ba, err := json.Marshal(v.GetDateTime()); err == nil {
+				valJson = string(ba)
+			}
+			if logLevel >= logLevelDetailed {
+				log.Printf(protocolConn.Name+": Read result '%s': %.0f '%s'\n", plc4xTagName, valDbl, v.GetDateTime().String())
+			}
+		} else {
+			bad = true
 		}
 	case "CHAR":
 	case "WCHAR":
@@ -757,9 +794,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading string!")
-			}
 		}
 	case "Struct":
 		if v.IsStruct() {
@@ -772,9 +806,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading struct!")
-			}
 		}
 	case "List":
 		if v.IsList() {
@@ -796,9 +827,6 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading list!")
-			}
 		}
 	case "RAW_BYTE_ARRAY":
 		if v.IsRaw() {
@@ -820,10 +848,10 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 			}
 		} else {
 			bad = true
-			if logLevel >= logLevelDetailed {
-				log.Printf(protocolConn.Name+": Read result '%s': %s\n", plc4xTagName, "Error reading raw array!")
-			}
 		}
+	}
+	if logLevel >= logLevelDetailed && bad {
+		log.Printf(protocolConn.Name+": Read result '%s': error reading %s! \n", plc4xTagName, v.GetPlcValueType().String())
 	}
 	return
 }
