@@ -63,7 +63,7 @@ type commandQueueEntry struct {
 	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
 	//ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
 	ProtocolSourceObjectAddress string `json:"protocolSourceObjectAddress"`
-	//ProtocolSourceASDU             int                `json:"protocolSourceASDU"`
+	ProtocolSourceASDU          string `json:"protocolSourceASDU"`
 	//ProtocolSourceCommandDuration  int                `json:"protocolSourceCommandDuration"`
 	//ProtocolSourceCommandUseSBO    bool               `json:"protocolSourceCommandUseSBO"`
 	PointKey            int       `json:"pointKey"`
@@ -111,7 +111,7 @@ type protocolConnection struct {
 	AddrSeparator                string
 	AutoKeyId                    int
 	ReconnectCount               int
-	Endianess                    []string
+	Endianness                   []string
 }
 
 // check error, terminate app if error

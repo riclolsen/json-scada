@@ -117,9 +117,170 @@ func iterateCommandsChangeStream(stream *mongo.ChangeStream, protConns []*protoc
 
 				// write based on type of address
 				switch {
-				case strings.Contains(addr, protocolConn.AddrSeparator+"STRING"), strings.Contains(addr, protocolConn.AddrSeparator+"CHAR"):
+				case strings.Contains(addr, protocolConn.AddrSeparator+"BOOL"):
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, insDoc.FullDocument.Value != 0).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"BYTE"):
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, byte(insDoc.FullDocument.Value)).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"SINT"):
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, int8(insDoc.FullDocument.Value)).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"SUINT"):
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, uint8(insDoc.FullDocument.Value)).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"UINT"), strings.Contains(addr, protocolConn.AddrSeparator+"WORD"):
+					var vlAux uint16
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b2 := make([]byte, 2)
+						binary.NativeEndian.PutUint16(b2, uint16(insDoc.FullDocument.Value))
+						vlAux = uint16(binary.LittleEndian.Uint16(b2))
+					case "BIG_ENDIAN":
+						b2 := make([]byte, 2)
+						binary.NativeEndian.PutUint16(b2, uint16(insDoc.FullDocument.Value))
+						vlAux = uint16(binary.BigEndian.Uint16(b2))
+					default:
+						vlAux = uint16(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"INT"):
+					var vlAux int16
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b2 := make([]byte, 2)
+						binary.NativeEndian.PutUint16(b2, uint16(insDoc.FullDocument.Value))
+						vlAux = int16(binary.LittleEndian.Uint16(b2))
+					case "BIG_ENDIAN":
+						b2 := make([]byte, 2)
+						binary.NativeEndian.PutUint16(b2, uint16(insDoc.FullDocument.Value))
+						vlAux = int16(binary.BigEndian.Uint16(b2))
+					case "REV_ENDIAN":
+						b2 := make([]byte, 2)
+						binary.LittleEndian.PutUint16(b2, uint16(insDoc.FullDocument.Value))
+						vlAux = int16(binary.BigEndian.Uint16(b2))
+					default:
+						vlAux = int16(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"UDINT"):
+					var vlAux uint32
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.NativeEndian.PutUint32(b4, uint32(insDoc.FullDocument.Value))
+						vlAux = uint32(binary.LittleEndian.Uint32(b4))
+					case "BIG_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.NativeEndian.PutUint32(b4, uint32(insDoc.FullDocument.Value))
+						vlAux = uint32(binary.BigEndian.Uint32(b4))
+					case "REV_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.LittleEndian.PutUint32(b4, uint32(insDoc.FullDocument.Value))
+						vlAux = uint32(binary.BigEndian.Uint32(b4))
+					default:
+						vlAux = uint32(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"DINT"):
+					var vlAux int32
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.NativeEndian.PutUint32(b4, uint32(insDoc.FullDocument.Value))
+						vlAux = int32(binary.LittleEndian.Uint32(b4))
+					case "BIG_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.NativeEndian.PutUint32(b4, uint32(insDoc.FullDocument.Value))
+						vlAux = int32(binary.BigEndian.Uint32(b4))
+					case "REV_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.LittleEndian.PutUint32(b4, uint32(insDoc.FullDocument.Value))
+						vlAux = int32(binary.BigEndian.Uint32(b4))
+					default:
+						vlAux = int32(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"ULINT"), strings.Contains(addr, protocolConn.AddrSeparator+"LWORD"):
+					var vlAux uint64
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.NativeEndian.PutUint64(b8, uint64(insDoc.FullDocument.Value))
+						vlAux = uint64(binary.LittleEndian.Uint64(b8))
+					case "BIG_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.NativeEndian.PutUint64(b8, uint64(insDoc.FullDocument.Value))
+						vlAux = uint64(binary.BigEndian.Uint64(b8))
+					case "REV_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.LittleEndian.PutUint64(b8, uint64(insDoc.FullDocument.Value))
+						vlAux = uint64(binary.BigEndian.Uint32(b8))
+					default:
+						vlAux = uint64(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"LINT"):
+					var vlAux int64
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.NativeEndian.PutUint64(b8, uint64(insDoc.FullDocument.Value))
+						vlAux = int64(binary.LittleEndian.Uint64(b8))
+					case "BIG_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.NativeEndian.PutUint64(b8, uint64(insDoc.FullDocument.Value))
+						vlAux = int64(binary.BigEndian.Uint64(b8))
+					case "REV_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.LittleEndian.PutUint64(b8, uint64(insDoc.FullDocument.Value))
+						vlAux = int64(binary.BigEndian.Uint32(b8))
+					default:
+						vlAux = int64(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"REAL"):
+					var vlAux float32
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.NativeEndian.PutUint32(b4, math.Float32bits(float32(insDoc.FullDocument.Value)))
+						vlAux = math.Float32frombits(binary.LittleEndian.Uint32(b4))
+					case "BIG_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.NativeEndian.PutUint32(b4, math.Float32bits(float32(insDoc.FullDocument.Value)))
+						vlAux = math.Float32frombits(binary.BigEndian.Uint32(b4))
+					case "REV_ENDIAN":
+						b4 := make([]byte, 4)
+						binary.LittleEndian.PutUint32(b4, math.Float32bits(float32(insDoc.FullDocument.Value)))
+						vlAux = math.Float32frombits(binary.BigEndian.Uint32(b4))
+					default:
+						vlAux = float32(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"LREAL"):
+					var vlAux float64
+					switch insDoc.FullDocument.ProtocolSourceASDU {
+					case "LITTLE_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.NativeEndian.PutUint64(b8, math.Float64bits(float64(insDoc.FullDocument.Value)))
+						vlAux = math.Float64frombits(binary.LittleEndian.Uint64(b8))
+					case "BIG_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.NativeEndian.PutUint64(b8, math.Float64bits(float64(insDoc.FullDocument.Value)))
+						vlAux = math.Float64frombits(binary.BigEndian.Uint64(b8))
+					case "REV_ENDIAN":
+						b8 := make([]byte, 8)
+						binary.LittleEndian.PutUint64(b8, math.Float64bits(float64(insDoc.FullDocument.Value)))
+						vlAux = math.Float64frombits(binary.BigEndian.Uint64(b8))
+					default:
+						vlAux = float64(insDoc.FullDocument.Value)
+					}
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, vlAux).Build()
+				case strings.Contains(addr, protocolConn.AddrSeparator+"STRING"),
+					strings.Contains(addr, protocolConn.AddrSeparator+"CHAR"),
+					strings.Contains(addr, protocolConn.AddrSeparator+"WCHAR"):
 					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, insDoc.FullDocument.ValueString).Build()
-				// case strings.HasSuffix(addr, "Struct"), strings.HasSuffix(addr, "LIST"), strings.HasSuffix(addr, "RAW_BYTE_ARRAY"):
+				case strings.Contains(addr, protocolConn.AddrSeparator+"Struct"),
+					strings.Contains(addr, protocolConn.AddrSeparator+"List"),
+					strings.Contains(addr, protocolConn.AddrSeparator+"RAW_BYTE_ARRAY"):
+					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, nil).Build()
 				default:
 					wrReq, err = wrBld.AddTagAddress(plc4xTagName, plc4xAddress, insDoc.FullDocument.Value).Build()
 				}
@@ -305,13 +466,13 @@ func main() {
 			// build a read-request
 			reqBld := protocolConn.PlcConn.ReadRequestBuilder()
 			for _, topic := range protocolConn.Topics {
-				var plc4xTagName, plc4xAddress, jsTagName, endianess string
+				var plc4xTagName, plc4xAddress, jsTagName, endianness string
 				splNameAddr := strings.Split(topic, "|")
 				if len(splNameAddr) > 2 {
 					jsTagName = splNameAddr[0]
 					plc4xAddress = splNameAddr[1]
 					plc4xTagName = plc4xAddress
-					endianess = splNameAddr[2]
+					endianness = strings.ToUpper(splNameAddr[2])
 				} else if len(splNameAddr) > 1 {
 					jsTagName = splNameAddr[0]
 					plc4xAddress = splNameAddr[1]
@@ -319,7 +480,7 @@ func main() {
 				} else {
 					plc4xAddress = topic
 				}
-				protocolConn.Endianess = append(protocolConn.Endianess, endianess)
+				protocolConn.Endianness = append(protocolConn.Endianness, endianness)
 				plc4xTagName = plc4xAddress
 				typeJsTag := "analog"
 				addr := strings.ToUpper(plc4xAddress)
@@ -353,6 +514,7 @@ func main() {
 							rtd.Tag = jsTagName + "[" + fmt.Sprint(i) + "]"
 							rtd.ProtocolSourceConnectionNumber = float64(protocolConn.ProtocolConnectionNumber)
 							rtd.ProtocolSourceObjectAddress = plc4xAddress + "[" + fmt.Sprint(i) + "]"
+							rtd.ProtocolSourceASDU = endianness
 							rtd.Group1 = DriverName
 							rtd.Group2 = protocolConn.Name
 							rtd.Group3 = plc4xAddress
@@ -367,6 +529,7 @@ func main() {
 						rtd.Tag = jsTagName
 						rtd.ProtocolSourceConnectionNumber = float64(protocolConn.ProtocolConnectionNumber)
 						rtd.ProtocolSourceObjectAddress = plc4xAddress
+						rtd.ProtocolSourceASDU = endianness
 						rtd.Group1 = DriverName
 						rtd.Group2 = protocolConn.Name
 						rtd.Group3 = plc4xAddress
@@ -408,7 +571,7 @@ func main() {
 				var updOpers []mongo.WriteModel
 				for i, plc4xTagName := range readRequestResult.GetResponse().GetTagNames() {
 					v := readRequestResult.GetResponse().GetValue(plc4xTagName)
-					valDbl, valStr, valJson, valArrDbl, bad := extractValue(v, protocolConn.Endianess[i], protocolConn, plc4xTagName, logLevel)
+					valDbl, valStr, valJson, valArrDbl, bad := extractValue(v, protocolConn.Endianness[i], protocolConn, plc4xTagName, logLevel)
 					if len(valArrDbl) > 1 {
 						for i := 0; i < len(valArrDbl); i++ {
 							valStr = fmt.Sprintf("%f", valArrDbl[i])
@@ -512,7 +675,7 @@ func main() {
 	}
 }
 
-func extractValue(v values.PlcValue, endianess string, protocolConn *protocolConnection, plc4xTagName string, logLevel int) (valDbl float64, valStr string, valJson string, valArrDbl []float64, bad bool) {
+func extractValue(v values.PlcValue, endianness string, protocolConn *protocolConnection, plc4xTagName string, logLevel int) (valDbl float64, valStr string, valJson string, valArrDbl []float64, bad bool) {
 	valArrDbl = []float64{}
 	valJson = "{}"
 	switch v.GetPlcValueType().String() {
@@ -584,7 +747,15 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "UINT", "WORD":
 		if v.IsUint16() {
 			var vlAux uint16
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
+				b2 := make([]byte, 2)
+				binary.NativeEndian.PutUint16(b2, v.GetUint16())
+				vlAux = binary.LittleEndian.Uint16(b2)
+			} else if endianness == "BIG_ENDIAN" {
+				b2 := make([]byte, 2)
+				binary.NativeEndian.PutUint16(b2, v.GetUint16())
+				vlAux = binary.BigEndian.Uint16(b2)
+			} else if endianness == "REV_ENDIAN" {
 				b2 := make([]byte, 2)
 				binary.BigEndian.PutUint16(b2, v.GetUint16())
 				vlAux = binary.LittleEndian.Uint16(b2)
@@ -605,7 +776,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "INT":
 		if v.IsInt16() {
 			var vlAux int16
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b2 := make([]byte, 2)
 				binary.BigEndian.PutUint16(b2, uint16(v.GetInt16()))
 				vlAux = int16(binary.LittleEndian.Uint16(b2))
@@ -626,7 +797,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "DINT":
 		if v.IsInt32() {
 			var vlAux int32
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b4 := make([]byte, 4)
 				binary.BigEndian.PutUint32(b4, uint32(v.GetInt32()))
 				vlAux = int32(binary.LittleEndian.Uint32(b4))
@@ -647,7 +818,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "UDINT", "DWORD":
 		if v.IsUint32() {
 			var vlAux uint32
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b4 := make([]byte, 4)
 				binary.BigEndian.PutUint32(b4, v.GetUint32())
 				vlAux = binary.LittleEndian.Uint32(b4)
@@ -668,7 +839,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "LINT":
 		if v.IsInt64() {
 			var vlAux int64
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b8 := make([]byte, 8)
 				binary.BigEndian.PutUint64(b8, uint64(v.GetInt64()))
 				vlAux = int64(binary.LittleEndian.Uint64(b8))
@@ -689,7 +860,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "ULINT", "LWORD":
 		if v.IsUint64() {
 			var vlAux uint64
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b8 := make([]byte, 8)
 				binary.BigEndian.PutUint64(b8, v.GetUint64())
 				vlAux = binary.LittleEndian.Uint64(b8)
@@ -710,7 +881,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "REAL":
 		if v.IsFloat32() {
 			var vlAux float32
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b4 := make([]byte, 4)
 				binary.BigEndian.PutUint32(b4, v.GetUint32())
 				vlAux = math.Float32frombits(binary.LittleEndian.Uint32(b4))
@@ -731,7 +902,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "LREAL":
 		if v.IsFloat64() {
 			var vlAux float64
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b8 := make([]byte, 8)
 				binary.BigEndian.PutUint64(b8, v.GetUint64())
 				vlAux = math.Float64frombits(binary.LittleEndian.Uint64(b8))
@@ -760,7 +931,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 		"LDATE_AND_TIME":
 		if v.IsTime() || v.IsDate() || v.IsDateTime() || v.IsDuration() {
 			var vlAux int64
-			if strings.ToUpper(endianess) == "LITTLE_ENDIAN" {
+			if endianness == "LITTLE_ENDIAN" {
 				b8 := make([]byte, 8)
 				binary.BigEndian.PutUint64(b8, uint64(v.GetDateTime().UnixMilli()))
 				vlAux = int64(binary.LittleEndian.Uint64(b8))
@@ -810,7 +981,7 @@ func extractValue(v values.PlcValue, endianess string, protocolConn *protocolCon
 	case "List":
 		if v.IsList() {
 			for i := 0; i < len(v.GetList()); i++ {
-				vd, _, _, _, _ := extractValue(v.GetList()[i], endianess, protocolConn, plc4xTagName, logLevel)
+				vd, _, _, _, _ := extractValue(v.GetList()[i], endianness, protocolConn, plc4xTagName, logLevel)
 				valArrDbl = append(valArrDbl, float64(vd))
 				if i == 0 {
 					valDbl = vd
