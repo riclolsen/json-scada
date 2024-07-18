@@ -3,6 +3,7 @@
 A generic PLC client driver for JSON-SCADA. Based on the Apache PLC4X/PLC4GO project.
 
     https://github.com/apache/plc4x
+    https://plc4x.apache.org/users/protocols/modbus.html
 
 This driver intends to support all protocols provided by the PLC4GO library: Modbus (TCP/RTU/ASCII), KNXnet, ADS. Upcoming: S7, OPCUA, BACNET, ABETH, CBUS, DF1, EIP, Firmata. However, only Modbus TCP was tested. Any help with testing other protocols is welcome.
 
@@ -31,7 +32,7 @@ To create a new PLC4X client instance, insert a new document in the _protocolDri
 * _**enabled**_ [Boolean] - Controls the enabling of the instance. Use false here to disable the instance. **Mandatory parameter**.
 * _**logLevel**_ [Double] - Number code for log level (0=minimum,1=basic,2=detailed,3=debug). Too much logging (levels 2 and 3) can affect performance. **Mandatory parameter**.
 * _**nodeNames**_ [Array of Strings]- Array of node names that can run the instance. Use more than one node for redundancy. Each redundant instance running on separate node will have the same connections and data enabled for scanning and update. **Mandatory parameter**.
-* _**activeNodeName**_ [String] - Name of the protocol driver that is currently active. This is updated by the drivers for redundancy control.**Optional**.
+* _**activeNodeName**_ [String] - Name of the protocol driver that is currently active. This is updated by the drivers for redundancy control. **Optional**.
 * _**activeNodeKeepAliveTimeTag**_ [Date] - This is updated regularly by the active driver. **Optional**.
 * _**keepProtocolRunningWhileInactive**_ [Boolean] - Define a driver will keep the protocol running while not the main active driver. Currently only the _false_ value is supported. **Optional**.
 
@@ -39,7 +40,7 @@ Changes in the _protocolDriverInstances_ config requires that the driver instanc
 
 ## Configure client connections to PLCs
 
-Each instance for this driver can have many client connections defined that must be described in the _protocolConnections_ collection. Create new connections usinng the Admin UI or Mongodb commands like below.
+Each instance for this driver can have many client connections defined that must be described in the _protocolConnections_ collection. Create new connections using the Admin UI or Mongodb commands like below.
 
     use json_scada_db_name
     db.protocolConnections.insert({
@@ -50,10 +51,13 @@ Each instance for this driver can have many client connections defined that must
         description: "PLC device #1 on MODBUS TCP",
         enabled: true,
         commandsEnabled: true,
+        autoCreateTags: true,
         endpointURLs: ["modbus-tcp://192.168.0.101:5001?unit-identifier=1", 
-                       "modbus-tcp://192.168.0.102:5001?unit-identifier=1"],
+                       "modbus-tcp://192.168.0.102:5001?unit-identifier=1"
+                      ],
         topics: ["MODBUS_PLC1_REG_1|holding-register:4:UINT|LITTLE_ENDIAN", 
-                 "MODBUS_PLC1_REG_20N|holding-register:20:INT[10]"],
+                 "MODBUS_PLC1_REG_20N|holding-register:20:INT[10]"
+                ],
         giInterval: 300,
         stats: null
     });
@@ -65,9 +69,15 @@ Each instance for this driver can have many client connections defined that must
 * _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 * _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 * _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
-* _**endpointURLs**_ [Array of Strings] - Array of PLC4X formatted PLC URL addresses. When having redundant devices, configure multiple entries. The driver will try to connect with the first device, when disconnected it will switch to the next device in the list. **Mandatory parameter**.
+* _**autoCreateTags**_ [Boolean] - Allows to enable automatic creation of tags. **Mandatory parameter**.
+* _**endpointURLs**_ [Array of Strings] - Array of PLC4X formatted PLC URL addresses. When having redundant devices, configure multiple entries. The driver will try to connect with the first device, when disconnected it will switch to the next device in the list. Supported protocol prefixes: "modbus-tcp", "modbus-rtu", "modbus-ascii". See PLC4X Modbus docs for URL parameters. **Mandatory parameter**.
 * _**topics**_ [Array of Strings] - Array of PLC tag addresses to be scanned. The format is "TAG_NAME|PLC4X_ADDRESS|ENDIANNESS". A tag name can be provided for automatic creation of tags. See PLC4X docs for the address format. Endianness can be empty (default), LITTLE_ENDIAN, BIG_ENDIAN or REV_ENDIAN (reverse endianness). **Mandatory parameter**.
 * _**giInterval**_ [Double] - General station interrogation period in seconds. **Optional parameter**.
+
+Examples of topics to scan:
+
+* "MODBUS_PLC1_REG_1|holding-register:4:UINT|LITTLE_ENDIAN" - will scan the address 4 holding register, 16 bit unsigned int, little endian, tag will be autocreated as "MODBUS_PLC1_REG_1".
+* "MODBUS_PLC1_REG_20N|holding-register:20:INT[10]" - will scan 10 holding registers at address 20, as 16 bit int, default endianness, tags will be named MODBUS_PLC1_REG_20N[0] ... MODBUS_PLC1_REG_20N[9].
 
 ## Configure tags for update
 
@@ -91,11 +101,11 @@ Select an existing tag for a update on a connection as below. Or create a new ta
     });
 
 * _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can update the tag. **Mandatory parameter**.
-* _**protocolSourceCommonAddress**_ [String] - Common Address of ASDU. Leave it as null or empty string. **Mandatory parameter**.
+* _**protocolSourceCommonAddress**_ [String] - Common Address of ASDU. Ignored: leave it as null or empty string. **Mandatory parameter**.
 * _**protocolSourceObjectAddress**_ [String] - Object address. Use the PLC4X address convention. **Mandatory parameter**.
-* _**protocolSourceASDU**_ [String] - Source ASDU TI type. Use to force BIG_ENDIAN, LITTLE_ENDIAN or REV_ENDIAN values. Leave empty for PLC4X default option. **Mandatory parameter**.
-* _**protocolSourceCommandDuration**_ [Double] - Use zero here. Just meaningful for commands. **Mandatory parameter**.
-* _**protocolSourceCommandUseSBO**_ [Boolean] - Use false here. Just meaningful for commands. **Mandatory parameter**.
+* _**protocolSourceASDU**_ [String] - Source ASDU TI type. Ignored for supervised tags. For commands, use to force BIG_ENDIAN, LITTLE_ENDIAN or REV_ENDIAN values. Leave empty for PLC4X default option. **Mandatory parameter**.
+* _**protocolSourceCommandDuration**_ [Double] - Ignored: use zero here. **Mandatory parameter**.
+* _**protocolSourceCommandUseSBO**_ [Boolean] - Ignored: use false here. **Mandatory parameter**.
 * _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 * _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 
