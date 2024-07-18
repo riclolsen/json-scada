@@ -314,7 +314,7 @@ func contains(a []string, str string) bool {
 	return false
 }
 
-func configInstance(client *mongo.Client, collectionInstances, collectionConnections, collectionCommands *mongo.Collection, instanceNumber int) (protocolConns []*protocolConnection, csCommands *mongo.ChangeStream) {
+func configInstance(client *mongo.Client, collectionInstances, collectionConnections, collectionCommands *mongo.Collection, instanceNumber int) (protocolConns []*protocolConnection, csCommands *mongo.ChangeStream, instanceId primitive.ObjectID) {
 
 	// Check the connection
 	err := client.Ping(context.TODO(), nil)
@@ -342,6 +342,7 @@ func configInstance(client *mongo.Client, collectionInstances, collectionConnect
 	if err != nil || instance.ProtocolDriver == "" {
 		log.Fatal("No driver instance found on configuration! Driver Name: ", DriverName, " Instance number: ", instanceNumber)
 	}
+	instanceId = instance.ID
 
 	// read connections config
 	filter = bson.D{

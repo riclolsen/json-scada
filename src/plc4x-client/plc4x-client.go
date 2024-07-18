@@ -349,24 +349,36 @@ func main() {
 
 	chMongoBw := make(chan []mongo.WriteModel, 1000)
 	chProtConns := make(chan []*protocolConnection)
+	chInstancesColl := make(chan *mongo.Collection)
 	chRtDataColl := make(chan *mongo.Collection)
+	chInstanceId := make(chan primitive.ObjectID)
 
 	// start a go routine to handle commands from mongo
-	go mongoWriter(cfg, instanceNumber, chMongoBw, chProtConns, chRtDataColl, logLevel)
+	go mongoWriter(cfg, instanceNumber, chMongoBw, chProtConns, chRtDataColl, chInstancesColl, chInstanceId, logLevel)
 	var protocolConns []*protocolConnection = []*protocolConnection{}
 	var collectionRtData *mongo.Collection
+	var collectionInstances *mongo.Collection
+	var instanceId primitive.ObjectID
+
 	// keep retrying protocol reconnection when disconnected
 	for {
 		select {
 		case protocolConns = <-chProtConns:
 		case collectionRtData = <-chRtDataColl:
+		case instanceId = <-chInstanceId:
+		case collectionInstances = <-chInstancesColl:
 		default:
 		}
-		if len(protocolConns) == 0 || collectionRtData == nil {
+		if len(protocolConns) == 0 || collectionRtData == nil || collectionInstances == nil {
+			time.Sleep(1 * time.Second)
+			IsActive = false
+			continue
+		}
+		processRedundancy(collectionInstances, instanceId, cfg)
+		if !IsActive {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-
 		for _, protocolConn := range protocolConns {
 			if protocolConn.PlcConn != nil && protocolConn.PlcConn.IsConnected() {
 				continue
@@ -424,7 +436,18 @@ func main() {
 
 			// try to connect to plc
 			connectionRequestChanel := driverManager.GetConnection(connUrl)
-			connectionResult := <-connectionRequestChanel
+			var connectionResult plc4go.PlcConnectionConnectResult
+			for {
+				select {
+				case connectionResult = <-connectionRequestChanel:
+				default:
+					processRedundancy(collectionInstances, instanceId, cfg)
+					time.Sleep(2 * time.Second)
+					continue
+				}
+				break
+			}
+			// connectionResult := <-connectionRequestChanel
 			if connectionResult.GetErr() != nil {
 				log.Printf("%s: Error connecting to PLC: %s", protocolConn.Name, connectionResult.GetErr().Error())
 				protocolConn.PlcConn = nil
@@ -653,6 +676,12 @@ func main() {
 				execRead()
 				for range time.Tick(time.Second * time.Duration(protocolConn.GiInterval)) {
 					if protocolConn.PlcConn != nil && protocolConn.PlcConn.IsConnected() {
+						if !IsActive {
+							log.Println("Instance inactive! Closing connection...")
+							protocolConn.PlcConn.Close()
+							protocolConn.PlcConn = nil
+							break
+						}
 						err := execRead()
 						if err == nil {
 							continue
@@ -671,11 +700,23 @@ func main() {
 				}
 			}()
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }
 
-func extractValue(v values.PlcValue, endianness string, protocolConn *protocolConnection, plc4xTagName string, logLevel int) (valDbl float64, valStr string, valJson string, valArrDbl []float64, bad bool) {
+func extractValue(
+	v values.PlcValue,
+	endianness string,
+	protocolConn *protocolConnection,
+	plc4xTagName string,
+	logLevel int,
+) (
+	valDbl float64,
+	valStr string,
+	valJson string,
+	valArrDbl []float64,
+	bad bool,
+) {
 	valArrDbl = []float64{}
 	valJson = "{}"
 	switch v.GetPlcValueType().String() {
@@ -1027,11 +1068,19 @@ func extractValue(v values.PlcValue, endianness string, protocolConn *protocolCo
 	return
 }
 
-func mongoWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo.WriteModel, chProtConns chan []*protocolConnection, chRtData chan *mongo.Collection, logLevel int) {
+func mongoWriter(
+	cfg configData,
+	instanceNumber int,
+	chMongoBw chan []mongo.WriteModel,
+	chProtConns chan []*protocolConnection,
+	chRtData chan *mongo.Collection,
+	chInstances chan *mongo.Collection,
+	chInstanceId chan primitive.ObjectID,
+	logLevel int,
+) {
 	for {
 		log.Print("Mongodb - Try to connect server...")
 		client, collectionRtData, collectionInstances, collectionConnections, collectionCommands, err := mongoConnect(cfg)
-		_, _, _ = collectionInstances, collectionConnections, collectionCommands
 		if err != nil {
 			log.Println("Mongodb - error connecting!")
 			log.Println(err)
@@ -1039,8 +1088,10 @@ func mongoWriter(cfg configData, instanceNumber int, chMongoBw chan []mongo.Writ
 			continue
 		}
 		defer client.Disconnect(context.TODO())
-		protocolConns, csCommands := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
+		protocolConns, csCommands, instanceId := configInstance(client, collectionInstances, collectionConnections, collectionCommands, instanceNumber)
+		chInstanceId <- instanceId
 		chProtConns <- protocolConns
+		chInstances <- collectionInstances
 		chRtData <- collectionRtData
 		go iterateCommandsChangeStream(csCommands, protocolConns, collectionCommands)
 
