@@ -67,16 +67,15 @@ go mod tidy
 go build 
 copy /Y calculations.exe %BINPATH%
 
-rem cd %SRCPATH%\plc4x-client
-rem go get "github.com/icza/bitio"
-rem go mod tidy 
-rem go build 
-rem copy /Y plc4x-client.exe %BINPATH%
-
 cd %SRCPATH%\i104m
 go mod tidy 
 go build 
 copy /Y i104m.exe %BINPATH%
+
+cd %SRCPATH%\plc4x-client
+go mod tidy 
+go build 
+copy /Y plc4x-client.exe %BINPATH%
 
 cd %SRCPATH%\cs_data_processor
 call %NPM% i --package-lock-only

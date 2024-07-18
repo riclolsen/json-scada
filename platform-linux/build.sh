@@ -42,16 +42,15 @@ go mod tidy
 go build
 cp calculations ../../bin/
 
-# cd ../plc4x-client
-# go get "github.com/icza/bitio"
-# go mod tidy 
-# go build 
-# cp plc4x-client ../../bin/
-
 cd ../i104m
 go mod tidy 
 go build
 cp i104m ../../bin/
+
+cd ../plc4x-client
+go mod tidy 
+go build
+cp plc4x-client ../../bin/
 
 cd ../cs_data_processor
 npm install

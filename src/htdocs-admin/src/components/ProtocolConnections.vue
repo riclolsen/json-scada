@@ -312,7 +312,7 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA', 'MQTT-SPARKPLUG-B'].includes(
+                      ['OPC-UA', 'MQTT-SPARKPLUG-B', 'PLC4X'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -518,6 +518,7 @@
                         'MQTT-SPARKPLUG-B',
                         'TELEGRAF-LISTENER',
                         'IEC61850',
+                         'PLC4X',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -731,6 +732,7 @@
                         'I104M',
                         'PI_DATA_ARCHIVE_INJECTOR',
                         'PI_DATA_ARCHIVE_CLIENT',
+                        'PLC4X',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2250,6 +2252,7 @@
                        'IEC61850',
                        'PI_DATA_ARCHIVE_INJECTOR',
                        'PI_DATA_ARCHIVE_CLIENT',
+                       'PLC4X',
                        ].includes(
                         selected.protocolDriver
                       )

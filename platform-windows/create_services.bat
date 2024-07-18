@@ -104,7 +104,7 @@ nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
 nssm set JSON_SCADA_alarm_beep_auth AppStdout C:\json-scada\log\alarm_beep.log
 nssm set JSON_SCADA_alarm_beep AppRotateOnline 1
 nssm set JSON_SCADA_alarm_beep AppRotateBytes 10000000
-nssm set JSON_SCADA_alarm_beep Start SERVICE_AUTO_START
+nssm set JSON_SCADA_alarm_beep Start SERVICE_DEMAND_START
 
 REM WARNING! This service has no security access control, use with care.
 nssm install JSON_SCADA_config_server_excel "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\config_server_for_excel\index.js" 
@@ -192,6 +192,12 @@ nssm set JSON_SCADA_i104m AppStdout C:\json-scada\log\i104m.log
 nssm set JSON_SCADA_i104m AppRotateOnline 1
 nssm set JSON_SCADA_i104m AppRotateBytes 10000000
 nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
+
+nssm install JSON_SCADA_plc4xclient "C:\json-scada\bin\plc4x-client.exe" 1 1 
+nssm set JSON_SCADA_plc4xclient AppStdout C:\json-scada\log\plc4xclient.log
+nssm set JSON_SCADA_plc4xclient AppRotateOnline 1
+nssm set JSON_SCADA_plc4xclient AppRotateBytes 10000000
+nssm set JSON_SCADA_plc4xclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
 nssm set JSON_SCADA_plctags AppStdout C:\json-scada\log\plctags.log

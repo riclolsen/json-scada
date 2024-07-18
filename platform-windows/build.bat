@@ -24,7 +24,7 @@ dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c R
 cd %SRCPATH%\libiec61850\build
 rem set VCTargetsPath=C:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
 rem set VCTargetsPath=D:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
-rem set VCToolsInstallDir=D:\ProgramFiles\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\
+rem set VCToolsInstallDir=D:\ProgramFiles\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\
 rem dotnet clean -c Release libiec61850.sln
 
 dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
@@ -67,16 +67,15 @@ go mod tidy
 go build 
 copy /Y calculations.exe %BINPATH%
 
-rem cd %SRCPATH%\plc4x-client
-rem go get "github.com/icza/bitio"
-rem go mod tidy
-rem go build 
-rem copy /Y plc4x-client.exe %BINPATH%
-
 cd %SRCPATH%\i104m
 go mod tidy
 go build 
 copy /Y i104m.exe %BINPATH%
+
+cd %SRCPATH%\plc4x-client
+go mod tidy 
+go build 
+copy /Y plc4x-client.exe %BINPATH%
 
 cd %SRCPATH%\cs_data_processor
 call %NPM% install

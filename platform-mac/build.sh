@@ -45,6 +45,11 @@ go mod tidy
 go build
 cp i104m ../../bin/
 
+cd ../plc4x-client
+go mod tidy 
+go build
+cp plc4x-client ../../bin/
+
 cd ../cs_data_processor
 npm install
 cd ../cs_custom_processor

@@ -33,6 +33,7 @@ nssm stop JSON_SCADA_plctags
 net stop JSON_SCADA_telegraf_runtime
 nssm stop JSON_SCADA_telegraf_listener
 nssm stop JSON_SCADA_mqttsparkplugclient
+nssm stop JSON_SCADA_plc4xclient
 ping -n 3
 
 REM STOP PROTOCOL SERVERS
