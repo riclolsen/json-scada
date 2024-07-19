@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.35"
-!define VERSION_ "0.35.0.0"
+!define VERSION "v.0.36"
+!define VERSION_ "0.36.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -134,6 +134,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaserver' 
   nsExec::Exec 'net stop JSON_SCADA_mqttsparkplugclient'  
+  nsExec::Exec 'net stop JSON_SCADA_plc4xclient'  
   nsExec::Exec 'net stop JSON_SCADA_telegraf_runtime'
   nsExec::Exec 'net stop JSON_SCADA_telegraf_listener'
   nsExec::Exec 'net stop JSON_SCADA_nginx'
@@ -244,7 +245,11 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-6.0.31-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-6.0.32-win-x64.exe"
+  ;File /a "..\platform-windows\gbda_aut.dll"
+  ;File /a "..\platform-windows\gbhda_aw.dll"
+  ;ExecWait `regsvr32 gbda_aut.dll`
+  ;ExecWait `regsvr32 gbhda_aw.dll`
 
   ; Visual C redist: needed for timescaledb
   ;ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" "Major"
@@ -258,8 +263,8 @@ SetRegView 64
   Sleep 1000
   Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.31-win-x64.exe" /install /passive /quiet'
-  
+  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.32-win-x64.exe" /install /passive /quiet'
+
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
@@ -638,6 +643,11 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_mqttsparkplugclient"`
   ClearErrors
 
+  ExecWait `"${SC}" stop "JSON_SCADA_plc4xclient"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_plc4xclient"`
+  ClearErrors
+
   ExecWait `"${SC}" stop "JSON_SCADA_telegraf_listener"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_telegraf_listener"`
@@ -745,6 +755,9 @@ Section "Uninstall"
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   Sleep 5000
   
+  ; ExecWait `regsvr32 gbda_aut.dll -u`
+  ; ExecWait `regsvr32 gbhda_aw.dll -u`
+
   RMDir /r "$INSTDIR\bin" 
   RMDir /r "$INSTDIR\platform-windows" 
   RMDir /r "$INSTDIR\conf" 

@@ -47,7 +47,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 * Event-based realtime async data processing with MongoDB Change Streams.
 * Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.35-alpha).
+* Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.36-alpha).
 * Unlimited tags, servers, and users.
 * Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 * Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -75,6 +75,11 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 * Data concentrator for Big Data / ML processing.
 * Digital Transformation, Industry 4.0 enabler.
 
+## Real-world usage
+
+* 5+ years of usage in 2 big control center scanning data from 80+ substations, 90k tags.
+* 5+ years of usage as HMI for local operation of circa 40 substations up to 230kV level. 
+
 ## Architecture
 
 ![architecture](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/riclolsen/json-scada/master/docs/JSON-SCADA_Arquitecture.txt "{json:scada} Architecture")
@@ -82,7 +87,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 * [Generic Install Guide](docs/install.md)
-* [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.35-alpha)
+* [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.36-alpha)
 * [RedHat/Rocky Linux Installer](docs/install.md#rhel94-and-compatible-systems-automated-installation)
 * [Install Guide](docs/install.md)
 * [Docker Demo](demo-docker/README.md)
@@ -119,6 +124,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] DNP3 Client (TCP, UDP, TLS, Serial) - Windows x64 only!
 - [ ] DNP3 Server (TCP, UDP, TLS, Serial)
 - [x] MQTT/Sparkplug-B Client
+- [x] Modbus Client via PLC4X-GO
 - [x] I104M (adapter for some OSHMI drivers)
 - [x] ICCP Client (via I104M)
 - [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
@@ -127,7 +133,6 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] OPC UA Historical Data Server
 - [ ] OPC UA Server
 - [ ] OPC DA Client
-- [ ] Modbus Client
 - [x] IEC 61850 MMS Client
 - [ ] IEC 61850 MMS Server
 - [ ] IEC 61850 GOOSE Client
@@ -162,9 +167,8 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] PowerBI Direct Integration
 - [ ] NodeRed Integration
 - [ ] Alerta Integration (https://alerta.io/)
-- [ ] PLC4X Integration (https://plc4x.apache.org/)
+- [x] PLC4X-GO Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
-- [x] SAGE (brazilian SCADA from CEPEL) web displays visualization
 
 ## Online Demo (substations simulation)
 

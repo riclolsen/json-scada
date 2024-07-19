@@ -49,16 +49,19 @@ cd %SRCPATH%\lib60870.netcore\iec104server\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
 cd %SRCPATH%\dnp3\Dnp3Client\ 
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% Dnp3Client.csproj
-cd %SRCPATH%\OPC-UA-Client\  
-rmdir obj /S /Q
-rmdir bin /S /Q
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% OPC-UA-Client.csproj
+
 cd %SRCPATH%\libplctag\libplctag.NET\src\libplctag
 dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
 cd %SRCPATH%\libplctag\PLCTagsClient
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% PLCTagsClient.csproj
+
 cd %SRCPATH%\logrotate\  
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% logrotate.csproj
+
+cd %SRCPATH%\OPC-UA-Client\  
+rmdir obj /S /Q
+rmdir bin /S /Q
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% OPC-UA-Client.csproj
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin

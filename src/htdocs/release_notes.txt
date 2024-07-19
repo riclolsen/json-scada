@@ -84,6 +84,9 @@ To allow other IP addresses edit the "c:\json-scada\conf\nginx_access_control.co
 To configure safe remote client access, configure IP address access control, HTTPS, 
   client certificates and user authentication directly in the Nginx configuration files.
 
+Locally installed databases MongoDB and Postgresql are configured for local access only with relaxed access control 
+  and authorization. The system can be reconfigured to access databases on external servers with full security.
+
 -------------------------------------------------------------------
 
 The customized Inkscape SVG graphics editor is a derivative of the Inkscape Project
@@ -99,25 +102,24 @@ We respect the GPL license of the upstream work by making the source code of the
   modifications to the original Inkscape and SAGE code available at:
 
 Source Code:
-  https://sourceforge.net/p/oshmiopensubstationhmi/mercurial/ci/default/tree/inkscape_sage_src/
+  https://gitlab.com/ricardolo/inkscape-rebased/
 
 -------------------------------------------------------------------
   
 Recommended Operating Systems:
 
-* Windows 10 Pro/Home/Enterprise, 64 bits.
-* Modern 64bit Windows server OSs.
-
-Please use an updated OS.
+* Windows 10/11 Pro/Home/Enterprise, 64 bit only.
+* Windows Server 2019+.
 
 Can also run on:
+* RHEL/Rocky/Oracle/Alma Linux 9.4 x86/64 or ARM64 (scripted installation).
 * Other Linux distros, Mac OSX, x86/64, ARM64, (no installer provided).
 * See documentation.
 
 Client user interface can be used on:
 * Modern IOS and Android devices.
 * Any device with an updated HTML5 browser like Chrome, Chromium, Firefox, Edge, Safari, Brave, Opera, Vivaldi.
-* Internet Explorer and non-Chromium based Edge are strictly not supported!
+* Internet Explorer and non-Chromium based Edge are explicitly not supported!
 
 -------------------------------------------------------------------
 
@@ -129,6 +131,62 @@ See official repo:
 
 Inkscape+SAGE:
 * See http://wiki.inkscape.org/wiki/index.php/Compiling_Inkscape_on_Windows_with_MSYS2.
+
+-------------------------------------------------------------------
+
+Notes for version 0.36:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* New driver PLC4X Client for PLC protocols like Modbus, etc.
+* IEC61850 client: fixed size of origin string for commands that was crashing some devices.
+* Fixed Bson version errors in server_realtime_auth module.
+* MongoDB Compass updated to 1.43.4.
+* MongoDB Community Server updated to 7.0.12.
+* Grafana updated to 11.1.0.
+* Telegraf runtime updated to 1.31.1.
+* Nodejs runtime updated to 20.15.1.
+* Dotnet runtime updated to 6.0.32.
+* Chromium updated to 126.0.6478.183.
+* NPM packages updated.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
+Notes for version 0.35:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* Added timeseries 'hist' collection on MongoDB for historical archival.
+* Fixed Telegraf service creation.
+* Optimized mongo inserts and updates on cs_data_processor.
+* Optimizations on Mongofw/Mongowr one-way replication processes.
+* Inkscape+SAGE: new build based on 1.2-dev.
+* PostgreSQL updated to 16.3-2.
+* TimescaleDB updated to 2.15.2.
+* Telegraf runtime updated to 1.31.0.
+* Nodejs runtime updated to 20.14.0.
+* Dotnet runtime updated to 6.0.31.
+* Chromium updated to 126.0.6478.57.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
 
 -------------------------------------------------------------------
 
@@ -183,7 +241,7 @@ Notes for version 0.32:
 * Added OpenJDK 22.0.1.
 * Telegraf runtime updated to 1.30.2.
 * MongoDB Community Server updated to 7.0.9.
-* MongoDB Compass updated to 1.44.0.
+* MongoDB Compass updated to 1.43.0.
 * Grafana updated to 9.5.18, now connect to local PostgreSQL.
 * Dotnet runtime updated to 6.0.29.
 * Nodejs runtime updated to 20.13.1.
