@@ -1,0 +1,67 @@
+<Project>
+  <PropertyGroup>
+    <Product>OPC DA/AE/HDA Client Solution .NET</Product>
+    <RepositoryUrl>https://github.com/technosoftware-gmbh/opcdaaehda-solution-net</RepositoryUrl>
+    <VersionPrefix>2.0.1</VersionPrefix>
+    <VersionSuffix>rc-$([System.DateTime]::Now.ToString("yyyyMMdd"))</VersionSuffix>
+    <Copyright>Copyright © 2011 - 2024 Technosoftware GmbH</Copyright>
+    <Company>Technosoftware GmbH</Company>
+    <Authors>Technosoftware GmbH</Authors>
+    <NoWarn>NU5125;RCS1138;RCS1139</NoWarn>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <HighEntropyVA>true</HighEntropyVA>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Highest language version supported by .NET Standard 2.0 and .NET framework -->
+    <LangVersion>7.3</LangVersion>
+    <!--TODO <GenerateDocumentationFile>true</GenerateDocumentationFile>-->
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <!-- to check the package validation on a release build, uncomment here -->
+    <!--<PackageValidationBaselineVersion>3.3.1/PackageValidationBaselineVersion>-->
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageIcon>images/TechnosoftwareGmbH.png</PackageIcon>
+    <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+    <!--<PackageLicenseUrl>https://technosoftware.com/license-agreement/</PackageLicenseUrl>-->
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+  	<Documentation>README.md</Documentation>
+    <PackageReleaseNotes>https://github.com/technosoftware-gmbh/opcdaaehda-solution-net/releases</PackageReleaseNotes>
+    <PackageTags>Technosoftware OPC DA/AE/HDA .NET 8.0 .NET 7.0 .NET 6.0 .NET 4.8 windows dotnet</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)/LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+    <None Include="$(MSBuildThisFileDirectory)/nuget/Technosoftware_SLA.pdf" Pack="true" PackagePath="licenses/"/>
+    <None Include="$(MSBuildThisFileDirectory)/nuget/TechnosoftwareGmbH.png" Pack="true" PackagePath="$(PackageIcon)"/>
+    <None Include="$(MSBuildThisFileDirectory)/README.md" Pack="true" PackagePath="$(Documentation)"/>
+    <None Include="$(MSBuildThisFileDirectory)/CHANGELOG.md" Pack="true" PackagePath="/"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(NBGV_PublicRelease)' != ''">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+  </ItemGroup>
+
+  <!-- Deterministic build is currently not supported for code coverage tests. -->
+  <PropertyGroup Condition="'$(CollectCoverage)' != 'true' AND ('$(TF_BUILD)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true')">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+</Project>

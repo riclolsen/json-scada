@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-windows</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Technosoftware.DaClientConsole</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>JsonScada.OpcDaClient</PackageId>
+    <Product>JSON-SCADA</Product>
+    <Description>OPC-DA Client Driver</Description>
+    <Copyright>Copyright © 2024 - Ricardo Lastra Olsen</Copyright>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.27.0" />
+    <PackageReference Include="Technosoftware.DaAeHdaSolution.DaAeHdaClient" Version="2.0.2" />
+  </ItemGroup>
+
+</Project>

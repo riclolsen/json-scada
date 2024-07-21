@@ -1,0 +1,85 @@
+<Project>
+  <!-- 
+    Supported frameworks (included in NuGet packages):
+       .NET Core 6 until 12-NOV-2024
+       .NET Core 7 until 14-MAY-2024
+       .NET Core 8 until 10-NOV-2026
+       .NET 4.8
+    No longer supported frameworks because of end of life:
+       .NET Core 2.0 is end of life since 1-OCT-2018. No support possible anymore.
+       .NET Core 2.1 is end of life since 21-AUG-2021. No support possible anymore.
+       .NET Core 2.2 is end of life since 31-DEC-2019. No support possible anymore.
+       .NET Core 3.0 is end of life since 03-MAR-2020. No support possible anymore.
+       .NET Core 3.1 is end of life since 13-DEC-2021. No support possible anymore.
+       .NET 5.0 is end of life since 10-MAY-2022. No support possible anymore.
+       .NET 4.6 is end of life since 26-APR-2022. No support possible anymore.
+       .NET 4.6.1 is end of life since 26-APR-2022. No support possible anymore.
+
+    Possible custom frameworks (NOT included in standard build and NuGet packages):
+       .NET 4.6.2
+       .NET 4.7.2
+
+    A custom framework can be used to test a legacy framework. Uncomment the 
+    following lines to test a custom test target. Supported values: 
+       net462
+       net472
+  -->
+
+  <!-- 
+  <PropertyGroup>
+    <CustomFramework>net462</CustomFramework>
+  </PropertyGroup> 
+  -->
+
+  <Choose>
+    <!-- Note: to build and test a legacy framework, set the CustomFramework environment 
+         variable accordingly -->
+    <When  Condition="'$(CustomFramework)' == 'net462'">
+      <PropertyGroup>
+        <WorkshopClientTargetFrameworks>net462</WorkshopClientTargetFrameworks>
+        <AppTargetFrameworks>net462</AppTargetFrameworks>
+        <LibTargetFrameworks>net462</LibTargetFrameworks>
+        <ComTargetFrameworks>net462</ComTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When  Condition="'$(CustomFramework)' == 'net472'">
+      <PropertyGroup>
+        <AnalysisLevel>preview-all</AnalysisLevel>
+        <WorkshopClientTargetFrameworks>net462</WorkshopClientTargetFrameworks>
+        <AppTargetFrameworks>net472</AppTargetFrameworks>
+        <LibTargetFrameworks>net472</LibTargetFrameworks>
+        <ComTargetFrameworks>net472</ComTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <!-- Visual Studio 2022 -->
+    <When  Condition="'$(VisualStudioVersion)' == '17.0'">
+      <PropertyGroup>
+        <AnalysisLevel>preview-all</AnalysisLevel>
+        <WorkshopClientTargetFrameworks>net48;net6.0-windows;net7.0-windows;net8.0-windows</WorkshopClientTargetFrameworks>
+        <AppTargetFrameworks>net48;net6.0-windows</AppTargetFrameworks>
+        <LibTargetFrameworks>net48;net6.0-windows;net7.0-windows;net8.0-windows</LibTargetFrameworks>
+        <ComTargetFrameworks>net48;net6.0-windows;net7.0-windows;net8.0-windows</ComTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <!-- Visual Studio 2019 -->
+    <When Condition="'$(VisualStudioVersion)' == '16.0'">
+      <PropertyGroup>
+        <AnalysisLevel>preview-all</AnalysisLevel>
+        <WorkshopClientTargetFrameworks>net48</WorkshopClientTargetFrameworks>
+        <AppTargetFrameworks>net48</AppTargetFrameworks>
+        <LibTargetFrameworks>net48</LibTargetFrameworks>
+        <ComTargetFrameworks>net48</ComTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <!-- Visual Studio 2017 and earlier -->
+    <Otherwise>
+      <PropertyGroup>
+        <AnalysisLevel>preview-all</AnalysisLevel>
+        <WorkshopClientTargetFrameworks>net48</WorkshopClientTargetFrameworks>
+        <AppTargetFrameworks>net48</AppTargetFrameworks>
+        <LibTargetFrameworks>net48</LibTargetFrameworks>
+        <ComTargetFrameworks>net48</ComTargetFrameworks>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+</Project>

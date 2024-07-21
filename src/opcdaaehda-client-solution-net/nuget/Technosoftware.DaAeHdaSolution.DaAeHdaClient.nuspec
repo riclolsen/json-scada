@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Technosoftware.DaAeHdaSolution.DaAeHdaClient</id>
+    <version>2.0.2</version>
+    <title>OPC DA/AE/HDA Solution .NET Client Library</title>
+    <description>OPC DA/AE/HDA .NET Client Library</description>
+    <readme>README.md</readme>
+    <authors>Technosoftware GmbH</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="file">LICENSE.md</license>
+    <projectUrl>https://github.com/technosoftware-gmbh/opcdaaehda-solution-net</projectUrl>
+    <icon>images/TechnosoftwareGmbH.png</icon>
+    <releaseNotes>https://github.com/technosoftware-gmbh/opcdaaehda-solution-net/releases</releaseNotes>
+    <copyright>Copyright © 2011 - 2023 Technosoftware GmbH</copyright>
+    <tags>Technosoftware OPC DA/AE/HDA .NET 7.0 .NET 6.0 dotnet windows netcore</tags>
+    <repository type="git" url="https://github.com/technosoftware-gmbh/opcdaaehda-solution-net" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.8">
+        <dependency id="Microsoft.Win32.Registry" version="5.0.0" />
+        <dependency id="Portable.BouncyCastle" version="1.9.0" />
+      </group>
+      <group targetFramework="net6.0-windows7.0">
+        <dependency id="Microsoft.Win32.Registry" version="5.0.0" />
+        <dependency id="System.Runtime.InteropServices" version="4.3.0" />
+      </group>
+      <group targetFramework="net7.0-windows7.0">
+        <dependency id="Microsoft.Win32.Registry" version="5.0.0" />
+        <dependency id="System.Runtime.InteropServices" version="4.3.0" />
+      </group>
+      <group targetFramework="net8.0-windows7.0">
+        <dependency id="Microsoft.Win32.Registry" version="5.0.0" />
+        <dependency id="System.Runtime.InteropServices" version="4.3.0" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Runtime" targetFramework=".NETFramework4.8" />
+      <frameworkAssembly assemblyName="System.Runtime.InteropServices" targetFramework=".NETFramework4.8" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="../README.md" target="/" />
+    <file src="../CHANGELOG.md" target="/" />
+    <file src="../nuget/TechnosoftwareGmbH.png" target="images/" />
+    <file src="../LICENSE.md" target="/"/>
+    <file src="../lib/net8.0-windows/Technosoftware.DaAeHdaClient.dll" target="lib/net8.0-windows8.0/" />
+    <file src="../lib/net8.0-windows/Technosoftware.DaAeHdaClient.xml" target="lib/net8.0-windows8.0/" />
+    <file src="../lib/net8.0-windows/Technosoftware.DaAeHdaClient.Com.dll" target="lib/net8.0-windows8.0/" />
+    <file src="../lib/net8.0-windows/Technosoftware.DaAeHdaClient.Com.xml" target="lib/net8.0-windows8.0/" />
+    <file src="../lib/net8.0-windows/Technosoftware.OpcRcw.dll" target="lib/net8.0-windows8.0/" />
+    <file src="../lib/net8.0-windows/Technosoftware.OpcRcw.xml" target="lib/net8.0-windows8.0/" />
+    <file src="../lib/net7.0-windows/Technosoftware.DaAeHdaClient.dll" target="lib/net7.0-windows7.0/" />
+    <file src="../lib/net7.0-windows/Technosoftware.DaAeHdaClient.xml" target="lib/net7.0-windows7.0/" />
+    <file src="../lib/net7.0-windows/Technosoftware.DaAeHdaClient.Com.dll" target="lib/net7.0-windows7.0/" />
+    <file src="../lib/net7.0-windows/Technosoftware.DaAeHdaClient.Com.xml" target="lib/net7.0-windows7.0/" />
+    <file src="../lib/net7.0-windows/Technosoftware.OpcRcw.dll" target="lib/net7.0-windows7.0/" />
+    <file src="../lib/net7.0-windows/Technosoftware.OpcRcw.xml" target="lib/net7.0-windows7.0/" />
+    <file src="../lib/net6.0-windows/Technosoftware.DaAeHdaClient.dll" target="lib/net6.0-windows7.0/" />
+    <file src="../lib/net6.0-windows/Technosoftware.DaAeHdaClient.xml" target="lib/net6.0-windows7.0/" />
+    <file src="../lib/net6.0-windows/Technosoftware.DaAeHdaClient.Com.dll" target="lib/net6.0-windows7.0/" />
+    <file src="../lib/net6.0-windows/Technosoftware.DaAeHdaClient.Com.xml" target="lib/net6.0-windows7.0/" />
+    <file src="../lib/net6.0-windows/Technosoftware.OpcRcw.dll" target="lib/net6.0-windows7.0/" />
+    <file src="../lib/net6.0-windows/Technosoftware.OpcRcw.xml" target="lib/net6.0-windows7.0/" />
+    <file src="../lib/net48/Technosoftware.DaAeHdaClient.dll" target="lib/net48/" />
+    <file src="../lib/net48/Technosoftware.DaAeHdaClient.xml" target="lib/net48/" />
+    <file src="../lib/net48/Technosoftware.DaAeHdaClient.Com.dll" target="lib/net48/" />
+    <file src="../lib/net48/Technosoftware.DaAeHdaClient.Com.xml" target="lib/net48/" />
+    <file src="../lib/net48/Technosoftware.OpcRcw.dll" target="lib/net48/" />
+    <file src="../lib/net48/Technosoftware.OpcRcw.xml" target="lib/net48/" />
+  </files>
+</package>
