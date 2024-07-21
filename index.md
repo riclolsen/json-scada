@@ -29,6 +29,8 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/MQTT-green "MQTT")
 ![](https://img.shields.io/badge/Sparkplug--B-green "Sparkplug B")
 ![](https://img.shields.io/badge/OPC--UA-green "OPC-UA")
+![](https://img.shields.io/badge/OPC--DA-yellow "OPC-DA")
+![](https://img.shields.io/badge/Modbus-green "Modbus")
 
 ![](https://img.shields.io/badge/license-GPL-green "License GPL")
 ![](https://img.shields.io/badge/contributors-welcome-green "Contributors Welcome")
@@ -77,7 +79,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Real-world usage
 
-* 5+ years of usage in 2 big control center scanning data from 80+ substations, 90k tags.
+* 5+ years of usage in 2 big control centers scanning data from 80+ substations, 90k tags.
 * 5+ years of usage as HMI for local operation of circa 40 substations up to 230kV level. 
 
 ## Architecture
@@ -133,6 +135,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] OPC UA Historical Data Server
 - [ ] OPC UA Server
 - [ ] OPC DA Client
+- [ ] OPC DA Server
 - [x] IEC 61850 MMS Client
 - [ ] IEC 61850 MMS Server
 - [ ] IEC 61850 GOOSE Client
