@@ -16,7 +16,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using Amazon.Runtime.Internal;
+using Amazon.SecurityToken.Model;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -34,8 +37,8 @@ namespace OPCDAClientDriver
         public static String ProtocolDriverName = "OPC-DA";
         public static String DriverVersion = "0.1.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
-        public static Int32 DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
-        public static Int32 BulkWriteLimit = 1250; // limit of each bulk write to mongodb
+        public static int DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
+        public static int BulkWriteLimit = 1250; // limit of each bulk write to mongodb
 
         public static int HandleCnt = 0;
         // public static Dictionary<string, string> MapNameToHandler = new Dictionary<string, string>();
@@ -48,6 +51,7 @@ namespace OPCDAClientDriver
             Log("Driver version " + DriverVersion);
             Log("Using Technosoftware " + LicenseHandler.Product + " " + LicenseHandler.Version);
             Technosoftware.DaAeHdaClient.Com.ApplicationInstance.InitializeSecurity(Technosoftware.DaAeHdaClient.Com.ApplicationInstance.AuthenticationLevel.Integrity);
+            ApplicationInstance.EnableTrace(ApplicationInstance.GetLogFileDirectory(), "SampleClients.HDa.log");
 
             if (args.Length > 0) // first argument in number of the driver instance
             {
@@ -189,6 +193,8 @@ namespace OPCDAClientDriver
             var collRtData =
                 DB.GetCollection<rtData>(RealtimeDataCollectionName);
 
+            LogLevel = 3; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
             foreach (OPCUA_connection isrv in conns)
             {
                 if (isrv.autoCreateTags)
@@ -294,13 +300,33 @@ namespace OPCDAClientDriver
                             Thread.Sleep(1000);
                             continue;
                         }
-                        TsCDaServer myDaServer = new TsCDaServer(new Technosoftware.DaAeHdaClient.Com.Factory(), opcUrl);
-                        myDaServer.SetClientName(srv.name);
-                        srv.connection = myDaServer;
+                        TsCDaServer daServer = new TsCDaServer(new Technosoftware.DaAeHdaClient.Com.Factory(), opcUrl);
+                        daServer.SetClientName(srv.name);
+                        srv.connection = daServer;
 
                         Log("Connecting to " + serverUrl);
                         // Connect to the server
-                        myDaServer.Connect();
+                        OpcUserIdentity userIdentity = null;
+                        if (srv.username != "")
+                        {
+                            var domainUser = srv.username.Split("/");
+                            if (srv.useSecurity)
+                            {
+                                if (domainUser.Length > 1)
+                                    userIdentity = new OpcUserIdentity(domainUser[0], domainUser[1], srv.password, srv.localCertFilePath, srv.peerCertFilePath);
+                                else
+                                    userIdentity = new OpcUserIdentity("", srv.username, srv.password, srv.localCertFilePath, srv.peerCertFilePath);
+                            }
+                            else
+                            {
+                                if (domainUser.Length > 1)
+                                    userIdentity = new OpcUserIdentity(domainUser[0], domainUser[1], srv.password);
+                                else
+                                    userIdentity = new OpcUserIdentity(srv.username, srv.password);
+                            }
+                        }
+                        daServer.Connect(new OpcConnectData(userIdentity));
+
                         Thread.Sleep(250);
                         switch (srv.connection.GetServerStatus().ServerState)
                         {
@@ -326,14 +352,14 @@ namespace OPCDAClientDriver
                         }
 
                         // Get the status from the server
-                        var status = myDaServer.GetServerStatus();
+                        var status = daServer.GetServerStatus();
                         Log($"{srv.name} - Status of Server is {status.ServerState}");
 
                         var itemsForGroup = new List<TsCDaItem>();
-                        BrowseServer(ref myDaServer, null, ref itemsForGroup, ref topics);
+                        BrowseServer(ref daServer, null, ref itemsForGroup, ref topics);
 
                         // Synchronous Read with server read function (DA 3.0) without a group
-                        var itemValues = myDaServer.Read(itemsForGroup.ToArray());
+                        var itemValues = daServer.Read(itemsForGroup.ToArray());
 
                         for (var i = 0; i < itemValues.Length; i++)
                         {
@@ -343,14 +369,42 @@ namespace OPCDAClientDriver
                             }
                             else
                             {
-                                Log($"{srv.name} - {itemValues[i].ItemName} {itemValues[i].Value} {itemValues[i].Quality}");
+                                //Log($"{srv.name} - {itemValues[i].ItemName} {itemValues[i].Value} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}");
+                                double value = 0;
+                                string valueJson = string.Empty;
+                                string valueString = string.Empty;
+                                bool quality = true;
+                                bool isDigital = false;
+                                convertItemValue(itemValues[i].Value, out value, out valueString, out valueJson, out quality, out isDigital);
+                                if (LogLevel > LogLevelDetailed)
+                                    Log($"{srv.name} - {itemValues[i].ItemName} {valueString} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}", LogLevelDetailed);
+
+                                var ov = new OPC_Value()
+                                {
+                                    valueJson = valueJson,
+                                    selfPublish = false,
+                                    address = "",
+                                    asdu = itemValues[i].Value.GetType().Name,
+                                    isDigital = isDigital,
+                                    value = value,
+                                    valueString = valueString,
+                                    cot = 20,
+                                    serverTimestamp = itemValues[i].Timestamp,
+                                    sourceTimestamp = DateTime.MinValue,
+                                    hasSourceTimestamp = false,
+                                    quality = quality,
+                                    conn_number = srv.protocolConnectionNumber,
+                                    conn_name = srv.name,
+                                    common_address = "",
+                                    display_name = "",
+                                };
                             }
                         }
                         // Console.ReadLine();
 
                         // Add a group with default values Active = true and UpdateRate = 500ms
                         var groupState = new TsCDaSubscriptionState { Name = "MyGroup", UpdateRate = 1000 };
-                        var group = (TsCDaSubscription)myDaServer.CreateSubscription(groupState);
+                        var group = (TsCDaSubscription)daServer.CreateSubscription(groupState);
 
                         var itemResults = group.AddItems(itemsForGroup.ToArray());
 
@@ -450,6 +504,99 @@ namespace OPCDAClientDriver
                         continue;
                     }
                 } while (position != null);
+            }
+        }
+        public static void convertItemValue(object iv, out double value, out string valueString, out string valueJson, out bool quality, out bool isDigital)
+        {
+            value = 0;
+            valueJson = string.Empty;
+            valueString = string.Empty;
+            quality = true;
+            isDigital = false;
+            try
+            {
+                if (iv.GetType().IsArray)
+                {
+                    valueJson = JsonSerializer.Serialize(iv);
+                    valueString = valueJson;
+                }
+                else
+                    switch (iv.GetType().Name)
+                    {
+                        case "String":
+                            valueString = Convert.ToString(iv);
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Boolean":
+                            value = Convert.ToBoolean(iv) ? 1 : 0;
+                            isDigital = true;
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                        case "SByte":
+                            value = Convert.ToSByte(iv);
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                        case "Decimal":
+                            value = Convert.ToDouble(Convert.ToDecimal(iv));
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                        case "Time":
+                        case "DateTime":
+                            value = Convert.ToDateTime(iv).Subtract(DateTime.UnixEpoch).TotalMilliseconds;
+                            valueString = Convert.ToDateTime(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Single":
+                        case "Double":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToDouble(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Int64":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToInt64(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "UInt64":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToUInt64(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Int32":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToInt32(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "UInt32":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToUInt32(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Int16":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToInt16(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "UInt16":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToUInt16(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        default:
+                            value = Convert.ToDouble(iv);
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                    }
+            }
+            catch
+            {
+                value = 0;
+                quality = false;
+                Log(iv.GetType().Name);
             }
         }
     }

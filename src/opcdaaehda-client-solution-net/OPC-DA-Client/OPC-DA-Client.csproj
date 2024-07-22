@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <AssemblyName>Technosoftware.DaClientConsole</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>JsonScada.OpcDaClient</PackageId>

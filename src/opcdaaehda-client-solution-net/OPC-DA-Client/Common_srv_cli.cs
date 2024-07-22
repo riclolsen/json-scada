@@ -36,14 +36,14 @@ namespace OPCDAClientDriver
 {
     partial class MainClass
     {
-        public static Int32 PointKeyInsert = 100000;
+        public static int PointKeyInsert = 100000;
         public static string JsonConfigFilePath = @"../conf/json-scada.json";
         public static string JsonConfigFilePathAlt = @"c:/json-scada/conf/json-scada.json";
-        public static Int32 LogLevelNoLog = 0; // log level 0=no
-        public static Int32 LogLevelBasic = 1; // log level 1=basic (default)
-        public static Int32 LogLevelDetailed = 2; // log level 2=detailed
-        public static Int32 LogLevelDebug = 3; // log level 3=debug
-        public static Int32 LogLevel = 1; // log level 0=no 1=min
+        public static int LogLevelNoLog = 0; // log level 0=no
+        public static int LogLevelBasic = 1; // log level 1=basic (default)
+        public static int LogLevelDetailed = 2; // log level 2=detailed
+        public static int LogLevelDebug = 3; // log level 3=debug
+        public static int LogLevel = 1; // log level 0=no 1=min
         private static Mutex logMutex_ = new Mutex();
         public static JSONSCADAConfig JSConfig = null;
         public static protocolDriverInstancesClass DriverInstance = null;
@@ -54,7 +54,7 @@ namespace OPCDAClientDriver
         public static string RealtimeDataCollectionName = "realtimeData";
         public static string SoeDataCollectionName = "soeData";
         public static string CommandsQueueCollectionName = "commandsQueue";
-        public static Int32 ProtocolDriverInstanceNumber = 1;
+        public static int ProtocolDriverInstanceNumber = 1;
         public static string redundantIpAddress = "";
         public static ConcurrentQueue<OPC_Value>
             OPCDataQueue = new ConcurrentQueue<OPC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
@@ -106,8 +106,37 @@ namespace OPCDAClientDriver
             public double autoCreateTagQueueSize { get; set; }
             [BsonDefaultValue(20000.0)]
             public double timeoutMs { get; set; }
+            [BsonDefaultValue("")]
+            public string username { get; set; }
+            [BsonDefaultValue("")]
+            public string password { get; set; }
             [BsonDefaultValue(false)]
             public bool useSecurity { get; set; }
+            //[BsonDefaultValue(false)]
+            //public bool chainValidation { get; set; }
+            //[BsonDefaultValue("")] 
+            //public string rootCertFilePath { get; set; }
+            [BsonDefaultValue("")] 
+            public string localCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string peerCertFilePath { get; set; }
+            //[BsonDefaultValue("")] 
+            //public string privateKeyFilePath { get; set; }
+            //[BsonDefaultValue("")] 
+            //public string pfxFilePath { get; set; }
+            //[BsonDefaultValue("")] 
+            //public string passphrase { get; set; }
+            //[BsonDefaultValue(false)] 
+            //public bool allowTLSv10 { get; set; }
+            //[BsonDefaultValue(false)]
+            //public bool allowTLSv11 { get; set; }
+            //[BsonDefaultValue(false)]
+            //public bool allowTLSv12 { get; set; }
+            //[BsonDefaultValue(false)]
+            //public bool allowTLSv13 { get; set; }
+            //[BsonDefaultValue("")] 
+            //public string cipherList { get; set; }
+
             public Double LastNewKeyCreated = -1;
             public SortedSet<string> InsertedTags = new SortedSet<string>();
             public TsCDaServer connection = null;
@@ -118,10 +147,10 @@ namespace OPCDAClientDriver
         public class protocolDriverInstancesClass
         {
             public ObjectId Id { get; set; }
-            public Int32 protocolDriverInstanceNumber { get; set; } = 1;
+            public int protocolDriverInstanceNumber { get; set; } = 1;
             public string protocolDriver { get; set; } = "";
             public bool enabled { get; set; } = true;
-            public Int32 logLevel { get; set; } = 1;
+            public int logLevel { get; set; } = 1;
             public string[] nodeNames { get; set; } = new string[0];
             public string activeNodeName { get; set; } = "";
             public DateTime activeNodeKeepAliveTimeTag { get; set; } = DateTime.MinValue;
@@ -129,7 +158,7 @@ namespace OPCDAClientDriver
         }
         public struct OPC_Value
         {
-            #pragma warning disable 0649
+#pragma warning disable 0649
             public string valueJson;
             public bool selfPublish;
             public string address;

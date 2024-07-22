@@ -43,26 +43,32 @@ namespace OPCDAClientDriver
         /// </param>
         public static void OnDataChangeEvent(object subscriptionHandle, object requestHandle, TsCDaItemValueResult[] values)
         {
-            Log(string.Format("----------------------------------------------------------- DataChange: {0}", values.Length));
+            string connName= "Conn?";
+            if (values.Length > 0)
+            {
+                string strHandle = string.Format("{0}", values[0].ClientHandle);
+                connName = MapHandlerToConnName[strHandle];
+            }
+            Log(string.Format($"{connName} - DataChange: {values.Length} -----------------------------------------------------------"), 1);
             if (requestHandle != null)
             {
                 Log("DataChange() for requestHandle :" + requestHandle.GetHashCode().ToString());
             }
             for (var i = 0; i < values.Length; i++)
-            {
-
-                string strHandle = string.Format("{0}", values[i].ClientHandle);
+            {                
                 // Console.Write("    Client Handle : "); Console.WriteLine(values[i].ClientHandle);
                 if (values[i].Result.IsSuccess() && values[i].Value != null)
                 {
+                    string strHandle = string.Format("{0}", values[i].ClientHandle);
                     if (values[i].Value.GetType().IsArray)
                     {
                         for (var j = 0; j < values.Length; j++)
                         {
-                            Log($"{MapHandlerToConnName[strHandle]} - Change: {MapHandlerToItemName[strHandle]}  Val[{j}]: " + string.Format("{0}", values[j].Value));
+                            if (j < 33 * LogLevel)
+                                Log($"{connName} - Change: {MapHandlerToItemName[strHandle]}  Val[{j}]: " + string.Format("{0}", values[j].Value), 2);
                         }
-                        Log($"{MapHandlerToConnName[strHandle]} - Change: {MapHandlerToItemName[strHandle]} TS: " + values[i].Timestamp.ToString(CultureInfo.InvariantCulture));
-                        Log($"{MapHandlerToConnName[strHandle]} - Change: {MapHandlerToItemName[strHandle]} Q: " + values[i].Quality);
+                        Log($"{connName} - Change: {MapHandlerToItemName[strHandle]} TS: " + values[i].Timestamp.ToString(CultureInfo.InvariantCulture), 2);
+                        Log($"{connName} - Change: {MapHandlerToItemName[strHandle]} Q: " + values[i].Quality, 2);
                     }
                     else
                     {
@@ -76,12 +82,13 @@ namespace OPCDAClientDriver
                         //    Log(message);
                         //}
 
-                        Log($"{MapHandlerToConnName[strHandle]} - Change: {MapHandlerToItemName[strHandle]} Val: {values[i].Value} Q: {values[i].Quality} TS: {values[i].Timestamp.ToString(CultureInfo.InvariantCulture)}");
+                        if (i < 33 * LogLevel)
+                            Log($"{connName} - Change: {MapHandlerToItemName[strHandle]} Val: {values[i].Value} Q: {values[i].Quality} TS: {values[i].Timestamp.ToString(CultureInfo.InvariantCulture)}", 2);
                     }
                 }
                 //Console.Write("    Result        : "); Console.WriteLine(values[i].Result.Description());
             }
-            Log("----------------------------------------------------------- End");
+            Log("----------------------------------------------------------- End", 2);
         }
     }
 }
