@@ -24,6 +24,10 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Diagnostics;
 using static OPCDAClientDriver.MainClass;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.Serialization;
+using System.Text.Json.Nodes;
+using MongoDB.Bson.IO;
 
 namespace OPCDAClientDriver
 {
@@ -32,6 +36,7 @@ namespace OPCDAClientDriver
         // This process updates acquired values in the mongodb collection for realtime data
         static public async void ProcessMongo(JSONSCADAConfig jsConfig)
         {
+            var serializer = new BsonArraySerializer();
             do
             {
                 try
@@ -63,7 +68,7 @@ namespace OPCDAClientDriver
                         if (!isMongoLive)
                             throw new Exception("Error on MongoDB connection ");
 
-                        Stopwatch stopWatch = new Stopwatch();                        
+                        Stopwatch stopWatch = new Stopwatch();
                         stopWatch.Start();
 
                         OPC_Value iv;
@@ -83,20 +88,20 @@ namespace OPCDAClientDriver
                                 tt = DateTime.MinValue;
                                 bsontt = BsonNull.Value;
                             }
-                            var t1 = stopWatch.Elapsed;
 
-                            BsonDocument valBson = new BsonDocument();
-                            /*
-                            try
+                            BsonArray valBson = null;
+                            if (iv.isArray)
                             {
-                                valBson = BsonDocument.Parse(iv.valueJson);
+                                try
+                                {
+                                    // valBson = BsonDocument.Parse(iv.valueJson); 
+                                    valBson = serializer.Deserialize(BsonDeserializationContext.CreateRoot(new JsonReader(iv.valueJson)));
+                                }
+                                catch (Exception e)
+                                {
+                                    if (LogLevel > LogLevelDetailed) Log(iv.conn_name + " - " + e.Message, LogLevelDebug);
+                                }
                             }
-                            catch (Exception e)
-                            {
-                                Log(iv.conn_name + " - " + e.Message, LogLevelDebug);
-                            }
-                            */
-                            var t2 = stopWatch.Elapsed;
 
                             /*
                             if (iv.selfPublish)
@@ -169,7 +174,7 @@ namespace OPCDAClientDriver
                                                 "sourceDataUpdate",
                                                 new BsonDocument {
                                                     {
-                                                        "valueBsonAtSource", valBson
+                                                        "valueBsonAtSource", (valBson == null ? BsonNull.Value : valBson)
                                                     },
                                                     {
                                                         "valueJsonAtSource", iv.valueJson
@@ -217,7 +222,7 @@ namespace OPCDAClientDriver
                                                         "invalidAtSource",
                                                         BsonBoolean
                                                             .Create(!iv
-                                                                .quality
+                                                                .isGood
                                                                 )
                                                     },
                                                     {
@@ -240,7 +245,6 @@ namespace OPCDAClientDriver
                                         }
                                     }
                                 };
-                            var t3 = stopWatch.Elapsed;
                             // update filter, avoids updating commands that can have the same address as supervised points
                             var filt =
                                 new rtFilt
@@ -260,14 +264,10 @@ namespace OPCDAClientDriver
                             if (listWrites.Count >= BulkWriteLimit)
                                 break;
 
-                            if (stopWatch.ElapsedMilliseconds > 1400)
+                            if (stopWatch.ElapsedMilliseconds > 1500)
                             {
-                                Log($"{t1} {t2} {t3} {t4}");
-                                Log($" ------------------------- {stopWatch.ElapsedMilliseconds}");
                                 break;
                             }
-
-                            // Log("Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
 
                             // give time to breath each 250 dequeues
                             //if ((listWrites.Count % 250)==0)

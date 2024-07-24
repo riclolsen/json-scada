@@ -21,8 +21,11 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
 using static MongoDB.Driver.WriteConcern;
@@ -355,7 +358,7 @@ namespace OPCDAClientDriver
 
                         var itemsBrowsed = new List<TsCDaItem>();
                         var itemsForGroup = new List<TsCDaItem>();
-                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref topics, ref srv);
+                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref topics, ref srv, "root");
 
                         // will read only data wanted
                         for (int i = 0; i < itemsBrowsed.Count; i++)
@@ -368,7 +371,6 @@ namespace OPCDAClientDriver
                             {
                                 if (srv.autoCreateTags)
                                 {
-                                    // srv.InsertedAddresses.Add(itemsBrowsed[i].ItemName);
                                     itemsForGroup.Add(itemsBrowsed[i]);
                                 }
                             }
@@ -377,6 +379,7 @@ namespace OPCDAClientDriver
                         var listWrites = new List<WriteModel<rtData>>();
 
                         // Synchronous Read with server read function (DA 3.0) without a group
+                        Log($"{srv.name} - Reading {itemsForGroup.Count} items...");
                         var itemValues = daServer.Read(itemsForGroup.ToArray());
                         for (var i = 0; i < itemValues.Length; i++)
                         {
@@ -386,13 +389,13 @@ namespace OPCDAClientDriver
                             }
                             else
                             {
-                                //Log($"{srv.name} - {itemValues[i].ItemName} {itemValues[i].Value} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}");
                                 double value = 0;
                                 string valueJson = string.Empty;
                                 string valueString = string.Empty;
-                                bool quality = true;
+                                bool isGood = true;
                                 bool isDigital = false;
-                                convertItemValue(itemValues[i].Value, out value, out valueString, out valueJson, out quality, out isDigital);
+                                convertItemValue(itemValues[i].Value, out value, out valueString, out valueJson, out isGood, out isDigital);
+                                isGood = itemValues[i].Quality.QualityBits.HasFlag(TsDaQualityBits.Good) && isGood;
                                 if (LogLevel > LogLevelDetailed)
                                     Log($"{srv.name} - {itemValues[i].ItemName} {valueString} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}", LogLevelDetailed);
 
@@ -403,17 +406,19 @@ namespace OPCDAClientDriver
                                     address = itemValues[i].ItemName,
                                     asdu = itemValues[i].Value.GetType().Name,
                                     isDigital = isDigital,
+                                    isArray = itemValues[i].Value.GetType().IsArray,
                                     value = value,
                                     valueString = valueString,
                                     cot = 20,
-                                    serverTimestamp = itemValues[i].Timestamp,
+                                    serverTimestamp = DateTime.Now,
                                     sourceTimestamp = DateTime.MinValue,
                                     hasSourceTimestamp = false,
-                                    quality = quality,
+                                    isGood = isGood,
                                     conn_number = srv.protocolConnectionNumber,
                                     conn_name = srv.name,
-                                    common_address = "",
-                                    display_name = "",
+                                    common_address = srv.MapItemNameToBranch[itemValues[i].ItemName],
+                                    display_name = itemValues[i].ItemName,
+                                    branch_name = srv.MapItemNameToBranch[itemValues[i].ItemName],
                                 };
 
                                 if (srv.autoCreateTags && !srv.InsertedAddresses.Contains(itemValues[i].ItemName))
@@ -423,12 +428,11 @@ namespace OPCDAClientDriver
 
                                     // will enqueue to insert the new tag into mongo DB
                                     var rtDtIns = newRealtimeDoc(ov, id);
-                                    AutoCreateTag(rtDtIns, ref collRtData, ref srv);
+                                    AutoCreateTag(in rtDtIns, in collRtData, in srv);
                                 }
                                 OPCDataQueue.Enqueue(ov);
                             }
                         }
-                        // Console.ReadLine();
 
                         // Add a group with default values Active = true and UpdateRate = 500ms
                         var subscrState = new TsCDaSubscriptionState { Name = "MyGroup", UpdateRate = 1000 };
@@ -448,25 +452,6 @@ namespace OPCDAClientDriver
                         {
                             OnDataChangeEvent(subscriptionHandle, requestHandle, values, ref srv);
                         };
-
-                        // subscr.DataChangedEvent += OnDataChangeEvent;
-
-                        /*
-                        Console.ReadLine();
-
-                        // Set group inactive
-                        groupState.Active = false;
-                        group.ModifyState((int)TsCDaStateMask.Active, groupState);
-
-                        Console.WriteLine("   Data change subscription deactivated, press <Enter> to remove all");
-                        Console.WriteLine("   and disconnect from the server.");
-                        group.Dispose();
-                        myDaServer.Disconnect();
-                        myDaServer.Dispose();
-                        // Console.ReadLine();
-                        Console.WriteLine("   Disconnected from the server.");
-                        Console.WriteLine();
-                        */
                     }
                     catch (OpcResultException e)
                     {

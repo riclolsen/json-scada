@@ -198,11 +198,11 @@ namespace OPCDAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
-                    description = "OPC-DA~" + iv.conn_name + "~" + iv.display_name,
+                    description = iv.conn_name + "~" + iv.branch_name + "~" + iv.display_name,
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
+                    group2 = iv.branch_name,
+                    group3 = iv.asdu,
                     stateTextFalse = "FALSE",
                     stateTextTrue = "TRUE",
                     eventTextFalse = "FALSE",
@@ -247,6 +247,7 @@ namespace OPCDAClientDriver
                     protocolDestinations = BsonNull.Value,
                     sourceDataUpdate = BsonNull.Value,
                     supervisedOfCommand = 0.0,
+                    substituted = false,
                     timeTag = BsonNull.Value,
                     timeTagAlarm = BsonNull.Value,
                     timeTagAtSource = BsonNull.Value,
@@ -273,11 +274,11 @@ namespace OPCDAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = -1.0,
-                    description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
+                    description = iv.conn_name + "~" + iv.branch_name + "~" + iv.display_name,
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
+                    group2 = iv.branch_name,
+                    group3 = iv.asdu,
                     stateTextFalse = "",
                     stateTextTrue = "",
                     eventTextFalse = "",
@@ -348,11 +349,11 @@ namespace OPCDAClientDriver
                 protocolSourceQueueSize = 10.0,
                 protocolSourceDiscardOldest = true,
                 alarmState = -1.0,
-                description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
+                description = iv.conn_name + "~" + iv.branch_name + "~" + iv.display_name,
                 ungroupedDescription = iv.display_name,
                 group1 = iv.conn_name,
-                group2 = iv.common_address,
-                group3 = "",
+                group2 = iv.branch_name,
+                group3 = iv.asdu,
                 stateTextFalse = "",
                 stateTextTrue = "",
                 eventTextFalse = "",
@@ -397,6 +398,7 @@ namespace OPCDAClientDriver
                 protocolDestinations = BsonNull.Value,
                 sourceDataUpdate = BsonNull.Value,
                 supervisedOfCommand = 0.0,
+                substituted = false,
                 timeTag = BsonNull.Value,
                 timeTagAlarm = BsonNull.Value,
                 timeTagAtSource = BsonNull.Value,
@@ -409,42 +411,42 @@ namespace OPCDAClientDriver
             };
         }
 
-        static public void AutoCreateTag(rtData dt, ref IMongoCollection<rtData> collRtData, ref OPCDA_connection srv)
+        static public void AutoCreateTag(in rtData rtDtIns, in IMongoCollection<rtData> collRtData, in OPCDA_connection srv)
         {
             do
             {
                 try
                 {
-                    collRtData.InsertOne(dt);
-                    srv.InsertedTags.Add(dt.tag.ToString());
-                    srv.InsertedAddresses.Add(dt.protocolSourceObjectAddress.ToString());
-                    Log($"{srv.name} - tag: {dt.tag}, item addr.: {dt.protocolSourceObjectAddress}");
+                    collRtData.WithWriteConcern(WriteConcern.W1).InsertOne(rtDtIns);
+                    srv.InsertedTags.Add(rtDtIns.tag.ToString());
+                    srv.InsertedAddresses.Add(rtDtIns.protocolSourceObjectAddress.ToString());
+                    if (LogLevel >= LogLevelDetailed) Log($"{srv.name} - tag: {rtDtIns.tag}, item addr.: {rtDtIns.protocolSourceObjectAddress}");
                     break;
                 }
                 catch
                 {
                     // error inserting probably duplicated _id or tag, try update the address for a tag
-                    Log($"{srv.name} - Error inserting tag: {dt.tag}, item addr.: {dt.protocolSourceObjectAddress}");
-                    var results = collRtData.UpdateOne(new BsonDocument {
-                                        { "tag", dt.tag },
-                                        { "protocolSourceConnectionNumber", dt.protocolSourceConnectionNumber },
+                    if (LogLevel >= LogLevelDetailed) Log($"{srv.name} - Error inserting tag: {rtDtIns.tag}, item addr.: {rtDtIns.protocolSourceObjectAddress}");
+                    var results = collRtData.WithWriteConcern(WriteConcern.W1).UpdateOne(new BsonDocument {
+                                        { "tag", rtDtIns.tag },
+                                        { "protocolSourceConnectionNumber", rtDtIns.protocolSourceConnectionNumber },
                                     }, new BsonDocument {
                                         { "$set", new BsonDocument {
-                                                    { "tag", dt.tag },
-                                                    { "protocolSourceObjectAddress", dt.protocolSourceObjectAddress }
+                                                    { "tag", rtDtIns.tag },
+                                                    { "protocolSourceObjectAddress", rtDtIns.protocolSourceObjectAddress }
                                         }
                                     }
                                     });
                     if (results.IsAcknowledged && results.MatchedCount != 0)
                     {
-                        srv.InsertedTags.Add(dt.tag.ToString());
-                        srv.InsertedAddresses.Add(dt.protocolSourceObjectAddress.ToString());
-                        Log($"{srv.name} - updated tag: {dt.tag}, item addr.: {dt.protocolSourceObjectAddress}");
+                        srv.InsertedTags.Add(rtDtIns.tag.ToString());
+                        srv.InsertedAddresses.Add(rtDtIns.protocolSourceObjectAddress.ToString());
+                        if (LogLevel >= LogLevelDetailed) Log($"{srv.name} - updated tag: {rtDtIns.tag}, item addr.: {rtDtIns.protocolSourceObjectAddress}");
                         break;
                     }
                 }
                 // could not insert or update:
-                dt._id = dt._id.ToInt64() + 1; // try next _id
+                rtDtIns._id = rtDtIns._id.ToInt64() + 1; // try next _id
             } while (true);
         }
     }

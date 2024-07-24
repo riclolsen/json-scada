@@ -163,17 +163,19 @@ namespace OPCDAClientDriver
             public string address;
             public string asdu;
             public bool isDigital;
+            public bool isArray;
             public double value;
             public string valueString;
             public int cot;
             public DateTime serverTimestamp;
             public DateTime sourceTimestamp;
             public bool hasSourceTimestamp;
-            public bool quality;
+            public bool isGood;
             public int conn_number;
             public string conn_name;
             public string common_address;
             public string display_name;
+            public string branch_name;
         }
         public class rtFilt
         {

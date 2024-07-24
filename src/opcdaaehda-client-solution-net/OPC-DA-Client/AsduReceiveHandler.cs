@@ -37,10 +37,42 @@ namespace OPCDAClientDriver
             //}
             for (var i = 0; i < values.Length; i++)
             {                
-                // Console.Write("    Client Handle : "); Console.WriteLine(values[i].ClientHandle);
                 if (values[i].Result.IsSuccess() && values[i].Value != null)
                 {
                     string strHandle = string.Format("{0}", values[i].ClientHandle);
+                    double value = 0;
+                    string valueJson = string.Empty;
+                    string valueString = string.Empty;
+                    bool isGood = true;
+                    bool isDigital = false;
+                    convertItemValue(values[i].Value, out value, out valueString, out valueJson, out isGood, out isDigital);
+                    isGood = values[i].Quality.QualityBits.HasFlag(TsDaQualityBits.Good) && isGood;
+                    if (LogLevel > LogLevelDetailed)
+                        Log($"{srv.name} - {values[i].ItemName} {valueString} {values[i].Quality} {values[i].Value.GetType().Name}", LogLevelDetailed);
+
+                    var ov = new OPC_Value()
+                    {
+                        valueJson = valueJson,
+                        selfPublish = true,
+                        address = values[i].ItemName,
+                        asdu = values[i].Value.GetType().Name,
+                        isDigital = isDigital,
+                        isArray = values[i].Value.GetType().IsArray,
+                        value = value,
+                        valueString = valueString,
+                        cot = 3,
+                        serverTimestamp = DateTime.Now,
+                        sourceTimestamp = values[i].Timestamp,
+                        hasSourceTimestamp = true,
+                        isGood = isGood,
+                        conn_number = srv.protocolConnectionNumber,
+                        conn_name = srv.name,
+                        common_address = "",
+                        branch_name = "",
+                        display_name = values[i].ItemName,
+                    };
+                    OPCDataQueue.Enqueue(ov);
+                    /*
                     if (values[i].Value.GetType().IsArray)
                     {
                         for (var j = 0; j < values.Length; j++)
@@ -69,6 +101,7 @@ namespace OPCDAClientDriver
                         if (LogLevel >= LogLevelDetailed && i < 33 * LogLevel)
                             Log($"{connName} - Change: {srv.MapHandlerToItemName[strHandle]} Val: {values[i].Value} Q: {values[i].Quality} TS: {values[i].Timestamp.ToString(CultureInfo.InvariantCulture)}", 2);
                     }
+                    */
                 }
                 //Console.Write("    Result        : "); Console.WriteLine(values[i].Result.Description());
             }
@@ -168,14 +201,13 @@ namespace OPCDAClientDriver
             }
         }
 
-        public static void BrowseServer(ref TsCDaServer daServer, OpcItem item, ref List<TsCDaItem> itemsForGroup, ref List<string> topics, ref OPCDA_connection srv)
+        public static void BrowseServer(ref TsCDaServer daServer, OpcItem item, ref List<TsCDaItem> itemsForGroup, ref List<string> topics, ref OPCDA_connection srv, string branch_name)
         {
             TsCDaBrowsePosition position = null;
             TsCDaBrowseFilters filters = new TsCDaBrowseFilters();
             filters.BrowseFilter = TsCDaBrowseFilter.All;
 
             TsCDaBrowseElement[] elements = daServer.Browse(item, filters, out position);
-            Console.WriteLine(position);
 
             if (elements != null)
             {
@@ -183,22 +215,21 @@ namespace OPCDAClientDriver
                 {
                     foreach (TsCDaBrowseElement elem in elements)
                     {
-                        Console.WriteLine(elem.ItemName, elem.GetType().ToString());
                         item = new OpcItem(elem.ItemPath, elem.ItemName);
                         if (elem.GetType() == typeof(TsCDaBrowseElement) && elem.HasChildren && (topics.Count == 0 || topics.Contains(elem.Name)))
                         {
-                            BrowseServer(ref daServer, item, ref itemsForGroup, ref topics, ref srv);
+                            srv.MapItemNameToBranch[item.ItemName] = branch_name;
+                            BrowseServer(ref daServer, item, ref itemsForGroup, ref topics, ref srv, item.ItemName);
                         }
 
                         if (!elem.HasChildren)
                         {
-                            Console.WriteLine("Add item to group - " + elem.ItemName);
-
                             var it = new TsCDaItem(item);
                             HandleCnt++;
                             it.ClientHandle = HandleCnt;
                             srv.MapHandlerToItemName[it.ClientHandle.ToString()] = it.ItemName;
                             srv.MapHandlerToConnName[it.ClientHandle.ToString()] = daServer.ClientName;
+                            srv.MapItemNameToBranch[it.ItemName] = branch_name;
 
                             // MapNameToHandler[it.ItemName] = it.ClientHandle.ToString();
                             itemsForGroup.Add(it);
