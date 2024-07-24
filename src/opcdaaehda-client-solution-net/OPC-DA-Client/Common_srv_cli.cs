@@ -27,9 +27,6 @@ using MongoDB.Bson.Serialization.Attributes;
 using System.Net.Security;
 using MongoDB.Driver;
 using System.Security.Cryptography.X509Certificates;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Xml.Xsl;
-using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
 
 namespace OPCDAClientDriver
@@ -47,19 +44,15 @@ namespace OPCDAClientDriver
         private static Mutex logMutex_ = new Mutex();
         public static JSONSCADAConfig JSConfig = null;
         public static protocolDriverInstancesClass DriverInstance = null;
-        public static string
-            ProtocolConnectionsCollectionName = "protocolConnections";
-        public static string
-            ProtocolDriverInstancesCollectionName = "protocolDriverInstances";
+        public static string ProtocolConnectionsCollectionName = "protocolConnections";
+        public static string ProtocolDriverInstancesCollectionName = "protocolDriverInstances";
         public static string RealtimeDataCollectionName = "realtimeData";
         public static string SoeDataCollectionName = "soeData";
         public static string CommandsQueueCollectionName = "commandsQueue";
         public static int ProtocolDriverInstanceNumber = 1;
         public static string redundantIpAddress = "";
-        public static ConcurrentQueue<OPC_Value>
-            OPCDataQueue = new ConcurrentQueue<OPC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
-        public static List<OPCUA_connection>
-            OPCUAconns = new List<OPCUA_connection>(); // list of RTU connections
+        public static ConcurrentQueue<OPC_Value> OPCDataQueue = new ConcurrentQueue<OPC_Value>(); // acquired values queue (to be updated in mongodb realtime data collection)
+        public static List<OPCDA_connection> OPCDAconns = new List<OPCDA_connection>(); // list of RTU connections
 
         public class
         JSONSCADAConfig // base configuration of the system (how to reach mongodb, etc.)
@@ -77,7 +70,7 @@ namespace OPCDAClientDriver
         }
         [BsonIgnoreExtraElements]
         public class
-        OPCUA_connection // protocol connection to RTU
+        OPCDA_connection // protocol connection to RTU
         {
             public ObjectId Id { get; set; }
             [BsonDefaultValue("")]
@@ -116,7 +109,7 @@ namespace OPCDAClientDriver
             //public bool chainValidation { get; set; }
             //[BsonDefaultValue("")] 
             //public string rootCertFilePath { get; set; }
-            [BsonDefaultValue("")] 
+            [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
             [BsonDefaultValue("")]
             public string peerCertFilePath { get; set; }
@@ -139,6 +132,12 @@ namespace OPCDAClientDriver
 
             public Double LastNewKeyCreated = -1;
             public SortedSet<string> InsertedTags = new SortedSet<string>();
+            public SortedSet<string> InsertedAddresses = new SortedSet<string>();
+            // public static Dictionary<string, string> MapNameToHandler = new Dictionary<string, string>();
+            public Dictionary<string, string> MapHandlerToItemName = new Dictionary<string, string>();
+            public Dictionary<string, string> MapHandlerToConnName = new Dictionary<string, string>();
+            public Dictionary<string, string> MapItemNameToBranch = new Dictionary<string, string>();
+
             public TsCDaServer connection = null;
             public Thread thrOPCStack = null;
             public int cntConnectRetries = 0;

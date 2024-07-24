@@ -16,10 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Amazon.Runtime.Internal;
-using Amazon.SecurityToken.Model;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -28,6 +25,7 @@ using System.Text.Json;
 using System.Threading;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
+using static MongoDB.Driver.WriteConcern;
 
 namespace OPCDAClientDriver
 {
@@ -41,10 +39,6 @@ namespace OPCDAClientDriver
         public static int BulkWriteLimit = 1250; // limit of each bulk write to mongodb
 
         public static int HandleCnt = 0;
-        // public static Dictionary<string, string> MapNameToHandler = new Dictionary<string, string>();
-        public static Dictionary<string, string> MapHandlerToItemName = new Dictionary<string, string>();
-        public static Dictionary<string, string> MapHandlerToConnName = new Dictionary<string, string>();
-
         public static void Main(string[] args)
         {
             Log(CopyrightMessage);
@@ -181,7 +175,7 @@ namespace OPCDAClientDriver
             var collconns =
                 DB
                     .GetCollection
-                    <OPCUA_connection>(ProtocolConnectionsCollectionName);
+                    <OPCDA_connection>(ProtocolConnectionsCollectionName);
             var conns =
                 collconns
                     .Find(conn =>
@@ -193,32 +187,35 @@ namespace OPCDAClientDriver
             var collRtData =
                 DB.GetCollection<rtData>(RealtimeDataCollectionName);
 
-            LogLevel = 3; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            // LogLevel = LogLevelDetailed; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-            foreach (OPCUA_connection isrv in conns)
+            foreach (OPCDA_connection srv in conns)
             {
-                if (isrv.autoCreateTags)
-                {
-                    // look for existing tags in this connections, missing tags will be inserted later when discovered
-                    var results = collRtData.Find<rtData>(new BsonDocument {
-                                        { "protocolSourceConnectionNumber", isrv.protocolConnectionNumber },
+                // look for existing tags in this connections, if autotag enabled missing tags will be inserted later when discovered
+                var results = collRtData.Find<rtData>(new BsonDocument {
+                                        { "protocolSourceConnectionNumber", srv.protocolConnectionNumber },
                                         { "origin", "supervised" }
+                                    }).Sort(new BsonDocument {
+                                        { "_id", 1 },
                                     }).ToList();
-                    for (int i = 0; i < results.Count; i++)
-                    {
-                        isrv.InsertedTags.Add(results[i].tag.ToString());
-                    }
+
+                srv.LastNewKeyCreated = AutoKeyMultiplier * srv.protocolConnectionNumber;
+                for (int i = 0; i < results.Count; i++)
+                {
+                    srv.InsertedTags.Add(results[i].tag.ToString());
+                    srv.InsertedAddresses.Add(results[i].protocolSourceObjectAddress.ToString());
+                    if (results[i]._id.ToDouble() > srv.LastNewKeyCreated)
+                        srv.LastNewKeyCreated = results[i]._id.ToDouble();
                 }
-                isrv.LastNewKeyCreated = 0;
-                if (isrv.endpointURLs.Length < 1)
+                if (srv.endpointURLs.Length < 1)
                 {
                     Log("Missing remote endpoint URLs list!");
                     Environment.Exit(-1);
                 }
-                OPCUAconns.Add(isrv);
-                Log(isrv.name.ToString() + " - New Connection");
+                OPCDAconns.Add(srv);
+                Log(srv.name.ToString() + " - New Connection");
             }
-            if (OPCUAconns.Count == 0)
+            if (OPCDAconns.Count == 0)
             {
                 Log("No connections found!");
                 Environment.Exit(-1);
@@ -247,8 +244,9 @@ namespace OPCDAClientDriver
             Log("Creating connections...");
             do
             {
-                foreach (OPCUA_connection srv in OPCUAconns)
+                for (var ii = 0; ii < OPCDAconns.Count; ii++)
                 {
+                    var srv = OPCDAconns[ii];
                     if (srv.connection != null)
                     {
                         try
@@ -355,12 +353,31 @@ namespace OPCDAClientDriver
                         var status = daServer.GetServerStatus();
                         Log($"{srv.name} - Status of Server is {status.ServerState}");
 
+                        var itemsBrowsed = new List<TsCDaItem>();
                         var itemsForGroup = new List<TsCDaItem>();
-                        BrowseServer(ref daServer, null, ref itemsForGroup, ref topics);
+                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref topics, ref srv);
+
+                        // will read only data wanted
+                        for (int i = 0; i < itemsBrowsed.Count; i++)
+                        {
+                            if (srv.InsertedAddresses.Contains(itemsBrowsed[i].ItemName))
+                            {
+                                itemsForGroup.Add(itemsBrowsed[i]);
+                            }
+                            else
+                            {
+                                if (srv.autoCreateTags)
+                                {
+                                    // srv.InsertedAddresses.Add(itemsBrowsed[i].ItemName);
+                                    itemsForGroup.Add(itemsBrowsed[i]);
+                                }
+                            }
+                        }
+
+                        var listWrites = new List<WriteModel<rtData>>();
 
                         // Synchronous Read with server read function (DA 3.0) without a group
                         var itemValues = daServer.Read(itemsForGroup.ToArray());
-
                         for (var i = 0; i < itemValues.Length; i++)
                         {
                             if (itemValues[i].Result.IsError())
@@ -382,8 +399,8 @@ namespace OPCDAClientDriver
                                 var ov = new OPC_Value()
                                 {
                                     valueJson = valueJson,
-                                    selfPublish = false,
-                                    address = "",
+                                    selfPublish = true,
+                                    address = itemValues[i].ItemName,
                                     asdu = itemValues[i].Value.GetType().Name,
                                     isDigital = isDigital,
                                     value = value,
@@ -398,25 +415,41 @@ namespace OPCDAClientDriver
                                     common_address = "",
                                     display_name = "",
                                 };
+
+                                if (srv.autoCreateTags && !srv.InsertedAddresses.Contains(itemValues[i].ItemName))
+                                {
+                                    var id = srv.LastNewKeyCreated + 1;
+                                    srv.LastNewKeyCreated = id;
+
+                                    // will enqueue to insert the new tag into mongo DB
+                                    var rtDtIns = newRealtimeDoc(ov, id);
+                                    AutoCreateTag(rtDtIns, ref collRtData, ref srv);
+                                }
+                                OPCDataQueue.Enqueue(ov);
                             }
                         }
                         // Console.ReadLine();
 
                         // Add a group with default values Active = true and UpdateRate = 500ms
-                        var groupState = new TsCDaSubscriptionState { Name = "MyGroup", UpdateRate = 1000 };
-                        var group = (TsCDaSubscription)daServer.CreateSubscription(groupState);
+                        var subscrState = new TsCDaSubscriptionState { Name = "MyGroup", UpdateRate = 1000 };
+                        var subscr = (TsCDaSubscription)daServer.CreateSubscription(subscrState);
 
-                        var itemResults = group.AddItems(itemsForGroup.ToArray());
+                        var itemResults = subscr.AddItems(itemsForGroup.ToArray());
 
                         for (var i = 0; i < itemResults.Length; i++)
                         {
                             if (itemResults[i].Result.IsError())
                             {
-                                Log($"{srv.name} - Item {itemResults[i].ItemName} could not be added to the group");
+                                Log($"{srv.name} - Item {itemResults[i].ItemName} could not be added to the subscription group");
                             }
                         }
 
-                        group.DataChangedEvent += OnDataChangeEvent;
+                        subscr.DataChangedEvent += (object subscriptionHandle, object requestHandle, TsCDaItemValueResult[] values) =>
+                        {
+                            OnDataChangeEvent(subscriptionHandle, requestHandle, values, ref srv);
+                        };
+
+                        // subscr.DataChangedEvent += OnDataChangeEvent;
 
                         /*
                         Console.ReadLine();
@@ -460,144 +493,6 @@ namespace OPCDAClientDriver
                     }
 
             } while (true);
-        }
-
-        public static void BrowseServer(ref TsCDaServer server, OpcItem item, ref List<TsCDaItem> itemsForGroup, ref List<string> topics)
-        {
-            TsCDaBrowsePosition position = null;
-            TsCDaBrowseFilters filters = new TsCDaBrowseFilters();
-            filters.BrowseFilter = TsCDaBrowseFilter.All;
-
-            TsCDaBrowseElement[] elements = server.Browse(item, filters, out position);
-            Console.WriteLine(position);
-
-            if (elements != null)
-            {
-                do
-                {
-                    foreach (TsCDaBrowseElement elem in elements)
-                    {
-                        Console.WriteLine(elem.ItemName, elem.GetType().ToString());
-                        item = new OpcItem(elem.ItemPath, elem.ItemName);
-                        if (elem.GetType() == typeof(TsCDaBrowseElement) && elem.HasChildren && (topics.Count == 0 || topics.Contains(elem.Name)))
-                        {
-                            BrowseServer(ref server, item, ref itemsForGroup, ref topics);
-                        }
-
-                        if (!elem.HasChildren)
-                        {
-                            Console.WriteLine("Add item to group - " + elem.ItemName);
-
-                            var it = new TsCDaItem(item);
-                            HandleCnt++;
-                            it.ClientHandle = HandleCnt;
-                            MapHandlerToItemName[it.ClientHandle.ToString()] = it.ItemName;
-                            MapHandlerToConnName[it.ClientHandle.ToString()] = server.ClientName;
-
-                            // MapNameToHandler[it.ItemName] = it.ClientHandle.ToString();
-                            itemsForGroup.Add(it);
-                        }
-                    }
-                    if (position != null)
-                    {
-                        elements = server.BrowseNext(ref position);
-                        continue;
-                    }
-                } while (position != null);
-            }
-        }
-        public static void convertItemValue(object iv, out double value, out string valueString, out string valueJson, out bool quality, out bool isDigital)
-        {
-            value = 0;
-            valueJson = string.Empty;
-            valueString = string.Empty;
-            quality = true;
-            isDigital = false;
-            try
-            {
-                if (iv.GetType().IsArray)
-                {
-                    valueJson = JsonSerializer.Serialize(iv);
-                    valueString = valueJson;
-                }
-                else
-                    switch (iv.GetType().Name)
-                    {
-                        case "String":
-                            valueString = Convert.ToString(iv);
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "Boolean":
-                            value = Convert.ToBoolean(iv) ? 1 : 0;
-                            isDigital = true;
-                            valueJson = JsonSerializer.Serialize(iv);
-                            valueString = valueJson;
-                            break;
-                        case "SByte":
-                            value = Convert.ToSByte(iv);
-                            valueJson = JsonSerializer.Serialize(iv);
-                            valueString = valueJson;
-                            break;
-                        case "Decimal":
-                            value = Convert.ToDouble(Convert.ToDecimal(iv));
-                            valueJson = JsonSerializer.Serialize(iv);
-                            valueString = valueJson;
-                            break;
-                        case "Time":
-                        case "DateTime":
-                            value = Convert.ToDateTime(iv).Subtract(DateTime.UnixEpoch).TotalMilliseconds;
-                            valueString = Convert.ToDateTime(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "Single":
-                        case "Double":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToDouble(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "Int64":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToInt64(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "UInt64":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToUInt64(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "Int32":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToInt32(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "UInt32":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToUInt32(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "Int16":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToInt16(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        case "UInt16":
-                            value = Convert.ToDouble(iv);
-                            valueString = Convert.ToUInt16(iv).ToString();
-                            valueJson = JsonSerializer.Serialize(iv);
-                            break;
-                        default:
-                            value = Convert.ToDouble(iv);
-                            valueJson = JsonSerializer.Serialize(iv);
-                            valueString = valueJson;
-                            break;
-                    }
-            }
-            catch
-            {
-                value = 0;
-                quality = false;
-                Log(iv.GetType().Name);
-            }
         }
     }
 }

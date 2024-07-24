@@ -74,10 +74,10 @@ namespace OPCDAClientDriver
                                         .protocolSourceConnectionNumber +
                                     "...");
                                     var found = false;
-                                    foreach (OPCUA_connection
+                                    foreach (OPCDA_connection
                                         srv
                                         in
-                                        OPCUAconns
+                                        OPCDAconns
                                     )
                                     {
                                         if (

@@ -20,11 +20,14 @@ using System;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 
 namespace OPCDAClientDriver
 {
     partial class MainClass
     {
+        public const double AutoKeyMultiplier = 1000000; // should be more than estimated maximum points on a connection
+
         [BsonIgnoreExtraElements]
         public class rtDataId
         {
@@ -170,6 +173,8 @@ namespace OPCDAClientDriver
             public BsonDouble valueDefault;
             [BsonDefaultValue("")]
             public BsonString valueString { get; set; }
+            [BsonDefaultValue("")]
+            public BsonString valueJson { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble value;
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
@@ -193,7 +198,7 @@ namespace OPCDAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
-                    description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
+                    description = "OPC-DA~" + iv.conn_name + "~" + iv.display_name,
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
                     group2 = iv.common_address,
@@ -206,7 +211,9 @@ namespace OPCDAClientDriver
                     tag = TagFromOPCParameters(iv),
                     type = "digital",
                     value = iv.value,
-                    valueString = "????",
+                    valueString = iv.valueString,
+                    valueJson = iv.valueJson,
+
                     alarmDisabled = false,
                     alerted = false,
                     alarmed = false,
@@ -280,6 +287,7 @@ namespace OPCDAClientDriver
                     type = "string",
                     value = 0.0,
                     valueString = iv.valueString,
+                    valueJson = iv.valueJson,
 
                     alarmDisabled = false,
                     alerted = false,
@@ -353,7 +361,8 @@ namespace OPCDAClientDriver
                 tag = TagFromOPCParameters(iv),
                 type = "analog",
                 value = iv.value,
-                valueString = "????",
+                valueString = iv.valueString,
+                valueJson = iv.valueJson,
 
                 alarmDisabled = false,
                 alerted = false,
@@ -398,6 +407,45 @@ namespace OPCDAClientDriver
                 valueDefault = 0.0,
                 zeroDeadband = 0.0
             };
+        }
+
+        static public void AutoCreateTag(rtData dt, ref IMongoCollection<rtData> collRtData, ref OPCDA_connection srv)
+        {
+            do
+            {
+                try
+                {
+                    collRtData.InsertOne(dt);
+                    srv.InsertedTags.Add(dt.tag.ToString());
+                    srv.InsertedAddresses.Add(dt.protocolSourceObjectAddress.ToString());
+                    Log($"{srv.name} - tag: {dt.tag}, item addr.: {dt.protocolSourceObjectAddress}");
+                    break;
+                }
+                catch
+                {
+                    // error inserting probably duplicated _id or tag, try update the address for a tag
+                    Log($"{srv.name} - Error inserting tag: {dt.tag}, item addr.: {dt.protocolSourceObjectAddress}");
+                    var results = collRtData.UpdateOne(new BsonDocument {
+                                        { "tag", dt.tag },
+                                        { "protocolSourceConnectionNumber", dt.protocolSourceConnectionNumber },
+                                    }, new BsonDocument {
+                                        { "$set", new BsonDocument {
+                                                    { "tag", dt.tag },
+                                                    { "protocolSourceObjectAddress", dt.protocolSourceObjectAddress }
+                                        }
+                                    }
+                                    });
+                    if (results.IsAcknowledged && results.MatchedCount != 0)
+                    {
+                        srv.InsertedTags.Add(dt.tag.ToString());
+                        srv.InsertedAddresses.Add(dt.protocolSourceObjectAddress.ToString());
+                        Log($"{srv.name} - updated tag: {dt.tag}, item addr.: {dt.protocolSourceObjectAddress}");
+                        break;
+                    }
+                }
+                // could not insert or update:
+                dt._id = dt._id.ToInt64() + 1; // try next _id
+            } while (true);
         }
     }
 }

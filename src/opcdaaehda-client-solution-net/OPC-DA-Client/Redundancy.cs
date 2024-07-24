@@ -57,7 +57,7 @@ namespace OPCDAClientDriver
                         var collconns =
                             DB
                                 .GetCollection
-                                <OPCUA_connection
+                                <OPCDA_connection
                                 >(ProtocolConnectionsCollectionName);
                         var instances =
                             collinsts
@@ -149,7 +149,7 @@ namespace OPCDAClientDriver
                                     .FindOneAndUpdateAsync(filter, update, options);
 
                                 // update statistics for connections
-                                foreach (OPCUA_connection srv in OPCUAconns)
+                                foreach (OPCDA_connection srv in OPCDAconns)
                                 {
                                     if (!(srv.connection is null))
                                     {

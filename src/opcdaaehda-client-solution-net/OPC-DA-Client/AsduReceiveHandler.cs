@@ -17,43 +17,24 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json;
+using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
 
 namespace OPCDAClientDriver
 {
     partial class MainClass
     {
-        /// <summary>
-        /// A delegate to receive data change updates from the server.
-        /// </summary>
-        /// <param name="subscriptionHandle">
-        /// A unique identifier for the subscription assigned by the client. If the parameter
-        ///	<see cref="TsCDaSubscriptionState.ClientHandle">ClientHandle</see> is not defined this
-        ///	parameter is empty.</param>
-        /// <param name="requestHandle">
-        ///	An identifier for the request assigned by the caller. This parameter is empty if
-        ///	the	corresponding parameter	in the calls Read(), Write() or Refresh() is not	defined.
-        ///	Can	be used	to Cancel an outstanding operation.
-        ///	</param>
-        /// <param name="values">
-        ///	<para class="MsoBodyText" style="MARGIN: 1pt 0in">The set of changed values.</para>
-        ///	<para class="MsoBodyText" style="MARGIN: 1pt 0in">Each value will always have
-        ///	item’s ClientHandle field specified.</para>
-        /// </param>
-        public static void OnDataChangeEvent(object subscriptionHandle, object requestHandle, TsCDaItemValueResult[] values)
+        public static void OnDataChangeEvent(object subscriptionHandle, object requestHandle, TsCDaItemValueResult[] values, ref OPCDA_connection srv)
         {
-            string connName= "Conn?";
-            if (values.Length > 0)
-            {
-                string strHandle = string.Format("{0}", values[0].ClientHandle);
-                connName = MapHandlerToConnName[strHandle];
-            }
+            string connName= srv.name;
             Log(string.Format($"{connName} - DataChange: {values.Length} -----------------------------------------------------------"), 1);
-            if (requestHandle != null)
-            {
-                Log("DataChange() for requestHandle :" + requestHandle.GetHashCode().ToString());
-            }
+            //if (requestHandle != null)
+            //{
+            //    Log("DataChange() for requestHandle :" + requestHandle.GetHashCode().ToString());
+            //}
             for (var i = 0; i < values.Length; i++)
             {                
                 // Console.Write("    Client Handle : "); Console.WriteLine(values[i].ClientHandle);
@@ -64,13 +45,16 @@ namespace OPCDAClientDriver
                     {
                         for (var j = 0; j < values.Length; j++)
                         {
-                            if (j < 33 * LogLevel)
-                                Log($"{connName} - Change: {MapHandlerToItemName[strHandle]}  Val[{j}]: " + string.Format("{0}", values[j].Value), 2);
+                            if (LogLevel >= LogLevelDetailed && j < 33 * LogLevel)
+                                Log($"{connName} - Change: {srv.MapHandlerToItemName[strHandle]}  Val[{j}]: " + string.Format("{0}", values[j].Value), 2);
                         }
-                        Log($"{connName} - Change: {MapHandlerToItemName[strHandle]} TS: " + values[i].Timestamp.ToString(CultureInfo.InvariantCulture), 2);
-                        Log($"{connName} - Change: {MapHandlerToItemName[strHandle]} Q: " + values[i].Quality, 2);
-                    }
-                    else
+                        if (LogLevel >= LogLevelDetailed)
+                        {
+                            Log($"{connName} - Change: {srv.MapHandlerToItemName[strHandle]} TS: " + values[i].Timestamp.ToString(CultureInfo.InvariantCulture), 2);
+                            Log($"{connName} - Change: {srv.MapHandlerToItemName[strHandle]} Q: " + values[i].Quality, 2);
+                        }
+                        }
+                        else
                     {
                         var valueResult = values[i];
                         //var quality = new TsCDaQuality(193);
@@ -82,13 +66,151 @@ namespace OPCDAClientDriver
                         //    Log(message);
                         //}
 
-                        if (i < 33 * LogLevel)
-                            Log($"{connName} - Change: {MapHandlerToItemName[strHandle]} Val: {values[i].Value} Q: {values[i].Quality} TS: {values[i].Timestamp.ToString(CultureInfo.InvariantCulture)}", 2);
+                        if (LogLevel >= LogLevelDetailed && i < 33 * LogLevel)
+                            Log($"{connName} - Change: {srv.MapHandlerToItemName[strHandle]} Val: {values[i].Value} Q: {values[i].Quality} TS: {values[i].Timestamp.ToString(CultureInfo.InvariantCulture)}", 2);
                     }
                 }
                 //Console.Write("    Result        : "); Console.WriteLine(values[i].Result.Description());
             }
             Log("----------------------------------------------------------- End", 2);
+        }
+        public static void convertItemValue(object iv, out double value, out string valueString, out string valueJson, out bool quality, out bool isDigital)
+        {
+            value = 0;
+            valueJson = string.Empty;
+            valueString = string.Empty;
+            quality = true;
+            isDigital = false;
+            try
+            {
+                if (iv.GetType().IsArray)
+                {
+                    valueJson = JsonSerializer.Serialize(iv);
+                    valueString = valueJson;
+                }
+                else
+                    switch (iv.GetType().Name)
+                    {
+                        case "String":
+                            valueString = Convert.ToString(iv);
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Boolean":
+                            value = Convert.ToBoolean(iv) ? 1 : 0;
+                            isDigital = true;
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                        case "SByte":
+                            value = Convert.ToSByte(iv);
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                        case "Decimal":
+                            value = Convert.ToDouble(Convert.ToDecimal(iv));
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                        case "Time":
+                        case "DateTime":
+                            value = Convert.ToDateTime(iv).Subtract(DateTime.UnixEpoch).TotalMilliseconds;
+                            valueString = Convert.ToDateTime(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Single":
+                        case "Double":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToDouble(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Int64":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToInt64(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "UInt64":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToUInt64(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Int32":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToInt32(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "UInt32":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToUInt32(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "Int16":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToInt16(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        case "UInt16":
+                            value = Convert.ToDouble(iv);
+                            valueString = Convert.ToUInt16(iv).ToString();
+                            valueJson = JsonSerializer.Serialize(iv);
+                            break;
+                        default:
+                            value = Convert.ToDouble(iv);
+                            valueJson = JsonSerializer.Serialize(iv);
+                            valueString = valueJson;
+                            break;
+                    }
+            }
+            catch
+            {
+                value = 0;
+                quality = false;
+                Log(iv.GetType().Name);
+            }
+        }
+
+        public static void BrowseServer(ref TsCDaServer daServer, OpcItem item, ref List<TsCDaItem> itemsForGroup, ref List<string> topics, ref OPCDA_connection srv)
+        {
+            TsCDaBrowsePosition position = null;
+            TsCDaBrowseFilters filters = new TsCDaBrowseFilters();
+            filters.BrowseFilter = TsCDaBrowseFilter.All;
+
+            TsCDaBrowseElement[] elements = daServer.Browse(item, filters, out position);
+            Console.WriteLine(position);
+
+            if (elements != null)
+            {
+                do
+                {
+                    foreach (TsCDaBrowseElement elem in elements)
+                    {
+                        Console.WriteLine(elem.ItemName, elem.GetType().ToString());
+                        item = new OpcItem(elem.ItemPath, elem.ItemName);
+                        if (elem.GetType() == typeof(TsCDaBrowseElement) && elem.HasChildren && (topics.Count == 0 || topics.Contains(elem.Name)))
+                        {
+                            BrowseServer(ref daServer, item, ref itemsForGroup, ref topics, ref srv);
+                        }
+
+                        if (!elem.HasChildren)
+                        {
+                            Console.WriteLine("Add item to group - " + elem.ItemName);
+
+                            var it = new TsCDaItem(item);
+                            HandleCnt++;
+                            it.ClientHandle = HandleCnt;
+                            srv.MapHandlerToItemName[it.ClientHandle.ToString()] = it.ItemName;
+                            srv.MapHandlerToConnName[it.ClientHandle.ToString()] = daServer.ClientName;
+
+                            // MapNameToHandler[it.ItemName] = it.ClientHandle.ToString();
+                            itemsForGroup.Add(it);
+                        }
+                    }
+                    if (position != null)
+                    {
+                        elements = daServer.BrowseNext(ref position);
+                        continue;
+                    }
+                } while (position != null);
+            }
         }
     }
 }
