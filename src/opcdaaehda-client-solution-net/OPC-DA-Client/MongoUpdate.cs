@@ -249,8 +249,7 @@ namespace OPCDAClientDriver
                             var filt =
                                 new rtFilt
                                 {
-                                    protocolSourceConnectionNumber =
-                                        iv.conn_number,
+                                    protocolSourceConnectionNumber = iv.conn_number,
                                     protocolSourceObjectAddress = iv.address,
                                     origin = "supervised"
                                 };

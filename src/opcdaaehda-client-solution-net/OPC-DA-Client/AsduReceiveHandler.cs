@@ -198,7 +198,7 @@ namespace OPCDAClientDriver
             }
         }
 
-        public static void BrowseServer(ref TsCDaServer daServer, OpcItem item, ref List<TsCDaItem> itemsBrowsed, ref OPCDA_connection srv, string branch_name)
+        public static void BrowseServer(ref TsCDaServer daServer, OpcItem item, ref List<TsCDaItem> itemsBrowsed, ref OPCDA_connection srv)
         {
             TsCDaBrowsePosition position = null;
             TsCDaBrowseFilters filters = new TsCDaBrowseFilters();
@@ -216,8 +216,7 @@ namespace OPCDAClientDriver
                         // srv.topics.Length==0 : read all branches
                         if (elem.GetType() == typeof(TsCDaBrowseElement) && elem.HasChildren && (srv.topics.Length == 0 || srv.branches.Contains(elem.Name)))
                         {
-                            // srv.MapItemNameToBranch[item.ItemName] = branch_name;
-                            BrowseServer(ref daServer, item, ref itemsBrowsed, ref srv, item.ItemName);
+                            BrowseServer(ref daServer, item, ref itemsBrowsed, ref srv);
                         }
 
                         if (!elem.HasChildren)
@@ -227,7 +226,6 @@ namespace OPCDAClientDriver
                             it.ClientHandle = HandleCnt;
                             srv.MapHandlerToItemName[it.ClientHandle.ToString()] = it.ItemName;
                             srv.MapHandlerToConnName[it.ClientHandle.ToString()] = daServer.ClientName;
-                            // srv.MapItemNameToBranch[it.ItemName] = branch_name;
                             // MapNameToHandler[it.ItemName] = it.ClientHandle.ToString();
                             itemsBrowsed.Add(it);
                         }

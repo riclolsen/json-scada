@@ -20,6 +20,9 @@ using System;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Threading;
+using Technosoftware.DaAeHdaClient;
+using Technosoftware.DaAeHdaClient.Da;
+using static MongoDB.Libmongocrypt.CryptContext;
 
 namespace OPCDAClientDriver
 {
@@ -131,109 +134,65 @@ namespace OPCDAClientDriver
 
                                                 break;
                                             }
-                                            /*
+
                                             if (
-                                            srv.connection.session.Connected &&
+                                            srv.connection.IsConnected &&
                                             srv.commandsEnabled
                                             )
                                             {
-                                                WriteValueCollection nodesToWrite = new WriteValueCollection();
-                                                WriteValue WriteVal = new WriteValue();
-                                                WriteVal.NodeId =
-                                                        new NodeId(System
-                                                        .Convert
-                                                        .ToString(change.FullDocument.protocolSourceObjectAddress));
-                                                WriteVal.AttributeId = Attributes.Value;
-                                                WriteVal.Value = new DataValue();
-
+                                                var item = new OpcItem(change.FullDocument.protocolSourceObjectAddress.ToString());
+                                                var daItem = new TsCDaItem(item);
+                                                var itVal = new TsCDaItemValueResult(item);
                                                 switch (change.FullDocument.protocolSourceASDU.ToString().ToLower())
                                                 {
                                                     case "boolean":
-                                                        WriteVal.Value.Value = System.Convert.ToBoolean(System
-                                                                .Convert.ToDouble(change.FullDocument.value) != 0.0);
+                                                        itVal.Value = Convert.ToBoolean(Convert.ToDouble(change.FullDocument.value) != 0.0);
                                                         break;
                                                     case "sbyte":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToSByte(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToSByte(change.FullDocument.value);
                                                         break;
                                                     case "byte":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToByte(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToByte(change.FullDocument.value);
                                                         break;
                                                     case "int16":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToInt16(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToInt16(change.FullDocument.value);
                                                         break;
                                                     case "uint16":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToUInt16(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToUInt16(change.FullDocument.value);
                                                         break;
                                                     case "int32":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToInt16(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToInt32(change.FullDocument.value);
                                                         break;
                                                     case "uint32":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToUInt16(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToUInt32(change.FullDocument.value);
                                                         break;
                                                     case "int64":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToInt16(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToInt64(change.FullDocument.value);
                                                         break;
                                                     case "uint64":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToUInt16(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToUInt64(change.FullDocument.value);
                                                         break;
                                                     case "float":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToSingle(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToSingle(change.FullDocument.value);
                                                         break;
                                                     case "double":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToDouble(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToDouble(change.FullDocument.value);
                                                         break;
                                                     case "datetime":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToDateTime(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToDateTime(change.FullDocument.value);
                                                         break;
                                                     case "string":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToString(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToString(change.FullDocument.value);
                                                         break;
                                                 }
-
-                                                nodesToWrite.Add(WriteVal);
-
-                                                // Write the node attributes
-                                                StatusCodeCollection results = null;
-                                                DiagnosticInfoCollection diagnosticInfos;
-
-                                                Log("MongoDB CMD CS - " + srv.name + " - Writing node...");
-
-                                                // Call Write Service
-                                                srv.connection.session.Write(null,
-                                                                nodesToWrite,
-                                                                out results,
-                                                                out diagnosticInfos);
-
+                                                Log($"MongoDB CMD CS - {srv.name} - Writing node: {itVal.ItemName} value: {itVal.Value}"  );
+                                                var results = srv.connection.Write(new TsCDaItemValue[] { itVal });
                                                 var okres = false;
-                                                var resultDescription = "";
-                                                if (results.Count > 0)
+                                                var resultDescription = "Error!";
+                                                if (results != null && results.Length > 0)
                                                 {
-                                                    resultDescription = results[0].ToString();
-                                                    if (StatusCode.IsGood(results[0]))
+                                                    resultDescription = results[0].Result.Description();
+                                                    if (results[0].Result.IsOk())
                                                         okres = true;
                                                 }
 
@@ -244,7 +203,7 @@ namespace OPCDAClientDriver
                                                 change
                                                     .FullDocument
                                                     .protocolSourceObjectAddress +
-                                                " - Command delivered - " + results[0].ToString());
+                                                " - Command delivered - " + resultDescription);
 
                                                 // update as delivered
                                                 var filter =
@@ -266,9 +225,11 @@ namespace OPCDAClientDriver
                                                     await collection
                                                         .UpdateOneAsync(filter,
                                                         update);
+
                                             }
                                             else
                                             {
+
                                                 // update as canceled (not connected)
                                                 Log("MongoDB CMD CS - " +
                                                 srv.name +
@@ -302,7 +263,6 @@ namespace OPCDAClientDriver
                                                         .UpdateOneAsync(filter,
                                                         update);
                                             }
-                                            */
                                             break;
                                         }
                                     }

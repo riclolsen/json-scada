@@ -363,7 +363,7 @@ namespace OPCDAClientDriver
 
                         var itemsBrowsed = new List<TsCDaItem>();
                         var itemsForGroup = new List<TsCDaItem>();
-                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref srv, "root");
+                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref srv);
 
                         // will read only data wanted
                         for (int i = 0; i < itemsBrowsed.Count; i++)
