@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Text.RegularExpressions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
@@ -198,11 +199,11 @@ namespace OPCDAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
-                    description = iv.conn_name + "~" + iv.branch_name + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.branch_name,
-                    group3 = iv.asdu,
+                    description = iv.group1 + "~" + iv.group2 + "~" + iv.display_name,
+                    ungroupedDescription = iv.ungroupedDescription,
+                    group1 = iv.group1,
+                    group2 = iv.group2,
+                    group3 = iv.group3,
                     stateTextFalse = "FALSE",
                     stateTextTrue = "TRUE",
                     eventTextFalse = "FALSE",
@@ -274,11 +275,11 @@ namespace OPCDAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = -1.0,
-                    description = iv.conn_name + "~" + iv.branch_name + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.branch_name,
-                    group3 = iv.asdu,
+                    description = iv.group1 + "~" + iv.group2 + "~" + iv.display_name,
+                    ungroupedDescription = iv.ungroupedDescription,
+                    group1 = iv.group1,
+                    group2 = iv.group2,
+                    group3 = iv.group3,
                     stateTextFalse = "",
                     stateTextTrue = "",
                     eventTextFalse = "",
@@ -349,11 +350,11 @@ namespace OPCDAClientDriver
                 protocolSourceQueueSize = 10.0,
                 protocolSourceDiscardOldest = true,
                 alarmState = -1.0,
-                description = iv.conn_name + "~" + iv.branch_name + "~" + iv.display_name,
-                ungroupedDescription = iv.display_name,
-                group1 = iv.conn_name,
-                group2 = iv.branch_name,
-                group3 = iv.asdu,
+                description = iv.group1 + "~" + iv.group2 + "~" + iv.display_name,
+                ungroupedDescription = iv.ungroupedDescription,
+                group1 = iv.group1,
+                group2 = iv.group2,
+                group3 = iv.group3,
                 stateTextFalse = "",
                 stateTextTrue = "",
                 eventTextFalse = "",

@@ -21,6 +21,7 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
@@ -29,14 +30,15 @@ using System.Threading.Tasks;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
 using static MongoDB.Driver.WriteConcern;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OPCDAClientDriver
 {
     partial class MainClass
     {
-        public static String CopyrightMessage = "{json:scada} OPC-DA Client Driver - Copyright 2021-2024 RLO";
-        public static String ProtocolDriverName = "OPC-DA";
-        public static String DriverVersion = "0.1.0";
+        public static string CopyrightMessage = "{json:scada} OPC-DA Client Driver - Copyright 2021-2024 RLO";
+        public static string ProtocolDriverName = "OPC-DA";
+        public static string DriverVersion = "0.1.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static int DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static int BulkWriteLimit = 1250; // limit of each bulk write to mongodb
@@ -194,6 +196,7 @@ namespace OPCDAClientDriver
 
             foreach (OPCDA_connection srv in conns)
             {
+                List<string> topics = new List<string>(srv.topics);
                 // look for existing tags in this connections, if autotag enabled missing tags will be inserted later when discovered
                 var results = collRtData.Find<rtData>(new BsonDocument {
                                         { "protocolSourceConnectionNumber", srv.protocolConnectionNumber },
@@ -202,9 +205,12 @@ namespace OPCDAClientDriver
                                         { "_id", 1 },
                                     }).ToList();
 
+                // put in branches names found in topics from connection plus protocolSourceCommonAddress from tags
+                foreach (var topic in srv.topics) srv.branches.Add(topic);
                 srv.LastNewKeyCreated = AutoKeyMultiplier * srv.protocolConnectionNumber;
                 for (int i = 0; i < results.Count; i++)
                 {
+                    if (results[i].protocolSourceCommonAddress.ToString() != string.Empty) srv.branches.Add(results[i].protocolSourceCommonAddress.ToString());
                     srv.InsertedTags.Add(results[i].tag.ToString());
                     srv.InsertedAddresses.Add(results[i].protocolSourceObjectAddress.ToString());
                     if (results[i]._id.ToDouble() > srv.LastNewKeyCreated)
@@ -292,7 +298,6 @@ namespace OPCDAClientDriver
                         // "opcda://localhost/Matrikon.OPC.Simulation.1"; "opcda://localhost/SampleCompany.DaSample.30"; 
                         var serverUrl = srv.endpointURLs[srv.cntConnectRetries % srv.endpointURLs.Length];
                         srv.cntConnectRetries++;
-                        List<string> topics = new List<string>(srv.topics);
 
                         var opcUrl = new OpcUrl(serverUrl);
                         if (opcUrl.Scheme != OpcUrlScheme.DA)
@@ -358,11 +363,22 @@ namespace OPCDAClientDriver
 
                         var itemsBrowsed = new List<TsCDaItem>();
                         var itemsForGroup = new List<TsCDaItem>();
-                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref topics, ref srv, "root");
+                        BrowseServer(ref daServer, null, ref itemsBrowsed, ref srv, "root");
 
                         // will read only data wanted
                         for (int i = 0; i < itemsBrowsed.Count; i++)
                         {
+                            //itemsBrowsed[i].Deadband = 10;
+                            //itemsBrowsed[i].DeadbandSpecified = true;
+                            //itemsBrowsed[i].SamplingRate = 10;
+                            //itemsBrowsed[i].SamplingRateSpecified = true;
+                            //itemsBrowsed[i].Active = true;
+                            //itemsBrowsed[i].ActiveSpecified = true;
+                            //itemsBrowsed[i].EnableBuffering = false;
+                            //itemsBrowsed[i].EnableBufferingSpecified = true;
+                            //itemsBrowsed[i].MaxAge = 0;
+                            //itemsBrowsed[i].MaxAgeSpecified = true;
+
                             if (srv.InsertedAddresses.Contains(itemsBrowsed[i].ItemName))
                             {
                                 itemsForGroup.Add(itemsBrowsed[i]);
@@ -398,7 +414,25 @@ namespace OPCDAClientDriver
                                 isGood = itemValues[i].Quality.QualityBits.HasFlag(TsDaQualityBits.Good) && isGood;
                                 if (LogLevel > LogLevelDetailed)
                                     Log($"{srv.name} - {itemValues[i].ItemName} {valueString} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}", LogLevelDetailed);
-
+                               
+                                var common_address = "";
+                                var lstDot = itemValues[i].ItemName.LastIndexOf(".");
+                                var spl = itemValues[i].ItemName.Split(".");
+                                string group2 = "@root", group3 = "", ungroupedDescription = itemValues[i].ItemName.Substring(lstDot+1);
+                                if (lstDot != -1)
+                                {
+                                    common_address = itemValues[i].ItemName.Substring(0, lstDot);
+                                }
+                                if (spl.Length > 1)
+                                {
+                                    group2 = spl[0];
+                                }
+                                if(spl.Length > 2)
+                                {
+                                    for (var j= 1; j < spl.Length-1; j++)
+                                        group3 += spl[j] + "/";
+                                    group3 = group3.Substring(0, group3.Length-1);
+                                }
                                 var ov = new OPC_Value()
                                 {
                                     valueJson = valueJson,
@@ -416,9 +450,12 @@ namespace OPCDAClientDriver
                                     isGood = isGood,
                                     conn_number = srv.protocolConnectionNumber,
                                     conn_name = srv.name,
-                                    common_address = srv.MapItemNameToBranch[itemValues[i].ItemName],
+                                    common_address = common_address,
                                     display_name = itemValues[i].ItemName,
-                                    branch_name = srv.MapItemNameToBranch[itemValues[i].ItemName],
+                                    group1 = srv.name,
+                                    group2 = group2,
+                                    group3 = group3,
+                                    ungroupedDescription = ungroupedDescription,
                                 };
 
                                 if (srv.autoCreateTags && !srv.InsertedAddresses.Contains(itemValues[i].ItemName))

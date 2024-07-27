@@ -136,8 +136,8 @@ namespace OPCDAClientDriver
             // public static Dictionary<string, string> MapNameToHandler = new Dictionary<string, string>();
             public Dictionary<string, string> MapHandlerToItemName = new Dictionary<string, string>();
             public Dictionary<string, string> MapHandlerToConnName = new Dictionary<string, string>();
-            public Dictionary<string, string> MapItemNameToBranch = new Dictionary<string, string>();
-
+            // public Dictionary<string, string> MapItemNameToBranch = new Dictionary<string, string>();
+            public SortedSet<string> branches = new SortedSet<string>(); // branches to scan
             public TsCDaServer connection = null;
             public Thread thrOPCStack = null;
             public int cntConnectRetries = 0;
@@ -175,7 +175,10 @@ namespace OPCDAClientDriver
             public string conn_name;
             public string common_address;
             public string display_name;
-            public string branch_name;
+            public string group1;
+            public string group2;
+            public string group3;
+            public string ungroupedDescription;
         }
         public class rtFilt
         {
