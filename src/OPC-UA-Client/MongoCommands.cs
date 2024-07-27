@@ -101,7 +101,7 @@ namespace OPCUAClientDriver
                                                     .Seconds;
 
                                             // test for command expired
-                                            if ( timeDif > 10 )
+                                            if (timeDif > 10)
                                             {
                                                 // update as expired
                                                 Log("MongoDB CMD CS - " +
@@ -129,7 +129,7 @@ namespace OPCUAClientDriver
                                                     await collection
                                                         .UpdateOneAsync(filter,
                                                         update);
-                                            
+
                                                 break;
                                             }
 
@@ -150,68 +150,43 @@ namespace OPCUAClientDriver
                                                 switch (change.FullDocument.protocolSourceASDU.ToString().ToLower())
                                                 {
                                                     case "boolean":
-                                                        WriteVal.Value.Value = System.Convert.ToBoolean(System
-                                                                .Convert.ToDouble(change.FullDocument.value) != 0.0);
+                                                        WriteVal.Value.Value = Convert.ToBoolean(Convert.ToDouble(change.FullDocument.value) != 0.0);
                                                         break;
                                                     case "sbyte":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToSByte(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToSByte(change.FullDocument.value);
                                                         break;
                                                     case "byte":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToByte(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToByte(change.FullDocument.value);
                                                         break;
                                                     case "int16":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToInt16(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToInt16(change.FullDocument.value);
                                                         break;
                                                     case "uint16":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToUInt16(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToUInt16(change.FullDocument.value);
                                                         break;
                                                     case "int32":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToInt16(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToInt32(change.FullDocument.value);
                                                         break;
                                                     case "uint32":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToUInt16(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToUInt32(change.FullDocument.value);
                                                         break;
                                                     case "int64":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToInt16(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToInt64(change.FullDocument.value);
                                                         break;
                                                     case "uint64":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToUInt16(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToUInt64(change.FullDocument.value);
                                                         break;
                                                     case "float":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToSingle(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToSingle(change.FullDocument.value);
                                                         break;
                                                     case "double":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToDouble(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToDouble(change.FullDocument.value);
                                                         break;
                                                     case "datetime":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToDateTime(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToDateTime(change.FullDocument.value);
                                                         break;
                                                     case "string":
-                                                        WriteVal.Value.Value = System
-                                                                .Convert
-                                                                .ToString(change.FullDocument.value);
+                                                        WriteVal.Value.Value = Convert.ToString(change.FullDocument.value);
                                                         break;
                                                 }
 
