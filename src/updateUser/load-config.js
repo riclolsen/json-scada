@@ -46,7 +46,7 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
 
   Log.levelCurrent = Log.levelNormal
   if (AppDefs.ENV_PREFIX + 'LOGLEVEL' in process.env)
-    Log.levelCurrent = process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL']
+    Log.levelCurrent = parseInt(process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL'])
   if (logLevelArg) Log.levelCurrent = parseInt(logLevelArg)
   configObj.LogLevel = Log.levelCurrent
 
