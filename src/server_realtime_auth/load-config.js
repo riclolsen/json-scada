@@ -51,7 +51,7 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
   configObj.LogLevel = Log.levelCurrent
 
   configObj.Instance =
-    instArg || process.env[AppDefs.ENV_PREFIX + 'INSTANCE'] || 1
+    instArg || parseInt(process.env[AppDefs.ENV_PREFIX + 'INSTANCE']) || 1
 
   configObj.GridFsCollectionName = 'files'
   configObj.RealtimeDataCollectionName = 'realtimeData'
