@@ -34,7 +34,7 @@ if (args.length > 1) logLevel = parseInt(args[1])
 let confFile = null
 if (args.length > 2) confFile = args[2]
 const jsConfig = LoadConfig(confFile, logLevel, inst)
-const MongoStatus = {HintMongoIsConnected : false}
+const MongoStatus = { HintMongoIsConnected: false }
 Log.log('Connecting to MongoDB server...')
 ;(async () => {
   let clientMongo = null

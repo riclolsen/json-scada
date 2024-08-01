@@ -31,10 +31,10 @@ function Start(interval, clientMongo, db, configObj, MongoStatus) {
   ProcessRedundancy(clientMongo, db, configObj)
   clearInterval(redundancyIntervalHandle)
   redundancyIntervalHandle = setInterval(function () {
-    if (!MongoStatus.HintMongoIsConnected){
+    if (!MongoStatus.HintMongoIsConnected) {
       ProcessActive = false
       return
-    }     
+    }
     ProcessRedundancy(clientMongo, db, configObj)
   }, interval)
 }

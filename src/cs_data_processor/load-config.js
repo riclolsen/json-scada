@@ -1,19 +1,19 @@
 /*
-* {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
-* This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, version 3.
-*
-* This program is distributed in the hope that it will be useful, but
-* WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 'use strict'
 
@@ -23,8 +23,7 @@ const AppDefs = require('./app-defs')
 const { ReadPreference } = require('mongodb')
 
 // load and parse config file
-function LoadConfig (confFileArg, logLevelArg, instArg) {
-
+function LoadConfig(confFileArg, logLevelArg, instArg) {
   let configFile =
     confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
   Log.log('Config - Config File: ' + configFile)
@@ -75,15 +74,16 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
 
 let ReadFromSecondary = false
 if (
-  AppDefs.ENV_PREFIX+'READ_FROM_SECONDARY' in process.env &&
-  process.env[AppDefs.ENV_PREFIX+'READ_FROM_SECONDARY'].toUpperCase() === 'TRUE'
+  AppDefs.ENV_PREFIX + 'READ_FROM_SECONDARY' in process.env &&
+  process.env[AppDefs.ENV_PREFIX + 'READ_FROM_SECONDARY'].toUpperCase() ===
+    'TRUE'
 ) {
   Log.log('Read From Secondary (Preferred): TRUE')
   ReadFromSecondary = true
 }
 
 // prepare mongo connection options
-function getMongoConnectionOptions (configObj) {
+function getMongoConnectionOptions(configObj) {
   let connOptions = {
     // useNewUrlParser: true,
     // useUnifiedTopology: true,
@@ -95,8 +95,8 @@ function getMongoConnectionOptions (configObj) {
       configObj.Instance,
     maxPoolSize: 20,
     readPreference: ReadFromSecondary
-    ? ReadPreference.SECONDARY_PREFERRED
-    : ReadPreference.PRIMARY
+      ? ReadPreference.SECONDARY_PREFERRED
+      : ReadPreference.PRIMARY,
   }
 
   if (
@@ -120,4 +120,4 @@ function getMongoConnectionOptions (configObj) {
   return connOptions
 }
 
-module.exports = LoadConfig 
+module.exports = LoadConfig

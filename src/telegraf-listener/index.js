@@ -37,7 +37,7 @@ const { MongoClient, ReadPreference, Double } = require('mongodb')
 const Queue = require('queue-fifo')
 const { setInterval } = require('timers')
 const dgram = require('dgram')
-const serverUdpSocket = dgram.createSocket({ type: 'udp4'})
+const serverUdpSocket = dgram.createSocket({ type: 'udp4' })
 let bindCount = 0
 const grpSep = '~'
 
@@ -85,7 +85,7 @@ const addGrpIfNotEmpty = function (obj) {
   return ''
 }
 
-serverUdpSocket.on('error', err => {
+serverUdpSocket.on('error', (err) => {
   console.log(`server error:\n${err.stack}`)
   serverUdpSocket.close()
   process.exit(1)
@@ -186,7 +186,7 @@ const processMessageJSON = function (data) {
         'topic',
         'group1',
         'group2',
-        'group3'
+        'group3',
       ].includes(key)
     )
       if (val !== '' && grouping.indexOf(val) === -1) {
@@ -226,7 +226,7 @@ const processMessageJSON = function (data) {
         description: tag,
         ungroupedDescription: ungroupedDescription,
         invalidAtSource: invalid,
-        timeTagAtSource: new Date(1000 * data.timestamp)
+        timeTagAtSource: new Date(1000 * data.timestamp),
       }
       if (LogLevel >= LogLevelDebug)
         console.log('Tag - ' + JSON.stringify(entry))
@@ -308,7 +308,7 @@ const rtData = function (measurement) {
     unit: '',
     updatesCnt: new Double(0.0),
     valueDefault: new Double(0.0),
-    zeroDeadband: new Double(0.0)
+    zeroDeadband: new Double(0.0),
   }
 }
 
@@ -338,7 +338,7 @@ if (
             let res = await collection
               .find({
                 protocolSourceConnectionNumber: ConnectionNumber,
-                protocolSourceObjectAddress: data.tag
+                protocolSourceObjectAddress: data.tag,
               })
               .toArray()
 
@@ -387,12 +387,12 @@ if (
           invalidAtSource: data.invalidAtSource,
           overflowAtSource: false,
           blockedAtSource: false,
-          substitutedAtSource: false
+          substitutedAtSource: false,
         }
         collection.updateOne(
           {
             protocolSourceConnectionNumber: ConnectionNumber,
-            protocolSourceObjectAddress: data.tag
+            protocolSourceObjectAddress: data.tag,
           },
           { $set: { sourceDataUpdate: updTag } }
         )
@@ -409,7 +409,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION + ' Instance:' + Instance,
     maxPoolSize: 20,
-    readPreference: ReadPreference.PRIMARY
+    readPreference: ReadPreference.PRIMARY,
   }
 
   if (
@@ -440,7 +440,7 @@ if (
         await MongoClient.connect(
           jsConfig.mongoConnectionString,
           connOptions
-        ).then(async client => {
+        ).then(async (client) => {
           clientMongo = client
           if (LogLevel > LogLevelMin)
             console.log('Connected correctly to MongoDB server')
@@ -453,7 +453,7 @@ if (
           db.collection(ProtocolConnectionsCollectionName)
             .find({
               protocolDriver: APP_NAME,
-              protocolDriverInstanceNumber: Instance
+              protocolDriverInstanceNumber: Instance,
             })
             .toArray(async function (err, results) {
               if (err) console.log(err)
@@ -488,7 +488,7 @@ if (
                   if ('ipAddresses' in results[0]) {
                     RestrictIPOrigins = results[0].ipAddresses
                   }
-                  
+
                   if (bindCount === 0) {
                     console.log(
                       'Binding to ' + UdpBindAddress + ':' + UdpBindPort
@@ -506,8 +506,8 @@ if (
                     .find({
                       _id: {
                         $gt: AutoKeyId,
-                        $lt: (ConnectionNumber + 1) * AutoKeyMultiplier
-                      }
+                        $lt: (ConnectionNumber + 1) * AutoKeyMultiplier,
+                      },
                     })
                     .sort({ _id: -1 })
                     .limit(1)
@@ -523,7 +523,7 @@ if (
           let lastActiveNodeKeepAliveTimeTag = null
           let countKeepAliveNotUpdated = 0
           let countKeepAliveUpdatesLimit = 4
-          async function ProcessRedundancy () {
+          async function ProcessRedundancy() {
             if (LogLevel >= LogLevelNormal)
               console.log('Redundancy - Process Active: ' + ProcessActive)
 
@@ -536,7 +536,7 @@ if (
             db.collection(ProtocolDriverInstancesCollectionName)
               .find({
                 protocolDriver: APP_NAME,
-                protocolDriverInstanceNumber: Instance
+                protocolDriverInstanceNumber: Instance,
               })
               .toArray(function (err, results) {
                 if (err) console.log(err)
@@ -556,7 +556,7 @@ if (
                       logLevel: new Double(1),
                       nodeNames: [],
                       activeNodeName: jsConfig.nodeName,
-                      activeNodeKeepAliveTimeTag: new Date()
+                      activeNodeKeepAliveTimeTag: new Date(),
                     })
                   } else {
                     // check for disabled or node not allowed
@@ -565,7 +565,8 @@ if (
                     let instKeepAliveTimeTag = null
 
                     if ('activeNodeKeepAliveTimeTag' in instance)
-                      instKeepAliveTimeTag = instance.activeNodeKeepAliveTimeTag.toISOString()
+                      instKeepAliveTimeTag =
+                        instance.activeNodeKeepAliveTimeTag.toISOString()
 
                     if (instance?.enabled === false) {
                       console.log('Redundancy - Instance disabled, exiting...')
@@ -626,17 +627,15 @@ if (
                       ).updateOne(
                         {
                           protocolDriver: APP_NAME,
-                          protocolDriverInstanceNumber: new Double(
-                            Instance
-                          )
+                          protocolDriverInstanceNumber: new Double(Instance),
                         },
                         {
                           $set: {
                             activeNodeName: jsConfig.nodeName,
                             activeNodeKeepAliveTimeTag: new Date(),
                             softwareVersion: VERSION,
-                            stats: {}
-                          }
+                            stats: {},
+                          },
                         }
                       )
                     }
@@ -653,7 +652,7 @@ if (
       }
 
       // wait 5 seconds
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise((resolve) => setTimeout(resolve, 5000))
 
       // detect connection problems, if error will null the client to later reconnect
       if (clientMongo === undefined) {
@@ -678,7 +677,7 @@ if (
 // test mongoDB connectivity
 let CheckMongoConnectionTimeout = 1000
 let HintMongoIsConnected = true
-async function checkConnectedMongo (client) {
+async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }

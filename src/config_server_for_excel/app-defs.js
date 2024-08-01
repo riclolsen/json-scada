@@ -21,7 +21,7 @@ module.exports = {
   NAME: 'CONFIG_SERVER_EXCEL',
   ENV_PREFIX: 'JS_CFGSRVEXCEL_',
   HTTP_PORT: 10001,
-  IP_BIND: '127.0.0.1',  
+  IP_BIND: '127.0.0.1',
   MSG: '{json:scada} - Config Server for Excel',
   VERSION: '0.1.1',
 }

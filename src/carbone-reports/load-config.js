@@ -23,7 +23,7 @@ const AppDefs = require('./app-defs')
 const { ReadPreference } = require('mongodb')
 
 // load and parse config file
-function LoadConfig () {
+function LoadConfig() {
   const args = process.argv.slice(2)
 
   var confFileArg = null
@@ -77,7 +77,7 @@ function LoadConfig () {
 }
 
 // prepare mongo connection options
-function getMongoConnectionOptions (configObj) {
+function getMongoConnectionOptions(configObj) {
   let connOptions = {
     // useNewUrlParser: true,
     // useUnifiedTopology: true,
@@ -88,7 +88,7 @@ function getMongoConnectionOptions (configObj) {
       ' Instance:' +
       configObj.Instance,
     maxPoolSize: 20,
-    readPreference: ReadPreference.PRIMARY
+    readPreference: ReadPreference.PRIMARY,
   }
 
   if (

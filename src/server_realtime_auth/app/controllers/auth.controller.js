@@ -158,8 +158,12 @@ exports.listTags = async (req, res) => {
 
 exports.updateProtocolConnection = async (req, res) => {
   registerUserAction(req, 'updateProtocolConnection')
-  req.body.protocolDriverInstanceNumber = Math.floor(req.body.protocolDriverInstanceNumber)
-  req.body.protocolConnectionNumber = Math.floor(req.body.protocolConnectionNumber)
+  req.body.protocolDriverInstanceNumber = Math.floor(
+    req.body.protocolDriverInstanceNumber
+  )
+  req.body.protocolConnectionNumber = Math.floor(
+    req.body.protocolConnectionNumber
+  )
 
   // make default bind address for some protocols
   if (
@@ -340,16 +344,12 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('localLinkAddress' in req.body)) {
       req.body.localLinkAddress = 1
     } else {
-      req.body.localLinkAddress = Math.floor(
-        req.body.localLinkAddress
-      )
+      req.body.localLinkAddress = Math.floor(req.body.localLinkAddress)
     }
     if (!('remoteLinkAddress' in req.body)) {
       req.body.remoteLinkAddress = 1
     } else {
-      req.body.remoteLinkAddress = Math.floor(
-        req.body.remoteLinkAddress
-      )
+      req.body.remoteLinkAddress = Math.floor(req.body.remoteLinkAddress)
     }
   }
 
@@ -426,9 +426,7 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('maxClientConnections' in req.body)) {
       req.body.maxClientConnections = 1
     } else {
-      req.body.maxClientConnections = Math.floor(
-        req.body.maxClientConnections
-      )
+      req.body.maxClientConnections = Math.floor(req.body.maxClientConnections)
     }
   }
 
@@ -709,7 +707,9 @@ exports.listProtocolDriverInstances = async (req, res) => {
 
 exports.updateProtocolDriverInstance = async (req, res) => {
   try {
-    req.body.protocolDriverInstanceNumber = Math.floor(req.body.protocolDriverInstanceNumber)
+    req.body.protocolDriverInstanceNumber = Math.floor(
+      req.body.protocolDriverInstanceNumber
+    )
     req.body.logLevel = Math.floor(req.body.logLevel)
     await ProtocolDriverInstance.findOneAndUpdate(
       { _id: req.body._id },
@@ -830,7 +830,7 @@ exports.listDisplays = (req, res) => {
 }
 
 exports.updateRole = async (req, res) => {
-  Log.log("Update role")
+  Log.log('Update role')
   try {
     registerUserAction(req, 'updateRole')
     await Role.findOneAndUpdate({ _id: req.body._id }, req.body)
@@ -842,7 +842,7 @@ exports.updateRole = async (req, res) => {
 }
 
 exports.updateUser = async (req, res) => {
-  Log.log("Update user")
+  Log.log('Update user')
   try {
     registerUserAction(req, 'updateUser')
     if (
@@ -862,7 +862,7 @@ exports.updateUser = async (req, res) => {
 }
 
 exports.createRole = async (req, res) => {
-  Log.log("Create role")
+  Log.log('Create role')
   try {
     const role = new Role(req.body)
     await role.save()
@@ -876,7 +876,7 @@ exports.createRole = async (req, res) => {
 }
 
 exports.createUser = async (req, res) => {
-  Log.log("Create user")
+  Log.log('Create user')
   try {
     if (req.body.password && req.body.password !== '')
       req.body.password = bcrypt.hashSync(req.body.password, 8)
@@ -892,7 +892,7 @@ exports.createUser = async (req, res) => {
 }
 
 exports.deleteRole = async (req, res) => {
-  Log.log("Delete role")
+  Log.log('Delete role')
   registerUserAction(req, 'deleteRole')
 
   await Role.findOneAndDelete({ _id: req.body._id })
@@ -900,7 +900,7 @@ exports.deleteRole = async (req, res) => {
 }
 
 exports.deleteUser = async (req, res) => {
-  Log.log("Delete user")
+  Log.log('Delete user')
   registerUserAction(req, 'deleteUser')
 
   await User.findOneAndDelete({ _id: req.body._id })

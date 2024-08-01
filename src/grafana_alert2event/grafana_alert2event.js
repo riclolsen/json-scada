@@ -50,7 +50,7 @@ app.listen(HTTP_PORT, IP_BIND, () => {
   console.log('listening on ' + IP_BIND + ':' + HTTP_PORT)
 })
 
-async function basicAuth (req, res, next) {
+async function basicAuth(req, res, next) {
   // make authenticate path public
   if (req.path === '/users/authenticate') {
     return next()
@@ -83,7 +83,7 @@ async function basicAuth (req, res, next) {
   next()
 }
 
-async function validateCredentials (cred) {
+async function validateCredentials(cred) {
   if (cred.username === USERNAME && cred.password === PASSWORD)
     return { username: cred.username }
   return false
@@ -139,7 +139,7 @@ app.post(API_URL, function (req, res) {
     timeTagAtSourceOk: false,
     ack: 0,
     source: req.body?.ruleUrl,
-    alertState: req.body?.state
+    alertState: req.body?.state,
   }
   soeQueue.enqueue(SOE_Event)
   console.log(SOE_Event)
@@ -176,7 +176,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION,
     maxPoolSize: 20,
-    readPreference: ReadPreference.PRIMARY
+    readPreference: ReadPreference.PRIMARY,
   }
 
   if (
@@ -204,7 +204,7 @@ if (
     if (clientMongo === null) {
       console.log('Try to connect to MongoDB server...')
       await MongoClient.connect(jsConfig.mongoConnectionString, connOptions)
-        .then(async client => {
+        .then(async (client) => {
           clientMongo = client
           console.log('Connected correctly to MongoDB server')
 
@@ -222,8 +222,7 @@ if (
                   res = await coll_soe.insertOne(event)
                   if (res.acknowledged)
                     console.log('MongoDB - Document inserted')
-                  else
-                    console.log('MongoDB - Error inserting Document')
+                  else console.log('MongoDB - Error inserting Document')
 
                   const coll_rtData = db.collection(RealtimeDataCollectionName)
 
@@ -237,8 +236,8 @@ if (
                         $set: {
                           value: new mongo.Double(1),
                           valueString: 'Beep Active',
-                          timeTag: new Date()
-                        }
+                          timeTag: new Date(),
+                        },
                       }
                     )
                     console.log(
@@ -256,8 +255,8 @@ if (
                         alerted:
                           event.eventText === ALERTING_MSG ? true : false,
                         alertState: event.alertState,
-                        timeTagAlertState: event.timeTag
-                      }
+                        timeTagAlertState: event.timeTag,
+                      },
                     }
 
                     res = await coll_rtData.updateOne(where, upd)
@@ -287,7 +286,7 @@ if (
     }
 
     // wait 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     if (!(await checkConnectedMongo(clientMongo))) {
       clientMongo = null
@@ -310,7 +309,7 @@ if (
 // test mongoDB connectivity
 let CheckMongoConnectionTimeout = 1000
 let HintMongoIsConnected = true
-async function checkConnectedMongo (client) {
+async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }

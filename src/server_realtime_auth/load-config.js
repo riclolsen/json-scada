@@ -23,8 +23,7 @@ const AppDefs = require('./app-defs')
 const { ReadPreference } = require('mongodb')
 
 // load and parse config file
-function LoadConfig (confFileArg, logLevelArg, instArg) {
-
+function LoadConfig(confFileArg, logLevelArg, instArg) {
   let configFile =
     confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
   Log.log('Config - Config File: ' + configFile)
@@ -74,15 +73,16 @@ function LoadConfig (confFileArg, logLevelArg, instArg) {
 
 let ReadFromSecondary = false
 if (
-  AppDefs.ENV_PREFIX+'READ_FROM_SECONDARY' in process.env &&
-  process.env[AppDefs.ENV_PREFIX+'READ_FROM_SECONDARY'].toUpperCase() === 'TRUE'
+  AppDefs.ENV_PREFIX + 'READ_FROM_SECONDARY' in process.env &&
+  process.env[AppDefs.ENV_PREFIX + 'READ_FROM_SECONDARY'].toUpperCase() ===
+    'TRUE'
 ) {
   Log.log('Read From Secondary (Preferred): TRUE')
   ReadFromSecondary = true
 }
 
 // prepare mongo connection options
-function getMongoConnectionOptions (configObj) {
+function getMongoConnectionOptions(configObj) {
   let connOptions = {
     // useNewUrlParser: true,
     // useUnifiedTopology: true,
@@ -94,8 +94,8 @@ function getMongoConnectionOptions (configObj) {
       configObj.Instance,
     maxPoolSize: 20,
     readPreference: ReadFromSecondary
-    ? ReadPreference.SECONDARY_PREFERRED
-    : ReadPreference.PRIMARY
+      ? ReadPreference.SECONDARY_PREFERRED
+      : ReadPreference.PRIMARY,
   }
 
   if (
@@ -119,4 +119,4 @@ function getMongoConnectionOptions (configObj) {
   return connOptions
 }
 
-module.exports = LoadConfig 
+module.exports = LoadConfig

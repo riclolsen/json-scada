@@ -23,7 +23,7 @@ const AppDefs = require('./app-defs')
 const { ReadPreference } = require('mongodb')
 
 // load and parse config file
-function LoadConfig () {
+function LoadConfig() {
   const args = process.argv.slice(2)
 
   var confFileArg = null

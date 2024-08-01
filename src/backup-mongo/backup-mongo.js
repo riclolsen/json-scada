@@ -25,17 +25,16 @@ const { LoadConfig } = require('./load-config')
 const fs = require('fs')
 const OutputDir = 'output'
 
-String.prototype.escapeSpecialChars = function() {
-  return this.replace(/\\n/g, "\\n")
-             .replace(/\\'/g, "\\'")
-             .replace(/\\"/g, '\\"')
-             .replace(/\\&/g, "\\&")
-             .replace(/\\r/g, "\\r")
-             .replace(/\\t/g, "\\t")
-             .replace(/\\b/g, "\\b")
-             .replace(/\\f/g, "\\f")
+String.prototype.escapeSpecialChars = function () {
+  return this.replace(/\\n/g, '\\n')
+    .replace(/\\'/g, "\\'")
+    .replace(/\\"/g, '\\"')
+    .replace(/\\&/g, '\\&')
+    .replace(/\\r/g, '\\r')
+    .replace(/\\t/g, '\\t')
+    .replace(/\\b/g, '\\b')
+    .replace(/\\f/g, '\\f')
 }
-
 ;(async () => {
   const args = process.argv.slice(2)
 
@@ -55,9 +54,8 @@ String.prototype.escapeSpecialChars = function() {
 
   let configFileArg = null
   if (args.length >= 1) configFileArg = args[0]
-  
-  if (!fs.existsSync(OutputDir))
-    fs.mkdirSync(OutputDir)
+
+  if (!fs.existsSync(OutputDir)) fs.mkdirSync(OutputDir)
 
   const jsConfig = LoadConfig(configFileArg) // load and parse config file
 
@@ -65,7 +63,7 @@ String.prototype.escapeSpecialChars = function() {
   MongoClient.connect(
     jsConfig.mongoConnectionString,
     jsConfig.MongoConnectionOptions
-  ).then(async client => {
+  ).then(async (client) => {
     // connected
 
     Log.log('Connected to MongoDB.')
@@ -75,13 +73,16 @@ String.prototype.escapeSpecialChars = function() {
     let usersCollection = db.collection(jsConfig.UsersCollectionName)
     let res = await usersCollection.find({}).toArray()
     if (res) {
-      let fd = fs.openSync(OutputDir + '/' + jsConfig.UsersCollectionName + '_insert.js','w')
-      Log.log('Collection '+jsConfig.UsersCollectionName)
-      res.forEach(element => {
+      let fd = fs.openSync(
+        OutputDir + '/' + jsConfig.UsersCollectionName + '_insert.js',
+        'w'
+      )
+      Log.log('Collection ' + jsConfig.UsersCollectionName)
+      res.forEach((element) => {
         Log.log(element.username)
-        fs.writeSync(fd,'db.'+jsConfig.UsersCollectionName+'.insertOne(')
-        fs.writeSync(fd,JSON.stringify(element))
-        fs.writeSync(fd,');\n')
+        fs.writeSync(fd, 'db.' + jsConfig.UsersCollectionName + '.insertOne(')
+        fs.writeSync(fd, JSON.stringify(element))
+        fs.writeSync(fd, ');\n')
       })
       fs.close(fd)
     }
@@ -89,57 +90,82 @@ String.prototype.escapeSpecialChars = function() {
     let rtDataCollection = db.collection(jsConfig.RealtimeDataCollectionName)
     res = await rtDataCollection.find({}).toArray()
     if (res) {
-      let fd = fs.openSync(OutputDir + '/' + jsConfig.RealtimeDataCollectionName + '_insert.js','w')
-      Log.log('Collection '+jsConfig.RealtimeDataCollectionName)
-      res.forEach(element => {
+      let fd = fs.openSync(
+        OutputDir + '/' + jsConfig.RealtimeDataCollectionName + '_insert.js',
+        'w'
+      )
+      Log.log('Collection ' + jsConfig.RealtimeDataCollectionName)
+      res.forEach((element) => {
         Log.log(element.tag)
-        fs.writeSync(fd,'db.'+jsConfig.RealtimeDataCollectionName+'.insertOne(')
-        fs.writeSync(fd,JSON.stringify(element))
-        fs.writeSync(fd,');\n')
+        fs.writeSync(
+          fd,
+          'db.' + jsConfig.RealtimeDataCollectionName + '.insertOne('
+        )
+        fs.writeSync(fd, JSON.stringify(element))
+        fs.writeSync(fd, ');\n')
       })
       fs.close(fd)
     }
 
     res = await rtDataCollection.find({}).toArray()
     if (res) {
-      let fd = fs.openSync(OutputDir + '/' + jsConfig.RealtimeDataCollectionName + '_update.js','w')
-      Log.log('Collection '+jsConfig.RealtimeDataCollectionName)
-      res.forEach(element => {
+      let fd = fs.openSync(
+        OutputDir + '/' + jsConfig.RealtimeDataCollectionName + '_update.js',
+        'w'
+      )
+      Log.log('Collection ' + jsConfig.RealtimeDataCollectionName)
+      res.forEach((element) => {
         Log.log(element.tag)
-        fs.writeSync(fd,'db.'+jsConfig.RealtimeDataCollectionName+'.updateOne(')
-        fs.writeSync(fd,'{tag:'+JSON.stringify(element.tag)+'},{$set:{')
-        fs.writeSync(fd,'hiLimit:'+element?.hiLimit+',')
-        fs.writeSync(fd,'hihiLimit:'+element?.hihiLimit+',')
-        fs.writeSync(fd,'hihihiLimit:'+element?.hihihiLimit+',')
-        fs.writeSync(fd,'loLimit:'+element?.loLimit+',')
-        fs.writeSync(fd,'loloLimit:'+element?.loloLimit+',')
-        fs.writeSync(fd,'lololoLimit:'+element?.lololoLimit+',')
-        fs.writeSync(fd,'hysteresis:'+element?.hysteresis+',')
-        fs.writeSync(fd,'substituted:'+element?.substituted+',')
-        fs.writeSync(fd,'alarmDisabled:'+element?.alarmDisabled+',')
-        fs.writeSync(fd,'annotation:'+JSON.stringify(element?.annotation)+',')
-        fs.writeSync(fd,'notes:'+JSON.stringify(element?.notes)+',')
-        fs.writeSync(fd,'commandBlocked:'+element?.commandBlocked)        
-        fs.writeSync(fd,'}});\n')
+        fs.writeSync(
+          fd,
+          'db.' + jsConfig.RealtimeDataCollectionName + '.updateOne('
+        )
+        fs.writeSync(fd, '{tag:' + JSON.stringify(element.tag) + '},{$set:{')
+        fs.writeSync(fd, 'hiLimit:' + element?.hiLimit + ',')
+        fs.writeSync(fd, 'hihiLimit:' + element?.hihiLimit + ',')
+        fs.writeSync(fd, 'hihihiLimit:' + element?.hihihiLimit + ',')
+        fs.writeSync(fd, 'loLimit:' + element?.loLimit + ',')
+        fs.writeSync(fd, 'loloLimit:' + element?.loloLimit + ',')
+        fs.writeSync(fd, 'lololoLimit:' + element?.lololoLimit + ',')
+        fs.writeSync(fd, 'hysteresis:' + element?.hysteresis + ',')
+        fs.writeSync(fd, 'substituted:' + element?.substituted + ',')
+        fs.writeSync(fd, 'alarmDisabled:' + element?.alarmDisabled + ',')
+        fs.writeSync(
+          fd,
+          'annotation:' + JSON.stringify(element?.annotation) + ','
+        )
+        fs.writeSync(fd, 'notes:' + JSON.stringify(element?.notes) + ',')
+        fs.writeSync(fd, 'commandBlocked:' + element?.commandBlocked)
+        fs.writeSync(fd, '}});\n')
       })
       fs.close(fd)
     }
 
-    let connectionsCollection = db.collection(jsConfig.ProtocolConnectionsCollectionName)
+    let connectionsCollection = db.collection(
+      jsConfig.ProtocolConnectionsCollectionName
+    )
     res = await connectionsCollection.find({}).toArray()
     if (res) {
-      let fd = fs.openSync(OutputDir + '/' + jsConfig.ProtocolConnectionsCollectionName + '_insert.js','w')
-      Log.log('Collection '+jsConfig.ProtocolConnectionsCollectionName)
-      res.forEach(element => {
+      let fd = fs.openSync(
+        OutputDir +
+          '/' +
+          jsConfig.ProtocolConnectionsCollectionName +
+          '_insert.js',
+        'w'
+      )
+      Log.log('Collection ' + jsConfig.ProtocolConnectionsCollectionName)
+      res.forEach((element) => {
         Log.log(element.name)
-        fs.writeSync(fd,'db.'+jsConfig.ProtocolConnectionsCollectionName+'.insertOne(')
-        fs.writeSync(fd,JSON.stringify(element))
-        fs.writeSync(fd,');\n')
+        fs.writeSync(
+          fd,
+          'db.' + jsConfig.ProtocolConnectionsCollectionName + '.insertOne('
+        )
+        fs.writeSync(fd, JSON.stringify(element))
+        fs.writeSync(fd, ');\n')
       })
       fs.close(fd)
     }
 
     process.exit()
   })
-
 })()

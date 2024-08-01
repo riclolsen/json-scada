@@ -1,19 +1,19 @@
 /*
-* {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
-* This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, version 3.
-*
-* This program is distributed in the hope that it will be useful, but
-* WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 'use strict'
 
@@ -31,11 +31,11 @@ function Start(interval, clientMongo, db, configObj, MongoStatus) {
   ProcessRedundancy(clientMongo, db, configObj)
   clearInterval(redundancyIntervalHandle)
   redundancyIntervalHandle = setInterval(function () {
-    if (!MongoStatus.HintMongoIsConnected){
+    if (!MongoStatus.HintMongoIsConnected) {
       ProcessActive = false
       return
     }
-     
+
     ProcessRedundancy(clientMongo, db, configObj)
   }, interval)
 }
@@ -57,13 +57,13 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
   Log.log('Redundancy - Process ' + (ProcessActive ? 'Active' : 'Inactive'))
 
   try {
-  // look for process instance entry, if not found create a new entry
-  const result = await db
-    .collection(configObj.ProcessInstancesCollectionName)
-    .findOne({
-      processName: AppDefs.NAME,
-      processInstanceNumber: new Double(configObj.Instance),
-    })
+    // look for process instance entry, if not found create a new entry
+    const result = await db
+      .collection(configObj.ProcessInstancesCollectionName)
+      .findOne({
+        processName: AppDefs.NAME,
+        processInstanceNumber: new Double(configObj.Instance),
+      })
 
     if (!result) {
       // not found, then create
@@ -152,8 +152,7 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
         )
       }
     }
-  }
-  catch (err) {
+  } catch (err) {
     Log.log('Redundancy - Error: ' + err)
   }
 }

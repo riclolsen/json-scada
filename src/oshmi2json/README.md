@@ -11,7 +11,7 @@ Input files: json-scada-mongo-import.js and json-scada-mongo-import.csv.
 
 Just execute
 
-    node oshmi2json.js 
+    node oshmi2json.js
 
 The json-scada-mongo-import.js import file can be imported directly by the mongo shell.
 

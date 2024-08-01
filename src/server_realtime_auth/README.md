@@ -42,14 +42,14 @@ Access point : /Invoke/
 
 Inspired by the OPC-UA material below:
 
-* https://prototyping.opcfoundation.org
-* https://www.youtube.com/watch?v=fiuamY0DzLM
-* https://reference.opcfoundation.org
-* https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
+- https://prototyping.opcfoundation.org
+- https://www.youtube.com/watch?v=fiuamY0DzLM
+- https://reference.opcfoundation.org
+- https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 
 ### Read Service
 
-This service is used to read realtime values from the MongoDB server. It is necessary to specify the nodes (data points) to be read by the numeric __id_ key or by the _tag_ string key.
+This service is used to read realtime values from the MongoDB server. It is necessary to specify the nodes (data points) to be read by the numeric \__id_ key or by the _tag_ string key.
 
 Reference documentation https://reference.opcfoundation.org/Core/docs/Part4/5.10.2/.
 
@@ -133,11 +133,11 @@ Response example:
         }
     }
 
-The non OPC-UA standard __Properties_ object from the response has extended attributes for the point. 
+The non OPC-UA standard \__Properties_ object from the response has extended attributes for the point.
 
 ### Write Service
 
-This service is used to send commands from the web UI to the server. 
+This service is used to send commands from the web UI to the server.
 
 Reference documentation: https://reference.opcfoundation.org/Core/docs/Part4/5.10.4/.
 
@@ -162,7 +162,6 @@ Write Request: call the Post method for the /Invoke access point with the follow
         ]
     }
 
-
 Response:
 
     {
@@ -186,7 +185,7 @@ Response:
         }
     }
 
-Next, use read requests (with AttributeId: 12) to monitor command feedback, using the __CommandHandles_ value.
+Next, use read requests (with AttributeId: 12) to monitor command feedback, using the \__CommandHandles_ value.
 
     {
         "ServiceId": 629,
@@ -244,6 +243,7 @@ Response as defined in https://reference.opcfoundation.org/Core/docs/Part4/7.20.
 When the StatusCode for the command is 0 (Good) the command was acknowledged ok.
 
 ### Read History Service Request
+
 ### Request Unique Attributes Value
 
 ## File Services API
@@ -252,16 +252,16 @@ Access point : /getFile
 
 This API can be used to retrieve files stored in MongoDB Gridfs. Files can be manipulated using the _mongofiles_ tool.
 
-* https://docs.mongodb.com/database-tools/mongofiles/
+- https://docs.mongodb.com/database-tools/mongofiles/
 
 The MQTT client driver can be used to subscribe and save files published to MQTT topics on a broker. In this case, the file name is the MQTT topic name.
 
 Parameters:
 
-* _**name**_ [String] - File name (for files saved by the MQTT driver, use the MQTT topic name). **Required parameter**
-* _**bucket**_ [String] - Gridfs bucket name. Default is "fs". **Optional parameter**
-* _**mime**_ [String] - Mime type for the HTTP header. If not specified, it will be guessed based on the file extension. **Optional parameter**
-* _**refresh**_ [Integer] - Time interval in seconds to reload page automatically (using the refresh HTTP header). **Optional parameter**
+- _**name**_ [String] - File name (for files saved by the MQTT driver, use the MQTT topic name). **Required parameter**
+- _**bucket**_ [String] - Gridfs bucket name. Default is "fs". **Optional parameter**
+- _**mime**_ [String] - Mime type for the HTTP header. If not specified, it will be guessed based on the file extension. **Optional parameter**
+- _**refresh**_ [Integer] - Time interval in seconds to reload page automatically (using the refresh HTTP header). **Optional parameter**
 
 Examples:
 
@@ -274,41 +274,41 @@ When enabled, the user roles (Role Based Access Control - RBAC) and rights are c
 
 ### _roles_ Collection Schema
 
-* _**name**_ [String] - role name.
-* _**isAdmin**_ [Boolean] - right to create, alter and delete users and roles.
-* _**changePassword**_ [Boolean] - right to change its own password.
-* _**sendCommands**_ [Boolean] - right to send commands (controls) via protocol.
-* _**enterAnnotations**_ [Boolean] - right to create blocking annotations.
-* _**enterNotes**_ [Boolean] - right to create documental annotations.
-* _**enterManuals**_ [Boolean] - right to alter manual values.
-* _**enterLimits**_ [Boolean] - right to set limits for analog points.
-* _**substituteValues**_ [Boolean] - right to substitute supervised values.
-* _**ackEvents**_ [Boolean] - right to acknowledge and eliminate events.
-* _**ackAlarms**_ [Boolean] - right to acknowledge and eliminate alarms.
-* _**disableAlarms**_ [Boolean] - right to disable/enable alarms for points.
-* _**group1List**_ [Array of String] - right to access only a limited set of data (from a group1 list). An empty list means no restrictions on groups.
-* _**displayList**_ [Array of String] - right to access only a limited set of displays. An empty list means no restrictions on displays.
-* _**maxSessionDays**_ [Double] - time in days for the maximum session period (after this, the JWT access token expires).
+- _**name**_ [String] - role name.
+- _**isAdmin**_ [Boolean] - right to create, alter and delete users and roles.
+- _**changePassword**_ [Boolean] - right to change its own password.
+- _**sendCommands**_ [Boolean] - right to send commands (controls) via protocol.
+- _**enterAnnotations**_ [Boolean] - right to create blocking annotations.
+- _**enterNotes**_ [Boolean] - right to create documental annotations.
+- _**enterManuals**_ [Boolean] - right to alter manual values.
+- _**enterLimits**_ [Boolean] - right to set limits for analog points.
+- _**substituteValues**_ [Boolean] - right to substitute supervised values.
+- _**ackEvents**_ [Boolean] - right to acknowledge and eliminate events.
+- _**ackAlarms**_ [Boolean] - right to acknowledge and eliminate alarms.
+- _**disableAlarms**_ [Boolean] - right to disable/enable alarms for points.
+- _**group1List**_ [Array of String] - right to access only a limited set of data (from a group1 list). An empty list means no restrictions on groups.
+- _**displayList**_ [Array of String] - right to access only a limited set of displays. An empty list means no restrictions on displays.
+- _**maxSessionDays**_ [Double] - time in days for the maximum session period (after this, the JWT access token expires).
 
 To each user can be attributed a set of roles. Each right in each user role are combined to be the less restrictive (except for arrays). The combination is a logical OR for booleans, maximum value for numbers and union for arrays. When arrays are combined, an empty array can be combined with a non-empty list leaving to a more restrictive result.
 
 ### Environment Variables
 
-* _**JS_IP_BIND**_ [String] - IP address for server to listen. Use "0.0.0.0" to listen on all interfaces. **Default="localhost" (local host only)**.
-* _**JS_HTTP_PORT**_ [Integer] - HTTP Port for server listening. **Default=8080**.
-* _**JS_GRAFANA_SERVER**_ [Integer] - HTTP URL to the Grafana server (for reverse proxy on /grafana). **Default="http://127.0.0.1:3000"**.
-* _**JS_CONFIG_FILE**_ [String] - JSON SCADA config file name. **Default="../../conf/json-scada.json"**.
-* _**JS_AUTHENTICATION**_ [String] - Control of user Authentication/Authorization. Leave empty or do not define to enable user authentication. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
-* _**JS_JWT_SECRET**_ [String] - Encryption key for the JWT token. **Default=value defined in ./app/config/auth.config.js**.
-* _**JS_READ_FROM_SECONDARY**_ [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
+- _**JS_IP_BIND**_ [String] - IP address for server to listen. Use "0.0.0.0" to listen on all interfaces. **Default="localhost" (local host only)**.
+- _**JS_HTTP_PORT**_ [Integer] - HTTP Port for server listening. **Default=8080**.
+- _**JS_GRAFANA_SERVER**_ [Integer] - HTTP URL to the Grafana server (for reverse proxy on /grafana). **Default="http://127.0.0.1:3000"**.
+- _**JS_CONFIG_FILE**_ [String] - JSON SCADA config file name. **Default="../../conf/json-scada.json"**.
+- _**JS_AUTHENTICATION**_ [String] - Control of user Authentication/Authorization. Leave empty or do not define to enable user authentication. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
+- _**JS_JWT_SECRET**_ [String] - Encryption key for the JWT token. **Default=value defined in ./app/config/auth.config.js**.
+- _**JS_READ_FROM_SECONDARY**_ [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
 
-For connection to the PostgreSQL historian, it is possible to use the standard _Libpq_ environment variables. 
+For connection to the PostgreSQL historian, it is possible to use the standard _Libpq_ environment variables.
 
-* https://www.postgresql.org/docs/current/libpq-envars.html
+- https://www.postgresql.org/docs/current/libpq-envars.html
 
 ### Command line arguments
 
-* _**1st Argument**_ [String] - Control of user Authentication/Authorization. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
+- _**1st Argument**_ [String] - Control of user Authentication/Authorization. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
 
 ## Tool to create users and change password via command line
 

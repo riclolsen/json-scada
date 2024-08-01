@@ -10,15 +10,14 @@ This project (code, documentation, and any other materials) is released under th
 
 You certify that:
 
-* (a) Your Contributions are created in whole or in part by You and You have the right to submit it under the designated license; or
+- (a) Your Contributions are created in whole or in part by You and You have the right to submit it under the designated license; or
 
-* (b) Your Contributions are based upon previous work that, to the best of your knowledge, is covered under an appropriate open source license and You have the right under that license to submit that work with modifications, whether created in whole or in part by You, under the designated license; or
+- (b) Your Contributions are based upon previous work that, to the best of your knowledge, is covered under an appropriate open source license and You have the right under that license to submit that work with modifications, whether created in whole or in part by You, under the designated license; or
 
-* (c) Your Contributions are provided directly to You by some other person who certified (a) or (b) and You have not modified them.
+- (c) Your Contributions are provided directly to You by some other person who certified (a) or (b) and You have not modified them.
 
-* (d) You understand and agree that Your Contributions are public and that a record of the Contributions (including all metadata and personal information You submit with them) is maintained indefinitely in the project repositories and all its forks.
+- (d) You understand and agree that Your Contributions are public and that a record of the Contributions (including all metadata and personal information You submit with them) is maintained indefinitely in the project repositories and all its forks.
 
-* (e) You are granting Your Contributions to this project under the terms of the license as noted in the project's repository.
+- (e) You are granting Your Contributions to this project under the terms of the license as noted in the project's repository.
 
-* (f) Contributors must provide name, email or social network contact and the phrase "I AGREE with the Contributors License Agreement of the project.".
- 
+- (f) Contributors must provide name, email or social network contact and the phrase "I AGREE with the Contributors License Agreement of the project.".

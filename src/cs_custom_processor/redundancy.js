@@ -31,11 +31,11 @@ function Start(interval, clientMongo, db, configObj, MongoStatus) {
   ProcessRedundancy(clientMongo, db, configObj)
   clearInterval(redundancyIntervalHandle)
   redundancyIntervalHandle = setInterval(function () {
-    if (!MongoStatus.HintMongoIsConnected){
+    if (!MongoStatus.HintMongoIsConnected) {
       ProcessActive = false
       return
     }
-     
+
     ProcessRedundancy(clientMongo, db, configObj)
   }, interval)
 }
@@ -57,13 +57,13 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
   Log.log('Redundancy - Process ' + (ProcessActive ? 'Active' : 'Inactive'))
 
   try {
-  // look for process instance entry, if not found create a new entry
-  const result = await db
-    .collection(configObj.ProcessInstancesCollectionName)
-    .findOne({
-      processName: AppDefs.NAME,
-      processInstanceNumber: new Double(configObj.Instance),
-    })
+    // look for process instance entry, if not found create a new entry
+    const result = await db
+      .collection(configObj.ProcessInstancesCollectionName)
+      .findOne({
+        processName: AppDefs.NAME,
+        processInstanceNumber: new Double(configObj.Instance),
+      })
 
     if (!result) {
       // not found, then create
@@ -152,8 +152,7 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
         )
       }
     }
-  }
-  catch (err) {
+  } catch (err) {
     Log.log('Redundancy - Error: ' + err)
   }
 }

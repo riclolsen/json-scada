@@ -23,7 +23,8 @@ const IP_BIND = process.env.JS_IP_BIND || '127.0.0.1'
 const HTTP_PORT = process.env.JS_HTTP_PORT || 8080
 const GRAFANA_SERVER = process.env.JS_GRAFANA_SERVER || 'http://127.0.0.1:3000'
 const LOGIO_SERVER = process.env.JS_LOGIO_SERVER || 'http://127.0.0.1:6688'
-const METABASE_SERVER = process.env.JS_METABASE_SERVER || 'http://127.0.0.1:3001'
+const METABASE_SERVER =
+  process.env.JS_METABASE_SERVER || 'http://127.0.0.1:3001'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
@@ -172,7 +173,7 @@ let pool = null
       QUERYJSON_AP,
       queryJSON,
       LOGIO_SERVER,
-      METABASE_SERVER,
+      METABASE_SERVER
     )
   } else {
     app.post(OPCAPI_AP, opcApi)
@@ -766,7 +767,8 @@ let pool = null
 
                     let addressing = {}
                     if (
-                      data.protocolSourceCommonAddress!="" && isNaN(data.protocolSourceCommonAddress) ||
+                      (data.protocolSourceCommonAddress != '' &&
+                        isNaN(data.protocolSourceCommonAddress)) ||
                       isNaN(data.protocolSourceObjectAddress) ||
                       isNaN(data.protocolSourceASDU)
                     ) {

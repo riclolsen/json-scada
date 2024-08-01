@@ -24,7 +24,7 @@ const AppDefs = require('./app-defs')
 let AutoKeyId = 0
 let AutoKeyMultiplier = 1000000 // should be more than estimated maximum points on a connection
 
-function NewTag () {
+function NewTag() {
   AutoKeyId++
 
   return {
@@ -94,19 +94,19 @@ function NewTag () {
     unit: '',
     updatesCnt: new Mongo.Double(0.0),
     valueDefault: new Mongo.Double(0.0),
-    zeroDeadband: new Mongo.Double(0.0)
+    zeroDeadband: new Mongo.Double(0.0),
   }
 }
 
 // find biggest point key (_id) on range and adjust automatic key
-async function GetAutoKeyInitialValue (rtCollection, configObj) {
+async function GetAutoKeyInitialValue(rtCollection, configObj) {
   AutoKeyId = configObj.ConnectionNumber * AutoKeyMultiplier
   let resLastKey = await rtCollection
     .find({
       _id: {
         $gt: AutoKeyId,
-        $lt: (configObj.ConnectionNumber + 1) * AutoKeyMultiplier
-      }
+        $lt: (configObj.ConnectionNumber + 1) * AutoKeyMultiplier,
+      },
     })
     .sort({ _id: -1 })
     .limit(1)
@@ -120,7 +120,7 @@ async function GetAutoKeyInitialValue (rtCollection, configObj) {
 
 let ListCreatedTags = []
 
-async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
+async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
   let tag =
     AppDefs.AUTOTAG_PREFIX +
     ':' +
@@ -133,7 +133,7 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
     let res = await rtDataCollection
       .find({
         protocolSourceConnectionNumber: connectionNumber,
-        protocolSourceObjectAddress: data.protocolSourceObjectAddress
+        protocolSourceObjectAddress: data.protocolSourceObjectAddress,
       })
       .toArray()
 
@@ -149,18 +149,20 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       newTag.protocolSourceObjectAddress = data.protocolSourceObjectAddress
       newTag.tag = tag
       if ('type' in data) newTag.type = data.type
-      if (newTag.type === 'analog'){
+      if (newTag.type === 'analog') {
         newTag.unit = data?.unit || 'units'
       }
-      if (newTag.type === 'digital'){
-        newTag.eventTextFalse = "false"
-        newTag.eventTextTrue = "true"
-        newTag.stateTextFalse = "false"
-        newTag.stateTextTrue = "true"
+      if (newTag.type === 'digital') {
+        newTag.eventTextFalse = 'false'
+        newTag.eventTextTrue = 'true'
+        newTag.stateTextFalse = 'false'
+        newTag.stateTextTrue = 'true'
       }
       newTag.description = data?.description
-      newTag.ungroupedDescription = data?.ungroupedDescription || data.protocolSourceObjectAddress
-      newTag.group1 = data?.group1 || AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber   
+      newTag.ungroupedDescription =
+        data?.ungroupedDescription || data.protocolSourceObjectAddress
+      newTag.group1 =
+        data?.group1 || AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber
       newTag.group2 = data?.group2 || ''
       newTag.group3 = data?.group3
       newTag.value = new Mongo.Double(data.value)
@@ -175,12 +177,9 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
       // console.log('>> Insert ' + tag)
 
       let resIns = await rtDataCollection.insertOne(newTag)
-      if (resIns.acknowledged) ListCreatedTags.push(tag) // change for mongo driver >= 4.0 
-      else
-        Log.log(
-          'Auto Key - Error inserting tag : ' + tag,
-          Log.levelDetailed
-        )
+      if (resIns.acknowledged)
+        ListCreatedTags.push(tag) // change for mongo driver >= 4.0
+      else Log.log('Auto Key - Error inserting tag : ' + tag, Log.levelDetailed)
     } else {
       // found (already exists, no need to create), just list as created
       ListCreatedTags.push(tag)
@@ -191,5 +190,5 @@ async function AutoCreateTag (data, connectionNumber, rtDataCollection) {
 module.exports = {
   NewTag: NewTag,
   GetAutoKeyInitialValue: GetAutoKeyInitialValue,
-  AutoCreateTag: AutoCreateTag
+  AutoCreateTag: AutoCreateTag,
 }

@@ -6,6 +6,3 @@ Warning: Annotations and limits on JSON SCADA will be overwritten!
 Just execute
 
     php oshmi_sync.php
-
-
-

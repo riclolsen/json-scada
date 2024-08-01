@@ -77,8 +77,7 @@ module.exports.CustomProcessor = function (
   // EXAMPLE OF CYCLIC PROCESSING AT INTERVALS
   // END EXAMPLE
   // -------------------------------------------------------------------------------------------
-  
-  
+
   /*
   // -------------------------------------------------------------------------------------------
   // EXAMPLE OF CHANGE STREAM PROCESSING (MONITORING OF CHANGES IN MONGODB COLLECTIONS)

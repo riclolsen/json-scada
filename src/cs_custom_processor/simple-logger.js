@@ -18,18 +18,18 @@
  */
 
 const Log = {
-    // simple message logger
-    levelMin: 0,
-    levelNormal: 1,
-    levelDetailed: 2,
-    levelDebug: 3,
-    levelCurrent: 1,
-    log: function (msg, level = 1) {
-      if (level <= this.levelCurrent) {
-        let dt = new Date()
-        console.log(dt.toISOString() + ' - ' + msg)
-      }
+  // simple message logger
+  levelMin: 0,
+  levelNormal: 1,
+  levelDetailed: 2,
+  levelDebug: 3,
+  levelCurrent: 1,
+  log: function (msg, level = 1) {
+    if (level <= this.levelCurrent) {
+      let dt = new Date()
+      console.log(dt.toISOString() + ' - ' + msg)
     }
-  }
+  },
+}
 
 module.exports = Log

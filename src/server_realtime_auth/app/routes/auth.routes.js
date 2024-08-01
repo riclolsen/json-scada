@@ -14,11 +14,11 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/signup',
     [
       verifySignUp.checkDuplicateUsernameOrEmail,
-      verifySignUp.checkRolesExisted
+      verifySignUp.checkRolesExisted,
     ],
     controller.signup
   )
-  
+
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
 
@@ -26,27 +26,23 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/listUserActions',
     [authJwt.isAdmin],
     controller.listUserActions
-  )  
+  )
   app.use(
     accessPoint + 'auth/createTag',
     [authJwt.isAdmin],
     controller.createTag
-  )  
+  )
   app.use(
     accessPoint + 'auth/updateTag',
     [authJwt.isAdmin],
     controller.updateTag
-  )  
+  )
   app.use(
     accessPoint + 'auth/deleteTag',
     [authJwt.isAdmin],
     controller.deleteTag
-  )  
-  app.use(
-    accessPoint + 'auth/listTags',
-    [authJwt.isAdmin],
-    controller.listTags
-  )  
+  )
+  app.use(accessPoint + 'auth/listTags', [authJwt.isAdmin], controller.listTags)
   app.post(
     accessPoint + 'auth/updateProtocolConnection',
     [authJwt.isAdmin],
@@ -71,7 +67,7 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/listNodes',
     [authJwt.isAdmin],
     controller.listNodes
-  )  
+  )
   app.post(
     accessPoint + 'auth/deleteProtocolDriverInstance',
     [authJwt.isAdmin],

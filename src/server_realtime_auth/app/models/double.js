@@ -1,6 +1,6 @@
 'use strict'
 
-const bsonDouble = require('bson').Double;
+const bsonDouble = require('bson').Double
 const mongoose = require('mongoose')
 
 class DoubleType extends Number {

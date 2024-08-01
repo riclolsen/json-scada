@@ -53,7 +53,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
   await MongoClient.connect(
     jsConfig.mongoConnectionString,
     getMongoConnectionOptions(jsConfig)
-  ).then(async client => {
+  ).then(async (client) => {
     // connected
 
     console.log('Connected to MongoDB.')
@@ -70,8 +70,8 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
           {
             $set: {
               password: hashedPassword,
-              ...(email != '' ? { email: email } : {})
-            }
+              ...(email != '' ? { email: email } : {}),
+            },
           }
         )
         if (res.matchedCount === 1) console.log('User updated successfully.')
@@ -85,7 +85,7 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
         username: username,
         password: hashedPassword,
         email: email,
-        roles: []
+        roles: [],
       })
       if ('insertedId' in res) {
         console.log('User created successfully.')
@@ -97,4 +97,3 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
   })
   process.exit()
 })()
-

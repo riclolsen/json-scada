@@ -1,4 +1,4 @@
-const Long = require("long");
+const Long = require('long')
 
 /**
  * MQTT sparkplug's numeric datatypes for metrics int8, int16, int32
@@ -16,29 +16,29 @@ const Long = require("long");
  */
 const castSparkplugValue = (type, value) => {
   switch (type.toLowerCase()) {
-    case "int8":
-    case "int16":
-    case "int32":
-      return new Int32Array([value])[0];
+    case 'int8':
+    case 'int16':
+    case 'int32':
+      return new Int32Array([value])[0]
 
-    case "int64":
-      return Long.fromValue(value, false).toSigned();
+    case 'int64':
+      return Long.fromValue(value, false).toSigned()
 
-    case "uint8":
-    case "uint16":
-    case "uint32":
-      return new Uint32Array([value])[0];
+    case 'uint8':
+    case 'uint16':
+    case 'uint32':
+      return new Uint32Array([value])[0]
 
-    case "uint64":
-      return Long.fromValue(value, true).toUnsigned();
+    case 'uint64':
+      return Long.fromValue(value, true).toUnsigned()
 
-    case "datetime":
-      return new Date(Long.fromValue(value, true).toUnsigned().toNumber());
+    case 'datetime':
+      return new Date(Long.fromValue(value, true).toUnsigned().toNumber())
 
-    case "boolean":
-      return Boolean(value); // boolean false or true TODO return number 0 or 1 instead?
+    case 'boolean':
+      return Boolean(value) // boolean false or true TODO return number 0 or 1 instead?
   }
-  return value;
-};
+  return value
+}
 
-module.exports = { castSparkplugValue };
+module.exports = { castSparkplugValue }

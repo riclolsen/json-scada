@@ -80,7 +80,7 @@ if (
     useUnifiedTopology: true,
     appname: APP_NAME + ' Version:' + VERSION,
     maxPoolSize: 20,
-    readPreference: ReadPreference.PRIMARY
+    readPreference: ReadPreference.PRIMARY,
   }
 
   if (
@@ -108,7 +108,7 @@ if (
     if (clientMongo === null) {
       console.log('Try to connect to MongoDB server...')
       await MongoClient.connect(jsConfig.mongoConnectionString, connOptions)
-        .then(async client => {
+        .then(async (client) => {
           clientMongo = client
           console.log('Connected correctly to MongoDB server')
 
@@ -129,8 +129,8 @@ if (
                     $set: {
                       value: new mongo.Double(0),
                       valueString: '0',
-                      beepType: new mongo.Double(0)
-                    }
+                      beepType: new mongo.Double(0),
+                    },
                   }
                 )
               }
@@ -185,7 +185,7 @@ if (
     }
 
     // wait 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     // detect connection problems, if error will null the client to later reconnect
     if (clientMongo === undefined) {
@@ -198,8 +198,7 @@ if (
         // not anymore connected, will retry
         beepPresent = false
         console.log('Disconnected Mongodb!')
-        if (clientMongo)
-          clientMongo.close()
+        if (clientMongo) clientMongo.close()
         clientMongo = null
       }
   }
@@ -208,7 +207,7 @@ if (
 // test mongoDB connectivity
 let CheckMongoConnectionTimeout = 1000
 let HintMongoIsConnected = true
-async function checkConnectedMongo (client) {
+async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
