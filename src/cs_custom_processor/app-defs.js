@@ -19,7 +19,7 @@
 
 module.exports = {
   NAME: 'CS_CUSTOM_PROCESSOR',
-  ENV_PREFIX: 'JS_CS_CUSTOM_PROCESSOR',
+  ENV_PREFIX: 'JS_CSCUSTOMPROC_',
   MSG: '{json:scada} - Change Stream Custom Processor',
   VERSION: '0.1.2',
 }
