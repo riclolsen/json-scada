@@ -50,14 +50,14 @@ function LoadConfig () {
 
   Log.levelCurrent = Log.levelNormal
   if (AppDefs.ENV_PREFIX + 'LOGLEVEL' in process.env)
-    Log.levelCurrent = process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL']
+    Log.levelCurrent = parseInt(process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL'])
   if (args.length > 1) Log.levelCurrent = parseInt(args[1])
   configObj.LogLevel = Log.levelCurrent
 
   var instArg = null
   if (args.length > 0) instArg = parseInt(args[0])
   configObj.Instance =
-    instArg || process.env[AppDefs.ENV_PREFIX + 'INSTANCE'] || 1
+    instArg || parseInt(process.env[AppDefs.ENV_PREFIX + 'INSTANCE']) || 1
 
   configObj.GridFsCollectionName = 'files'
   configObj.RealtimeDataCollectionName = 'realtimeData'
