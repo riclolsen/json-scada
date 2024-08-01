@@ -36,8 +36,7 @@ const AutoTag = require('./auto-tag')
 const { castSparkplugValue: castSparkplugValue } = require('./cast')
 
 const SparkplugNS = 'spBv1.0'
-const DevicesList = []
-const NodesList = []
+const DevicesList = [] // contains either EoN nodes or devices
 const ValuesQueue = new Queue() // queue of values to update acquisition
 const SparkplugPublishQueue = new Queue() // queue of values to publish as Sparkplug-B
 let SparkplugDeviceBirthed = false
@@ -1613,8 +1612,8 @@ async function sparkplugProcess(
 
               // data from not birthed node?
               if (
-                !(nodeLocator in NodesList) ||
-                !NodesList[nodeLocator].birthed
+                !(nodeLocator in DevicesList) ||
+                !DevicesList[nodeLocator].birthed
               ) {
                 Log.log(
                   logModS + 'Data from not yet birthed node: ' + nodeLocator
@@ -1698,8 +1697,8 @@ async function sparkplugProcess(
             case 'NDEATH':
               // Node death, invalidate all Sparkplug metrics from this node (7.1.1)
               Log.log(logModS + 'Node DEATH', Log.levelDetailed)
-              if (nodeLocator in NodesList)
-                NodesList[nodeLocator].birthed = false
+              if (nodeLocator in DevicesList)
+                DevicesList[nodeLocator].birthed = false
               // devices from this node marked as dead
               DevicesList.forEach(function (element, key) {
                 if (key.indexOf(deviceLocator) === 0)
@@ -1781,7 +1780,7 @@ function ProcessNodeBirthOrData(nodeLocator, payload, isBirth) {
 
   if (isBirth) {
     Log.log('Sparkplug - New node: ' + nodeLocator)
-    NodesList[nodeLocator] = {
+    DevicesList[nodeLocator] = {
       birthed: true,
       mapAliasToObjectAddress: [],
       metrics: payload.metrics,
