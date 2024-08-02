@@ -225,7 +225,7 @@ namespace OPCDAClientDriver
                                                     case "vt_bstr":
                                                     case "bstr":
                                                     case "string":
-                                                        itVal.Value = Convert.ToString(change.FullDocument.value);
+                                                        itVal.Value = Convert.ToString(change.FullDocument.valueString);
                                                         break;
                                                 }
                                                 itVal.Quality = TsCDaQuality.Good;
