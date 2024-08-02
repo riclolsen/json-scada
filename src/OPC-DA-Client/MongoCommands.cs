@@ -145,46 +145,92 @@ namespace OPCDAClientDriver
                                                 var itVal = new TsCDaItemValueResult(item);
                                                 switch (change.FullDocument.protocolSourceASDU.ToString().ToLower())
                                                 {
+                                                    case "vt_bool":
+                                                    case "bool":
                                                     case "boolean":
                                                         itVal.Value = Convert.ToBoolean(Convert.ToDouble(change.FullDocument.value) != 0.0);
                                                         break;
+                                                    case "vt_i1":
+                                                    case "i1":
+                                                    case "int1":
                                                     case "sbyte":
                                                         itVal.Value = Convert.ToSByte(change.FullDocument.value);
                                                         break;
+                                                    case "vt_ui1":
+                                                    case "ui1":
+                                                    case "uint1":
                                                     case "byte":
                                                         itVal.Value = Convert.ToByte(change.FullDocument.value);
                                                         break;
+                                                    case "vt_i2":
+                                                    case "i2":
+                                                    case "int2":
                                                     case "int16":
                                                         itVal.Value = Convert.ToInt16(change.FullDocument.value);
                                                         break;
+                                                    case "vt_ui2":
+                                                    case "ui2":
+                                                    case "uint2":
                                                     case "uint16":
                                                         itVal.Value = Convert.ToUInt16(change.FullDocument.value);
                                                         break;
+                                                    case "vt_i4":
+                                                    case "i4":
+                                                    case "int4":
                                                     case "int32":
                                                         itVal.Value = Convert.ToInt32(change.FullDocument.value);
                                                         break;
+                                                    case "vt_ui4":
+                                                    case "ui4":
+                                                    case "uint4":
                                                     case "uint32":
                                                         itVal.Value = Convert.ToUInt32(change.FullDocument.value);
                                                         break;
+                                                    case "vt_i8":
+                                                    case "i8":
+                                                    case "int8":
                                                     case "int64":
                                                         itVal.Value = Convert.ToInt64(change.FullDocument.value);
                                                         break;
+                                                    case "vt_ui8":
+                                                    case "ui8":
+                                                    case "uint8":
                                                     case "uint64":
                                                         itVal.Value = Convert.ToUInt64(change.FullDocument.value);
                                                         break;
+                                                    case "vt_r4":
+                                                    case "r4":
+                                                    case "single":
                                                     case "float":
                                                         itVal.Value = Convert.ToSingle(change.FullDocument.value);
                                                         break;
+                                                    case "vt_r8":
+                                                    case "r8":
                                                     case "double":
                                                         itVal.Value = Convert.ToDouble(change.FullDocument.value);
                                                         break;
+                                                    case "vt_cy":
+                                                    case "cy":
+                                                    case "currency":
+                                                    case "money":
+                                                    case "decimal":
+                                                        itVal.Value = Convert.ToDecimal(change.FullDocument.value);
+                                                        break;
+                                                    case "vt_date":
+                                                    case "date":
+                                                    case "time":
                                                     case "datetime":
                                                         itVal.Value = Convert.ToDateTime(change.FullDocument.value);
                                                         break;
+                                                    case "vt_bstr":
+                                                    case "bstr":
                                                     case "string":
                                                         itVal.Value = Convert.ToString(change.FullDocument.value);
                                                         break;
                                                 }
+                                                itVal.Quality = TsCDaQuality.Good;
+                                                itVal.Timestamp = Convert.ToDateTime(change.FullDocument.timeTag);
+                                                itVal.TimestampSpecified = true;
                                                 Log($"MongoDB CMD CS - {srv.name} - Writing node: {itVal.ItemName} value: {itVal.Value}"  );
                                                 var results = srv.connection.Write(new TsCDaItemValue[] { itVal });
                                                 var okres = false;
