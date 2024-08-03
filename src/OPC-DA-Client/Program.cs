@@ -22,15 +22,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
-using static MongoDB.Driver.WriteConcern;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OPCDAClientDriver
 {
@@ -397,84 +392,18 @@ namespace OPCDAClientDriver
                         // Synchronous Read with server read function (DA 3.0) without a group
                         Log($"{srv.name} - Reading {itemsForGroup.Count} items...");
                         var itemValues = daServer.Read(itemsForGroup.ToArray());
-                        for (var i = 0; i < itemValues.Length; i++)
-                        {
-                            if (itemValues[i].Result.IsError())
-                            {
-                                Log($"{srv.name} - Item {itemValues[i].ItemPath} {itemValues[i].ItemName} could not be read");
-                            }
-                            else
-                            {
-                                double value = 0;
-                                string valueJson = string.Empty;
-                                string valueString = string.Empty;
-                                bool isGood = true;
-                                bool isDigital = false;
-                                convertItemValue(itemValues[i].Value, out value, out valueString, out valueJson, out isGood, out isDigital);
-                                isGood = itemValues[i].Quality.QualityBits.HasFlag(TsDaQualityBits.Good) && isGood;
-                                if (LogLevel > LogLevelDetailed)
-                                    Log($"{srv.name} - {itemValues[i].ItemName} {valueString} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}", LogLevelDetailed);
-                               
-                                var common_address = "";
-                                var lstDot = itemValues[i].ItemName.LastIndexOf(".");
-                                var spl = itemValues[i].ItemName.Split(".");
-                                string group2 = "@root", group3 = "", ungroupedDescription = itemValues[i].ItemName.Substring(lstDot+1);
-                                if (lstDot != -1)
-                                {
-                                    common_address = itemValues[i].ItemName.Substring(0, lstDot);
-                                }
-                                if (spl.Length > 1)
-                                {
-                                    group2 = spl[0];
-                                }
-                                if(spl.Length > 2)
-                                {
-                                    for (var j= 1; j < spl.Length-1; j++)
-                                        group3 += spl[j] + "/";
-                                    group3 = group3.Substring(0, group3.Length-1);
-                                }
-                                var ov = new OPC_Value()
-                                {
-                                    valueJson = valueJson,
-                                    selfPublish = true,
-                                    address = itemValues[i].ItemName,
-                                    asdu = itemValues[i].Value.GetType().Name,
-                                    isDigital = isDigital,
-                                    isArray = itemValues[i].Value.GetType().IsArray,
-                                    value = value,
-                                    valueString = valueString,
-                                    cot = 20,
-                                    serverTimestamp = DateTime.Now,
-                                    sourceTimestamp = DateTime.MinValue,
-                                    hasSourceTimestamp = false,
-                                    isGood = isGood,
-                                    conn_number = srv.protocolConnectionNumber,
-                                    conn_name = srv.name,
-                                    common_address = common_address,
-                                    display_name = itemValues[i].ItemName,
-                                    group1 = srv.name,
-                                    group2 = group2,
-                                    group3 = group3,
-                                    ungroupedDescription = ungroupedDescription,
-                                };
-
-                                if (srv.autoCreateTags && !srv.InsertedAddresses.Contains(itemValues[i].ItemName))
-                                {
-                                    var id = srv.LastNewKeyCreated + 1;
-                                    srv.LastNewKeyCreated = id;
-
-                                    // will enqueue to insert the new tag into mongo DB
-                                    var rtDtIns = newRealtimeDoc(ov, id);
-                                    AutoCreateTag(in rtDtIns, in collRtData, in srv);
-                                }
-                                OPCDataQueue.Enqueue(ov);
-                            }
-                        }
+                        processValueResults(ref srv, ref itemValues, ref collRtData, true);
 
                         // Add a group with default values Active = true and UpdateRate = 500ms
-                        var subscrState = new TsCDaSubscriptionState { Name = "MyGroup", UpdateRate = 1000 };
+                        var subscrState = new TsCDaSubscriptionState
+                        {
+                            Name = "JsonScadaGroup1",
+                            UpdateRate = (int)srv.autoCreateTagSamplingInterval,
+                            Deadband = (float)srv.deadBand,
+                            // TimeBias = (int)(srv.hoursShift * 60)
+                            // KeepAlive = (int)srv.giInterval/2,
+                        };
                         var subscr = (TsCDaSubscription)daServer.CreateSubscription(subscrState);
-
                         var itemResults = subscr.AddItems(itemsForGroup.ToArray());
 
                         for (var i = 0; i < itemResults.Length; i++)
@@ -489,6 +418,7 @@ namespace OPCDAClientDriver
                         {
                             OnDataChangeEvent(subscriptionHandle, requestHandle, values, ref srv);
                         };
+                        srv.subscriptions.Add(subscr);
                     }
                     catch (OpcResultException e)
                     {

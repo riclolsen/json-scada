@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -28,14 +29,14 @@ namespace OPCDAClientDriver
     {
         public static void OnDataChangeEvent(object subscriptionHandle, object requestHandle, TsCDaItemValueResult[] values, ref OPCDA_connection srv)
         {
-            string connName= srv.name;
+            string connName = srv.name;
             Log(string.Format($"{connName} - DataChange: {values.Length} -----------------------------------------------------------"), 1);
             //if (requestHandle != null)
             //{
             //    Log("DataChange() for requestHandle :" + requestHandle.GetHashCode().ToString());
             //}
             for (var i = 0; i < values.Length; i++)
-            {                
+            {
                 if (values[i].Result.IsSuccess() && values[i].Value != null)
                 {
                     string strHandle = string.Format("{0}", values[i].ClientHandle);
@@ -61,7 +62,7 @@ namespace OPCDAClientDriver
                         valueString = valueString,
                         cot = 3,
                         serverTimestamp = DateTime.Now,
-                        sourceTimestamp = values[i].Timestamp,
+                        sourceTimestamp = values[i].Timestamp.AddHours(srv.hoursShift),
                         hasSourceTimestamp = true,
                         isGood = isGood,
                         conn_number = srv.protocolConnectionNumber,
@@ -115,7 +116,21 @@ namespace OPCDAClientDriver
             {
                 if (iv.GetType().IsArray)
                 {
-                    valueJson = JsonSerializer.Serialize(iv);
+                    if (iv.GetType().Name == "Byte[]")
+                    {
+                        var bytes = (byte[])iv;
+                        valueJson = "[";
+                        for (int i = 0; i < bytes.Length; i++)
+                        {
+                            valueJson += "" + bytes[i] + ",";
+                        }
+                        if (bytes.Length > 0) valueJson = valueJson.Substring(0, valueJson.Length - 1); 
+                        valueJson += "]";
+
+                        // valueJson = JsonSerializer.Serialize(iv);
+                    }
+                    else
+                        valueJson = JsonSerializer.Serialize(iv);
                     valueString = valueJson;
                 }
                 else
@@ -237,6 +252,84 @@ namespace OPCDAClientDriver
                     }
                 } while (position != null);
             }
+        }
+
+        public static void processValueResults(ref OPCDA_connection srv, ref TsCDaItemValueResult[] itemValues, ref IMongoCollection<rtData> collRtData, bool firstExecution)
+        {
+            for (var i = 0; i < itemValues.Length; i++)
+            {
+                if (itemValues[i].Result.IsError())
+                {
+                    Log($"{srv.name} - Item {itemValues[i].ItemPath} {itemValues[i].ItemName} could not be read");
+                }
+                else
+                {
+                    double value = 0;
+                    string valueJson = string.Empty;
+                    string valueString = string.Empty;
+                    bool isGood = true;
+                    bool isDigital = false;
+                    convertItemValue(itemValues[i].Value, out value, out valueString, out valueJson, out isGood, out isDigital);
+                    isGood = itemValues[i].Quality.QualityBits.HasFlag(TsDaQualityBits.Good) && isGood;
+                    if (LogLevel > LogLevelDetailed)
+                        Log($"{srv.name} - {itemValues[i].ItemName} {valueString} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}", LogLevelDetailed);
+
+                    var common_address = "";
+                    var lstDot = itemValues[i].ItemName.LastIndexOf(".");
+                    var spl = itemValues[i].ItemName.Split(".");
+                    string group2 = "@root", group3 = "", ungroupedDescription = itemValues[i].ItemName.Substring(lstDot + 1);
+                    if (lstDot != -1)
+                    {
+                        common_address = itemValues[i].ItemName.Substring(0, lstDot);
+                    }
+                    if (spl.Length > 1)
+                    {
+                        group2 = spl[0];
+                    }
+                    if (spl.Length > 2)
+                    {
+                        for (var j = 1; j < spl.Length - 1; j++)
+                            group3 += spl[j] + "/";
+                        group3 = group3.Substring(0, group3.Length - 1);
+                    }
+                    var ov = new OPC_Value()
+                    {
+                        valueJson = valueJson,
+                        selfPublish = true,
+                        address = itemValues[i].ItemName,
+                        asdu = itemValues[i].Value.GetType().Name,
+                        isDigital = isDigital,
+                        isArray = itemValues[i].Value.GetType().IsArray,
+                        value = value,
+                        valueString = valueString,
+                        cot = 20,
+                        serverTimestamp = DateTime.Now,
+                        sourceTimestamp = DateTime.MinValue,
+                        hasSourceTimestamp = false,
+                        isGood = isGood,
+                        conn_number = srv.protocolConnectionNumber,
+                        conn_name = srv.name,
+                        common_address = common_address,
+                        display_name = itemValues[i].ItemName,
+                        group1 = srv.name,
+                        group2 = group2,
+                        group3 = group3,
+                        ungroupedDescription = ungroupedDescription,
+                    };
+
+                    if (firstExecution && srv.autoCreateTags && !srv.InsertedAddresses.Contains(itemValues[i].ItemName))
+                    {
+                        var id = srv.LastNewKeyCreated + 1;
+                        srv.LastNewKeyCreated = id;
+
+                        // will enqueue to insert the new tag into mongo DB
+                        var rtDtIns = newRealtimeDoc(ov, id);
+                        AutoCreateTag(in rtDtIns, in collRtData, in srv);
+                    }
+                    OPCDataQueue.Enqueue(ov);
+                }
+            }
+
         }
     }
 }

@@ -73,46 +73,28 @@ namespace OPCDAClientDriver
         OPCDA_connection // protocol connection to RTU
         {
             public ObjectId Id { get; set; }
-            [BsonDefaultValue("")]
-            public string protocolDriver { get; set; }
-            [BsonDefaultValue(1)]
-            public int protocolDriverInstanceNumber { get; set; }
-            [BsonDefaultValue(1)]
-            public int protocolConnectionNumber { get; set; }
-            [BsonDefaultValue("NO NAME")]
-            public string name { get; set; }
-            [BsonDefaultValue("SERVER NOT DESCRIPTED")]
-            public string description { get; set; }
-            [BsonDefaultValue(true)]
-            public bool enabled { get; set; }
-            [BsonDefaultValue(true)]
-            public bool commandsEnabled { get; set; }
+            public string protocolDriver { get; set; } = string.Empty;
+            public int protocolDriverInstanceNumber { get; set; } = 1;
+            public int protocolConnectionNumber { get; set; } = 1;
+            public string name { get; set; } = "NO NAME";
+            public string description { get; set; } = "CONNECTION NOT DESCRIPTED";
+            public bool enabled { get; set; } = true;
+            public bool commandsEnabled { get; set; } = true;
             public string[] endpointURLs { get; set; }
             public string[] topics { get; set; }
-            [BsonDefaultValue(true)]
-            public bool autoCreateTags { get; set; }
-            [BsonDefaultValue(2.5)]
-            public double autoCreateTagPublishingInterval { get; set; }
-            [BsonDefaultValue(0.0)]
-            public double autoCreateTagSamplingInterval { get; set; }
-            [BsonDefaultValue(5.0)]
-            public double autoCreateTagQueueSize { get; set; }
-            [BsonDefaultValue(20000.0)]
-            public double timeoutMs { get; set; }
-            [BsonDefaultValue("")]
-            public string username { get; set; }
-            [BsonDefaultValue("")]
-            public string password { get; set; }
-            [BsonDefaultValue(false)]
-            public bool useSecurity { get; set; }
-            //[BsonDefaultValue(false)]
-            //public bool chainValidation { get; set; }
-            //[BsonDefaultValue("")] 
-            //public string rootCertFilePath { get; set; }
-            [BsonDefaultValue("")]
-            public string localCertFilePath { get; set; }
-            [BsonDefaultValue("")]
-            public string peerCertFilePath { get; set; }
+            public bool autoCreateTags { get; set; } = true;
+            public int giInterval { get; set; } = 0;
+            public double deadBand { get; set; } = 0;
+            public double hoursShift { get; set; } = 0;
+            public double autoCreateTagPublishingInterval { get; set; } = 2.5;
+            public double autoCreateTagSamplingInterval { get; set; } = 0.0;
+            public double autoCreateTagQueueSize { get; set; } = 5.0;
+            public double timeoutMs { get; set; } = 20000.0;
+            public string username { get; set; } = string.Empty;
+            public string password { get; set; } = string.Empty;
+            public bool useSecurity { get; set; } = false;
+            public string localCertFilePath { get; set; } = string.Empty;
+            public string peerCertFilePath { get; set; } = string.Empty;
             //[BsonDefaultValue("")] 
             //public string privateKeyFilePath { get; set; }
             //[BsonDefaultValue("")] 
@@ -130,7 +112,7 @@ namespace OPCDAClientDriver
             //[BsonDefaultValue("")] 
             //public string cipherList { get; set; }
 
-            public Double LastNewKeyCreated = -1;
+            public double LastNewKeyCreated = -1;
             public SortedSet<string> InsertedTags = new SortedSet<string>();
             public SortedSet<string> InsertedAddresses = new SortedSet<string>();
             // public static Dictionary<string, string> MapNameToHandler = new Dictionary<string, string>();
@@ -138,7 +120,8 @@ namespace OPCDAClientDriver
             public Dictionary<string, string> MapHandlerToConnName = new Dictionary<string, string>();
             // public Dictionary<string, string> MapItemNameToBranch = new Dictionary<string, string>();
             public SortedSet<string> branches = new SortedSet<string>(); // branches to scan
-            public TsCDaServer connection = null;
+            public TsCDaServer connection = null; // opc da connection to a server
+            public List<TsCDaSubscription> subscriptions = new List<TsCDaSubscription>(); // data subscriptions on a server
             public Thread thrOPCStack = null;
             public int cntConnectRetries = 0;
         }
@@ -190,24 +173,24 @@ namespace OPCDAClientDriver
         public class rtCommand
         {
             public BsonObjectId id { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolSourceConnectionNumber { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolSourceCommonAddress { get; set; }
             [BsonDefaultValue("")]
             public BsonString protocolSourceObjectAddress { get; set; }
             [BsonDefaultValue("")]
             public BsonString protocolSourceASDU { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolSourceCommandDuration { get; set; }
             [BsonDefaultValue(false)]
             public BsonBoolean protocolSourceCommandUseSBO { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble pointKey { get; set; }
             [BsonDefaultValue("")]
             public BsonString tag { get; set; }
             public BsonDateTime timeTag { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble value { get; set; }
             [BsonDefaultValue("")]
             public BsonString valueString { get; set; }
@@ -221,24 +204,24 @@ namespace OPCDAClientDriver
         public class rtCommandNoAck
         {
             public BsonObjectId id { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolSourceConnectionNumber { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolSourceCommonAddress { get; set; }
             [BsonDefaultValue("")]
             public BsonString protocolSourceObjectAddress { get; set; }
             [BsonDefaultValue("")]
             public BsonString protocolSourceASDU { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolSourceCommandDuration { get; set; }
             [BsonDefaultValue(false)]
             public BsonBoolean protocolSourceCommandUseSBO { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble pointKey { get; set; }
             [BsonDefaultValue("")]
             public BsonString tag { get; set; }
             public BsonDateTime timeTag { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble value { get; set; }
             [BsonDefaultValue("")]
             public BsonString valueString { get; set; }
@@ -251,25 +234,25 @@ namespace OPCDAClientDriver
         [BsonIgnoreExtraElements]
         public class rtDataProtocDest
         {
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationConnectionNumber { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationCommonAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationObjectAddress { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationASDU { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationCommandDuration { get; set; }
             [BsonDefaultValue(false)]
             public BsonBoolean protocolDestinationCommandUseSBO { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationGroup { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(1)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(1.0)]
             public BsonDouble protocolDestinationKConv1 { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationKConv2 { get; set; }
-            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0)]
+            [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
             public BsonDouble protocolDestinationHoursShift { get; set; }
         }
 
@@ -305,13 +288,13 @@ namespace OPCDAClientDriver
             }
         }
 
-        static void Log(System.Exception e, int level = 1)
+        static void Log(Exception e, int level = 1)
         {
             Log(e.ToString(), level);
         }
         public class BsonDoubleSerializer : SerializerBase<BsonDouble> // generic permissive numeric deserializer resulting double
         { // read most types as double, write to double
-            public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, BsonDouble dval)
+            public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, BsonDouble dval)
             {
                 context.Writer.WriteDouble(dval.ToDouble());
             }
@@ -358,10 +341,10 @@ namespace OPCDAClientDriver
                         }
                         break;
                     case BsonType.Decimal128:
-                        dval = System.Convert.ToDouble(context.Reader.ReadDecimal128());
+                        dval = Convert.ToDouble(context.Reader.ReadDecimal128());
                         break;
                     case BsonType.Boolean:
-                        dval = System.Convert.ToDouble(context.Reader.ReadBoolean());
+                        dval = Convert.ToDouble(context.Reader.ReadBoolean());
                         break;
                     case BsonType.Int32:
                         dval = context.Reader.ReadInt32();
@@ -376,7 +359,7 @@ namespace OPCDAClientDriver
 
         public class BsonIntSerializer : SerializerBase<BsonInt32> // generic permissive numeric deserializer resulting int
         { // read most types as int but write to double
-            public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, BsonInt32 ival)
+            public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, BsonInt32 ival)
             {
                 context.Writer.WriteDouble(ival.ToDouble());
             }
@@ -429,13 +412,13 @@ namespace OPCDAClientDriver
                         }
                         break;
                     case BsonType.Decimal128:
-                        dval = System.Convert.ToDouble(context.Reader.ReadDecimal128());
+                        dval = Convert.ToDouble(context.Reader.ReadDecimal128());
                         break;
                     case BsonType.Boolean:
-                        dval = System.Convert.ToDouble(context.Reader.ReadBoolean());
+                        dval = Convert.ToDouble(context.Reader.ReadBoolean());
                         break;
                 }
-                return System.Convert.ToInt32(dval);
+                return Convert.ToInt32(dval);
             }
         }
         static byte[] GetBytesFromPEM(string pemString, string section)
@@ -457,26 +440,26 @@ namespace OPCDAClientDriver
         }
         private static bool CertificateValidationCallBack(
            object sender,
-           System.Security.Cryptography.X509Certificates.X509Certificate certificate,
-           System.Security.Cryptography.X509Certificates.X509Chain chain,
-           System.Net.Security.SslPolicyErrors sslPolicyErrors)
+           X509Certificate certificate,
+           X509Chain chain,
+           SslPolicyErrors sslPolicyErrors)
         {
             // If the certificate is a valid, signed certificate, return true.
-            if (sslPolicyErrors == System.Net.Security.SslPolicyErrors.None)
+            if (sslPolicyErrors == SslPolicyErrors.None)
             {
                 Console.WriteLine("It's ok");
                 return true;
             }
 
             // If there are errors in the certificate chain, look at each error to determine the cause.
-            if ((sslPolicyErrors & System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
             {
                 if (chain != null && chain.ChainStatus != null)
                 {
-                    foreach (System.Security.Cryptography.X509Certificates.X509ChainStatus status in chain.ChainStatus)
+                    foreach (X509ChainStatus status in chain.ChainStatus)
                     {
                         if ((certificate.Subject == certificate.Issuer) &&
-                                (status.Status == System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.UntrustedRoot))
+                                (status.Status == X509ChainStatusFlags.UntrustedRoot))
                         {
                             // Self-signed certificates with an untrusted root are valid.
                             Console.WriteLine("Untrusted root certificate");
@@ -496,7 +479,7 @@ namespace OPCDAClientDriver
                                 return true;
                             }
 
-                            if (status.Status != System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.NoError)
+                            if (status.Status != X509ChainStatusFlags.NoError)
                             {
 
                                 Console.WriteLine(status.StatusInformation);

@@ -103,67 +103,6 @@ namespace OPCDAClientDriver
                                 }
                             }
 
-                            /*
-                            if (iv.selfPublish)
-                            {
-                                // find the json-scada connection for this received value 
-                                int conn_index = 0;
-                                for (int index = 0; index < OPCDAconns.Count; index++)
-                                {
-                                    if (OPCDAconns[index].protocolConnectionNumber == iv.conn_number)
-                                        conn_index = index;
-                                }
-
-                                string tag = TagFromOPCParameters(iv);
-                                if (!OPCDAconns[conn_index].InsertedTags.Contains(tag))
-                                { // tag not yet inserted
-                                    // put the tag in the list of inserted, then insert it
-
-                                    OPCDAconns[conn_index].InsertedTags.Add(tag);
-
-                                    Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
-
-                                    // find a new freee _id key based on the connection number
-                                    if (OPCDAconns[conn_index].LastNewKeyCreated == 0)
-                                    {
-                                        Double AutoKeyId = iv.conn_number * AutoKeyMultiplier;
-                                        var results = collectionId.Find<rtDataId>(new BsonDocument {
-                                            { "_id", new BsonDocument{
-                                                { "$gt", AutoKeyId },
-                                                { "$lt", ( iv.conn_number + 1) * AutoKeyMultiplier }
-                                                }
-                                            }
-                                            }).Sort(Builders<rtDataId>.Sort.Descending("_id"))
-                                            .Limit(1)
-                                            .ToList();
-
-                                        if (results.Count > 0)
-                                        {
-                                            OPCDAconns[conn_index].LastNewKeyCreated = results[0]._id.ToDouble() + 1;
-                                        }
-                                        else
-                                        {
-                                            OPCDAconns[conn_index].LastNewKeyCreated = AutoKeyId;
-                                        }
-                                    }
-                                    else
-                                        OPCDAconns[conn_index].LastNewKeyCreated = OPCDAconns[conn_index].LastNewKeyCreated + 1;
-
-                                    var id = OPCDAconns[conn_index].LastNewKeyCreated;
-
-                                    // will enqueue to insert the new tag into mongo DB
-                                    var insert = newRealtimeDoc(iv, id);
-                                    insert.protocolSourcePublishingInterval = OPCDAconns[conn_index].autoCreateTagPublishingInterval;
-                                    insert.protocolSourceSamplingInterval = OPCDAconns[conn_index].autoCreateTagSamplingInterval;
-                                    insert.protocolSourceQueueSize = OPCDAconns[conn_index].autoCreateTagQueueSize;
-                                    listWrites
-                                        .Add(new InsertOneModel<rtData>(insert));
-
-                                    // will imediatelly be followed by an update below (to the same tag)
-                                }
-                            }
-                            */
-
                             // update one existing document with received tag value (realtimeData)
                             var update =
                                 new BsonDocument {
