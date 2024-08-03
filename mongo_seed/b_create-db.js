@@ -533,17 +533,23 @@ var protocolConnectionsValidator = {
       privateKeyFilePath: {
         bsonType: ['string', 'null'],
       },
+      deadBand: {
+        bsonType: ['double', 'long', 'int', 'null'],
+      },
+      hoursShift: {
+        bsonType: ['double', 'long', 'int', 'null'],
+      },
       autoCreateTags: {
         bsonType: ['bool', 'null'],
       },
       autoCreateTagPublishingInterval: {
-        bsonType: ['double', 'null'],
+        bsonType: ['double', 'long', 'int', 'null'],
       },
       autoCreateTagSamplingInterval: {
-        bsonType: ['double', 'null'],
+        bsonType: ['double', 'long', 'int', 'null'],
       },
       autoCreateTagQueueSize: {
-        bsonType: ['double', 'null'],
+        bsonType: ['double', 'long', 'int', 'null'],
       },
       configFileName: {
         bsonType: ['string', 'null'],
