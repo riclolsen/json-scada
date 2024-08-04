@@ -165,6 +165,9 @@ namespace OPCDAClientDriver
             public string group2;
             public string group3;
             public string ungroupedDescription;
+            public double protocolSourcePublishingInterval;
+            public double protocolSourceSamplingInterval;
+            public double protocolSourceQueueSize;
         }
         public class rtFilt
         {

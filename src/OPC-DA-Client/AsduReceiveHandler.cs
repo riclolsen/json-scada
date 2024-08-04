@@ -20,6 +20,7 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
 
@@ -277,7 +278,7 @@ namespace OPCDAClientDriver
                     if (LogLevel > LogLevelDetailed)
                         Log($"{srv.name} - {itemValues[i].ItemName} {valueString} {itemValues[i].Quality} {itemValues[i].Value.GetType().Name}", LogLevelDetailed);
 
-                    var common_address = "";
+                    var common_address = "@root";
                     var lstDot = itemValues[i].ItemName.LastIndexOf(".");
                     var spl = itemValues[i].ItemName.Split(".");
                     string group2 = "@root", group3 = "", ungroupedDescription = itemValues[i].ItemName.Substring(lstDot + 1);
@@ -314,14 +315,18 @@ namespace OPCDAClientDriver
                         conn_name = srv.name,
                         common_address = common_address,
                         display_name = itemValues[i].ItemName,
-                        group1 = srv.name,
-                        group2 = group2,
-                        group3 = group3,
-                        ungroupedDescription = ungroupedDescription,
                     };
 
                     if (firstExecution && srv.autoCreateTags && !srv.InsertedAddresses.Contains(itemValues[i].ItemName))
                     {
+                        ov.group1 = srv.name;
+                        ov.group2 = group2;
+                        ov.group3 = group3;
+                        ov.ungroupedDescription = ungroupedDescription;
+                        ov.protocolSourcePublishingInterval = srv.autoCreateTagPublishingInterval;
+                        ov.protocolSourceSamplingInterval = srv.autoCreateTagSamplingInterval;
+                        ov.protocolSourceQueueSize = srv.autoCreateTagQueueSize;
+
                         var id = srv.LastNewKeyCreated + 1;
                         srv.LastNewKeyCreated = id;
 

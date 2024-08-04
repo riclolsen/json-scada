@@ -27,7 +27,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
-using static MongoDB.Driver.WriteConcern;
 
 namespace OPCDAClientDriver
 {
@@ -413,7 +412,7 @@ namespace OPCDAClientDriver
                         var subscrState = new TsCDaSubscriptionState
                         {
                             Name = "JsonScadaGroup1",
-                            UpdateRate = (int)srv.autoCreateTagSamplingInterval,
+                            UpdateRate = (int)srv.autoCreateTagPublishingInterval * 1000,
                             Deadband = (float)srv.deadBand,
                             // TimeBias = (int)(srv.hoursShift * 60)
                             // KeepAlive = (int)srv.giInterval/2,
