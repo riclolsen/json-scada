@@ -269,6 +269,7 @@ export default {
       "MQTT-SPARKPLUG-B",
       "OPC-UA",
       "OPC-UA_SERVER",
+      "OPC-DA",
       "PLCTAG",
       "PLC4X",
       "TELEGRAF-LISTENER",
@@ -310,6 +311,7 @@ export default {
         this.selected.nodeNames.push(this.newNode);
         this.updateProtocolDriverInstance();
         this.newNode = "";
+        this.fetchNodes();
       }
     },
     async updateProtocolDriverInstance() {

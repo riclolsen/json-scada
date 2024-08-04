@@ -6,6 +6,7 @@
     "appTitle": "Административное управление",
     "logout": "Выйти"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "Поисковый тег",
     "searchDescription": "Описание поиска",
@@ -173,6 +174,12 @@
     "serverQueueSize": "Размер очереди сервера",
     "serverQueueSizeTitle": "Размер очереди выборки по умолчанию на сервере",
     "serverQueueSizeHint": "Используйте ноль, чтобы избежать буферизации на сервере OPC.",
+    "deadBand": "Зона нечувствительности по умолчанию",
+    "deadBandTitle": "Наименьшее изменение, которое может вызвать обновление данных в порядке исключения.",
+    "deadBandHint": "Процент.",
+    "hoursShift": "Сдвиг временных меток",
+    "hoursShiftTitle": "Количество часов для компенсации часового пояса.",
+    "hoursShiftHint": "В часах.",
     "timeoutKeepalive": "Тайм-аут keep-alive",
     "timeoutKeepaliveTitle": "Интервал тайм-аута для сообщений keep-alive",
     "timeoutKeepaliveHint": "В миллисекундах.",

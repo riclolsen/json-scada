@@ -6,6 +6,7 @@
     "appTitle": "الإدارة الإدارية",
     "logout": "تسجيل خروج"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "بحث الوسم",
     "searchDescription": "وصف البحث",
@@ -173,6 +174,12 @@
     "serverQueueSize": "حجم قائمة انتظار الخادم",
     "serverQueueSizeTitle": "حجم قائمة انتظار العينات الافتراضي على الخادم",
     "serverQueueSizeHint": "استخدم الصفر لتجنب التخزين المؤقت على خادم OPC.",
+    "deadBand": "النطاق الميت الافتراضي",
+    "deadBandTitle": "أصغر اختلاف يمكن أن يتسبب في تحديث البيانات عن طريق الاستثناء.",
+    "deadBandHint": "نسبه مئويه.",
+    "hoursShift": "تحول الطوابع الزمنية",
+    "hoursShiftTitle": "عدد الساعات للتعويض عن المنطقة الزمنية.",
+    "hoursShiftHint": "في ساعات.",
     "timeoutKeepalive": "مهلة البقاء على قيد الحياة",
     "timeoutKeepaliveTitle": "الفاصل الزمني للمهلة لرسائل البقاء على قيد الحياة",
     "timeoutKeepaliveHint": "في مللي ثانية.",

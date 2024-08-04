@@ -312,7 +312,7 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA', 'MQTT-SPARKPLUG-B', 'PLC4X'].includes(
+                      ['OPC-UA', 'MQTT-SPARKPLUG-B', 'PLC4X', 'OPC-DA'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -373,9 +373,10 @@
                             v-model="newURL"
                             :rules="[
                               rules.required,
-                              selected.protocolDriver === 'OPC-UA'
-                                ? rules.endpointOPC
-                                : rules.endpointMQTT,
+                              selected.protocolDriver === 'MQTT-SPARKPLUG-B'
+                                ? rules.endpointMQTT
+                                : selected.protocolDriver === 'OPC-UA' ? 
+                                    rules.endpointOPC : rules.endpointOPCDA,
                             ]"
                           ></v-text-field>
                         </v-card-title>
@@ -416,7 +417,7 @@
 
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'IEC61850'].includes(
+                      ['MQTT-SPARKPLUG-B', 'IEC61850', 'OPC-DA'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -446,7 +447,7 @@
 
                   <v-list-item
                     v-if="
-                      ['MQTT-SPARKPLUG-B', 'IEC61850'].includes(
+                      ['MQTT-SPARKPLUG-B', 'IEC61850', 'OPC-DA'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -518,7 +519,8 @@
                         'MQTT-SPARKPLUG-B',
                         'TELEGRAF-LISTENER',
                         'IEC61850',
-                         'PLC4X',
+                        'PLC4X',
+                        'OPC-DA',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -544,8 +546,8 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA'].includes(selected.protocolDriver) &&
-                      selected.autoCreateTags
+                      ['OPC-UA'].includes(selected.protocolDriver) && selected.autoCreateTags ||
+                      ['OPC-DA'].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -585,8 +587,8 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA'].includes(selected.protocolDriver) &&
-                      selected.autoCreateTags
+                      ['OPC-UA'].includes(selected.protocolDriver) && selected.autoCreateTags ||
+                      ['OPC-DA'].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -623,8 +625,8 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA'].includes(selected.protocolDriver) &&
-                      selected.autoCreateTags
+                      ['OPC-UA'].includes(selected.protocolDriver) && selected.autoCreateTags ||
+                      ['OPC-DA'].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -660,32 +662,86 @@
                   </v-list-item>
 
                   <v-list-item
-                    class="ma-0"
                     v-if="
-                      ['OPC-UA', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER','IEC61850'].includes(
+                      ['OPC-DA'].includes(
                         selected.protocolDriver
                       )
                     "
                   >
-                    <v-switch
-                      class="ma-0"
-                      v-model="selected.useSecurity"
-                      inset
-                      color="primary"
-                      :label="`${$t(
-                        'src\\components\\connections.useSecurity'
-                      )}${
-                        selected.useSecurity
-                          ? $t('src\\components\\connections.useSecurityTrue')
-                          : $t('src\\components\\connections.useSecurityFalse')
-                      }`"
-                      @change="updateProtocolConnection"
-                    ></v-switch>
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          :label="
+                            $t('src\\components\\connections.deadBand')
+                          "
+                          hide-details="auto"
+                          v-model="selected.deadBand"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.deadBandTitle"
+                            )
+                          }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle>
+                          {{
+                            $t(
+                              "src\\components\\connections.deadBandHint"
+                            )
+                          }}
+                        </v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
                   </v-list-item>
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA', 'OPC-UA_SERVER'].includes(
+                      ['OPC-DA'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :input-value="active"
+                          :label="
+                            $t('src\\components\\connections.hoursShift')
+                          "
+                          hide-details="auto"
+                          v-model="selected.hoursShift"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.hoursShiftTitle"
+                            )
+                          }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle>
+                          {{
+                            $t(
+                              "src\\components\\connections.hoursShiftHint"
+                            )
+                          }}
+                        </v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -733,6 +789,7 @@
                         'PI_DATA_ARCHIVE_INJECTOR',
                         'PI_DATA_ARCHIVE_CLIENT',
                         'PLC4X',
+                        'OPC-DA',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1621,6 +1678,31 @@
                       @change="updateProtocolConnection"
                     ></v-switch>
                   </v-list-item>
+
+                  <v-list-item
+                    class="ma-0"
+                    v-if="
+                      ['OPC-UA', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850', 'OPC-DA'].includes(
+                        selected.protocolDriver
+                      )
+                    "
+                  >
+                    <v-switch
+                      class="ma-0"
+                      v-model="selected.useSecurity"
+                      inset
+                      color="primary"
+                      :label="`${$t(
+                        'src\\components\\connections.useSecurity'
+                      )}${
+                        selected.useSecurity
+                          ? $t('src\\components\\connections.useSecurityTrue')
+                          : $t('src\\components\\connections.useSecurityFalse')
+                      }`"
+                      @change="updateProtocolConnection"
+                    ></v-switch>
+                  </v-list-item>
+
                 </v-list-item-group>
               </v-list>
             </v-card>
@@ -1808,6 +1890,7 @@
                   'OPC-UA_SERVER',
                   'IEC61850',
                   'IEC61850_SERVER',
+                  'OPC-DA',
                 ].includes(selected.protocolDriver) &&
                   selected.useSecurity)
               "
@@ -1827,6 +1910,7 @@
                         'DNP3',
                         'MQTT-SPARKPLUG-B',
                         'OPC-UA_SERVER',
+                        'OPC-DA',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1973,6 +2057,7 @@
                         'DNP3',
                         'IEC61850',
                         'IEC61850_SERVER',
+                        'OPC-DA',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2253,6 +2338,7 @@
                        'PI_DATA_ARCHIVE_INJECTOR',
                        'PI_DATA_ARCHIVE_CLIENT',
                        'PLC4X',
+                       'OPC-DA',
                        ].includes(
                         selected.protocolDriver
                       )
@@ -2437,11 +2523,10 @@
                       <v-flex fill-height>
                         <v-card dense tile>
                           <v-card-text> Scripted Topics </v-card-text>
-
                           <template
-                            v-for="(item, index) in selected.topicsScripted"
+                          v-for="(item, index) in selected.topicsScripted" 
                           >
-                            <v-container :key="item.dummy" fluid>
+                            <v-container :key="item.dummy" v-if="true" fluid>
                               <v-card dense>
                                 <v-card-text dense>
                                   <v-text-field
@@ -2984,6 +3069,14 @@ export default {
           i18n.t("src\\components\\connections.rulesInvalidEndpoint")
         );
       },
+      endpointOPCDA: (value) => {
+        let pattern =
+          /^opcda:\/\/[a-zA-Z0-9-_]+[:./\\]+([a-zA-Z0-9 -_./:=&"'?%+@#$!])+$/;
+        return (
+          pattern.test(value) ||
+          i18n.t("src\\components\\connections.rulesInvalidEndpoint")
+        );
+      },
       endpointMQTT: (value) => {
         let pattern =
           /^mqtt:\/\/[a-zA-Z0-9-_]+[:./\\]+([a-zA-Z0-9 -_./:=&"'?%+@#$!])+$/;
@@ -3021,6 +3114,7 @@ export default {
       "MQTT-SPARKPLUG-B",
       "OPC-UA",
       "OPC-UA_SERVER",
+      "OPC-DA",
       "PLCTAG",
       "PLC4X",
       "TELEGRAF-LISTENER",

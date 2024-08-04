@@ -6,6 +6,7 @@
     "appTitle": "管理员管理",
     "logout": "登出"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "搜索标签",
     "searchDescription": "搜索说明",
@@ -173,6 +174,12 @@
     "serverQueueSize": "服务器队列大小",
     "serverQueueSizeTitle": "服务器上的默认采样队列大小",
     "serverQueueSizeHint": "使用零以避免在OPC服务器上进行缓冲。",
+    "deadBand": "默认死区",
+    "deadBandTitle": "可能导致数据更新异常的最小变化。",
+    "deadBandHint": "百分。",
+    "hoursShift": "时间戳偏移",
+    "hoursShiftTitle": "补偿时区的小时数。",
+    "hoursShiftHint": "几小时之内。",
     "timeoutKeepalive": "超时保持活动",
     "timeoutKeepaliveTitle": "保持活动消息的超时间隔",
     "timeoutKeepaliveHint": "以毫秒为单位。",

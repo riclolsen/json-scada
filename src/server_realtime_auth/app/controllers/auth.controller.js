@@ -221,7 +221,7 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['OPC-UA', 'TELEGRAF-LISTENER', 'MQTT-SPARKPLUG-B', 'IEC61850'].includes(
+    ['OPC-UA', 'TELEGRAF-LISTENER', 'MQTT-SPARKPLUG-B', 'IEC61850', 'PLC4X', 'OPC-DA'].includes(
       req?.body?.protocolDriver
     )
   ) {
@@ -231,7 +231,7 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850'].includes(
+    ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850', 'PLC4X', 'OPC-DA'].includes(
       req?.body?.protocolDriver
     )
   ) {
@@ -262,6 +262,15 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
+  if (['MQTT-SPARKPLUG-B', 'OPC-DA'].includes(req?.body?.protocolDriver)) {
+    if (!('username' in req.body)) {
+      req.body.username = ''
+    }
+    if (!('password' in req.body)) {
+      req.body.password = ''
+    }
+  }
+
   if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('topicsAsFiles' in req.body)) {
       req.body.topicsAsFiles = []
@@ -284,12 +293,6 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('publishTopicRoot' in req.body)) {
       req.body.publishTopicRoot = ''
     }
-    if (!('username' in req.body)) {
-      req.body.username = ''
-    }
-    if (!('password' in req.body)) {
-      req.body.password = ''
-    }
     if (!('pfxFilePath' in req.body)) {
       req.body.pfxFilePath = ''
     }
@@ -302,6 +305,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-UA_SERVER',
       'IEC61850',
       'IEC61850_SERVER',
+      'OPC-DA',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('useSecurity' in req.body)) {
@@ -309,7 +313,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['OPC-UA', 'OPC-UA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA'].includes(req?.body?.protocolDriver)) {
     if (!('timeoutMs' in req.body)) {
       req.body.timeoutMs = 20000.0
     }
@@ -319,6 +323,8 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('configFileName' in req.body)) {
       req.body.configFileName = '../conf/Opc.Ua.DefaultClient.Config.xml'
     }
+  }
+  if (['OPC-UA', 'OPC-DA'].includes(req?.body?.protocolDriver)) {
     if (!('autoCreateTagPublishingInterval' in req.body)) {
       req.body.autoCreateTagPublishingInterval = 2.5
     }
@@ -329,7 +335,14 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.autoCreateTagQueueSize = 0.0
     }
   }
-
+  if (['OPC-DA'].includes(req?.body?.protocolDriver)) {
+    if (!('deadBand' in req.body)) {
+      req.body.deadBand = 0.0
+    }
+    if (!('hoursShift' in req.body)) {
+      req.body.hoursShift = 0.0
+    }
+  }
   if (
     [
       'IEC60870-5-101',
@@ -403,7 +416,7 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG', 'IEC61850'].includes(
+    ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG', 'IEC61850', 'PLC4X', 'OPC-DA'].includes(
       req?.body?.protocolDriver
     )
   ) {
@@ -439,6 +452,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3',
       'MQTT-SPARKPLUG-B',
       'OPC-UA_SERVER',
+      'OPC-DA',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('localCertFilePath' in req.body)) {
@@ -453,6 +467,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'IEC61850_SERVER',
       'DNP3',
+      'OPC-DA',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('peerCertFilePath' in req.body)) {

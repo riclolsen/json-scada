@@ -6,6 +6,7 @@
     "appTitle": "Управління адміністратором",
     "logout": "Вийти"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "Тег пошуку",
     "searchDescription": "Опис пошуку",
@@ -173,6 +174,12 @@
     "serverQueueSize": "Розмір черги сервера",
     "serverQueueSizeTitle": "Розмір черги вибірки на сервері за замовчуванням",
     "serverQueueSizeHint": "Використовуйте нуль, щоб уникнути буферизації на сервері OPC.",
+    "deadBand": "Зона нечутливості за замовчуванням",
+    "deadBandTitle": "Найменша варіація, яка може спричинити оновлення даних за винятком.",
+    "deadBandHint": "Відсоток.",
+    "hoursShift": "Зсув часових позначок",
+    "hoursShiftTitle": "Кількість годин для компенсації часового поясу.",
+    "hoursShiftHint": "У годинах.",
     "timeoutKeepalive": "Тайм-аут продовжує жити",
     "timeoutKeepaliveTitle": "Інтервал часу очікування для повідомлень, що залишаються в живих",
     "timeoutKeepaliveHint": "За мілісекунди.",

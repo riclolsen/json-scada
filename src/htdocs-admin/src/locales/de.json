@@ -6,6 +6,7 @@
     "appTitle": "Admin-Management",
     "logout": "Ausloggen"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "Tag suchen",
     "searchDescription": "Suche Beschreibung",
@@ -173,6 +174,12 @@
     "serverQueueSize": "Größe der Serverwarteschlange",
     "serverQueueSizeTitle": "Standardgröße der Stichprobenwarteschlange auf dem Server",
     "serverQueueSizeHint": "Verwenden Sie Null, um eine Pufferung auf dem OPC-Server zu vermeiden.",
+    "deadBand": "Standard-Totzone",
+    "deadBandTitle": "Kleinste Abweichung, die zu einer Datenaktualisierung durch Ausnahme führen kann.",
+    "deadBandHint": "Prozent.",
+    "hoursShift": "Zeitstempel verschieben sich",
+    "hoursShiftTitle": "Anzahl der Stunden zum Ausgleich der Zeitzone.",
+    "hoursShiftHint": "In Stunden.",
     "timeoutKeepalive": "Timeout am Leben bleiben",
     "timeoutKeepaliveTitle": "Zeitüberschreitungsintervall für Keep-Alive-Nachrichten",
     "timeoutKeepaliveHint": "In Millisekunden.",

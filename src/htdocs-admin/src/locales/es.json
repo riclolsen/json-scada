@@ -6,6 +6,7 @@
     "appTitle": "Gestión administrativa",
     "logout": "Cerrar sesión"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "Etiqueta de búsqueda",
     "searchDescription": "Descripción de búsqueda",
@@ -173,6 +174,12 @@
     "serverQueueSize": "Tamaño de la cola del servidor",
     "serverQueueSizeTitle": "Tamaño de la cola de muestreo predeterminado en el servidor",
     "serverQueueSizeHint": "Utilice cero para evitar el almacenamiento en búfer en el servidor OPC.",
+    "deadBand": "Banda muerta predeterminada",
+    "deadBandTitle": "Variación más pequeña que puede provocar la actualización de datos por excepción.",
+    "deadBandHint": "Por ciento.",
+    "hoursShift": "Las marcas de tiempo cambian",
+    "hoursShiftTitle": "Número de horas para compensar la zona horaria.",
+    "hoursShiftHint": "En horas.",
     "timeoutKeepalive": "Tiempo de espera para mantener vivo",
     "timeoutKeepaliveTitle": "Intervalo de tiempo de espera para mensajes de mantenimiento",
     "timeoutKeepaliveHint": "En milisegundos.",

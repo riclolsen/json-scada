@@ -6,6 +6,7 @@
     "appTitle": "مدیریت سرپرست",
     "logout": "خروج"
   },
+  "src\\components\\tabbedoptions": {},
   "src\\components\\tag": {
     "searchTag": "برچسب جستجو",
     "searchDescription": "توضیحات جستجو",
@@ -173,6 +174,12 @@
     "serverQueueSize": "اندازه صف سرور",
     "serverQueueSizeTitle": "اندازه صف نمونه برداری پیش فرض در سرور",
     "serverQueueSizeHint": "برای جلوگیری از ایجاد بافر در سرور OPC از صفر استفاده کنید.",
+    "deadBand": "باند مرده پیش فرض",
+    "deadBandTitle": "کوچکترین تغییری که می‌تواند باعث به‌روزرسانی داده‌ها بر اساس استثنا شود.",
+    "deadBandHint": "درصد",
+    "hoursShift": "مهر زمانی تغییر می کند",
+    "hoursShiftTitle": "تعداد ساعت برای جبران منطقه زمانی.",
+    "hoursShiftHint": "در چند ساعت",
     "timeoutKeepalive": "مهلت زمانی ادامه دارد",
     "timeoutKeepaliveTitle": "فاصله زمانی برای پیامهای زنده",
     "timeoutKeepaliveHint": "بر حسب میلی ثانیه.",
