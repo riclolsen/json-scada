@@ -23,10 +23,8 @@ using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Diagnostics;
-using static OPCDAClientDriver.MainClass;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
-using System.Text.Json.Nodes;
 using MongoDB.Bson.IO;
 
 namespace OPCDAClientDriver

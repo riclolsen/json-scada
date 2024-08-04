@@ -24,8 +24,10 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
+using static MongoDB.Driver.WriteConcern;
 
 namespace OPCDAClientDriver
 {
@@ -263,18 +265,31 @@ namespace OPCDAClientDriver
                                 //    Thread.Sleep(1000);
                                 //    continue;
                                 case OpcServerState.Operational:
-                                    Thread.Sleep(1000);
+                                    Thread.Sleep(100);
                                     continue;
                                 default:
                                     Log(srv.name.ToString() + "Status of Server is " + srv.connection.GetServerStatus().ServerState);
+                                    // update as invalid
+                                    Log("Invalidating points on connection " + srv.protocolConnectionNumber);
+                                    var filter =
+                                        new BsonDocument(new BsonDocument("protocolSourceConnectionNumber",
+                                            srv.protocolConnectionNumber));
+                                    var update =
+                                        new BsonDocument("$set", new BsonDocument{
+                                                {"invalid",  true},
+                                                {"invalid",  true},
+                                                {"timeTag", BsonValue.Create(DateTime.Now) },
+                                            });
+                                    var res = collRtData.UpdateManyAsync(filter, update);
                                     //groupState.Active = false;
                                     //group.ModifyState((int)TsCDaStateMask.Active, groupState);
                                     //group.Dispose();
+                                    srv.cancellationTokenSource.Cancel();
+                                    Thread.Sleep(100);
                                     srv.connection.Subscriptions.Clear();
                                     srv.connection.Disconnect();
                                     srv.connection.Dispose();
                                     srv.connection = null;
-                                    Thread.Sleep(1000);
                                     break;
                             }
                         }
@@ -419,6 +434,18 @@ namespace OPCDAClientDriver
                             OnDataChangeEvent(subscriptionHandle, requestHandle, values, ref srv);
                         };
                         srv.subscriptions.Add(subscr);
+                        if (srv.giInterval > 0) // do periodic general interrogations
+                        {
+                            Task.Run(async () => {
+                                while (!srv.cancellationTokenSource.Token.IsCancellationRequested)
+                                {
+                                    await Task.Delay(TimeSpan.FromSeconds(srv.giInterval), srv.cancellationTokenSource.Token);
+                                    Log(string.Format($"{srv.name} -  Read All: {subscr.Items.Length}"));
+                                    var itemValues = daServer.Read(subscr.Items);
+                                    processValueResults(ref srv, ref itemValues, ref collRtData, true);
+                                }
+                            }, srv.cancellationTokenSource.Token);
+                        }
                     }
                     catch (OpcResultException e)
                     {

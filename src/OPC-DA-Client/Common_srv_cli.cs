@@ -124,6 +124,9 @@ namespace OPCDAClientDriver
             public List<TsCDaSubscription> subscriptions = new List<TsCDaSubscription>(); // data subscriptions on a server
             public Thread thrOPCStack = null;
             public int cntConnectRetries = 0;
+            // public CancellationToken cancellationToken = new CancellationToken();
+            public CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
         }
         [BsonIgnoreExtraElements]
         public class protocolDriverInstancesClass

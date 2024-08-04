@@ -22,7 +22,6 @@ using MongoDB.Driver;
 using System.Threading;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
-using static MongoDB.Libmongocrypt.CryptContext;
 using System.Text.Json;
 using System.Collections.Generic;
 
