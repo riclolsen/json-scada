@@ -23,6 +23,8 @@ using System.Threading;
 using Technosoftware.DaAeHdaClient;
 using Technosoftware.DaAeHdaClient.Da;
 using static MongoDB.Libmongocrypt.CryptContext;
+using System.Text.Json;
+using System.Collections.Generic;
 
 namespace OPCDAClientDriver
 {
@@ -178,12 +180,14 @@ namespace OPCDAClientDriver
                                                     case "i4":
                                                     case "int4":
                                                     case "int32":
+                                                    case "int":
                                                         itVal.Value = Convert.ToInt32(change.FullDocument.value);
                                                         break;
                                                     case "vt_ui4":
                                                     case "ui4":
                                                     case "uint4":
                                                     case "uint32":
+                                                    case "uint":
                                                         itVal.Value = Convert.ToUInt32(change.FullDocument.value);
                                                         break;
                                                     case "vt_i8":
@@ -226,6 +230,161 @@ namespace OPCDAClientDriver
                                                     case "bstr":
                                                     case "string":
                                                         itVal.Value = Convert.ToString(change.FullDocument.valueString);
+                                                        break;
+
+                                                    case "vt_i1[]":
+                                                    case "i1[]":
+                                                    case "int1[]":
+                                                    case "sbyte[]":
+                                                        try
+                                                        {
+                                                            List<sbyte> lst = JsonSerializer.Deserialize<List<sbyte>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_ui1[]":
+                                                    case "ui1[]":
+                                                    case "uint1[]":
+                                                    case "byte[]":
+                                                        try
+                                                        {
+                                                            List<byte> lst = JsonSerializer.Deserialize<List<byte>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_i2[]":
+                                                    case "i2[]":
+                                                    case "int2[]":
+                                                    case "int16[]":
+                                                        try
+                                                        {
+                                                            List<Int16> lst = JsonSerializer.Deserialize<List<Int16>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_ui2[]":
+                                                    case "ui2[]":
+                                                    case "uint2[]":
+                                                    case "uint16[]":
+                                                        try
+                                                        {
+                                                            List<UInt16> lst = JsonSerializer.Deserialize<List<UInt16>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_array":
+                                                    case "array":
+                                                    case "vt_i4[]":
+                                                    case "i4[]":
+                                                    case "int4[]":
+                                                    case "int32[]":
+                                                    case "int[]":
+                                                        try
+                                                        {
+                                                            List<Int32> lst = JsonSerializer.Deserialize<List<Int32>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_ui4[]":
+                                                    case "ui4[]":
+                                                    case "uint4[]":
+                                                    case "uint32[]":
+                                                    case "uint[]":
+                                                        try
+                                                        {
+                                                            List<UInt32> lst = JsonSerializer.Deserialize<List<UInt32>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_i8[]":
+                                                    case "i8[]":
+                                                    case "int8[]":
+                                                    case "int64[]":
+                                                        try
+                                                        {
+                                                            List<Int64> lst = JsonSerializer.Deserialize<List<Int64>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_ui8[]":
+                                                    case "ui8[]":
+                                                    case "uint8[]":
+                                                    case "uint64[]":
+                                                        try
+                                                        {
+                                                            List<UInt64> lst = JsonSerializer.Deserialize<List<UInt64>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_r4[]":
+                                                    case "r4[]":
+                                                    case "single[]":
+                                                    case "float[]":
+                                                        try
+                                                        {
+                                                            List<float> lst = JsonSerializer.Deserialize<List<float>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "vt_r8[]":
+                                                    case "r8[]":
+                                                    case "double[]":
+                                                        try
+                                                        {
+                                                            List<double> lst = JsonSerializer.Deserialize<List<double>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
+                                                        break;
+                                                    case "string[]":
+                                                        try
+                                                        {
+                                                            List<string> lst = JsonSerializer.Deserialize<List<string>>(change.FullDocument.valueString.ToString());
+                                                            itVal.Value = lst.ToArray();
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Log($"MongoDB CMD CS - {srv.name} - Error casting to array: {itVal.ItemName} value: {change.FullDocument.valueString.ToString()}");
+                                                        }
                                                         break;
                                                 }
                                                 itVal.Quality = TsCDaQuality.Good;
