@@ -390,15 +390,18 @@ namespace OPCDAClientDriver
                                                 itVal.Quality = TsCDaQuality.Good;
                                                 itVal.Timestamp = Convert.ToDateTime(change.FullDocument.timeTag);
                                                 itVal.TimestampSpecified = true;
-                                                Log($"MongoDB CMD CS - {srv.name} - Writing node: {itVal.ItemName} value: {itVal.Value}"  );
-                                                var results = srv.connection.Write(new TsCDaItemValue[] { itVal });
                                                 var okres = false;
                                                 var resultDescription = "Error!";
-                                                if (results != null && results.Length > 0)
+                                                if (itVal.Value != null )
                                                 {
-                                                    resultDescription = results[0].Result.Description();
-                                                    if (results[0].Result.IsOk())
-                                                        okres = true;
+                                                Log($"MongoDB CMD CS - {srv.name} - Writing node: {itVal.ItemName} value: {itVal.Value}");
+                                                var results = srv.connection.Write(new TsCDaItemValue[] { itVal });
+                                                    if (results != null && results.Length > 0)
+                                                    {
+                                                        resultDescription = results[0].Result.Description();
+                                                        if (results[0].Result.IsOk())
+                                                            okres = true;
+                                                    }
                                                 }
 
                                                 Log("MongoDB CMD CS - " +
