@@ -83,7 +83,7 @@ const ProtocolConnection = mongoose.model(
 
     // OPC-DA_Client
     deadBand: { type: Double, min: 0, default: 0.0 },
-    hourShift: { type: Double, min: 0, default: 0.0 },
+    hoursShift: { type: Double, min: 0, default: 0.0 },
 
     // IEC 101/104 Client
     testCommandInterval: { type: Double, min: 0, default: 0.0 },
