@@ -615,7 +615,7 @@ const pipeline = [
                     ?.valueStringAtSource || ''
                 let valueJson =
                   change.updateDescription.updatedFields.sourceDataUpdate
-                    ?.valueJsonAtSource || {}
+                    ?.valueJsonAtSource || ''
                 let alarmed = change.fullDocument.alarmed
 
                 // avoid undefined, null or NaN values
@@ -967,6 +967,7 @@ const pipeline = [
                     _id: change.fullDocument._id,
                     value: new Double(value),
                     valueString: valueString,
+                    valueJson: valueJson,
                     ...(change.fullDocument?.type === 'analog' &&
                     insertIntoHistorian
                       ? { historianLastValue: new Double(value) }
