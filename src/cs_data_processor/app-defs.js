@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'CS_DATA_PROCESSOR',
   ENV_PREFIX: 'JS_CSDATAPROC_',
   MSG: '{json:scada} - Change Stream Data Processor',
-  VERSION: '0.1.4',
+  VERSION: '0.1.5',
 }
