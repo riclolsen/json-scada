@@ -32,6 +32,9 @@ let HintMongoIsConnected = true
 
   let server = null
   let clientMongo = null
+  let group1List = {},
+    group2List = {},
+    group3List = {}
 
   while (true) {
     if (clientMongo === null)
@@ -188,14 +191,14 @@ let HintMongoIsConnected = true
           if (connection?.useSecurity === true) {
             if (
               'localCertFilePath' in connection &&
-              'length' in connection.localCertFilePath
+              typeof connection.localCertFilePath === 'string'
             ) {
               if (connection.localCertFilePath.length > 0)
                 certificateProp.certificateFile = connection.localCertFilePath
             }
             if (
               'privateKeyFilePath' in connection &&
-              'length' in connection.privateKeyFilePath
+              typeof connection.privateKeyFilePath === 'string'
             ) {
               if (connection.privateKeyFilePath.length > 0)
                 privateKeyProp.privateKeyFile = connection.privateKeyFilePath
@@ -227,13 +230,9 @@ let HintMongoIsConnected = true
           await server.initialize()
           Log.log('OPC-UA Server initialized.')
 
-          const namespace = server.engine.addressSpace.registerNamespace(
-            'urn:json_scada:tags'
-          )
-
-          // declare a new object
-          const device = namespace.addObject({
-            organizedBy: server.engine.addressSpace.rootFolder.objects,
+          const namespace = server.engine.addressSpace.getOwnNamespace()
+          // we create a new folder under RootFolder
+          const device = namespace.addFolder('ObjectsFolder', {
             browseName: 'JsonScadaServer',
           })
 
@@ -254,7 +253,12 @@ let HintMongoIsConnected = true
           })
 
           server.on('newChannel', function (channel, endpoint) {
-            Log.log('New Channel, remote address: ' + channel.remoteAddress)
+            Log.log(
+              'New Channel, remote address: ' +
+                channel.remoteAddress +
+                ', endpoint: ' +
+                endpoint
+            )
           })
 
           server.on('create_session', function (session) {
@@ -263,7 +267,7 @@ let HintMongoIsConnected = true
               'Client description, application URI: ' +
                 session?.parent?.clientDescription?.applicationUri
             )
-            Log.log('Remote Address: ' + session?.channel?._remoteAddress)
+            Log.log('Remote Address: ' + session?.channel?.remoteAddress)
 
             if (
               'ipAddresses' in connection &&
@@ -271,11 +275,11 @@ let HintMongoIsConnected = true
             ) {
               if (
                 connection.ipAddresses.length > 0 &&
-                session?.channel?._remoteAddress != ''
+                session?.channel?.remoteAddress != ''
               )
                 if (
                   !connection.ipAddresses.includes(
-                    session.channel._remoteAddress.replace('::ffff:', '')
+                    session.channel.remoteAddress.replace('::ffff:', '')
                   )
                 ) {
                   Log.log('IP not authorized: closing session!')
@@ -325,6 +329,7 @@ let HintMongoIsConnected = true
                   type: 1,
                   value: 1,
                   valueString: 1,
+                  valueJson: 1,
                   timeTag: 1,
                   timeTagAtSource: 1,
                   timeTagAtSourceOk: 1,
@@ -342,8 +347,60 @@ let HintMongoIsConnected = true
             )
             .toArray()
 
+          // folder tree based on group1/group2/group3 properties of tags
+          for (let i = 0; i < res.length; i++) {
+            if (res[i].group1 == '') {
+              if (!res[i].folder) res[i].folder = device
+              continue
+            }
+            if (res[i].group1 in group1List) {
+              res[i].folder = group1List[res[i].group1]
+              continue
+            }
+            let folder = namespace.addFolder(device, {
+              browseName: res[i].group1,
+            })
+            group1List[res[i].group1] = folder
+            res[i].folder = folder
+          }
+
+          for (let i = 0; i < res.length; i++) {
+            if (res[i].group1 == '' || res[i].group2 == '') {
+              continue
+            }
+            if (res[i].group2 in group2List) {
+              res[i].folder = group2List[res[i].group2]
+              continue
+            }
+            let folder = namespace.addFolder(res[i].folder, {
+              browseName: res[i].group2,
+            })
+            group2List[res[i].group2] = folder
+            res[i].folder = folder
+          }
+
+          for (let i = 0; i < res.length; i++) {
+            if (
+              res[i].group1 == '' ||
+              res[i].group2 == '' ||
+              res[i].group3 == ''
+            ) {
+              continue
+            }
+            if (res[i].group3 in group3List) {
+              res[i].folder = group3List[res[i].group3]
+              continue
+            }
+            let folder = namespace.addFolder(res[i].folder, {
+              browseName: res[i].group3,
+            })
+            group3List[res[i].group3] = folder
+            res[i].folder = folder
+          }
+
           Log.log(`Creating ${res.length} OPC UA Variables...`)
-          res.forEach((element) => {
+          for (let i = 0; i < res.length; i++) {
+            const element = res[i]
             if (element._id <= 0) {
               // exclude internal system data
               return
@@ -374,7 +431,10 @@ let HintMongoIsConnected = true
               }
             }
 
-            let type, value, dataType
+            let type,
+              value,
+              dataType,
+              arrayType = null
             switch (element?.type) {
               case 'digital':
                 type = 'Boolean'
@@ -382,16 +442,27 @@ let HintMongoIsConnected = true
                 value = element.value === 0 ? false : true
                 break
               case 'json':
-                type = 'String'
-                dataType = DataType.String
-                if ('valueJson' in element) JSON.stringify(element?.valueJson)
-                else value = JSON.stringify(element?.value)
+                let obj = null
+                try {
+                  obj = JSON.parse(element?.valueJson)
+                } catch (e) {
+                  Log.log(e)
+                }
+                if (Array.isArray(obj)) {
+                  arrayType = DataType.Double
+                  dataType = DataType.Double
+                  type = 'Double'
+                } else {
+                  dataType = DataType.String
+                  type = 'String'
+                }
+                value = obj
                 break
               case 'string':
                 type = 'String'
                 dataType = DataType.String
                 if ('valueString' in element) value = element.valueString
-                else value = element.value.toString()
+                else value = '' + element?.value
                 break
               case 'analog':
                 type = 'Double'
@@ -402,9 +473,12 @@ let HintMongoIsConnected = true
                 return
             }
             if (type) {
+              Log.log('Creating node: ' + element.tag, 2)
               metrics[element.tag] = namespace.addVariable({
-                componentOf: device,
-                nodeId: 'i=' + element._id,
+                componentOf: element.folder,
+                // numeric nodeId can't exceed 4294967295
+                // nodeId: 'i=' + (useSerialNodeId ? serialNodeId++ : element._id),
+                // let it be auto created by NodeOPCUA
                 browseName: element.tag,
                 dataType: type,
                 description: element?.description,
@@ -422,6 +496,7 @@ let HintMongoIsConnected = true
               metrics[element.tag].setValueFromSource(
                 new Variant({
                   dataType: dataType,
+                  // ...(arrayType ? { arrayType: arrayType } : {}),
                   value: value,
                 }),
                 element.invalid ? StatusCodes.Bad : StatusCodes.Good,
@@ -431,7 +506,7 @@ let HintMongoIsConnected = true
                   : element.timeTagAtSource
               )
             }
-          })
+          }
           Log.log(`Finished creating OPC UA Variables.`)
 
           //        setInterval(async () => {
@@ -513,7 +588,6 @@ let HintMongoIsConnected = true
             })
 
             // start to listen for changes
-            // a mongo disconnection produces a fatal error here!
             changeStream.on('change', (change) => {
               let m = metrics[change.fullDocument?.tag]
               if (m !== undefined) {
@@ -585,10 +659,18 @@ let HintMongoIsConnected = true
                     )
                     break
                   case 'json':
+                    let obj = null
+                    try {
+                      obj = JSON.parse(change.fullDocument?.valueJson)
+                    } catch (e) {
+                      Log.log(e)
+                    }
                     m.setValueFromSource(
                       new Variant({
-                        dataType: DataType.String,
-                        value: JSON.stringify(change.fullDocument?.valueJson),
+                        dataType: Array.isArray(obj)
+                          ? DataType.Array
+                          : DataType.ExtensionObject,
+                        value: obj,
                       }),
                       change.fullDocument?.invalid
                         ? StatusCodes.Bad
@@ -601,7 +683,7 @@ let HintMongoIsConnected = true
                     Log.log(
                       change.fullDocument?.tag +
                         ' ' +
-                        JSON.stringify(change.fullDocument?.valueJson) +
+                        change.fullDocument?.valueJson +
                         (change.fullDocument?.invalid ? ' bad' : ' good'),
                       Log.levelDetailed
                     )
