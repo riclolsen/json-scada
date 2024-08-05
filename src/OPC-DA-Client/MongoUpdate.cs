@@ -257,7 +257,7 @@ namespace OPCDAClientDriver
         }
         static string TagFromOPCParameters(OPC_Value ov)
         {
-            return ov.conn_name + ";" + ov.address;
+            return ov.conn_name + "." + ov.address;
         }
     }
 }

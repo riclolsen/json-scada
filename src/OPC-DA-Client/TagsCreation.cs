@@ -258,8 +258,8 @@ namespace OPCDAClientDriver
                     valueDefault = 0.0,
                     zeroDeadband = 0.0
                 };
-            else
-            if (iv.asdu.ToLower() == "string" || iv.asdu.ToLower() == "extensionobject")
+            
+            if (iv.asdu.ToLower() == "string")
                 return new rtData()
                 {
                     _id = _id,
@@ -333,6 +333,82 @@ namespace OPCDAClientDriver
                     updatesCnt = 0,
                     valueDefault = 0.0,
                     zeroDeadband = 0.0,
+                };
+
+            if (iv.isArray)
+                return new rtData()
+                {
+                    _id = _id,
+                    protocolSourceASDU = iv.asdu,
+                    protocolSourceCommonAddress = iv.common_address,
+                    protocolSourceConnectionNumber = iv.conn_number,
+                    protocolSourceObjectAddress = iv.address,
+                    protocolSourceCommandUseSBO = false,
+                    protocolSourceCommandDuration = 0.0,
+                    protocolSourcePublishingInterval = iv.protocolSourcePublishingInterval,
+                    protocolSourceSamplingInterval = iv.protocolSourceSamplingInterval,
+                    protocolSourceQueueSize = iv.protocolSourceQueueSize,
+                    protocolSourceDiscardOldest = true,
+                    alarmState = 2.0,
+                    description = iv.group1 + "~" + iv.group2 + "~" + iv.display_name,
+                    ungroupedDescription = iv.ungroupedDescription,
+                    group1 = iv.group1,
+                    group2 = iv.group2,
+                    group3 = iv.group3,
+                    stateTextFalse = "",
+                    stateTextTrue = "",
+                    eventTextFalse = "",
+                    eventTextTrue = "",
+                    origin = "supervised",
+                    tag = TagFromOPCParameters(iv),
+                    type = "json",
+                    value = iv.value,
+                    valueString = iv.valueString,
+                    valueJson = iv.valueJson,
+
+                    alarmDisabled = false,
+                    alerted = false,
+                    alarmed = false,
+                    alertedState = "",
+                    annotation = "",
+                    commandBlocked = false,
+                    commandOfSupervised = 0.0,
+                    commissioningRemarks = "",
+                    formula = 0.0,
+                    frozen = false,
+                    frozenDetectTimeout = 0.0,
+                    hiLimit = Double.MaxValue,
+                    hihiLimit = Double.MaxValue,
+                    hihihiLimit = Double.MaxValue,
+                    historianDeadBand = 0.0,
+                    historianPeriod = 0.0,
+                    hysteresis = 0.0,
+                    invalid = true,
+                    invalidDetectTimeout = 60000,
+                    isEvent = false,
+                    kconv1 = 1.0,
+                    kconv2 = 0.0,
+                    location = BsonNull.Value,
+                    loLimit = -Double.MaxValue,
+                    loloLimit = -Double.MaxValue,
+                    lololoLimit = -Double.MaxValue,
+                    notes = "",
+                    overflow = false,
+                    parcels = BsonNull.Value,
+                    priority = 0.0,
+                    protocolDestinations = BsonNull.Value,
+                    sourceDataUpdate = BsonNull.Value,
+                    supervisedOfCommand = 0.0,
+                    substituted = false,
+                    timeTag = BsonNull.Value,
+                    timeTagAlarm = BsonNull.Value,
+                    timeTagAtSource = BsonNull.Value,
+                    timeTagAtSourceOk = false,
+                    transient = false,
+                    unit = "",
+                    updatesCnt = 0,
+                    valueDefault = 0.0,
+                    zeroDeadband = 0.0
                 };
 
             return new rtData()
