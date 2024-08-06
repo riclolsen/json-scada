@@ -31,12 +31,12 @@ sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-ope
 sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
 sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
-wget https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.$(arch).rpm
+wget --inet4-only https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.$(arch).rpm
 sudo dnf -y install ./potrace-devel-1.16-7.el9.$(arch).rpm
 
 sudo update-crypto-policies --set LEGACY
 
-wget https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
+wget --inet4-only https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
@@ -137,7 +137,7 @@ sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
 
 sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_20.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
