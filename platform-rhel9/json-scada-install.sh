@@ -20,13 +20,12 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
-sudo dnf -y install dotnet-sdk-8.0
 sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless inkscape
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-6.0 java-21-openjdk php curl
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl libpcap-devel
 # to compile inkscape
 sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
