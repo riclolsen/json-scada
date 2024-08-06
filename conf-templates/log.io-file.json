@@ -126,9 +126,29 @@
     },
     {
       "source": "node1",
+      "stream": "opcdaclient",
+      "config": {
+        "path": "/json-scada/log/opcdaclient.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "opcuaserver",
       "config": {
         "path": "/json-scada/log/opcuaserver.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "plc4xclient",
+      "config": {
+        "path": "/json-scada/log/plc4xclient.log",
         "watcherOptions": {
           "usePolling": true
         }
