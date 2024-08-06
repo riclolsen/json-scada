@@ -17,13 +17,9 @@
  */
 
 using libplctag;
-using libplctag.DataTypes;
 using System;
 using System.Diagnostics;
-using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PLCTagDriver
 {

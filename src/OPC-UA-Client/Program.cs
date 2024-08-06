@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -28,9 +28,9 @@ namespace OPCUAClientDriver
 {
     partial class MainClass
     {
-        public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2022 RLO";
+        public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2024 RLO";
         public static String ProtocolDriverName = "OPC-UA";
-        public static String DriverVersion = "0.1.1";
+        public static String DriverVersion = "0.2.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static Int32 BulkWriteLimit = 1250; // limit of each bulk write to mongodb
@@ -140,7 +140,7 @@ namespace OPCUAClientDriver
                     }
                     Log("Instance: " +
                     inst.protocolDriverInstanceNumber.ToString());
-                    var nodefound = false;
+                    var nodefound = false || inst.nodeNames.Length == 0;
                     foreach (var name in inst.nodeNames)
                     {
                         if (JSConfig.nodeName == name)

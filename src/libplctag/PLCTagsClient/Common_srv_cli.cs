@@ -27,8 +27,6 @@ using MongoDB.Bson.Serialization.Attributes;
 using System.Net.Security;
 using MongoDB.Driver;
 using System.Security.Cryptography.X509Certificates;
-using libplctag;
-using System.ComponentModel.DataAnnotations;
 
 namespace PLCTagDriver
 {

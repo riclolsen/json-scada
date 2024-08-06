@@ -1,6 +1,6 @@
 ﻿/* 
  * PLCTags CIP Ethernet/IP & Modbus TCP Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020 - 2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -18,27 +18,22 @@
 
 using libplctag;
 using libplctag.DataTypes;
-using libplctag.NativeImport;
 using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
-using System.Timers;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using System.Linq;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Collections;
 
 namespace PLCTagDriver
 {
     partial class MainClass
     {
         public static String ProtocolDriverName = "PLCTAG";
-        public static String DriverVersion = "0.1.0";
+        public static String DriverVersion = "0.1.1";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
 
@@ -333,7 +328,7 @@ namespace PLCTagDriver
                     }
                     Log("Instance: " +
                     inst.protocolDriverInstanceNumber.ToString());
-                    var nodefound = false;
+                    var nodefound = false || inst.nodeNames.Length == 0;
                     foreach (var name in inst.nodeNames)
                     {
                         if (JSConfig.nodeName == name)

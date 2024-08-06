@@ -256,7 +256,7 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 		log.Println("Redundancy - No driver instance found!")
 	}
 
-	if !contains(instance.NodeNames, cfg.NodeName) {
+	if len(instance.NodeNames) > 0 && !contains(instance.NodeNames, cfg.NodeName) {
 		log.Fatal("Redundancy - This node name not in the list of nodes from driver instance!")
 	}
 

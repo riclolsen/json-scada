@@ -1,6 +1,6 @@
 ﻿/* 
  * DNP3 Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2021 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -33,9 +33,9 @@ namespace Dnp3Driver
     partial class MainClass
     {
         static IDNP3Manager mgr;
-        public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020-2021 RLO";
+        public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020-2024 RLO";
         public static String ProtocolDriverName = "DNP3";
-        public static String DriverVersion = "0.1.3";
+        public static String DriverVersion = "0.1.5";
         public static uint CROB_PulseOnTime = 100;
         public static uint CROB_PulseOffTime = 100;
         public static bool Active = false; // indicates this driver instance is the active node in the moment
@@ -254,7 +254,7 @@ namespace Dnp3Driver
                     }
                     Log("Instance: " +
                     inst.protocolDriverInstanceNumber.ToString());
-                    var nodefound = false;
+                    var nodefound = false || inst.nodeNames.Length == 0;
                     foreach (var name in inst.nodeNames)
                     {
                         if (JSConfig.nodeName == name)
