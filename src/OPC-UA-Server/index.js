@@ -19,7 +19,13 @@
 
 'use strict'
 
-const { OPCUAServer, Variant, DataType, StatusCodes } = require('node-opcua')
+const {
+  OPCUAServer,
+  Variant,
+  DataType,
+  StatusCodes,
+  VariantArrayType,
+} = require('node-opcua')
 const { MongoClient, Double } = require('mongodb')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
@@ -431,48 +437,8 @@ let HintMongoIsConnected = true
               }
             }
 
-            let type,
-              value,
-              dataType,
-              arrayType = null
-            switch (element?.type) {
-              case 'digital':
-                type = 'Boolean'
-                dataType = DataType.Boolean
-                value = element.value === 0 ? false : true
-                break
-              case 'json':
-                let obj = null
-                try {
-                  obj = JSON.parse(element?.valueJson)
-                } catch (e) {
-                  Log.log(e)
-                }
-                if (Array.isArray(obj)) {
-                  arrayType = DataType.Double
-                  dataType = DataType.Double
-                  type = 'Double'
-                } else {
-                  dataType = DataType.String
-                  type = 'String'
-                }
-                value = obj
-                break
-              case 'string':
-                type = 'String'
-                dataType = DataType.String
-                if ('valueString' in element) value = element.valueString
-                else value = '' + element?.value
-                break
-              case 'analog':
-                type = 'Double'
-                dataType = DataType.Double
-                value = parseFloat(element.value)
-                break
-              default:
-                return
-            }
-            if (type) {
+            const v = convertValueVariant(element)
+            if (v.type) {
               Log.log('Creating node: ' + element.tag, 2)
               metrics[element.tag] = namespace.addVariable({
                 componentOf: element.folder,
@@ -480,7 +446,7 @@ let HintMongoIsConnected = true
                 // nodeId: 'i=' + (useSerialNodeId ? serialNodeId++ : element._id),
                 // let it be auto created by NodeOPCUA
                 browseName: element.tag,
-                dataType: type,
+                dataType: v.type,
                 description: element?.description,
                 minimumSamplingInterval: 1000,
                 ...cmdWriteProp,
@@ -494,11 +460,11 @@ let HintMongoIsConnected = true
                 //}
               })
               metrics[element.tag].setValueFromSource(
-                new Variant({
-                  dataType: dataType,
-                  // ...(arrayType ? { arrayType: arrayType } : {}),
-                  value: value,
-                }),
+                {
+                  dataType: v.dataType,
+                  ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                  value: v.value,
+                },
                 element.invalid ? StatusCodes.Bad : StatusCodes.Good,
                 !('timeTagAtSource' in element) ||
                   element.timeTagAtSource === null
@@ -591,13 +557,30 @@ let HintMongoIsConnected = true
             changeStream.on('change', (change) => {
               let m = metrics[change.fullDocument?.tag]
               if (m !== undefined) {
+                const v = convertValueVariant(change.fullDocument)
+                metrics[change.fullDocument.tag].setValueFromSource(
+                  {
+                    dataType: v.dataType,
+                    ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                    value: v.value,
+                  },
+                  change.fullDocument.invalid
+                    ? StatusCodes.Bad
+                    : StatusCodes.Good,
+                  !('timeTagAtSource' in change.fullDocument) ||
+                    change.fullDocument.timeTagAtSource === null
+                    ? new Date(1970, 0, 1)
+                    : change.fullDocument.timeTagAtSource
+                )
+
+                /*
                 switch (change.fullDocument?.type) {
                   case 'analog':
                     m.setValueFromSource(
-                      new Variant({
+                      {
                         dataType: DataType.Double,
                         value: parseFloat(change.fullDocument?.value),
-                      }),
+                      },
                       change.fullDocument?.invalid
                         ? StatusCodes.Bad
                         : StatusCodes.Good,
@@ -616,10 +599,10 @@ let HintMongoIsConnected = true
                     break
                   case 'digital':
                     m.setValueFromSource(
-                      new Variant({
+                      {
                         dataType: DataType.Boolean,
                         value: change.fullDocument?.value === 0 ? false : true,
-                      }),
+                      },
                       change.fullDocument?.invalid
                         ? StatusCodes.Bad
                         : StatusCodes.Good,
@@ -638,10 +621,10 @@ let HintMongoIsConnected = true
                     break
                   case 'string':
                     m.setValueFromSource(
-                      new Variant({
+                      {
                         dataType: DataType.String,
                         value: change.fullDocument?.valueString,
-                      }),
+                      },
                       change.fullDocument?.invalid
                         ? StatusCodes.Bad
                         : StatusCodes.Good,
@@ -666,12 +649,12 @@ let HintMongoIsConnected = true
                       Log.log(e)
                     }
                     m.setValueFromSource(
-                      new Variant({
+                      {
                         dataType: Array.isArray(obj)
                           ? DataType.Array
                           : DataType.ExtensionObject,
                         value: obj,
-                      }),
+                      },
                       change.fullDocument?.invalid
                         ? StatusCodes.Bad
                         : StatusCodes.Good,
@@ -680,6 +663,7 @@ let HintMongoIsConnected = true
                         ? new Date(1970, 0, 1)
                         : change.fullDocument.timeTagAtSource
                     )
+                        
                     Log.log(
                       change.fullDocument?.tag +
                         ' ' +
@@ -689,6 +673,7 @@ let HintMongoIsConnected = true
                     )
                     break
                 }
+                    */
               }
             })
           } catch (e) {
@@ -812,5 +797,107 @@ async function checkConnectedMongo(client) {
   } else {
     HintMongoIsConnected = false
     return false
+  }
+}
+
+function convertValueVariant(rtData) {
+  let type = '',
+    value = null,
+    dataType = '',
+    arrayType = null
+  switch (rtData?.type) {
+    case 'digital':
+      type = 'Boolean'
+      dataType = DataType.Boolean
+      value = rtData.value === 0 ? false : true
+      break
+    case 'json':
+      let obj = null
+      try {
+        obj = JSON.parse(rtData?.valueJson)
+      } catch (e) {
+        Log.log(e)
+      }
+      if (Array.isArray(obj)) {
+        arrayType = VariantArrayType.Array
+        dataType = DataType.Double
+        if (obj.length > 0)
+          switch (typeof obj[0]) {
+            case 'boolean':
+              type = 'Boolean'
+              dataType = DataType.Boolean
+              value = obj
+              break
+            case 'number':
+            case 'bigint':
+              type = 'Double'
+              value = obj
+              break
+            case 'string':
+              if (obj[0].length >= 19) {
+                const tm = Date.parse(obj[0])
+                if (!isNaN(tm)) {
+                  type = 'DateTime'
+                  dataType = DataType.DateTime
+                  value = []
+                  obj.forEach((v) => value.push(new Date(v)))
+                } else {
+                  type = 'String'
+                  dataType = DataType.String
+                  value = obj
+                }
+              } else {
+                type = 'String'
+                dataType = DataType.String
+                value = obj
+              }
+              break
+            default:
+              type = 'String'
+              dataType = DataType.String
+              value = JSON.stringify(obj)
+          }
+      } else {
+        dataType = DataType.String
+        type = 'String'
+        value = JSON.stringify(obj)
+      }
+      break
+    case 'string':
+      type = 'String'
+      dataType = DataType.String
+      if ('valueString' in rtData) value = rtData.valueString
+      else value = '' + rtData?.value
+      break
+    case 'analog':
+      if (
+        rtData.value > 1000000000000 &&
+        typeof rtData.valueJson === 'string'
+      ) {
+        // try to detect date type as json (number of milliseconds)
+        const tm = Date.parse(rtData.valueJson.replace(/^"(.+(?="$))"$/, '$1'))
+        if (!isNaN(tm)) {
+          value = new Date(tm)
+          type = 'DateTime'
+          dataType = DataType.DateTime
+        } else {
+          type = 'Double'
+          dataType = DataType.Double
+          value = parseFloat(rtData.value)
+        }
+      } else {
+        type = 'Double'
+        dataType = DataType.Double
+        value = parseFloat(rtData.value)
+      }
+      break
+    default:
+  }
+
+  return {
+    type: type,
+    value: value,
+    dataType: dataType,
+    arrayType: arrayType,
   }
 }
