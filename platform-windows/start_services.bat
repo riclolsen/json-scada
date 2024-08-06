@@ -40,6 +40,7 @@ REM nssm start JSON_SCADA_iec101server
 REM nssm start JSON_SCADA_iec101client
 REM nssm start JSON_SCADA_dnp3client
 nssm start JSON_SCADA_opcuaclient
+rem nssm start JSON_SCADA_opcdaclient
 REM nssm start JSON_SCADA_iec61850client
 REM nssm start JSON_SCADA_i104m
 REM nssm start JSON_SCADA_plctags

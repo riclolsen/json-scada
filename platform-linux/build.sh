@@ -32,7 +32,15 @@ cd ../../../../../lib60870.netcore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
+dotnet restore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+
+cd ../opcdaaehda-client-solution-net
+dotnet build -f net8.0-windows DaAeHdaNetStandard.sln
+
+cd ../OPC-DA-Client
+dotnet restore
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto

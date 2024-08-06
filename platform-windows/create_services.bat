@@ -181,6 +181,12 @@ nssm set JSON_SCADA_opcuaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcuaclient AppRotateBytes 10000000
 nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
 
+nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 2 
+nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
+nssm set JSON_SCADA_opduaclient AppRotateOnline 1
+nssm set JSON_SCADA_opduaclient AppRotateBytes 10000000
+nssm set JSON_SCADA_opduaclient Start SERVICE_DEMAND_START
+
 nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 2 
 nssm set JSON_SCADA_iec61850client AppStdout C:\json-scada\log\iec61850client.log
 nssm set JSON_SCADA_iec61850client AppRotateOnline 1

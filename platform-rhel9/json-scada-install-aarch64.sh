@@ -20,6 +20,7 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
+sudo dnf -y install dotnet-sdk-8.0
 sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless inkscape
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
