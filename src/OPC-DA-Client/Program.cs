@@ -244,13 +244,48 @@ namespace OPCDAClientDriver
                         ProcessMongoCmd(JSConfig));
             thrMongoCmd.Start();
 
-            Thread.Sleep(1000);
+            var wasActive = false;
+            while (!Active)
+            {
+                Thread.Sleep(2000);
+            }
 
             Log("Creating connections...");
             do
             {
+                if (!Active) // handle redundant state active or inactive 
+                {
+                    if (wasActive) // when switched to inactive, disconnect servers
+                    {
+                        wasActive = false;
+                        for (var i = 0; i < OPCDAconns.Count; i++)
+                        {
+                            var srv = OPCDAconns[i];
+                            if (srv.connection != null)
+                            {
+                                srv.cancellationTokenSource.Cancel();
+                                Thread.Sleep(100);
+                                for (var j = 0; j < srv.subscriptions.Count; j++)
+                                {
+                                    srv.subscriptions[j].SetEnabled(false);
+                                    srv.subscriptions[j].DataChangedEvent -= null;
+                                }
+                                srv.connection.Subscriptions.Clear();
+                                srv.connection.Disconnect();
+                                srv.connection.Dispose();
+                                srv.connection = null;
+                            }
+                        }
+                        Thread.Sleep(2000);
+                        continue;
+                    }
+                }
+                wasActive = true;
+
                 for (var ii = 0; ii < OPCDAconns.Count; ii++)
                 {
+                    if (!Active) break;
+
                     var srv = OPCDAconns[ii];
                     if (srv.connection != null)
                     {
@@ -301,6 +336,7 @@ namespace OPCDAClientDriver
                             Log(srv.name + " - " + e.Message);
                         }
                     }
+                    if (!Active) break;
 
                     try
                     {
@@ -435,7 +471,8 @@ namespace OPCDAClientDriver
                         srv.subscriptions.Add(subscr);
                         if (srv.giInterval > 0) // do periodic general interrogations
                         {
-                            Task.Run(async () => {
+                            Task.Run(async () =>
+                            {
                                 while (!srv.cancellationTokenSource.Token.IsCancellationRequested)
                                 {
                                     await Task.Delay(TimeSpan.FromSeconds(srv.giInterval), srv.cancellationTokenSource.Token);

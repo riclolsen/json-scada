@@ -30,6 +30,7 @@ namespace OPCDAClientDriver
     {
         public static void OnDataChangeEvent(object subscriptionHandle, object requestHandle, TsCDaItemValueResult[] values, ref OPCDA_connection srv)
         {
+            // if (!Active) return;
             string connName = srv.name;
             if (LogLevel >= 2)
                 Log(string.Format($"{connName} - DataChange: {values.Length} -----------------------------------------------------------"), 1);
