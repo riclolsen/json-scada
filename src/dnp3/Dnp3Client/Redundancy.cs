@@ -71,7 +71,7 @@ namespace Dnp3Driver
                         {
                             foundinstance = true;
 
-                            var nodefound = false;
+                            var nodefound = false || inst.nodeNames.Length == 0;
                             foreach (var name in inst.nodeNames)
                             {
                                 if (JSConfig.nodeName == name)
