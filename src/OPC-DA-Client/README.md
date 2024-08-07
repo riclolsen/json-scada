@@ -179,6 +179,10 @@ This driver has the following command line arguments.
 - _**2nd arg. - Log. Level**_ [Integer] - Log level (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**.
 - _**3rd arg. - Config File Path/Name**_ [String] - Complete path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**.
 
+## Troubleshooting OPC-DA remote access
+
+    https://technosoftware.com/help/OPCDaAeHdaClientSolutionNet/20/#topic5.html
+
 ## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
 
 ![Driver instances and connections](https://github.com/riclolsen/json-scada/raw/master/docs/JSON-SCADA_Connections.png 'Driver Instances and Connections Numbering')
