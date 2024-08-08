@@ -443,6 +443,7 @@ namespace OPCDAClientDriver
                         Log($"{srv.name} - Reading {itemsForGroup.Count} items...");
                         var itemValues = daServer.Read(itemsForGroup.ToArray());
                         processValueResults(ref srv, ref itemValues, ref collRtData, true);
+                        var cntRemoved = 0;
                         for (var i = 0; i < itemValues.Length; i++) // remove items that can't be read from subscription
                         {
                             if (itemValues[i].Result.IsError())
@@ -452,10 +453,15 @@ namespace OPCDAClientDriver
                                     if (itemValues[i].ItemName == itemsForGroup[j].ItemName)
                                     {
                                         itemsForGroup.RemoveAt(j);
+                                        cntRemoved++;
                                         break;
                                     }
                                 }
                             }
+                        }
+                        if (cntRemoved > 0)
+                        {
+                            Log($"{srv.name} - Removed {cntRemoved} items that can't be read from subscription.");
                         }
 
                         // Add a group with default values Active = true and UpdateRate = 500ms

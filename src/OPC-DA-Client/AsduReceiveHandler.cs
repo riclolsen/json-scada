@@ -264,7 +264,10 @@ namespace OPCDAClientDriver
             {
                 if (itemValues[i].Result.IsError())
                 {
-                    Log($"{srv.name} - Item {itemValues[i].ItemPath} {itemValues[i].ItemName} could not be read");
+                    if (LogLevel >= LogLevelDetailed)
+                    {
+                    Log($"{srv.name} - Item {itemValues[i].ItemPath} {itemValues[i].ItemName} could not be read", LogLevelDetailed);
+                    }
                 }
                 else
                 {
