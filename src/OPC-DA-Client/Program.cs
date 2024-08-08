@@ -443,6 +443,20 @@ namespace OPCDAClientDriver
                         Log($"{srv.name} - Reading {itemsForGroup.Count} items...");
                         var itemValues = daServer.Read(itemsForGroup.ToArray());
                         processValueResults(ref srv, ref itemValues, ref collRtData, true);
+                        for (var i = 0; i < itemValues.Length; i++) // remove items that can't be read from subscription
+                        {
+                            if (itemValues[i].Result.IsError())
+                            {
+                                for (int j = 0; j < itemsForGroup.Count; j++)
+                                {
+                                    if (itemValues[i].ItemName == itemsForGroup[j].ItemName)
+                                    {
+                                        itemsForGroup.RemoveAt(j);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
 
                         // Add a group with default values Active = true and UpdateRate = 500ms
                         var subscrState = new TsCDaSubscriptionState
@@ -455,7 +469,6 @@ namespace OPCDAClientDriver
                         };
                         var subscr = (TsCDaSubscription)daServer.CreateSubscription(subscrState);
                         var itemResults = subscr.AddItems(itemsForGroup.ToArray());
-
                         for (var i = 0; i < itemResults.Length; i++)
                         {
                             if (itemResults[i].Result.IsError())
