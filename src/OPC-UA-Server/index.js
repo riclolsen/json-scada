@@ -443,7 +443,9 @@ let HintMongoIsConnected = true
               metrics[element.tag] = namespace.addVariable({
                 componentOf: element.folder,
                 // numeric nodeId can't exceed 4294967295
-                // nodeId: 'i=' + (useSerialNodeId ? serialNodeId++ : element._id),
+                ...(element._id > 4294967295
+                  ? {}
+                  : { nodeId: 'i=' + element._id }),
                 // let it be auto created by NodeOPCUA
                 browseName: element.tag,
                 dataType: v.type,
