@@ -157,7 +157,7 @@ namespace Iec10XDriver
 
         static void Main(string[] args)
         {
-            Log("{json:scada} IEC60870-5-101 Server Driver - Copyright 2020 RLO");
+            Log("{json:scada} IEC60870-5-101 Server Driver - Copyright 2020-2024 RLO");
             Log("Driver version " + DriverVersion);
             Log("Using lib60870.NET version " +
             LibraryCommon.GetLibraryVersionString());

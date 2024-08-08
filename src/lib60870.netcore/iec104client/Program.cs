@@ -162,7 +162,7 @@ namespace Iec10XDriver
 
         static void Main(string[] args)
         {
-            Log("{json:scada} IEC60870-5-104 Driver - Copyright 2020 RLO");
+            Log("{json:scada} IEC60870-5-104 Driver - Copyright 2020-2024 RLO");
             Log("Driver version " + DriverVersion);
             Log("Using lib60870.NET version " +
             LibraryCommon.GetLibraryVersionString());
@@ -264,306 +264,304 @@ namespace Iec10XDriver
                     Log("Instance: " +
                     inst.protocolDriverInstanceNumber.ToString());
                     var nodefound = false || inst.nodeNames.Length == 0;
+                    foreach (var name in inst.nodeNames)
                     {
-                        foreach (var name in inst.nodeNames)
+                        if (JSConfig.nodeName == name)
                         {
-                            if (JSConfig.nodeName == name)
-                            {
-                                nodefound = true;
-                            }
+                            nodefound = true;
                         }
-                        if (!nodefound)
-                        {
-                            Log("Node '" +
-                            JSConfig.nodeName +
-                            "' not found in instances configuration!");
-                            Environment.Exit(-1);
-                        }
-                        DriverInstance = inst;
-                        break;
                     }
-                    break; // process just first result
-                }
-                if (!foundInstance)
-                {
-                    Log("Driver instance [" +
-                    ProtocolDriverInstanceNumber +
-                    "] not found in configuration!");
-                    Environment.Exit(-1);
-                }
-
-                // read and process connections configuration for this driver instance
-                var collconns =
-                    DB
-                        .GetCollection
-                        <IEC10X_connection>(ProtocolConnectionsCollectionName);
-                var conns =
-                    collconns
-                        .Find(conn =>
-                            conn.protocolDriver == ProtocolDriverName &&
-                            conn.protocolDriverInstanceNumber ==
-                            ProtocolDriverInstanceNumber &&
-                            conn.enabled == true)
-                        .ToList();
-                foreach (IEC10X_connection isrv in conns)
-                {
-                    if (isrv.ipAddresses.Length < 1)
+                    if (!nodefound)
                     {
-                        Log("Missing ipAddresses list!");
+                        Log("Node '" +
+                        JSConfig.nodeName +
+                        "' not found in instances configuration!");
                         Environment.Exit(-1);
                     }
-                    IEC10Xconns.Add(isrv);
-                    Log(isrv.name.ToString() + " - New Connection");
+                    DriverInstance = inst;
+                    break;
                 }
-                if (IEC10Xconns.Count == 0)
+                break; // process just first result
+            }
+            if (!foundInstance)
+            {
+                Log("Driver instance [" +
+                ProtocolDriverInstanceNumber +
+                "] not found in configuration!");
+                Environment.Exit(-1);
+            }
+
+            // read and process connections configuration for this driver instance
+            var collconns =
+                DB
+                    .GetCollection
+                    <IEC10X_connection>(ProtocolConnectionsCollectionName);
+            var conns =
+                collconns
+                    .Find(conn =>
+                        conn.protocolDriver == ProtocolDriverName &&
+                        conn.protocolDriverInstanceNumber ==
+                        ProtocolDriverInstanceNumber &&
+                        conn.enabled == true)
+                    .ToList();
+            foreach (IEC10X_connection isrv in conns)
+            {
+                if (isrv.ipAddresses.Length < 1)
                 {
-                    Log("No connections found!");
+                    Log(isrv.name + " - Missing ipAddresses list!");
                     Environment.Exit(-1);
                 }
+                IEC10Xconns.Add(isrv);
+                Log(isrv.name.ToString() + " - New Connection");
+            }
+            if (IEC10Xconns.Count == 0)
+            {
+                Log("No connections found!");
+                Environment.Exit(-1);
+            }
 
-                // start thread to process redundancy control
-                Thread thrMongoRedundacy =
-                    new Thread(() =>
-                            ProcessRedundancyMongo(JSConfig));
-                thrMongoRedundacy.Start();
+            // start thread to process redundancy control
+            Thread thrMongoRedundacy =
+                new Thread(() =>
+                        ProcessRedundancyMongo(JSConfig));
+            thrMongoRedundacy.Start();
 
-                // start thread to update acquired data to database
-                Thread thrMongo =
-                    new Thread(() =>
-                            ProcessMongo(JSConfig));
-                thrMongo.Start();
+            // start thread to update acquired data to database
+            Thread thrMongo =
+                new Thread(() =>
+                        ProcessMongo(JSConfig));
+            thrMongo.Start();
 
-                // start thread to watch for commands in the database using a change stream
-                Thread thrMongoCmd =
-                    new Thread(() =>
-                            ProcessMongoCmd(JSConfig));
-                thrMongoCmd.Start();
+            // start thread to watch for commands in the database using a change stream
+            Thread thrMongoCmd =
+                new Thread(() =>
+                        ProcessMongoCmd(JSConfig));
+            thrMongoCmd.Start();
 
-                Log("Setting up IEC Connections & ASDU handlers...");
-                int cntIecSrv = 0;
-                foreach (IEC10X_connection srv in IEC10Xconns)
+            Log("Setting up IEC Connections & ASDU handlers...");
+            int cntIecSrv = 0;
+            foreach (IEC10X_connection srv in IEC10Xconns)
+            {
+                var apcipars = new APCIParameters();
+                apcipars.K = srv.k;
+                apcipars.W = srv.w;
+                apcipars.T0 = srv.t0;
+                apcipars.T1 = srv.t1;
+                apcipars.T2 = srv.t2;
+                apcipars.T3 = srv.t3;
+                var alpars = new ApplicationLayerParameters();
+                alpars.SizeOfCOT = srv.sizeOfCOT;
+                alpars.SizeOfCA = srv.sizeOfCA;
+                alpars.SizeOfIOA = srv.sizeOfIOA;
+                alpars.OA = srv.localLinkAddress;
+
+                TlsSecurityInformation secInfo = null;
+                if (srv.localCertFilePath != "")
                 {
-                    var apcipars = new APCIParameters();
-                    apcipars.K = srv.k;
-                    apcipars.W = srv.w;
-                    apcipars.T0 = srv.t0;
-                    apcipars.T1 = srv.t1;
-                    apcipars.T2 = srv.t2;
-                    apcipars.T3 = srv.t3;
-                    var alpars = new ApplicationLayerParameters();
-                    alpars.SizeOfCOT = srv.sizeOfCOT;
-                    alpars.SizeOfCA = srv.sizeOfCA;
-                    alpars.SizeOfIOA = srv.sizeOfIOA;
-                    alpars.OA = srv.localLinkAddress;
-
-                    TlsSecurityInformation secInfo = null;
-                    if (srv.localCertFilePath != "")
+                    try
                     {
-                        try
-                        {
-                            // Own certificate has to be a pfx file that contains the private key
-                            X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath, srv.passphrase, X509KeyStorageFlags.MachineKeySet);
+                        // Own certificate has to be a pfx file that contains the private key
+                        X509Certificate2 ownCertificate = new X509Certificate2(srv.localCertFilePath, srv.passphrase, X509KeyStorageFlags.MachineKeySet);
 
-                            // Create a new security information object to configure TLS
-                            secInfo = new TlsSecurityInformation(null, ownCertificate);
+                        // Create a new security information object to configure TLS
+                        secInfo = new TlsSecurityInformation(null, ownCertificate);
 
-                            // Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
-                            secInfo.AddAllowedCertificate(new X509Certificate2(srv.peerCertFilePath));
+                        // Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
+                        secInfo.AddAllowedCertificate(new X509Certificate2(srv.peerCertFilePath));
 
-                            // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
-                            secInfo.AddCA(new X509Certificate2(srv.rootCertFilePath));
+                        // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
+                        secInfo.AddCA(new X509Certificate2(srv.rootCertFilePath));
 
-                            // Check if the certificate is signed by a provided CA
-                            secInfo.ChainValidation = srv.chainValidation;
+                        // Check if the certificate is signed by a provided CA
+                        secInfo.ChainValidation = srv.chainValidation;
 
-                            // Check that the shown server certificate is in the list of allowed certificates
-                            secInfo.AllowOnlySpecificCertificates = srv.allowOnlySpecificCertificates;
-                        }
-                        catch (Exception e)
-                        {
-                            Log(srv.name + " - Error configuring TLS certificates.");
-                            Log(srv.name + " - " + e.Message);
-                            Environment.Exit(1);
-                        }
+                        // Check that the shown server certificate is in the list of allowed certificates
+                        secInfo.AllowOnlySpecificCertificates = srv.allowOnlySpecificCertificates;
                     }
+                    catch (Exception e)
+                    {
+                        Log(srv.name + " - Error configuring TLS certificates.");
+                        Log(srv.name + " - " + e.Message);
+                        Environment.Exit(1);
+                    }
+                }
 
-                    var tcpPort = 2404;
-                    string[] ipAddrPort = srv.ipAddresses[0].Split(':');
-                    if (ipAddrPort.Length > 1)
-                        if (int.TryParse(ipAddrPort[1], out _))
-                            tcpPort = System.Convert.ToInt32(ipAddrPort[1]);
-                    var con =
-                        new Connection(ipAddrPort[0],
+                var tcpPort = 2404;
+                string[] ipAddrPort = srv.ipAddresses[0].Split(':');
+                if (ipAddrPort.Length > 1)
+                    if (int.TryParse(ipAddrPort[1], out _))
+                        tcpPort = System.Convert.ToInt32(ipAddrPort[1]);
+                var con =
+                    new Connection(ipAddrPort[0],
+                        tcpPort,
+                        apcipars,
+                        alpars);
+                con.Parameters.OA = srv.localLinkAddress;
+                srv.conn1 = con;
+                srv.conn2 = con;
+                srv.connection = con;
+                srv.CntGI = srv.giInterval - 3;
+                srv.CntTestCommand = srv.testCommandInterval - 1;
+                srv.CntTimeSync = 0;
+                srv.CntTestCommandSeq = 0;
+                if (LogLevel >= LogLevelDebug)
+                    con.DebugOutput = true;
+                con.SetASDUReceivedHandler(AsduReceivedHandler, cntIecSrv);
+                con.SetConnectionHandler(ConnectionHandler, cntIecSrv);
+
+                if (srv.ipAddresses.Length > 1) // is there a secondary server ?
+                {
+                    string[] ipAddrPort2 = srv.ipAddresses[1].Split(':');
+                    if (ipAddrPort2.Length > 1)
+                        if (int.TryParse(ipAddrPort2[1], out _))
+                            tcpPort = System.Convert.ToInt32(ipAddrPort2[1]);
+                    var c2 =
+                        new Connection(ipAddrPort2[0],
                             tcpPort,
                             apcipars,
                             alpars);
                     con.Parameters.OA = srv.localLinkAddress;
-                    srv.conn1 = con;
-                    srv.conn2 = con;
-                    srv.connection = con;
-                    srv.CntGI = srv.giInterval - 3;
-                    srv.CntTestCommand = srv.testCommandInterval - 1;
-                    srv.CntTimeSync = 0;
-                    srv.CntTestCommandSeq = 0;
+                    srv.conn2 = c2;
+                    srv.connection = c2; // force initial swap to primary server
                     if (LogLevel >= LogLevelDebug)
-                        con.DebugOutput = true;
-                    con.SetASDUReceivedHandler(AsduReceivedHandler, cntIecSrv);
-                    con.SetConnectionHandler(ConnectionHandler, cntIecSrv);
-
-                    if (srv.ipAddresses.Length > 1) // is there a secondary server ?
-                    {
-                        string[] ipAddrPort2 = srv.ipAddresses[1].Split(':');
-                        if (ipAddrPort2.Length > 1)
-                            if (int.TryParse(ipAddrPort2[1], out _))
-                                tcpPort = System.Convert.ToInt32(ipAddrPort2[1]);
-                        var c2 =
-                            new Connection(ipAddrPort2[0],
-                                tcpPort,
-                                apcipars,
-                                alpars);
-                        con.Parameters.OA = srv.localLinkAddress;
-                        srv.conn2 = c2;
-                        srv.connection = c2; // force initial swap to primary server
-                        if (LogLevel >= LogLevelDebug)
-                            c2.DebugOutput = true;
-                        c2.SetASDUReceivedHandler(AsduReceivedHandler, cntIecSrv);
-                        c2.SetConnectionHandler(ConnectionHandler, cntIecSrv);
-                    }
-
-                    if (srv.localCertFilePath != "" && secInfo != null)
-                    {
-                        srv.conn1.SetTlsSecurity(secInfo);
-                        srv.conn2.SetTlsSecurity(secInfo);
-                    }
-
-                    // create timer to increment counters each second
-                    srv.TimerCnt = new System.Timers.Timer();
-                    srv.TimerCnt.Interval = 1000;
-                    srv.TimerCnt.Elapsed += (sender, e) => MyElapsedMethod(sender, e, srv);
-                    static void MyElapsedMethod(object sender, ElapsedEventArgs e, IEC10X_connection serv)
-                    {
-                        if (serv.testCommandInterval > 0)
-                            serv.CntTestCommand++;
-                        if (serv.giInterval > 0)
-                            serv.CntGI++;
-                        if (serv.timeSyncInterval > 0)
-                            serv.CntTimeSync++;
-                    }
-                    srv.TimerCnt.Enabled = true;
-
-                    cntIecSrv++;
+                        c2.DebugOutput = true;
+                    c2.SetASDUReceivedHandler(AsduReceivedHandler, cntIecSrv);
+                    c2.SetConnectionHandler(ConnectionHandler, cntIecSrv);
                 }
-                Thread.Sleep(1000);
 
-                do
+                if (srv.localCertFilePath != "" && secInfo != null)
                 {
-                    foreach (IEC10X_connection srv in IEC10Xconns)
+                    srv.conn1.SetTlsSecurity(secInfo);
+                    srv.conn2.SetTlsSecurity(secInfo);
+                }
+
+                // create timer to increment counters each second
+                srv.TimerCnt = new System.Timers.Timer();
+                srv.TimerCnt.Interval = 1000;
+                srv.TimerCnt.Elapsed += (sender, e) => MyElapsedMethod(sender, e, srv);
+                static void MyElapsedMethod(object sender, ElapsedEventArgs e, IEC10X_connection serv)
+                {
+                    if (serv.testCommandInterval > 0)
+                        serv.CntTestCommand++;
+                    if (serv.giInterval > 0)
+                        serv.CntGI++;
+                    if (serv.timeSyncInterval > 0)
+                        serv.CntTimeSync++;
+                }
+                srv.TimerCnt.Enabled = true;
+
+                cntIecSrv++;
+            }
+            Thread.Sleep(1000);
+
+            do
+            {
+                foreach (IEC10X_connection srv in IEC10Xconns)
+                {
+                    var conNameStr = srv.name + " - ";
+                    if (Active)
                     {
-                        var conNameStr = srv.name + " - ";
-                        if (Active)
+                        if (srv.connection.IsRunning)
                         {
-                            if (srv.connection.IsRunning)
+                            if (srv.giInterval > 0)
                             {
-                                if (srv.giInterval > 0)
+                                if (srv.CntGI >= srv.giInterval)
                                 {
-                                    if (srv.CntGI >= srv.giInterval)
-                                    {
-                                        Log(conNameStr + "Send Interrogation Request", LogLevelDetailed);
-                                        srv.CntGI = 0;
-                                        srv
-                                            .connection
-                                            .SendInterrogationCommand(CauseOfTransmission
-                                                .ACTIVATION,
-                                            srv.remoteLinkAddress,
-                                            QualifierOfInterrogation.STATION);
-                                    }
-                                }
-                                if (srv.testCommandInterval > 0)
-                                {
-                                    if (srv.CntTestCommand >= srv.testCommandInterval)
-                                    {
-                                        Log(conNameStr + "Send Test Command", LogLevelDetailed);
-                                        srv.CntTestCommand = 0;
-                                        srv.CntTestCommandSeq++;
-                                        srv.connection.SendTestCommandWithCP56Time2a(srv.remoteLinkAddress, srv.CntTestCommandSeq, new CP56Time2a(DateTime.Now));
-                                    }
-                                }
-                                if (srv.timeSyncInterval > 0)
-                                {
-                                    if (srv.CntTimeSync >= srv.timeSyncInterval)
-                                    {
-                                        Log(conNameStr + "Send Clock Sync", LogLevelDetailed);
-                                        srv.CntTimeSync = 0;
-                                        srv.connection.SendClockSyncCommand(srv.remoteLinkAddress, new CP56Time2a(DateTime.Now));
-                                    }
+                                    Log(conNameStr + "Send Interrogation Request", LogLevelDetailed);
+                                    srv.CntGI = 0;
+                                    srv
+                                        .connection
+                                        .SendInterrogationCommand(CauseOfTransmission
+                                            .ACTIVATION,
+                                        srv.remoteLinkAddress,
+                                        QualifierOfInterrogation.STATION);
                                 }
                             }
-                            else
+                            if (srv.testCommandInterval > 0)
                             {
-                                srv.CntGI = srv.giInterval - 2;
-                                srv.CntTestCommand = srv.testCommandInterval - 1;
-                                srv.CntTimeSync = srv.timeSyncInterval;
-                                srv.CntTestCommandSeq = 0;
-                                srv.connection.Close();
-                                srv.connection.Cancel();
-
-                                // swap slave connection when not connected
-                                if (srv.ipAddresses.Length > 1)
+                                if (srv.CntTestCommand >= srv.testCommandInterval)
                                 {
-                                    if (srv.connection == srv.conn1)
-                                    {
-                                        Log(conNameStr + "Trying server " + srv.ipAddresses[1]);
-                                        srv.connection = srv.conn2;
-                                    }
-                                    else
-                                    {
-                                        Log(conNameStr + "Trying server " + srv.ipAddresses[0]);
-                                        srv.connection = srv.conn1;
-                                    }
+                                    Log(conNameStr + "Send Test Command", LogLevelDetailed);
+                                    srv.CntTestCommand = 0;
+                                    srv.CntTestCommandSeq++;
+                                    srv.connection.SendTestCommandWithCP56Time2a(srv.remoteLinkAddress, srv.CntTestCommandSeq, new CP56Time2a(DateTime.Now));
                                 }
-
-                                try
+                            }
+                            if (srv.timeSyncInterval > 0)
+                            {
+                                if (srv.CntTimeSync >= srv.timeSyncInterval)
                                 {
-                                    srv.connection.Connect(); // (re)try to connect to server
-                                }
-                                catch
-                                {
-                                    Log(conNameStr + "Error connecting!");
+                                    Log(conNameStr + "Send Clock Sync", LogLevelDetailed);
+                                    srv.CntTimeSync = 0;
+                                    srv.connection.SendClockSyncCommand(srv.remoteLinkAddress, new CP56Time2a(DateTime.Now));
                                 }
                             }
                         }
                         else
-                        { // Inactive                        
-                            if (srv.connection.IsRunning)
+                        {
+                            srv.CntGI = srv.giInterval - 2;
+                            srv.CntTestCommand = srv.testCommandInterval - 1;
+                            srv.CntTimeSync = srv.timeSyncInterval;
+                            srv.CntTestCommandSeq = 0;
+                            srv.connection.Close();
+                            srv.connection.Cancel();
+
+                            // swap slave connection when not connected
+                            if (srv.ipAddresses.Length > 1)
                             {
-                                srv.CntGI = srv.giInterval - 2;
-                                srv.CntTestCommand = srv.testCommandInterval - 1;
-                                srv.CntTimeSync = srv.timeSyncInterval;
-                                srv.CntTestCommandSeq = 0;
-                                srv.connection.Close();
-                                srv.connection.Cancel();
+                                if (srv.connection == srv.conn1)
+                                {
+                                    Log(conNameStr + "Trying server " + srv.ipAddresses[1]);
+                                    srv.connection = srv.conn2;
+                                }
+                                else
+                                {
+                                    Log(conNameStr + "Trying server " + srv.ipAddresses[0]);
+                                    srv.connection = srv.conn1;
+                                }
+                            }
+
+                            try
+                            {
+                                srv.connection.Connect(); // (re)try to connect to server
+                            }
+                            catch
+                            {
+                                Log(conNameStr + "Error connecting!");
                             }
                         }
                     }
-                    Thread.Sleep(500);
-
-                    if (!Console.IsInputRedirected)
-                        if (Console.KeyAvailable)
+                    else
+                    { // Inactive                        
+                        if (srv.connection.IsRunning)
                         {
-                            if (Console.ReadKey().Key == ConsoleKey.Escape)
-                            {
-                                Log("Exiting application!");
-                                Environment.Exit(0);
-                            }
-                            else
-                                Log("Press 'Esc' key to terminate...");
+                            srv.CntGI = srv.giInterval - 2;
+                            srv.CntTestCommand = srv.testCommandInterval - 1;
+                            srv.CntTimeSync = srv.timeSyncInterval;
+                            srv.CntTestCommandSeq = 0;
+                            srv.connection.Close();
+                            srv.connection.Cancel();
                         }
+                    }
                 }
-                while (true);
+                Thread.Sleep(500);
 
-                /* Synchronize clock of the controlled station */
-                //con.SendClockSyncCommand(1 /* CA */, new CP56Time2a(DateTime.Now));
+                if (!Console.IsInputRedirected)
+                    if (Console.KeyAvailable)
+                    {
+                        if (Console.ReadKey().Key == ConsoleKey.Escape)
+                        {
+                            Log("Exiting application!");
+                            Environment.Exit(0);
+                        }
+                        else
+                            Log("Press 'Esc' key to terminate...");
+                    }
             }
+            while (true);
+
+            /* Synchronize clock of the controlled station */
+            //con.SendClockSyncCommand(1 /* CA */, new CP56Time2a(DateTime.Now));
         }
     }
 }

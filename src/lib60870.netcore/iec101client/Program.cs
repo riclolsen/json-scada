@@ -251,7 +251,7 @@ namespace Iec10XDriver
                     DriverInstance = inst;
                     break;
                 }
-                break; // process just first result
+                break   ; // process just first result
             }
             if (!foundInstance)
             {
