@@ -48,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.36-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.37-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -88,7 +88,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.36-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.37-alpha)
 - [RedHat/Rocky Linux Installer](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
 - [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
@@ -104,6 +104,8 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [MQTT Sparkplug-B Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/mqtt-sparkplug/README.md)
 - [OPC-UA Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-UA-Client/README.md)
 - [OPC-UA Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-UA-Server/README.md)
+- [OPC-DA Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-DA-Client/README.md)
+- [PLC4X-GO Modbus Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/plc4x-client/README.md)
 - [CIP Ethernet/IP PLCTags Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/libplctag/PLCTagsClient/README.md)
 - [I104M Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/i104m/README.md)
 - [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
@@ -126,13 +128,15 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] MQTT/Sparkplug-B Client
 - [x] Modbus Client via PLC4X-GO
 - [x] I104M (adapter for some OSHMI drivers)
-- [x] ICCP Client (via I104M)
+- [ ] ICCP Client
+- [ ] ICCP Server
 - [x] Telegraf Client (OPC-UA, MQTT, MODBUS, SNMP, ...)
 - [x] OPC UA Client
 - [x] OPC UA Server
 - [ ] OPC UA Historical Data Server
-- [ ] OPC DA Client
-- [ ] OPC DA Server
+- [x] OPC DA Client (Windows)
+- [ ] OPC AE Client (Windows)
+- [ ] OPC DA Server (Windows)
 - [x] IEC 61850 MMS Client
 - [ ] IEC 61850 MMS Server
 - [ ] IEC 61850 GOOSE Client
@@ -171,6 +175,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] Alerta Integration (https://alerta.io/)
 - [x] PLC4X-GO Integration (https://plc4x.apache.org/)
 - [ ] Managed Cloud Service
+- [ ] Supported LTS versions
 
 ## Online Demo (substations simulation)
 

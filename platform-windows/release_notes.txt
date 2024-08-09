@@ -134,6 +134,31 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.37:
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* New OPC-DA Client driver.
+* OPC-UA Server: create branches from groups1/2/3, handle arrays and date types, fix errors.
+* Fix measurements with alias from EON nodes on MQTT/Sparkplug driver.
+* Fix environment variables on nodejs processes.
+* Dotnet projects targets 8.0 version, updated Mongodb drivers.
+* Grafana updated to 11.1.3.
+* Nodejs runtime updated to 20.16.0.
+* MongoDB Compass updated to 1.43.5.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
 Notes for version 0.36:
 
 * Default login credentials: username=admin password=jsonscada.

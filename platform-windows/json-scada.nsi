@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.36"
-!define VERSION_ "0.36.0.0"
+!define VERSION "v.0.37"
+!define VERSION_ "0.37.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -106,7 +106,6 @@ ${DisableX64FSRedirection}
 
 SetRegView 64
 
-
 ; Closes all processes
   nsExec::Exec 'net stop JSON_SCADA_grafana'
   nsExec::Exec 'net stop JSON_SCADA_metabase'
@@ -132,6 +131,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
+  nsExec::Exec 'net stop JSON_SCADA_opcdaclient' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaserver' 
   nsExec::Exec 'net stop JSON_SCADA_mqttsparkplugclient'  
   nsExec::Exec 'net stop JSON_SCADA_plc4xclient'  
@@ -245,7 +245,8 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-6.0.32-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.7-win-x64.exe"
+  File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
   ;ExecWait `regsvr32 gbda_aut.dll`
@@ -261,10 +262,13 @@ SetRegView 64
   ;  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /q'
   ;${EndIf}
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  Exec '"$INSTDIR\platform-windows\dotnet-runtime-6.0.32-win-x64.exe" /install /passive /quiet'
-
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.7-win-x64.exe" /install /passive /quiet'
+  Sleep 1000
+  ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
+  Sleep 1000
+  
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
@@ -278,7 +282,7 @@ SetRegView 64
   File /a /r "..\platform-windows\jdk-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\metabase-runtime
-  File /a /r "..\platform-windows\metabase-runtime\metabase.jar"
+  File /a "..\platform-windows\metabase-runtime\metabase.jar"
 
   SetOutPath $INSTDIR\platform-windows\grafana-runtime
   File /a /r "..\platform-windows\grafana-runtime\*.*"
@@ -327,13 +331,14 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\htdocs
   File /a "..\src\htdocs\*.*"
+  File /a ".\release_notes.txt"
   SetOutPath $INSTDIR\src\htdocs\sounds
-  File /a /r "..\src\htdocs\sounds\critical.wav"
-  File /a /r "..\src\htdocs\sounds\noncritical.wav"
+  File /a "..\src\htdocs\sounds\critical.wav"
+  File /a "..\src\htdocs\sounds\noncritical.wav"
   SetOutPath $INSTDIR\src\htdocs\scripts
   File /a /r "..\src\htdocs\scripts\*.*"
   SetOutPath $INSTDIR\src\htdocs\sage-cepel-displays
-  File /a /r "..\src\htdocs\sage-cepel-displays\README.md"
+  File /a "..\src\htdocs\sage-cepel-displays\README.md"
   SetOutPath $INSTDIR\src\htdocs\images
   File /a /r "..\src\htdocs\images\*.*"
   SetOutPath $INSTDIR\src\htdocs\charts
@@ -633,6 +638,11 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_opcuaclient"`
   ClearErrors
 
+  ExecWait `"${SC}" stop "JSON_SCADA_opcdaclient"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_opcdaclient"`
+  ClearErrors
+
   ExecWait `"${SC}" stop "JSON_SCADA_telegraf_runtime"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_telegraf_runtime"`
@@ -666,6 +676,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_opcuaserver"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_opcuaserver"`
+  ClearErrors
+  
+  ExecWait `"${SC}" stop "JSON_SCADA_opcdaserver"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_opcdaserver"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_cs_data_processor"`
