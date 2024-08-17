@@ -65,9 +65,10 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
 ## Use cases
 
+- Protocol Gateway.
+- Secure Protocol Gateway with 1-way air gapped replication (via data diode or tap device).
 - Power/Oil/Gas/Manufacturing/etc Local Station HMI.
-- SCADA Protocol Gateway.
-- SCADA Control Centers.
+- SCADA for Control Centers.
 - SCADA/IIoT Historian.
 - Intranet/Internet HTTPS Gateway - Visualization Server.
 - Multilevel Systems Integration (SCADA/IIoT/ERP/MES/PLC).

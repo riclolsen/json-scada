@@ -27,6 +27,7 @@ var protocolDriverNames = [
   'SPA-BUS',
   'BACNET',
   'ICCP',
+  'ICCP_SERVER',
   'PI_DATA_ARCHIVE_INJECTOR',
   'PI_DATA_ARCHIVE_CLIENT',
   'INFLUXDB_INJECTOR',
