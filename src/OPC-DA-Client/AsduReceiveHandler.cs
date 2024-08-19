@@ -1,5 +1,5 @@
 /* 
- * IEC 60870-5-104 Server Protocol driver for {json:scada}
+ * OPC-DA Client Protocol driver for {json:scada}
  * {json:scada} - Copyright (c) 2024 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
