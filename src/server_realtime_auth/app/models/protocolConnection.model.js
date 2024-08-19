@@ -23,18 +23,28 @@ const ProtocolConnection = mongoose.model(
     commandsEnabled: { type: Boolean, required: true, default: true },
     stats: { type: Object, default: null },
 
-    // IEC 104 Server, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850_SERVER
+    // IEC60870-5-104_SERVER, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850_SERVER, ICCP_SERVER, DNP3_SERVER
     ipAddressLocalBind: { type: String },
 
-    // IEC 104 Server and Client, DNP3 Client, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850 Server and CLient
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP, ICCP_SERVER
     ipAddresses: { type: [String], default: [] },
 
-    // MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850 CLient, PLC4X, OPC-DA_Client
+    // MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, PLC4X, OPC_DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
     topics: { type: [String], default: [] },
+
+    // ICCP, ICCP_SERVER
+    aeQualifier: { type: Double, default: 12 },
+    localAppTitle: { type: String, default: '1.1.1.998' },
+    localSelectors: { type: String, default: '0 0 0 2 0 2 0 2' },
+
+    // ICCP
+    remoteAppTitle: { type: String, default: '1.1.1.999' },
+    remoteSelectors: { type: String, default: '0 0 0 1 0 1 0 1' },
+
     // MQTT-SPARKPLUG-B, OPC-UA_SERVER
     groupId: { type: String },
 
-    // MQTT-SPARKPLUG-B, IEC 104 Server, IEC 104 Client
+    // MQTT-SPARKPLUG-B, IEC60870-5-104, IEC60870-5-104_SERVER
     passphrase: { type: String, default: '' },
 
     // MQTT-SPARKPLUG-B
@@ -46,55 +56,53 @@ const ProtocolConnection = mongoose.model(
     scadaHostId: { type: String },
     publishTopicRoot: { type: String },
     pfxFilePath: { type: String, default: '' },
-    
-    // MQTT-SPARKPLUG-B, IEC61850 Client and Server, OPC-DA_Client
+
+    // MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, OPC-DA
     username: { type: String },
     password: { type: String },
 
-    // OPC-UA Client, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850 Client, PLC4X, OPC-DA_Client
+    // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP
     autoCreateTags: { type: Boolean, default: true },
 
-    // OPC-UA Client, OPC-DA_Client
+    // OPC-UA, OPC-DA
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
     autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
     autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
 
-    // OPC-UA Client, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850 Client and Server, OPC-DA_Client
+    // OPC-UA, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA
     useSecurity: { type: Boolean, default: false },
 
-    // OPC-UA Client, MQTT-SPARKPLUG-B, PLC4X, OPC-DA_Client
-    endpointURLs: { type: [String], default: [] }, 
+    // OPC-UA, MQTT-SPARKPLUG-B, PLC4X, OPC-DA
+    endpointURLs: { type: [String], default: [] },
 
-    // OPC-UA Client, OPC-UA_SERVER, OPC-DA_Client
+    // OPC-UA, OPC-UA_SERVER, OPC-DA
     timeoutMs: { type: Double, min: 0, default: 20000 },
 
-    // OPC-UA Client
+    // OPC-UA
     configFileName: {
       type: String,
       default: '../conf/Opc.Ua.DefaultClient.Config.xml',
     },
 
-    // IEC 104 Server and Client, DNP3, PLCTag, I104M
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M
     localLinkAddress: { type: Double, min: 0, default: 1.0 },
     remoteLinkAddress: { type: Double, min: 0, default: 1.0 },
 
-    // IEC 104 Server and Client, DNP3, PLCTag, I104M, IEC61850 Client, PLC4X, OPC-DA_Client
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, IEC61850, PLC4X, OPC-DA
     giInterval: { type: Double, min: 0, default: 300.0 },
 
-    // OPC-DA_Client
+    // OPC-DA
     deadBand: { type: Double, min: 0, default: 0.0 },
     hoursShift: { type: Double, min: 0, default: 0.0 },
 
-    // IEC 101/104 Client
+    // IEC60870-5-101, IEC60870-5-101_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER
     testCommandInterval: { type: Double, min: 0, default: 0.0 },
     timeSyncInterval: { type: Double, min: 0, default: 0.0 },
-
-    // IEC 101/104 Server and Client
     sizeOfCOT: { type: Double, min: 1, default: 2.0 },
     sizeOfCA: { type: Double, min: 1, default: 2.0 },
     sizeOfIOA: { type: Double, min: 1, default: 3.0 },
 
-    // IEC 104 Server and Client
+    // IEC60870-5-104, IEC60870-5-104_SERVER
     k: { type: Double, min: 1, default: 12.0 },
     w: { type: Double, min: 1, default: 8.0 },
     t0: { type: Double, min: 1, default: 10.0 },
@@ -102,30 +110,30 @@ const ProtocolConnection = mongoose.model(
     t2: { type: Double, min: 1, default: 10.0 },
     t3: { type: Double, min: 1, default: 20.0 },
 
-    // IEC 104 Server, IEC61850 Server
+    // IEC60870-5-104_SERVER, IEC61850_SERVER
     serverModeMultiActive: { type: Boolean, default: true },
     maxClientConnections: { type: Double, min: 1, default: 1.0 },
 
-    // IEC 101/104 Server, IEC61850 Server
+    // IEC60870-5-104_SERVER,IEC60870-5-101_SERVER, IEC61850_SERVER
     maxQueueSize: { type: Double, min: 0, default: 5000.0 },
 
-    // IEC 104 Client/Server, DNP3 Client, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850 Client and Server, OPC-DA_Client
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA
     localCertFilePath: { type: String, default: '' },
 
-    // IEC 104 Client/Server, DNP3 Client, IEC61850 Client and Server, OPC-DA_Client
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, IEC61850, IEC61850_SERVER, OPC-DA
     peerCertFilePath: { type: String, default: '' },
 
-    // IEC 104 Server, IEC61850 Client and Server
+    // IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER
     peerCertFilesPaths: { type: [String], default: [] },
 
-    // IEC 104 Client/Server, MQTT-SPARKPLUG-B, IEC61850 Client and Server
+    // IEC60870-5-104, IEC60870-5-104_SERVER, MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER
     rootCertFilePath: { type: String, default: '' },
     chainValidation: { type: Boolean, default: false },
 
-    // IEC 104 Client/Server, IEC61850 Client and Server
+    // IEC60870-5-104, IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER
     allowOnlySpecificCertificates: { type: Boolean, default: false },
 
-    // DNP3 Client, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850 Client and Server
+    // DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER
     privateKeyFilePath: { type: String, default: '' },
     allowTLSv10: { type: Boolean, default: false },
     allowTLSv11: { type: Boolean, default: false },
@@ -133,7 +141,7 @@ const ProtocolConnection = mongoose.model(
     allowTLSv13: { type: Boolean, default: true },
     cipherList: { type: String, default: '' },
 
-    // DNP3 Client
+    // DNP3
     asyncOpenDelay: { type: Double, min: 0.0, default: 0.0 },
     timeSyncMode: { type: Double, min: 0.0, max: 2.0, default: 0.0 },
     class0ScanInterval: { type: Double, min: 0.0, default: 0.0 },
@@ -143,14 +151,14 @@ const ProtocolConnection = mongoose.model(
     enableUnsolicited: { type: Boolean, default: true },
     rangeScans: { type: Array, default: [] },
 
-    // IEC 101 Server and Client, DNP3 Client
+    // IEC60870-5-101, IEC60870-5-101_SERVER, DNP3
     portName: { type: String },
     baudRate: { type: Double, min: 150, default: 9600.0 },
     parity: { type: String, default: 'Even' },
     stopBits: { type: String, default: 'One' },
     handshake: { type: String, default: 'None' },
 
-    // IEC 101 Server and Client
+    // IEC60870-5-101, IEC60870-5-101_SERVER
     timeoutForACK: { type: Double, min: 1, default: 1000 },
     timeoutRepeat: { type: Double, min: 1, default: 1000 },
     useSingleCharACK: { type: Boolean, default: true },
