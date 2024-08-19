@@ -97,6 +97,9 @@ function getMongoConnectionOptions(configObj) {
       ? ReadPreference.SECONDARY_PREFERRED
       : ReadPreference.PRIMARY,
   }
+  if ( 'mongoDatabaseName' in configObj && configObj.mongoDatabaseName!=='' ) {
+    connOptions.dbName = configObj.mongoDatabaseName
+  }
 
   if (
     typeof configObj.tlsCaPemFile === 'string' &&

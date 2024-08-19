@@ -85,7 +85,7 @@ exports.updateTag = async (req, res) => {
       let _id = req.body._id
       delete req.body._id
 
-      var IsNumberVal = function (value) {
+      let IsNumberVal = function (value) {
         if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(value)) return true
         return false
       }
@@ -174,6 +174,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'I104M',
       'TELEGRAF-LISTENER',
       'OPC-UA_SERVER',
+      'ICCP_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (
@@ -197,6 +198,9 @@ exports.updateProtocolConnection = async (req, res) => {
         case 'TELEGRAF-LISTENER':
           req.body.ipAddressLocalBind = '0.0.0.0:51920'
           break
+        case 'ICCP_SERVER':
+          req.body.ipAddressLocalBind = '0.0.0.0:102'
+          break
       }
     }
   }
@@ -213,6 +217,8 @@ exports.updateProtocolConnection = async (req, res) => {
       'I104M',
       'TELEGRAF-LISTENER',
       'OPC-UA_SERVER',
+      'ICCP',
+      'ICCP_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('ipAddresses' in req.body)) {
@@ -221,9 +227,15 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['OPC-UA', 'TELEGRAF-LISTENER', 'MQTT-SPARKPLUG-B', 'IEC61850', 'PLC4X', 'OPC-DA'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'OPC-UA',
+      'TELEGRAF-LISTENER',
+      'MQTT-SPARKPLUG-B',
+      'IEC61850',
+      'PLC4X',
+      'OPC-DA',
+      'ICCP',
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (!('autoCreateTags' in req.body)) {
       req.body.autoCreateTags = true
@@ -231,9 +243,16 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850', 'PLC4X', 'OPC-DA'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'MQTT-SPARKPLUG-B',
+      'OPC-UA_SERVER',
+      'IEC61850',
+      'PLC4X',
+      'OPC-DA',
+      'OPC-DA_SERVER',
+      'ICCP',
+      'ICCP_SERVER',
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (!('topics' in req.body)) {
       req.body.topics = []
@@ -313,9 +332,36 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA'].includes(req?.body?.protocolDriver)
+  ) {
     if (!('timeoutMs' in req.body)) {
       req.body.timeoutMs = 20000.0
+    }
+  }
+
+  if (
+    ['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('aeQualifier' in req.body)) {
+      req.body.aeQualifier = 12.0
+    }
+    if (!('localAppTitle' in req.body)) {
+      req.body.localAppTitle = '1.1.1.998'
+    }
+    if (!('localSelectors' in req.body)) {
+      req.body.localSelectors = '0 0 0 2 0 2 0 2'
+    }
+  }
+
+  if (
+    ['ICCP'].includes(req?.body?.protocolDriver)
+  ) {
+    if (!('remoteAppTitle' in req.body)) {
+      req.body.remoteAppTitle = '1.1.1.999'
+    }
+    if (!('remoteSelectors' in req.body)) {
+      req.body.remoteSelectors = '0 0 0 1 0 1 0 1'
     }
   }
 
@@ -416,9 +462,15 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['IEC60870-5-101', 'IEC60870-5-104', 'DNP3', 'PLCTAG', 'IEC61850', 'PLC4X', 'OPC-DA'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'IEC60870-5-101',
+      'IEC60870-5-104',
+      'DNP3',
+      'PLCTAG',
+      'IEC61850',
+      'PLC4X',
+      'OPC-DA',
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (!('giInterval' in req.body)) {
       req.body.giInterval = 300
@@ -959,7 +1011,7 @@ exports.signup = async (req, res) => {
 // Will check for valid user and then create a JWT access token
 exports.signin = async (req, res) => {
   try {
-    let user = await User.findOne({
+    const user = await User.findOne({
       username: req.body.username,
     })
       .populate('roles', '-__v')
@@ -969,7 +1021,7 @@ exports.signin = async (req, res) => {
       return res.status(200).send({ ok: false, message: 'User Not found.' })
     }
 
-    var passwordIsValid = bcrypt.compareSync(req.body.password, user.password)
+    const passwordIsValid = bcrypt.compareSync(req.body.password, user.password)
 
     if (!passwordIsValid) {
       return res.status(200).cookie('x-access-token', null).send({
@@ -979,8 +1031,8 @@ exports.signin = async (req, res) => {
     }
 
     // Combines all roles rights for the user
-    var authorities = []
-    var rights = {
+    let authorities = []
+    let rights = {
       isAdmin: false,
       changePassword: false,
       sendCommands: false,
@@ -1040,7 +1092,7 @@ exports.signin = async (req, res) => {
           rights.maxSessionDays = user.roles[i].maxSessionDays
     }
 
-    var token = jwt.sign(
+    const token = jwt.sign(
       { id: user.id, username: user.username, rights: rights },
       config.secret,
       {
