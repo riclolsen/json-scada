@@ -117,23 +117,23 @@ const ProtocolConnection = mongoose.model(
     // IEC60870-5-104_SERVER,IEC60870-5-101_SERVER, IEC61850_SERVER
     maxQueueSize: { type: Double, min: 0, default: 5000.0 },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA, ICCP_SERVER, ICCP
     localCertFilePath: { type: String, default: '' },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, IEC61850, IEC61850_SERVER, OPC-DA
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, IEC61850, OPC-DA
     peerCertFilePath: { type: String, default: '' },
 
-    // IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER
+    // IEC60870-5-104, IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
     peerCertFilesPaths: { type: [String], default: [] },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER
+    // IEC60870-5-104, IEC60870-5-104_SERVER, MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
     rootCertFilePath: { type: String, default: '' },
     chainValidation: { type: Boolean, default: false },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER
+    // IEC60870-5-104, IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
     allowOnlySpecificCertificates: { type: Boolean, default: false },
 
-    // DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER
+    // DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
     privateKeyFilePath: { type: String, default: '' },
     allowTLSv10: { type: Boolean, default: false },
     allowTLSv11: { type: Boolean, default: false },

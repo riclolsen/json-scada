@@ -430,7 +430,6 @@
                           :label="$t('src\\components\\connections.username')"
                           hide-details="auto"
                           v-model="selected.username"
-                          :rules="[rules.subtopic]"
                           @change="updateProtocolConnection"
                         ></v-text-field>
                       </v-list-item-action>
@@ -460,7 +459,6 @@
                           :label="$t('src\\components\\connections.password')"
                           hide-details="auto"
                           v-model="selected.password"
-                          :rules="[rules.subtopic]"
                           @change="updateProtocolConnection"
                         ></v-text-field>
                       </v-list-item-action>
@@ -521,6 +519,7 @@
                         'IEC61850',
                         'PLC4X',
                         'OPC-DA',
+                        'ICCP',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1682,7 +1681,14 @@
                   <v-list-item
                     class="ma-0"
                     v-if="
-                      ['OPC-UA', 'MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850', 'OPC-DA'].includes(
+                      ['OPC-UA', 
+                       'MQTT-SPARKPLUG-B', 
+                       'OPC-UA_SERVER', 
+                       'IEC61850', 
+                       'OPC-DA',
+                       'ICCP',
+                       'ICCP_SERVER',
+                      ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -1723,6 +1729,8 @@
                   'PLCTAG',
                   'TELEGRAF-LISTENER',
                   'OPC-UA_SERVER',
+                  'ICCP',
+                  'ICCP_SERVER',
                 ].includes(selected.protocolDriver)
               "
             >
@@ -1741,6 +1749,7 @@
                         'I104M',
                         'TELEGRAF-LISTENER',
                         'OPC-UA_SERVER',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1784,6 +1793,8 @@
                         'MODBUS',
                         'TELEGRAF-LISTENER',
                         'OPC-UA_SERVER',
+                        'ICCP',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1891,6 +1902,8 @@
                   'IEC61850',
                   'IEC61850_SERVER',
                   'OPC-DA',
+                  'ICCP',
+                  'ICCP_SERVER',
                 ].includes(selected.protocolDriver) &&
                   selected.useSecurity)
               "
@@ -1911,6 +1924,8 @@
                         'MQTT-SPARKPLUG-B',
                         'OPC-UA_SERVER',
                         'OPC-DA',
+                        'ICCP',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -1983,6 +1998,8 @@
                         'IEC60870-5-104',
                         'IEC61850',
                         'IEC61850_SERVER',
+                        'ICCP',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2016,6 +2033,8 @@
                         'OPC-UA_SERVER',
                         'IEC61850',
                         'IEC61850_SERVER',
+                        'ICCP',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2094,11 +2113,112 @@
                   <v-list-item
                     v-if="
                       [
+                        'IEC60870-5-104_SERVER',
+                        'IEC60870-5-104',
+                        'IEC61850',
+                        'IEC61850_SERVER',
+                        'ICCP',
+                        'ICCP_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <v-autocomplete
+                      v-model="selected.peerCertFilesPaths"
+                      :items="selected.peerCertFilesPaths"
+                      chips
+                      small-chips
+                      deletable-chips
+                      :label="
+                        $t('src\\components\\connections.peerCertificateFiles')
+                      "
+                      multiple
+                      @change="updateProtocolConnection"
+                    ></v-autocomplete>
+
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          v-bind="attrs"
+                          v-on="on"
+                          class="mx-2"
+                          fab
+                          dark
+                          x-small
+                          color="blue"
+                          @click="dialogAddCertPath = true"
+                        >
+                          <v-icon dark> mdi-plus </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>{{
+                        $t("src\\components\\connections.peerCertificateFilesAdd")
+                      }}</span>
+                    </v-tooltip>
+                    <v-dialog
+                      v-model="dialogAddCertPath"
+                      max-width="400"
+                      class="pa-8"
+                    >
+                      <v-card>
+                        <v-card-title class="headline">
+                          {{
+                            $t(
+                              "src\\components\\connections.peerCertificateFilesAdd"
+                            )
+                          }}
+                        </v-card-title>
+
+                        <v-card-title class="headline">
+                          <v-text-field
+                            label="New Path"
+                            v-model="newCertPath"
+                          ></v-text-field>
+                        </v-card-title>
+
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+
+                          <v-btn
+                            color="green darken-1"
+                            text
+                            @click="dialogAddCertPath = false"
+                          >
+                            {{
+                              $t(
+                                "src\\components\\connections.peerCertificateFilesCancel"
+                              )
+                            }}
+                          </v-btn>
+
+                          <v-btn
+                            color="blue darken-1"
+                            text
+                            @click="
+                              dialogAddCertPath = false;
+                              addNewCertPath();
+                            "
+                          >
+                            {{
+                              $t(
+                                "src\\components\\connections.peerCertificateFilesExecute"
+                              )
+                            }}
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
                         'IEC60870-5-104',
                         'IEC60870-5-104_SERVER',
                         'MQTT-SPARKPLUG-B',
                         'IEC61850',
                         'IEC61850_SERVER',
+                        'ICCP',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2171,7 +2291,11 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 'MQTT-SPARKPLUG-B'].includes(
+                      ['DNP3',
+                       'MQTT-SPARKPLUG-B',
+                       'ICCP',
+                       'ICCP_SERVER',
+                      ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2193,7 +2317,11 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 'MQTT-SPARKPLUG-B'].includes(
+                      ['DNP3', 
+                       'MQTT-SPARKPLUG-B',
+                       'ICCP',
+                       'ICCP_SERVER',
+                      ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2205,7 +2333,7 @@
                       :label="`${$t(
                         'src\\components\\connections.allowTls11'
                       )}${
-                        selected.allowTLSv10
+                        selected.allowTLSv11
                           ? $t('src\\components\\connections.allowTls11True')
                           : $t('src\\components\\connections.allowTls11False')
                       }`"
@@ -2215,7 +2343,11 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 'MQTT-SPARKPLUG-B'].includes(
+                      ['DNP3', 
+                       'MQTT-SPARKPLUG-B',
+                       'ICCP',
+                       'ICCP_SERVER',
+                      ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2227,7 +2359,7 @@
                       :label="`${$t(
                         'src\\components\\connections.allowTls12'
                       )}${
-                        selected.allowTLSv10
+                        selected.allowTLSv12
                           ? $t('src\\components\\connections.allowTls12True')
                           : $t('src\\components\\connections.allowTls12False')
                       }`"
@@ -2237,7 +2369,11 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 'MQTT-SPARKPLUG-B'].includes(
+                      ['DNP3', 
+                       'MQTT-SPARKPLUG-B',
+                       'ICCP',
+                       'ICCP_SERVER',
+                      ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2249,7 +2385,7 @@
                       :label="`${$t(
                         'src\\components\\connections.allowTls13'
                       )}${
-                        selected.allowTLSv10
+                        selected.allowTLSv13
                           ? $t('src\\components\\connections.allowTls13True')
                           : $t('src\\components\\connections.allowTls13False')
                       }`"
@@ -2259,7 +2395,11 @@
 
                   <v-list-item
                     v-if="
-                      ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+                      ['DNP3', 
+                       'MQTT-SPARKPLUG-B',
+                       'ICCP',
+                       'ICCP_SERVER',
+                      ].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2291,6 +2431,8 @@
                         'MQTT-SPARKPLUG-B',
                         'IEC61850',
                         'IEC61850_SERVER',
+                        'ICCP',
+                        'ICCP_SERVER',
                       ].includes(selected.protocolDriver)
                     "
                   >
@@ -2320,7 +2462,18 @@
               class="mt-6"
               tile
               v-if="
-                ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER', 'IEC61850'].includes(
+                ['MQTT-SPARKPLUG-B', 
+                 'OPC-UA_SERVER', 
+                 'IEC61850',
+                 'IEC61850_SERVER',
+                 'PI_DATA_ARCHIVE_INJECTOR',
+                 'PI_DATA_ARCHIVE_CLIENT',
+                 'PLC4X',
+                 'OPC-DA',
+                 'OPC-DA_SERVER',
+                 'ICCP',
+                 'ICCP_SERVER',
+                ].includes(
                   selected.protocolDriver
                 )
               "
@@ -2335,10 +2488,14 @@
                       ['MQTT-SPARKPLUG-B',
                        'OPC-UA_SERVER',
                        'IEC61850',
+                       'IEC61850_SERVER',
                        'PI_DATA_ARCHIVE_INJECTOR',
                        'PI_DATA_ARCHIVE_CLIENT',
                        'PLC4X',
                        'OPC-DA',
+                       'OPC-DA_SERVER',
+                       'ICCP',
+                       'ICCP_SERVER',
                        ].includes(
                         selected.protocolDriver
                       )
@@ -2424,6 +2581,204 @@
                         </v-card-actions>
                       </v-card>
                     </v-dialog>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'ICCP',
+                        'ICCP_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="number"
+                          :rules="[rules.required]"
+                          :input-value="active"
+                          :label="$t('src\\components\\connections.aeQualifier')"
+                          hide-details="auto"
+                          v-model="selected.aeQualifier"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t("src\\components\\connections.aeQualifierTitle")
+                          }}</v-list-item-title
+                        >
+                        <v-list-item-subtitle>{{
+                          $t("src\\components\\connections.aeQualifierHint")
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'ICCP',
+                        'ICCP_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :rules="[rules.required, rules.apTitle]"
+                          :input-value="active"
+                          :label="
+                            $t(
+                              'src\\components\\connections.localAppTitle'
+                            )
+                          "
+                          hide-details="auto"
+                          v-model="selected.localAppTitle"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.localAppTitleTitle"
+                            )
+                          }}</v-list-item-title
+                        >
+                        <v-list-item-subtitle>{{
+                          $t(
+                            "src\\components\\connections.localAppTitleHint"
+                          )
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  
+                  <v-list-item
+                    v-if="
+                      [
+                        'ICCP',
+                        'ICCP_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :rules="[rules.required, rules.isoSelectors]"
+                          :input-value="active"
+                          :label="
+                            $t(
+                              'src\\components\\connections.localSelectors'
+                            )
+                          "
+                          hide-details="auto"
+                          v-model="selected.localSelectors"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.localSelectorsTitle"
+                            )
+                          }}</v-list-item-title
+                        >
+                        <v-list-item-subtitle>{{
+                          $t(
+                            "src\\components\\connections.localSelectorsHint"
+                          )
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'ICCP',
+                        'ICCP_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :rules="[rules.required, rules.apTitle]"
+                          :input-value="active"
+                          :label="
+                            $t(
+                              'src\\components\\connections.remoteAppTitle'
+                            )
+                          "
+                          hide-details="auto"
+                          v-model="selected.remoteAppTitle"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.remoteAppTitleTitle"
+                            )
+                          }}</v-list-item-title
+                        >
+                        <v-list-item-subtitle>{{
+                          $t(
+                            "src\\components\\connections.remoteAppTitleHint"
+                          )
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'ICCP',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :rules="[rules.required, rules.isoSelectors]"
+                          :input-value="active"
+                          :label="
+                            $t(
+                              'src\\components\\connections.remoteSelectors'
+                            )
+                          "
+                          hide-details="auto"
+                          v-model="selected.remoteSelectors"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.remoteSelectorsTitle"
+                            )
+                          }}</v-list-item-title
+                        >
+                        <v-list-item-subtitle>{{
+                          $t(
+                            "src\\components\\connections.remoteSelectorsHint"
+                          )
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
                   </v-list-item>
 
                   <v-list-item
@@ -3019,6 +3374,7 @@ export default {
     itemsSizeOfCA: [1, 2],
     itemsSizeOfIOA: [1, 2, 3],
     dialogAddIP: false,
+    dialogAddCertPath: false,
     dialogAddURL: false,
     dialogAddTopic: false,
     dialogAddTopicAsFile: false,
@@ -3034,6 +3390,7 @@ export default {
       period: 300,
     },
     newIP: "",
+    newCertPath: "",
     newURL: "",
     newTopic: "",
     newTopicAsFile: "",
@@ -3046,6 +3403,20 @@ export default {
     rules: {
       required: (value) =>
         !!value || i18n.t("src\\components\\connections.rulesRequired"),
+      isoSelectors: (value) => {
+        const pattern = /^\d+(?:\s+\d+){7}$/;
+        return (
+          pattern.test(value) ||
+          i18n.t("src\\components\\connections.rulesInvalidIsoSelector")
+        );
+      },
+      apTitle: (value) => {
+        const pattern = /\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/;
+        return (
+          pattern.test(value) ||
+          i18n.t("src\\components\\connections.rulesInvalidApTitle")
+        );
+      },
       ip: (value) => {
         const pattern = /\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/;
         return (
@@ -3115,10 +3486,13 @@ export default {
       "OPC-UA",
       "OPC-UA_SERVER",
       "OPC-DA",
+      "OPC-DA_SERVER",
       "PLCTAG",
       "PLC4X",
       "TELEGRAF-LISTENER",
       "I104M",
+      "ICCP",
+      "ICCP_SERVER",
       "PI_DATA_ARCHIVE_INJECTOR",
       "PI_DATA_ARCHIVE_CLIENT",
     ],
@@ -3205,6 +3579,13 @@ export default {
         this.selected.ipAddresses.push(this.newIP);
         this.updateProtocolConnection();
         this.newIP = "";
+      }
+    },
+    async addNewCertPath() {
+      if (this.newCertPath != "" && !this.selected.peerCertFilesPaths.includes(this.newCertPath)) {
+        this.selected.peerCertFilesPaths.push(this.newCertPath);
+        this.updateProtocolConnection();
+        this.newCertPath = "";
       }
     },
     async addNewURL() {
