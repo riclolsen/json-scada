@@ -75,8 +75,8 @@ const ProtocolConnection = mongoose.model(
     // OPC-UA, MQTT-SPARKPLUG-B, PLC4X, OPC-DA
     endpointURLs: { type: [String], default: [] },
 
-    // OPC-UA, OPC-UA_SERVER, OPC-DA
-    timeoutMs: { type: Double, min: 0, default: 20000 },
+    // OPC-UA, OPC-UA_SERVER, OPC-DA, ICCP, ICCP_SERVER
+    timeoutMs: { type: Double, min: 0, default: 10000 },
 
     // OPC-UA
     configFileName: {

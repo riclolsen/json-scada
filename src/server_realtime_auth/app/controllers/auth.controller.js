@@ -333,16 +333,16 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA'].includes(req?.body?.protocolDriver)
+    ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA', 'ICCP', 'ICCP_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
   ) {
     if (!('timeoutMs' in req.body)) {
-      req.body.timeoutMs = 20000.0
+      req.body.timeoutMs = 10000.0
     }
   }
 
-  if (
-    ['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)
-  ) {
+  if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('aeQualifier' in req.body)) {
       req.body.aeQualifier = 12.0
     }
@@ -354,9 +354,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (
-    ['ICCP'].includes(req?.body?.protocolDriver)
-  ) {
+  if (['ICCP'].includes(req?.body?.protocolDriver)) {
     if (!('remoteAppTitle' in req.body)) {
       req.body.remoteAppTitle = '1.1.1.999'
     }

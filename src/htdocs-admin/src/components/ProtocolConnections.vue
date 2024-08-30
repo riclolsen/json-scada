@@ -740,7 +740,7 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA'].includes(
+                      ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA', 'ICCP', 'ICCP_SERVER'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -751,7 +751,7 @@
                           type="number"
                           :input-value="active"
                           :label="
-                            $t('src\\components\\connections.timeoutKeepalive')
+                            $t('src\\components\\connections.timeoutMs')
                           "
                           hide-details="auto"
                           v-model="selected.timeoutMs"
@@ -762,14 +762,14 @@
                         <v-list-item-title>
                           {{
                             $t(
-                              "src\\components\\connections.timeoutKeepaliveTitle"
+                              "src\\components\\connections.timeoutMsTitle"
                             )
                           }}
                         </v-list-item-title>
                         <v-list-item-subtitle>
                           {{
                             $t(
-                              "src\\components\\connections.timeoutKeepaliveHint"
+                              "src\\components\\connections.timeoutMsHint"
                             )
                           }}
                         </v-list-item-subtitle>
