@@ -368,7 +368,12 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.configFileName = '../conf/Opc.Ua.DefaultClient.Config.xml'
     }
   }
-  if (['OPC-UA', 'OPC-DA'].includes(req?.body?.protocolDriver)) {
+  if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('autoCreateTagPublishingInterval' in req.body)) {
+      req.body.autoCreateTagPublishingInterval = 2.5
+    }
+  }
+  if (['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('autoCreateTagPublishingInterval' in req.body)) {
       req.body.autoCreateTagPublishingInterval = 2.5
     }
@@ -379,10 +384,15 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.autoCreateTagQueueSize = 0.0
     }
   }
-  if (['OPC-DA'].includes(req?.body?.protocolDriver)) {
+  if (['OPC-DA','OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('deadBand' in req.body)) {
       req.body.deadBand = 0.0
     }
+    if (!('hoursShift' in req.body)) {
+      req.body.hoursShift = 0.0
+    }
+  }
+  if (['ICCP','ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('hoursShift' in req.body)) {
       req.body.hoursShift = 0.0
     }
@@ -468,11 +478,25 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'PLC4X',
       'OPC-DA',
+      'ICCP',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('giInterval' in req.body)) {
       req.body.giInterval = 300
     }
+  }
+
+  if (
+    [
+      'IEC60870-5-101',
+      'IEC60870-5-104',
+      'DNP3',
+      'PLCTAG',
+      'IEC61850',
+      'PLC4X',
+      'OPC-DA',
+    ].includes(req?.body?.protocolDriver)
+  ) {
     if (!('timeSyncInterval' in req.body)) {
       req.body.timeSyncInterval = 0
     }

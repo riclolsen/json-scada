@@ -546,7 +546,7 @@
                   <v-list-item
                     v-if="
                       ['OPC-UA'].includes(selected.protocolDriver) && selected.autoCreateTags ||
-                      ['OPC-DA'].includes(selected.protocolDriver)
+                      ['OPC-DA', 'OPC-DA_SERVER', 'ICCP', 'ICCP_SERVER'].includes(selected.protocolDriver)
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -701,7 +701,7 @@
 
                   <v-list-item
                     v-if="
-                      ['OPC-DA'].includes(
+                      ['OPC-DA', 'OPC-DA_SERVER', 'ICCP', 'ICCP_SERVER'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -789,6 +789,7 @@
                         'PI_DATA_ARCHIVE_CLIENT',
                         'PLC4X',
                         'OPC-DA',
+                        'ICCP',
                       ].includes(selected.protocolDriver)
                     "
                   >

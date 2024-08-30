@@ -64,8 +64,10 @@ const ProtocolConnection = mongoose.model(
     // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP
     autoCreateTags: { type: Boolean, default: true },
 
-    // OPC-UA, OPC-DA
+    // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
+    
+    // OPC-UA, OPC-DA
     autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
     autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
 
@@ -88,11 +90,13 @@ const ProtocolConnection = mongoose.model(
     localLinkAddress: { type: Double, min: 0, default: 1.0 },
     remoteLinkAddress: { type: Double, min: 0, default: 1.0 },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, IEC61850, PLC4X, OPC-DA
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, IEC61850, PLC4X, OPC-DA, ICCP
     giInterval: { type: Double, min: 0, default: 300.0 },
 
-    // OPC-DA
+    // OPC-DA, OPC-DA_SERVER
     deadBand: { type: Double, min: 0, default: 0.0 },
+
+    // OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
     hoursShift: { type: Double, min: 0, default: 0.0 },
 
     // IEC60870-5-101, IEC60870-5-101_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER
