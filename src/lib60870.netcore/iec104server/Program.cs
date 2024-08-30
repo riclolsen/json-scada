@@ -105,9 +105,9 @@ namespace Iec10XDriver
             [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
             [BsonDefaultValue("")]
-            public string passphrase { get; set; }            
+            public string passphrase { get; set; }
             [BsonDefaultValue(new string[] { })]
-            public string []peerCertFilesPaths { get; set; }
+            public string[] peerCertFilesPaths { get; set; }
             [BsonDefaultValue("")]
             public string peerCertFilePath { get; set; }
             [BsonDefaultValue("")]
@@ -277,7 +277,7 @@ namespace Iec10XDriver
                     Log("Instance: " +
                     inst.protocolDriverInstanceNumber.ToString());
                     var nodefound = false || inst.nodeNames.Length == 0;
-                    foreach ( var name in inst.nodeNames)
+                    foreach (var name in inst.nodeNames)
                     {
                         if (JSConfig.nodeName == name)
                         {
@@ -371,7 +371,7 @@ namespace Iec10XDriver
                         // Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
                         secInfo.AddAllowedCertificate(new X509Certificate2(srv.peerCertFilePath));
                         foreach (string peerCertFilePath in srv.peerCertFilesPaths)
-                          secInfo.AddAllowedCertificate(new X509Certificate2(peerCertFilePath));
+                            secInfo.AddAllowedCertificate(new X509Certificate2(peerCertFilePath));
 
                         // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
                         secInfo.AddCA(new X509Certificate2(srv.rootCertFilePath));
