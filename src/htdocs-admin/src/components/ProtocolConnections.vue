@@ -2484,6 +2484,47 @@
                   $t("src\\components\\connections.pubSubCard")
                 }}</v-subheader>
                 <v-list-item-group>
+
+                  <v-list-item
+                    v-if="
+                      [
+                        'ICCP',
+                        'ICCP_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <template v-slot:default="{ active }">
+                      <v-list-item-action>
+                        <v-text-field
+                          type="text"
+                          :input-value="active"
+                          :label="
+                            $t(
+                              'src\\components\\connections.domain'
+                            )
+                          "
+                          hide-details="auto"
+                          v-model="selected.domain"
+                          @change="updateProtocolConnection"
+                        ></v-text-field>
+                      </v-list-item-action>
+                      <v-list-item-content>
+                        <v-list-item-title>
+                          {{
+                            $t(
+                              "src\\components\\connections.domainTitle"
+                            )
+                          }}</v-list-item-title
+                        >
+                        <v-list-item-subtitle>{{
+                          $t(
+                            "src\\components\\connections.domainHint"
+                          )
+                        }}</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-list-item>
+
                   <v-list-item
                     v-if="
                       ['MQTT-SPARKPLUG-B',

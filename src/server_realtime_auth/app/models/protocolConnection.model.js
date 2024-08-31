@@ -33,6 +33,7 @@ const ProtocolConnection = mongoose.model(
     topics: { type: [String], default: [] },
 
     // ICCP, ICCP_SERVER
+    domain : { type: String, default: '' },
     aeQualifier: { type: Double, default: 12 },
     localAppTitle: { type: String, default: '1.1.1.998' },
     localSelectors: { type: String, default: '0 0 0 2 0 2 0 2' },

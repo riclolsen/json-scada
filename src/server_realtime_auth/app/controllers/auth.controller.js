@@ -393,6 +393,9 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
   if (['ICCP','ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('domain' in req.body)) {
+      req.body.domain = ""
+    }
     if (!('hoursShift' in req.body)) {
       req.body.hoursShift = 0.0
     }
