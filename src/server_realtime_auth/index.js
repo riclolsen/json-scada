@@ -1900,6 +1900,13 @@ let pool = null
 
                 let Results = []
                 results.map((node) => {
+                  // check for group1 list in user rights (from token)
+                  if (AUTHENTICATION && userRights.group1List.length > 0) {
+                    if (!userRights.group1List.includes(node.group1)) {
+                      // Access to data denied!
+                      return node
+                    }
+                  }
                   let NodeId = {
                     IdType: opcIdTypeString,
                     Id: node.tag,
@@ -2122,6 +2129,13 @@ let pool = null
 
           let Results = []
           await results.map((node) => {
+            // check for group1 list in user rights (from token)
+            if (AUTHENTICATION && userRights.group1List.length > 0) {
+              if (!userRights.group1List.includes(node.group1)) {
+                // Access to data denied!
+                return node
+              }
+            }
             let Value = {
               Value: {
                 Type: opc.DataType.String,
