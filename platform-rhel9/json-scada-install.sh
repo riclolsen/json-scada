@@ -25,7 +25,9 @@ sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl libpcap-devel
+sudo dnf config-manager --set-enabled crb
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl 
+sudo dnf -y install libpcap-devel
 # to compile inkscape
 sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
@@ -109,7 +111,7 @@ sudo chown postgres:postgres /var/lib/pgsql/16/data/pg_hba.conf
 sudo cp postgresql.conf /var/lib/pgsql/16/data/
 sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
 sudo systemctl enable postgresql-16
-sudo timescaledb-tune --pg-config=/usr/pgsql-16/bin/pg_config
+sudo timescaledb-tune -yes --pg-config=/usr/pgsql-16/bin/pg_config
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
