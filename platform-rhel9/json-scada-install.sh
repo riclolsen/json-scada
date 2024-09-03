@@ -28,6 +28,7 @@ sudo dnf -y install epel-release
 sudo dnf config-manager --set-enabled crb
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl 
 sudo dnf -y install libpcap-devel
+
 # to compile inkscape
 sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
