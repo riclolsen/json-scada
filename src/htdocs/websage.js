@@ -3359,19 +3359,43 @@ getHistoricalData: function (i, pnt, timeBegin) {
             if ( typeof pointKey === "number" ){
               if (node.HistoryData[0].Value.Type === OpcValueTypes.Boolean) {
                 V[pointKey] = node.HistoryData[0].Value.Body?0:1;
-                F[pointKey] = (node.HistoryData[0].Value.Body ? 0x02 : 0x01) | (node.HistoryData[0].Value.Quality & 0x80000000 ? 0x80 : 0x00);
+                F[pointKey] =
+                  (node.HistoryData[0].Value.Body ? 0x02 : 0x01) |
+                  (node.HistoryData[0].Value.Quality & 0x80000000
+                    ? 0x80
+                    : 0x00) |
+                  (timeSnap - new Date(node.HistoryData[0].ServerTimestamp) >
+                  1000 * 60 * 60
+                    ? 0x80
+                    : 0x00);
                 T[pointKey] = node.HistoryData[0].ServerTimestamp;
                 S[pointKey] = "" + V[pointKey];
               }
               else if (node.HistoryData[0].Value.Type === OpcValueTypes.Double) {
                 V[pointKey] = node.HistoryData[0].Value.Body;
-                F[pointKey] = 0x20 | (node.HistoryData[0].Value.Quality & 0x80000000 ? 0x80 : 0x00);
+                F[pointKey] =
+                  0x20 |
+                  (node.HistoryData[0].Value.Quality & 0x80000000
+                    ? 0x80
+                    : 0x00) |
+                  (timeSnap - new Date(node.HistoryData[0].ServerTimestamp) >
+                  1000 * 60 * 60
+                    ? 0x80
+                    : 0x00);
                 T[pointKey] = node.HistoryData[0].ServerTimestamp;
                 S[pointKey] = "" + V[pointKey];
               }
               else if (node.HistoryData[0].Value.Type === OpcValueTypes.String) { 
                 V[pointKey] = parseFloat(node.HistoryData[0].Value.Body);
-                F[pointKey] = 0x20 | (node.HistoryData[0].Value.Quality & 0x80000000 ? 0x80 : 0x00);
+                F[pointKey] =
+                  0x20 |
+                  (node.HistoryData[0].Value.Quality & 0x80000000
+                    ? 0x80
+                    : 0x00) |
+                  (timeSnap - new Date(node.HistoryData[0].ServerTimestamp) >
+                  1000 * 60 * 60
+                    ? 0x80
+                    : 0x00);
                 T[pointKey] = node.HistoryData[0].ServerTimestamp;
                 S[pointKey] = node.HistoryData[0].Value.Body;
               }
@@ -5237,7 +5261,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
       var dt = document.getElementById("dtpk").valueAsDate;
 
       var secs = document.getElementById("timesldr").value;
-      var ms = dt.valueOf() + secs * 1000;
+      var ms = dt.valueOf() + secs * 1000 + new Date().getTimezoneOffset() * 60 * 1000;
 
       dt = new Date(ms);
       var agora = new Date();
