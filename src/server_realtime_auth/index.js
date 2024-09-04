@@ -427,9 +427,19 @@ let pool = null
 
                 let findPoint = null
                 if (node.NodeId.IdType === opcIdTypeNumber) {
-                  findPoint = { _id: parseInt(node.NodeId.Id) }
+                  findPoint = {
+                    _id: parseInt(node.NodeId.Id),
+                    ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                      ? {}
+                      : { group1: { $in: userRights.group1List } }),
+                  }
                 } else if (node.NodeId.IdType === opcIdTypeString) {
-                  findPoint = { tag: node.NodeId.Id }
+                  findPoint = {
+                    tag: node.NodeId.Id,
+                    ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                      ? {}
+                      : { group1: { $in: userRights.group1List } }),
+                  }
                 }
 
                 if (node.Value.Body & opc.Acknowledge.RemoveAllEvents) {
@@ -438,7 +448,13 @@ let pool = null
                     Date.now() - EventsRemoveGuardSeconds * 1000
                   )
                   let result = await db.collection(COLL_SOE).updateMany(
-                    { ack: { $lte: 1 }, timeTag: { $lte: fromDate } },
+                    {
+                      ack: { $lte: 1 },
+                      timeTag: { $lte: fromDate },
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
+                    },
                     {
                       $set: {
                         ack: 2,
@@ -453,7 +469,12 @@ let pool = null
                 } else if (node.Value.Body & opc.Acknowledge.AckAllEvents) {
                   Log.log('Ack All Events')
                   let result = await db.collection(COLL_SOE).updateMany(
-                    { ack: 0 },
+                    {
+                      ack: 0,
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
+                    },
                     {
                       $set: {
                         ack: 1,
@@ -477,6 +498,9 @@ let pool = null
                       tag: node.NodeId.Id,
                       ack: { $lte: 1 },
                       timeTag: { $lte: fromDate },
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
                     },
                     {
                       $set: {
@@ -493,7 +517,13 @@ let pool = null
                 } else if (node.Value.Body & opc.Acknowledge.AckPointEvents) {
                   Log.log('Ack Point Events: ' + node.NodeId.Id)
                   let result = await db.collection(COLL_SOE).updateMany(
-                    { tag: node.NodeId.Id, ack: 0 },
+                    {
+                      tag: node.NodeId.Id,
+                      ack: 0,
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
+                    },
                     {
                       $set: {
                         ack: 1,
@@ -512,6 +542,9 @@ let pool = null
                     {
                       _id: new ObjectId(node._Properties.event_id),
                       ack: { $lte: 1 },
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
                     },
                     {
                       $set: {
@@ -532,6 +565,9 @@ let pool = null
                     {
                       _id: new ObjectId(node._Properties.event_id),
                       ack: 0,
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
                     },
                     {
                       $set: {
@@ -551,7 +587,11 @@ let pool = null
                 if (node.Value.Body & opc.Acknowledge.AckAllAlarms) {
                   Log.log('Ack All Alarms')
                   let result = await db.collection(COLL_REALTIME).updateMany(
-                    {},
+                    {
+                      ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                        ? {}
+                        : { group1: { $in: userRights.group1List } }),
+                    },
                     {
                       $set: {
                         alarmed: false,
@@ -562,6 +602,11 @@ let pool = null
                   result = await db.collection(COLL_REALTIME).updateMany(
                     {
                       $and: [
+                        {
+                          ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                            ? {}
+                            : { group1: { $in: userRights.group1List } }),
+                        },
                         { type: 'digital' },
                         { isEvent: true },
                         { value: 1 },

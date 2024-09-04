@@ -373,7 +373,9 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.autoCreateTagPublishingInterval = 2.5
     }
   }
-  if (['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)
+  ) {
     if (!('autoCreateTagPublishingInterval' in req.body)) {
       req.body.autoCreateTagPublishingInterval = 2.5
     }
@@ -384,7 +386,7 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.autoCreateTagQueueSize = 0.0
     }
   }
-  if (['OPC-DA','OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('deadBand' in req.body)) {
       req.body.deadBand = 0.0
     }
@@ -392,9 +394,9 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.hoursShift = 0.0
     }
   }
-  if (['ICCP','ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('domain' in req.body)) {
-      req.body.domain = ""
+      req.body.domain = ''
     }
     if (!('hoursShift' in req.body)) {
       req.body.hoursShift = 0.0
@@ -1103,7 +1105,11 @@ exports.signin = async (req, res) => {
         rights.disableAlarms =
           rights.disableAlarms || user.roles[i].disableAlarms
       if ('group1List' in user.roles[i])
-        rights.group1List = rights.group1List.concat(user.roles[i].group1List)
+        rights.group1List =
+          i > 0 &&
+          (rights.group1List.length === 0 || user.roles[i].group1List.length === 0)
+            ? []
+            : rights.group1List.concat(user.roles[i].group1List)
       if ('group1CommandList' in user.roles[i])
         rights.group1CommandList = rights.group1CommandList.concat(
           user.roles[i].group1CommandList
