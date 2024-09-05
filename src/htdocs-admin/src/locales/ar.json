@@ -145,6 +145,7 @@
     "protocolDriver": "سائق البروتوكول",
     "instanceNumber": "رقم المثيل",
     "protocolConnectionParameters": "معلمات اتصال البروتوكول",
+    "connectionMode": "وضع الاتصال",
     "localLinkAddress": "عنوان الارتباط المحلي",
     "localLinkAddressTitle": "عنوان الارتباط المحلي",
     "localLinkAddressHint": "رقم صحيح.",

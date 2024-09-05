@@ -145,6 +145,7 @@
     "protocolDriver": "Драйвер протокола",
     "instanceNumber": "Номер экземпляра",
     "protocolConnectionParameters": "Параметры подключения протокола",
+    "connectionMode": "Режим подключения",
     "localLinkAddress": "Адрес локальной ссылки",
     "localLinkAddressTitle": "Адрес локальной ссылки",
     "localLinkAddressHint": "Целое число.",

@@ -145,6 +145,7 @@
     "protocolDriver": "协议驱动",
     "instanceNumber": "实例编号",
     "protocolConnectionParameters": "协议连接参数",
+    "connectionMode": "连接模式",
     "localLinkAddress": "本地链接地址",
     "localLinkAddressTitle": "本地链接地址",
     "localLinkAddressHint": "整数编号。",

@@ -614,6 +614,9 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (['DNP3'].includes(req?.body?.protocolDriver)) {
+    if (!('connectionMode' in req.body)) {
+      req.body.connectionMode = "TCP Active"
+    }
     if (!('asyncOpenDelay' in req.body)) {
       req.body.asyncOpenDelay = 0.0
     }

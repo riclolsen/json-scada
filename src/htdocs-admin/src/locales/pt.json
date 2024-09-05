@@ -145,6 +145,7 @@
     "protocolDriver": "Driver de protocolo",
     "instanceNumber": "Número da instância de driver",
     "protocolConnectionParameters": "Parâmetros de conexão de protocolo",
+    "connectionMode": "Modo de conexão",
     "localLinkAddress": "Endereço do link local",
     "localLinkAddressTitle": "Endereço do link local",
     "localLinkAddressHint": "Número inteiro.",

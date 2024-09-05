@@ -145,6 +145,7 @@
     "protocolDriver": "Драйвер протоколу",
     "instanceNumber": "Номер екземпляра",
     "protocolConnectionParameters": "Параметри підключення протоколу",
+    "connectionMode": "Режим підключення",
     "localLinkAddress": "Адреса місцевого посилання",
     "localLinkAddressTitle": "Адреса місцевого посилання",
     "localLinkAddressHint": "Ціле число.",

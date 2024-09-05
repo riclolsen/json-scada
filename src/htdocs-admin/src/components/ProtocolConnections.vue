@@ -212,7 +212,7 @@
                     )
                   }}
                 </v-subheader>
-
+                
                 <v-list-item-group multiple active-class="">
                   <v-list-item
                     v-if="
@@ -1710,6 +1710,24 @@
                     ></v-switch>
                   </v-list-item>
 
+                  <v-list-item
+                    class="ma-0"
+                    v-if="
+                      [
+                        'DNP3',
+                        'DNP3_SERVER',
+                      ].includes(selected.protocolDriver)
+                    "
+                  >
+                    <v-select
+                      :items="connectionModeDnp3Items"
+                      :label="$t('src\\components\\connections.connectionMode')"
+                      v-model="selected.connectionMode"
+                      outlined
+                      @change="updateProtocolConnection"
+                    ></v-select>
+                  </v-list-item>
+
                 </v-list-item-group>
               </v-list>
             </v-card>
@@ -1723,8 +1741,6 @@
                   'IEC60870-5-104_SERVER',
                   'IEC61850',
                   'IEC61850_SERVER',
-                  'DNP3',
-                  'DNP3_SERVER',
                   'I104M',
                   'MODBUS',
                   'PLCTAG',
@@ -1732,7 +1748,11 @@
                   'OPC-UA_SERVER',
                   'ICCP',
                   'ICCP_SERVER',
-                ].includes(selected.protocolDriver)
+                ].includes(selected.protocolDriver) ||
+                [
+                  'DNP3',
+                  'DNP3_SERVER',
+                ].includes(selected.protocolDriver) && selected.connectionMode !== 'Serial'
               "
             >
               <v-list flat dense shaped subheader>
@@ -1745,13 +1765,16 @@
                       [
                         'IEC60870-5-104_SERVER',
                         'IEC61850_SERVER',
-                        'DNP3',
-                        'DNP3_SERVER',
                         'I104M',
                         'TELEGRAF-LISTENER',
                         'OPC-UA_SERVER',
                         'ICCP_SERVER',
-                      ].includes(selected.protocolDriver)
+                      ].includes(selected.protocolDriver) ||
+                      [
+                        'DNP3',
+                        'DNP3_SERVER',
+                      ].includes(selected.protocolDriver) && 
+                      (selected.connectionMode.endsWith('Passive') || selected.connectionMode === 'UDP')
                     "
                   >
                     <template v-slot:default="{ active }">
@@ -1894,7 +1917,7 @@
               class="mt-6"
               tile
               v-if="
-                ['IEC60870-5-104', 'IEC60870-5-104_SERVER', 'DNP3'].includes(
+                ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
                   selected.protocolDriver
                 ) ||
                 ([
@@ -1906,7 +1929,11 @@
                   'ICCP',
                   'ICCP_SERVER',
                 ].includes(selected.protocolDriver) &&
-                  selected.useSecurity)
+                  selected.useSecurity)  ||
+                [
+                  'DNP3',
+                  'DNP3_SERVER',
+                ].includes(selected.protocolDriver) && selected.connectionMode.startsWith('TLS')
               "
             >
               <v-list flat dense shaped subheader>
@@ -1922,6 +1949,7 @@
                         'IEC61850',
                         'IEC61850_SERVER',
                         'DNP3',
+                        'DNP3_SERVER',
                         'MQTT-SPARKPLUG-B',
                         'OPC-UA_SERVER',
                         'OPC-DA',
@@ -2075,6 +2103,7 @@
                         'IEC60870-5-104',
                         'IEC60870-5-104_SERVER',
                         'DNP3',
+                        'DNP3_SERVER',
                         'IEC61850',
                         'IEC61850_SERVER',
                         'OPC-DA',
@@ -2255,7 +2284,7 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 'MQTT-SPARKPLUG-B'].includes(
+                      ['DNP3', 'DNP3_SERVER', 'MQTT-SPARKPLUG-B'].includes(
                         selected.protocolDriver
                       )
                     "
@@ -2292,7 +2321,9 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3',
+                      [
+                       'DNP3',
+                       'DNP3_SERVER',
                        'MQTT-SPARKPLUG-B',
                        'ICCP',
                        'ICCP_SERVER',
@@ -2318,7 +2349,9 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 
+                      [
+                       'DNP3',
+                       'DNP3_SERVER',
                        'MQTT-SPARKPLUG-B',
                        'ICCP',
                        'ICCP_SERVER',
@@ -2344,7 +2377,9 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 
+                      [
+                       'DNP3',
+                       'DNP3_SERVER',
                        'MQTT-SPARKPLUG-B',
                        'ICCP',
                        'ICCP_SERVER',
@@ -2370,7 +2405,9 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 
+                      [
+                       'DNP3',
+                       'DNP3_SERVER',
                        'MQTT-SPARKPLUG-B',
                        'ICCP',
                        'ICCP_SERVER',
@@ -2396,7 +2433,9 @@
 
                   <v-list-item
                     v-if="
-                      ['DNP3', 
+                      [
+                       'DNP3',
+                       'DNP3_SERVER',
                        'MQTT-SPARKPLUG-B',
                        'ICCP',
                        'ICCP_SERVER',
@@ -3189,10 +3228,12 @@
                 [
                   'IEC60870-5-101',
                   'IEC60870-5-101_SERVER',
+                  'MODBUS',
+                ].includes(selected.protocolDriver) ||
+                [
                   'DNP3',
                   'DNP3_SERVER',
-                  'MODBUS',
-                ].includes(selected.protocolDriver)
+                ].includes(selected.protocolDriver) && selected.connectionMode === 'Serial'
               "
             >
               <v-list flat dense shaped subheader>
@@ -3516,6 +3557,14 @@ export default {
         );
       },
     },
+    connectionModeDnp3Items:[
+      "TCP Active",
+      "TCP Passive",
+      "TLS Active",
+      "TLS Passive",
+      "UDP",
+      "Serial",
+    ],
     driverNameItems: [
       "IEC60870-5-104",
       "IEC60870-5-104_SERVER",

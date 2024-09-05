@@ -147,6 +147,7 @@ const ProtocolConnection = mongoose.model(
     cipherList: { type: String, default: '' },
 
     // DNP3
+    connectionMode: { type: String, default: 'TCP Active' },
     asyncOpenDelay: { type: Double, min: 0.0, default: 0.0 },
     timeSyncMode: { type: Double, min: 0.0, max: 2.0, default: 0.0 },
     class0ScanInterval: { type: Double, min: 0.0, default: 0.0 },

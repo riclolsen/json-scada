@@ -145,6 +145,7 @@
     "protocolDriver": "Protokolltreiber",
     "instanceNumber": "Instanznummer",
     "protocolConnectionParameters": "Protokollverbindungsparameter",
+    "connectionMode": "Verbindungsmodus",
     "localLinkAddress": "Lokale Linkadresse",
     "localLinkAddressTitle": "Lokale Linkadresse",
     "localLinkAddressHint": "Ganzzahlige Zahl.",

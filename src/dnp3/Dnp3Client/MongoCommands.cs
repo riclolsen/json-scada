@@ -1,6 +1,6 @@
 ﻿/* 
  * DNP3 Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020 - 2024 Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -26,6 +26,18 @@ namespace Dnp3Driver
 {
     partial class MainClass
     {
+        // demonstrates how to build a set of command headers for a complex command request
+        // static ICommandHeaders GetCommandHeaders()
+        // {
+        //     var crob = new ControlRelayOutputBlock(OperationType.PULSE_ON, TripCloseCode.NUL, false, 1, 100, 100);
+        //     var ao = new AnalogOutputDouble64(1.37);
+        // 
+        //     return CommandSet.From(
+        //         CommandHeader.From(IndexedValue.From(crob, 0)),
+        //         CommandHeader.From(IndexedValue.From(ao, 1))
+        //     );
+        // }
+
         // This process watches (via change stream) for commands inserted to a commands collection
         // When the command is considered valid it is forwarded to the RTU
         static async void ProcessMongoCmd(JSONSCADAConfig jsConfig)

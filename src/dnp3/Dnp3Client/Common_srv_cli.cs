@@ -1,6 +1,6 @@
 ﻿/* 
  * DNP3 Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020 - 2024 Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -84,6 +84,109 @@ namespace Dnp3Driver
             DNP3DataQueue = new ConcurrentQueue<DNP3_Value>();
         public static List<DNP3_connection>
                     DNP3conns = new List<DNP3_connection>(); // list of RTU connections
+
+        [BsonIgnoreExtraElements]
+        public class
+        RangeScans
+        {
+            [BsonDefaultValue(1)]
+            public int group { get; set; }
+            [BsonDefaultValue(1)]
+            public int variation { get; set; }
+            [BsonDefaultValue(0)]
+            public int startAddress { get; set; }
+            [BsonDefaultValue(0)]
+            public int stopAddress { get; set; }
+            [BsonDefaultValue(0)]
+            public int period { get; set; }
+        }
+
+        [BsonIgnoreExtraElements]
+        public class
+        DNP3_connection // DNP3 connection to RTU
+        {
+            public ObjectId Id { get; set; }
+            [BsonDefaultValue("")]
+            public string protocolDriver { get; set; }
+            [BsonDefaultValue(1)]
+            public int protocolDriverInstanceNumber { get; set; }
+            [BsonDefaultValue(1)]
+            public int protocolConnectionNumber { get; set; }
+            [BsonDefaultValue("NO NAME")]
+            public string name { get; set; }
+            [BsonDefaultValue("SERVER NOT DESCRIPTED")]
+            public string description { get; set; }
+            [BsonDefaultValue(true)]
+            public bool enabled { get; set; }
+            [BsonDefaultValue(true)]
+            public bool commandsEnabled { get; set; }
+            [BsonDefaultValue("TCP Active")]
+            public string connectionMode { get; set; }
+            [BsonDefaultValue("")]
+            public string ipAddressLocalBind { get; set; }
+            public string[] ipAddresses { get; set; }
+            [BsonDefaultValue("")]
+            public string portName { get; set; }
+            [BsonDefaultValue(9600)]
+            public int baudRate { get; set; }
+            [BsonDefaultValue("None")]
+            public string parity { get; set; }
+            [BsonDefaultValue("One")]
+            public string stopBits { get; set; }
+            [BsonDefaultValue("None")]
+            public string handshake { get; set; }
+            [BsonDefaultValue(0)]
+            public int asyncOpenDelay { get; set; }
+            [BsonDefaultValue(false)]
+            public bool allowTLSv10 { get; set; }
+            [BsonDefaultValue(false)]
+            public bool allowTLSv11 { get; set; }
+            [BsonDefaultValue(true)]
+            public bool allowTLSv12 { get; set; }
+            [BsonDefaultValue(true)]
+            public bool allowTLSv13 { get; set; }
+            [BsonDefaultValue("")]
+            public string cipherList { get; set; }
+            [BsonDefaultValue("")]
+            public string localCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string peerCertFilePath { get; set; }
+            [BsonDefaultValue("")]
+            public string privateKeyFilePath { get; set; }
+            [BsonDefaultValue(1)]
+            public int localLinkAddress { get; set; }
+            [BsonDefaultValue(1)]
+            public int remoteLinkAddress { get; set; }
+            [BsonDefaultValue(300)]
+            public int giInterval { get; set; }
+            [BsonDefaultValue(0)]
+            public int class0ScanInterval { get; set; }
+            [BsonDefaultValue(0)]
+            public int class1ScanInterval { get; set; }
+            [BsonDefaultValue(0)]
+            public int class2ScanInterval { get; set; }
+            [BsonDefaultValue(0)]
+            public int class3ScanInterval { get; set; }
+            public RangeScans []rangeScans { get; set; }
+            [BsonDefaultValue(0)]
+            public int timeSyncMode { get; set; }
+            [BsonDefaultValue(true)]
+            public bool enableUnsolicited { get; set; }
+            [BsonDefaultValue(true)]
+            public bool serverModeMultiActive { get; set; }
+            [BsonDefaultValue(2)]
+            public int maxClientConnections { get; set; }
+            [BsonDefaultValue(1000)]
+            public int MaxQueueSize { get; set; }
+            public IChannel channel;
+            public IMaster master;
+            public bool isConnected;
+        }
+
+        public class rtData
+        {
+            public BsonDocument sourceDataUpdate { get; set; }
+        }
 
         public class
         JSONSCADAConfig // base configuration of the system (how to reach mongodb, etc.)

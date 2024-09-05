@@ -22,8 +22,6 @@ using System.Linq;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using Automatak.DNP3.Adapter;
 using Automatak.DNP3.Interface;
@@ -35,124 +33,11 @@ namespace Dnp3Driver
         static IDNP3Manager mgr;
         public static String DriverMessage = "{json:scada} DNP3 Client Driver - Copyright 2020-2024 RLO";
         public static String ProtocolDriverName = "DNP3";
-        public static String DriverVersion = "0.1.5";
+        public static String DriverVersion = "0.1.6";
         public static uint CROB_PulseOnTime = 100;
         public static uint CROB_PulseOffTime = 100;
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
-
-        [BsonIgnoreExtraElements]
-        public class
-        RangeScans
-        {
-            [BsonDefaultValue(1)]
-            public int group { get; set; }
-            [BsonDefaultValue(1)]
-            public int variation { get; set; }
-            [BsonDefaultValue(0)]
-            public int startAddress { get; set; }
-            [BsonDefaultValue(0)]
-            public int stopAddress { get; set; }
-            [BsonDefaultValue(0)]
-            public int period { get; set; }
-        }
-
-        [BsonIgnoreExtraElements]
-        public class
-        DNP3_connection // DNP3 connection to RTU
-        {
-            public ObjectId Id { get; set; }
-            [BsonDefaultValue("")]
-            public string protocolDriver { get; set; }
-            [BsonDefaultValue(1)]
-            public int protocolDriverInstanceNumber { get; set; }
-            [BsonDefaultValue(1)]
-            public int protocolConnectionNumber { get; set; }
-            [BsonDefaultValue("NO NAME")]
-            public string name { get; set; }
-            [BsonDefaultValue("SERVER NOT DESCRIPTED")]
-            public string description { get; set; }
-            [BsonDefaultValue(true)]
-            public bool enabled { get; set; }
-            [BsonDefaultValue(true)]
-            public bool commandsEnabled { get; set; }
-            [BsonDefaultValue("")]
-            public string ipAddressLocalBind { get; set; }
-            public string[] ipAddresses { get; set; }
-            [BsonDefaultValue("")]
-            public string portName { get; set; }
-            [BsonDefaultValue(9600)]
-            public int baudRate { get; set; }
-            [BsonDefaultValue("None")]
-            public string parity { get; set; }
-            [BsonDefaultValue("One")]
-            public string stopBits { get; set; }
-            [BsonDefaultValue("None")]
-            public string handshake { get; set; }
-            [BsonDefaultValue(0)]
-            public int asyncOpenDelay { get; set; }
-            [BsonDefaultValue(false)]
-            public bool allowTLSv10 { get; set; }
-            [BsonDefaultValue(false)]
-            public bool allowTLSv11 { get; set; }
-            [BsonDefaultValue(true)]
-            public bool allowTLSv12 { get; set; }
-            [BsonDefaultValue(true)]
-            public bool allowTLSv13 { get; set; }
-            [BsonDefaultValue("")]
-            public string cipherList { get; set; }
-            [BsonDefaultValue("")]
-            public string localCertFilePath { get; set; }
-            [BsonDefaultValue("")]
-            public string peerCertFilePath { get; set; }
-            [BsonDefaultValue("")]
-            public string privateKeyFilePath { get; set; }
-            [BsonDefaultValue(1)]
-            public int localLinkAddress { get; set; }
-            [BsonDefaultValue(1)]
-            public int remoteLinkAddress { get; set; }
-            [BsonDefaultValue(300)]
-            public int giInterval { get; set; }
-            [BsonDefaultValue(0)]
-            public int class0ScanInterval { get; set; }
-            [BsonDefaultValue(0)]
-            public int class1ScanInterval { get; set; }
-            [BsonDefaultValue(0)]
-            public int class2ScanInterval { get; set; }
-            [BsonDefaultValue(0)]
-            public int class3ScanInterval { get; set; }
-            public RangeScans []rangeScans { get; set; }
-            [BsonDefaultValue(0)]
-            public int timeSyncMode { get; set; }
-            [BsonDefaultValue(true)]
-            public bool enableUnsolicited { get; set; }
-            [BsonDefaultValue(true)]
-            public bool serverModeMultiActive { get; set; }
-            [BsonDefaultValue(2)]
-            public int maxClientConnections { get; set; }
-            [BsonDefaultValue(1000)]
-            public int MaxQueueSize { get; set; }
-            public IChannel channel;
-            public IMaster master;
-            public bool isConnected;
-        }
-
-        public class rtData
-        {
-            public BsonDocument sourceDataUpdate { get; set; }
-        }
-
-        // demonstrates how to build a set of command headers for a complex command request
-        static ICommandHeaders GetCommandHeaders()
-        {
-            var crob = new ControlRelayOutputBlock(OperationType.PULSE_ON, TripCloseCode.NUL, false, 1, 100, 100);
-            var ao = new AnalogOutputDouble64(1.37);
-
-            return CommandSet.From(
-                CommandHeader.From(IndexedValue.From(crob, 0)),
-                CommandHeader.From(IndexedValue.From(ao, 1))
-            );
-        }
 
         static int Main(string[] args)
         {
@@ -330,7 +215,7 @@ namespace Dnp3Driver
             thrMongoCmd.Start();
 
             Log("Setting up connections & ASDU handlers...");
-            mgr = DNP3ManagerFactory.CreateManager(2*Environment.ProcessorCount, new PrintingLogAdapter());
+            mgr = DNP3ManagerFactory.CreateManager(2 * Environment.ProcessorCount, new PrintingLogAdapter());
             foreach (DNP3_connection srv in DNP3conns)
             {
                 uint logLevel = LogLevels.NONE;
@@ -340,15 +225,216 @@ namespace Dnp3Driver
                     logLevel = LogLevels.NORMAL | LogLevels.APP_COMMS;
                 if (LogLevel >= LogLevelDebug)
                     logLevel = LogLevels.ALL;
-                
+
                 MyChannelListener chlistener = new MyChannelListener();
                 chlistener.dnp3conn = srv;
 
                 IChannel channel = null; // can be tcp, udp, tls, or serial
-                if (srv.ipAddresses.Length > 0) // TCP, TLS or UDP
-                { 
-                    if (srv.ipAddressLocalBind.Trim() != "")
-                    { // UDP
+                switch (srv.connectionMode.ToUpper())
+                {
+                    default:
+                        Log(srv.name + " - Bad connection config! Ignoring connection...");
+                        continue;
+                    case "TCP ACTIVE":
+                    case "TCP PASSIVE":
+                    case "TLS ACTIVE":
+                    case "TLS PASSIVE":
+                        // look for the same channel config already created (multi-drop case)
+                        // if found, just reuse
+                        foreach (DNP3_connection conn in DNP3conns)
+                        {
+                            if (!(conn.channel is null))
+                                if (srv.ipAddresses.SequenceEqual(conn.ipAddresses))
+                                {
+                                    channel = conn.channel;
+                                    break;
+                                }
+                        }
+                        if (!(channel is null))
+                        {
+                            Log(srv.name + " - Reusing channel...");
+                        }
+                        else
+                        {
+                            ushort tcpPort = 20000;
+                            string[] ipAddrPort = srv.ipAddresses[0].Split(':');
+                            if (ipAddrPort.Length > 1)
+                                if (int.TryParse(ipAddrPort[1], out _))
+                                    tcpPort = System.Convert.ToUInt16(ipAddrPort[1]);
+
+                            ushort localPort = 20000;
+                            string[] localIpAddrPort = srv.ipAddressLocalBind.Split(':');
+                            if (localIpAddrPort.Length > 1)
+                                if (int.TryParse(localIpAddrPort[1], out _))
+                                    localPort = System.Convert.ToUInt16(localIpAddrPort[1]);
+
+                            switch (srv.connectionMode.ToUpper())
+                            {
+                                case "TCP ACTIVE":
+                                    Log(srv.name + " - Creating TCP active channel...");
+                                    channel = mgr.AddTCPClient(
+                                        "TCP:" + srv.name,
+                                        logLevel,
+                                        new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                                        new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
+                                        chlistener
+                                        );
+                                    break;
+                                case "TCP PASSIVE":
+                                    Log(srv.name + " - Creating TCP passive channel...");
+                                    channel = mgr.AddTCPServer(
+                                        "TCP:" + srv.name,
+                                        logLevel,
+                                        ServerAcceptMode.CloseNew,
+                                        new IPEndpoint(localIpAddrPort[0], localPort),
+                                        chlistener
+                                        );
+                                    break;
+                                case "TLS ACTIVE":
+                                    if (srv.localCertFilePath.Trim() == "")
+                                    {
+                                        Log(srv.name + " - Missing localCertFilePath parameter, ignoring connection!");
+                                        continue;
+                                    }
+                                    Log(srv.name + " - Creating TLS active channel...");
+                                    TLSConfig tlscfg = new TLSConfig(
+                                        srv.peerCertFilePath,
+                                        srv.localCertFilePath,
+                                        srv.privateKeyFilePath,
+                                        srv.allowTLSv10,
+                                        srv.allowTLSv11,
+                                        srv.allowTLSv12,
+                                        srv.allowTLSv13,
+                                        srv.cipherList
+                                        );
+                                    channel = mgr.AddTLSClient(
+                                        "TLS:" + srv.name,
+                                        logLevel,
+                                        new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                                        new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
+                                        tlscfg,
+                                        chlistener
+                                        );
+                                    break;
+                                case "TLS PASSIVE":
+                                    if (srv.localCertFilePath.Trim() == "")
+                                    {
+                                        Log(srv.name + " - Missing localCertFilePath parameter, ignoring connection!");
+                                        continue;
+                                    }
+                                    Log(srv.name + " - Creating TLS passive channel...");
+                                    TLSConfig tlscfgs = new TLSConfig(
+                                        srv.peerCertFilePath,
+                                        srv.localCertFilePath,
+                                        srv.privateKeyFilePath,
+                                        srv.allowTLSv10,
+                                        srv.allowTLSv11,
+                                        srv.allowTLSv12,
+                                        srv.allowTLSv13,
+                                        srv.cipherList
+                                        );
+                                    channel = mgr.AddTLSServer(
+                                        "TLS:" + srv.name,
+                                        logLevel,
+                                        ServerAcceptMode.CloseNew,
+                                        new IPEndpoint(localIpAddrPort[0], localPort),
+                                        tlscfgs,
+                                        chlistener
+                                        );
+                                    break;
+                            }
+                        }
+                        break;
+                    case "SERIAL":
+                        if (srv.portName.Trim() == "")
+                        {
+                            Log(srv.name + " - Missing portName parameter, ignoring connection!");
+                            continue;
+                        }
+                        // look for the same channel config already created (multi-drop case)
+                        // if found, just reuse
+                        foreach (DNP3_connection conn in DNP3conns)
+                        {
+                            if (!(conn.channel is null))
+                                if (conn.portName.Trim() != "" &&
+                                    srv.portName.Trim() == conn.portName.Trim())
+                                {
+                                    channel = conn.channel;
+                                    break;
+                                }
+                        }
+                        if (!(channel is null))
+                        {
+                            Log(srv.name + " - Reusing channel...");
+                        }
+                        else
+                        {
+                            Log(srv.name + " - Creating serial channel...");
+                            StopBits stopbits;
+                            switch (srv.stopBits.ToLower())
+                            {
+                                default:
+                                case "1":
+                                case "one":
+                                    stopbits = StopBits.One;
+                                    break;
+                                case "1.5":
+                                case "one.five":
+                                case "one5":
+                                    stopbits = StopBits.OnePointFive;
+                                    break;
+                                case "2":
+                                case "two":
+                                    stopbits = StopBits.Two;
+                                    break;
+                                case "none":
+                                    stopbits = StopBits.None;
+                                    break;
+                            }
+                            Parity parity;
+                            switch (srv.parity.ToLower())
+                            {
+                                default:
+                                case "none":
+                                    parity = Parity.None;
+                                    break;
+                                case "even":
+                                    parity = Parity.Even;
+                                    break;
+                                case "odd":
+                                    parity = Parity.Odd;
+                                    break;
+                            }
+                            FlowControl fc;
+                            switch (srv.handshake.ToLower())
+                            {
+                                default:
+                                case "none":
+                                    fc = FlowControl.None;
+                                    break;
+                                case "xon":
+                                    fc = FlowControl.XONXOFF;
+                                    break;
+                                case "rts":
+                                    fc = FlowControl.Hardware;
+                                    break;
+                            }
+                            SerialSettings ss = new SerialSettings(srv.portName, srv.baudRate, 8, stopbits, parity, fc);
+                            channel = mgr.AddSerial(
+                                "SERIAL:" + srv.name,
+                                logLevel,
+                                new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
+                                ss,
+                                chlistener
+                                );
+                        }
+                        break;
+                    case "UDP":
+                        if (srv.ipAddressLocalBind.Trim() == "")
+                        {
+                            Log(srv.name + " - Missing ipAddressLocalBind parameter, ignoring connection!");
+                            continue;
+                        }
                         // look for the same channel config already created (multi-drop case)
                         // if found, just reuse
                         foreach (DNP3_connection conn in DNP3conns)
@@ -388,152 +474,7 @@ namespace Dnp3Driver
                                 chlistener
                                 );
                         }
-                    }
-                    else
-                    { // TCP or TLS
-                        ushort tcpPort = 20000;
-                        string[] ipAddrPort = srv.ipAddresses[0].Split(':');
-                        if (ipAddrPort.Length > 1)
-                            if (int.TryParse(ipAddrPort[1], out _))
-                                tcpPort = System.Convert.ToUInt16(ipAddrPort[1]);
-
-                        // look for the same channel config already created (multi-drop case)
-                        // if found, just reuse
-                        foreach (DNP3_connection conn in DNP3conns)
-                        {
-                            if ( !(conn.channel is null) ) 
-                            if (srv.ipAddresses.SequenceEqual(conn.ipAddresses))
-                            {
-                                channel = conn.channel;                                
-                                break;
-                            }
-                        }
-                        if (!(channel is null))
-                        {
-                            Log(srv.name + " - Reusing channel...");
-                        }
-                        else
-                        {
-                            if (srv.localCertFilePath.Trim() != "")
-                            { // TLS
-                                Log(srv.name + " - Creating TLS channel...");
-                                TLSConfig tlscfg = new TLSConfig(
-                                    srv.peerCertFilePath,
-                                    srv.localCertFilePath,
-                                    srv.privateKeyFilePath,
-                                    srv.allowTLSv10,
-                                    srv.allowTLSv11,
-                                    srv.allowTLSv12,
-                                    srv.allowTLSv13,
-                                    srv.cipherList
-                                    );
-                                channel = mgr.AddTLSClient(
-                                    "TLS:" + srv.name,
-                                    logLevel,
-                                    new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                                    new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
-                                    tlscfg,
-                                    chlistener
-                                    );
-                            }
-                            else
-                            { // TCP
-                                Log(srv.name + " - Creating TCP channel...");
-                                channel = mgr.AddTCPClient(
-                                    "TCP:" + srv.name,
-                                    logLevel,
-                                    new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                                    new List<IPEndpoint> { new IPEndpoint(ipAddrPort[0], tcpPort) },
-                                    chlistener
-                                    );
-                            }
-                        }
-                    }
-                }
-                else if (srv.portName.Trim() != "" )
-                { // serial connection
-                    // look for the same channel config already created (multi-drop case)
-                    // if found, just reuse
-                    foreach (DNP3_connection conn in DNP3conns)
-                    {
-                        if (!(conn.channel is null))
-                            if (conn.portName.Trim() != "" &&
-                                srv.portName.Trim() == conn.portName.Trim())
-                            {
-                                channel = conn.channel;
-                                break;
-                            }
-                    }
-                    if (!(channel is null))
-                    {
-                        Log(srv.name + " - Reusing channel...");
-                    }
-                    else
-                    {
-                        Log(srv.name + " - Creating serial channel...");
-                        StopBits stopbits;
-                        switch (srv.stopBits.ToLower())
-                        {
-                            default:
-                            case "1":
-                            case "one":
-                                stopbits = StopBits.One;
-                                break;
-                            case "1.5":
-                            case "one.five":
-                            case "one5":
-                                stopbits = StopBits.OnePointFive;
-                                break;
-                            case "2":
-                            case "two":
-                                stopbits = StopBits.Two;
-                                break;
-                            case "none":
-                                stopbits = StopBits.None;
-                                break;
-                        }
-                        Parity parity;
-                        switch (srv.parity.ToLower())
-                        {
-                            default:
-                            case "none":
-                                parity = Parity.None;
-                                break;
-                            case "even":
-                                parity = Parity.Even;
-                                break;
-                            case "odd":
-                                parity = Parity.Odd;
-                                break;
-                        }
-                        FlowControl fc;
-                        switch (srv.handshake.ToLower())
-                        {
-                            default:
-                            case "none":
-                                fc = FlowControl.None;
-                                break;
-                            case "xon":
-                                fc = FlowControl.XONXOFF;
-                                break;
-                            case "rts":
-                                fc = FlowControl.Hardware;
-                                break;
-                        }
-                        SerialSettings ss = new SerialSettings(srv.portName, srv.baudRate, 8, stopbits, parity, fc);
-                        channel = mgr.AddSerial(
-                            "SERIAL:" + srv.name,
-                            logLevel,
-                            new ChannelRetry(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)),
-                            ss,
-                            chlistener
-                            );
-                    }
-                }
-                else
-                { // bad connection config, skip
-                    Log(srv.name  + " - Bad connection config! Ingoring...");
-                    continue;
+                        break;
                 }
 
                 if (channel is null)
@@ -552,8 +493,8 @@ namespace Dnp3Driver
                     //config.link.keepAliveTimeout =  TimeSpan.FromSeconds(60);
                     config.master.startupIntegrityClassMask = ClassField.AllClasses;
                     config.master.timeSyncMode = TimeSyncMode.None;
-                    if (srv.timeSyncMode>=2)
-                      config.master.timeSyncMode = TimeSyncMode.LAN;
+                    if (srv.timeSyncMode >= 2)
+                        config.master.timeSyncMode = TimeSyncMode.LAN;
                     else
                     if (srv.timeSyncMode == 1)
                         config.master.timeSyncMode = TimeSyncMode.NonLAN;
@@ -562,7 +503,7 @@ namespace Dnp3Driver
                     {
                         config.master.disableUnsolOnStartup = false;
                         config.master.unsolClassMask = ClassField.AllClasses;
-                    }                    
+                    }
                     else
                     {
                         config.master.disableUnsolOnStartup = true;
