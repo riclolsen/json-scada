@@ -36,6 +36,7 @@ Changes in the _protocolDriverInstances_ config requires that the driver instanc
 ## Configure client connections to DNP3 servers
 
 Each instance for this driver can have many client connection defined that must be described in the _protocolConnections_ collection.
+Create a new connection in Admin UI or directly on MongoDB as below.
 
     use json_scada_db_name
     db.protocolConnections.insert({
@@ -46,6 +47,7 @@ Each instance for this driver can have many client connection defined that must 
         description: "KIK1 Station DNP3",
         enabled: true,
         commandsEnabled: true,
+        connectionMode: "TCP Active",
         ipAddressLocalBind: "",
         ipAddresses: ["192.168.0.31:20000"],
         portName: "",
@@ -109,10 +111,11 @@ Each instance for this driver can have many client connection defined that must 
   - _**period**_ [Double] - Period in seconds for a range scan. **Mandatory parameter**.
 
 - _**stats**_ [Object] - Protocol statistics updated by the driver.
+- _**connectionMode**_ [String] - Connection mode: 'TCP Active'|'TCP Passive'|'TLS Active'|'TLS Passive'|'UDP'|'Serial'.
 
 For TCP communication.
 
-- _**ipAddressLocalBind**_ [String] - Not used for TCP option (leave empty). **Optional parameter**.
+- _**ipAddressLocalBind**_ [String] - Local bind address for passive option. Not used for TCP active option (leave empty). **Mandatory parameter**.
 - _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for DNP3 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
 
 For UDP communication.
@@ -131,7 +134,7 @@ For Serial communication.
 
 For TLS over TCP.
 
-- _**ipAddressLocalBind**_ [String] - Not used for TLS option (leave empty). **Optional parameter**.
+- _**ipAddressLocalBind**_ [String] - Local bind address for passive option. Not used for TCP active option (leave empty). **Mandatory parameter**.
 - _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for DNP3 servers to be scanned (only the first server is currently supported). **Mandatory parameter**.
 - _**allowTLSv10**_ [Boolean] - Allow TLS version 1.0 (default false).
 - _**allowTLSv11**_ [Boolean] - Allow TLS version 1.1 (default false).
