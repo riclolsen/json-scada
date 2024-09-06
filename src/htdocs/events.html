@@ -56,10 +56,11 @@ var LIMSUPS = []; // Analog superior limits for points
 var LIMINFS = []; // Analog inferior limits for points
 var NUM_VAR = 0;        // number of digital values changes on server
 var NUM_VAR_ANT = 0;    // previous value of NUM_VAR
-var ALARMBEEP = 0; // alarm beep status
 var GROUP1_LIST = []; // list of possible group1 values
 var BEEP_POINTKEY = -1;
 var CNTUPDATES_POINTKEY = -2;
+var ALARMBEEP = 0; // alarm beep status
+var BEEP_GROUP1_LIST = []; // list of alarmed groups
 
 // for command dialog
 var NPTO, ID, ESTACAO, MODULO, DESC, ST_ON, ST_OFF, VAL_STR, CNPTO, CID, CDESC, CST_ON, CST_OFF;
@@ -845,6 +846,8 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
         prop = element._Properties;          
         var pointKey = prop._id;
 
+        if ( pointKey === BEEP_POINTKEY && "beepGroup1List" in prop ) BEEP_GROUP1_LIST = prop.beepGroup1List;
+
         if (element.Value.Type === OpcValueTypes.Boolean) {
             V[pointKey] = element.Value.Body?0:1;
             F[pointKey] = (element.Value.Body ? 0x02 : 0x01);
@@ -1186,7 +1189,16 @@ getServerStatus: function()
   WebSAGE.getRealtimeData( [BEEP_POINTKEY, CNTUPDATES_POINTKEY], true,
       prop => {
         ALARMBEEP = WebSAGE.getValue(BEEP_POINTKEY);
- 
+        if (WebSAGE.getValue(BEEP_POINTKEY)) {
+          var jsuserck = readCookie( "json-scada-user" );
+          if (jsuserck) {
+            var jsuserObj = JSON.parse(decodeURIComponent(jsuserck))
+            if (jsuserObj.rights && jsuserObj.rights.group1List && jsuserObj.rights.group1List.length>0) {
+              var instersect = BEEP_GROUP1_LIST.filter(value => jsuserObj.rights.group1List.includes(value));
+              if (instersect.length === 0) ALARMBEEP = 0;
+            }
+          }
+        }
         if ( ALARMBEEP ) {
           if ( ! document.getElementById( "idHistorico" ).checked )    
           if ( document.getElementById( "imgAlarmes" ).style.display != "" ) {

@@ -227,6 +227,11 @@ Example document.
 * _**_sourceDataUpdate.timeTagAtSourceOk_**_ [Boolean] - Source timestamp ok.
 * _**_sourceDataUpdate.timeTag_**_ [Date] - Local update time.
 
+### Fields only existing for the special tag "_System.Status.AlarmBeep"
+
+* _**_beepType_**_ [Double] - Beep type. **Mandatory parameter**.
+* _**_beepGroup1List_**_ [Array of String] - List of group1 alarmed. **Mandatory parameter**.
+
 ## _commandsQueue_ collection
 
 This collection has no configuration, it is written by the system when user issue commands in the UI. Commands are inserted here to be dispatched by protocols drivers. Protocol acknowledgement information is updated here also by protocol drivers.

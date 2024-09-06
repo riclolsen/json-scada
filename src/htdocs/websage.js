@@ -47,7 +47,8 @@ var LIMSUPS = []; // Analog superior limits for points
 var LIMINFS = []; // Analog inferior limits for points
 var INVTAGS = []; // List of invalid tags (not found)
 var NUM_VAR = 0; // Number of digital values changed
-var ALARMBEEP = 0; // Indicates the presence of beep alarm
+var ALARMBEEP = 0; // alarm beep status
+var BEEP_GROUP1_LIST = []; // list of alarmed groups
 
 var NUM_VAR_ANT = 0; // Last state of NUM_VAR variable
 
@@ -3507,6 +3508,8 @@ getHistoricalData: function (i, pnt, timeBegin) {
             return;
           prop = element._Properties;          
           var pointKey = prop._id;
+          
+          if ( pointKey === BEEP_POINTKEY && "beepGroup1List" in prop ) BEEP_GROUP1_LIST = prop.beepGroup1List;
 
           if (element.Value.Type === OpcValueTypes.Boolean) {
             V[pointKey] = element.Value.Body?0:1;
@@ -3661,6 +3664,16 @@ getHistoricalData: function (i, pnt, timeBegin) {
       }        
 
       ALARMBEEP = WebSAGE.getValue(BEEP_POINTKEY);
+      if (WebSAGE.getValue(BEEP_POINTKEY)) {
+        var jsuserck = readCookie( "json-scada-user" );
+        if (jsuserck) {
+          var jsuserObj = JSON.parse(decodeURIComponent(jsuserck))
+          if (jsuserObj.rights && jsuserObj.rights.group1List && jsuserObj.rights.group1List.length>0) {
+            var instersect = BEEP_GROUP1_LIST.filter(value => jsuserObj.rights.group1List.includes(value));
+            if (instersect.length === 0) ALARMBEEP = 0;
+          }
+        }
+      }
       NUM_VAR_ANT = WebSAGE.getValue(CNTUPDATES_POINTKEY);
       });   
   },

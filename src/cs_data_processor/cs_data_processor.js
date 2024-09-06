@@ -147,6 +147,11 @@ const pipeline = [
       mongoRtDataQueue.dequeue()
       const _id = upd._id
       delete upd._id // remove _id for update
+      let addToSet = null
+      if ('$addToSet' in upd) {
+        addToSet = upd.$addToSet
+        delete upd.$addToSet
+      }
       updArr.push({
         updateOne: {
           filter: { _id: _id },
@@ -154,6 +159,15 @@ const pipeline = [
         },
       })
       cnt++
+      if (addToSet) {
+        updArr.push({
+          updateOne: {
+            filter: { _id: _id },
+            update: { $addToSet: addToSet },
+          },
+        })
+        cnt++
+      }
     }
     const res = await collection
       .bulkWrite(updArr, {
@@ -287,6 +301,8 @@ const pipeline = [
           const changeStream = collection.watch(pipeline, {
             fullDocument: 'updateLookup',
           })
+
+          await createSpecialTags(collection)
 
           Redundancy.Start(5000, clientMongo, db, jsConfig, MongoStatus)
 
@@ -908,6 +924,9 @@ const pipeline = [
                           value: new Double(1),
                           valueString: 'Beep Active',
                           timeTag: dt,
+                          $addToSet: {
+                            beepGroup1List: change.fullDocument.group1,
+                          },
                         })
                       else if (
                         change.fullDocument.priority <= LowestPriorityThatBeeps
@@ -917,6 +936,9 @@ const pipeline = [
                           value: new Double(1),
                           valueString: 'Beep Active',
                           timeTag: dt,
+                          $addToSet: {
+                            beepGroup1List: change.fullDocument.group1,
+                          },
                         })
                     }
                     if (change.fullDocument.type === 'digital') {
@@ -1256,5 +1278,154 @@ async function checkConnectedMongo(client) {
   } else {
     MongoStatus.HintMongoIsConnected = false
     return false
+  }
+}
+
+async function createSpecialTags(collection) {
+  // insert special tags when not found
+  let results = await collection.find({ _id: beepPointKey }).toArray()
+  if (results && results.length == 0) {
+    collection
+      .insertOne({
+        _id: new Double(beepPointKey),
+        alarmRange: new Double(0.0),
+        alarmDisabled: true,
+        alarmState: new Double(1.0),
+        alarmed: false,
+        annotation: '',
+        commandBlocked: false,
+        commandOfSupervised: new Double(0.0),
+        description: '_System~Status~Alarm Beep',
+        eventTextFalse: 'Beep Deactivated',
+        eventTextTrue: 'Beep Activated',
+        formula: null,
+        frozen: false,
+        frozenDetectTimeout: new Double(300.0),
+        group1: '_System',
+        group2: 'Status',
+        group3: '',
+        hiLimit: null,
+        hihiLimit: null,
+        hihihiLimit: null,
+        historianDeadBand: new Double(0.0),
+        historianPeriod: new Double(0.0),
+        hysteresis: new Double(0.0),
+        invalid: true,
+        invalidDetectTimeout: new Double(0.0),
+        isEvent: false,
+        kconv1: new Double(1.0),
+        kconv2: new Double(0.0),
+        loLimit: null,
+        location: null,
+        loloLimit: null,
+        lololoLimit: null,
+        notes: '',
+        origin: 'system',
+        overflow: false,
+        parcels: null,
+        priority: new Double(3.0),
+        protocolSourceASDU: new Double(0.0),
+        protocolSourceCommandDuration: null,
+        protocolSourceCommandUseSBO: null,
+        protocolSourceCommonAddress: new Double(0.0),
+        protocolSourceConnectionNumber: new Double(0.0),
+        protocolSourceObjectAddress: new Double(0.0),
+        sourceDataUpdate: null,
+        stateTextFalse: 'No Beep',
+        stateTextTrue: 'Active Beep',
+        substituted: false,
+        supervisedOfCommand: new Double(0.0),
+        tag: '_System.Status.AlarmBeep',
+        timeTag: { $date: '2000-01-01T00:00:00.000Z' },
+        transient: false,
+        type: 'analog',
+        ungroupedDescription: 'Alarm Beep',
+        unit: 'Enum',
+        updatesCnt: new Double(0.0),
+        value: new Double(0.0),
+        valueDefault: new Double(0.0),
+        valueString: 'No Beep',
+        timeTagAtSource: null,
+        timeTagAtSourceOk: null,
+        beepType: new Double(0.0),
+        beepGroup1List: [],
+      })
+      .catch(function (err) {
+        Log.log('Error on Mongodb query!', err)
+      })
+  } else {
+    await collection.updateOne(
+      { _id: beepPointKey, beepGroup1List: { $exists: false } },
+      { $set: { beepGroup1List: [] } }
+    )
+  }
+  results = await collection.find({ _id: cntUpdatesPointKey }).toArray()
+  if (results && results.length == 0) {
+    collection
+      .insertOne({
+        _id: new Double(cntUpdatesPointKey),
+        alarmRange: new Double(0),
+        alarmDisabled: true,
+        alarmState: new Double(1.0),
+        alarmed: false,
+        annotation: '',
+        commandBlocked: false,
+        commandOfSupervised: new Double(0.0),
+        description: '_System~Status~Digital Updates Count',
+        eventTextFalse: '',
+        eventTextTrue: '',
+        formula: null,
+        frozen: false,
+        frozenDetectTimeout: new Double(300.0),
+        group1: '_System',
+        group2: 'Status',
+        group3: '',
+        hiLimit: null,
+        hihiLimit: null,
+        hihihiLimit: null,
+        historianDeadBand: new Double(0.0),
+        historianPeriod: new Double(0.0),
+        hysteresis: new Double(0.0),
+        invalid: true,
+        invalidDetectTimeout: new Double(0.0),
+        isEvent: false,
+        kconv1: new Double(1.0),
+        kconv2: new Double(0.0),
+        loLimit: null,
+        location: null,
+        loloLimit: null,
+        lololoLimit: null,
+        notes: '',
+        origin: 'system',
+        overflow: false,
+        parcels: null,
+        priority: new Double(3.0),
+        protocolSourceASDU: new Double(0.0),
+        protocolSourceCommandDuration: null,
+        protocolSourceCommandUseSBO: null,
+        protocolSourceCommonAddress: new Double(0.0),
+        protocolSourceConnectionNumber: new Double(0.0),
+        protocolSourceObjectAddress: new Double(0.0),
+        sourceDataUpdate: null,
+        stateTextFalse: '',
+        stateTextTrue: '',
+        substituted: false,
+        supervisedOfCommand: new Double(0.0),
+        tag: '_System.Status.DigitalUpdatesCnt',
+        timeTag: { $date: '2000-01-01T00:00:00.000Z' },
+        transient: false,
+        type: 'analog',
+        ungroupedDescription: 'Digital Updates Count',
+        unit: 'Updates',
+        updatesCnt: new Double(0.0),
+        value: new Double(0.0),
+        valueDefault: new Double(0.0),
+        valueString: '0 Updates',
+        timeTagAtSource: null,
+        timeTagAtSourceOk: null,
+      })
+      .catch(function (err) {
+        Log.log('Error on Mongodb query!', err)
+      })
   }
 }

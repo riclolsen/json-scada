@@ -603,7 +603,8 @@ let pool = null
                     {
                       $and: [
                         {
-                          ...(!AUTHENTICATION || userRights?.group1List?.length == 0
+                          ...(!AUTHENTICATION ||
+                          userRights?.group1List?.length == 0
                             ? {}
                             : { group1: { $in: userRights.group1List } }),
                         },
@@ -678,21 +679,50 @@ let pool = null
                 }
                 if (node.Value.Body & opc.Acknowledge.SilenceBeep) {
                   Log.log('Silence Beep')
-                  await db.collection(COLL_REALTIME).updateOne(
-                    { _id: beepPointKey },
-                    {
-                      $set: {
-                        value: new Double(0),
-                        valueString: '0',
-                        beepType: new Double(0),
-                      },
-                    }
-                  )
-                  UserActionsQueue.enqueue({
-                    username: username,
-                    action: 'Silence Beep',
-                    timeTag: new Date(),
-                  })
+                  if (AUTHENTICATION && userRights.group1List.length > 0) {
+                    // just remove groups from beep list
+                    await db.collection(COLL_REALTIME).updateOne(
+                      { _id: beepPointKey },
+                      {
+                        $pullAll: {
+                          beepGroup1List: userRights.group1List,
+                        },
+                      }
+                    )
+                    // force silence when list is empty
+                    await db.collection(COLL_REALTIME).updateOne(
+                      { _id: beepPointKey, beepGroup1List: { $eq: [] } },
+                      {
+                        $set: {
+                          value: new Double(0),
+                          valueString: '0',
+                          beepType: new Double(0),
+                        },
+                      }
+                    )
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      action: 'Silence Beep',
+                      timeTag: new Date(),
+                    })
+                  } else {
+                    await db.collection(COLL_REALTIME).updateOne(
+                      { _id: beepPointKey },
+                      {
+                        $set: {
+                          value: new Double(0),
+                          valueString: '0',
+                          beepType: new Double(0),
+                          beepGroup1List: [],
+                        },
+                      }
+                    )
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      action: 'Silence Beep',
+                      timeTag: new Date(),
+                    })
+                  }
                 }
 
                 OpcResp.ServiceId = opc.ServiceCode.WriteResponse
@@ -1272,6 +1302,7 @@ let pool = null
                   origin: 1,
                   group1: 1,
                   beepType: 1,
+                  beepGroup1List: 1,
                 },
               }
 
@@ -1478,6 +1509,7 @@ let pool = null
                           supervisedOfCommand: pointInfo.supervisedOfCommand,
                           origin: pointInfo.origin,
                           beepType: pointInfo?.beepType,
+                          beepGroup1List: pointInfo?.beepGroup1List,
                         }
                       }
                       if (pointInfo.type === 'string')

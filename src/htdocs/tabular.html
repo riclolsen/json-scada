@@ -66,6 +66,7 @@ var ALARMBEEP = 0; // alarm beep status
 var ALARMBEEP_TYPE = 0; // alarm beep type
 var BEEP_POINTKEY = -1;
 var CNTUPDATES_POINTKEY = -2;
+var BEEP_GROUP1_LIST = []; // list of alarmed groups
 
 // variáveis para o diálogo de comando
 var NPTO, ID, ESTACAO, MODULO, DESC, ST_ON, ST_OFF, VAL_STR, CNPTO, CHANDLE, CID, CDESC, CST_ON, CST_OFF;
@@ -1483,6 +1484,16 @@ WebSAGE.getRealtimeData( [BEEP_POINTKEY, CNTUPDATES_POINTKEY], true,
   }
 
   ALARMBEEP = WebSAGE.getValue(BEEP_POINTKEY);
+  if (WebSAGE.getValue(BEEP_POINTKEY)) {
+    var jsuserck = readCookie( "json-scada-user" );
+    if (jsuserck) {
+      var jsuserObj = JSON.parse(decodeURIComponent(jsuserck))
+      if (jsuserObj.rights && jsuserObj.rights.group1List && jsuserObj.rights.group1List.length>0) {
+        var instersect = BEEP_GROUP1_LIST.filter(value => jsuserObj.rights.group1List.includes(value));
+        if (instersect.length === 0) ALARMBEEP = 0;
+      }
+    }
+  }
   NUM_VAR_ANT = WebSAGE.getValue(CNTUPDATES_POINTKEY);
   if ( ALARMBEEP )
       {
@@ -1841,8 +1852,8 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
         prop = element._Properties;          
         var pointKey = prop._id;
 
-		if ( pointKey === BEEP_POINTKEY && "beepType" in prop )
-			ALARMBEEP_TYPE = prop.beepType;
+        if ( pointKey === BEEP_POINTKEY && "beepType" in prop ) ALARMBEEP_TYPE = prop.beepType;
+        if ( pointKey === BEEP_POINTKEY && "beepGroup1List" in prop ) BEEP_GROUP1_LIST = prop.beepGroup1List;
 
         if (element.Value.Type === OpcValueTypes.Boolean) {
             V[pointKey] = element.Value.Body?0:1;
