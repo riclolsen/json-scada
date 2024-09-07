@@ -3019,7 +3019,7 @@ init: function()
           document.getElementById('nonCriticalSound').play();
           document.getElementById('btSound').value = '🔊';
           window.sndIntervalHandle = setInterval( function(){        
-		  if (window.WebSAGE.getValue(BEEP_POINTKEY))
+          if (ALARMBEEP)
             switch (ALARMBEEP_TYPE) {
               default:
                 document.getElementById('nonCriticalSound').play();
