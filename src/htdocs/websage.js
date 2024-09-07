@@ -369,11 +369,27 @@ var WebSAGE = {
 
   // Process the list of screens
   lista_telas: function(filename, indscr) {
-    var i, t, elOptNew, elSel, titu, pos, nohs, textolink, tmp, idtela;
+    var i, t, elOptNew, elSel, nohs, textolink, tmp, idtela, jsuserObj;
 
     WebSAGE.g_seltela = document.getElementById("SELTELA");
 
-    if (optionhtml !== "") {
+    var jsuserck = readCookie( "json-scada-user" );
+    if (jsuserck) {
+      jsuserObj = JSON.parse(decodeURIComponent(jsuserck))
+      for (i=0; i<jsuserObj.rights.displayList.length; i++) {
+          elSel = document.getElementById("SELTELA");
+          elOptNew = document.createElement("option");
+          elOptNew.text = jsuserObj.rights.displayList[i];
+          elOptNew.value = "svg/" + jsuserObj.rights.displayList[i];
+          try {
+            elSel.add(elOptNew, null); // standards compliant; doesn't work in IE
+          } catch (ex) {
+            elSel.add(elOptNew); // IE only
+          }  
+        }
+      } 
+    
+    if (!jsuserck && optionhtml !== "" || jsuserObj && jsuserObj.rights.displayList.length === 0) {
       $("#SELTELA").html(optionhtml);
     } else
       for (i = 0; i < optval.length; i++) {
