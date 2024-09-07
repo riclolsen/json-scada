@@ -1,6 +1,6 @@
 version: '3.8'
 
-# {json:scada} Demo - (c) 2020-2021 - Ricardo L. Olsen 
+# {json:scada} Demo - (c) 2020-2024 - Ricardo L. Olsen 
 
 # ACCESS VIA WEB BROWSER AT http://127.0.0.1:8080
 # Grafana access http://127.0.0.1:3000, user=admin password=jsonscada
@@ -80,7 +80,7 @@ services:
 
   # Postgresql/TimescaleDB Process SQL current data files 
   process_pg_rtdata:
-    image: timescale/timescaledb:latest-pg14
+    image: timescale/timescaledb:latest-pg16
     container_name: jsdemo_process_pg_rtdata
     command: /sql/process_pg_rtdata.sh
     restart: unless-stopped
@@ -100,7 +100,7 @@ services:
       - jsdemo_net
 
   grafana:
-    image: grafana/grafana:9.5.9
+    image: grafana/grafana-oss:11
     container_name: jsdemo_grafana
     # you may need to set the docker user:group to be able to write grafana folder 
     # set UID and GID variables 
@@ -134,7 +134,7 @@ services:
   
   # IEC60870-5-104 CLIENT, will connect to a demo server on 207.180.242.96:2404
   iec104client:
-    image: mcr.microsoft.com/dotnet/sdk:6.0
+    image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name: jsdemo_iec104client
     command: sh -c "sleep 20 && /jsonscada_bin/iec104client"
     restart: unless-stopped
@@ -148,7 +148,7 @@ services:
 
   # IEC60870-5-104 SERVER, accepts connection on 127.0.0.1:2404 (originator address 1)
   iec104server:
-    image: mcr.microsoft.com/dotnet/sdk:6.0
+    image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name:  jsdemo_iec104server
     command: sh -c "sleep 20 && /jsonscada_bin/iec104server"
     restart: unless-stopped
@@ -341,7 +341,7 @@ services:
 #                    sleep 2 &&
 #                    protonup -t 8.4 -y &&
 #                    echo 555337b3129e4544846342bd94c9a8ac > /etc/machine-id &&
-#                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 dotnet-runtime-6.0.19-win-x64.exe /q &&
+#                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 dotnet-runtime-8.0.7-win-x64.exe /q &&
 #                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 ../jsonscada_bin/Dnp3Client.exe "
 #    volumes:
 #      - ./conf:/conf
