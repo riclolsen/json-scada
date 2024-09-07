@@ -361,6 +361,7 @@ const pipeline = [
                             'PLC4X',
                             'MODBUS',
                             'IEC61850',
+                            'ICCP',
                           ],
                         ],
                       },
@@ -389,7 +390,7 @@ const pipeline = [
                       instance?.protocolDriverInstanceNumber
                   )
                   // find all connections related to his instance
-                  const res = db
+                  const res = await db
                     .collection(jsConfig.ProtocolConnectionsCollectionName)
                     .find({
                       protocolDriver: instance?.protocolDriver,
@@ -405,52 +406,26 @@ const pipeline = [
                         'Data invalidated for connection: ' +
                           connection?.protocolConnectionNumber
                       )
+                      await db
+                        .collection(jsConfig.RealtimeDataCollectionName)
+                        .updateMany(
+                          {
+                            origin: 'supervised',
+                            protocolSourceConnectionNumber:
+                              connection?.protocolConnectionNumber,
+                            invalid: false,
+                          },
+                          {
+                            $set: {
+                              invalid: true,
+                            },
+                          }
+                        )
+                        .catch(function (err) {
+                          Log.log('Error on Mongodb query!', err)
+                        })
                     }
                 }
-              for (let i = 0; i < results.length; i++) {
-                Log.log('PROTOCOL INSTANCE NOT RUNNING DETECTED!')
-                let instance = results[i]
-                Log.log(
-                  'Driver Name: ' +
-                    instance?.protocolDriver +
-                    ' Instance Number: ' +
-                    instance?.protocolDriverInstanceNumber
-                )
-                // find all connections related to his instance
-                db.collection(jsConfig.ProtocolConnectionsCollectionName)
-                  .find({
-                    protocolDriver: instance?.protocolDriver,
-                    protocolDriverInstanceNumber:
-                      instance?.protocolDriverInstanceNumber,
-                  })
-                  .toArray(function (err, results) {
-                    if (results)
-                      for (let i = 0; i < results.length; i++) {
-                        let connection = results[i]
-                        Log.log(
-                          'Data invalidated for connection: ' +
-                            connection?.protocolConnectionNumber
-                        )
-                        db.collection(jsConfig.RealtimeDataCollectionName)
-                          .updateMany(
-                            {
-                              origin: 'supervised',
-                              protocolSourceConnectionNumber:
-                                connection?.protocolConnectionNumber,
-                              invalid: false,
-                            },
-                            {
-                              $set: {
-                                invalid: true,
-                              },
-                            }
-                          )
-                          .catch(function (err) {
-                            Log.log('Error on Mongodb query!', err)
-                          })
-                      }
-                  })
-              }
             }
           }, invalidDetectCycle)
 
