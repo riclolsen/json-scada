@@ -182,10 +182,14 @@ namespace Dnp3Driver
                     .ToList();
             foreach (DNP3_connection isrv in conns)
             {
-                if (isrv.ipAddresses.Length < 1 && isrv.portName.Trim() == "")
+                if (isrv.ipAddresses.Length < 1 && isrv.connectionMode.ToUpper().EndsWith("ACTIVE"))
                 {
                     Log("No ipAddresses or port name defined on conenction! " + isrv.name);
                     Environment.Exit(-1);
+                }
+                if (isrv.ipAddressLocalBind.Trim()==string.Empty && isrv.connectionMode.ToUpper().EndsWith("PASSIVE"))
+                {
+                    isrv.ipAddressLocalBind = "0.0.0.0:20000";
                 }
                 DNP3conns.Add(isrv);
                 Log(isrv.name.ToString() + " - New Connection");
@@ -244,11 +248,18 @@ namespace Dnp3Driver
                         foreach (DNP3_connection conn in DNP3conns)
                         {
                             if (!(conn.channel is null))
-                                if (srv.ipAddresses.SequenceEqual(conn.ipAddresses))
+                            {
+                                if (srv.connectionMode.ToUpper().EndsWith("ACTIVE") && srv.ipAddresses.SequenceEqual(conn.ipAddresses))
                                 {
                                     channel = conn.channel;
                                     break;
                                 }
+                                if (srv.connectionMode.ToUpper().EndsWith("PASSIVE") && srv.ipAddressLocalBind == conn.ipAddressLocalBind)
+                                {
+                                    channel = conn.channel;
+                                    break;
+                                }
+                            }
                         }
                         if (!(channel is null))
                         {

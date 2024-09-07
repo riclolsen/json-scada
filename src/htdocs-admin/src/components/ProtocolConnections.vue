@@ -1811,7 +1811,6 @@
                         'IEC61850',
                         'IEC61850_SERVER',
                         'DNP3_SERVER',
-                        'DNP3',
                         'I104M',
                         'PLCTAG',
                         'MODBUS',
@@ -1819,7 +1818,11 @@
                         'OPC-UA_SERVER',
                         'ICCP',
                         'ICCP_SERVER',
-                      ].includes(selected.protocolDriver)
+                      ].includes(selected.protocolDriver) ||
+                      [
+                        'DNP3',
+                      ].includes(selected.protocolDriver) && 
+                      (selected.connectionMode.endsWith('Active') || selected.connectionMode === 'UDP')
                     "
                   >
                     <v-autocomplete
