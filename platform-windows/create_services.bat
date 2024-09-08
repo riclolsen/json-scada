@@ -169,6 +169,18 @@ nssm set JSON_SCADA_iec101server AppRotateOnline 1
 nssm set JSON_SCADA_iec101server AppRotateBytes 10000000
 nssm set JSON_SCADA_iec101server Start SERVICE_DEMAND_START
 
+rem nssm install JSON_SCADA_iccpclient "C:\json-scada\bin\iccpclient.exe" 1 1
+rem nssm set JSON_SCADA_iccpclient AppStdout C:\json-scada\log\iccpclient.log
+rem nssm set JSON_SCADA_iccpclient AppRotateOnline 1
+rem nssm set JSON_SCADA_iccpclient AppRotateBytes 10000000
+rem nssm set JSON_SCADA_iccpclient Start SERVICE_DEMAND_START
+
+rem nssm install JSON_SCADA_iccpserver "C:\json-scada\bin\iccpserver.exe" 1 1
+rem nssm set JSON_SCADA_iccpserver AppStdout C:\json-scada\log\iccpserver.log
+rem nssm set JSON_SCADA_iccpserver AppRotateOnline 1
+rem nssm set JSON_SCADA_iccpserver AppRotateBytes 10000000
+rem nssm set JSON_SCADA_iccpserver Start SERVICE_DEMAND_START
+
 nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\Dnp3Client.exe" 1 2 
 nssm set JSON_SCADA_dnp3client AppStdout C:\json-scada\log\dnp3client.log
 nssm set JSON_SCADA_dnp3client AppRotateOnline 1

@@ -31,12 +31,15 @@ REM nssm start JSON_SCADA_mongowr
 
 REM SELECT PROTOCOLS TO START
 nssm start JSON_SCADA_iec104client
+rem nssm start JSON_SCADA_iec101client
+rem nssm start JSON_SCADA_iccpclient
 nssm start JSON_SCADA_mqttsparkplugclient
 rem nssm start JSON_SCADA_plc4xclient
 nssm start JSON_SCADA_telegraf_listener
 net start JSON_SCADA_telegraf_runtime
 REM nssm start JSON_SCADA_iec104server
 REM nssm start JSON_SCADA_iec101server
+REM nssm start JSON_SCADA_iccpserver
 REM nssm start JSON_SCADA_iec101client
 REM nssm start JSON_SCADA_dnp3client
 nssm start JSON_SCADA_opcuaclient

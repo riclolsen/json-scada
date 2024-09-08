@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.37"
-!define VERSION_ "0.37.0.0"
+!define VERSION "v.0.38"
+!define VERSION_ "0.38.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -127,6 +127,8 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iec101server'
   nsExec::Exec 'net stop JSON_SCADA_iec104client'
   nsExec::Exec 'net stop JSON_SCADA_iec104server'
+  nsExec::Exec 'net stop JSON_SCADA_iccpclient'
+  nsExec::Exec 'net stop JSON_SCADA_iccpserver'
   nsExec::Exec 'net stop JSON_SCADA_iec61850client'
   nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
@@ -245,7 +247,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-8.0.7-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.8-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -264,7 +266,7 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.7-win-x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.8-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
@@ -623,6 +625,11 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_iec104client"`
   ClearErrors
   
+  ExecWait `"${SC}" stop "JSON_SCADA_iccpclient"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iccpclient"`
+  ClearErrors
+
   ExecWait `"${SC}" stop "JSON_SCADA_iec61850client"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_iec61850client"`
@@ -671,6 +678,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_iec104server"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_iec104server"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_iccpserver"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_iccpserver"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_opcuaserver"`
