@@ -218,6 +218,9 @@ $('#bardiv').css( 'background-color', ScreenViewer_ToolbarColor );
 
 // Load screen file 
 if (tela == "") {
+  if (indtela == "")
+	document.getElementById("loader").style.display = "none";
+
   // if svg file name is not passed as a parameter, wait for screen_list.js to load and find the name in the list, then init the svg processing
   $(function(){
     WebSAGE.init_svg(WebSAGE.lista_telas("", indtela));
