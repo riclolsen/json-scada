@@ -2713,7 +2713,6 @@
                       <v-list-item-action>
                         <v-text-field
                           type="text"
-                          :rules="[rules.required, rules.apTitle]"
                           :input-value="active"
                           :label="
                             $t(
@@ -2796,7 +2795,6 @@
                       <v-list-item-action>
                         <v-text-field
                           type="text"
-                          :rules="[rules.required, rules.apTitle]"
                           :input-value="active"
                           :label="
                             $t(
@@ -3494,13 +3492,6 @@ export default {
         return (
           pattern.test(value) ||
           i18n.t("src\\components\\connections.rulesInvalidIsoSelector")
-        );
-      },
-      apTitle: (value) => {
-        const pattern = /\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/;
-        return (
-          pattern.test(value) ||
-          i18n.t("src\\components\\connections.rulesInvalidApTitle")
         );
       },
       ip: (value) => {
