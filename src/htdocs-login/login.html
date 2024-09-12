@@ -19,6 +19,26 @@
         border-radius: 3px;
         transition: 1s;
       }
+      .blocksnf {
+        flex: 0 1 min-content;
+        position: relative;
+        float: left;
+        flex-wrap: wrap;
+        color: white;
+        vertical-align: middle;
+        margin: 5px;
+        padding: 5px;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        transition: 1s;
+      }
+      dialog {
+        background-color: rgb(145, 156, 168);
+        color: white;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        transition: 1s;
+      }
       h1 {
         text-align: center;
       }
@@ -61,11 +81,11 @@
         return this.replace(/^\s+|\s+$/g, '')
       }
 
-      const parseCookie = str => {
+      const parseCookie = (str) => {
         if (str === '') return {}
         return str
           .split(';')
-          .map(v => v.split('='))
+          .map((v) => v.split('='))
           .reduce((acc, v) => {
             acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(
               v[1].trim()
@@ -74,37 +94,42 @@
           }, {})
       }
 
-      function LoadFavicon (href) {
-        var link = document.createElement('link')
+      function LoadFavicon(href) {
+        let link = document.createElement('link')
         link.type = 'image/x-icon'
         link.rel = 'shortcut icon'
         link.href = href
         document.getElementsByTagName('head')[0].appendChild(link)
       }
 
-      function testLogin () {
-        var ck = parseCookie(document.cookie)
+      function testLogin() {
+        let ck = parseCookie(document.cookie)
         if ('json-scada-user' in ck) {
           ck = JSON.parse(ck['json-scada-user'])
-          var logoutButton = document.getElementById('logout')
-          var buttonMessage = 'Logout [' + ck.username + ']'
+          let logoutButton = document.getElementById('logout')
+          let buttonMessage = 'Logout [' + ck.username + ']'
           if (logoutButton.textContent !== buttonMessage)
             logoutButton.textContent = buttonMessage
 
           if (ck.rights.isAdmin)
             document.getElementById('divAdmin').style.display = ''
           else document.getElementById('divAdmin').style.display = 'none'
+
+          if(ck.rights.changePassword)
+            document.getElementById('changePasswordButton').style.display = ''
+          else
+          document.getElementById('changePasswordButton').style.display = 'none'
         }
 
         fetch('/Invoke/test/user', {
           headers: {
             Accept: 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          method: 'GET'
+          method: 'GET',
         })
-          .then(resp => resp.json())
-          .then(data => {
+          .then((resp) => resp.json())
+          .then((data) => {
             // console.log(data)
             if ('ok' in data && data.ok) {
               document.getElementById('divlogout').style.display = ''
@@ -115,7 +140,7 @@
               document.getElementById('divlogin').style.display = ''
             }
           })
-          .catch(error => {
+          .catch((error) => {
             document.getElementById('divlogout').style.display = 'none'
             document.getElementById('divlogin').style.display = ''
             console.log(
@@ -125,20 +150,20 @@
           })
       }
 
-      function tryLogin (e) {
+      function tryLogin() {
         fetch('/Invoke/auth/signin', {
           headers: {
             Accept: 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           method: 'POST',
           body: JSON.stringify({
             username: document.getElementById('username').value,
-            password: document.getElementById('password').value
-          })
+            password: document.getElementById('password').value,
+          }),
         })
-          .then(resp => resp.json())
-          .then(data => {
+          .then((resp) => resp.json())
+          .then((data) => {
             if ('ok' in data && data.ok == false) {
               document.getElementById('divloginerror').style.display = ''
               setTimeout(function () {
@@ -146,29 +171,30 @@
               }, 3000)
             }
           })
-          .catch(error => {
+          .catch((error) => {
             console.log('Error on a fetch operation: ' + error.message)
           })
           .finally(() => {
             testLogin()
+            document.getElementById('password').value = ''
           })
       }
 
-      function tryLogout (e) {
+      function tryLogout() {
         fetch('/Invoke/auth/signout', {
           headers: {
             Accept: 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           method: 'POST',
           body: JSON.stringify({
-            username: document.getElementById('username').value
-          })
+            username: document.getElementById('username').value,
+          }),
         })
-          .then(response => {
+          .then((response) => {
             // console.log(response)
           })
-          .catch(error => {
+          .catch((error) => {
             console.log('Error on a fetch operation: ' + error.message)
           })
           .finally(() => {
@@ -178,7 +204,7 @@
     </script>
   </head>
   <body>
-    <div id="divlogin" class="login" style="display:none">
+    <div id="divlogin" class="login" style="display: none">
       <h1>
         <img height="90" src="images/json-scada.svg" alt="{json:scada}" />
         <br />Login
@@ -207,88 +233,116 @@
         LOGIN
       </button>
 
-      <div id="divloginerror" style="display:none">
+      <div id="divloginerror" style="display: none">
         Login error, invalid credentials!
       </div>
     </div>
 
-    <div id="divlogout" style="display:none">
+    <div id="divlogout" style="display: none; text-align: center">
       <h1>
         <img height="90" src="images/json-scada.svg" alt="{json:scada}" />
       </h1>
 
-      <button
-        id="logout"
-        type="button"
-        onclick="tryLogout()"
-        class="blocks btn btn-primary"
+      <div style="display: inline-block">
+        <div class="blocksnf">
+          <button
+            id="logout"
+            onclick="tryLogout()"
+            class="blocks btn btn-primary"
+          >
+            LOGOUT
+          </button>
+
+          <button id="changePasswordButton" class="blocksnf btn btn-primary"
+            >Change Password</button
+          >
+        </div>
+      </div>
+
+      <div
+        id="divAdmin"
+        title="Administrative Panel"
+        style="display: none; text-align: center"
       >
-        LOGOUT
-      </button>
+        <div style="display: inline-block">
+          <div class="blocks">
+            <a target="_blank" href="../admin/">
+              <img height="40" src="images/admin.png" /><br />Admin
+            </a>
+          </div>
 
-      <div class="blocks">
-	    <!-- <a target="_blank" href="../display.html?SVGFILE=../svg/kaw2.svg"> -->
-        <a target="_blank" href="../display.html">
-          <img height="40" src="images/tela.png" /><br />Display Viewer
-        </a>
-      </div>
-      <div class="blocks">
-        <a target="_blank" href="../tabular.html?MODE=ALARMS_VIEWER">
-          <img height="40" src="images/firstaid.svg" /><br />Alarms Viewer
-        </a>
-      </div>
-      <div class="blocks">
-        <a target="_blank" href="../events.html">
-          <img height="40" src="images/chrono.svg" /><br />Events Viewer
-        </a>
-      </div>
-      <div class="blocks">
-        <a target="_blank" href="../tabular.html">
-          <img height="40" src="images/tabular.svg" /><br />Tabular Viewer
-        </a>
-      </div>
-      <div class="blocks" title="Grafana">
-        <a id="grafana" target="_blank" href="/grafana">
-          <img height="40" src="images/grafana.ico" /><br />Grafana Dashboards
-        </a>
-        <script>
-          // use this to access Grafana on a distinct port or use some reverse proxy and remove this code
-          //(function () {
-          // document.getElementById('grafana').href = window.location.protocol + "//" + window.location.hostname + ":3000";
-          // })();
-        </script>
-      </div>
-
-      <div class="blocks" title="Metabase">
-        <a id="metabase" target="_blank" href="/metabase">
-          <img height="40" src="images/metabase.svg" /><br />Metabase Dashboards
-        </a>
-      </div>
-
-      <div class="blocks">
-        <a target="_blank" href="../about.html">
-          <img height="40" src="images/json-scada.svg" /><br />About JSON SCADA
-        </a>
-      </div>
-
-      <div id="divAdmin" title="Administrative Panel" style="display: none">
-        <div class="blocks">
-          <a target="_blank" href="../admin/">
-            <img height="40" src="images/admin.png" /><br />Admin
-          </a>
-        </div>
-        <div class="blocks">
-          <a target="_blank" href="../log-io/">
-            <img height="40" src="images/json-scada.svg" /><br />Log Viewer
-          </a>
+          <div class="blocks">
+            <a target="_blank" href="../log-io/">
+              <img height="40" src="images/json-scada.svg" /><br />Log Viewer
+            </a>
+          </div>
         </div>
       </div>
 
+      <div style="display: inline-block; text-align: center">
+        <div class="blocks">
+          <!-- <a target="_blank" href="../display.html?SVGFILE=../svg/kaw2.svg"> -->
+          <a target="_blank" href="../display.html">
+            <img height="40" src="images/tela.png" /><br />Display Viewer
+          </a>
+        </div>
+        <div class="blocks">
+          <a target="_blank" href="../tabular.html?MODE=ALARMS_VIEWER">
+            <img height="40" src="images/firstaid.svg" /><br />Alarms Viewer
+          </a>
+        </div>
+        <div class="blocks">
+          <a target="_blank" href="../events.html">
+            <img height="40" src="images/chrono.svg" /><br />Events Viewer
+          </a>
+        </div>
+        <div class="blocks">
+          <a target="_blank" href="../tabular.html">
+            <img height="40" src="images/tabular.svg" /><br />Tabular Viewer
+          </a>
+        </div>
+        <div class="blocks" title="Grafana">
+          <a id="grafana" target="_blank" href="/grafana">
+            <img height="40" src="images/grafana.ico" /><br />Grafana Dashboards
+          </a>
+        </div>
+
+        <div class="blocks" title="Metabase">
+          <a id="metabase" target="_blank" href="/metabase">
+            <img height="40" src="images/metabase.svg" /><br />Metabase
+            Dashboards
+          </a>
+        </div>
+
+        <div class="blocks">
+          <a target="_blank" href="../about.html">
+            <img height="40" src="images/json-scada.svg" /><br />About JSON
+            SCADA
+          </a>
+        </div>
+      </div>
     </div>
+
+    <dialog id="changePasswordDialog">
+      <form id="changePasswordForm">
+        <h2>Change Password</h2>
+        <label for="currentPassword">Current Password:</label>
+        <input type="password" id="currentPassword" required />
+        <br />
+        <label for="newPassword">New Password:</label>
+        <input type="password" id="newPassword" required />
+        <br />
+        <label for="confirmPassword">Confirm New Password:</label>
+        <input type="password" id="confirmPassword" required />
+        <br />
+        <button type="submit">Change Password</button>
+        <button type="button" id="cancelButton">Cancel</button>
+      </form>
+    </dialog>
 
     <script>
       ;(function () {
-        setTimeout( function () {
+        setTimeout(function () {
           document.getElementById('username').focus()
         }, 250)
 
@@ -303,6 +357,79 @@
               document.getElementById('login').click()
             }
           })
+
+        // Get references to the dialog and form elements
+        const dialog = document.getElementById('changePasswordDialog')
+        const form = document.getElementById('changePasswordForm')
+        const cancelButton = document.getElementById('cancelButton')
+
+        // Function to open the dialog
+        function openChangePasswordDialog() {
+          dialog.showModal()
+        }
+
+        // Function to close the dialog
+        function closeChangePasswordDialog() {
+          dialog.close()
+          form.reset()
+        }
+
+        // Event listener for form submission
+        form.addEventListener('submit', function (e) {
+          e.preventDefault()
+
+          const currentPassword =
+            document.getElementById('currentPassword').value
+          const newPassword = document.getElementById('newPassword').value
+          const confirmPassword =
+            document.getElementById('confirmPassword').value
+
+          // Validate passwords
+          if (newPassword !== confirmPassword) {
+            alert("New passwords don't match!")
+            return
+          }
+
+          let ck = parseCookie(document.cookie)
+          if ('json-scada-user' in ck) {
+            ck = JSON.parse(ck['json-scada-user'])
+          }
+
+          fetch('/Invoke/auth/changePassword', {
+            method: 'post',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: ck.username,
+              currentPassword: currentPassword,
+              newPassword: newPassword,
+            }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (!('error' in data)) {
+                alert('Password changed successfully!')
+                document.getElementById('password').value = newPassword
+                tryLogin()
+              } else {
+                alert('Failed changing password!')
+              }
+            })
+            .catch((err) => alert('Error changing password!'))
+
+          closeChangePasswordDialog()
+        })
+
+        // Event listener for cancel button
+        cancelButton.addEventListener('click', closeChangePasswordDialog)
+
+        // Example: Open dialog when a button is clicked
+        const changePasswordButton = document.getElementById(
+          'changePasswordButton'
+        )
+        changePasswordButton.addEventListener('click', openChangePasswordDialog)
       })()
     </script>
   </body>

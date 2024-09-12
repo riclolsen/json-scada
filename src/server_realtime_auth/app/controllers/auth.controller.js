@@ -12,6 +12,7 @@ const UserAction = db.userAction
 const UserActionsQueue = require('../../userActionsQueue')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const { error } = require('console')
 
 // add header to identify json-scada user for Grafana auto-login (auth.proxy)
 exports.addXWebAuthUser = (req) => {
@@ -615,7 +616,7 @@ exports.updateProtocolConnection = async (req, res) => {
 
   if (['DNP3'].includes(req?.body?.protocolDriver)) {
     if (!('connectionMode' in req.body)) {
-      req.body.connectionMode = "TCP Active"
+      req.body.connectionMode = 'TCP Active'
     }
     if (!('asyncOpenDelay' in req.body)) {
       req.body.asyncOpenDelay = 0.0
@@ -1056,7 +1057,7 @@ exports.signin = async (req, res) => {
     if (!passwordIsValid) {
       return res.status(200).cookie('x-access-token', null).send({
         ok: false,
-        message: 'Invalid Password!',
+        message: 'Wrong Password!',
       })
     }
 
@@ -1110,7 +1111,8 @@ exports.signin = async (req, res) => {
       if ('group1List' in user.roles[i])
         rights.group1List =
           i > 0 &&
-          (rights.group1List.length === 0 || user.roles[i].group1List.length === 0)
+          (rights.group1List.length === 0 ||
+            user.roles[i].group1List.length === 0)
             ? []
             : rights.group1List.concat(user.roles[i].group1List)
       if ('group1CommandList' in user.roles[i])
@@ -1230,5 +1232,65 @@ function registerUserAction(req, actionName) {
       action: actionName,
       timeTag: new Date(),
     })
+  }
+}
+
+// user change its password
+exports.changePassword = async (req, res) => {
+  Log.log('User request for password change.')
+  try {
+    let user = await User.findOne({ username: req.body.username }).exec()
+    if (!user) {
+      res.status(200).send({ error: 'User not found!' })
+      Log.log('Change password user not found!')
+      return
+    }
+    let ck = checkToken(req)
+    if (
+      ck === false ||
+      ck?.username !== req.body.username ||
+      !ck?.rights?.changePassword
+    ) {
+      res.status(200).send({ error: "Can't change password!" })
+      Log.log("Can't change password!")
+      return
+    }
+    if (
+      !('currentPassword' in req.body) ||
+      req.body.currentPassword === '' ||
+      req.body.currentPassword === null
+    ) {
+      res.status(200).send({ error: 'Invalid current password!' })
+      Log.log('Invalid current password!')
+      return
+    }
+
+    const passwordIsValid = bcrypt.compareSync(
+      req.body.currentPassword,
+      user.password
+    )
+    if (!passwordIsValid) {
+      res.status(200).send({ error: 'Wrong current password!' })
+      Log.log('Wrong current password!')
+      return
+    }
+
+    if (
+      !('newPassword' in req.body) ||
+      req.body.newPassword === '' ||
+      req.body.newPassword === null
+    ) {
+      res.status(200).send({ error: 'Invalid new password!' })
+      Log.log('Invalid new password!')
+      return
+    }
+    user.password = bcrypt.hashSync(req.body.newPassword, 8)
+    await user.save()
+    registerUserAction(req, 'changePassword')
+    res.status(200).send({})
+    Log.log('Password changed!')
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
   }
 }
