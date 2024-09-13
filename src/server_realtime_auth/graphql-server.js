@@ -21,7 +21,8 @@ async function initGQLServer(app, db) {
           }
   
           type Query {
-            getTags: [Tag!]!
+            getTagsByGroup1(group1: String!): [Tag!]!
+            getTags(tags: [String]!): [Tag!]!
             getTag(tag: String!): Tag
             }
           
@@ -86,6 +87,8 @@ async function initGQLServer(app, db) {
             origin: String
             overflow: Boolean
             priority: Float
+            protocolSourceConnectionNumber: Float
+            protocolSourceObjectAddress: String
             stateTextFalse: String
             stateTextTrue: String
             substituted: Boolean
@@ -112,8 +115,11 @@ async function initGQLServer(app, db) {
         getUserByName: async (_, qry) => {
           return await db.user.findOne({ username: qry.username })
         },
-        getTags: async () => {
-          return await db.tag.find()
+        getTagsByGroup1: async (_, qry) => {
+          return await db.tag.find({group1: qry.group1})
+        },
+        getTags: async (_, qry) => {
+          return await db.tag.find({tag: {$in : qry.tags}})
         },
         getTag: async (_, qry) => {
           return await db.tag.findOne({ tag: qry.tag })

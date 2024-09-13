@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'server_realtime_auth',
   ENV_PREFIX: 'JS_SERVER_REALTIME_AUTH_',
   MSG: '{json:scada} - Server Realtime Auth',
-  VERSION: '0.1.6',
+  VERSION: '0.1.7',
 }
