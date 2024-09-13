@@ -1,0 +1,129 @@
+const { ApolloServer } = require('@apollo/server')
+const { expressMiddleware } = require('@apollo/server/express4')
+const cors = require('cors')
+const bodyParser = require('body-parser')
+const { authJwt } = require('./app/middlewares')
+
+async function initGQLServer(app, db) {
+  // Create an Apollo server
+  const srvApollo = new ApolloServer({
+    typeDefs: `#graphql
+          type Query {
+            getUsers: [User!]!
+            getUserByName(username: String!): User
+          }
+  
+          type User {
+            _id: ID!
+            username: String!
+            email: String
+            roles: [ID!]
+          }
+  
+          type Query {
+            getTags: [Tag!]!
+            getTag(tag: String!): Tag
+            }
+          
+          type SourceDataUpdate {
+            valueAtSource: Float
+            valueStringAtSource: String
+            valueJsonAtSource: String
+            asduAtSource: String
+            causeOfTransmissionAtSource: String
+            timeTagAtSource: Float
+            timeTagAtSourceOk: Boolean
+            timeTag: Float
+            notTopicalAtSource: Boolean
+            invalidAtSource: Boolean
+            overflowAtSource: Boolean
+            blockedAtSource: Boolean
+            substitutedAtSource: Boolean
+            originator: String
+          }
+            
+          type Tag {
+            _id: Float!
+            tag: String!
+            value: Float
+            valueString: String
+            valueJson: String
+            alarmDisabled: Boolean
+            alarmRange: Float
+            alarmState: Float
+            alarmed: Boolean
+            alerted: Boolean
+            alertState: String
+            annotation: String
+            commandBlocked: Boolean
+            commandOfSupervised: Float
+            commissioningRemarks: String
+            description: String
+            eventTextFalse: String
+            eventTextTrue: String
+            formula: Float
+            frozen: Boolean
+            frozenDetectTimeout: Float
+            group1: String
+            group2: String
+            group3: String
+            hihihiLimit: Float
+            hihiLimit: Float
+            hiLimit: Float
+            historianDeadBand: Float
+            historianPeriod: Float
+            historianLastValue: Float
+            hysteresis: Float
+            invalid: Boolean
+            invalidDetectTimeout: Float
+            isEvent: Boolean
+            kconv1: Float
+            kconv2: Float
+            loLimit: Float
+            loloLimit: Float
+            lololoLimit: Float
+            notes: String
+            origin: String
+            overflow: Boolean
+            priority: Float
+            stateTextFalse: String
+            stateTextTrue: String
+            substituted: Boolean
+            supervisedOfCommand: Float
+            timeTag:Float
+            timeTagAlarm: Float
+            timeTagAlertState: Float
+            timeTagAtSource: Float
+            timeTagAtSourceOk: Boolean
+            transient: Boolean
+            type: String
+            ungroupedDescription: String
+            unit: String
+            updatesCnt: Float
+            zeroDeadband: Float
+            sourceDataUpdate: SourceDataUpdate
+            }
+        `,
+    resolvers: {
+      Query: {
+        getUsers: async () => {
+          return await db.user.find()
+        },
+        getUserByName: async (_, qry) => {
+          return await db.user.findOne({ username: qry.username })
+        },
+        getTags: async () => {
+          return await db.tag.find()
+        },
+        getTag: async (_, qry) => {
+          return await db.tag.findOne({ tag: qry.tag })
+        },
+      },
+    },
+  })
+  await srvApollo.start()
+  app.use(cors(), bodyParser.json())
+  app.use('/apollo', [authJwt.verifyToken], expressMiddleware(srvApollo))
+}
+
+module.exports = initGQLServer

@@ -148,4 +148,8 @@ module.exports = function (app, accessPoint) {
     [authJwt.isAdmin],
     controller.updateUser
   )
+  app.post(
+    accessPoint + 'auth/changePassword',
+    controller.changePassword
+  )
 }

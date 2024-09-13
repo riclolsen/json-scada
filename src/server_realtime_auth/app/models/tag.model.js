@@ -52,6 +52,7 @@ const Tag = mongoose.model(
     protocolSourceCommonAddress: { type: mongoose.Mixed, default: '' },
     protocolSourceConnectionNumber: { type: Double, default: 0.0 },
     protocolSourceObjectAddress: { type: mongoose.Mixed, default: '' },
+    sourceDataUpdate: { type: Object, default: null },
     stateTextFalse: { type: String, default: '' },
     stateTextTrue: { type: String, default: '' },
     substituted: { type: Boolean, default: false },

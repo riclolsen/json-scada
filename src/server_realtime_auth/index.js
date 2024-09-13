@@ -46,6 +46,7 @@ const opc = require('./opc_codes.js')
 const { Pool } = require('pg')
 const UserActionsQueue = require('./userActionsQueue')
 const GetQueryPostgresql = require('./customJsonQueries')
+const initGQLServer = require('./graphql-server.js')
 
 const config = require('./app/config/auth.config.js')
 if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
@@ -68,73 +69,74 @@ const EventsRemoveGuardSeconds = 20
 const jsConfig = LoadConfig()
 let HintMongoIsConnected = true
 
-if (AUTHENTICATION) {
-  // JWT Auth Mongo Express https://bezkoder.com/node-js-mongodb-auth-jwt/
-  dbAuth.mongoose
-    .connect(jsConfig.mongoConnectionString, jsConfig.MongoConnectionOptions)
-    .then(() => {
-      Log.log('Successfully connect to MongoDB (via mongoose).')
-      // initial();
-    })
-    .catch((err) => {
-      console.error('Connection error', err)
-      process.exit()
-    })
-
-  app.use(cookieParser())
-  app.options(OPCAPI_AP, cors()) // enable pre-flight request
-  app.use(express.json())
-  app.use(
-    express.urlencoded({
-      extended: true,
-    })
-  )
-} else {
-  Log.log('******* DISABLED AUTHENTICATION! ********')
-
-  // reverse proxy for grafana
-  app.use('/grafana', httpProxy(GRAFANA_SERVER))
-  // reverse proxy for grafana
-  app.use('/metabase', httpProxy(METABASE_SERVER))
-  // reverse proxy for log.io
-  app.use('/log-io', httpProxy(LOGIO_SERVER))
-  const wsProxy = createProxyMiddleware({
-    target: logioServer,
-    ws: true, // enable websocket proxy
-  })
-  app.use('/socket.io', wsProxy)
-  app.on('upgrade', wsProxy.upgrade)
-
-  // add charset for special sage displays
-  app.use(
-    '/sage-cepel-displays/',
-    express.static('../htdocs/sage-cepel-displays', {
-      setHeaders: function (res, path) {
-        if (/.*\.html/.test(path)) {
-          res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
-        }
-      },
-    })
-  )
-  app.use(express.static('../htdocs')) // serve static files
-  app.options(OPCAPI_AP, cors()) // enable pre-flight request
-  app.use(express.json())
-  app.use(
-    express.urlencoded({
-      extended: true,
-    })
-  )
-  // Here we serve up the index page
-  app.get('/', function (req, res) {
-    res.sendFile(path.join(__dirname + '../htdocs/index.html'))
-  })
-}
-
 let db = null
 let clientMongo = null
 let pool = null
 
 ;(async () => {
+  if (AUTHENTICATION) {
+    // JWT Auth Mongo Express https://bezkoder.com/node-js-mongodb-auth-jwt/
+    dbAuth.mongoose
+      .connect(jsConfig.mongoConnectionString, jsConfig.MongoConnectionOptions)
+      .then(() => {
+        Log.log('Successfully connect to MongoDB (via mongoose).')
+        // initial();
+      })
+      .catch((err) => {
+        console.error('Connection error', err)
+        process.exit()
+      })
+
+    app.use(cookieParser())
+    app.options(OPCAPI_AP, cors()) // enable pre-flight request
+    app.use(express.json())
+    app.use(
+      express.urlencoded({
+        extended: true,
+      })
+    )
+    initGQLServer(app, dbAuth)
+  } else {
+    Log.log('******* DISABLED AUTHENTICATION! ********')
+
+    // reverse proxy for grafana
+    app.use('/grafana', httpProxy(GRAFANA_SERVER))
+    // reverse proxy for grafana
+    app.use('/metabase', httpProxy(METABASE_SERVER))
+    // reverse proxy for log.io
+    app.use('/log-io', httpProxy(LOGIO_SERVER))
+    const wsProxy = createProxyMiddleware({
+      target: logioServer,
+      ws: true, // enable websocket proxy
+    })
+    app.use('/socket.io', wsProxy)
+    app.on('upgrade', wsProxy.upgrade)
+
+    // add charset for special sage displays
+    app.use(
+      '/sage-cepel-displays/',
+      express.static('../htdocs/sage-cepel-displays', {
+        setHeaders: function (res, path) {
+          if (/.*\.html/.test(path)) {
+            res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
+          }
+        },
+      })
+    )
+    app.use(express.static('../htdocs')) // serve static files
+    app.options(OPCAPI_AP, cors()) // enable pre-flight request
+    app.use(express.json())
+    app.use(
+      express.urlencoded({
+        extended: true,
+      })
+    )
+    // Here we serve up the index page
+    app.get('/', function (req, res) {
+      res.sendFile(path.join(__dirname + '../htdocs/index.html'))
+    })
+  }
+
   app.listen(HTTP_PORT, IP_BIND, () => {
     Log.log('listening on ' + HTTP_PORT)
   })
