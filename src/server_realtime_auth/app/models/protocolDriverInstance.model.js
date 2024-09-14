@@ -10,8 +10,10 @@ const ProtocolDriverInstance = mongoose.model(
     logLevel: { type: Double, default: 1.0 },
     nodeNames: { type: [String], default: ['mainNode'] },
     keepProtocolRunningWhileInactive: { type: Boolean, default: false },
-    //activeNodeName: {type: String, default: ""},
-    //activeNodeKeepAliveTimeTag: {type: Date, default: null},
+    activeNodeName: {type: String, default: ""},
+    activeNodeKeepAliveTimeTag: {type: Date, default: null},
+    softwareVersion: {type: String, default: ""},
+    stats: {type: Object, default: null},
   }),
   'protocolDriverInstances'
 )

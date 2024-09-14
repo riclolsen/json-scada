@@ -24,6 +24,8 @@ async function initGQLServer(app, db) {
             getTagsByGroup1(group1: String!): [Tag!]!
             getTags(tags: [String]!): [Tag!]!
             getTag(tag: String!): Tag
+            getProtocolDriverInstances: [ProtocolDriverInstance!]!
+            getProtocolConnections: [ProtocolConnection!]!
             }
           
           type SourceDataUpdate {
@@ -106,6 +108,30 @@ async function initGQLServer(app, db) {
             zeroDeadband: Float
             sourceDataUpdate: SourceDataUpdate
             }
+          
+          type ProtocolDriverInstance {
+            _id: ID!
+            protocolDriver: String!
+            protocolDriverInstanceNumber: Float!
+            enabled: Boolean
+            logLevel: Float
+            nodeNames: [String]
+            keepProtocolRunningWhileInactive: Boolean
+            activeNodeName: String
+            activeNodeKeepAliveTimeTag: Float
+            softwareVersion: String
+            }
+
+          type ProtocolConnection {
+            _id: ID!
+            protocolDriver: String!
+            protocolDriverInstanceNumber: Float
+            protocolConnectionNumber: Float
+            name: String
+            description: String
+            enabled: Boolean
+            commandsEnabled: Boolean
+          }  
         `,
     resolvers: {
       Query: {
@@ -123,6 +149,12 @@ async function initGQLServer(app, db) {
         },
         getTag: async (_, qry) => {
           return await db.tag.findOne({ tag: qry.tag })
+        },
+        getProtocolDriverInstances: async () => {
+          return await db.protocolDriverInstance.find()
+        },
+        getProtocolConnections: async () => {
+          return await db.protocolConnection.find()
         },
       },
     },
