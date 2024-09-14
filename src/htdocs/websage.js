@@ -6,7 +6,7 @@
 //
 // DEPENDENCIES : opc-codes.js, util.js, jquery.js, jquery.ui, core.js, shortcut.js, messages.js, config_viewers.js  (must be include before this script)
 
-// {json:scada} - Copyright 2020-2023 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2024 - Ricardo L. Olsen
 // Derived from OSHMI/Open Substation HMI - Copyright 2008-2020 - Ricardo L. Olsen
 
 /*jslint browser: true, bitwise: true, devel: true */
@@ -319,7 +319,10 @@ var WebSAGE = {
         .then(response => response.text())
         .then(data => {
           //var ini = performance.now();
+          //var xmlDoc = new DOMParser().parseFromString(data, "text/xml");
+          //document.getElementById("svgdiv").appendChild(xmlDoc.documentElement);
           document.getElementById("svgdiv").innerHTML = data;
+
           $(document.getElementById("svgdiv").children[0]).css(
             "background-color",
             VisorTelas_BackgroundSVG
@@ -5614,6 +5617,31 @@ getHistoricalData: function (i, pnt, timeBegin) {
 
     try {
       SVGDoc = document.getElementById("svgdiv").children[0];
+
+      // execute scripts in the svg file
+      ( async function() { 
+        var scripts = SVGDoc.getElementsByTagName("script");
+        var importPergola = -1;
+        for (var i = 0; i < scripts.length; i++) {
+          if (scripts[i].href.baseVal.endsWith("pergola.js")) {
+            importPergola = i;
+            break;
+          }
+        }
+        var code = "";
+        for (var i = 0; i < scripts.length; i++) {
+          if (scripts[i].href.baseVal != "") {
+            code += await (await fetch(scripts[i].href.baseVal)).text();
+          } else {
+            code += SVGDoc.getElementsByTagName("script")[i].innerHTML
+          }
+          code += "\n";
+          if (importPergola-1 === i) {
+            code += "var container = 'layer1';\n";
+          }
+        }
+        eval(code);
+      } )();
 
       if (SVGDoc == null && tela !== "") {
         // if SVG not loaded, reload page
