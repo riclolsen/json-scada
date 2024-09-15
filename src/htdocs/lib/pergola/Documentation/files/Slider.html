@@ -1,0 +1,176 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Slider</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Slider class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Slider</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string or number (user space units).</p>
+
+  	<p id="shape" class="property"><strong>shape</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string; allowed values: "round"; "square".</p>
+
+  	<p id="size" class="property"><strong>size</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string; allowed values: "linear"; "discrete".</p>
+
+  	<p id="numberOfSteps" class="property"><strong>numberOfSteps</strong></p>
+  	<p>4 – number; the number of steps for this "discrete" <a href="#type">type</a>.</p>
+
+  	<p id="initial" class="property"><strong>initial</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string; the initial position; allowed values: "start"; "middle"; "end".</p>
+
+  	<p id="extent" class="property"><strong>extent</strong></p>
+  	<p>127 – number (user space units); the displacement range.</p>
+
+  	<p id="valueTip" class="property"><strong>valueTip</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – boolean; determines whether this should display a value tip.</p>
+
+  	<p id="rx" class="property"><strong>rx</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="trackFill" class="property"><strong>trackFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="trackStroke" class="property"><strong>trackStroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="trackOpacity" class="property"><strong>trackOpacity</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string or number.</p>
+
+  	<p id="slotStroke" class="property"><strong>slotStroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="slotSize" class="property"><strong>slotSize</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="release" class="property"><strong>release</strong>()</p>
+  	<p>This method is invoked upon <a href="Dragarea.html#release">release</a> of <a href="references.html#dragarea">pergola.dragarea</a>. Hides this <a href="#valueTip">valueTip</a> and/or this <a href="#quickTip">quickTip</a> if specified. You don't need to invoke this method explicitly.</p>
+
+  	<p id="horizontalSliderInit" class="property"><strong>horizontalSliderInit</strong>(<i>evt</i>)</p>
+  	<p>Returns an <a href="Dragarea.html#activate">activation object</a> for <a href="references.html#dragarea">pergola.dragarea</a> with this <a href="#horizontalSlideByButton">horizontalSlideByButton</a> assigned to the <code>callback</code> property. You don't need to invoke this method explicitly.</p>
+
+  	<p id="verticalSliderInit" class="property"><strong>verticalSliderInit</strong>(<i>evt</i>)</p>
+  	<p>Returns an <a href="Dragarea.html#activate">activation object</a> for <a href="references.html#dragarea">pergola.dragarea</a> with this <a href="#verticalSlideByButton">verticalSlideByButton</a> assigned to the <code>callback</code> property. You don't need to invoke this method explicitly.</p>
+
+  	<p id="horizontalSlideByButton" class="property"><strong>horizontalSlideByButton</strong>(<i>evt</i>)</p>
+  	<p>Callback function invoked as a method of <a href="references.html#dragarea">pergola.dragarea</a>. You don't need to invoke this method explicitly.</p>
+
+  	<p id="verticalSlideByButton" class="property"><strong>verticalSlideByButton</strong>(<i>evt</i>)</p>
+  	<p>Callback function invoked as a method of <a href="references.html#dragarea">pergola.dragarea</a>. You don't need to invoke this method explicitly.</p>
+
+  	<p id="horizontalSlideByTrack" class="property"><strong>horizontalSlideByTrack</strong>(<i>evt</i>)</p>
+  	<p>Callback for events registered on this <a href="#track">track</a> (horizontal). You don't need to invoke this method explicitly.</p>
+
+  	<p id="verticalSlideByTrack" class="property"><strong>verticalSlideByTrack</strong>(<i>evt</i>)</p>
+  	<p>Callback for events registered on this <a href="#track">track</a> (vertical). You don't need to invoke this method explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="buildH" class="property"><strong>buildH</strong>(<i>object</i>)</p>
+  	<p>Specialized build method for horizontal scrollbar. this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+  	<p id="buildV" class="property"><strong>buildV</strong>(<i>object</i>)</p>
+  	<p>Specialized build method for vertical scrollbar. this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="track" class="property"><strong>track</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="buttonGroup" class="property"><strong>buttonGroup</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="button" class="property"><strong>button</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="valueTipGroup" class="property"><strong>valueTipGroup</strong></p>
+  	<p>If this <a href="#valueTip">valueTip</a>, &lt;g&gt; element.</p>
+
+  	<p id="text" class="property"><strong>text</strong></p>
+  	<p>If this <a href="#valueTip">valueTip</a>, &lt;text&gt; element.</p>
+
+  	<p id="quickTip" class="property"><strong>quickTip</strong></p>
+  	<p>If specified, reference to library's quick tip (lib/qtips.js) or new <a href="QuickTip.html">pergola.QuickTip</a> instance (as returned by the <a href="Class.html#quickTipFormat">quickTipFormat()</a> method). See <a href="QuickTip.html">pergola.QuickTip</a> for options.</p>
+
+  	<p id="fn" class="property"><strong>fn</strong></p>
+  	<p>If specified, callback function.</p>
+
+  	<p class="first">Other properties related to internal dynamics are not listed.</p>
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

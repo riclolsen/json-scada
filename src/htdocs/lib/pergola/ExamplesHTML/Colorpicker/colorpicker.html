@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola color picker</title>
+<meta name="description" content="SVG library - Pergola's color picker with 65536 (narrow spectrum) or 393216 (wide spectrum) visible colors. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+  <img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+  <h1>Color Picker and Color Box Selector</h1>
+
+  <div id="svg" style="width: 1580px; height: 670px; margin-left: 20px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+
+<!-- PROJECT FILES  -->
+  <script src="colorBoxSelector_and_colorpicker.js" type="text/javascript"></script>
+
+
+  <div class="blurb">
+
+	  <h3><a href="../../Examples/Colorpicker/colorpicker.svg">View as standalone SVG</a></h3>
+
+  	<p>The color picker basic and extended versions now run in a single interface. The panel now has the narrow/wide spectrum button to toggle between 65536 and 393216 visible colors.</p>
+		<p>The ColorBoxSelector class is specifically designed to use the <code>pergola.colorpicker</code>, a reusable instance of the <code>ColorPicker</code> class created at runtime. A ColorBoxSelector instance initializes the color picker through its event handler. To initialize the color picker through some other object or event you must specifically invoke the <code>pergola.colorpicker.init()</code> method which expects one object with two properties: <code>user</code>, the object that processes the color result, and <code>color</code>, the new initial color value in any legal format:</p>
+
+    <div class="codebox">
+    <script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.colorpicker.init({
+  user: object,
+  color: color value
+});</script>
+    </div>
+
+		<h4>HOW</h4>
+
+		<p>Use of the color box selector (as in this page):</p>
+    <div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var mySelector = new pergola.ColorBoxSelector()
+.build({
+  parent : g,
+  caption : {
+    y : 15,
+    textNode : "Select color",
+  },
+//  target : pergola.background,
+  fn : function () {
+    var cp = pergola.colorpicker;
+
+    cp.user.fill = cp.color;
+    cp.user.rect.setAttributeNS(null, "fill", cp.color);
+/*
+ * example: change the background color
+*/  
+//    cp.user.target.fill = cp.color;
+//    cp.user.target.rect.setAttributeNS(null, "fill", cp.color);
+  }
+});
+]]></script>
+    </div>
+  </div>
+
+  <div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

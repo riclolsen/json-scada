@@ -1,0 +1,499 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG library – API Reference</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference.">
+<link href="api.css" type="text/css" rel="stylesheet"/>
+
+<script type="text/javascript">
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-55637971-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+</head>
+<body>
+<img src="graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div id="doc">
+
+	<h1 id="title">API Reference</h1>
+
+	<p class="first">All Pergola things are under the <code>pergola</code> namespace. Pergola now uses <a href="http://semver.org/">semantic versioning</a>. To find the current version use <code>pergola.version</code>.</p>
+
+	<ul id="contents" class="none">
+		<li><a class="index" href="#Core">Core</a></li>
+		<li><a class="index" href="#Class">Class (superclass)</a></li>
+		<li><a class="index" href="#Classes">Classes</a></li>
+		<li><a class="index" href="#Libraries">Libraries</a>
+		<li><a class="index" href="#BuiltinObExt">Built-in objects extensions</a>
+   </ul>
+
+
+
+	<div class="toc">
+
+
+<!-- Core -->
+		<h2 id="Core" class="header"><a href="files/core.html">Core</a></h2>
+
+		<h3><a href="files/dom.html">DOM</a></h3>
+		<ul class="dot">
+			<li><a href="files/dom.html#SVG">SVG()</a> – universal SVG node builder</li>
+			<li><a href="files/dom.html#HTML">HTML()</a> – universal HTML node builder</li>
+			<li><a href="files/dom.html#HTML_FO">HTML_FO()</a> – universal HTML node builder as foreighObject</li>
+	  </ul>
+
+
+	  <h3><a href="files/nodeManip.html">node manipulation</a></h3>
+		<ul class="dot">
+			<li><a href="files/nodeManip.html#removeChildren">removeChildren()</a> – remove all children of specified node</li>
+			<li><a href="files/nodeManip.html#attribute">attribute()</a> – set a collection of attributes for specified node</li>
+	  </ul>
+
+
+	  <h3><a href="files/classOps.html">class operations</a></h3>
+		<ul class="dot">
+			<li><a href="files/classOps.html#subclass">subclass()</a> – subclass inheritance</li>
+			<li><a href="files/classOps.html#extend">extend()</a> – extends objects or classes</li>
+			<li><a href="files/classOps.html#destroy">destroy()</a> – deletes properties and variables</li>
+	  </ul>
+
+
+	  <h3><a href="files/requests.html">requests - load - save</a></h3>
+		<ul class="dot">
+			<li><a href="files/requests.html#getFiles">getFiles()</a> – retrieve the file list from specified folder on server</li>
+			<li><a href="files/requests.html#loadSVG">loadSVG()</a> – loads and parses an SVG document, and appends it to the specified container</li>
+			<li><a href="files/requests.html#saveJSON">saveJSON()</a> – save file (json) to specified folder</li>
+      <li><a href="files/requests.html#saveSVG">saveSVG()</a> – save file (svg) to specified folder</li>
+			<li><a href="files/requests.html#xhrGET">xhrGET()</a> – issue a GET request</li>
+			<li><a href="files/requests.html#xhrPOST">xhrPOST()</a> – issue a POST request</li>
+			<li><a href="files/requests.html#xmlToJson">xmlToJson()</a> – XML to JSON converter</li>
+	  </ul>
+
+
+	  <h3><a href="files/xmlName.html">pergola.xmlName</a></h3>
+		<ul class="dot">
+			<li><a href="files/xmlName.html#list">list</a> – list of the generated xml names</li>
+			<li><a href="files/xmlName.html#exist">exist()</a> – checks if xml name to add is already used</li>
+			<li><a href="files/xmlName.html#add">add()</a> – adds xml name returned by <a href="files/String.html#xmlNameGenerator">String.xmlNameGenerator()</a></li>
+			<li><a href="files/xmlName.html#remove">remove()</a> – removes assigned xml name from list (on object deletion)</li>
+	  </ul>
+
+
+	  <h3><a href="files/undo.html">pergola.Undo</a></h3>
+		<ul class="dot">
+			<li><a href="files/undo.html#max">max</a> – levels</li>
+			<li><a href="files/undo.html#buffer">buffer</a> – stores mementos</li>
+			<li><a href="files/undo.html#index">index</a> – buffer index</li>
+			<li><a href="files/undo.html#canUndo">canUndo()</a> – buffer is not empty</li>
+			<li><a href="files/undo.html#canRedo">canRedo()</a> – buffer length is greater than index</li>
+			<li><a href="files/undo.html#add">add()</a> – record an action</li>
+			<li><a href="files/undo.html#update">update()</a> – shifts buffer if overflow</li>
+			<li><a href="files/undo.html#cancel">cancel()</a> – remove latest entry in buffer</li>
+			<li><a href="files/undo.html#destroy">destroy()</a> – checks all elements referenced (one or more reference) in the buffer objects and deletes them where applicable</li>
+			<li><a href="files/undo.html#flush">flush()</a> – reinitialize buffer</li>
+			<li><a href="files/undo.html#undo">undo()</a> – handler; if <a href="files/undo.html#canUndo">canUndo</a>, invokes objects' <code>undo</code> callback</li>
+			<li><a href="files/undo.html#redo">redo()</a> – handler; if <a href="files/undo.html#canRedo">canRedo</a>, invokes objects' <code>redo</code> callback</li>
+			<li><a href="files/undo.html#handleEvent">handleEvent()</a> – event handler; forks to sub-handlers <a href="files/undo.html#undo">undo</a> / <a href="files/undo.html#redo">redo</a></li>
+			<li><a href="files/undo.html#register">register()</a> – activate recording of this action (objects to be monitored must instantiate the class first)</li>
+			<li><a href="files/undo.html#disable">disable()</a> – stop monitoring. Call this on action termination</li>
+	  </ul>
+
+
+	  <h3><a href="files/timer.html">pergola.Timer</a></h3>
+		<ul class="dot">
+			<li><a href="files/timer.html#initialize">initialize()</a> – start a timer process with specified <code>frequence</code> (if any) and <code>delay</code> (if any)</li>
+			<li><a href="files/timer.html#setInterval">setInterval()</a> – called internally if <code>frequence</code> was specified</li>
+			<li><a href="files/timer.html#clear">clear()</a> – clear interval and/or timeout; optionally destroy instance</li>
+	  </ul>
+
+
+	  <h3><a href="files/key.html">pergola.Key</a></h3>
+		<p>Prototype methods</p>
+		<ul class="dot">
+			<li><a href="files/key.html#register">register()</a> – enables keyboard monitoring; starts process</li>
+			<li><a href="files/key.html#release">release()</a> – stops keyboard monitoring; ends current process optionally destroy instance</li>
+	  </ul>
+	  <p>Class properties and methods</p>
+	  <ul class="dot">
+			<li><a href="files/key.html#active">active</a> – reference to the current typing process</li>
+			<li><a href="files/key.html#keydown">keydown()</a> – default generic keydown handler; handles keyCode (8, 9, 13, 46, 112–123)</li>
+			<li><a href="files/key.html#keypress">keypress()</a> – default keypress handler; handles charCode; alphanumeric</li>
+			<li><a href="files/key.html#keyup">keyup()</a> – default keyup handler; no action</li>
+			<li><a href="files/key.html#keypressNum">keypressNum()</a> – optional keypress handler; handles charCode; filters numeric values</li>
+			<li><a href="files/key.html#keypressInt">keypressInt()</a> – optional keypress handler; handles charCode; filters integer values</li>
+			<li><a href="files/key.html#keypressPos">keypressPos()</a> – optional keypress handler; handles charCode; filters positive numeric values</li>
+			<li><a href="files/key.html#keypressPosInt">keypressPosInt()</a> – optional keypress handler; handles charCode; filters positive integer values</li>
+			<li><a href="files/key.html#keypressHex">keypressHex()</a> – optional keypress handler; handles charCode; filters hexadecimal values</li>
+	  </ul>
+
+
+	  <h3><a href="files/geom.html">pergola.geom</a></h3>
+		<ul class="dot">
+			<li><a href="files/geom.html#intersectionPoint">intersectionPoint()</a> – get intersection point between two lines</li>
+			<li><a href="files/geom.html#intersect">intersect()</a> – test intersection</li>
+			<li><a href="files/geom.html#pointBetween">pointBetween()</a> – test if point is between two points</li>
+			<li><a href="files/geom.html#pointOnLine">pointOnLine()</a> – test if point is on a segment</li>
+			<li><a href="files/geom.html#getPDistance">getPDistance()</a> – get shortest distance from point to segment</li>
+			<li><a href="files/geom.html#getPPoint">getPPoint()</a> – get perpendicular point on line from point</li>
+			<li><a href="files/geom.html#getP2Pdistance">getP2Pdistance()</a> – get distance between two points</li>
+			<li><a href="files/geom.html#centroid">centroid()</a> – get true centroid</li>
+			<li><a href="files/geom.html#crossProduct">crossProduct()</a> – cross product</li>
+			<li><a href="files/geom.html#angle">angle</a>
+				<ul>
+					<li><a href="files/geom.html#degrees">angle.degrees()</a> – get the rotation angle of a line in degrees</li>
+					<li><a href="files/geom.html#radians">angle.radians()</a> – get the rotation angle of a line in radians</li>
+					<li><a href="files/geom.html#toDegrees">angle.toDegrees()</a> – convert radians (number or string) to degrees</li>
+					<li><a href="files/geom.html#toRadians">angle.toRadians()</a> – convert degrees (number or string) to radians</li>
+					<li><a href="files/geom.html#angleBetween2Lines">angle.angleBetween2Lines()</a> – get angle between two lines</li>
+					<li><a href="files/geom.html#constrain">angle.constrain()</a> – constrain line to fixed angles from specified number of cardinals</li>
+				</ul>
+			</li>
+			<li><a href="files/geom.html#area">area</a>
+				<ul>
+					<li><a href="files/geom.html#triangle">area.triangle()</a> – computes triangle area based on sides</li>
+					<li><a href="files/geom.html#polygon">area.polygon()</a> – computes polygon area based on vertices (clockwise or counterclockwise)</li>
+				</ul>
+			</li>
+		</ul>
+
+
+	  <h3><a href="files/color.html">pergola.color</a></h3>
+		<p>Properties</p>
+		<ul class="dot">
+			<li><a href="files/color.html#rgbTable">rgbTable</a> – table of color values</li>
+      <li><a href="files/color.html#neutral">neutral</a> – the current theme color is neutral</li>
+			<li><a href="files/color.html#components">components</a> – object with r, g, b properties</li>
+			<li><a href="files/color.html#ingredients">ingredients</a> – array of sorted color components of the current theme color</li>
+			<li><a href="files/color.html#themeLuminosity">themeLuminosity</a> – the luminosity (0–255) of the current theme color</li>
+      <li><a href="files/color.html#keywordNames">keywordNames</a> – object with the color keywords name/value pairs.</li>
+      <li><a href="files/color.html#customColorNames">customColorNames</a> – object defining custom color keywords</li>
+	  </ul>
+	  <p>Methods</p>
+		<ul class="dot">
+			<li><a href="files/color.html#convert">convert()</a> – converts a color string in any legal format (including color keyword and <a href="files/constants.html#customColorNames">custom color keyword</a>) to the specified format</li>
+			<li><a href="files/color.html#hslToRgb">hslToRgb()</a> – converts hsl to rgb</li>
+			<li><a href="files/color.html#hexToRGB">hexToRGB()</a> – converts hexadecimal (complete string with #) to rgb</li>
+			<li><a href="files/color.html#rgbToHex">rgbToHex()</a> – converts single rgb value (number) to hexadecimal (always returns two digits from 00 to FF)</li>
+			<li><a href="files/color.html#lab">lab()</a> – used by system</li>
+			<li><a href="files/color.html#shade">shade()</a> – get a shade of current theme color from specified array of ingredients in %, and positive or negative brightness factor</li>
+			<li><a href="files/color.html#rgbTablePopulate">rgbTablePopulate</a>
+				<ul>
+					<li><a href="files/color.html#basic">rgbTablePopulate.basic()</a> – populates a 65536 rgb colors table</li>
+					<li><a href="files/color.html#extended">rgbTablePopulate.extended()</a> – populates a 393216 rgb colors table</li>
+				</ul>
+			</li>
+	  </ul>
+
+
+	  <h3><a href="files/geo.html">pergola.geo</h3>
+		<ul class="dot">
+			<li><a href="files/geo.html#distance">distance()</a> – Computes the distance between two geo-locations</li>
+			<li><a href="files/geo.html#kmToMi">kmToMi()</a> – convert kilometers to miles</li>
+			<li><a href="files/geo.html#kmToNmi">kmToNmi()</a> – convert kilometers to nautical miles</li>
+			<li><a href="files/geo.html#formatMiles">formatMiles()</a> – formats to miles-feet-yards-inches depending on magnitude</li>
+			<li><a href="files/geo.html#formatKm">formatKm()</a> – formats to kilometers-meters-centimeters depending on magnitude</li>
+	  </ul>
+
+
+	  <h3><a href="files/contextmenuManager.html">pergola.contextmenuManager</a></h3>
+		<ul class="dot">
+			<li><a href="files/contextmenuManager.html#browser">browser()</a> – handler for "contextmenu" event registered on the window object</li>
+			<li><a href="files/contextmenuManager.html#custom">custom()</a> – handler for "mousedown" event registered on the window object</li>
+			<li><a href="files/contextmenuManager.html#activate">activate()</a> – activates custom contextmenu</li>
+	  </ul>
+
+
+	  <h3><a href="files/debugger.html">pergola.debugger</a></h3>
+		<ul class="dot">
+			<li><a href="files/debugger.html#toggleOn">toggleOn()</a> – opens the debugger panel</li>
+			<li><a href="files/debugger.html#toggleOff">toggleOff()</a> – closes the debugger panel</li>
+			<li><a href="files/debugger.html#vars">vars()</a> – shows property/value pairs in parameter object</li>
+	  </ul>
+
+
+	  <h3><a href="files/lazyLoad.html">pergola.lazyLoad</a></h3>
+		<ul class="dot">
+			<li><a href="files/lazyLoad.html#fileDialog">fileDialog()</a> – Creates the <a href="files/references.html#fileDialog">pergola.fileDialog</a> <a href="files/Panel.html">panel</a></li>
+			<li><a href="files/lazyLoad.html#findDialog">findDialog()</a> – Creates the <a href="files/references.html#findDialog">pergola.findDialog</a> <a href="files/Panel.html">panel</a></li>
+			<li><a href="files/lazyLoad.html#colorpickerDialog">colorpickerDialog()</a> – Creates the <a href="files/references.html#colorpicker">pergola.colorpicker</a> <a href="files/Panel.html">panel</a></li>
+	  </ul>
+
+
+	  <h3><a href="files/misc.html">miscellaneous</a></h3>
+		<ul class="dot">
+			<li><a href="files/misc.html#decimalToHex">decimalToHex()</a> – converter</li>
+			<li><a href="files/misc.html#find">find()</a> – utility function to initialize and open the <a href="files/references.html#findDialog">pergola.findDialog</a></li>
+			<li><a href="files/misc.html#getColorpicker">getColorpicker()</a> – utility function to initialize and open the <a href="files/references.html#colorpicker">pergola.colorpicker</a></li>
+      <li><a href="files/misc.html#handleContextmenu">handleContextmenu()</a> – system context menu management</li>
+      <li><a href="files/misc.html#handleCustomContextmenu">handleCustomContextmenu()</a> – custom context menu management</li>
+			<li><a href="files/misc.html#height">height()</a> – get the computedStyle.height of HTML container, or of root document in standalone SVG</li>
+			<li><a href="files/misc.html#hexToDecimal">hexToDecimal()</a> – converter</li>
+      <li><a href="files/misc.html#message">message()</a> – pointer coordinates in HTML + SVG context, or standalone SVG</li>
+			<li><a href="files/misc.html#mousePoint">mousePoint()</a> – pointer coordinates in HTML + SVG context, or standalone SVG</li>
+			<li><a href="files/misc.html#resize">resize()</a> – redraws the interface on resize event</li>
+			<li><a href="files/misc.html#setCursor">setCursor()</a> – set SVG "cursor" attribute (workaround)</li>
+			<li><a href="files/misc.html#symbol">symbol()</a> – returns a group containing a symbol (from library or defined on the fly). Use for symbols or icons</li>
+			<li><a href="files/misc.html#toArray">toArray()</a> – store property values into array (avoids conflict with other extension libraries)</li>
+			<li><a href="files/misc.html#use">use()</a> – use a preset shape from the shapes library with SVG attributes specified in the object passed</li>
+			<li><a href="files/misc.html#width">width()</a> – get the computedStyle.width of HTML container, or of root document in standalone SVG</li>
+	  </ul>
+
+
+	  <h3><a href="files/constants.html">system constants</a></h3>
+		<ul class="dot">
+			<li><a href="files/constants.html#version">version</a> – the current version</li>
+      <li><a href="files/constants.html#browser">browser</a> – browser identifiers</li>
+      <li><a href="files/constants.html#locale">locale</a> – browser's language</li>
+			<li><a href="files/constants.html#debug">debug</a> – use debugger (as specified in config file)</li>
+			<li><a href="files/constants.html#decimals">decimals</a> – default decimal places (as specified in config file)</li>
+			<li><a href="files/constants.html#getDir">getDir</a> – default file on server for getting directory listings</li>
+      <li><a href="files/constants.html#NF">NF</a> – Intl.NumberFormat implemented</li>
+			<li><a href="files/constants.html#DTF">DTF</a> – Intl.DateTimeFormat implemented</li>
+			<li><a href="files/constants.html#mutationEvnt">mutationEvnt</a> – MutationEvents 2 implemented</li>
+			<li><a href="files/constants.html#mutationObserver">mutationObserver</a> – mutationObserver implemented</li>
+			<li><a href="files/constants.html#ns">ns</a> – namespace prefixes</li>
+			<li><a href="files/constants.html#path">path</a> – path to pergola folder (as specified in config file)</li>
+      <li><a href="files/constants.html#radixChar">radixChar</a> – table of locale decimal delimiters</li>
+			<li><a href="files/constants.html#remote">remote</a> – lets pergola know if it's running in remote or local mode</li>
+			<li><a href="files/constants.html#systemMenu">systemMenu</a> – determines whether pergola has a system menu on the taskbar (as specified in config file)</li>
+			<li><a href="files/constants.html#taskbarLogo">taskbarLogo</a> – lets you place a logo on the taskbar (as specified in config file)</li>
+			<li><a href="files/constants.html#theme">theme</a> – the current theme color (as specified in config file)</li>
+			<li><a href="files/constants.html#undos">undos</a> – number of undos (as specified in config file)</li>
+			<li><a href="files/constants.html#writeFile">writeFile</a> – default file on server for writing files</li>
+	  </ul>
+
+	  <h3><a href="files/variables.html">environment variables</a></h3>
+		<ul class="dot">
+			<li><a href="files/variables.html#removeSelection">pergola.removeSelection</a> – removal of current selection range</li>
+      <li><a href="files/variables.html#preventMousemoveDefault">pergola.preventMousemoveDefault</a> – affects selection</li>
+			<li><a href="files/variables.html#preventMousedownDefault">pergola.preventMousedownDefault</a> – affects selection</li>
+			<li><a href="files/variables.html#preemptiveIsUp">pergola.preemptiveIsUp</a> – prevents any action on the interface if a preemptive dialog is up</li>
+			<li><a href="files/variables.html#contextmenuEnabled">pergola.contextmenuEnabled</a> – allows to switch to a custom context menu</li>
+	  </ul>
+
+	  <h3><a href="files/references.html">system references</a></h3>
+
+		<p>Layers</p>
+		<ul class="dot">
+			<li><a href="files/references.html#container">container</a> – the HTML container embedding Pergola when running in HTML + SVG mode (set in config)</li>
+      <li><a href="files/references.html#contextMenus">contextMenus</a> – the &lt;g&gt; element containing custom context menus</li>
+			<li><a href="files/references.html#defs">defs</a> – the &lt;defs&gt; element with id: "pergola_defs"</li>
+			<li><a href="files/references.html#desktop">desktop</a> – the outmost &lt;g&gt; element containing all system layers</li>
+			<li><a href="files/references.html#pdoc">doc</a> – <i>document.documentElement</i> in SVG mode, or outmost &lt;svg&gt; element in HTML mode</li>
+			<li><a href="files/references.html#preemptive">preemptive</a> – the &lt;g&gt; element containing preemptive panels</li>
+			<li><a href="files/references.html#systemComponents">systemComponents</a> – the &lt;g&gt; element containing system components</li>
+			<li><a href="files/references.html#user">user</a> – the &lt;g&gt; element default container for user objects</li>
+	  </ul>
+
+	  <p>Objects</p>
+	  <ul class="dot">
+			<li><a href="files/references.html#background">background</a> – system component (<a the href="files/Background.html">pergola.Background</a> object)</li>
+			<li><a href="files/references.html#colorpicker">colorpicker</a> – system component (<a the href="files/ColorPicker.html">pergola.Colorpicker</a> object)</li>
+			<li><a href="files/references.html#coordinates">coordinates</a> – system component (<a href="files/Coordinates.html">pergola.Coordinates</a> object)</li>
+			<li><a href="files/references.html#dragarea">dragarea</a> – system component (<a href="files/Dragarea.html">pergola.Dragarea</a> object)</li>
+			<li><a href="files/references.html#fileDialog">fileDialog</a> – system component (<a href="files/Panel.html">pergola.Panel</a> object)</li>
+			<li><a href="files/references.html#findDialog">findDialog</a> – system component (<a href="files/Panel.html">pergola.Panel</a> object)</li>
+			<li><a href="files/references.html#menubar">menubar</a> – system component (<a href="files/Menubar.html">pergola.Menubar</a> object)</li>
+      <li><a href="files/references.html#notification">notification</a> – system component (<a href="files/Panel.html">pergola.Panel</a> object)</li>
+			<li><a href="files/references.html#rubberBox">rubberBox</a> – system component (<a href="files/RubberBox.html">pergola.RubberBox</a> object)</li>
+			<li><a href="files/references.html#tabsDock">tabsDock</a> – system component (<a href="files/TabsDock.html">pergola.TabsDock</a> object)</li>
+			<li><a href="files/references.html#taskbar">taskbar</a> – system component (<a href="files/Taskbar.html">pergola.Taskbar</a> object)</li>
+			<li><a href="files/references.html#presentationAttributes">presentationAttributes</a> – sheet of initial values of SVG properties/attributes and/or other properties for all classes</li>
+	  </ul>
+
+	  <h3>shortcuts</h3>
+
+		<p>The shortcuts are not in the pergola namespace, they are global variables.<br>
+		The $ symbol is not used in the conventional way. In Pergola all elements and component elements that are likely<br>
+		to be manipulated, or that can be manipulated are referenced, and you never need to invoke getElementById().</p>
+		<ul class="dot">
+			<li>$C() – alias for <a href="files/dom.html#SVG">pergola.SVG()</a></li>
+      <li>$H() – alias for <a href="files/dom.html#HTML">pergola.HTML()</a></li>
+			<li>$M() – alias for <a href="files/misc.html#message">pergola.message()</a></li>
+			<li>$D() – alias for <a href="files/debugger.html#vars">pergola.debugger.vars()</a></li>
+	  </ul>
+
+
+<!-- Class -->
+		<h2 id="Class" class="header"><a href="files/Class.html">Class</a> (superclass)</h2>
+    <ul class="dot">
+			<li><a href="files/Class.html#Class">Class()</a> – base constructor (<code>baseConstructor</code>) of its subclasses; defines prototype properties and methods to inherit</li>
+    </ul>
+
+		<h3><a href="files/Class.html#prototype">prototype</a></h3>
+		<ul class="dot">
+			<li><a href="files/Class.html#x">x</a> – initial value of x</li>
+			<li><a href="files/Class.html#y">y</a> – initial value of y</li>
+      <li><a href="files/Class.html#font-family">"font-family"</a> – initial value of "font-family"</li>
+			<li><a href="files/Class.html#font-size">"font-size"</a> – initial value of "font-size"</li>
+      <li><a href="files/Class.html#stroke">stroke</a> – initial value of stroke</li>
+			<li><a href="files/Class.html#registerEvents">registerEvents()</a> – add one or more event listeners of the type(s) specified in string or array, with the specified handler or this</li>
+			<li><a href="files/Class.html#unregisterEvents">unregisterEvents()</a> – remove one or more registered event listeners of the type(s) specified in string or array, with the specified handler or this</li>
+			<li><a href="files/Class.html#checkEventsList">checkEventsList()</a> – checks if specified event type is registered</li>
+			<li><a href="files/Class.html#setPointerEvents">setPointerEvents()</a> – set pointer events to "all" for the specified elements</li>
+			<li><a href="files/Class.html#removePointerEvents">removePointerEvents()</a> – set pointer events to "none" for the specified elements</li>
+			<li><a href="files/Class.html#memento">memento()</a> – create memento for Undo instance with specified properties</li>
+			<li><a href="files/Class.html#setContextmenu">setContextmenu()</a> – creates context menu for objects (for random elements see <a href="files/contextmenuManager.html">pergola.contextmenuManager</a>)</li>
+			<li><a href="files/Class.html#absoluteX">absoluteX()</a> – get the absolute x position of specified node</li>
+			<li><a href="files/Class.html#absoluteY">absoluteY()</a> – get the absolute y position of specified node</li>
+			<li><a href="files/Class.html#setXYWH">setXYWH()</a> – set x, y, width, and height attributes for the specified element</li>
+			<li><a href="files/Class.html#moveXY">moveXY()</a> – set x and y attributes for the specified element</li>
+			<li><a href="files/Class.html#moveByTranslation">moveByTranslation()</a> – set the transform attribute  for this <code>target</code> element</li>
+			<li><a href="files/Class.html#checkUserFunction">checkUserFunction()</a> – checks the type (function or string) and invokes the user function <code>fn</code></li>
+			<li><a href="files/Class.html#checkCallback">checkCallback()</a> – checks the type (function or string) of the callback</li>
+			<li><a href="files/Class.html#setPositionToStrokeWidth">setPositionToStrokeWidth()</a> – get fine positioning in relation to stroke width; use with straight lines in pixels units</li>
+			<li><a href="files/Class.html#sweep">sweep()</a> – short for deleting specified properties</li>
+			<li><a href="files/Class.html#getFiles">getFiles()</a> – Reference to the <a href="files/requests.html#getFiles">pergola.getFiles()</a> utility function</li>
+			<li><a href="files/Class.html#getColorpicker">getColorpicker()</a> – Reference to the <a href="files/misc.html#getColorpicker">pergola.getFiles()</a> utility function</li>
+			<li><a href="files/Class.html#find">find()</a> – Reference to the <a href="files/misc.html#find">pergola.getFiles()</a> utility function</li>
+			<li><a href="files/Class.html#autoScroll">autoScroll()</a> – use for transformations, or when drawing in vector editing application</li>
+			<li><a href="files/Class.html#zoomBylensToolInit">zoomBylensToolInit()</a> – initializes <code>pergola.rubberBox</code> and <code>pergola.dragarea</code></li>
+			<li><a href="files/Class.html#zoomBylensTool">zoomBylensTool()</a> – applies scaling</li>
+			<li><a href="files/Class.html#mapZoomBylensTool">mapZoomBylensTool()</a> – applies zoom value in maps</li>
+			<li><a href="files/Class.html#scrollByhandToolInit">scrollByhandToolInit()</a> – initializes <code>pergola.dragarea</code></li>
+			<li><a href="files/Class.html#scrollByHandTool">scrollByHandTool()</a> – applies transformations</li>
+			<li><a href="files/Class.html#measureByRulerTool">measureByRulerTool()</a> – measures distance (maps)</li>
+			<li><a href="files/Class.html#measureItinerary">measureItinerary()</a> – calculates itinerary (maps)</li>
+			<li><a href="files/Class.html#zoomTimerInit">zoomTimerInit()</a> – initializes zoom timer</li>
+			<li><a href="files/Class.html#mapZoomFadeout">mapZoomFadeout()</a> – continues zoom to next or previous integer value</li>
+			<li><a href="files/Class.html#mapZoomDownByButton">mapZoomDownByButton()</a> – applies map zoom</li>
+			<li><a href="files/Class.html#mapZoomUpByButton">mapZoomUpByButton()</a> – applies map zoom</li>
+			<li><a href="files/Class.html#zoomDownByButton">zoomDownByButton()</a> – applies zoom</li>
+			<li><a href="files/Class.html#zoomUpByButton">zoomUpByButton()</a> – applies map zoom</li>
+			<li><a href="files/Class.html#quickTipFormat">quickTipFormat()</a> – checks format and origin (library or user) of quic ktip</li>
+			<li><a href="files/Class.html#quickTipInit">quickTipInit()</a> – initializes quicktip timer</li>
+			<li><a href="files/Class.html#rollover">rollover()</a> – button hover effects</li>
+			<li><a href="files/Class.html#videoInverse">videoInverse()</a> – button hover text effect</li>
+			<li><a href="files/Class.html#buttonSelect">buttonSelect()</a> – applies effect on selected button</li>
+			<li><a href="files/Class.html#buttonDeselect">buttonDeselect()</a> – removes  effect from deselected button</li>
+			<li><a href="files/Class.html#textCenterVertical">textCenterVertical()</a> – center text vertically</li>
+			<li><a href="files/Class.html#textShow">textShow()</a> – show text; for objects that have a <code>text</code> property</li>
+			<li><a href="files/Class.html#textHide">textHide()</a> – hide text; for objects that have a <code>text</code> property</li>
+			<li><a href="files/Class.html#textDataUpdate">textDataUpdate()</a> – update text value; for objects that have a <code>text</code> property</li>
+	  </ul>
+
+
+<!-- Classes -->
+		<h2 id="Classes" class="header"><a href="files/classes.html">Classes</a></h2>
+    <ul class="dot">
+			<li><a href="files/Background.html">Background</a></li>
+			<li><a href="files/Button.html">Button</a></li>
+			<li><a href="files/Caption.html">Caption</a></li>
+			<li><a href="files/CheckBox.html">CheckBox</a></li>
+			<li><a href="files/ColorBoxSelector.html">ColorBoxSelector</a></li>
+			<li><a href="files/ColorPicker.html">ColorPicker</a></li>
+			<li><a href="files/ComboBox.html">ComboBox</a></li>
+			<li><a href="files/CommandButton.html">CommandButton</a></li>
+      <li><a href="files/ContextMenu.html">ContextMenu</a></li>
+      <li><a href="files/ContextMenuItem.html">ContextMenuItem</a></li>
+			<li><a href="files/Coordinates.html">Coordinates</a></li>
+			<li><a href="files/DataGrid.html">DataGrid</a></li>
+			<li><a href="files/DataGridHeader.html">DataGridHeader</a></li>
+			<li><a href="files/DataGridLine.html">DataGridLine</a></li>
+			<li><a href="files/DialogButton.html">DialogButton</a></li>
+      <li><a href="files/Doc.html">Doc</a></li>
+			<li><a href="files/Dragarea.html">Dragarea</a></li>
+			<li><a href="files/Frame.html">Frame</a></li>
+			<li><a href="files/Input.html">Input</a></li>
+			<li><a href="files/InputCursor.html">InputCursor</a></li>
+			<li><a href="files/Layout.html">Layout</a></li>
+			<li><a href="files/Legend.html">Legend</a></li>
+			<li><a href="files/ListItem.html">ListItem</a></li>
+			<li><a href="files/Menu.html">Menu</a></li>
+			<li><a href="files/Menubar.html">Menubar</a></li>
+			<li><a href="files/MenuItem.html">MenuItem</a></li>
+			<li><a href="files/MenuList.html">MenuList</a></li>
+			<li><a href="files/Panel.html">Panel</a></li>
+			<li><a href="files/PopupList.html">PopupList</a></li>
+			<li><a href="files/PopupListItem.html">PopupListItem</a></li>
+			<li><a href="files/Preview.html">Preview</a></li>
+			<li><a href="files/Progress.html">Progress</a></li>
+			<li><a href="files/QuickTip.html">QuickTip</a></li>
+			<li><a href="files/RadioButton.html">RadioButton</a></li>
+			<li><a href="files/RubberBox.html">RubberBox</a></li>
+			<li><a href="files/Scrollbar.html">Scrollbar</a></li>
+			<li><a href="files/ScrollButton.html">ScrollButton</a></li>
+			<li><a href="files/ScrollSlider.html">ScrollSlider</a></li>
+			<li><a href="files/Selector.html">Selector</a></li>
+			<li><a href="files/Separator.html">Separator</a></li>
+			<li><a href="files/Slider.html">Slider</a></li>
+			<li><a href="files/StatusBar.html">StatusBar</a></li>
+      <li><a href="files/Suffix.html">Suffix</a></li>
+			<li><a href="files/Tab.html">Tab</a></li>
+			<li><a href="files/TabsDock.html">TabsDock</a></li>
+			<li><a href="files/Taskbar.html">Taskbar</a></li>
+			<li><a href="files/ToolBar.html">ToolBar</a></li>
+			<li><a href="files/ToolButton.html">ToolButton</a></li>
+			<li><a href="files/TopBar.html">TopBar</a></li>
+			<li><a href="files/UpDownButton.html">UpDownButton</a></li>
+			<li><a href="files/Window.html">Window</a></li>
+			<li><a href="files/WindowTab.html">WindowTab</a></li>
+			<li><a href="files/WindowTopBar.html">WindowTopBar</a></li>
+    </ul>
+
+
+
+<!-- Libraries -->
+		<h2 id="Libraries" class="header"><a href="files/lib.html">Libraries</a></h2>
+    <ul class="dot">
+  	  <li><a href="files/filters.html">filter</a> – object defining filter functions</li>
+  	  <li><a href="files/markers.html">marker</a> – object defining marker functions</li>
+  	  <li><a href="files/patterns.html">pattern</a> – object defining pattern functions</li>
+  	  <li><a href="files/symbols.html">symbols</a> – symbols repository</li>
+  	  <li><a href="files/shapes.html">shapes</a> – shapes repository (geometry attributes definitions with no paint attributes)</li>
+  	  <li><a href="files/skins.html">skins</a> – object defining skin functions, color scheme, initial values for all classes, gradients and patterns</li>
+  	  <li><a href="files/cursors.html">cursors</a> – cursors repository</li>
+  	  <li><a href="files/qtips.html">quickTip</a> – quick tips archive</li>
+  	  <li><a href="files/messages.html">messages</a> – messages archive</li>
+    </ul>
+
+
+
+<!-- built-in object extensions -->
+		<h2 id="BuiltinObExt" class="header"><a href="files/obExt.html">Built-in objects extensions</a></h2>
+
+		<h3><a href="files/Number.html">Number</a></h3>
+		<ul class="dot">
+			<li><a href="files/Number.html#evenToOdd">evenToOdd()</a> – get the odd smaller than this, where this is even</li>
+			<li><a href="files/Number.html#oddToEven">oddToEven()</a> – get the even smaller than this, where this is odd</li>
+			<li><a href="files/Number.html#isEven">isEven()</a> – test if this is even</li>
+      <li><a href="files/Number.html#isInteger">isInteger()</a> – test if this is an integer</li>
+			<li><a href="files/Number.html#trim">trim()</a> – get this number (as Number) with the specified number of decimal places</li>
+			<li><a href="files/Number.html#toRad">toRad()</a> – convert degrees to radians</li>
+			<li><a href="files/Number.html#toDeg">toDeg()</a> – convert radians to degrees</li>
+		</ul>
+
+
+		<h3><a href="files/String.html">String</a></h3>
+		<ul class="dot">
+			<li><a href="files/String.html#xmlNameStartChar">xmlNameStartChar</a> – regular expression; illegal XML name start characters</li>
+			<li><a href="files/String.html#xmlNameChar">xmlNameChar</a> – regular expression; illegal XML name characters</li>
+			<li><a href="files/String.html#toXML">toXML()</a> – make a string XML conformant</li>
+			<li><a href="files/String.html#xmlNameGenerator">xmlNameGenerator()</a> – get a unique XML string composed of "XML_" + 32-bit hex number</li>
+      <li><a href="files/String.html#unformatNumber">unformatNumber()</a> – convert a locale formatted number to JavaScript number</li>
+			<li><a href="files/String.html#width">width()</a> – get this bbox width (rounded) with the specified font parameters (size, family, weight, letter-spacing, kerning)</li>
+			<li><a href="files/String.html#height">height()</a> – get this bbox height (rounded) with the specified font parameters (size, family)</li>
+			<li><a href="files/String.html#truncate">truncate()</a> – get this truncated by the specified number of characters</li>
+			<li><a href="files/String.html#truncateWithDots">truncateWithDots()</a> – get this truncated to the specified width, with the specified font parameters (size, family, weight, letter-spacing, kerning), + "..."</li>
+			<li><a href="files/String.html#centerVertical">centerVertical()</a> – get the y value (for text element) of this, from specified height and font parameters (size, family)</li>
+			<li><a href="files/String.html#brighten">brighten()</a> – get this (color string in any legal format) brightened by the specified factor</li>
+			<li><a href="files/String.html#darken">darken()</a> – get this (color string in any legal format) darkened by the specified factor</li>
+		</ul>
+
+
+
+	</div>
+</div>
+<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+</body>
+</html>
+
+
+

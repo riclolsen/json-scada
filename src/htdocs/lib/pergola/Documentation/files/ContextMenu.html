@@ -1,0 +1,108 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – ContextMenu</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – ContextMenu.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.ContextMenu</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">A custom context menu can be defined for any object to replace the browser's context menu. Learn more in the <a href="../Tutorial.html#contextMenu">CUSTOM CONTEXT MENU</a> section of the Tutorial. <a href="../../ExamplesHTML/Contextmenu/contextmenu.html">Example</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p id="active" class="property"><strong>active</strong></p>
+    <p>Object reference – initial null. This property is set on opening a custom context menu object. The system handles its closing (<a href="misc.html#handleCustomContextmenu">pergola.handleCustomContextmenu</a>).</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#contextMenus">pergola.contextMenus</a>. Do not override.</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units) or string.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="filter" class="property"><strong>filter</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – URI.</p>
+
+  	<p id="margin" class="property"><strong>margin</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="advanceY" class="property"><strong>advanceY</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="open" class="property"><strong>open</strong>(<i>point</i>)</p>
+  	<p><i>point</i> is an object with x and y number or string properties. Adds mousedown event listener to the window object with the <a href="misc.html#handleCustomContextmenu">handleCustomContextmenu()</a> handler.</p>
+
+  	<p id="close" class="property"><strong>close</strong>()</p>
+  	<p>Closes this. Removes mousedown event listener from the window object with the <a href="misc.html#handleCustomContextmenu">handleCustomContextmenu()</a> handler.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+    <p id="items" class="property"><strong>items</strong></p>
+    <p>An object defining <a href="ContextMenuItem.html">pergola.ContextMenuItem</a> objects.</p>
+
+  	<p id="menuItems" class="property"><strong><i>menu items</i></strong></p>
+    <p>Collection of menu items; new <a href="MenuItem.html">pergola.ContextMenuItem</a> instance for each property in <a href="#items">items</a>. Note: contrary to a regular menu, the context menu does not create references for its items.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

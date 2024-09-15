@@ -1,0 +1,90 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Shapes</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Shapes.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Shapes Library</h1>
+
+	<p class="first"><code>pergola.shapes</code> (defined in lib/shapes.js) is an object whose properties represent a collection of shapes. Each object property defines the <code>element</code> string property –typically "path", "polyline", "polygon", but can be any primitive– and the corresponding geometrical attribute(s) ("d", "points"). A shape object does not define paint attributes.</p>
+
+	<p>To use a library shape you invoke <a href="misc.html#use">pergola.use()</a> passing an object specifying the properties: <code>parent</code> node, <code>shape</code> reference, and <code>attributes</code> object. For example, to use the <code>triangle</code> shape:
+<pre> pergola.use({
+  parent : <i>node</i>,
+  shape : pergola.shapes.triangle,
+  attributes : {
+    transform : "translate(80 -.5) scale(4)",
+    fill : "#FFFFC0",
+    stroke : "black",
+    "stroke-width" : .25
+  }
+});
+</pre>
+	Notice how you can control the stroke width in respect to the scale factor.</p>
+
+<p><a href="../../ExamplesHTML/Shapes/shapes.html">Examples page</a>.</p>
+
+	<p>A shape can also be referenced when instantiating a class that implements the <code>shape</code> property, for example <a href="Button.html#shape">pergola.Button</a>, to override the default &lt;rect&gt; shape. Example:</p>
+<pre> var shapeButton = new pergola.Button()
+  .build({
+    parent : <i>node</i>,
+    x : 272,
+    y : 214.5,
+    fill : "#FF5000",
+    stroke : "lightsteelblue",
+    maskFill : "white",
+    shape : pergola.shapes.triangle,
+    extra : {transform : "scale(2 .5) rotate(180)"},
+    quickTip : {tip : "library shape with transformations"}
+  });
+</pre>
+	Note: rotations are always applied about the shape's center and only the shape is rotated, keeping symbols, images, and text upright.
+
+	<p>Read also the <a href="../Tutorial.html#shapes">Shapes library</a> chapter in the tutorial.</p>
+
+
+	<div class="propList">
+
+		<h3>pergola.shapes</h3>
+
+		<p id="triangle" class="property"><strong>triangle</strong></p>
+
+		<p id="pentagon" class="property"><strong>pentagon</strong></p>
+
+		<p id="hexagon" class="property"><strong>hexagon</strong></p>
+
+		<p id="heptagon" class="property"><strong>heptagon</strong></p>
+
+		<p id="octagon" class="property"><strong>octagon</strong></p>
+
+		<p id="nonagon" class="property"><strong>nonagon</strong></p>
+
+		<p id="decagon" class="property"><strong>decagon</strong></p>
+
+		<p id="dodecagon" class="property"><strong>dodecagon</strong></p>
+
+		<p id="rhombus" class="property"><strong>rhombus</strong></p>
+
+		<p id="semicircle" class="property"><strong>semicircle</strong></p>
+
+		<p id="star" class="property"><strong>star</strong></p>
+
+		<p id="heart" class="property"><strong>heart</strong></p>
+
+		<p id="pied_de_poule" class="property"><strong>pied_de_poule</strong></p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

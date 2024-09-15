@@ -1,0 +1,45 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Debugger</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Debugger.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Debugger</h1>
+
+	<p class="first">Use the pergola.debugger to show variables and properties name/value pairs in the debugger panel. Activate the debugger in the config.js file bound to each project. Learn more in the <a href="../Tutorial.html#debugger">USING THE DEBUGGER</a> section of the Tutorial.</p>
+
+
+
+	<div class="propList">
+
+		<h3>pergola.debugger</h3>
+
+		<p id="toggleOn" class="property"><strong>toggleOn</strong>()</p>
+		<p>Expands the debugger panel (click on debugger symbol in top-left corner).</p>
+
+
+		<p id="toggleOff" class="property"><strong>toggleOff</strong>()</p>
+		<p>Collapses the debugger panel (click on close symbol in top-left corner).</p>
+
+
+		<p id="vars" class="property"><strong>vars</strong>(<i>input</i>)</p>
+		<p>Shortcut: $D. <i>input</i> is an object with arbitrary property/value pairs (normally the same). The property name uses the string notation. Use example:
+		<pre>SD({"myRect.x" : myRect.x});</pre>
+		The debugger panel displays: myRect.x = <i>value of myRect.x</i></p>
+
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

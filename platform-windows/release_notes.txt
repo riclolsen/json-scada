@@ -57,6 +57,7 @@ Acknowledgements:
   D3JS - http://d3js.org
   Radar-chart-d3 - https://github.com/alangrafu/radar-chart-d3
   Vega A Visualization Grammar - https://vega.github.io/vega
+  Pergola SVG - https://web.archive.org/web/20210211163020/http://www.dotuscomus.com/pergola/licenses.html
   NSSM - The Non-Sucking Service Manager: http://nssm.cc
   Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
   CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/

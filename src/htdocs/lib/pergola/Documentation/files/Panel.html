@@ -1,0 +1,203 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Panel</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Panel class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Panel</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+  <p class="first"><a href="../../ExamplesHTML/Panel/panelWithTabs.html">Example</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p id="panels" class="property"><strong>panels</strong></p>
+    <p>Array. Stores panels' references.</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+  	<p>"dialog" – string; allowed values: "basic"; "dialog".</p>
+
+  	<p id="x" class="property"><strong>x</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="y" class="property"><strong>y</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="fill-opacity" class="property"><strong>"fill-opacity"</strong></p>
+  	<p>1 – string or number.</p>
+
+  	<p id="stroke-opacity" class="property"><strong>"stroke-opacity"</strong></p>
+  	<p>1 – string or number.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="margin" class="property"><strong>margin</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="hasFooter" class="property"><strong>hasFooter</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – boolean (user space units); determines whether this should have a visible footer. Note: the <a href="#footerGroup">footerGroup</a> is built in any case for panels of <a href="#type">type</a> "dialog".</p>
+
+  	<p id="footerFill" class="property"><strong>footerFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="footerHeight" class="property"><strong>footerHeight</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="filter" class="property"><strong>filter</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string (URI).</p>
+
+  	<p id="validated" class="property"><strong>validated</strong></p>
+  	<p>true – boolean; when a panel is not validated, following an illegal entry or no selection, for example, the <a href="#ok">ok</a> button will not close the panel.</p>
+
+  	<p id="preemptive" class="property"><strong>preemptive</strong></p>
+  	<p>false – boolean; when a preemptive panel is open, most system functionalities are disabled.</p>
+
+  	<p id="isOpen" class="property"><strong>isOpen</strong></p>
+  	<p>false – boolean.</p>
+
+  	<p id="isTop" class="property"><strong>isTop</strong></p>
+  	<p>false – boolean.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="move" class="property"><strong>move</strong></p>
+  	<p>Reference to <a href="Class.html#moveByTranslation">pergola.Panel.superClass.moveByTranslation()</a> method.</p>
+
+  	<p id="open" class="property"><strong>open</strong>()</p>
+  	<p>Invokes this <a href="#bringToFront">bringToFront()</a>; sets this <a href="#isOpen">isOpen</a>.</p>
+
+  	<p id="init" class="property"><strong>init</strong>(<i>object</i>)</p>
+  	<p>Call this method to initialize a dialog panel with <a href="#user">user</a> and <a href="#fn">fn</a> properties specified in <i>object</i>; a typical use case is with system dialogs <a href="references.html#colorpicker">pergola.colorpicker</a> and <a href="references.html#findDialog">pergola.findDialog</a>. Invokes this <a href="#open">open()</a>.</p>
+
+  	<p id="update" class="property"><strong>update</strong>(<i>object</i>)</p>
+  	<p><i>object</i> defines the <code>title</code> string and <code>ok</code> string properties. Invoke this method to change this <a href="#topBar">topBar</a>'s title and this <a href="#ok">ok</a> button's text. Use case is a multipurpose panel like the <a href="references.html#fileDialog">pergola.fileDialog</a> panel (file open or save as).</p>
+
+  	<p id="bringToFront" class="property"><strong>bringToFront</strong>()</p>
+  	<p>Appends this <a href="#container">container</a> to its layer (<a href="../Tutorial.html#DOM-layers">system layers</a>). You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="warn" class="property"><strong>warn</strong>(<i>evt</i>)</p>
+  	<p>Shows preemptive visual warning.</p>
+
+  	<p id="getCandidate" class="property"><strong>getCandidate</strong>()</p>
+  	<p>Sets the <a href="#isTop">isTop</a> property to true for the last element in <a href="#panels">panels</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="close" class="property"><strong>close</strong>(<i>evt</i>)</p>
+  	<p>Collapses this <a href="#container">container</a>; sets this <a href="#isOpen">isOpen</a> to false; invokes this <a href="#getCandidate">getCandidate</a>.</p>
+
+  	<p id="release" class="property"><strong>release</strong>(<i>evt</i>)</p>
+  	<p>The <a href="Dragarea.html">pergola.Dragarea</a> release() method invokes the release() method of the activator object if such method is defined for private release processing.</p>
+
+  	<p id="footerPath" class="property"><strong>footerPath</strong>()</p>
+  	<p>Returns the "d" attribute for this <a href="#bar">bar</a>.</p>
+
+  	<p id="resize" class="property"><strong>resize</strong>(<i>object</i>)</p>
+  	<p><i>object</i> defines the required <code>width</code> and <code>height</code> number (user space units) properties, and optional <code>x</code> number, <code>y</code> number, <code>ok</code> object (x,y) and <code>cancel</code> object (x,y) properties. Invoke this method to resize the top bar if you need to resize a panel programmatically.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Designates the <a href="classes.html#owner">owner object</a>.</p>
+
+    <p id="user" class="property"><strong>user</strong></p>
+    <p>The current user object. Applies to system dialogs <a href="references.html#colorpicker">pergola.colorpicker</a> and <a href="references.html#findDialog">pergola.findDialog</a>, or any user defined dialog with similar sharing functionality. The best practice is to specify this property in the call to the <a href="#init">init</a> method.</p>
+
+    <p id="container" class="property"><strong>container</strong></p>
+    <p>&lt;g&gt; element.</p>
+
+    <p id="topBar" class="property"><strong>topBar</strong></p>
+    <p>If this <a href="#type">type</a> is "dialog", <a href="TopBar.html">pergola.TopBar</a> instance.</p>
+
+    <p id="frame" class="property"><strong>frame</strong></p>
+    <p><a href="Frame.html">pergola.Frame</a> instance.</p>
+
+    <p id="closeBtn" class="property"><strong>closeBtn</strong></p>
+    <p>If this <a href="#type">type</a> is "dialog", <a href="CommandButton.html">pergola.CommandButton</a> instance.</p>
+
+    <p id="footerGroup" class="property"><strong>footerGroup</strong></p>
+    <p>If this <a href="#type">type</a> is "dialog", &lt;g&gt; element.</p>
+
+    <p id="footer" class="property"><strong>footer</strong></p>
+    <p>If this <a href="#type">type</a> is "dialog" and this <a href="#hasFooter">hasFooter</a>, &lt;path&gt; element.</p>
+
+    <p id="ok" class="property"><strong>ok</strong></p>
+    <p>If this <code>okButton</code> object property is specified in the <a href="classes.html#initializationObject">initialization object</a>, <a href="DialogButton.html">DialogButton</a> instance. The <code>okButton</code> object may define the <code>text</code> string, <code>x</code> number, <code>y</code> number, and <code>marginRight</code> number properties; if <code>text</code> is not defined the default value is "OK".</p>
+
+    <p id="cancel" class="property"><strong>cancel</strong></p>
+    <p>If this <code>cancelButton</code> object is specified in the <a href="classes.html#initializationObject">initialization object</a>, new <a href="DialogButton.html">DialogButton</a>. The <code>cancelButton</code> object may define the <code>text</code> string, <code>x</code> number, <code>y</code> number, and <code>marginRight</code> number properties; if <code>text</code> is not defined the default value is "Cancel".</p>
+
+    <p id="layout" class="property"><strong>layout</strong></p>
+    <p>If specified, an initialization object for the <a href="Layout.html">pergola.Layout</a> class (<a href="#contains">contains</a> must not be specified).</p>
+
+  	<p id="contains" class="property"><strong>contains</strong>()</p>
+  	<p>If specified, node or function (<a href="#layout">layout</a> must not be specified).</p>
+
+    <p id="fn" class="property"><strong>fn</strong></p>
+    <p>If specified, callback function invoked by implied event on <a href="#ok">OK</a> button, which also invokes callback functions defined for panel's embedded components.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

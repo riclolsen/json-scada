@@ -1,0 +1,43 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Context Menu Manager</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Context Menu Manager.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Context Menu Manager</h1>
+
+	<p class="first">Allows to replace the browser's context menu for any element. Learn more in the <a href="../Tutorial.html#contextMenu">Custom Context Menu</a> section of the Tutorial.</p>
+
+
+
+	<div class="propList">
+
+		<h3>pergola.contextmenuManager</h3>
+
+		<p id="browser" class="property">pergola.contextmenuManager.<strong>browser</strong>(<i>evt</i>)</p>
+		<p>Handler for "contextmenu" event registered on the window object; prevents the browsers's context menu if <a href="variables.html#contextmenuEnabled">pergola.contextmenuEnabled</a> is false, then resets it to true (the initial state).</p>
+
+		<p id="custom" class="property">pergola.contextmenuManager.<strong>custom</strong>(<i>evt</i>)</p>
+		<p>Handler for "mousedown" event registered on the window object by custom context menu <a href="ContextMenu.html#open">open()</a> method; checks if a custom context menu is open (<a href="ContextMenu.html#active">pergola.ContextMenu.active</a>) and invokes its <a href="ContextMenu.html#close">close()</a> method, where the "mousedown" event registered on the window object gets removed.</p>
+
+		<p id="activate" class="property">pergola.contextmenuManager.<strong>activate</strong>(<i>evt</i>, <i>callback</i>, <i>items</i>)</p>
+		<p>On mousedown: adds mouseup event listener to <i>evt.target</i> with <i>callback</i> handler. On mouseup: assigns a <a href="ContextMenu.html">pergola.ContextMenu</a> instance to the <i>evt.target</i>.contextmenu property; sets <a href="variables.html#contextmenuEnabled">pergola.contextmenuEnabled</a> to false to prevent the browser's context menu; removes the mouseup event listener; invokes custom context menu <a href="ContextMenu.html#open">open()</a> method.</p>
+
+		<p>Invoke this function from right mouse button test in element's/object's event handler. Learn more in the <a href="../Tutorial.html#contextMenu">CUSTOM CONTEXT MENU</a> section of the Tutorial.</p>
+
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

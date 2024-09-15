@@ -1,0 +1,99 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Classes</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Classes.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Classes</h1>
+
+	<p class="first">The classes listed below are subclasses of <a href="Class.html#Class">pergola.Class</a>. They include widgets and system components. Where specified, a class is further subclassed to some other class.</p>
+
+	<p>Prototype inheritance is true JavaScript prototype inheritance model, with no referencing or duplication(simple or recursive) or other alien technique.</p>
+
+	<p id="initializationObject">All constructors have a prototype method named <code>build</code> (except for <a href="undo.html">pergola.Undo</a> and <a href="key.html">pergola.Key</a>, whose initializer methods are named <code>register</code>, and <a href="timer.html">pergola.Timer</a>, where it is named <code>initialize</code>), allowing both method chaining and deferred construction. The latter allows predefining objects and their component objects, keeping a clean structure that gives at a glance control, and allows dynamic or conditional construction, together with the capability of self-referencing and of accessing the inherited properties and methods. Instantiation is therefore dissociated from physical construction. The <code>build()</code> method expects an object literal, referred to throughout the API reference as <strong>initialization object</strong>, where you can specify instance properties and methods, and prototype properties and methods to override.</p>
+
+	<p id="owner">A special instance property, <a href="../Tutorial.html#owner"><strong>owner</strong></a>, was introduced by Pergola to designate the owner object (typically, but not necessarily, the object requesting the instance) of a component object, enabling the latter to keep a reference to its hierarchical superior, skipping the labor of object scanning methods. Where the <code>owner</code> property is required, it is specified in the class's reference page, and if it is omitted in the initialization object the <code>build</code> method returns an alert; construction is aborted, but the instance is not destroyed.</p>
+
+	<p>The initial values of some prototype properties for each class are set in the <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> object, defined by the current <a href="skins.html">skin</a> function (located in the skin.js file). The classes fetch the initial values there.</p>
+
+	<p>For in-depth information in friendly language and code examples read the <a href="../Tutorial.html#classes">Classes</a> section in the tutorial.</p>
+
+	<p id="systemEvents">In the header section of each of the classes' pages, the mention “System events” specifies whether the class's instances can interact with –or their behavior can be affected by– the system, or system components (whether actively through the class's <code>handleEvent()</code> prototype method, or passively), and the mention “User events and functions” specifies if the class implements the <a href="../Tutorial.html#events">User events and functions</a> mechanism, which allows to specify one or more event types and/or callback function.</p>
+
+	<p id="handleEvent">For classes that define it, the <strong>handleEvent()</strong> method is listed under the "Prototype" header, but not detailed. Where applicable it carries out system checks, and may activate or deactivate services, and in all cases it handles one or more event types registered on one or more elements, and invokes the relative callback functions. It also handles <a href="../Tutorial.html#events">user events and functions</a> where applies.</p>
+
+	<p id="classesList" class="first">
+
+  <ul class="dot">
+    <li><a href="Background.html">Background</a></li>
+		<li><a href="Button.html">Button</a></li>
+		<li><a href="Caption.html">Caption</a></li>
+		<li><a href="CheckBox.html">CheckBox</a></li>
+		<li><a href="ColorBoxSelector.html">ColorBoxSelector</a></li>
+		<li><a href="ColorPicker.html">ColorPicker</a></li>
+		<li><a href="ComboBox.html">ComboBox</a></li>
+		<li><a href="CommandButton.html">CommandButton</a></li>
+    <li><a href="ContextMenu.html">ContextMenu</a></li>
+    <li><a href="ContextMenuItem.html">ContextMenuItem</a></li>
+		<li><a href="Coordinates.html">Coordinates</a></li>
+		<li><a href="DataGrid.html">DataGrid</a></li>
+		<li><a href="DataGridHeader.html">DataGridHeader</a></li>
+		<li><a href="DataGridLine.html">DataGridLine</a></li>
+		<li><a href="DialogButton.html">DialogButton</a></li>
+    <li><a href="Doc.html">Doc</a></li>
+		<li><a href="Dragarea.html">Dragarea</a></li>
+		<li><a href="Frame.html">Frame</a></li>
+		<li><a href="Input.html">Input</a></li>
+		<li><a href="InputCursor.html">InputCursor</a></li>
+		<li><a href="Layout.html">Layout</a></li>
+		<li><a href="Legend.html">Legend</a></li>
+		<li><a href="ListItem.html">ListItem</a></li>
+		<li><a href="Menu.html">Menu</a></li>
+		<li><a href="Menubar.html">Menubar</a></li>
+		<li><a href="MenuItem.html">MenuItem</a></li>
+		<li><a href="MenuList.html">MenuList</a></li>
+		<li><a href="Panel.html">Panel</a></li>
+		<li><a href="PopupList.html">PopupList</a></li>
+		<li><a href="PopupListItem.html">PopupListItem</a></li>
+		<li><a href="Preview.html">Preview</a></li>
+		<li><a href="Progress.html">Progress</a></li>
+		<li><a href="QuickTip.html">QuickTip</a></li>
+		<li><a href="RadioButton.html">RadioButton</a></li>
+		<li><a href="RubberBox.html">RubberBox</a></li>
+		<li><a href="Scrollbar.html">Scrollbar</a></li>
+		<li><a href="ScrollButton.html">ScrollButton</a></li>
+		<li><a href="ScrollSlider.html">ScrollSlider</a></li>
+		<li><a href="Selector.html">Selector</a></li>
+		<li><a href="Separator.html">Separator</a></li>
+		<li><a href="Slider.html">Slider</a></li>
+		<li><a href="StatusBar.html">StatusBar</a></li>
+    <li><a href="Suffix.html">Suffix</a></li>
+		<li><a href="Tab.html">Tab</a></li>
+		<li><a href="TabsDock.html">TabsDock</a></li>
+		<li><a href="Taskbar.html">Taskbar</a></li>
+		<li><a href="ToolBar.html">ToolBar</a></li>
+		<li><a href="ToolButton.html">ToolButton</a></li>
+		<li><a href="TopBar.html">TopBar</a></li>
+		<li><a href="UpDownButton.html">UpDownButton</a></li>
+		<li><a href="Window.html">Window</a></li>
+		<li><a href="WindowTab.html">WindowTab</a></li>
+		<li><a href="WindowTopBar.html">WindowTopBar</a></li>
+	</ul>
+  </p>
+
+
+
+
+</div>
+
+</body>
+</html>
+
+

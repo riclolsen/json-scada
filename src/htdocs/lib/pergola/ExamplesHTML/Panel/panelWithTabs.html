@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola Panel with Tabs</title>
+<meta name="description" content="SVG library - Example of panel with tabs built with the pergola.Panel and pergola.Tab classes. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+  <img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+  <h1>Panel with Tabs</h1>
+
+
+  <div id="svg" style="width: 800px; height: 580px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+  <script src="panelWithTabs.js" type="text/javascript"></script>
+
+  <div class="blurb">
+
+    <h3><a href="../../Examples/Panel/panelWithTabs.svg">View as standalone SVG</a></h3>
+
+    <p>View other Panel examples: <a href="panelWithTabs.html">panel with tabs</a> – <a href="dialogPanel.html">dialog panel</a> – <a href="simplePanel.html">simple panel</a> – <a href="basicPanel.html">basic panel</a> – <a href="panelWithTableLayout.html">panel with table layout</a>
+    </p>
+
+    <p>The “Layout” tab uses the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Layout.html#table">table</a> prototype method of the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Layout.html">pergola.Layout</a> class. The “HTML Table” tab uses the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/dom.html#HTML_FO">HTML_FO</a> DOM helper to build an HTML table as  foreignObject.</p>
+
+		<p>Panel contents can be appended manually, or by setting the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Panel.html#contains">contains</a> node or function property, or by specifying a <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Panel.html#layout">layout</a>.</p>
+
+		<h4>HOW</h4>
+
+    <div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var myPanel = new pergola.Panel("myPanel");
+
+myPanel.populate = {
+
+  "table Layout" : function () {
+    for (var c in this.cells) {
+      $C({
+        element : "text",
+        x : this.layout.cellWidth / 2,
+        y : this.layout.cellHeight / 2 + 8,
+        "font-size" : "16pt",
+        "font-weight" : "bold",
+        fill : "#F0F0F0",
+        "text-anchor" : "middle",
+        textNode : "CELL " + c,
+        appendTo : this.cells[c]
+      });
+    }
+  },
+
+  "tab # 2" : function () {
+    $C({
+      element : "text",
+      x : this.owner.width / 2,
+      y : 200,
+      "font-size" : 120,
+      "font-weight" : "bold",
+      fill : "#F0F0F0",
+      "text-anchor" : "middle",
+      textNode : this.title.toUpperCase(),
+      appendTo : this.pane.container
+    });
+  },
+
+  "HTML table" : function () {
+    var switchTag = $C({
+          element : "switch",
+          appendTo : this.pane.container
+        }),
+        fObj = $C({
+          element : "foreignObject",
+          x : 9,
+          width : this.pane.width,
+          height : this.pane.height,
+          appendTo : switchTag
+        }),
+        body = pergola.HTML_FO({
+          element : "body",
+          xmlns : pergola.ns.xhtml,
+          appendTo : fObj
+        }),
+        table = pergola.HTML_FO({
+          element : "table",
+          border : 1,
+          cellpadding : 2,
+          cellspacing : 2,
+          style : "width: 100%; background-color: #F8F8F8;",
+          appendTo : body
+        });
+
+    for (var i = 0; i < 3; i++) {
+      var tr = pergola.HTML_FO({
+            element : "tr",
+            appendTo : table
+          });
+
+      for (var j = 0; j < 3; j++) {
+        var td = pergola.HTML_FO({
+              element : "td",
+              style : "height: " + parseInt((this.pane.height - 40) / 3) + "px; text-align: center;",
+              appendTo : tr
+            });
+
+        pergola.HTML_FO({
+          element : "p",
+          style : "font-size: 16pt; font-weight: bold; color: #F0F0F0;",
+          textNode : ("CELL " + (i * 3 + j)),
+          appendTo : td
+        });
+      }
+    }
+    $C({
+      element : "text",
+      x : this.pane.width / 2,
+      y : 80,
+      "font-size" : 16,
+      "text-anchor" : "middle",
+      textNode : "<foreignObject> is not implemented in Internet Explorer Trident",
+      appendTo : switchTag
+    });
+  }
+};
+
+
+
+myPanel.build({
+  type : "dialog",
+  title : "PANEL WITH TABS",
+  x : 100,
+  y : 12,
+  width : 600,
+  height : 440,
+  margin : 0,
+  okButton : {text : "OK"},
+  cancelButton : {text : "Cancel"},
+  isOpen : true,             // panels are mostly used for dialogs. Default is false
+  fn : function () {
+    alert ("Calling Panel tabs User Functions...")
+    for (var t in this.tabs) this.tabs[t].fn();
+  },
+  layout : {
+    type : "tabbed",
+    tabs : {
+      "table Layout" : {
+        active : true,
+        title : "table Layout",
+        layout : {
+          type : "table",
+          rows : 3,
+          cols : 3,
+          spacing : 4,
+          attributes : {
+//            fill : "#F8F8F8", 
+            stroke : "#D0D0D0",
+//            "stroke-width" : 2
+          }
+        },
+        contains : myPanel.populate["table Layout"],
+        fn : function () {
+          alert('Tab \"table Layout\" User Function calls the legend toggleOff() method.');
+          legend.toggleOff();
+        }
+      },
+      "tab # 2" : {
+        title : "tab # 2",
+        contains : myPanel.populate["tab # 2"],
+        fn : function () {alert('Tab \"tab # 2\" User Function only shows this alert');}
+      },
+      "HTML table" : {
+        title : "HTML table",
+        contains : myPanel.populate["HTML table"],
+        fn : function () {alert('Tab \"HTML table\" User Function only shows this alert')}
+      }
+    }
+  }
+});
+]]></script>
+    </div>
+
+  </div>
+
+  <div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

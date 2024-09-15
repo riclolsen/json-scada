@@ -1,0 +1,103 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Caption</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Caption.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Caption</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">Use this component to label selectors, input boxes, etc. <a href="../../ExamplesHTML/Selector/Selector.html">Example</a>. See also the Caption's subclass <a href="Suffix.html">pergola.Suffix</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. For this class this property should normally be overridden to designate the container of the object requesting the instance.</p>
+
+  	<p id="position" class="property"><strong>position</strong></p>
+  	<p>"left" – string (values: "left"; "right").</p>
+
+  	<p id="text-anchor" class="property"><strong>"text-anchor"</strong></p>
+  	<p>"end" – string. Note: this property should not be overridden as it is set to the appropriate value depending on <a href="#position">position</a>.</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>Color string. Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a>.</p>
+
+  	<p id="inverse" class="property"><strong>inverse</strong></p>
+  	<p>false – boolean. If set to true, the default value of this <a href="#textFill">textFill</a> is overridden to get the value of <a href="misc.html#presentationAttributes">pergola.presentationAttributes.text.fill</a>, which is dependent of the <a href="color.html#themeLuminosity">themeLuminosity</a>. In practice you will set this property to true if the text color doesn't read well against any particular color in the background.</p>
+
+  	<p id="activator" class="property"><strong>activator</strong></p>
+    <p>true – boolean. If true, the caption is sensitive to events and can activate the control to which it relates (selectors, input boxes).</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Required, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="x" class="property"><strong>x</strong></p>
+  	<p>If not specified in the <a href="classes.html#initializationObject">initialization object</a>, the computed x position relative to the value of this <a href="#text-anchor">"text-anchor"</a>.</p>
+
+  	<p id="y" class="property"><strong>y</strong></p>
+  	<p>If not specified in the <a href="classes.html#initializationObject">initialization object</a>, the inherited value 0 (the text <a href="#element">element</a> may not be visible).</p>
+
+  	<p id="textNode" class="property"><strong>textNode</strong></p>
+  	<p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a> – string.</p>
+
+  	<p id="element" class="property"><strong>element</strong></p>
+  	<p>&lt;text&gt; element.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

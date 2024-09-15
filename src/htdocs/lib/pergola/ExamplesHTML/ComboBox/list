@@ -1,0 +1,26 @@
+
+var myList = [
+	"Pergola is cool",
+	"Pergola is easy",
+	"Do you practice Pergolese?",
+	"One Pergola for me",
+	"Are you a Pergologist?",
+	"Pergolatin'",
+	"My Pergola and I",
+	"Coding",
+	"I need Pergola",
+	"SVG rocks",
+];
+
+var myMessages = [
+	"That's true",
+	"Very easy",
+	"No, it comes naturally",
+	"... and one for my friend",
+	"Well, I do have a license",
+	"... on a Sunday afternoon",
+	"A love story",
+	"... under my Pergola",
+	"I can't do without",
+	"No shit"
+];

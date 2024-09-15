@@ -1,0 +1,215 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Doc</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Doc class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Doc</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">System component. An instance of this class is a component object and cannot be an orphan object. Its basic function is to embed transformable content of any type (artwork, maps, etc.) and external SVG documents and fragments. It is enabled to create layers, and the default content layer is referenced by the <a href="#transformable">transformable</a> property, which is the target of transformation tools (including scroll bars and container resizing). <a href="Window.html">pergola.Window</a> and <a href="ComboBox.html">pergola.ComboBox</a> instantiate this class. You don't normally need to instantiate this class explicitly, but it's quite common in applications to query its properties and invoke its methods from external scopes.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+  	<p id="parent" class="property"><strong>parent</strong></p>
+  	<p>null. Must be overridden.</p>
+
+  	<p id="scaleFactor" class="property"><strong>scaleFactor</strong></p>
+  	<p>1 – number.</p>
+
+  	<p id="maxScale" class="property"><strong>maxScale</strong></p>
+  	<p>64 – number.</p>
+
+  	<p id="minScale" class="property"><strong>minScale</strong></p>
+  	<p>0.03125 – number.</p>
+
+  	<p id="autoscrollValue" class="property"><strong>autoscrollValue</strong></p>
+  	<p>6 – number.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="append" class="property"><strong>append</strong>(<i>object</i>)</p>
+  	<p><i>object</i>.<code>newDoc</code> (required) specifies the document or fragment to be appended; new content is appended to <i>object</i>.<code>container</code>, if specified, or to this <a href="#transformable">transformable</a>; if <i>object</i>.<code>resetScale</code> is specified, this <a href="#transformable">transformable</a> scale will be reset to 1; if <i>object</i>.<code>merge</code> is specified, new content will be added to existing content, otherwise existing content (nodes and references) will be deleted. See also <a href="requests.html#loadSVG">pergola.loadSVG</a>, which invokes this method.</p>
+
+  	<p id="centerCanvas" class="property"><strong>centerCanvas</strong>()</p>
+  	<p>Forces centering of this <a href="#canvas">canvas</a>.</p>
+
+  	<p id="dblclick" class="property"><strong>dblclick</strong>(<i>evt</i>)</p>
+  	<p>Handles double click for map zoom. Do not invoke explicitly.</p>
+
+  	<p id="flush" class="property"><strong>flush</strong>(<i>layer</i>)</p>
+  	<p>Remove all contents of specified <i>layer</i> node.</p>
+
+  	<p id="getOffset" class="property"><strong>getOffset</strong>()</p>
+  	<p>Returns an object with <code>x</code> and <code>y</code> number properties representing the absolute x,y position of this <a href="#transformable">transformable</a>.</p>
+
+  	<p id="getVisibleCenter" class="property"><strong>getVisibleCenter</strong>()</p>
+  	<p>Returns an object with <code>x</code> and <code>y</code> number properties representing the visible horizontal and vertical center respectively, computed from to sliders' position.</p>
+
+  	<p id="height" class="property"><strong>height</strong>()</p>
+  	<p>Returns a number relative to this <a href="#owner">owner</a> layout geometry.</p>
+
+		<p id="horScrollSliderSync" class="property"><strong>horScrollSliderSync</strong>()</p>
+	  <p>System. Synchronization of horizontal scrollbar slider. Invoked on user activity and content updates. Do not invoke explicitly.</p>
+
+  	<p id="hRatio" class="property"><strong>hRatio</strong>()</p>
+  	<p>Returns a number representing the ratio between this <a href="#scaledH">scaledH</a> and this <a href="#owner">owner</a>.<code>vScrollBar.range</code> (vertical <a href="Scrollbar.html">ScrollBar</a>).</p>
+
+  	<p id="matrixTransformApply" class="property"><strong>matrixTransformApply</strong>()</p>
+  	<p>Sets the "transform" attribute of this <a href="#transformable">transformable</a> to this <a href="#ctm">ctm</a>.</p>
+
+  	<p id="mousewheel" class="property"><strong>mousewheel</strong>(<i>evt</i>)</p>
+  	<p>Handles scaling or scrolling with the mouse wheel depending on the value of this <a href="#owner">owner</a>.<a href="Window.html#mousewheel">mousewheel</a> string property, which can get the values "zoom", "scroll", or "" (empty string). You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="overflow" class="property"><strong>overflow</strong>(<i>v</i>[, <i>min</i>, <i>max</i>])</p>
+  	<p>Overflow test for zooming by input. <i>v</i> is the input value. If <i>min</i> is specified, it represents the value of the <a href="Input.html">Input</a> object's <a href="Input.html#min">min</a> property; if not specified, the value of this <a href="#minScale">minScale</a> is used. If <i>max</i> is specified, it represents the value of the <a href="Input.html">Input</a> object's <a href="Input.html#max">max</a> property; if not specified, the value of this <a href="#maxScale">maxScale</a> is used.</p>
+
+  	<p id="resizeButtonDisplay" class="property"><strong>resizeButtonDisplay</strong>()</p>
+  	<p>Resize button synchronization. Do not invoke explicitly.</p>
+
+  	<p id="scale" class="property"><strong>scale</strong>(<i>point</i>)</p>
+  	<p><i>point</i> is an object with <code>x</code> and <code>y</code> number properties (typically pointer's x,y). If <i>point</i> is not specified, <i>point</i> gets the return value of this <a href="#zoomPointIsCenter">zoomPointIsCenter()</a>. Applies scaling about <i>point</i>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="scrollBarsDisplay" class="property"><strong>scrollBarsDisplay</strong>()</p>
+  	<p>Scrollbars synchronization. Do not invoke explicitly.</p>
+
+  	<p id="scrollRange" class="property"><strong>scrollRange</strong>()</p>
+  	<p>Returns an object with <code>minX</code> and <code>minY</code> properties representing minimal values for this <a href="Class.html#autoScroll">autoScroll()</a>.</p>
+
+  	<p id="setBackground" class="property"><strong>setBackground</strong>()</p>
+  	<p>If this <a href="#docBgResizable">docBgResizable</a>, sets the "width" and "height" attributes of this <a href="#transformable">transformable</a> to values relative to this <a href="#transformable">transformable</a> bounding box if this <a href="#scaledW">scaledW</a> and this <a href="#scaledH">scaledH</a> are greater than this <a href="#visibleW">visibleW</a> and this <a href="#visibleH">visibleH</a>, or to computed values that cover the visible region. This method is strictly for internal use. Do not invoke explicitly.</p>
+
+  	<p id="transformUpdate" class="property"><strong>transformUpdate</strong>()</p>
+  	<p>Invoked on mutations and transformations of this <a href="#transformable">transformable</a> and/or of this <a href="#owner">owner</a> container.</p>
+
+  	<p id="updateOnMutation" class="property"><strong>updateOnMutation</strong>()</p>
+  	<p>Updates internal geometry.</p>
+
+  	<p id="updatePreview" class="property"><strong>updatePreview</strong>()</p>
+  	<p>Updates the clone of this <a href="#transformable">transformable</a> for window tab preview. Do not invoke explicitly.</p>
+
+		<p id="vertScrollSliderSync" class="property"><strong>vertScrollSliderSync</strong>()</p>
+	  <p>System. Synchronization of vertical scrollbar slider. Invoked on user activity and content updates. Do not invoke explicitly.</p>
+
+  	<p id="width" class="property"><strong>width</strong>()</p>
+  	<p>Returns a number relative to this <a href="#owner">owner</a> layout geometry.</p>
+
+  	<p id="wRatio" class="property"><strong>wRatio</strong>()</p>
+  	<p>Returns a number representing the ratio between this <a href="#scaledW">scaledW</a> and this <a href="#owner">owner</a>.<code>hScrollBar.range</code> (horizontal <a href="Scrollbar.html">ScrollBar</a>).</p>
+
+  	<p id="zoomPointIsCenter" class="property"><strong>zoomPointIsCenter</strong>()</p>
+  	<p>Returns an object with <code>x</code> and <code>y</code> number properties representing the compensated horizontal center of this <a href="#visibleW">visibleW</a> and this this <a href="#visibleH">visibleH</a> respectively.</p>
+
+  	<p id="zoomPointIsMouse" class="property"><strong>zoomPointIsMouse</strong>(<i>point</i>)</p>
+  	<p><i>point</i> is the return value of <a href="misc.html#mousePoint">pergola.mousePoint()</a>. Returns an object with <code>x</code> and <code>y</code> number properties representing the offsets in relation to this <a href="#owner">owner</a> x and y respectively.</p>
+
+  	<p id="zoomFromValue" class="property"><strong>zoomFromValue</strong>(<i>v</i>)</p>
+  	<p><i>v</i> specifies percentage in the range 3.13–6400.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="build" class="property"><strong>build</strong>([<i>object</i>])</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements and instance properties. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>. Designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="canvas" class="property"><strong>canvas</strong></p>
+    <p>Object with <code>width</code> and <code>height</code> number (user space units) properties representing this <a href="#transformable">transformable</a> bounding box width and height, respectively. Do not override (dynamically updated).</p>
+
+  	<p id="docBgResizable" class="property"><strong>docBgResizable</strong></p>
+    <p>This boolean determines whether this <a href="#background">background</a> should be resized on transformations. Must be specified in the <a href="classes.html#initializationObject">initialization object</a> if this <a href="#owner">owner</a> is resizable. The <a href="Window.html">pergola.Window</a> <a href="Window.html#resizable">resizable</a> and <a href="Window.html#docBgResizable">docBgResizable</a> prototype properties are set to true. This property therefore is either inherited from this <a href="#owner">owner</a>, or resolves to false.</p>
+
+  	<p id="scaledW" class="property"><strong>scaledW</strong></p>
+    <p>Number (user space units). This <a href="#canvas">canvas</a>.<code>width</code> multiplied by this <a href="#scaleFactor">scaleFactor</a>. Do not override (dynamically updated).</p>
+
+  	<p id="scaledH" class="property"><strong>scaledH</strong></p>
+  	<p>Number (user space units). This <a href="#canvas">canvas</a>.<code>height</code> multiplied by this <a href="#scaleFactor">scaleFactor</a>. Do not override (dynamically updated).</p>
+
+  	<p id="visibleW" class="property"><strong>visibleW</strong></p>
+  	<p>Number (user space units). The value returned by this <a href="#width">width()</a>. Do not override (dynamically updated).</p>
+
+  	<p id="visibleH" class="property"><strong>visibleH</strong></p>
+  	<p>Number (user space units). The value returned by this <a href="#height">height()</a>. Do not override (dynamically updated).</p>
+
+  	<p id="ctm" class="property"><strong>ctm</strong></p>
+  	<p>Object representing the Transformation Matrix of this <a href="#transformable">transformable</a>. Initial:</p>
+    <p><pre> {
+    a: 1,
+    b: 0,
+    c: 0,
+    d: 1,
+    e: 0,
+    f: 0
+  }</pre></p>
+    The properties are dynamically updated, and their values are dependable, for example, where <code>this.ctm.f</code> returns the same value across the implementations, <code>this.transformable.getCTM().f</code> does not. If you need to set any of the properties, the appropriate transformations must be applied by calls to this <a href="#scale">scale</a> (if <code>a</code> and/or <code>d</code> are set), or to this <a href="#matrixTransformApply">matrixTransformApply</a>, <a href="Class.html#horScrollSliderSync">horScrollSliderSync</a>, and this <a href="Class.html#vertScrollSliderSync">vertScrollSliderSync</a> (if <code>e</code> and/or <code>f</code> are set). Note however that transformations are best left to the user, with the implemented transformation tools.</p>
+
+  	<p id="selection" class="property"><strong>selection</strong></p>
+  	<p>Array. Storage for selected objects in editing applications.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;svg&gt; element.</p>
+
+  	<p id="transformable" class="property"><strong>transformable</strong></p>
+  	<p>&lt;g&gt; element. Default layer for appended content.</p>
+
+  	<p id="background" class="property"><strong>background</strong></p>
+  	<p>&lt;rect&gt; element. This element is created to ensure that this <a href="#container">container</a> always has an event.target for the registered events, independently of loaded or manually appended content. The &lt;rect&gt; is subject to transformations if this <a href="#docBgResizable">docBgResizable</a> is true.</p>
+
+  	<p id="currentTool" class="property"><strong>currentTool</strong></p>
+  	<p>Reference to selected tool.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA – API Reference – MenuItem</title>
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.MenuItem</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+  <p class="first">System component. You don't need to instantiate this class, or invoke any of its methods explicitly. Instantiation is made through a <a href="MenuList.html">pergola.MenuList</a> object, a component of a <a href="Menu.html">pergola.Menu</a> object.</p>
+
+  <p class="first">Examples in <a href="../../ExamplesHTML/Menu/menu.html">menu</a> and window examples (<a href="../../ExamplesHTML/BingMaps/index.html">maps</a> (complex), or <a href="../../ExamplesHTML/Window/window_art.html">window</a> (simple)).</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p>Node – Defaults to <a href="references.html#user">pergola.user</a>. Must be overridden to designate a predefined container of this <a href="#owner">owner</a> (<a href="MenuList.html">pergola.MenuList</a> object).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Number (user space units) – Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a>.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>String – Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a>.</p>
+
+  	<p><p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>String – "black".</p>
+
+  	<p id="textFillInverse" class="property"><strong>textFillInverse</strong></p>
+  	<p>String – "white".</p>
+
+  	<p id="active" class="property"><strong>active</strong></p>
+  	<p>Boolean – true; if false the menu text is grayed out, the event propagation is stopped, and the events are not processed.</p>
+
+  	<p id="exclusive" class="property"><strong>exclusive</strong></p>
+  	<p>Boolean – false; if true, and if this <a href="#check">check</a>, this has radio button behavior in respect to exclusive sibling menu items with checkmark.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="effects" class="property"><strong>effects</strong>(<i>evt</i>)</p>
+  	<p>Handles hovering effects. You never need to invoke this method explicitly.</p>
+
+  	<p id="activate" class="property"><strong>activate</strong>()</p>
+  	<p>An inactive menu item is grayed out. This method is invoked as a method of this, but from a context other than events triggered by this.</p>
+
+  	<p id="deactivate" class="property"><strong>deactivate</strong>()</p>
+  	<p>An inactive menu item is grayed out. This method is invoked as a method of this, normally from a context other than events triggered by this, but may also be invoked from this context for self deactivation.</p>
+
+  	<p id="setChecked" class="property"><strong>setChecked</strong>()</p>
+  	<p>Set checkmark. Invoke this method to synchronize from another scope, for actions that can be triggered by menu and by other means.</p>
+
+  	<p id="uncheck" class="property"><strong>uncheck</strong>()</p>
+  	<p>Remove checkmark. Invoke this method to synchronize from another scope, for actions that can be triggered by menu and by other means.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p>Manages the state of this and of its sibling items in relation to <a href="#checkmark">checkmark</a>, <a href="#exclusive">exclusive</a>, and <a href="#submenu">submenu</a>, where applies; invokes this <a href="#fn">fn</a> through this <a href="Class.html#checkUserFunction">checkUserFunction()</a>.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String – If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String – The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Object – Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; designates the <a href="classes.html#owner">owner object (<a href="MenuList.html">pergola.MenuList</a>)</a>.</p>
+
+    <p id="menuObject" class="property"><strong>menuObject</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; designates the common ascendant <a href="Menu.html">pergola.Menu</a> object of first and subsequent (submenus) generations of <a href="MenuItem.html">MenuItem</a> objects.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="button" class="property"><strong><i>button</i></strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+    <p id="width" class="property"><strong>width</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; number (user space units).</p>
+
+    <p id="text" class="property"><strong>text</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; object specifying the required <code>textNode</code> string property (equal to this <a href="#string">string</a>) and optional text attributes using SVG vocabulary and grammar. This property is reassigned during processing to reference the produced &lt;text&gt; element.</p>
+
+    <p id="string" class="property"><strong>string</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; originally specified in the menu <code>items</code> property, and inherited by this instatiator (<a href="MenuList.html">pergola.MenuList</a>) object</a>.</p>
+
+    <p id="font-family" class="property"><strong>"font-family"</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>, the value inherited from this <a href="#menuObject">menuObject</a> by all descendants. Used for layout geometry.</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>, the value inherited from this <a href="#menuObject">menuObject</a> by all descendants. Used for layout geometry.</p>
+
+  	<p id="check" class="property"><strong>check</strong></p>
+  	<p>Boolean – If specified, the menu item will have a <a href="#chekmark">chekmark</a>; set to true if you need the initial state of the menu item to be checked (<a href="#chekmark">chekmark</a> visible), or false if the initial state has to be unchecked (<a href="#chekmark">chekmark</a> hidden).</p>
+
+  	<p id="checkmark" class="property"><strong>checkmark</strong></p>
+  	<p>If check (true) is specified in the <a href="classes.html#initializationObject">initialization object</a>, chekmark <a href="symbols.html">symbol</a> element.</p>
+
+  	<p id="submenu" class="property"><strong>submenu</strong></p>
+  	<p>If specified, object defining menu <a href="Menu.html#items">items</a>.</p>
+
+  	<p id="arrow" class="property"><strong>arrow</strong></p>
+  	<p>If <a href="#submenu">submenu</a> is specified in the <a href="classes.html#initializationObject">initialization object</a>, arrow <a href="symbols.html">symbol</a> element.</p>
+
+  	<p id="list" class="property"><strong>list</strong></p>
+  	<p>If <a href="#submenu">submenu</a> is specified in the <a href="classes.html#initializationObject">initialization object</a>, a new <a href="MenuList.html">pergola.MenuList</a>, which inherits and builds this <a href="#submenu">submenu</a> <a href="MenuList.html#items">items</a> in parallel scopes.</p>
+
+  	<p id="separator" class="property"><strong>separator</strong></p>
+  	<p>If specified in the <a href="classes.html#initializationObject">initialization object</a> (value: <code>new <a href="Separator.html">pergola.Separator</a>()</code>), a separator is built below the menu item.</p>
+
+    <p id="fn" class="property"><strong>fn</strong></p>
+    <p>If specified (originally specified in the menu <code>items</code> property, and inherited by this <a href="#owner">owner</a> (<a href="MenuList.html">pergola.MenuList</a>) object</a>), callback function.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,151 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Frame</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Frame class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Frame</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+	<p class="first">A frame is a box that can be resized in all directions if the <code>resizable</code> property of its <a href="#owner">owner</a> object is true. Pergola <a href="Window.html">windows</a> and <a href="Panel.html">panels</a> have a frame. Currently only windows are resizable.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="rx" class="property"><strong>rx</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="fill-opacity" class="property"><strong>"fill-opacity"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke-opacity" class="property"><strong>"stroke-opacity"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="filter" class="property"><strong>filter</strong></p>
+  	<p>"none" – string (URI).</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="initDrag" class="property"><strong>initDrag</strong>()</p>
+  	<p>Returns an <a href="Dragarea.html#activate">activation object</a> for <a href="references.html#dragarea">pergola.dragarea</a>. You don't normally need to invoke this method explicitly.</p>
+
+		<p id="resizeN" class="property"><strong>resizeN</strong>(<i>evt</i>)</p>
+	  <p>System. North resize callback for <a href="references.html#dragarea">pergola.dragarea</a> <a href="Dragarea.html#activate">activation object</a>. Invokes the resizeN() method of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeS" class="property"><strong>resizeS</strong>(<i>evt</i>)</p>
+	  <p>System. South resize callback for <a href="references.html#dragarea">pergola.dragarea</a> <a href="Dragarea.html#activate">activation object</a>. Invokes the resizeS() method of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeE" class="property"><strong>resizeE</strong>(<i>evt</i>)</p>
+	  <p>System. East resize callback for <a href="references.html#dragarea">pergola.dragarea</a> <a href="Dragarea.html#activate">activation object</a>. Invokes the resizeE() method of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeW" class="property"><strong>resizeW</strong>(<i>evt</i>)</p>
+	  <p>System. West resize callback for <a href="references.html#dragarea">pergola.dragarea</a> <a href="Dragarea.html#activate">activation object</a>. Invokes the resizeW() method of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeNE" class="property"><strong>resizeNE</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for North-East resize. Invokes the resizeN() and resizeE() methods of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeNW" class="property"><strong>resizeNW</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for North-West resize. Invokes the resizeN() and resizeW() methods of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeSE" class="property"><strong>resizeSE</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for South-East resize. Invokes the resizeS() and resizeE() methods of the <a href="#owner">owner</a> object.</p>
+
+		<p id="resizeSW" class="property"><strong>resizeSW</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for South-West resize. Invokes the resizeS() and resizeW() methods of the <a href="#owner">owner</a> object.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p>Depending on event type: invokes this <code>owner</code> <code>bringToFront()</code>; sets cursors; sets the <a href="#callback">callback</a> function relative to direction; invokes <a href="Dragarea.html#activate">pergola.dragarea.activate</a> passing this <a href="#initDrag">initDrag()</a>.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#rect">rect</a> ID.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>. Designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="rect" class="property"><strong>rect</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="north" class="property"><strong>north</strong></p>
+  	<p>Boolean representing the resizing direction.</p>
+
+  	<p id="east" class="property"><strong>east</strong></p>
+  	<p>Boolean representing the resizing direction.</p>
+
+  	<p id="south" class="property"><strong>south</strong></p>
+  	<p>Boolean representing the resizing direction.</p>
+
+  	<p id="west" class="property"><strong>west</strong></p>
+  	Boolean representing the resizing direction.</p>
+
+  	<p id="offset" class="property"><strong>offset</strong></p>
+  	<p>Object with <code>x</code> and <code>y</code> properties representing the pointer's x and y offset in relation to contact coordinates.</p>
+
+  	<p id="callback" class="property"><strong>callback</strong></p>
+  	<p>Selected dynamically in relation to resizing direction, is one of: this <a href="Class.html#resizeN">resizeN</a>; this <a href="Class.html#resizeE">resizeE</a>; this <a href="Class.html#resizeS">resizeS</a>; this <a href="Class.html#resizeW">resizeW</a>; this <a href="Class.html#resizeNE">resizeNE</a>; this <a href="Class.html#resizeNW">resizeNW</a>; this <a href="Class.html#resizeSE">resizeSE</a>; this <a href="Class.html#resizeSW">resizeSW</a>.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

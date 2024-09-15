@@ -1,0 +1,140 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – DataGridHeader</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – DataGridHeader class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.DataGridHeader</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">This class is designed as component for <a href="DataGrid.html">pergola.DataGrid</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="sorted" class="property"><strong>sorted</strong></p>
+  	<p>0 – number.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="release" class="property"><strong>release</strong>(<i>evt</i>)</p>
+  	<p>Callback for mouseup on the <a href="references.html#dragarea">pergola.dragarea</a>. Manages reorganization of data after column displacement.</p>
+
+  	<p id="select" class="property"><strong>select</strong>(<i>evt</i>)</p>
+  	<p>Manages column selection.</p>
+
+  	<p id="autoScrollLeft" class="property"><strong>autoScrollLeft</strong>()</p>
+  	<p>Autosrolls left when the mouse is over the autoscroll zone close to the window's right edge.</p>
+
+  	<p id="autoScrollRight" class="property"><strong>autoScrollRight</strong>()</p>
+  	<p>Autosrolls right when the mouse is over the autoscroll zone close to the window's left edge.</p>
+
+  	<p id="move" class="property"><strong>move</strong>(<i>evt</i>)</p>
+  	<p>Callback for mousemove event on the <a href="references.html#dragarea">pergola.dragarea</a>.</p>
+
+  	<p id="sort" class="property"><strong>sort</strong>()</p>
+  	<p>Invokes this <a href="#owner">owner</a>'s <a href="DataGrid.html#sortAscending">sortAscending()</a> or <a href="DataGrid.html#sortDescending">sortDescending()</a> according to current state.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="build" class="property"><strong>build</strong>([<i>object</i>])</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements and instance properties. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified. Designates the <a href="classes.html#owner">owner object</a>. For this class it can only be a <a href="DataGrid.html">pergola.DataGrid</a> object.</p>
+
+  	<p id="parent" class="property"><strong>parent</strong></p>
+    <p>Node. Must be specified. Designates the parent node.</p>
+
+  	<p id="pTitle" class="property"><strong>title</strong></p>
+    <p>String. Must be specified.</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+    <p>String. Must be specified.</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+    <p>String. Inherited by the <a href="DataGrid.html">pergola.DataGrid</a> <a href="#owner">owner</a> object.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="box" class="property"><strong>box</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="text" class="property"><strong>text</strong></p>
+  	<p>&lt;text&gt; element. The header.</p>
+
+  	<p id="asc" class="property"><strong>asc</strong></p>
+  	<p>&lt;text&gt; element. The header.</p>
+
+  	<p id="desc" class="property"><strong>desc</strong></p>
+  	<p>&lt;text&gt; element. The header.</p>
+
+  	<p id="sortTouch" class="property"><strong>sortTouch</strong></p>
+  	<p>&lt;text&gt; element. The header.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Legend</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Legend class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Legend</h1>
+
+  <p class="first">System events: NO.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first"><a href="../../ExamplesHTML/Legend/legend.html">Example</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="display" class="property"><strong>display</strong></p>
+  	<p>"block" – string.</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string or number (user space units).</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="toggleOn" class="property"><strong>toggleOn</strong>()</p>
+  	<p>Shows the legend.</p>
+
+  	<p id="toggleOff" class="property"><strong>toggleOff</strong>()</p>
+  	<p>Hides the legend.</p>
+
+  	<p id="move" class="property"><strong>move</strong>(<i>x</i>, <i>y</i>)</p>
+  	<p>Translates this <a href="#container">container</a> to <i>x</i>, <i>y</i>.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="vSpacing" class="property"><strong>vSpacing</strong></p>
+  	<p>If specified, the line height is increased by its number value.</p>
+
+  	<p id="textAttributes" class="property"><strong>textAttributes</strong></p>
+  	<p>If specified, an object whose properties are &lt;text&gt; element attributes specified using SVG vocabulary and grammar.</p>
+
+  	<p id="legend" class="property"><strong>legend</strong></p>
+  	<p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>. Object defining a collection of legend lines. Each item in the collection is an object defining the <code>art</code> object and <code>caption</code> string properties. A legend item looks like this:
+<pre>legend : {
+  "The red line" : {
+    art : {
+      elements : [
+        {element : "path", d : "M0,-2 h 60", fill : "none", stroke : "#F0F0F0", "stroke-width" : 4},
+        {element : "path", d : "M0,-2 h 60", fill : "none", stroke : "#F80000", "stroke-width" : 4, "stroke-dasharray" : "9,8"}
+      ]
+    },
+    caption : "The red line"
+  },
+  ...
+}</pre></p>
+
+  	<p>In the <code>elements</code> array you may recognize the format expected by the <a href="dom.html#SVG">SVG()</a> node builder, but note that the <code>appendTo</code> property must not be specified.</p>
+
+  	<p><code>caption</code> can be a string (for single line), or an array of strings (for multiple lines).</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="textelements" class="property"><strong><i>text elements</i></strong></p>
+  	<p>Collection of properties; &lt;text&gt; element for each <i>property name</i> in this <a href="#legend">legend</a>. Where this <a href="#legend">legend</a>.<code>caption</code> defines multiple lines, &lt;tspan&gt; elements are added to the text element. The &lt;text&gt; elements are rendered with the attributes defined in this <a href="#textAttributes">textAttributes</a>.</p>
+
+  	<p>Note: the artwork elements are not referenced.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

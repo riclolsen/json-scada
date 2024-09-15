@@ -1,0 +1,129 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – WindowTab</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – WindowTab class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.WindowTab</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+	<p class="first">System component. This class is specifically designed for <a href="Window.html">pergola.Window</a> objects.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. Overriden by <a href="Window.html">Window</a> instances with <a href="TabsDock.html#container">pergola.tabsDock.container</a>.</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string or number (user space units).</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="maskFill" class="property"><strong>maskFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="maskStroke" class="property"><strong>maskStroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="textFillInverse" class="property"><strong>textFillInverse</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="hasTextEffect" class="property"><strong>hasTextEffect</strong></p>
+  	<p>false – boolean.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+  	<p id="setTitle" class="property"><strong>setTitle</strong>()</p>
+  	<p>Sets the tab text with this <a href="#owner">owner</a>.<a href="Window.html#pTitle">title</a>. You don't need to invoke this method explicitly.</p>
+
+  	<p id="close" class="property"><strong>close</strong>()</p>
+  	<p>Removes this reference from the <a href="Window.html#tabs">pergola.Window.tabs</a> array; appends this <a href="#container">container</a> to <a href="misc.html#tabsDock">pergola.tabsDock</a>.<a href="TabsDock.html#closedGroup">closedGroup</a>; invokes <a href="TabsDock.html#reorganize">reorganize</a>. Invoked by this <a href="#owner">owner</a>.<a href="Window.html#close">close()</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="open" class="property"><strong>open</strong>()</p>
+  	<p>Adds this reference from the <a href="Window.html#tabs">pergola.Window.tabs</a> array; appends this <a href="#container">container</a> to <a href="misc.html#tabsDock">pergola.tabsDock</a>.<a href="TabsDock.html#container">container</a>; invokes <a href="TabsDock.html#reorganize">reorganize</a>. Invoked by this <a href="#owner">owner</a>.<a href="Window.html#reopen">reopen()</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="remove" class="property"><strong>remove</strong>()</p>
+  	<p>Removes this reference from the <a href="Window.html#tabs">pergola.Window.tabs</a> array; removes this <a href="#container">container</a> from <a href="misc.html#tabsDock">pergola.tabsDock</a>.<a href="TabsDock.html#container">container</a>; invokes <a href="TabsDock.html#reorganize">reorganize</a>. Invoked by this <a href="#owner">owner</a>.<a href="Window.html#terminate">terminate()</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    vString. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="mask" class="property"><strong>mask</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="button" class="property"><strong>button</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="text" class="property"><strong>text</strong></p>
+  	<p>&lt;text&gt; element.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – system references</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – system references.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">System References</h1>
+
+	<p class="first">The properties listed here are references to system components and system layers.</p>
+
+
+	<div class="propList">
+
+		<p id="background" class="property">pergola.<strong>background</strong></p>
+		<p>Reference to the desktop background. See the <a href="Background.html">pergola.Background</a> class for the list of properties and methods.</p>
+
+		<p id="colorpicker" class="property">pergola.<strong>colorpicker</strong></p>
+		<p>Reference to the system color picker. See the <a href="ColorPicker.html">pergola.Colorpicker</a> class for the list of properties and methods. The color picker can be initialized by any object, designated as <a href="ColorPicker.html#user">user</a>.</p>
+
+		<p id="container" class="property">pergola.<strong>container</strong></p>
+		<p>Reference to HTML element when container is specified in the configuration file (HTML + SVG mode).</p>
+
+		<p id="coordinates" class="property">pergola.<strong>coordinates</strong></p>
+		<p>Reference to the system's coordinates editing gadget. See the <a href="Coordinates.html">pergola.Coordinates</a> class for the list of properties and methods. Use to show coordinates (or anything, like length, distance, etc.) at the pointer's coordinates in the user space.</p>
+
+		<p id="contextMenus" class="property">pergola.<strong>contextMenus</strong></p>
+		<p>Reference to system layer. Default parent node for custom context menus.</p>
+
+		<p id="defs" class="property">pergola.<strong>defs</strong></p>
+		<p>Reference to &lt;defs&gt; element with id “pergola_defs”.</p>
+
+		<p id="desktop" class="property">pergola.<strong>desktop</strong></p>
+		<p>Reference to system layer. Although elements can be appended to this layer, all user objects should be appended to the <a href="#user">pergola.user</a> layer.</p>
+
+		<p id="dialogs" class="property">pergola.<strong>dialogs</strong></p>
+		<p>Reference to system layer. This layer ranks high in the layers system, and it's where the dialogs are. Preemptive dialogs (with the <a href="Panel.html#preemptive">preemptive</a> property set) are placed in the next layer up. You never need to access this layer, unless you design your own dialog panel without using the <a href="Panel.html">pergola.Panel</a> class.</p>
+
+		<p id="pdoc" class="property">pergola.<strong>doc</strong></p>
+		<p>Reference to <i>document.documentElement</i> (standalone SVG) or outermost &lt;svg&gt; in HTML <a href="#container">container</a>.</p>
+
+		<p id="dragarea" class="property">pergola.<strong>dragarea</strong></p>
+		<p>Reference to the system's drag area. Pergola creates an instance of the <a href="Dragarea.html">pergola.Dragarea</a> class at runtime.</p>
+
+		<p id="fileDialog" class="property">pergola.<strong>fileDialog</strong></p>
+	  <p>Reference to the system's file dialog. Pergola creates an instance of the <a href="Panel.html">pergola.Panel</a> class for opening or saving a file, with lazy loading. The file dialog can be initialized through a menu or some other object, specifying the <a href="Panel.html#user">user</a> object, the <code>title</code> string, the <code>path</code> URL, and the <code>callback</code> function properties.</p>
+	  <p>Since the panel's file list needs to be updated on each use, invoke the <a href="requests.html#getFiles">pergola.getFiles()</a> utility function (as a method of the object requiring the service by using the function's call() method), which sends a request, updates the file list, changes the title, and opens the initialized dialog.</p>
+	  <p>The <a href="requests.html#getFiles">pergola.getFiles()</a> function is referenced by the <a href="Class.html">Class</a> (superclass) <a href="Class.html#getFiles">getFiles()</a> prototype method, and therefore for instances of <a href="classes.html">classes</a> inheriting from <a href="Class.html">Class</a> you don't need to use the function's call() method.</p>
+
+		<p id="findDialog" class="property">pergola.<strong>findDialog</strong></p>
+	  <p>Reference to the system's find panel. Pergola creates an instance of the <a href="Panel.html">pergola.Panel</a> class for this purpose, with lazy loading. The find panel can be initialized by any object, designated as <a href="Panel.html#user">user</a>, specifying the <a href="Panel.html#fn">fn</a> callback function.</p>
+	  <p>To initialize the dialog invoke the <a href="misc.html#find">pergola.find()</a> utility function (as a method of the object requiring the service by using the function's call() method).</p>
+	  <p id="getData">The panel's <b>getData()</b> instance method returns an object with these properties: <code>value</code> string representing the input; <code>regexp</code> regular expression; <code>flags</code> the regular expression flags as per panel's “Case Insensitive” checkbox; <code>wholeWord</code> boolean representing the state of the “Whole Word” checkbox. The suggested practice is to invoke this method as first statement of the callback function. Learn more in <a href="../Tutorial.html#find">THE FIND DIALOG</a> section of the Tutorial.</p>
+
+		<p id="menubar" class="property">pergola.<strong>menubar</strong></p>
+		<p>Reference to the system's menubar. Pergola creates an instance of the <a href="Menubar.html">pergola.Menubar</a> class at runtime if <a href="constants.html#systemMenu">systemMenu</a> is set to true in the config file.</p>
+
+		<p id="notification" class="property">pergola.<strong>notification</strong></p>
+		<p>Reference to the system's notification dialog. Pergola creates an instance of the <a href="Panel.html">pergola.Panel</a> class at runtime. Initial values can be overridden in the skins file (<i>pergola.presentationAttributes.notification</i>). To use the notification, invoke <a href="misc.html#message">pergola.message()</a>.</p>
+
+		<p id="preemptive" class="property">pergola.<strong>preemptive</strong></p>
+		<p>Reference to system layer. This is where the dialogs with the <a href="Panel.html#preemptive">preemptive</a> property set are appended.</p>
+
+		<p id="rubberBox" class="property">pergola.<strong>rubberBox</strong></p>
+	  <p>Reference to the system's rubber band box. Pergola creates an instance of the <a href="RubberBox.html">pergola.RubberBox</a> class at runtime.</p>
+
+		<p id="systemComponents" class="property">pergola.<strong>systemComponents</strong></p>
+		<p>Reference to system layer containing: debugger; dialogs; preemptive dialogs; quick tips; coordinates tip; context menus; drag area; taskbar. Do not append anything to this layer. The preferred layer for user objects is <a href="#user">pergola.user</a>.</p>
+
+		<p id="tabsDock" class="property">pergola.<strong>tabsDock</strong></p>
+		<p>Reference to the system's tabs dock (located on taskbar). Pergola creates an instance of the <a href="TabsDock.html">pergola.TabsDock</a> class at runtime. The tabs are open windows' tabs. User tab docks can also be created.</p>
+
+		<p id="taskbar" class="property">pergola.<strong>taskbar</strong></p>
+		<p>Reference to the system's taskbar. Pergola creates an instance of the <a href="Taskbar.html">pergola.Taskbar</a> class at runtime. User taskbars can also be created.</p>
+
+		<p id="user" class="property">pergola.<strong>user</strong></p>
+		<p>Reference to system layer; default container for all classes and preferred container for user orphan objects and elements.</p>
+
+		<h3></h3>
+		<p id="presentationAttributes" class="property">pergola.<strong>presentationAttributes</strong></p>
+		<p>Object defining properties whose names correspond to the pergola classes. Each object property defines SVG paint, geometry, or other proprietary attributes. Paint and geometry attribute names use SVG vocabulary (e.g. <i>x</i>, <i>width</i>, <i>"fill-opacity"</i>, etc.). Besides these, the object property <code>all</code> defines the common attributes <a href="Class.html#font-family">"font-family"</a> and <a href="Class.html#font-size">"font-size"</a> applied to the <a href="Class.html">Class</a> superclass and to the document, and the <a href="Class.html#stroke">stroke</a> attribute for the <a href="Class.html">Class</a> superclass. The <code>text</code> object property defines the <code>fill</code>, <code>fillInverse</code>, and <code>shadow</code> properties with values computed from theme luminosity.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

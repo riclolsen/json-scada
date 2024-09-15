@@ -1,0 +1,104 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Geometry</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Geometry.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Geometry</h1>
+
+	<p class="first">This subset of geometry functions is particularly aimed at vector editing applications.</p>
+
+
+
+	<div class="propList">
+
+		<h3>pergola.geom</h3>
+
+		<p id="intersectionPoint" class="property"><strong>intersectionPoint</strong>(<i>a1</i>, <i>a2</i>, <i>b1</i>, <i>b2</i>)</p>
+		<p>Get intersection point between line <i>a1</i>,<i>a2</i> and line <i>b1</i>,<i>b2</i>. The points are objects with x and y number properties. Returns {x : <i>x</i>, y : <i>y</i>} intersection point object, or false.</p>
+
+
+		<p id="intersect" class="property"><strong>intersect</strong>(<i>a1</i>, <i>a2</i>, <i>b1</i>, <i>b2</i>)</p>
+		<p>Test intersection between line <i>a1</i>,<i>a2</i> and line <i>b1</i>,<i>b2</i>. The points are objects with x and y properties. Returns true if lines intersect, or false.</p>
+
+
+
+		<p id="pointBetween" class="property"><strong>pointBetween</strong>(<i>a</i>, <i>b</i>, <i>c</i>)</p>
+		<p>Test if point <i>c</i> is between point <i>a</i> and point <i>b</i>. Unidimensional (x or y). Returns true if point is between, or false.</p>
+
+
+		<p id="pointOnLine" class="property"><strong>pointOnLine</strong>(<i>p</i>, <i>a</i>, <i>b</i>)</p>
+		<p>Tests if point <i>p</i> is on segment <i>a</i>,<i>b</i>. The points are objects with x and y properties. Treats horizontal and vertical lines. Applies 1 x 10−6 compensation. Returns true if point is on line, or false.</p>
+
+
+		<p id="getPDistance" class="property"><strong>getPDistance</strong>(<i>x</i>, <i>y</i>, <i>x1</i>, <i>y1</i>, <i>x2</i>, <i>y2</i>)</p>
+		<p>Get shortest distance from point <i>x</i>,<i>y</i> to line <i>x1</i>,<i>y1</i> <i>x2</i>,<i>y2</i>. Returns shortest distance number.</p>
+
+
+		<p id="getPPoint" class="property"><strong>getPPoint</strong>(<i>p</i>, <i>l</i>)</p>
+		<p>Get the perpendicular point on line <i>l</i> ({x1,y1,x2,y2}) from point <i>p</i> ({x,y}). Returns {x : <i>x</i>, y : <i>y</i>} perpendicular point object.</p>
+
+
+		<p id="getP2Pdistance" class="property"><strong>getP2Pdistance</strong>(<i>a</i>, <i>b</i>)</p>
+		<p>Get the distance between two points. <i>a</i> and <i>b</i> are objects with x and y properties. Returns distance number.</p>
+
+
+		<p id="centroid" class="property"><strong>centroid</strong>(<i>points</i>, <i>area</i>)</p>
+		<p>Get true centroid of a polygon. <i>points</i> is an array whose elements are objects with x and y properties. <i>area</i> is the polygon's area. Returns {x : <i>x</i>, y : <i>y</i>} center point object.</p>
+
+
+		<p id="crossProduct" class="property"><strong>crossProduct</strong>(<i>v1</i>, <i>v2</i>)</p>
+		<p>Vectors <i>v1</i> and <i>v2</i> are objects with x and y properties. Returns number.</p>
+
+
+		<h3 id="angle">pergola.geom.angle</h3>
+
+		<p id="degrees" class="property"><strong>degrees</strong>(<i>p1</i>, <i>p2</i>)</p>
+		<p>Get rotation angle of line <i>p1</i>,<i>p2</i>. <i>p1</i> and <i>p2</i> are objects with x and y properties. Returns a number representing the angle in degrees.</p>
+
+
+		<p id="radians" class="property"><strong>radians</strong>(<i>dy</i>, <i>dx</i>)</p>
+		<p>Get angle in radians from center point, where <i>dy</i> is y - cy, and <i>dx</i> is x - cx. A typical use is when drawing a line or dragging one anchor point of a line. Returns a number representing the current angle in radians.</p>
+
+
+
+		<p id="toDegrees" class="property"><strong>toDegrees</strong>(<i>radians</i>)</p>
+		<p>Converts <i>radians</i> to degrees. Returns degrees number.</p>
+
+
+		<p id="toRadians" class="property"><strong>toRadians</strong>(<i>degrees</i>)</p>
+		<p>Converts <i>degrees</i> to radians. Returns radians number.</p>
+
+
+		<p id="angleBetween2Lines" class="property"><strong>angleBetween2Lines</strong>(<i>a</i>, <i>b</i>)</p>
+		<p>Get angle between two lines. <i>a</i> and <i>b</i> are objects ({x1,y1,x2,y2}). Returns a number representing the angle in degrees.</p>
+
+
+		<p id="constrain" class="property"><strong>constrain</strong>(<i>angle</i>[, <i>cardinals</i>])</p>
+		<p>Constrain an angle to fixed values. if <i>cardinals</i> is not specified the value 16 (22.5 degrees) is used. A typical use is when drawing a line or dragging one anchor point of a line. Returns a number representing the constrained angle in degrees.</p>
+
+
+		<h3 id="area">pergola.geom.area</h3>
+
+		<p id="triangle" class="property"><strong>triangle</strong>(<i>s</i>)</p>
+		<p>Computes the area of a triangle, based on sides. <i>s</i> is an array containing the sides' length. Returns area number.</p>
+
+
+		<p id="polygon" class="property"><strong>polygon</strong>(<i>X</i>, <i>Y</i>, <i>n</i>)</p>
+		<p>Computes the area of a polygon, based on vertices. <i>X</i> is an array of ordered x vertices; <i>Y</i> is an array of ordered y vertices; <i>n</i> is the number of sides. Returns area signed number (negative for clockwise order).</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

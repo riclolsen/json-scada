@@ -1,0 +1,87 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola Input</title>
+<meta name="description" content="SVG library - pergola.Input class using the new pergola.Key class. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Input</h1>
+
+
+	<div id="svg" style="width: 800px; height: 200px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+
+<!-- PROJECT FILES  -->
+	<script src="input.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Input/Input.svg">View as standalone SVG</a></h3>
+
+		<p>The new <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/key.html">pergola.Key</a> class implements input in Pergola. The <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html">pergola.Input</a> class (named ValueInputBox in previous versions) has been extended to integrate this capability.</p>
+
+		<p>The input box can be configured through the properties <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#hasButtons">hasButtons</a>, <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#realTime">realTime</a> for real time processing, <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#width">width</a>, <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#height">height</a>, <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#caption">caption</a>, and <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#appendix">suffix</a>.</p>
+
+		<p>If the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#callback">callback</a> object or function property is specified, it overrides (any or all) the default <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/key.html">pergola.Key</a> class methods. In this example the default keypress method is overridden by the specified <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/key.html#keypressPosInt">pergola.Key.keypressPosInt</a>, designed to filter positive integers. Learn more in the SVG magazine <a href="http://svgmagazine.com/oct2014/js_Key.html">Keyboard Class</a> article.</p>
+
+		<p>You can also specify <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#min">min</a> and <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#max">max</a> numeric thresholds, <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#maxLength">maxLength</a> maximum string length number, <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#baseValue">baseValue</a> string or number, initial <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#value">value</a> string or number, a <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#target">target</a> object and <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#propName">propName</a> string property name on which to operate, and the associated <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Input.html#fn">fn</a> callback function.</p> 
+
+		<p>Full overflow management is implemented (with default or custom notifications).</p>
+
+		<h4>HOW</h4>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var g = $C({element : "g", transform : "translate(100 50)", appendTo : pergola.user});
+
+var myObject = {
+  r : 0,
+  g : 128,
+  b : 0,
+  circle : $C({element : "circle", cx : 120, cy : 10, r : 16, fill : "rgb(0, 128, 0)", stroke : "#A0A0A0", "stroke-width" : 2, appendTo : g}),
+  changeColor : function () {
+    this.circle.setAttributeNS(null, "fill", "rgb(" + this.r + "," + this.g + "," + this.b + ")");
+  },
+  input : new pergola.Input()
+};
+
+myObject.input.build({
+  owner : myObject,
+  parent : g,
+  callback : {keypress : pergola.Key.keypressPosInt},
+  caption : {
+    textNode : "G",
+  },
+  hasButtons : true,
+  max : 255,
+  min : 0,
+  maxLength : 3,
+  value : myObject.g + "",
+  allowEmpty : false,
+  target : myObject,
+  propName : "g",
+  fn : "changeColor",
+  realTime : true
+});
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

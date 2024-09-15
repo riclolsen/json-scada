@@ -1,0 +1,274 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola SVG filters</title>
+<meta name="description" content="SVG library - Pergola filters gallery. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+<style>
+h1 {
+	margin-left: 154px;
+	font-size: 20px;
+	color: #202020;
+}
+#svg {
+	width: 208px;
+	height: 3520px;
+	margin: 40px 16px 0 28px;
+	border: 0;
+}
+#text {
+	margin-top: 40px;
+	font-size: 12px;
+}
+div.code_blurb {
+	margin-top: 20px;
+	height: 200px;
+}
+.codebox {
+	margin-top: 4px;
+	background-color: #FEFEFE;
+	border: 1px solid #F0F0F0;
+	padding-left: 16px;
+	line-height: 14px;
+}
+
+code {
+	font-family: "Consolas", "Courier New", "Bitstream Vera Sans Mono", Courier, monospace;
+}
+
+.name {
+	font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Filters</h1>
+	<div class="blurb">
+		The <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/filters.html">pergola.filter</a> library object defines filter function properties. Filter elements are not created at runtime. To use a filter assign the call to the filter attribute of an element: <code>filter : pergola.filter.noise()</code>. The function creates the filter with unique ID based on parameters–if it doesn't exist–and returns the URI string. Learn more in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/Tutorial.html#filters">FILTERS library</a> section of the Tutorial. <a href="../../Examples/Filters/filters.svg"><b>View as standalone SVG</b></a>.
+	</div>
+
+	<table border="0" cellpadding="0" cellspacing="0">
+		<tr>
+			<td><div id="svg"></div></td>
+			<td valign="top">
+				<div id="text">
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Rosewood
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({baseFrequency : ".1 0", seed : 2})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">turbulence()</code> – Burr-elm
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.turbulence({
+  baseFrequency : ".05 .055",
+  seed : 1000,
+  tableValues : {R : ".31 0", G : ".1 0", B : ".03 0"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Walnut burl
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : ".055 .035",
+  seed : 1000,
+  tableValues : {R : ".21 0", G : ".08 0", B : ".025 0"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Spruce
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : ".7 0",
+  numOctaves : 1,
+  values : "1.5 1 1 1 1 1.5 0 0 0 0 1.5 0 0 0 0 0 0 0 0 1.5",
+  tableValues : {R : ".15 .7", G : ".15 .5", B : ".15 .15"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Pine
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : ".03 0",
+  values : "1 1 1 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1",
+  tableValues : {R : ".3 1.1", G : ".3 1.15", B : "0 .65"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Hay stack
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : "1 .05",
+  tableValues : {R : ".6 0", G : ".6 0", B : ".05 0"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Savana
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : ".2 .005",
+  tableValues : {R : ".2 0", G : ".4 0", B : ".05 0"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Red velvet curtain
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : ".03 .002",
+  tableValues : {R : ".16 0", G : "0 0", B : "0 0"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">turbulence()</code> – Stone
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.turbulence({
+  baseFrequency : ".35 .35",
+  tableValues : {R : ".4 .2", G : ".4 .2", B : ".5 .2"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">noise()</code> – Stone
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.noise({
+  baseFrequency : ".84 .85",
+  tableValues : {R : ".45 .08", G : ".5 .1", B : ".5 .1"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">turbulence()</code> – Stone
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.turbulence({
+  baseFrequency : ".056 .011",
+  tableValues : {R : ".82 .7", G : ".82 .7", B : ".82 .7"}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">specular()</code> – Bevel (default)
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.specular()
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">specular()</code> – Inset
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.specular({
+  surfaceScale : 4,
+  specularExponent : 2,
+  specularConstant : 1.1,
+  "fePointLight" : {x : 10000, y : 10000, z : -1000}
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">blur()</code> – Drop shadow (default)
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.blur()
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">blur()</code> – Drop shadow
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.blur({
+  stdDeviation : 3,
+  dx : 4.5,
+  dy : 4.5,
+  "flood-color" : "#103058",
+  "flood-opacity" : .6
+})
+]]></script>
+						</div>
+					</div>
+
+					<div class="code_blurb">
+						<code class="name">blur()</code> – Drop shadow
+						<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.filter.blur({
+  stdDeviation : 2,
+  dx : 2,
+  dy : 2,
+  "flood-opacity" : 1
+})
+]]></script>
+						</div>
+					</div>
+
+
+				</div>
+			</td>
+		</tr>
+	</table>
+
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+ <script src="f.js" type="text/javascript"></script> 
+
+</body>
+</html>
+

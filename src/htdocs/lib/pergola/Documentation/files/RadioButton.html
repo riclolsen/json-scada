@@ -1,0 +1,113 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – RadioButton</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – RadioButton class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.RadioButton</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+  <p class="first">This class implements a mechanism that allows the <a href="#owner">owner</a> of multiple instances to manage their state. See <a href="../Tutorial.html#panelRadioCheck">Panel With Radio Buttons And Check Boxes</a> in tutorial. Note: a radio button always has siblings; if you need a single fake radio button, use instead a regular <a href="Button.html">Button</a>, which can be easily customized to look like a radio button, or use a <a href="CheckBox.html">CheckBox</a> instead.</p>
+
+  <p class="first"><a href="../../ExamplesHTML/RadioAndCheckButtons/Radio-CheckButtons.html">Example</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="dotFill" class="property"><strong>dotFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="r" class="property"><strong>r</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units); the button's radius.</p>
+
+  	<p id="dotR" class="property"><strong>dotR</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units); the dot's radius.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p>Manages the state of this siblings. Assigns this to this <a href="#owner">owner</a>.<code>selection</code>; invokes this <a href="#fn">fn</a> if specified; invokes this <a href="#owner">owner</a>.<code>fn()</code> if specified.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="dot" class="property"><strong>dot</strong></p>
+  	<p>&lt;circle&gt; element.</p>
+
+  	<p id="caption" class="property"><strong>caption</strong></p>
+  	<p>If specified, an object defining the required <code>textNode</code> string property, optional <code>x</code>, <code>y</code> number (user space units) properties, and optional <code>position</code> string property. These are <a href="Caption.html">pergola.Caption</a> properties. This property is reassigned during processing, and references a new <a href="Caption.html">pergola.Caption</a> instance.</p>
+
+  	<p id="manager" class="property"><strong>manager</strong></p>
+  	<p>if specified, object for sibling radio buttons management.</p>
+
+  	<p id="fn" class="property"><strong>fn</strong></p>
+  	<p>If specified, callback function.</p>
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

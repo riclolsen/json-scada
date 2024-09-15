@@ -1,0 +1,112 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Taskbar</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Taskbar class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Taskbar</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">System component. You can create other instances of this class.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. Overridden by the <a href="references.html#taskbar">pergola.taskbar</a> object with <a href="references.html#systemComponents">pergola.systemComponents</a>.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="position" class="property"><strong>position</strong></p>
+  	<p>Defined in config file – string; allowed values: "top"; "bottom".</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="display" class="property"><strong>display</strong></p>
+  	<p>"none" – string.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="toggleOn" class="property"><strong>toggleOn</strong>()</p>
+  	<p>Displays the taskbar. The initial value of this <a href="#display">display</a> is "none". This method is invoked on the first instantiation (only) of <a href="Window.html">pergola.Window</a>, if that occurs. The tabs dock with its window tab children, if any, is appended to this <a href="#display">container</a>.</p>
+
+  	<p id="toggleOff" class="property"><strong>toggleOff</strong>()</p>
+  	 <p>Hides the taskbar. The contained tabs dock with its window tab children, if any, is appended to a different container and remains visible.</p>
+
+  	<p id="toggle" class="property"><strong>toggle</strong>()</p>
+  	<p>Sets the <a href="#display">display</a> attribute for this <a href="#container">container</a>.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p></p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="rect" class="property"><strong>rect</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+    </div>
+
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

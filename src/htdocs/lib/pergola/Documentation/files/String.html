@@ -1,0 +1,80 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – String</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – String Object extensions.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">String</h1>
+
+  <p class="first">String prototype extension properties and methods.</p>
+
+
+	<div class="propList">
+
+		<h2 id="prototype" class="propsHeader">prototype</h2>
+
+		<p id="xmlNameStartChar" class="property"><strong>xmlNameStartChar</strong></p>
+		<p>Regular expression containing illegal XML name start characters.</p>
+
+		<p id="xmlNameChar" class="property"><strong>xmlNameChar</strong></p>
+		<p>Regular expression containing illegal XML name characters.</p>
+
+		<p id="toXML"><strong>toXML</strong>()</p>
+		<p>Returns this XML name conformant; illegal characters are replaced with "_".</p>
+
+		<p id="xmlNameGenerator" class="property"><strong>xmlNameGenerator</strong>()</p>
+		<p>Returns this + a unique XML string composed of "XML_" + 32-bit hex number; <i>this</i> would typically be the empty string "", example:
+		<pre> var myName = "".xmlNameGenerator();</pre></p>
+		<p>If <a href="xmlName.html#exist">pergola.xmlName.exist(<i>generated name</i>)</a>, a new name is generated and tested.</p>
+
+		<p id="unformatNumber" class="property"><strong>unformatNumber</strong>(<i>decimal</i>)</p>
+		<p><i>decimal</i> represents the locale decimal separator (radix). Returns a float representing this locale formatted number. Example:
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var formattedString = "1 284,45 €";    // the "fr-FR" format
+var value = formattedString.unformatNumber(pergola.radixChar[pergola.locale]);    // value = 1284.45
+]]></script>
+ 		</div>
+    See also <a href="constants.html#radixChar">pergola.radixChar</a>.
+     </p>
+
+		<p id="width" class="property"><strong>width</strong>([<i>fS</i>, <i>fF</i>, <i>fW</i>, <i>lS</i>, <i>k</i>])</p>
+		<p>If <i>fS</i> string is specified it overrides <a href="Class.html#font-size">pergola.Class.prototype["font-size"]</a>; If <i>fS</i> string is specified it overrides <a href="Class.html#font-family">pergola.Class.prototype["font-family"]</a>; if <i>fW</i> font width string is not specified the value "normal" is used; if <i>lS</i> letter-spacing number or string is not specified the value "normal" is used; if <i>k</i> kerning number or string is not specified the value "auto" is used. Returns the BBox width of a (volatile) &lt;text&gt; element with this text node.</p>
+
+		<p id="height" class="property"><strong>height</strong>([<i>fS</i>, <i>fF</i>])</p>
+		<p>If <i>fS</i> string is specified it overrides <a href="Class.html#font-size">pergola.Class.prototype["font-size"]</a>; If <i>fS</i> string is specified it overrides <a href="Class.html#font-family">pergola.Class.prototype["font-family"]</a>. Returns the BBox height of a (volatile) &lt;text&gt; element with this text node.</p>
+		<p>Note: currently the value returned by this method is not dependable because some implementations return the height of the highest glyph in the string, and some others return a value equivalent to the line height.</p>
+
+		<p id="truncate" class="property"><strong>truncate</strong>(<i>n</i>)</p>
+		<p>Returns this truncated of <i>n</i> number of characters, starting from the end.</p>
+
+		<p id="truncateWithDots" class="property"><strong>truncateWithDots</strong>(<i>width</i>[, <i>fS</i>, <i>fF</i>, <i>fW</i>, <i>lS</i>, <i>k</i>])</p>
+		<p>If <i>fS</i> string is specified it overrides <a href="Class.html#font-size">pergola.Class.prototype["font-size"]</a>; If <i>fS</i> string is specified it overrides <a href="Class.html#font-family">pergola.Class.prototype["font-family"]</a>; if <i>fW</i> font width string is not specified the value "normal" is used; if <i>lS</i> letter-spacing number or string is not specified the value "normal" is used; if <i>k</i> kerning number or string is not specified the value "auto" is used. Returns this truncated to fit the specified <i>width</i>, + "...".</p>
+
+		<p id="centerVertical" class="property"><strong>centerVertical</strong>(<i>height</i>[, <i>fS</i>, <i>fF</i>])</p>
+		<p>Returns a number suitable as y value for &lt;text&gt; elements. Note: this method relies on the value returned by this <a href="#height">height()</a> and therefore is not dependable.</p>
+
+		<p id="brighten" class="property"><strong>brighten</strong>(<i>f</i>)</p>
+		<p>Returns this (color string in any legal format) brightened by the specified <i>f</i> factor.</p>
+
+		<p id="darken" class="property"><strong>darken</strong>(<i>f</i>)</p>
+		<p>Returns this (color string in any legal format) darkened by the specified <i>f</i> factor.</p>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

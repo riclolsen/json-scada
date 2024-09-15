@@ -1,0 +1,53 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – xmlName</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – XML names manager.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">XML names/IDs</h1>
+
+	<p class="first">When you create an instance of any of the Pergola classes you can pass an optional string parameter. If specified, the constructor (more precisely, the <a href="Class.html#Class">Class</a> superclass constructor) uses it to define the object's properties <code>name</code> and (XML conformant) <code>id</code>, which is also used as prefix for the object's descendants IDs. The <i>id</i> attribute is set for the most relevant component elements, but it's never used by any class method (Pergola references instead all the relevant DOM nodes and container layers).</p>
+
+	<p>If the parameter is not specified the constructor creates a unique XML <i>name</i>/<i>id</i>. You can use this feature for any object or element.</p>
+
+	<p>You normally don't need to use pergola.xmlName properties and methods explicitly, but rather through <a href="String.html#xmlNameGenerator">String.xmlNameGenerator</a>:
+	<pre> var id = "".xmlNameGenerator();</pre>
+	However, you can invoke explicitly pergola.xmlName.exist() and pergola.xmlName.add() to check and add hardcoded IDs (but do not add an id without testing its existence).
+	</p>
+
+
+
+	<div class="propList">
+
+		<h3>pergola.xmlName</h3>
+
+		<p id="list" class="property">pergola.xmlName.<strong>list</strong></p>
+		<p>Array – stores all generated IDs.</p>
+
+
+		<p id="exist" class="property">pergola.xmlName.<strong>exist</strong>(<i>string</i>)</p>
+		<p>Checks if <i>string</i> is already used.</p>
+
+
+		<p id="add" class="property">pergola.xmlName.<strong>add</strong>(<i>string</i>)</p>
+		<p>Adds <i>string</i> to pergola.xmlName.list.</p>
+
+
+		<p id="remove" class="property">pergola.xmlName.<strong>remove</strong>(<i>string</i>)</p>
+		<p>Removes <i>string</i> from pergola.xmlName.list.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

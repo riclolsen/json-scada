@@ -1,0 +1,117 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – ToolButton</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – ToolButton class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.ToolButton</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+  <p class="first">System component. Subclass of <a href="Button.html">pergola.Button</a>; inherits prototype of <a href="Button.html#prototype">pergola.Button</a>.</p>
+
+	<p class="first">The <a href="Window.html">pergola.Window</a> class implements full management of tools.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.
+
+  	<p id="maskFill" class="property"><strong>maskFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="rx" class="property"><strong>rx</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="selected" class="property"><strong>selected</strong></p>
+  	<p>false – boolean; can be true for more than one tool, while it can be true for only one tool in a collection of <a href="#exclusive">exclusive</a> tools.</p>
+
+  	<p id="suspended" class="property"><strong>suspended</strong></p>
+  	<p>false – boolean; this property is dynamically set, and allows the reactivation of an inactive window by click on its canvas while the tool is neutralized.</p>
+
+  	<p id="exclusive" class="property"><strong>exclusive</strong></p>
+  	<p>false – boolean; "exclusive" tools added to a window are elements of the <a href="Window.html#exclusiveTools">exclusiveTools</a> array. A buttons in this collection has radio button behavior with their siblings.</p>
+
+  	<p id="prevent" class="property"><strong>prevent</strong></p>
+  	<p>true – boolean; for window tools this property determines if the event.preventDefault() method should be invoked by the event handlers. For user tools that you may define for any other context, you may need to set a condition based on this property in the tool handler to prevent the browser's default actions. In those cases where the default actions are sought, you must override this property (to false) in the tool's <a href="classes.html#initializationObject">initialization object</a>.</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+  	<p>"regular" – string; this property can be overridden with any arbitrary string and it's designed for use in vector editing applications. The value is processed by the handlers. It is never processes by any of the <code>pergola</code>, or <code>pergola.Class</code>, or any classes' methods. The default value "regular" implies a base behavior.</p>
+
+  	<p id="cursor" class="property"><strong>cursor</strong></p>
+  	<p>"default" – string; tools often define a CSS cursor value. The specified cursor is applied to the tool's activity region.</p>
+
+  	<p class="property">This class is a subclass of <a href="Button.html">pergola.Button</a>. See other <a href="Button.html#protoproperties">pergola.Button prototype properties</a>.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p>Overrides <a href="Button.html#protoMethods">pergola.Button</a>'s handleEvent.</p>
+
+  	<p class="first">This class is a subclass of <a href="Button.html">pergola.Button</a>. See <a href="Button.html#protoMethods">pergola.Button prototype methods</a> for inherited methods.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="location" class="property"><strong>location</strong></p>
+  	<p>Boolean; determines whether this uses the <a href="Window.html#map">pergola.Window</a> maps location services.
+
+  	<p id="actOnCanvas" class="property"><strong>actOnCanvas</strong></p>
+  	<p>Boolean; determines whether this (as member of the collection of <a href="Window.html#tools">tools</a> of a <a href="Window.html">pergola.Window</a> object) <a href="Button.html#fn">fn</a> should serve as callback for events registered on the window's <a href="Window.html#pDoc">doc</a> container.
+
+    <p class="first">This class is a subclass of <a href="Button.html">pergola.Button</a>. See other <a href="Button.html#instance">pergola.Button instance properties</a>.</p>
+
+    </div>
+
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

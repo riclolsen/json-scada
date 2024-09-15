@@ -1,0 +1,56 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola - SVG Symbols</title>
+<meta name="description" content="SVG library - Pergola symbols library. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+
+	<h1>Symbols</h1>
+
+	<div id="svg" style="width: 800px; height: 480px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+  <script src="symbols.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Symbols/symbols.svg">View as standalone SVG</a></h3>
+
+		<p>Symbols are defined by the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/symbols.html">pergola.symbols</a> library object.</p>
+
+		<h4>HOW</h4>
+		<p>A symbol is an array of one or more elements with their paint and geometrical attributes. When using a symbol you can override its attributes or define new ones, using SVG attributes vocabulary.</p>
+		<p>You can attach a symbol to objects like buttons, tools, etc., or use it as standalone to create icons by invoking the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/misc.html#symbol">pergola.symbol()</a> utility function.</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var myIcon = pergola.symbol({
+  symbol : pergola.symbols.lens,
+  x : 20,
+  y : 20,
+  parent : node
+});
+]]></script>
+		</div>
+
+		<p>Learn more in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/Tutorial.html#symbols">SYMBOLS library</a> section of the Tutorial.</p>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

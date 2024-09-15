@@ -1,0 +1,57 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – DOM</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – DOM.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">DOM</h1>
+
+	<p class="first">Pergola introduced a progressive concept for creating nodes without defining proprietary pseudo-classes, but rather using the existing SVG or HTML classes library represented by the implementation itself. The <a href="#SVG">pergola.SVG</a> function is therefore an interface. It has one variant for <a href="#HTML">HTML</a> elements and one for <a href="#HTML_FO">HTML as foreignObject</a> elements (same as HTML but in the xhtml namespace). The rationale of this concept is explained in the SVG magazine <a href="http://www.svgmagazine.com/jul2011/dom-helper.html" target="new">DOM Helper</a> article.</p>
+
+	<p>The functions expect an object defining the element to be created, a parent node –which can create itself in parallel scope– and a collection of attributes specified using the language's vocabulary and grammar.</p>
+
+	<p>The method returns the element created in the appropriate <a href="constants.html#ns">namespace</a>.</p>
+
+
+	<div class="propList">
+		<h3>Creating SVG elements</h3>
+
+		<p id="SVG" class="property">pergola.<strong>SVG</strong>(<i>object</i>)</p>
+		<p><i>object</i>:<pre>
+  {
+    element : "<i>element name</i>",
+    <i>attributeName</i> : <i>attribute value</i>,
+    <i>"attribute-Name"</i> : <i>attribute value</i>,
+    textNode : <i>String</i>,
+    appendTo : <i>node</i>
+  }</pre></p>
+
+	  <p>The <code>element</code> string property is required and must be the first property specified. The <code>textNode</code> string property is optional and can be set for text and tspan elements. The <code>appendTo</code> node property is optional; appending can be deferred using the appropriate DOM methods. All other property names will correspond strictly to the element's attributes, and attribute names containing illegal characters for JavaScript variable names must use the string notation, e.g. "font-family", or "xlink:href". The <i>style</i> and <i>class</i> attributes can also be set. To call this function you can use the shortcut $C.</p>
+
+
+		<h3>Creating HTML elements</h3>
+		<p id="HTML" class="property">pergola.<strong>HTML</strong>(<i>object</i>)</p>
+		<p><i>object</i> is the same as in <a href="#SVG">SVG</a>, but the <code>textNode</code> property can be set for all HTML tags that can have a text node. To call this function you can use the shortcut $H.</p>
+
+
+		<h3>Creating HTML elements as foreignObject</h3>
+		<p id="HTML_FO" class="property">pergola.<strong>HTML_FO</strong>(<i>object</i>)</p>
+		<p><i>object</i> is the same as in <a href="#SVG">SVG</a>, but the <code>textNode</code> property can be set for all HTML tags that can have a text node. Nodes created by this function are in the xhtml "http://www.w3.org/1999/xhtml" namespace.</p>
+
+	</div>
+
+	<p class="first">Use examples <a href="http://svg.dotuscomus.com/lib/tinytools/DOM/DOM_Helper.html" target="new">here</a>, and in several Pergola examples.</p>
+
+</div>
+
+</body>
+</html>
+
+

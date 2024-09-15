@@ -1,0 +1,231 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Scrollbar</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Scrollbar class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Scrollbar</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">System component. You never need to instantiate this class, or invoke any of its methods explicitly (the <a href="Slider.html">pergola.Slider</a> is instead a user widget).</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. Overridden by controls using scrollbars.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="horTrackFill" class="property"><strong>horTrackFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="vertTrackFill" class="property"><strong>vertTrackFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="rx" class="property"><strong>rx</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="size" class="property"><strong>size</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="padding" class="property"><strong>padding</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="min" class="property"><strong>min</strong></p>
+  	<p>0 – number; the low threshold of displacement.</p>
+
+  	<p id="extent" class="property"><strong>extent</strong></p>
+  	<p>0 – number; the high threshold of displacement.</p>
+
+  	<p id="scrollType" class="property"><strong>scrollType</strong></p>
+  	<p>"regular" – string; allowed values: "regular"; "navigation".</p>
+
+  	<p id="initial" class="property"><strong>initial</strong></p>
+  	<p>"start" – string; allowed values: "start"; "middle".</p>
+
+  	<p id="sliderClearance" class="property"><strong>sliderClearance</strong></p>
+  	<p>2 – number.</p>
+
+  	<p id="step" class="property"><strong>step</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number; the scroll units for step scrolling by buttons.</p>
+
+  	<p id="delay" class="property"><strong>delay</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number; the delay before repetition for step scrolling by buttons.</p>
+
+  	<p id="stepFrequence" class="property"><strong>stepFrequence</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number; the repetition frequence for step scrolling by buttons.</p>
+
+  	<p id="pageFrequence" class="property"><strong>pageFrequence</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number; the repetition frequence for page scrolling by track.</p>
+
+  	<p id="mapPageFrequence" class="property"><strong>mapPageFrequence</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number; the repetition frequence for page scrolling by track in maps.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+		<p id="updateHor" class="property"><strong>updateHor</strong>(<i>x</i>, <i>y</i>)</p>
+	  <p>System. Updates geometry of horizontal scrollbar.</p>
+
+		<p id="updateVert" class="property"><strong>updateVert</strong>(<i>x</i>, <i>y</i>)</p>
+	  <p>System. Updates geometry of vertical scrollbar.</p>
+
+		<p id="horScrollBySliderInit" class="property"><strong>horScrollBySliderInit</strong>(<i>evt</i>)</p>
+	  <p>System. Initialization of horizontal scrollbar slider. Returns an object for initialization of <a href="references.html#Dragarea">pergola.dragarea</a>, specifying the appropriate callback function for "regular" or "navigation" (maps) <a href="#scrollType">scrollType</a>.</p>
+
+		<p id="vertScrollBySliderInit" class="property"><strong>vertScrollBySliderInit</strong>(<i>evt</i>)</p>
+	  <p>System. Initialization of vertical scrollbar slider. Returns an object for initialization of <a href="references.html#Dragarea">pergola.dragarea</a>, specifying the appropriate callback function for "regular" or "navigation" (maps) <a href="#scrollType">scrollType</a>.</p>
+
+		<p id="horScrollByPageInit" class="property"><strong>horScrollByPageInit</strong>(<i>evt</i>)</p>
+	  <p>System. Initialization of horizontal scrollbar track <a href="timer.html">Timer</a>, specifying the appropriate callback function for "regular" or "navigation" (maps) <a href="#scrollType">scrollType</a>.</p>
+
+		<p id="vertScrollByPageInit" class="property"><strong>vertScrollByPageInit</strong>(<i>evt</i>)</p>
+	  <p>System. Initialization of vertical scrollbar track <a href="timer.html">Timer</a>, specifying the appropriate callback function for "regular" or "navigation" (maps) <a href="#scrollType">scrollType</a>.</p>
+
+  	<p id="stepScrollTimerInit" class="property"><strong>stepScrollTimerInit</strong>(<i>evt</i>, <i>button</i>, <i>callback</i>)</p>
+  	<p><i>button</i> is this <a href="#backScroll">backScroll</a> or this <a href="#fwdScroll">fwdScroll</a>; <i>callback</i> specifies appropriate function depending on this <a href="#scrollType">scrollType</a>. Initializes a <a href="timer.html">pergola.Timer</a> instance with the appropriate callback function for "regular" or "navigation" (maps) <a href="#scrollType">scrollType</a>, this <a href="#delay">delay</a>, and this <a href="#stepFrequence">stepFrequence</a>. You never need to invoke this methods explicitly.</p>
+
+		<p id="horScrollBySlider" class="property"><strong>horScrollBySlider</strong>(<i>evt</i>)</p>
+	  <p>System. Applies horizontal scrolling by slider. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="vertScrollBySlider" class="property"><strong>vertScrollBySlider</strong>(<i>evt</i>)</p>
+	  <p>System. Applies vertical scrolling by slider. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="horFwdStepScroll" class="property"><strong>horFwdStepScroll</strong>()</p>
+	  <p>System. Applies horizontal forward scroll by button. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="vertFwdStepScroll" class="property"><strong>vertFwdStepScroll</strong>()</p>
+	  <p>System. Applies vertical forward scroll by button. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="horBackStepScroll" class="property"><strong>horBackStepScroll</strong>()</p>
+	  <p>System. Applies horizontal back scroll by button. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="vertBackStepScroll" class="property"><strong>vertBackStepScroll</strong>()</p>
+	  <p>System. Applies vertical back scroll by button. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="horScrollByPage" class="property"><strong>horScrollByPage</strong>()</p>
+	  <p>System. Horizontal scroll by page. You don't normally need to invoke this methods explicitly.</p>
+
+		<p id="vertScrollByPage" class="property"><strong>vertScrollByPage</strong>()</p>
+	  <p>System. Vertical scroll by page. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="overflow" class="property"><strong>overflow</strong>(<i>s</i>)</p>
+  	<p><i>s</i> is this <a href="#slider">slider</a>. Tests positive and negative overflow. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="positiveOverflow" class="property"><strong>positiveOverflow</strong>(<i>s</i>)</p>
+  	<p><i>s</i> is this <a href="#slider">slider</a>. Tests positive overflow. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="negativeOverflow" class="property"><strong>negativeOverflow</strong>(<i>s</i>)</p>
+  	<p><i>s</i> is this <a href="#slider">slider</a>. Tests negative overflow. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapHorScrollBySlider" class="property"><strong>mapHorScrollBySlider</strong>(<i>evt</i>)</p>
+  	<p>System. Applies horizontal scrolling by slider. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapVertScrollBySlider" class="property"><strong>mapVertScrollBySlider</strong>(<i>evt</i>)</p>
+  	<p>System. Applies vertical scrolling by slider. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapHorFwdStepScroll" class="property"><strong>mapHorFwdStepScroll</strong>()</p>
+  	<p>System. Applies horizontal forward scroll by button. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapVertFwdStepScroll" class="property"><strong>mapVertFwdStepScroll</strong>()</p>
+  	<p>System. Applies vertical forward scroll by button. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapHorBackStepScroll" class="property"><strong>mapHorBackStepScroll</strong>()</p>
+  	<p>System. Applies horizontal back scroll by button. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapVertBackStepScroll" class="property"><strong>mapVertBackStepScroll</strong>()</p>
+  	<p>System. Applies vertical back scroll by button. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapHorScrollByPage" class="property"><strong>mapHorScrollByPage</strong>()</p>
+  	<p>System. Horizontal scroll by page. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="mapVertScrollByPage" class="property"><strong>mapVertScrollByPage</strong>()</p>
+  	<p>System. Vertical scroll by page. Acts on maps panning. You don't normally need to invoke this methods explicitly.</p>
+
+  	<p id="release" class="property"><strong>release</strong>()</p>
+  	<p>Invoked upon termination of the scrolling process. You never need to invoke this methods explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="buildH" class="property"><strong>buildH</strong>(<i>object</i>)</p>
+  	<p>Specialized build method for horizontal scrollbar. this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+  	<p id="buildV" class="property"><strong>buildV</strong>(<i>object</i>)</p>
+  	<p>Specialized build method for vertical scrollbar. this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="track" class="property"><strong>track</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="slider" class="property"><strong>slider</strong></p>
+  	<p><a href="ScrollSlider.html">pergola.ScrollSlider</a> instance.</p>
+
+  	<p id="backScroll" class="property"><strong>backScroll</strong></p>
+  	<p><a href="ScrollButton.html">pergola.ScrollButton</a> instance.</p>
+
+  	<p id="fwdScroll" class="property"><strong>fwdScroll</strong></p>
+  	<p><a href="ScrollButton.html">pergola.ScrollButton</a> instance.</p>
+
+  	<p class="first">Other properties related to internal dynamics are not listed.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

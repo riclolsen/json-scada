@@ -1,0 +1,194 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Class</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Class superclass.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Class</h1>
+
+	<p class="first">Superclass. All Pergola <a href="classes.html">classes</a>, to the exception of <a href="undo.html">Undo</a>, <a href="timer.html">Timer</a>, and <a href="key.html">Key</a>, are subclassed to <code>pergola.Class</code>. When a class is subclassed using the method <a href="classOps.html#subclass">pergola.subclass</a>, <code>pergola.Class</code> is assigned to the class property <code><strong>baseConstructor</strong></code>, and <code>pergola.Class.prototype</code> is assigned to the class property <code><strong>superClass</strong></code>.</p>
+
+
+
+
+	<p id="Class" class="first">pergola.<strong>Class</strong>([<i>name</i>])</p>
+	Constructor. If <i>name</i> string is specified this <code>name</code> gets <i>name</i>, otherwise a unique new name is generated (<a href="String.html#xmlNameGenerator">String.xmlNameGenerator()</a>). this <code>name</code> is then made XML conformant (<a href="String.html#toXML">String.toXML()</a>) and assigned to this <code>id</code>.
+  <p>Note: the <code>name</code> of an object (not necessarily the property or variable name defining the instance) can be very useful for debugging and for visible names.</p>
+  <p>Note: if <i>name</i> is specified no duplicates check is carried out.</p>
+
+
+
+	<div class="propList">
+
+		<h2 id="prototype" class="propsHeader">Prototype</h2>
+	  <p>Apart from the first six properties listed below, the following methods are specifically designed as common class routines, or to carry out system tasks (as well as most of the methods defined in the subclasses' prototypes). However, some can be useful in external contexts, in which case they can be invoked using the <code>call</code> method of the function object. Where the blurb starts with "System", it means that the function is designed exclusively for the system and should never be invoked explicitly.</p>
+
+	  <p id="parent" class="property"><strong>parent</strong></p>
+	  <p>The default parent node for instances of all classes is the <a href="references.html#user">pergola.user</a> layer (&lt;g&gt; element). Overriding this property at instantiation is not suggested, unless otherwise specified in the <a href="classes.html">classes</a>' reference pages, or unless the specified container is itself appended to the default container. <a href="references.html#user">pergola.user</a> should also be the preferred container for orphan user objects and elements (for the latter, the value of the <code><a href="dom.html">appendTo</a></code> property). Note: some classes of system components (like dialogs) override this property in their prototype.</p>
+
+		<p id="x" class="property"><strong>x</strong></p>
+		<p>The initial value of the <code>x</code> property (as the SVG's <i>x</i> attribute). All Pergola visual classes use the <code>x</code> and <code>y</code> properties to specify the position of the <code>container</code> property (reference to &lt;svg&gt; or &lt;g&gt; element). For classes that don't define <code>container</code>, <code>x</code> and <code>y</code> may be applied to element(s) that have those attributes, or remain unused. The <code>x</code> and <code>y</code> properties are set to initial values, or to overridden values, or to current values (after transformations of the appropriate type). If the container element has <i>x</i> and <i>y</i> attributes (&lt;svg&gt;) transformations are applied by setting these attributes. If the container element does not have <i>x</i> and <i>y</i> attributes (&lt;g&gt;) transformations are applied by setting the <i>transform</i> attribute.</p>
+
+		<p id="y" class="property"><strong>y</strong></p>
+		<p>The initial value of the <code>y</code> property (as the SVG's <i>y</i> attribute). All Pergola visual classes use the <code>x</code> and <code>y</code> properties to specify the position of the <code>container</code> property (reference to &lt;svg&gt; or &lt;g&gt; element). For classes that don't define <code>container</code>, <code>x</code> and <code>y</code> may be applied to element(s) that have those attributes, or remain unused. The <code>x</code> and <code>y</code> properties are set to initial values, or to overridden values, or to current values (after transformations of the appropriate type). If the container element has <i>x</i> and <i>y</i> attributes (&lt;svg&gt;) transformations are applied by setting these attributes. If the container element does not have <i>x</i> and <i>y</i> attributes (like &lt;g&gt; for example) transformations are applied by setting the <i>transform</i> attribute.</p>
+
+		<p id="font-family" class="property"><strong>"font-family"</strong></p>
+	  <p>The initial value of the <code>"font-family"</code> property. Applied to document and inherited by &lt;text&gt; elements, where not overridden by class or instances. This initial value can be set in the skins.js file. See <a href="skins.html">Skins library</a>, and <a href="../Tutorial.html#skins">Skins</a> in Tutorial.</p>
+
+		<p id="font-size" class="property"><strong>"font-size"</strong></p>
+	  <p>The initial value of the <code>"font-size"</code> property. Applied to document and inherited by classes' (where not overridden by class or instance) and by orphan &lt;text&gt; elements. This initial value can be set in the skins.js file. See <a href="skins.html">Skins library</a>, and <a href="../Tutorial.html#skins">Skins</a> in Tutorial.</p>
+
+		<p id="stroke" class="property"><strong>stroke</strong></p>
+	  <p>The initial value of the <code>stroke</code> property. Inherited by classes' components and by orphan elements that have the <i>stroke</i> attribute. This initial value can be set in the skins.js file. See <a href="skins.html">Skins library</a>, and <a href="../Tutorial.html#skins">Skins</a> in Tutorial.</p>
+
+		<p id="registerEvents" class="property"><strong>registerEvents</strong>(<i>tgt</i>, <i>e</i>[, <i>handler</i>])</p>
+	  <p>Adds event listener(s) for the type(s) specified by <i>e</i> string or array of strings to the <i>tgt</i> element, with <i>handler</i> function, if specified, or this (<code>handleEvent</code>). Note: event types are registered for the bubbling phase; if you need to add an event for the capturing phase use the regular method.</p>
+
+		<p id="unregisterEvents" class="property"><strong>unregisterEvents</strong>(<i>tgt</i>, <i>e</i>, <i>handler</i>)</p>
+	  <p>Removes event listener(s) for the type(s) specified by <i>e</i> string or array of strings to the <i>tgt</i> element, with <i>handler</i> function, if specified, or this (<code>handleEvent</code>).</p>
+
+		<p id="checkEventsList" class="property"><strong>checkEventsList</strong>(<i>e</i>)</p>
+	  <p><i>e</i> string is an event type. Returns true if <i>e</i> is already registered, otherwise returns false.</p>
+
+		<p id="setPointerEvents" class="property"><strong>setPointerEvents</strong>(<i>array</i>)</p>
+	  <p>Sets the "pointer-events" attribute to "all" for the elements specified in <i>array</i>.</p>
+
+		<p id="removePointerEvents" class="property"><strong>removePointerEvents</strong>(<i>array</i>)</p>
+	  <p>Sets the "pointer-events" attribute to "none" for the elements specified in <i>array</i>.</p>
+
+		<p id="memento" class="property"><strong>memento</strong>(<i>object</i>)</p>
+	  <p>Defines the property <code>obj</code> for <i>object</i> and assigns this. Returns the memento <i>object</i> for <a href="undo.html">pergola.Undo</a> instances.</p>
+
+		<p id="absoluteX" class="property"><strong>absoluteX</strong>(<i>node</i>)</p>
+	  <p>Get the CTM.e of <i>node</i>.</p>
+	  <p>Note: a workaround was added for Firefox recent builds.</p>
+
+		<p id="absoluteY" class="property"><strong>absoluteY</strong>(<i>node</i>)</p>
+	  <p>Get the CTM.f of <i>node</i>.</p>
+	  <p>Note: a workaround was added for Firefox recent builds.</p>
+
+		<p id="setXYWH" class="property"><strong>setXYWH</strong>(<i>element</i>)</p>
+	  <p>Sets the <i>x</i>, <i>y</i>, <i>width</i>, and <i>height</i> attributes for the specified <i>element</i>.</p>
+
+		<p id="moveXY" class="property"><strong>moveXY</strong>(<i>evt</i>)</p>
+	  <p>Sets the <i>x</i>, <i>y</i> attributes for this <code>target</code> element.</p>
+
+		<p id="moveByTranslation" class="property"><strong>moveByTranslation</strong>(<i>evt</i>)</p>
+	  <p>Sets the <i>transform</i> attribute for this <code>target</code> element.</p>
+
+		<p id="setContextmenu" class="property"><strong>setContextmenu</strong>(<i>evt</i>, <i>element</i>, <i>items</i>)</p>
+	  <p>On mousedown: adds mouseup event listener to <i>element</i> with this, if it's not already registered. On mouseup: assigns a <a href="ContextMenu.html">pergola.ContextMenu</a> instance to this.contextmenu; sets <a href="variables.html#contextmenuEnabled">pergola.contextmenuEnabled</a> to false to prevent the browser's context menu; removes the mouseup event listener, if it was added on mousedown; invokes custom context menu <a href="ContextMenu.html#open">open()</a> method.</p>
+
+		<p id="checkUserFunction" class="property"><strong>checkUserFunction</strong>(<i>evt</i>)</p>
+	  <p>System. Checks the format of user <code>fn</code> function or string and invokes it passing the event. All Pergola interactivity components (menus, buttons, dialogs, boxes, selectors, etc.) are designed to process a callback <code>fn</code> defined as instance property. Learn more in the <a href="../Tutorial.html#events">User Events And Functions</a> section of the Tutorial.</p>
+
+		<p id="checkCallback" class="property"><strong>checkCallback</strong>(<i>evt</i>, <i>callback</i>)</p>
+	  <p>System. Checks the format of <code>callback</code> function or string; if string (name of instance method), it invokes it passing the event; if function, it invokes it as a method of this using the function's call() method, passing the event.</p>
+	  <p>Essentially, the difference between the user <a href="#checkUserFunction"><code>fn</code></a> function and a <i>callback</i> function is that the former is always executed in a known context: this; it is also invoked directly from the handler where the event occurs. For the latter instead, the known context is not inherent, and may be lost as the reference will normally traverse one or more different contexts, although it may not. The context where the <i>callback</i> lands must be able to programmatically retrace the original context and invoke the <i>callback</i> in that context. Learn more in the <a href="../Tutorial.html#events">User Events And Functions</a> section of the Tutorial.</p>
+
+
+		<p id="setPositionToStrokeWidth" class="property"><strong>setPositionToStrokeWidth</strong>(<i>sw</i>)</p>
+	  <p><i>sw</i> is a number representing a stroke width. Get fine positioning of lines in relation to stroke width; use with straight lines in pixels units. If <i>sw</i> is even returns 0, otherwise returns 0.5.</p>
+	  <p>Note: add or subtract the result to <i>x</i>, <i>y</i> attributes.</p>
+
+		<p id="sweep" class="property"><strong>sweep</strong>(<i>props</i>)</p>
+	  <p>Shortcut for deleting the specified properties of this; <i>props</i> is an array containing one or more string property names.</p>
+
+		<p id="getFiles" class="property"><strong>getFiles</strong>(<i>object</i>)</p>
+	  <p>Reference to the <a href="requests.html#getFiles">pergola.getFiles()</a> utility function. Allows to invoke the function in the object's context without the need to use the function's call() method.
+
+		<p id="getColorpicker" class="property"><strong>getColorpicker</strong>(<i>color</i>)</p>
+	  <p>Reference to the <a href="misc.html#getColorpicker">pergola.getColorpicker()</a> utility function. Allows to invoke the function in the object's context without the need to use the function's call() method.
+
+		<p id="find" class="property"><strong>find</strong>(<i>callback</i>)</p>
+	  <p>Reference to the <a href="misc.html#find">pergola.find()</a> utility function. Allows to invoke the function in the object's context without the need to use the function's call() method.
+
+		<p id="autoScroll" class="property"><strong>autoScroll</strong>()</p>
+	  <p>System. Used in vector editors. Auto-scrolls while drawing or moving objects.
+
+		<p id="zoomBylensToolInit" class="property"><strong>zoomBylensToolInit</strong>(<i>evt</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Initializes <a href="references.html#rubberBox">pergola.rubberBox</a> and <a href="references.html#dragarea">pergola.dragarea</a>.</p>
+
+		<p id="zoomBylensTool" class="property"><strong>zoomBylensTool</strong>(<i>evt</i>)</p>
+	  <p>System. Lens tool callback. Applies scaling to this (window) embedded document (<code>doc</code>).</p>
+
+		<p id="mapZoomBylensTool" class="property"><strong>mapZoomBylensTool</strong>(<i>evt</i>)</p>
+	  <p>System. Maps lens tool callback. Applies zoom level to this (window) <code>map</code>.</p>
+
+		<p id="scrollByhandToolInit" class="property"><strong>scrollByhandToolInit</strong>(<i>evt</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Initializes <a href="references.html#dragarea">pergola.dragarea</a>.</p>
+
+		<p id="scrollByHandTool" class="property"><strong>scrollByHandTool</strong>(<i>evt</i>)</p>
+	  <p>System. Hand tool callback. Applies transformations to this (window) <a href="Window.html#pDoc">doc</a>.</p>
+
+		<p id="measureByRulerTool" class="property"><strong>measureByRulerTool</strong>(<i>evt</i>)</p>
+	  <p>System. Ruler tool callback. Measures geo distance.</p>
+
+		<p id="measureItinerary" class="property"><strong>measureItinerary</strong>(<i>evt</i>)</p>
+	  <p>System. Itinerary tool callback. Calculates itinerary (maps).</p>
+
+		<p id="zoomTimerInit" class="property"><strong>zoomTimerInit</strong>(<i>evt</i>, <i>obj</i>, <i>callback</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Initializes zooming <a href="timer.html">timer</a>.</p>
+
+		<p id="mapZoomTimerInit" class="property"><strong>mapZoomTimerInit</strong>(<i>evt</i>, <i>obj</i>, <i>callback</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Initializes map zooming <a href="timer.html">timer</a>.</p>
+
+		<p id="mapZoomFadeout" class="property"><strong>mapZoomFadeout</strong>()</p>
+	  <p>System. Continues map zooming to next or previous integer value.</p>
+
+		<p id="mapZoomDownByButton" class="property"><strong>mapZoomDownByButton</strong>()</p>
+	  <p>System. Map zoom down tool callback.</p>
+
+		<p id="mapZoomUpByButton" class="property"><strong>mapZoomDownByButton</strong>()</p>
+	  <p>System. Map zoom up tool callback.</p>
+
+		<p id="zoomDownByButton" class="property"><strong>zoomDownByButton</strong>()</p>
+	  <p>System. Zoom up tool callback.</p>
+
+		<p id="zoomUpByButton" class="property"><strong>zoomUpByButton</strong>()</p>
+	  <p>System. Zoom down tool callback.</p>
+
+		<p id="quickTipFormat" class="property"><strong>quickTipFormat</strong>()</p>
+	  <p>Checks format and origin (library or user) of this <code>quicktip</code>. If this <code>quicktip</code> is a string designating a property of the <a href="misc.html#quicktips">quicktips</a> object, its reference is assigned to this <code>quicktip</code>. If this <code>quicktip</code> is an object, a new <a href="QuickTip.html">pergola.QuickTip</a> instance is assigned to this <code>quicktip</code>, with this <code>quicktip</code> properties.</p>
+
+		<p id="quickTipInit" class="property"><strong>quickTipInit</strong>()</p>
+	  <p>Initializes this <code>quicktip</code> timer with this <code>quicktip</code> delay.</p>
+
+		<p id="rollover" class="property"><strong>rollover</strong>(<i>evt</i>)</p>
+	  <p>Applies/removes button hover effect to this (<a href="Button.html">pergola.Button</a> and its subclasses). The effect ("fill-opacity") is applied to the <code>button</code> element and to the <code>image</code> element (if present). If this has the <code>text</code> property, invokes <a href="#videoInverse">videoInverse()</a>. Configurable in skin.js file.</p>
+
+		<p id="videoInverse" class="property"><strong>videoInverse</strong>(<i>evt</i>)</p>
+	  <p>Applies/removes button hover effect to this <code>text</code>. The effect is the classic video-inverse (dark-bright or bright-dark, depending on <a href="color.html#themeLuminosity">pergola.color.themeLuminosity</a>). If this has <code>checkmark</code> and/or <code>arrow</code> properties (<a href="MenuItem.html">pergola.MenuItem</a>) the checkmark's and/or the arrow's <i>fill</i> attribute are set to the same video-inverse color. Configurable in skin.js file.</p>
+
+		<p id="buttonSelect" class="property"><strong>buttonSelect</strong>(<i>o</i>)</p>
+	  <p>Sets the "fill-opacity" to 1 (revealing the button's <code>mask</code> element) for this selected <code>button</code>. Configurable in skin.js file.</p>
+
+		<p id="buttonDeselect" class="property"><strong>buttonDeselect</strong>(<i>o</i>)</p>
+	  <p>Sets the "fill-opacity" to 1 (hiding the button's <code>mask</code> element) for this deselected <code>button</code>. Configurable in skin.js file.</p>
+
+		<p id="textCenterVertical" class="property"><strong>textCenterVertical</strong>(<i>height</i>, <i>fS</i>)</p>
+	  <p>Returns a number representing a suitable text baseline based on <i>height</i> text box number, and <i>fS</i> font size string or number.</p>
+
+		<p id="textShow" class="property"><strong>textShow</strong>()</p>
+	  <p>Shows this <code>text</code> element. Use for objects that have a <code>text</code> property.</p>
+
+		<p id="textHide" class="property"><strong>textHide</strong>()</p>
+	  <p>Hides this <code>text</code> element. Use for objects that have a <code>text</code> property.</p>
+
+		<p id="textDataUpdate" class="property"><strong>textDataUpdate</strong>(<i>v</i>)</p>
+	  <p>Updates this <code>text</code> element's data. Use for objects that have a <code>text</code> property.</p>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

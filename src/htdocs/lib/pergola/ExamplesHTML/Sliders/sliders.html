@@ -1,0 +1,67 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola Sliders</title>
+<meta name="description" content="SVG library - Pergola sliders gallery. All features. Full customization. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Sliders</h1>
+
+
+	<div id="svg" style="width: 800px; height: 400px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+	<script src="sliders.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Sliders/sliders.svg">View as standalone SVG</a></h3>
+
+		<p><a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Slider.html">pergola.Slider</a> objects have <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Slider.html#valueTip">valueTip</a> and <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Slider.html#quickTip">quickTip</a> properties. They can be used together, as in the last example below. You can set the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Slider.html#type">type</a> property to "linear" or "discrete" and specify the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Slider.html#numberOfSteps">numberOfSteps</a> for the "discrete" type. You can set the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Slider.html#initial">initial</a> position to "start", "middle", or "end".</p>
+
+		<h4>HOW</h4>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 98;"><![CDATA[
+mySlider7 = new pergola.Slider("My Slider 7")
+.buildV({
+  parent : g,
+  x : 580,
+  extent : 220,
+  shape : "square",
+  size : 20,
+  slotSize : 2,
+  slotStroke : "#909090",
+  initial : "start",
+  target : circle,
+  fn : "myFunction",
+  valueTip : true,
+  quickTip : {
+    tip : "rgb(000, 255, 255)",
+    delay : 0,
+    x : 688,
+    y : 140
+  }
+});
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

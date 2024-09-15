@@ -1,0 +1,120 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Progress</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Progress class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Progress</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">Examples: <a href="../../ExamplesHTML/Load/loadSVG.html">Window progress bar</a>; timer driven <a href="../../ExamplesHTML/Progress/progress.html">progress bars</a>. See also progress initialization in <a href="requests.html#loadSVG">pergola.loadSVG()</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="statusFill" class="property"><strong>statusFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+  	<p>"bar" – string; the only value currently implemented.</p>
+
+  	<p id="advance" class="property"><strong>advance</strong></p>
+  	<p>0 – number representing the width value of this <a href="#status">status</a> in <a href="../../ExamplesHTML/Progress/progress.html">timer driven</a> instances.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="start" class="property"><strong>start</strong>()</p>
+  	<p>Shows the progress bar.</p>
+
+  	<p id="stop" class="property"><strong>hide</strong>()</p>
+  	<p>Hides the progress bar.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#status">status</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p>If specified, overrides the default parent node <a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="rect" class="property"><strong>rect</strong></p>
+  	<p>&lt;rect&gt; element. The static bar.</p>
+
+  	<p id="status" class="property"><strong>status</strong></p>
+  	<p>&lt;rect&gt; element. The variable width bar representing the progress.</p>
+
+  	<p id="extent" class="property"><strong>extent</strong></p>
+  	<p>Number. The computed maximum value for this <a href="#status">status</a> width.</p>
+
+  	<p id="extra" class="property"><strong>extra</strong></p>
+  	<p>If specified, object defining <a href="../Tutorial.html#extra">extra</a> attributes for this <a href="#rect">rect</a> element specified using SVG vocabulary and grammar.</p>
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

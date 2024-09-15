@@ -1,0 +1,98 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola Selector</title>
+<meta name="description" content="SVG library - Pergola selector (classic, Mac-like). Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Selector with Pop-up List</h1>
+
+
+	<div id="svg" style="width: 800px; height: 340px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+  <script src="selector.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Selector/selector.svg">View as standalone SVG</a></h3>
+    <p>View <a href="selectors-inPanel.html">selectors-inPanel</a></p>
+
+		<p class="first">A <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Selector.html">pergola.Selector</a> object uses the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/PopupList.html">pergola.PopupList</a>, which creates <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/PopupListItem.html">pergola.PopupListItem</a> instances based on the specified <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Selector.html#list">list</a> array property. The pop-up list is not preemptive within the viewport.</p>
+
+		<h4>HOW</h4>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 39;"><![CDATA[
+tshirt.sizeSelector = new pergola.Selector()
+.build({
+  owner : tshirt,
+  parent : tshirt.container,
+  x : -270,
+  list : tshirt.sizes,
+  index : 1,
+  caption : {
+    y : 15,
+    textNode : "Size"
+  },
+  fn : function (evt) {
+    this.owner.setSize(this.index);
+  }
+});
+
+tshirt.colorSelector = new pergola.Selector()
+.build({
+  owner : tshirt,
+  parent : tshirt.container,
+  x : -270,
+  y : 50,
+  list : tshirt.colorNames,
+  index : 2,
+  caption : {
+    y : 15,
+    textNode : "Color"
+  },
+  fn : function (evt) {
+    this.owner.setColor(this.index);
+  }
+});
+
+tshirt.qtySelector = new pergola.Selector()
+.build({
+  owner : tshirt,
+  parent : tshirt.container,
+  x : -270,
+  y : 100,
+  width : 60,
+  list : tshirt.qtyValues,
+  index : 0,
+  caption : {
+    y : 15,
+    textNode : "Qty"
+  },
+  fn : function (evt) {
+    this.owner.setQty(this.index);
+  }
+});
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

@@ -1,0 +1,114 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Undo</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Undo class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Undo</h1>
+
+	<p class="first">pergola.Undo is not subclassed to pergola.Class.</p>
+
+	<p>An object needing undo/redo monitoring must first define a pergola.Undo instance and register it, for example:
+	<pre> myObject.undoManager = new pergola.Undo().register();</pre>
+	You will then be able to add mementos (before) any actions to be recorded.</p>
+
+	<p>Pergola windows automatically assign an Undo instance to the instance property <i>undoManager</i>. The feature is <a href="#register">register</a>ed for the topmost window, and <a href="#disable">disable</a>d for the others. The system manages these states.</p>
+
+	<p class="first">Note: you can use method chaining with <a href="#register">register()</a> and <a href="#add">add()</a> only.</p>
+
+	<p id="Undo" class="first">pergola.<strong>Undo</strong>([<i>n</i>])</p>
+	Constructor. If <i>n</i> number is specified it represents the level of undos, and it's assigned to this <a href="#max">max</a>, otherwise the default number applies, as set in the config file.</p>
+
+
+	<div class="propList">
+
+  	<h2 class="propsHeader">class</h2>
+
+    <p>None</p>
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+		<p id="canUndo" class="property"><strong>canUndo</strong>()</p>
+		<p>Returns true if this buffer is not empty.</p>
+
+
+		<p id="canRedo" class="property"><strong>canRedo</strong>()</p>
+		<p>Returns true if this buffer length is greater than this index.</p>
+
+
+		<p id="add" class="property"><strong>add</strong>(<i>array</i>)</p>
+		<p>Call this method to record an action. <i>array</i> contains one or more elements. Each element is a memento object defining the required <code>obj</code> (typically this), and <code>undo</code> and <code>redo</code> callback functions. The memento may define any other properties necessary to the correct restoration of the previous state for undo, and of the current state for redo. Adding a memento can look like this:
+		<pre> pergola.Window.active().undoManager.add([
+    this.memento({
+      undo : this.undo.remove,
+      redo : this.redo.restore,
+      snappers : this.storeSnaps()
+    })
+  ]);</pre>
+  	</p>
+
+		<p>Note: <a href="Class.html#memento">memento</a> is a helper method of the the pergola.Class (superclass) prototype. It adds the required <code>obj</code> property.</p>
+
+
+		<p id="update" class="property"><strong>update</strong>()</p>
+		<p>Shifts the buffer if it has reached the maximum length and invokes this <a href="#destroy">destroy</a>. You don't normally need to invoke this method explicitly.</p>
+
+
+		<p id="cancel" class="property"><strong>cancel</strong>()</p>
+		<p>Remove the latest entry in the buffer. This method is not invoked by any other method. If needed, use with caution. You don't normally need to invoke this method explicitly.</p>
+
+
+		<p id="destroy" class="property"><strong>destroy</strong>(<i>elements</i>)</p>
+		<p>For each element in <i>elements</i> it invokes <i>element</i>.destroy() if element has a <code>pendingDelete</code> property set, and a <code>destroy</code> method. You don't normally need to invoke this method explicitly.</p>
+
+
+		<p id="flush" class="property"><strong>flush</strong>()</p>
+		<p>Reinitializes the buffer. This method is not invoked by any other method. If needed, use with caution.</p>
+
+
+		<p id="undo" class="property"><strong>undo</strong>()</p>
+		<p>Invokes the <code>undo</code> callback for each object in buffer element at pre-decremented <a href="#index">index</a>, if this <a href="#canUndo">canUndo</a>. You don't normally need to invoke this method explicitly.</p>
+
+
+		<p id="redo" class="property"><strong>redo</strong>()</p>
+		<p>Invokes the <i>redo</i> callback for each object in buffer element at <a href="#index">index</a> post-incremented, if this <a href="#canRedo">canRedo</a>. You don't normally need to invoke this method explicitly.</p>
+
+
+		<p id="handleEvent" class="property"><strong>handleEvent</strong>(evt)</p>
+		<p>Forks to this <a href="#undo">undo</a> (CTRL + z), or this <a href="#redo">redo</a> (SHIFT + CTRL + z).</p>
+
+
+		<p id="register" class="property"><strong>register</strong>()</p>
+		<p>Adds keydown event listener to document.documentElement with <a href="#handleEvent">this</a> handler.</p>
+
+
+		<p id="disable" class="property"><strong>disable</strong>()</p>
+		<p>Removes keydown event listener to document.documentElement with <a href="#handleEvent">this</a> handler.</p>
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+
+  	<p id="max" class="property"><strong>max</strong></p>
+    <p>Number; level of undos (set in the config file). To override, pass the new number to the <a href="#Undo">constructor</a> when creating an instance.</p>
+
+  	<p id="buffer" class="property"><strong>buffer</strong></p>
+    <p>Array; its elements are arrays containing one or more object elements. The maximum buffer length (level of undos) is set in the config file.</p>
+
+  	<p id="index" class="property"><strong>index</strong></p>
+    <p>Number; index for this <a href="#buffer">buffer</a>.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,119 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Menu</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Menu class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Menu</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO (callback functions are defined for each of the menu <a href="#items">items</a> defined in the <a href="classes.html#initializationObject">initialization object</a>).</p>
+
+  <p class="first">An object requiring an instance of this class must also define a <a href="Menubar.html">Menubar</a> instance, which manages the layout of the contained menus. The menu bar may not be visible. See also <a href="../Tutorial.html#Menu">Menu</a> in the tutorial.</p>
+
+  <p class="first"><a href="../../ExamplesHTML/Menu/menu.html">Example</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p id="active" class="property"><strong>active</strong></p></p>
+    <p>false – boolean; used by system to collapse open menu lists.
+
+    <p id="handle" class="property"><strong>handle</strong></p>
+    <p>null – reference to current menu (open or highlighted).</p>
+
+    </div>
+
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. When defining a menu as a component of a <a href="Window.html">Window</a> instance you don't need to specify the parent node as it is automatically overridden. When defining a <a href="../Tutorial.html#createSystemMenu">system menu</a> you must specify <code><a href="references.html#menubar">pergola.menubar</a>.container</code> as parent node.</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string or number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="rx" class="property"><strong>rx</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> (text object property) – string.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="close" class="property"><strong>close</strong>(<i>evt</i>)</p>
+  	<p>Collapses active menu. You never need to invoke this method explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p>If specified, overrides the default parent node <a href="references.html#user">pergola.user</a>. When defining a menu as a component of a <a href="Window.html">Window</a> instance you don't need to specify the parent node. When defining a <a href="../Tutorial.html#createSystemMenu">system menu</a> you must specify <code>pergola.menubar.container</code> as parent node.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="button" class="property"><strong><i>button</i></strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="list" class="property"><strong>list</strong></p>
+  	<p><a href="MenuList.html">pergola.MenuList</a> instance, which inherits and builds this <a href="#items">items</a>.</p>
+
+  	<p id="items" class="property"><strong>items</strong></p>
+  	<p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; an object defining menu items object properties. The <a href="MenuItem.html">pergola.MenuItem</a> instances are built by (and are properties of) this <a href="#list">list</a>.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

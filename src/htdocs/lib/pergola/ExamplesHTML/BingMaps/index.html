@@ -1,0 +1,273 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola Windows – Mapping Application</title>
+<meta name="description" content="SVG library - Windowed mapping application using the Pergola framework and libraries, with the Polymaps library plugged in, and Bing tiles. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+<body>
+
+  <img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Window – Mapping Application</h1>
+	<div class="blurb">
+		<p>A case study of this work can be found in the book <a href="https://www.microsoft.com/learning/en-us/book.aspx?ID=15525" target="new">“Building Web Applications with SVG”</a> (Microsoft Press).</p>
+	</div>
+
+	<div id="svg" style="width: 800px; height: 600px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+	<script src="../../pergola/extlib/polymaps-g42b145f/polymaps.js" type="text/javascript"></script>
+	<script src="../../pergola/extlib/polymaps-g42b145f/lib/bingCallback.js" type="text/javascript"></script>
+	<script src="bing_window.js" type="text/javascript"></script>
+
+
+
+	<div class="blurb">
+
+  <h3><a href="../../Examples/BingMaps/BingWindow.svg">View as standalone SVG</a></h3>
+
+	<p>This mapping application example uses the Polymaps library (customized for full SVG compliance), and Bing tiles. The Window class prototype is extended with specific mapping properties and methods, and the behavior of the transformation tools, including scrollbars, overrides the regular behavior by sending tile requests rather than acting on the contained document's viewport. You define a mapping window through its <code>type</code> property: <code>"map"</code>.</p>
+
+	<p>A step by step <a href="http://dev.opera.com/articles/view/building-a-web-mapping-application-with-pergola-and-polymaps/" target="new">tutorial</a> for this example can be found at dev.opera.</p>
+
+		<h4>HOW</h4>
+
+  <p>The property <code>contains</code> of a Window instance can get a node or a function. In this case it's a function that invokes the <code>mapMaker</code> prototype method, which initializes the map as described in the Polymaps API. This mapping application can be easily extended with mapping tools through the <code>tools</code> property of the window object during its instantiation or through the <code>addTools()</code> prototype method at a later stage. The ruler tool for measuring distances, the itinerary tool, and the map navigation help tool are implemented by default in a window of <code>type</code> "map". (Skipping some repetitive portions of the menu's code).</p>
+	<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var bingWin = new pergola.Window("Bing Maps")
+.build({
+  isFull : true,
+  type : "map",
+  canvas : {
+    width : 2048,
+    height : 1536
+  },
+  fill : "#010413",
+
+  menu : {
+    views : {
+      title : "Views",
+      items : {
+        aerial : {
+          string : "Aerial",
+          check : false,
+          exclusive : true,
+          view : "aerial",
+          fn : tileSource
+        },
+        aerialLabels : {
+          string : "Aerial With Labels",
+          check : true,
+          exclusive : true,
+          view : "aerialWithLabels",
+          fn : tileSource
+        },
+        road : {
+          string : "Road",
+          check : false,
+          exclusive : true,
+          view : "road",
+          fn : tileSource
+        }
+      }
+    },
+    layers : {
+      title : "Layers",
+      items : {
+        lukanga : {
+          string : "Lukanga Swamp Rally",
+          check : false,
+          target : function () {
+            return {
+              layer : bingWin.layers.lukangaRally,
+              center : {lat : -14.46, lon : 27.3125},
+              zoom : 11,
+              view : "aerialWithLabels"
+            }
+          },
+          fn : 'toggleLayer'
+        },
+        polygons : {
+          string : "Polygons",
+          check : false,
+          target : function () {
+            return {
+              layer : bingWin.layers.polygons,
+              center : {lat : 37.7590, lon : -122.4191},
+              zoom : 14,
+              view : "road"
+            }
+          },
+          fn : 'toggleLayer'
+        },
+        bananas : {
+          string : "Top 10 banana producing nations",
+          check : false,
+          target : function () {
+            return {
+              layer : bingWin.layers.bananas,
+              center : {lat : 10, lon : 100},
+              zoom : 4,
+              view : "aerial"
+            }
+          },
+          fn : 'toggleLayer',
+          separator : new pergola.Separator()
+        },
+        copyright : {
+          string : "Copyright",
+          check : true,
+          target : function () {return bingWin.doc.copyright;},
+          fn : function () {
+            if (!this.target()) return;
+            var l = bingWin.layers.copyright;
+            l.display = l.display == "block" ? "none" : "block";
+            this.target().setAttributeNS(null, "display", l.display);
+          }
+        }
+      }
+    },
+    go_places : {
+      title : "Go Places",
+      items : {
+        paris : {
+          string : "Paris",
+          fn : function () {var c = pergola.Window.active(); c.centerMap({lat : 48.8553, lon : 2.3456}); c.mapZoom(16);}
+        },
+        ...,
+        svgOpen2011 : {
+          string : "SVG Open 2011",
+          target : function () {
+            return {
+              layer : bingWin.layers.svgOpen2011,
+              center : {lat : 42.36131, lon : -71.08124},
+              zoom : 17,
+              view : "road"
+            };
+          },
+          fn : 'toggleLayer'
+        }
+      }
+    },
+    zoomLevel : {
+      title : "Levels",
+      items : {
+        z1 : {string : "1", check : false, exclusive : true, fn : function () {pergola.Window.active().mapZoom(1);}},
+        ...,
+        z21 : {string : "21", check : false, exclusive : true, fn : function () {pergola.Window.active().mapZoom(21);}}
+      }
+    },
+    grid : {
+      title : "Grid",
+      items : {
+        grid : {
+          string : "Grid",
+          check : false,
+          fn : function () {
+            var map = bingWin.map,
+                l = bingWin.layers.grid;
+            l.display = l.display == "block" ? "none" : "block";
+            if (!map.grid) {
+              map.add(polymaps.grid());
+              map.center(map.center());
+            }
+            map.grid.setAttributeNS(null, "display", l.display);
+          }
+        }
+      }
+    },
+    unit : {
+      title : "Unit",
+      items : {
+        km : {
+          string : "Kilometres",
+          check : true,
+          exclusive : true,
+          fn : function () {
+            var win = pergola.Window.active();
+            win.map.unit = "Km";
+            if (win.doc.itinerary) win.doc.itinerary.updateUnit(win.map);
+          }
+        },
+        mi : {
+          string : "Miles",
+          check : false,
+          exclusive : true,
+          fn : function () {
+            var win = pergola.Window.active();
+            win.map.unit = "mi";
+            if (win.doc.itinerary) win.doc.itinerary.updateUnit(win.map);
+          }
+        },
+        nmi : {
+          string : "Nautical Miles",
+          check : false,
+          exclusive : true,
+          fn : function () {
+            var win = pergola.Window.active();
+            win.map.unit = "nmi";
+            if (win.doc.itinerary) win.doc.itinerary.updateUnit(win.map);
+          }
+        }
+      }
+    }
+  },
+  views : {
+    aerial : {},
+    aerialWithLabels : {},
+    road : {}
+  },
+  layers : {
+    copyright : {
+      feature : false,
+      display : "block"
+    },
+    bananas : {
+      feature : true,
+      display : "none"
+    },
+    polygons : {
+      feature : true,
+      display : "none"
+    },
+    lukangaRally : {
+      feature : true,
+      display : "none"
+    },
+    svgOpen2011 : {
+      feature : true,
+      display : "none"
+    },
+    grid : {
+      feature : false,
+      display : "none"
+    }
+  },
+  release : function () {
+    polymaps.origin.x = this.x + this.doc.x;
+    polymaps.origin.y = this.y + this.doc.y;
+    this.centerMap(this.map.center());
+    if (this.copyright) this.copyright.setAttributeNS(null, "transform", "translate(13 " + (this.doc.visibleH - 54) + ")");
+  },
+  contains : function () {return this.mapMaker()}
+
+});
+]]></script>
+
+		</div>
+  </div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

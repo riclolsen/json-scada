@@ -1,0 +1,101 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Requests</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Requests.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Requests - Load - Save</h1>
+
+	<p class="first">These functions use XMLHttpRequest to: load text or data; load SVG documents; save json files (see <a href="references.html#fileDialog">pergola.fileDialog</a>).</p>
+
+
+	<div class="propList">
+
+
+		<p id="getFiles" class="property">pergola.<strong>getFiles</strong>(<i>object</i>)</p>
+	  <p>Invoke this function using the call() method to initialize the <a href="references.html#fileDialog">pergola.fileDialog</a>. <i>object</i> specifies these properties:
+      <ul class="none">
+				<li>title : <i>title</i> string (e.g. "Save As...") – Required</li>
+			  <li>ok : <i>OK-button-text</i> string – Required</li>
+			  <li>callback : <i>method-name</i> string or <i>function</i> – Required</li>
+			  <li>path : <i>path-to-folder</i> URL string – Required</li>
+			  <li>files : <i>property-name</i> string – Required</li>
+			  <li>getDir : <i>file name</i> string</li>
+			</ul>
+		The function invokes the <a href="lazyLoad.html#fileDialog">pergola.lazyLoad.fileDialog()</a> to build the <a href="references.html#fileDialog">pergola.fileDialog</a> if it doesn't exist, and changes its title and the OK button's text. Upon successful request the array representing the retrieved files list is assigned to this[<i>files</i>], which (<i>files</i>) you would typically define as an empty array initially.
+		</p>
+		<p>Note: if <i>getDir</i> is specified it overrides the default <a href="constants.html#getDir">pergola.getDir</a>, and represents the file name of alternative script on server to retrieve directory listings.</p>
+
+
+		<h3>Downloading SVG documents</h3>
+		<p id="loadSVG" class="property">pergola.<strong>loadSVG</strong>(<i>object</i>)</p>
+		<p>Loads an SVG document or fragment and appends it to the specified container.</p>
+		<p><i>object</i> defines these properties:
+			<ul class="none">
+				<li>url : <i>url</i>,</li>
+			  <li>target : <i>object</i> or <i>container</i>,</li>
+			  <li>progress : <i>progress</i>,</li>
+			  <li>container : <i>container</i>,</li>
+			  <li>merge : <i>boolean</i>,</li>
+			  <li>resetScale : <i>boolean</i></li>
+			</ul>
+		</p>
+
+		<p>
+			Issues a request using the GET method for the specified <i>url</i> and appends the document to the specified <i>target</i> if <i>target</i> is a container element. If <i>target</i> is a <a href="files/Window.html">pergola.Window</a> object the document will be appended to the specified <i>container</i> (optional), or to the default container (<a href="Doc.html#transformable">window.doc.transformable</a>).</p>
+		</p>
+
+		<p>
+			If <i>progress</i> is specified the referenced progress bar will be activated. If <i>merge</i> is specified and true the new document will be merged with existing content, otherwise it will replace the content of the destination container (whether a layer or <a href="Doc.html#transformable">window.doc.transformable</a>). If <i>resetScale</i> is specified the window's zoom value will be reset to 1:1. Other than for a window context, <i>container</i>, <i>merge</i>, and <i>resetScale</i> do not apply.</p>
+		</p>
+
+
+		<p id="saveJSON" class="property">pergola.<strong>saveJSON</strong>(<i>savePath</i>, <i>filename</i>, <i>jsonObject</i>[, <i>url</i>])</p>
+	  <p>Saves <i>jsonObject</i> object as <i>filename</i> (string without the .json extension) to the specified <i>savePath</i> (string) folder. Do not stringify <i>jsonObject</i>.</p>
+	  <p>If <i>url</i> string is specified, it designates the url of the server script to override the default <a href="constants.html#writeFile">pergola.writeFile</a> ("writeFile.php").</p>
+
+
+		<p id="saveSVG" class="property">pergola.<strong>saveSVG</strong>(<i>savePath</i>, <i>filename</i>, <i>data</i>[, <i>url</i>])</p>
+	  <p>Saves SVG <i>data</i> string representing a document/fragment, as <i>filename</i> (string without the .svg extension) to the specified <i>savePath</i> (string) folder.</p>
+	  <p>If <i>url</i> string is specified, it designates the url of the server script to override the default <a href="constants.html#writeFile">pergola.writeFile</a> ("writeFile.php").</p>
+
+
+		<p id="xhrGET" class="property">pergola.<strong>xhrGET</strong>(<i>object</i>)</p>
+	  <p>Issues a request using the GET method for the specified <i>object.url</i>. If <i>object.mime</i> is specified the mime type will be overridden (attempt). If <i>object.callback</i> is specified it will be invoked asynchronously when the request is done, passing the request as parameter, allowing full processing of the response in <i>object.callback</i>. Example:
+	<pre>  pergola.xhrGET({
+    url : "getDir.php",
+    mime : "application/x-www-form-urlencoded",
+    callback : <i>function (request)</i>
+  });</pre>
+		</p>
+
+
+		<p id="xhrPOST" class="property">pergola.<strong>xhrPOST</strong>(<i>object</i>)</p>
+		<p>Issues a request using the POST method with the specified <i>object.url</i>. If <i>object.mime</i> is specified the mime type will be overridden (attempt). The request is sent with <i>object.params</i> [string] as parameter. If <i>object.callback</i> is specified it will be invoked asynchronously when the request is done, passing the request as parameter. Example:
+<pre>  pergola.xhrPOST({
+    url : "getDir.php",
+    params : "folder=" + <i>path</i> [+ ...],
+    mime : "application/x-www-form-urlencoded",
+    callback : <i>function (request)</i>
+  });</pre>
+		</p>
+
+
+		<p id="xmlToJson" class="property">pergola.<strong>xmlToJson</strong>(<i>xml</i>)</p>
+	  <p>Converts the specified <i>xml</i> node/fragment to a JSON object.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,220 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Input</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Input class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Input</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+	<p class="first">This class replaces and extends the valueInputBox class of previous versions. It now takes <a href="key.html">keyboard</a> input. It also implements a flexible mechanism allowing the <a href="#fn">callback function</a> to be invoked as a method of this <a href="classes.html#owner">owner</a> object, or of this.</p>
+
+	<p>Examples: <a href="../../ExamplesHTML/Input/Input.html">Input</a>; <a href="../../ExamplesHTML/BingMaps/index.html">Mapping Window</a> (status bar fields); <a href="../../ExamplesHTML/DataGrid/datagrid.html">Datagrid</a> (columns using different <a href="#type">type</a>s of input).</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+  	<p>String – it can be one of "string" "number" "date" "boolean". In practice only "number" and "date" are processed to invoke the appropriate formatting methods (<a href="#format_number">format_number()</a> or <a href="#format_date">format_date()</a>) if this <a href="#format">format</a> is true. Those methods use the JavaScript <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-8" target="new">Intl</a> built-in object, where available.</p>
+
+  	<p id="hasButtons" class="property"><strong>hasButtons</strong></p>
+  	<p>false – boolean; determines whether this should have <a href="#inc">inc</a> and <a href="#dec">dec</a> buttons; if true this is a spinner control.</p>
+
+  	<p id="realTime" class="property"><strong>realTime</strong></p>
+  	<p>false – boolean; if this <a href="#hasButtons">hasButtons</a>, determines whether the value should be applied in real time, or upon button release. You shouldn't use real time if the input has formatting options.</p>
+
+  	<p id="format" class="property"><strong>format</strong></p>
+  	<p>false – boolean; if true, the text node of this <a href="#element">element</a> is formatted with the method relative to this <a href="#type">type</a>. This <a href="#type">type</a> and the value of this <a href="#value">value</a> are not changed.</p>
+
+  	<p id="locale" class="property"><strong>locale</strong></p>
+  	<p>String; the value of <a href="constants.html#locale">pergola.locale</a>.</p>
+
+  	<p id="allowEmpty" class="property"><strong>allowEmpty</strong></p>
+  	<p>true – boolean; allows ending input with empty string. If false, the previous value is restored.</p>
+
+  	<p id="empty" class="property"><strong>empty</strong></p>
+  	<p>false – boolean. If true, input activation empties the field.</p>
+
+  	<p id="cursor" class="property"><strong>cursor</strong></p>
+  	<p>true – boolean; determines the use of the <a href="InputCursor.html">input cursor</a>.</p>
+
+  	<p id="keypressCallback" class="property"><strong>keypressCallback</strong></p>
+  	<p><a href="key.html#keypress">pergola.Key.keypress</a> class method – you can override with one of the filtering methods provided by the <a href="key.html">Key</a> class, or with your own keypress callback. Learn more in the SVG magazine <a href="http://svgmagazine.com/oct2014/js_Key.html">Keyboard Class</a> article.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="strokeInside" class="property"><strong>strokeInside</strong></p>
+  	<p>true – boolean; the x and y attributes of this <a href="#rect">rect</a> are set to 0.5 and therefore the left and top borders are not clipped by this <a href="#container">container</a> (svg). If this property is overridden, the x and y attributes of this <a href="#rect">rect</a> are set to -0.5, and this can be sought in a lineup of input boxes (like a datagrid for example) to prevent double strokes.</p>
+
+  	<p id="font-family" class="property"><strong>"font-family"</strong></p>
+  	<p>0 – number (user space units). Unless overridden, the "font-family" attribute is not set and is inherited from the parent container, or the document. This allows to save some valuable DOM populating time when dealing with a great number of input instances in a read/write datagrid, for example. </p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>0 – number (user space units). Overrides the value inherited by <a href="Class.html#presentationAttributes">pergola.Class</a> superclass. Unless overridden, the "font-size" attribute is not set and is inherited from the parent container, or the document. This allows to save some valuable DOM populating time when dealing with a great number of input instances in a read/write datagrid, for example.</p>
+
+  	<p id="fontSize" class="property"><strong>fontSize</strong></p>
+  	<p>Numeric value of this <a href="#font-size">"font-size"</a>. When this <a href="#font-size">"font-size"</a> is not specified, the value of this property is derived from this <a href="classes.html#owner">owner</a>'s <code>"font-size"</code> or <a href="Class.html">this.constructor.superClass</a><a href="Class.html#font-size">["font-size"]</a>, and is used to compute <a href="InputCursor.html">InputCursor</a> size and position.</p>
+
+  	<p id="tX" class="property"><strong>tX</strong></p>
+  	<p>5 – number (user space units); the value of this <a href="#element">element</a> x attribute.</p>
+
+  	<p id="tY" class="property"><strong>tY</strong></p>
+  	<p>0 – number (user space units); the value of this <a href="#element">element</a> y attribute.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="setValue" class="property"><strong>setValue</strong>()</p>
+  	<p>Checks if this <a href="#value">value</a> length exceeds this <a href="#inc">inc</a>.<code>maxLength</code>; updates this <a href="#element">element</a> data; sets <a href="InputCursor.html">input cursor</a> position; if this <a href="#realTime">realTime</a> is true, invokes this <a href="#fn">fn</a> as a method of this <a href="#owner">owner</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="increment" class="property"><strong>increment</strong>()</p>
+  	<p>Callback for this <a href="#inc">inc</a>.<code>button</code> <a href="timer.html">timer</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="decrement" class="property"><strong>decrement</strong>()</p>
+  	<p>Callback for this <a href="#dec">dec</a>.<code>button</code> <a href="timer.html">timer</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="reset" class="property"><strong>reset</strong>()</p>
+  	<p>Resets this <a href="#value">value</a> to this <a href="#baseValue">baseValue</a>; updates this <a href="#element">element</a> data. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="overflow" class="property"><strong>overflow</strong>()</p>
+  	<p>Checks overflow on input end. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="format_number" class="property"><strong>format_number</strong>()</p>
+  	<p>If this <a href="#type">type</a> is "number" and this format is true, the text node of this <a href="#element">element</a> is formatted using the JavaScript <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-8">Intl</a> built-in object. This <a href="#type">type</a> and the value of this <a href="#value">value</a> are not changed.</p>
+
+  	<p id="format_date" class="property"><strong>format_date</strong>()</p>
+  	<p>If this <a href="#type">type</a> is "date" and this format is true, formats this <a href="#element">element</a> data using the JavaScript <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-8">Intl</a> built-in object. This <a href="#type">type</a> and the value of this <a href="#value">value</a> are not changed.</p>
+
+  	<p id="endInput" class="property"><strong>endInput</strong>()</p>
+  	<p>Manages end of input; invokes this <a href="#fn">fn</a> as a method of this <a href="#owner">owner</a>; restores <a href="undo.html#register">undo</a> (register) for active window. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p></p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>. Note that for instances of this class, if not specified, this <code>owner</code> resolves to this.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;svg&gt; element.</p>
+
+  	<p id="rect" class="property"><strong>rect</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="element" class="property"><strong>element</strong></p>
+  	<p>&lt;text&gt; element.</p>
+
+  	<p id="inc" class="property"><strong>inc</strong></p>
+  	<p>If this <a href="#hasButtons">hasButtons</a>, new <a href="UpDownButton.html">pergola.UpDownButton</a> instance.</p>
+
+  	<p id="dec" class="property"><strong>dec</strong></p>
+  	<p>If this <a href="#hasButtons">hasButtons</a>, new <a href="UpDownButton.html">pergola.UpDownButton</a> instance.</p>
+
+  	<p id="value" class="property"><strong>value</strong></p>
+  	<p>String or number. The initial value.</p>
+
+  	<p id="baseValue" class="property"><strong>baseValue</strong></p>
+  	<p>String or number. Backup of this <a href="#value">value</a>.</p>
+
+  	<p id="target" class="property"><strong>target</strong></p>
+  	<p>Object. The target object controlled by this.</p>
+
+  	<p id="propName" class="property"><strong>propName</strong></p>
+  	<p>String. The name of a property of this <a href="#target">target</a> to which this <a href="#value">value</a> is applied.</p>
+
+  	<p id="inputCursor" class="property"><strong>inputCursor</strong></p>
+  	<p>Assigned dynamically by <a href="key.html">pergola.Key</a> (instantiated in <a href="#handleEvent">handleEvent</a>) unless <a href="#cursor">cursor</a> is specifically set to false in the <a href="classes.html#initializationObject">initialization object</a>. This means that the input cursor is assigned by default, and for the odd case where you don't need it you must specify <pre>cursor : false</pre> in the <a href="classes.html#initializationObject">initialization object</a>.</p>
+
+  	<p id="caption" class="property"><strong>caption</strong></p>
+  	<p>If specified, an object defining the required <code>textNode</code> string property, optional <code>x</code>, <code>y</code> number (user space units) properties, and optional <code>position</code> string property. These are <a href="Caption.html">pergola.Caption</a> properties. This property is reassigned during processing, and references a new <a href="Caption.html">pergola.Caption</a> instance.</p>
+
+  	<p id="appendix" class="property"><strong>appendix</strong></p>
+  	<p>If specified, object defining the required <code>textNode</code> string property, and the optional <code>x</code>, and <code>y</code> number (user space units) properties. New <a href="Caption.html">pergola.Caption</a> instance positioned to the right of the input box (for showing unit types for example). The <a href="Caption.html">pergola.Caption</a> <a href="Caption.html#position">position</a> instance property is then set to "right" and cannot be overridden.</p>
+
+  	<p id="max" class="property"><strong>max</strong></p>
+  	<p>If specified, a number representing the upper threshold for numeric values.</p>
+
+  	<p id="min" class="property"><strong>min</strong></p>
+  	<p>If specified, number representing the lower threshold for numeric values.</p>
+
+  	<p id="maxLength" class="property"><strong>maxLength</strong></p>
+  	<p>If specified, number representing the maximum string length allowed for this <a href="#value">value</a>.</p>
+
+  	<p id="printShortcut" class="property"><strong>printShortcut</strong></p>
+  	<p>This boolean is set to false if this <a href="#keypressCallback">keypressCallback</a> references one of the methods <a href="key.html#keypressPos">pergola.Key.keypressPos</a>, <a href="key.html#keypressPosInt">pergola.Key.keypressPosInt</a>, <a href="key.html#keypressHex">pergola.Key.keypressHex</a>; it's only intent is to provide a workaround for Opera using the <code>-</code> and <code>+</code> keys to zoom the page, by preventing the browser's default while not emitting those characters on keydown when using the keypress filtering methods above. This property will be removed in due time. Learn more in the SVG magazine <a href="http://svgmagazine.com/oct2014/js_Key.html" target="new">Keyboard Class</a> article.</p>
+
+  	<p id="options" class="property"><strong>options</strong></p>
+  	<p>If specified, an object as specified by Intl.NumberFormat <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-11.1.1.1" target="new">options</a> (see Mozilla's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NumberFormat" target="new">Intl.NumberFormat</a> for a more friendly language) for formatting fields of <a href="#type">type</a> "number", or Intl.DateTimeFormat <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-12.1.1.1" target="new">options</a> (see Mozilla's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat" target="new">Intl.DateTimeFormat</a> for a more friendly language) for formatting fields of <a href="#type">type</a> "date".</p>
+
+  	<p id="fn" class="property"><strong>fn</strong></p>
+  	<p>String specifying a method name. Note that for this class (exception), <code>fn</code> must be a string specifying the name of a method; this allows it to be invoked as a method of this <a href="#owner">owner</a>, if <code>owner</code> is specified, or of this.</p>
+
+  	<p id="callback" class="property"><strong>callback</strong></p>
+  	<p>If specified, it is a function or an object specifying keydown and/or keypress and/or keyup function properties, for the purpose of overriding any or all the default <a href="Key.html#position">pergola.Key</a> class methods.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

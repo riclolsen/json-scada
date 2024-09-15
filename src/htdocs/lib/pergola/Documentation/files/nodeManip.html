@@ -1,0 +1,36 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Node manipulation</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Node manipulation.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Node manipulation</h1>
+
+
+	<div class="propList">
+
+		<p id="removeChildren" class="property">pergola.<strong>removeChildren</strong>(<i>node</i>)</p>
+		<p>Removes all children of <i>node</i>. This method does not rely on the childNodes array and is therefore always safe. Note that if the node being emptied is subject to periodical dynamic node addition, nodes that happen to be added while the function is executing will also be removed.</p>
+
+		<p id="attribute" class="property">pergola.<strong>attribute</strong>(<i>element</i>, <i>list</i>[, <i>ns</i>])</p>
+		<p>The <i>list</i> object specifies one or more attributes in the namespace vocabulary (attribute names containing illegal characters for JavaScript variable names must be specified as strings, e.g. "font-size") to be set for <i>element</i>. If specified, <i>ns</i> is a string or false. If not specified –ease of use priority given to SVG– setAttributeNS(null, ...) is used; if <i>element</i> is an HTML element, <i>ns</i> must be set to false, and setAttribute() is used; if <i>ns</i> is a namespace URI, setAttributeNS(<i>ns</i>, ...) is used. Examples:
+		<pre> pergola.attribute(<i>SVG &lt;text&gt; element</i>, {x : <i>value</i>, y : <i>value</i>, "font-size" : <i>value</i>});
+  pergola.attribute(<i>HTML &lt;div&gt; element</i>, {width : <i>value</i>, height : <i>value</i>, style : <i>value</i>}, false);
+  pergola.attribute(<i>element in some namespace</i>, {<i>attribute name</i> : <i>value</i>, <i>attribute name</i> : <i>value</i>}, <i>some namespace URI</i>);
+	</pre></p>
+		<p>Note: you only need to use this method to add or modify attributes of an existing element. When creating elements you specify the attributes directly in the object passed to the <a href="dom.html">DOM node builder</a>.</p>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

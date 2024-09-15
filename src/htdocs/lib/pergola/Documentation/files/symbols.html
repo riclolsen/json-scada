@@ -1,0 +1,119 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Symbols</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Symbols.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Symbols Library</h1>
+
+	<p class="first"><code>pergola.symbols</code> (defined in lib/symbols.js) is an object whose properties represent a collection of symbols. Each property is an array with one or more object elements defining SVG primitives, or text, or image elements, in the format expected by the <a href="dom.html#SVG">pergola.SVG()</a> node builder (without the <code>appendTo</code> property). A symbol property can also be an object designating a category, like it's the case for <code>pergola.symbols.arrow</code>, defining in turn the object properties <code>tiny</code>, <code>small</code>, and <code>large</code>, each having a subset of symbol properties <code>up</code>, <code>down</code>, <code>left</code>, and <code>right</code>; the reference to one of those would be: <code>pergola.symbols.arrow.small.left</code>.</p>
+
+	<p>Example of a symbol definition:</p>
+<pre> lens : [
+    {element : "path", d : "M4.5 3.4l6.5,5", stroke : "#323232", "stroke-width" : 1.25, "stroke-linecap" : "round"},
+    {element : "circle", r : 5.75, fill : "#FFFFFF", stroke : "#727272", "stroke-width" : 1.5, "fill-opacity" : .6}
+  ]
+</pre>
+
+	<p>A symbol can be referenced when instantiating a class that implements the <code>symbol</code> property, for example <a href="Button.html#symbol">pergola.Button</a>, or can be used as standlone by passing it to the <a href="misc.html#symbol">pergola.symbol()</a> utility function. See the <a href="../Tutorial.html#symbols">Symbols library</a> chapter in the tutorial for in-depth information and use cases for symbols and icons. Below is the current list of symbol properties of the pergola.symbols object:</p>
+
+
+	<p>
+	<ul class="none bold">
+		<li>lens</li>
+		<li>zoomMinus</li>
+		<li>zoomPlus</li>
+		<li>hand</li>
+		<li>ruler</li>
+		<li>measure</li>
+		<li>itinerary</li>
+		<li>winMinimize</li>
+		<li>winFull</li>
+		<li>winClose</li>
+		<li>resize</li>
+		<li>checkmark</li>
+		<li>arrow
+			<ul class="none">
+				<li>tiny</li>
+				<li>
+					<ul class="none">
+						<li>up</li>
+						<li>down</li>
+						<li>left</li>
+						<li>right</li>
+					</ul>
+				</li>
+				<li>small</li>
+				<li>
+					<ul class="none">
+						<li>up</li>
+						<li>down</li>
+						<li>left</li>
+						<li>right</li>
+					</ul>
+				</li>
+				<li>large</li>
+				<li>
+					<ul class="none">
+						<li>up</li>
+						<li>down</li>
+						<li>left</li>
+						<li>right</li>
+					</ul>
+				</li>
+			</ul>
+		</li>
+		<li>selectionTool</li>
+		<li>directSelectionTool</li>
+		<li>groupSelectionTool</li>
+		<li>areaSelectionTool</li>
+		<li>dot
+			<ul class="none">
+				<li>large</li>
+				<li>small</li>
+			</ul>
+		</li>
+		<li>menuArrow</li>
+		<li>selectorArrow
+			<ul class="none">
+				<li>up</li>
+				<li>down</li>
+			</ul>
+		</li>
+		<li>question</li>
+		<li>transition</li>
+		<li>pathToLineTool</li>
+		<li>lineTool</li>
+		<li>penTool</li>
+		<li>typeTool</li>
+		<li>rubberTool</li>
+		<li>accessoriesTool</li>
+		<li>lineOptionsTool</li>
+		<li>cutWasteTool</li>
+		<li>areaTool</li>
+		<li>calcTool</li>
+		<li>configTool</li>
+		<li>testSquareTool</li>
+		<li>leg</li>
+		<li>signalPaddle</li>
+		<li>pushpin_red</li>
+		<li>pushpin_green</li>
+		<li>pushpin_blue</li>
+		<li>banana</li>
+
+	</ul>
+	</p>
+
+</div>
+
+</body>
+</html>
+
+

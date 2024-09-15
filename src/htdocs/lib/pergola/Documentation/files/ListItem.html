@@ -1,0 +1,115 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – ListItem</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – ListItem class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.ListItem</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES. Note: beyond the implemented management of selection, deselection and activation (double click) –which invokes the callback function defined by the <a href="#owner">owner</a> object (<a href="ComboBox.html">pergola.ComboBox</a> instance) or by the owner's <a href="#owner">owner</a> object (typically a <a href="Panel.html">pergola.Panel</a> instance)– if <a href="#fn">fn</a> is specified it is invoked on mouseover and mouseout events. Any specified <a href="#ev">ev</a> is ignored. A typical use of <a href="#fn">fn</a> is to show a preview image of the hovered list item.</p>
+
+  <p class="first">System component. This class is specifically designed as component for the <a href="ComboBox.html">pergola.ComboBox</a> class. You don't need to instantiate this class, or invoke any of its methods explicitly.</p>
+
+  <p class="first">Example in <a href="../../ExamplesHTML/ComboBox/combobox.html">combobox</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. The parent node is normally overridden by the instatiating object.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="maskFill" class="property"><strong>maskFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>"black" – string.</p>
+
+  	<p id="textFillInverse" class="property"><strong>textFillInverse</strong></p>
+  	<p>"white" – string.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="effects" class="property"><strong>effects</strong>(<i>evt</i>)</p>
+  	<p>Handles hovering effects. You never need to invoke this method explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p>Assigns this <a href="#string">string</a> to this <a href="#owner">owner</a>.<code>selection</code>, and this to this <a href="#owner">owner</a>.<code>selectionHandle</code>. Doubleclick on this invokes (through <a href="Class.html#checkUserFunction">checkUserFunction()</a>) in this order: 1) this <code>owner.fn</code> if specified; 2) this <code>owner.owner.fn</code> if specified.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="button" class="property"><strong>button</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="text" class="property"><strong>text</strong></p>
+  	<p>&lt;text&gt; element.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; a computed number representing the smallest value between this <a href="#owner">owner</a>.<code>width</code> and the greatest line length in this <a href="#owner">owner</a>.<code>list</code> elements. This value is the same for all sibling items, and is computed by the instantiator (<a href="ComboBox.html">pergola.ComboBox</a>).</p>
+
+  	<p id="string" class="property"><strong>string</strong></p>
+  	<p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; a string representing the property name as defined in this <a href="#owner">owner</a>.<code>list</code> array property, and is used as the text node of this <a href="#text">text</a>, therefore it's always best to declare this property name using the string notation. To clarify this, see the <a href="../../ExamplesHTML/ComboBox/combobox.html">combobox</a> example.</p>
+
+  	<p id="fn" class="property"><strong>fn</strong></p>
+  	<p>If specified, or otherwise specified, callback function invoked on implemented mouseover and mouseout events.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

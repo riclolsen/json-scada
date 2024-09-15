@@ -1,0 +1,37 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Skins</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Skins.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Skins Library</h1>
+
+	<p class="first"><code>pergola.skins</code> (defined in lib/skins.js) is an object defining <i>skin</i> function properties. The <code>skin</code> function specified in the configuration file is invoked at runtime. The function defines color scheme related system constants, the <code>presentationAttributes</code> object, and gradients and patterns.</p>
+
+	<p>The <code>presentationAttributes</code> object defines properties whose names relate to the Pergola <a href="classes.html">classes</a>, and that's where the respective prototypes initial values are set. This translates in the possibility for the developer to set initial values without needing to hack the classes, or to design a whole new skin, in which case the default (and unique) "rubber" function must be used as template. The function also defines gradients and patterns. Note that to change the look and feel of the interface it's usually enough to change the color scheme (<code>theme</code> in the configuration file).</p>
+
+	<p>Read also the <a href="../Tutorial.html#skins">Skins</a> and <a href="../Tutorial.html#newSkin">Making A New Skin</a> chapters in the tutorial.</p>
+
+
+	<div class="propList">
+
+		<h3>pergola.skins</h3>
+
+		<p id="rubber" class="property"><strong>rubber</strong>()</p>
+		<p>Invokes <a href="color.html#lab">pergola.color.lab()</a> to define the system's color constants; defines the <a href="misc.html#presentationAttributes"><strong>presentationAttributes</strong></a> object with property names corresponding to the <a href="classes.html">classes</a> names (all lower case); defines and appends gradients and patterns to <a href="references.html#defs">pergola.defs</a>.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

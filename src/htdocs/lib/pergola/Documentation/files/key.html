@@ -1,0 +1,150 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Key</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Key class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Key</h1>
+
+	<p class="first">pergola.Key is not subclassed to pergola.Class.</p>
+
+	<p>This class manages keyboard input in SVG, and produces equal results in all major implementations. For extensive information about this class read the SVG magazine <a href="http://svgmagazine.com/mar2014/js_key.html" target="new">Keyboard Class</a> article.</p>
+
+	<p>Features: pass events to default handlers or to custom handlers for each type of event independently, or to a unique handler; end input on &lt;ENTER&gt; and/or pointer events; prevent certain type of actions in the interface from ending input; instance self-destruction, if specified. Learn more in the <a href="../Tutorial.html#Key">KEY CLASS</a> section of the Tutorial.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="active"><strong>active</strong></p>
+		<p>References the current typing process, which can be terminated from other contexts like this:
+		<pre>pergola.Key.active.release();</pre></p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+		<p id="keydown" class="property"><strong>keydown</strong>(<i>evt</i>)</p>
+		<p>Default keydown handler. Invoked as method of this <a href="#handle">handle</a>. Scans the following key codes:
+		<ul class="none">
+			<li>8 (BACKSPACE) : default prevented; deletes last character (<i>this</i> must have a <i>value</i> property and a <i>setValue()</i> method)</li>
+			<li>46 (DELETE) : no action (needs cursor position handling)</li>
+			<li>9 (TAB) : default prevented;</li>
+			<li>13 (ENTER) : ends input</li>
+			<li>112–123 (function keys F1–F12) : default prevented;</li>
+		</ul>
+	  Note: this function does what the “keydown” event was designed for: key codes scan.</p>
+
+		<p id="keypress" class="property"><strong>keypress</strong>(<i>evt</i>)</p>
+		<p>Default keypress handler for <a href="key.html">pergola.Key</a>. Invoked as method of this <a href="#handle">handle</a>. Filters character codes 32–65535. Use for regular typing. Note: this function does what the “keypress” event was designed for: character codes scan.</p>
+
+		<p id="keyup" class="property"><strong>keyup</strong>(<i>evt</i>)</p>
+		<p>Default keyup handler for <a href="key.html">pergola.Key</a>. Invoked as method of this <a href="#handle">handle</a>. No action. Override if needed.
+
+		<p id="keypressNum" class="property"><strong>keypressNum</strong>(<i>evt</i>)</p>
+		<p>Assign this method to the <code>keypress</code> property of the <a href="#callback">callback</a> object to override the default <a href="#keypress">keypress</a> handler. Invoked as method of this <a href="#handle">handle</a>. Filters digits. Note: this function does what the “keypress” event was designed for: character codes scan.</p>
+
+		<p id="keypressInt" class="property"><strong>keypressInt</strong>(<i>evt</i>)</p>
+		<p>Assign this method to the <code>keypress</code> property of the <a href="#callback">callback</a> object to override the default <a href="#keypress">keypress</a> handler. Invoked as method of this <a href="#handle">handle</a>. Filters integers. Note: this function does what the “keypress” event was designed for: character codes scan.</p>
+
+		<p id="keypressPos" class="property"><strong>keypressPos</strong>(<i>evt</i>)</p>
+		<p>Assign this method to the <code>keypress</code> property of the <a href="#callback">callback</a> object to override the default <a href="#keypress">keypress</a> handler. Invoked as method of this <a href="#handle">handle</a>. Filters positive numbers. Note: this function does what the “keypress” event was designed for: character codes scan.</p>
+
+		<p id="keypressPosInt" class="property"><strong>keypressPosInt</strong>(<i>evt</i>)</p>
+		<p>Assign this method to the <code>keypress</code> property of the <a href="#callback">callback</a> object to override the default <a href="#keypress">keypress</a> handler. Invoked as method of this <a href="#handle">handle</a>. Filters positive integers. Note: this function does what the “keypress” event was designed for: character codes scan.</p>
+
+		<p id="keypressHex" class="property"><strong>keypressHex</strong>(<i>evt</i>)</p>
+		<p>Assign this method to the <code>keypress</code> property of the <a href="#callback">callback</a> object to override the default <a href="#keypress">keypress</a> handler. Invoked as method of this <a href="#handle">handle</a>. Filters hexadecimal digits. Note: this function does what the “keypress” event was designed for: character codes scan.</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="register" class="property"><strong>register</strong>(<i>object</i>)</p>
+		<p>The method expects an initialization <i>object</i> whose properties are inherited by this instance. Adds “keydown”, “keypress”, and “keyup” event listeners with this; adds “mouseup” event listener with this.<a href="#release">release()</a>. If any or all of the callback functions are not specified the instance will use the default <a href="#keydown">keydown()</a>, <a href="#keypress">keypress()</a>, and <a href="#keyup">keyup()</a> class methods, accordingly.</p>
+
+    <p>Instantiation/initialization can look like this:
+<pre>  myObject.key = pergola.Key()
+  .register({
+    handle : <i>object</i>,
+    callback: {
+      keydown : <i>function</i>,
+      keypress : <i>function</i>,
+      keyup : <i>function</i>,
+    },
+    cursor : <i>boolean</i>,
+    warn : <i>boolean</i>,
+    stop : <i>boolean</i>,
+    destroy : "key"
+  });</pre></p>
+
+		<p>See the <a href="#instance">instance properties</a> defined in <i>object</i>:</p>
+
+		<p id="release" class="property"><strong>release</strong>()</p>
+		<p>This method is invoked when the user clicks anywhere in the document. It may also be explicitly invoked from another scope, like this:
+		<pre> if (Key.active) Key.active.release([<i>params</i>]);</pre></p>
+		<p>Ends the current input process if <a href="#register">stop</a> was not programmatically set to false (on any particular action on the interface); removes the event listeners; if <a href="#register">cursor</a> was specified, removes the <a href="InputCursor.html">input cursor</a>; if <a href="#register">handle</a> defines a <code>endInput()</code> method, or if its constructor's prototype defines a <code>endInput()</code> method, <code>handle.endInput()</code> is invoked with the optional arguments passed by the call from another scope (in this case, the presence of arguments signals to the endInput() function that input was ended by means other than those predefined for the Key instance, letting you take the appropriate actions).</p>
+
+		<p id="mousedown" class="property"><strong>mousedown</strong>(<i>evt</i>)</p>
+		<p>Handler for the "mousedown" event registered on document.documentElement at instantiation/registration. Invokes the <a href="#release">release</a> method.</p>
+
+		<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+		<p>Dispatches "keydown"/"keypress"/"keyup" event to respective callback.</p>
+
+    </div>
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="handle" class="property"><strong>handle</strong></p>
+    <p>Object. Required. Typically, but not necessarily, a reference to the object that instantiates the class. It may not reference the Key instance itself.</p>
+
+  	<p id="callback" class="property"><strong>callback</strong></p>
+    <p>Function or Object. If specified, it can be an object defining any or all the default handlers to override, or can be a function that will be the unique handler for the three event types. Note that if <a href="#handle">handle</a> has instance or prototype methods named <code>keydown</code>, <code>keypress</code> and <code>keyup</code> (any, or all), you don't actually need to specify them in the callback object, as they will automatically override the default <a href="#keydown">keydown()</a>, <a href="#keypress">keypress()</a>, and <a href="#keyup">keyup()</a> class methods.</p>
+
+    <p id="cursor" class="property"><strong>cursor</strong></p>
+    <p>Boolean. If not specified, an instance of <a href="InputCursor.html">InputCursor</a> is assigned to this <a href="#handle">handle</a> by default. To override this behavior this property must be specified and set to false.</p>
+
+  	<p id="warn" class="property"><strong>warn</strong></p>
+  	<p>Boolean. If specified <a href="Input.html">pergola.Input</a> instances will display out of range messages.</p>
+
+  	<p id="stop" class="property"><strong>stop</strong></p>
+  	<p>Boolean. If specified (and set to false) it will prevent some actions in the interface from forcing end of input, where this behavior is not sought. In practice there's no need to specify this property during instantiation; instead, it is set statically in the event handlers of those objects (scrollbars for example) that should not interfere with the input, or can be set dynamically on certain conditions, and in those cases, after the interfering action has ended it must be set back to true, otherwise input will never end.</p>
+
+  	<p id="destroy" class="property"><strong>destroy</strong></p>
+  	<p>String. If specified, it gets the name of the property to which the Key instance was assigned. The object ceases to exist if there aren't any other references to it.</p>
+
+    </div>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

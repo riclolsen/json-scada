@@ -1,0 +1,75 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Miscellaneous</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Miscellaneous.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Miscellaneous</h1>
+
+	<p class="first">Other pergola properties and utility functions</p>
+
+
+	<div class="propList">
+
+		<p id="decimalToHex" class="property">pergola.<strong>decimalToHex</strong>(<i>n</i>)</p>
+		<p>Returns a hexadecimal string representation of <i>n</i> number.</p>
+
+		<p id="find" class="property">pergola.<strong>find</strong>(<i>callback</i>)</p>
+		<p>This utility allows you to initialize and open the <a href="references.html#findDialog">pergola.findDialog</a>. To invoke you must use the function's call() method, passing the <i>callback</i> function. When working in the context of instances of <a href="classes.html">classes</a> inheriting from <a href="Class.html">Class</a> (superclass) you invoke instead the <a href="Class.html#find">find()</a> prototype method,  with no need to use the function's call() method. The function creates the <a href="references.html#findDialog">pergola.findDialog</a> if it doesn't exist, by invoking the <a href="lazyLoad.html#findDialog">pergola.lazyLoad.findDialog()</a>. Learn more in <a href="../Tutorial.html#find">THE FIND DIALOG</a> section of the Tutorial.</p>
+
+		<p id="getColorpicker" class="property">pergola.<strong>getColorpicker</strong>(<i>color</i>)</p>
+		<p>This utility initializes and opens the <a href="references.html#colorpicker">pergola.colorpicker</a>. The color picker no longer exists in the two versions "basic" and "extended". With the current color picker the user can toggle between "narrow spectrum" (65535 visible colors) and "wide spectrum" (393216 visible colors). The function creates the <a href="references.html#colorpicker">pergola.colorpicker</a> if it doesn't exist, by invoking the <a href="lazyLoad.html#colorpickerDialog">pergola.lazyLoad.colorpickerDialog()</a>. You no longer specify the colorpicker type in the config.js file. This is done instead in the skin.js file; the value of the <code>pergola.presentationAttributes.colorpicker.spectrum</code> property ("wide" or "narrow") determines the initial display of the color picker.</p>
+
+
+		<p id="height" class="property">pergola.<strong>height</strong>()</p>
+		<p>Get the computedStyle.height of the HTML container, or of the root document in standalone SVG. If computedStyle is not implemented the function returns window.innerWidth. <a href="#resize">pergola.resize()</a> uses this value to redraw the interface on resize event in standalone SVG context.</p>
+
+		<p id="hexToDecimal" class="property">pergola.<strong>hexToDecimal</strong>(<i>n</i>)</p>
+		<p>Converts <i>n</i> hex number to decimal.</p>
+
+		<p id="message" class="property">pergola.<strong>message</strong>(<i>m</i>[, <i>pos</i>])</p>
+		<p>Shortcut: $M. Displays and updates the text of the <a href="references.html#notification">pergola.notification</a> dialog. The <i>m</i> string can contain the escape sequence “\n” for new lines. If <i>pos</i> (object defining <i>x</i> and <i>y</i> properties) is specified the dialog appears at user space coordinates <i>pos.x</i>, <i>pos.y</i>.</p>
+
+		<p id="mousePoint" class="property">pergola.<strong>mousePoint</strong>(<i>evt</i>)</p>
+		<p>In HTML + SVG context uses the methods createSVGPoint(), matrixTransform(), getScreenCTM(), and inverse(). In standalone SVG context it uses evt.clientX and evt.clientY. Returns {x : <i>x</i>, y : <i>y</i>} mouse coordinates object in the user space.</p>
+
+		<p>The <code>presentationAttributes</code> object represents a style sheet, and its properties take expressions, of course. It is located in the skins.js file, where multiple sheets can be defined (the sheet to be used being defined in the config file). Most properties defined here can be overridden for the classes' instances. This technique allows to apply full customization without the need to hack the classes. Note that this does not prevent the use of the <i>style</i> or <i>class</i> attributes for any element created with the <a href="dom.html">DOM</a> helpers, or for any class instance for which the paint and geometrical attributes can be overridden. See also <a href="skins.html">Skins library</a> and the <a href="../Tutorial.html#skins">Skins</a> chapter in the tutorial.</p>
+
+		<p id="resize" class="property">pergola.<strong>resize</strong>()</p>
+		<p>Callback for the "resize" event. Updates the geometry and redraws the interface (in standalone SVG only).</p>
+
+		<p id="setCursor" class="property">pergola.<strong>setCursor</strong>(<i>element</i>, <i>cursor</i>)</p>
+		<p>Set SVG "cursor" attribute. Workaround for defective implementations.</p>
+
+		<p id="symbol" class="property">pergola.<strong>symbol</strong>(<i>object</i>)</p>
+		<p>Utility function to use <a href="files/symbols.html">symbols</a> from the symbols library (lib/symbols.js) or defined inline. Use also for creating icons. Returns a group containing the symbol's elements.
+	  <i>object</i> must define the <code>symbol</code> property, which can get a symbol or an image. If <code>symbol</code> designates a symbol, it can be a reference to a symbol in the library (lib/symbols.js), or a symbol specified in the same format of the symbols library (an array of one or more objects in the format expected by the <a href="dom.html#SVG">SVG</a> DOM helper, without the <code>appendTo</code> property). If <code>symbol</code> designates an image, it gets the image's URL string, and the <code>width</code> and <code>height</code> properties must be specified.</p>
+	  <p>Other optional properties of <i>object</i>: <code>x</code>; <code>y</code>; <code>opacity</code>; <code>parent</code>. if <code>x</code> and/or <code>y</code> string or number (user space units) are specified the group is translated to x,y. If <code>opacity</code> string or number is specified it is applied to the group. If <code>parent</code> node is not specified the group will be appended to this container.</p>
+	  <p>This method is extensively used by Pergola classes and can be used for orphan symbols and icons using the method call(). Read also the <a href="../Tutorial.html#symbols">Symbols</a> chapter in the tutorial.</p>
+
+		<p id="propsToArray" class="property">pergola.<strong>propsToArray</strong>(<i>object</i>)</p>
+		<p>Returns an array with the property names in <i>object</i> (avoids conflict with other built-in objects extension libraries).</p>
+
+		<p id="toArray" class="property">pergola.<strong>toArray</strong>(<i>object</i>)</p>
+		<p>Returns an array with the property values in <i>object</i> (avoids conflict with other built-in objects extension libraries).</p>
+
+		<p id="use" class="property">pergola.<strong>use</strong>(<i>object</i>)</p>
+		<p>Utility function to use the <a href="files/shapes.html">shapes</a> library (located in lib/shapes.js); <i>object</i> defines the properties: <code>shape</code> reference to library shape, <code>parent</code> node, and optional paint <code>attributes</code> object. Returns the <i>shape</i> element. Read also the <a href="../Tutorial.html#shapes">Shapes</a> chapter in the tutorial.</p>
+
+		<p id="width" class="property">pergola.<strong>width</strong>()</p>
+		<p>Get the computedStyle.width of the HTML container, or of the root document in standalone SVG. If computedStyle is not implemented the function returns window.innerWidth. <a href="#resize">pergola.resize()</a> uses this value to redraw the interface on resize event in standalone SVG context.</p>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

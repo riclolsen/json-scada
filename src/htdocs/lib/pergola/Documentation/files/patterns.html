@@ -1,0 +1,148 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Patterns</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Patterns.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Patterns Library</h1>
+
+	<p class="first">A pattern definition is a method of the <code>pergola.pattern</code> object (defined in lib/patterns.js). The function first creates a unique ID based on the function name and values, taking into account the overriding values, and if it doesn't already exist in the document it creates and appends the filter element to <a href="references.html#defs">pergola.defs</a>. Returns the URI string.</p>
+
+	<p>The pattern functions expect an optional object specifying overriding properties. Some properties have arbitrary names, and some use SVG vocabulary (names containing illegal characters for JavaScript variable names are specified using the string notation, e.g. "stroke-width"). The values of the number properties represent user space units.</p>
+
+	<h4 id="common">Properties common to all patterns</h4>
+	<ul class="none">
+		<li id="colors"><code>colors</code> : array containing one or more "fill" value elements; if overridden, the array must have the expected length for each pattern function, fault of which the omitted values resolve to "black".</li>
+		<li id="opacity"><code>opacity</code> : number or string (initial: 1); this value is applied to the topmost element in the pattern.</li>
+		<li id="transform"><code>transform</code> : string (initial: ""); specify scaling, rotation, skewing. Transformations are set for the <a href="http://www.w3.org/TR/SVG11/pservers.html#PatternElementPatternTransformAttribute" target="new">patternTransform</a> attribute. Note: translations don't normally have any visual effect.</li>
+	</ul>
+
+
+
+	<div class="propList">
+
+		<h3>pergola.pattern</h3>
+
+		<p id="catseye" class="property">pergola.pattern.<strong>catseye</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 5)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="pirelli" class="property">pergola.pattern.<strong>pirelli</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 6)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="line" class="property">pergola.filpatternter.<strong>line</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 1)</li>
+			<li><code>spacing</code> : number (initial: 1)</li>
+			<li><code>width</code> : number (initial: 8)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 1 element.</p>
+
+
+		<p id="grid" class="property">pergola.pattern.<strong>grid</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 1)</li>
+			<li><code>spacing</code> : number (initial: 4)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 1 elements.</p>
+
+
+		<p id="bar" class="property">pergola.pattern.<strong>bar</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 8)</li>
+			<li><code>spacing</code> : number (initial: 8)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="grille" class="property">pergola.filpatternter.<strong>grille</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 6)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="pied_de_poule" class="property">pergola.pattern.<strong>pied_de_poule</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>width</code> : number (initial: 10)</li>
+			<li><code>height</code> : number (initial: 10)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="pied_de_poule1" class="property">pergola.pattern.<strong>pied_de_poule1</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>width</code> : number (initial: 12)</li>
+			<li><code>height</code> : number (initial: 12)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="checkers" class="property">pergola.pattern.<strong>checkers</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 32)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="dot" class="property">pergola.pattern.<strong>dot</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 3)</li>
+			<li><code>spacing</code> : number (initial: 9)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="hive" class="property">pergola.pattern.<strong>hive</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>width</code> : number (initial: 48)</li>
+			<li><code>height</code> : number (initial: 27.713)</li>
+			<li><code>"stroke-width"</code> : string or number (initial: 2, user space units)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 2 elements.</p>
+
+
+		<p id="ring" class="property">pergola.pattern.<strong>ring</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define any of the <a href="#common">common</a> and/or these properties:
+		<ul class="none">
+			<li><code>size</code> : number (initial: 6)</li>
+			<li><code>spacing</code> : number (initial: 10)</li>
+			<li><code>"stroke-width"</code> : string or number (initial: 2, user space units)</li>
+		</ul>
+		If <a href="#colors">colors</a> is specified, it must have 3 elements.</p>
+
+
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

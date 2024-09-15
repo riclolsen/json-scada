@@ -1,0 +1,152 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola Menus</title>
+<meta name="description" content="SVG library - Menu example built using the pergola.Menu class. All features. Standalone SVG or HTML + SVG." />
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+<body>
+  <img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+  <h1>Menu</h1>
+
+
+  <div id="svg" style="width: 800px; height: 324px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+  <script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+    <script src="menu.js" type="text/javascript"></script>
+
+  <div class="blurb">
+
+    <h3><a href="../../Examples/Menu/menu.svg">View as standalone SVG</a></h3>
+
+    <p>A <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Menu.html">pergola.Menu</a> object instantiates its components and you don't need to instantiate explicitly the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/MenuList.html">pergola.MenuList</a> and <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/MenuItem.html">pergola.MenuItem</a> classes. A menu can be appended to a <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Menubar.html">menu bar</a> (whether painted or not) on the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/references.html#taskbar">pergola.taskbar</a>, in a window, or on the desk. A <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Window.html">pergola.Window</a> object automatically builds a menubar if the property <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Window.html#menu">menu</a> is set at instantiation.</p>
+    <p>Pergola classes allow both method chaining and deferred construction. The latter allows you to predefine objects and their component objects, keeping a clean structure that gives you at a glance control, and allows dynamic or conditional construction:</p>
+
+    <h4>HOW</h4>
+
+    <div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 15;"><![CDATA[
+var myObject = {
+  menubar : new pergola.Menubar()
+    .build({
+      x : 180,
+      y : 80
+    }),
+  menu : {
+    food : new pergola.Menu("Food"),
+    other : new pergola.Menu("Other")
+  },
+  message : function (evt) {...},
+  ...
+};
+]]></script>
+    </div>
+
+    <p>The deferred construction of the menu components:</p>
+    <div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 52;"><![CDATA[
+myObject.menu.food.build({
+  owner : myObject,
+  parent : myObject.menubar.container,
+  title : myObject.menu.food.name,
+  items : {
+    item1 : {
+      string : "Menu Item #1",
+      check : true,
+      fn : myObject.message
+    },
+    item2 : {
+      string : "Menu Item #2",
+      check : false,
+      fn : myObject.message
+    },
+    food : {
+      string : "Food",
+      submenu : {
+        items : {
+          organic : {
+            string : "Organic (OOS)",
+            active : false,
+            fn : myObject.message
+          },
+          fruits : {
+            string : "Fruits",
+            submenu : {
+              items : {
+                bananas : {
+                  string : "Bananas",
+                  check : false,
+                  fn : myObject.message
+                },
+                pears : {
+                  string : "Pears",
+                  check : false,
+                  fn : myObject.message
+                },
+                cherries : {
+                  string : "Cherries",
+                  check : false,
+                  fn : myObject.message
+                },
+                plums : {
+                  string : "Plums",
+                  check : false,
+                  fn : myObject.message
+                }
+              }
+            }
+          },
+          vegetables : {
+            string : "Vegetables",
+            submenu : {
+              items : {
+                carrots : {
+                  string : "Carrots",
+                  check : false,
+                  fn : myObject.message
+                },
+                potatoes : {
+                  string : "Potatoes",
+                  check : false,
+                  fn : myObject.message
+                },
+                beans : {
+                  string : "Beans",
+                  check : false,
+                  fn : myObject.message
+                },
+                tomatoes : {
+                  string : "Tomatoes",
+                  check : false,
+                  fn : myObject.message
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    item4 : {
+      string : "Menu Item #4",
+      fn : myObject.message
+    }
+  }
+});
+]]></script>
+    </div>
+
+  </div>
+
+  <div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

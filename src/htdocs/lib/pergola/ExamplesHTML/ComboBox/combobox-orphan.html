@@ -1,0 +1,67 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola combobox – orphan</title>
+<meta name="description" content="SVG library - Pergola combobox. Updatable contents. Orphan or embedded through the pergola.Layout class. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Combobox</h1>
+
+
+	<div id="svg" style="width: 800px; height: 360px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+
+<!-- PROJECT FILES  -->
+	<script src="list" type="text/javascript"></script>
+  <script src="combobox-orphan.js" type="text/javascript"></script>
+
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/ComboBox/combobox-orphan.svg">View as standalone SVG</a></h3>
+
+		<p>View <a href="combobox.html">combobox</a> in panel.</p>
+
+		<p>A <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/ComboBox.html">pergola.ComboBox</a> instance can be an orphan object or a property of an <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Classes.html#owner">owner</a> object, typically a panel. To embed a combobox in a panel (or in a panel's tab) you set the <code>layout</code> property, as in the code example below, or you can append it manually. The geometrical properties <code>x</code>, <code>y</code>, <code>width</code> and <code>height</code> can be overridden.</p>
+
+		<p><a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/ListItem.html">pergola.ListItem</a> instances are automatically generated with event listeners, based on the array of strings assigned to the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/ComboBox.html#list">list</a> property. Processing is handled by both the list items (click: selection; double click: activation) and the panel's <span class="it">OK</span> button if the combobox is a component.</p>
+
+		<p>Contents can be updated dynamically using the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/ComboBox.html#update">update()</a> prototype method.</p>
+
+		<p>The example code below also shows the use of the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/references.html#notification">pergola.notification</a>, a preemptive (option) dialog which can be used like a system alert that doesn't stop execution of the script.</p>
+
+		<h4>HOW</h4>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+myComboBox = new pergola.ComboBox("My Combobox")
+.build({
+  x : 200,
+  y : 60,
+  list : myList,
+  fn : function (evt) {
+    for (var m in myList) if (this.selection == myList[m]) $M(myMessages[m], {x : 280, y : 100});
+  }
+});
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

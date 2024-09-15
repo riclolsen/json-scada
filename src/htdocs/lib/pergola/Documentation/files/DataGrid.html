@@ -1,0 +1,358 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – DataGrid</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – DataGrid class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.DataGrid</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">An instance of this class cannot be an orphan object and must be contained in a <a href="Window.html">window</a>. It is typically created by instantiating a <a href="Window.html">Window</a> and invoking its <a href="Window.html#datagridMaker">datagridMaker()</a> prototype method. See <a href="http://www.dotuscomus.com/pergola/currentVersion/ExamplesHTML/DataGrid/datagrid_demo.html" target="new">Example</a>. Learn more in the <a href="../Tutorial.html#datagrid">DATAGRID</a> section of the Tutorial.</p>
+
+  <p>The native data format for pergola.DataGrid is JSON. Learn more in the <a href="../Tutorial.html#data">DATAGRID#data</a> section of the Tutorial.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+  	<p id="headerHeight" class="property"><strong>headerHeight</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="rowHeight" class="property"><strong>rowHeight</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units) or the string "auto" (default).</p>
+
+  	<p id="nColumns" class="property"><strong>nColumns</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number. Number of columns; applies to empty grid. If <a href="#binding">binding</a> is specified, this <a href="#columns">columns</a> length.</p>
+
+  	<p id="nRows" class="property"><strong>nRows</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number. Number of rows; applies to empty grid. If <a href="#binding">binding</a> is specified, this <a href="#rows">rows</a> length.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="altFill" class="property"><strong>altFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="highlightFill" class="property"><strong>highlightFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="highlightStroke" class="property"><strong>highlightStroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="gutter" class="property"><strong>gutter</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – boolean. If true, the datagrid has line numbers.</p>
+
+  	<p id="gutterWidth" class="property"><strong>gutterWidth</strong></p>
+  	<p>0 – number. The value is dependent of the <a href="#nRows">nRows</a> number of rows.</p>
+
+  	<p id="readOnly" class="property"><strong>readOnly</strong></p>
+  	<p>true – boolean. In this mode the menu “Save” and “Save As” are inactive.</p>
+
+  	<p id="savePath" class="property"><strong>savePath</strong></p>
+  	<p>"." – string. The folder containing the saved files. The default represents the location of writeFile.php, the script designated as default by <a href="constants.html#writeFile">pergola.writeFile</a>.</p>
+
+  	<p id="permissions" class="property"><strong>permissions</strong></p>
+  	<p>"user" – string. Option "administrator"; affects <a href="#Save">Save</a> and <a href="#Save As">Save As</a>.</p>
+
+  	<p id="language" class="property"><strong>language</strong></p>
+  	<p><a href="constants.html#locale">pergola.locale</a> – string. To override this property you must specify a string containing a BCP 47 language tag.</p>
+
+  	<p id="menu" class="property"><strong>menu</strong></p>
+  	<p>false – boolean or array of strings. If true, these menus are built by default: "file"; "edit"; "view"; "search". If <code>menu</code> is an array, it specifies which menus (from the previous list) must be built.</p>
+    <p>Note: you can also add <a href="#customMenus">custom menus</a>.</p>
+
+    </div>
+
+
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+<!--
+  	<p id="xml" class="property"><strong>xml</strong>(<i>request</i>)</p>
+  	<p>.</p>
+
+  	<p id="localXml" class="property"><strong>localXml</strong>(<i>node</i>)</p>
+  	<p>.</p>
+-->
+  	<p id="save" class="property"><strong>save</strong>()</p>
+  	<p>Builds a JSON object based on the current state of this <a href="#columns">columns</a> and this <a href="#rows">rows</a> and invokes <a href="requests.html#save">pergola.save()</a>. Overwriting the current file is only allowed if the value of this <a href="#permissions">permissions</a> is "administrator".</p>
+
+  	<p id="saveAs" class="property"><strong>saveAs</strong>()</p>
+  	<p>Callback function for this <a href="Class.html#getFiles">getFiles()</a>. Invokes this <a href="requests.html#saveJSON">pergola.saveJSON()</a>. Rejects any attempt to overwrite the current file if the value of this <a href="#permissions">permissions</a> is not "administrator".</p>
+<!--
+  	<p id="open" class="property"><strong>open</strong>()</p>
+  	<p>Callback function for this.<a href="Class.html#getFiles">getFiles()</a>.</p>
+-->
+  	<p id="syncMenu" class="property"><strong>syncMenu</strong>()</p>
+  	<p>This method is invoked by the <a href="#build">build()</a> method, which is invoked asynchronously. Therefore the data can be queried, allowing to build and set the menu voices accordingly. It also applies for the <a href="#customMenus">customMenus</a>.</p>
+
+  	<p id="search" class="property"><strong>search</strong>()</p>
+  	<p>Callback function for this <a href="Class.html#find">find()</a>. Assigns the object returned by the <a href="references.html#getData">getData()</a> method of the <a href="references.html#findDialog">pergola.findDialog</a> panel to this <a href="#stringData">stringData</a>. Invokes this <a href="doFind">doFind()</a> and this <a href="#gotoFound">gotoFound()</a>.</p>
+
+  	<p id="searchUpdate" class="property"><strong>searchUpdate</strong>()</p>
+  	<p>Invoked for updating this <a href="#found">found</a> array on changes affecting its structure. Invokes this <a href="doFind">doFind()</a>.</p>
+
+  	<p id="doFind" class="property"><strong>doFind</strong>()</p>
+  	<p>Reinitializes this <a href="#found">found</a> to the empty array and populates it with object elements with <code>label</code> string, <code>line</code> number, <code>entry</code> string, <code>textNode</code> text node, <code>start</code> number, <code>length</code> number properties.</p>
+
+  	<p id="gotoFound" class="property"><strong>gotoFound</strong>(<i>d</i>)</p>
+  	<p>Invokes the <a href="#goToColumn">goToColumn()</a> and <a href="#goToLine">goToLine()</a> methods; creates a selection range.</p>
+
+  	<p id="goToLine" class="property"><strong>goToLine</strong>(<i>n</i>)</p>
+  	<p><i>n</i> represents the row number. Invokes <i>n</i>th row <a href="DataGridLine.html#select">select()</a> method. Invokes this <a href="#owner">owner</a>.<a href="Window.html#pDoc">doc</a> transformation methods.</p>
+
+  	<p id="goToColumn" class="property"><strong>goToColumn</strong>(<i>label</i>)</p>
+  	<p><i>label</i> string represents the column's label. Invokes the column's <a href="DataGridHeader.html#select">select()</a> method. Invokes this <a href="#owner">owner</a>.<a href="Window.html#pDoc">doc</a> transformation methods.</p>
+
+  	<p id="toggleColumn" class="property"><strong>toggleColumn</strong>(<i>label</i>)</p>
+  	<p><i>label</i> string represents the column's label. Hides or shows the column with the specified <i>label</i>; sets the column's <a href="DataGridHeader.html#display">display</a> property accordingly.</p>
+
+  	<p id="removeColumn" class="property"><strong>removeColumn</strong>(<i>header</i>)</p>
+  	<p><i>header</i> represents the column's <a href="DataGridHeader.html">DataGridHeader</a> object. Frees its dependencies, removes the DOM objects. Note: deleting a column removes it permanently, affecting the file output on saving.</p>
+<!--
+  	<p id="removeRow" class="property"><strong>removeRow</strong>(<i>line</i>)</p>
+  	<p><i>line</i> represents the column's <a href="DataGridLine.html">DataGridLine</a> object. Frees its dependencies, removes the DOM objects. Note: deleting a row removes it permanently, affecting the file output on saving.</p>
+-->
+  	<p id="setDisplayed" class="property"><strong>setDisplayed</strong>()</p>
+  	<p>Updates the <a href="#displayed">displayed</a> array containing the visible columns.</p>
+
+  	<p id="setColumnsOffset" class="property"><strong>setColumnsOffset</strong>()</p>
+  	<p>Reorganizes columns and cells position after column displacement or on/off toggling; sets the columns' <a href="DataGridHeader.html#x">x</a> properties accordingly.</p>
+
+  	<p id="gutterPositionOnScroll" class="property"><strong>gutterPositionOnScroll</strong>()</p>
+  	<p>Makes the <a href="#gutterGroup">gutterGroup</a> static.</p>
+
+  	<p id="headerPositionOnScroll" class="property"><strong>headerPositionOnScroll</strong>()</p>
+  	<p>Makes the <a href="#headerGroup">headerGroup</a> static.</p>
+
+  	<p id="getColumnSelectionFrameData" class="property"><strong>getColumnSelectionFrameData</strong>(<i>x</i>)</p>
+  	<p><i>x</i> number is the value of the selected column's <code>x</code> property; returns a string representing the computed value of the <a href="#columnSelectionFrame">columnSelectionFrame</a> <code>d</code> attribute.</p>
+
+  	<p id="getRowSelectionFrameData" class="property"><strong>getRowSelectionFrameData</strong>(<i>y</i>)</p>
+  	<p><i>y</i> number is the value of the selected row's <code>y</code> property; returns a string representing the computed value of the <a href="#rowSelectionFrame">rowSelectionFrame</a> <code>d</code> attribute.</p>
+
+  	<p id="deselect" class="property"><strong>deselect</strong>()</p>
+  	<p>Invokes this <a href="#deselectColumn">deselectColumn()</a> and this <a href="#deselectRow">deselectRow()</a>.</p>
+
+  	<p id="deselectColumn" class="property"><strong>deselectColumn</strong>()</p>
+  	<p>Deselects this <a href="#currentColumn">currentColumn()</a>.</p>
+
+  	<p id="deselectRow" class="property"><strong>deselectRow</strong>(<i>object</i>)</p>
+  	<p>Deselects this <a href="#currentRow">currentRow()</a>.</p>
+
+  	<p id="sortAscending" class="property"><strong>sortAscending</strong>(<i>label</i>, <i>type</i>)</p>
+  	<p><i>label</i> string represents the column's label and <i>type</i> its type ("number", "date", or alphanumeric [default]). Sorts the data in ascending order; invokes this <a href="#sortApply">sortApply()</a>.</p>
+
+  	<p id="sortDescending" class="property"><strong>sortDescending</strong>(<i>label</i>, <i>type</i>)</p>
+  	<p><i>label</i> string represents the column's label and <i>type</i> its type ("number", "date", or alphanumeric [default]). Sorts the data in descending order; invokes this <a href="#sortApply">sortApply()</a>.</p>
+
+  	<p id="sortApply" class="property"><strong>sortApply</strong>()</p>
+  	<p>Applies the rows' translations and fills.</p>
+
+  	<p id="createRows" class="property"><strong>createRows</strong>(<i>zone</i>)</p>
+  	<p><i>zone</i> is an object with <code>start</code> and <code>end</code> properties representing indices (see <a href="#buffered">buffered</a>). Invoked by this <a href="#render">render()</a> once if this <a href="#buffered">buffered</a> is false, or sequentially (timer). This ensures that the data is displayed upon creation of the first fifty rows. Depending on the number of cells, some browsers might reach the end of computing quicker than the rendering time for the first fifty rows.</p>
+
+  	<p id="render" class="property"><strong>render</strong>()</p>
+  	<p>Invoked by this <a href="#build">build</a>.</p>
+
+  	<p id="build" class="property"><strong>build</strong>([<i>object</i>])</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements, components and instance properties. Returns this. The method is invoked asynchronously.</p>
+<!--
+  	<p id="buildEmpty" class="property"><strong>buildEmpty</strong>([<i>object</i>])</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements, components and instance properties. Returns this. This method is invoked by the <a href="Window.html#datagridMaker">pergola.Window.datagridMaker()</a> method if this <a href="#binding">binding</a> is omitted.</p>
+-->
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified. Designates the <a href="classes.html#owner">owner object</a>, which for a datagrid object can only be a <a href="Window.html">Window</a> instance.</p>
+
+  	<p id="parent" class="property"><strong>parent</strong></p>
+    <p>Must be specified. Designates the parent node, which for a datagrid object can only be <a href="Doc.html#transformable"><i>window</i>.doc.transformable</a>.</p>
+
+  	<p id="binding" class="property"><strong>binding</strong></p>
+    <p>String or Object. In remote mode, a string representing the URL of the JSON data to load; in local mode, an object literal. If not specified, an editable blank grid is displayed with the default <a href="#nColumns">nColumns</a> and <a href="#nRows">nRows</a>; in this case the <a href="#readOnly">readOnly</a> property is forced to false. See the <a href="../Tutorial.html#datagrid">DATAGRID</a> section of the Tutorial for details.</p>
+    <p>Structure of JSON object/object literal:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+{
+  "columns" : [
+    {"label": "First Name", "type": "string"},
+    {"label": "Last Name", "type": "string"},
+    {"label": "Board Member", "type": "boolean", "options": ["Yes","No"]},
+    {"label": "Birth", "type": "date", "options": {"year": "numeric", "month": "long", "day": "numeric"}},
+    {"label": "Join Date", "type": "date", "options": {"year": "numeric", "month": "2-digit", "day": "2-digit"}},
+    {"label": "Salary", "type": "number", "options": {"style": "currency", "currency" : "USD"}},
+    {"label": "Notice", "type": "string"},
+    {"label": "Email", "type": "string"}
+  ],
+  "rows" : [
+    {"First Name" : "Jack", "Last Name" : "Bushnell", "Board Member" : true, "Birth" : "19 Jan 1970", "Join Date" : "1998-01-02", "Salary" : 10400.00, "Notice" : "8 weeks", "Email" : "jack.bushnell@pDatagrid.com"},
+    {"First Name" : "Peter", "Last Name" : "Fawler", "Board Member" : false, "Birth" : "1976-02-01", "Join Date" : "1999-05-28", "Salary" : 2600.00, "Notice" : "8 weeks", "Email" : "peter.fawler@pDatagrid.com"},
+    {"First Name" : "Paul", "Last Name" : "Best", "Board Member" : false, "Birth" : "1974-06-05", "Join Date" : "1996-12-08", "Salary" : 3000.00, "Notice" : "4 weeks", "Email" : "paul.best@pDatagrid.com"},
+    {"First Name" : "Mary", "Last Name" : "White", "Board Member" : true, "Birth" : "1972-03-21", "Join Date" : "2000-06-24", "Salary" : 15000.00, "Notice" : "2 weeks", "Email" : "mary.white@pDatagrid.com"},
+    {"First Name" : "Alice", "Last Name" : "Danielsson", "Board Member" : false, "Birth" : "1978-08-04", "Join Date" : "2003-03-26", "Salary" : 1800.00, "Notice" : "8 weeks", "Email" : "alice.danielsson@pDatagrid.com"}
+  ]
+}
+]]></script>
+ 		</div>
+
+    <p>Note that if/when editing the object literal by hand you can skip unneeded quotes for property names, but a saved JSON object will have all properties in string representation.</p>
+
+    <p>Each column object must have the "label" and "type" properties. The data in each column must be of the same type. Learn about data types in the <a href="../Tutorial.html#Columns">Columns</a> and <a href="../Tutorial.html#dataTypes">Data Types</a> sections of the Tutorial.</p>
+
+
+
+  	<p id="folder" class="property"><strong>folder</strong></p>
+    <p>String. If <a href="#binding">binding</a> is a URL string, the folder name string where the file is located; if <a href="#binding">binding</a> is an object, this property is undefined. See also <a href="#Save">Save</a> and <a href="#Save As">Save As</a>.</p>
+
+  	<p id="filename" class="property"><strong>filename</strong></p>
+    <p>String. If <a href="#binding">binding</a> is a URL string, the file name string without the extension; if <a href="#binding">binding</a> is an object, this property is undefined. See also <a href="#Save">Save</a> and <a href="#Save As">Save As</a>.</p>
+
+  	<p id="radixChar" class="property"><strong>radixChar</strong></p>
+    <p>String. The value of <a href="constants.html#radixChar">pergola.radixChar</a>[this.<a href="#language">language</a>]. Used for converting locale number strings back to numbers, this property is passed to the String <a href="String.html#unformatNumber">unformatNumber()</a> prototype extension method.</p>
+
+
+  	<p id="columns" class="property"><strong>columns</strong></p>
+    <p>Array of objects. As defined by the <code>columns</code> property of the loaded JSON object (or object literal in local mode). Its elements and/or their order may change on user actions and/or on dynamic updates.</p>
+    <p>After construction each object in this <code>columns</code> has the following properties (besides those set in the JSON data):
+      <ul class="none">
+        <li><code>index</code> : Number</li>
+        <li><code>x</code> : Number (user space units)</li>
+        <li><code>width</code> : Number (user space units)</li>
+        <li><code>display</code> : String – "block"/"none"</li>
+        <li><code>header</code> : <a href="DataGridHeader.html">pergola.DataGridHeader</a> instance</li>
+      </ul>
+    </p>
+
+
+  	<p id="rows" class="property"><strong>rows</strong></p>
+    <p>Array of objects. As defined by the <code>rows</code> property of the loaded JSON object (native format), or empty array for blank datagrid. Its elements and/or their order may change on user actions and/or on dynamic updates.</p>
+    <p>After construction each object in this <code>columns</code> has the following properties (besides those set in the JSON data):
+      <ul class="none">
+        <li><code>y</code> : Number (user space units)</li>
+        <li><code>height</code> : Number (user space units)</li>
+        <li><code>group</code> : &lt;g&gt; element</li>
+        <li><code>line</code> : <a href="DataGridHeader.html">pergola.DataGridLine</a> instance</li>
+        <li><code>cells</code> : Object</li>
+      </ul>
+    </p>
+    <p>The <code>cells</code> object has a number of object properties equal to the number of fields in each row; the property names are the columns' <code>label</code> values.</p>
+    <p>In readOnly mode the objects in <code>cells</code> have these properties: <code>container</code> &lt;g&gt; element; <code>rect</code> &lt;rect&gt; element; <code>element</code> &lt;text&gt; element; <code>value</code> string.</p>
+    <p>In read/write mode the objects in <code>cells</code> are <a href="Input.html">pergola.Input</a> instances.</p>
+    <p>Note: all formatting is applied to the <code>value</code> property of the cell object–and the text node of the cell's <code>element</code> (&lt;text&gt; element). The original values in the <code>rows</code> are not changed. On cell editing, the corresponding value in <code>rows</code> is updated after conversion to the appropriate <i>type</i>.</p>
+
+  	<p id="transY" class="property"><strong>transY</strong></p>
+    <p>Number. Used for sequential y positioning of the rows.</p>
+
+  	<p id="buffered" class="property"><strong>buffered</strong></p>
+    <p>Boolean or Array – false if this <a href="#rows">rows</a> length is &lt;= 50; otherwise array of objects with <code>start</code> and <code>end</code> number properties representing chunks of 50 rows.</p>
+<!--
+    <p id="currentCell" class="property"><strong>currentCell</strong></p>
+		<p>Reference to the currently selected cell object.</p>
+-->
+    <p id="currentColumn" class="property"><strong>currentColumn</strong></p>
+		<p>Reference to the currently selected column object. This cross-reference is set in the <a href="DataGridHeader.html">DataGridHeader</a>'s <a href="DataGridHeader.html#select">select()</a> method on column selection, and gets the value of the header's (<a href="DataGridHeader.html">DataGridHeader</a> instance) <a href="DataGridHeader.html#column">column</a> property, which is a reference to its respective element of this <a href="#columns">columns</a> array.</p>
+
+    <p id="currentRow" class="property"><strong>currentRow</strong></p>
+		<p>Reference to the currently selected row object. This cross-reference is set in the <a href="DataGridLine.html">DataGridLine</a>'s <a href="DataGridLine.html#select">select()</a> prototype method on row selection, and gets the value of the row's (<a href="DataGridLine.html">DataGridLine</a> instance) <a href="DataGridLine.html#row">row</a> property, which is a reference to its respective element of this <a href="#rows">rows</a> array.</p>
+
+  	<p id="ordered" class="property"><strong>ordered</strong></p>
+    <p>Array representing the currently displayed columns in their order (left to right).</p>
+
+  	<p id="displayed" class="property"><strong>displayed</strong></p>
+    <p>Array representing the columns with the <a href="DataGridHeader.html#display">display</a> property set to "block".</p>
+
+  	<p id="exclude" class="property"><strong>exclude</strong></p>
+    <p>If specified, Array of strings representing names of columns with sensitive data to exclude in <a href="#readOnly">readOnly</a> mode, or empty array if the property is not specified.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+    <p>&lt;g&gt; element.</p>
+
+  	<p id="gutterGroup" class="property"><strong>gutterGroup</strong></p>
+    <p>&lt;g&gt; element.</p>
+
+  	<p id="headerGroup" class="property"><strong>headerGroup</strong></p>
+    <p>&lt;g&gt; element.</p>
+
+  	<p id="dummy" class="property"><strong>dummy</strong></p>
+    <p>&lt;rect&gt; element. Static top-left dummy box.</p>
+
+  	<p id="customMenus" class="property"><strong>customMenus</strong></p>
+    <p>If specified (using regular <a href="Menu.html">Menu</a> syntax) the custom menus are added after the default menus.</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+    <p>Number representing this <a href="#container">container</a>'s bounding box height.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+    <p>Number representing this <a href="#container">container</a>'s bounding box width.</p>
+
+  	<p id="columnSelectionFrame" class="property"><strong>columnSelectionFrame</strong></p>
+    <p>&lt;path&gt; element. Column highlighter frame. Its width and positions are updated to the selected column.</p>
+
+  	<p id="rowSelectionFrame" class="property"><strong>rowSelectionFrame</strong></p>
+    <p>&lt;path&gt; element. Row highlighter frame. Its width, height, and positions are updated to the selected row.</p>
+
+  	<p id="stringData" class="property"><strong>stringData</strong></p>
+    <p>Object. Return value of the <a href="references.html#getData">getData()</a> method of <a href="references.html#findDialog">pergola.findDialog</a>.</p>
+
+  	<p id="found" class="property"><strong>found</strong></p>
+    <p>Array. Defined on first use of this <a href="#search">search()</a> if any occurrences are found.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

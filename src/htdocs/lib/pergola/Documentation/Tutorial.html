@@ -1,0 +1,2854 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG library – Tutorial</title>
+<meta name="description" content="Pergola JavaScript SVG native library – Tutorial.">
+<link href="tutorial.css" type="text/css" rel="stylesheet"/>
+<script type="text/javascript" src="syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+<body>
+<img src="graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div id="doc">
+
+  <h1 id="title">Tutorial</h1>
+
+	<div class="contents">
+		<ol class="summary">
+			<li><a class="index" href="#introduction"><span>Introduction</span></a></li>
+			<li><a class="index" href="#configuration"><span>Configuration</span></a></li>
+			<li><a class="index" href="#constructors"><span>Instantiation, Objects And Properties</span></a></li>
+			<li><a class="index" href="#classes"><span>Classes</span></a></li>
+			<li><a class="index" href="#SVGDomHelper"><span>DOM Helper</span></a>
+        <ol class="nested summary">
+    			<li><a class="index" href="#SVG"><span>SVG</span></a></li>
+    			<li><a class="index" href="#HTML"><span>HTML</span></a></li>
+  		  </ol></li>
+			<li><a class="index" href="#events"><span>User Events And Functions</span></a></li>
+			<li><a class="index" href="#Timer"><span>Timer Class</span></a></li>
+      <li><a class="index" href="#Undo"><span>Undo Class</span></a></li>
+      <li><a class="index" href="#Key"><span>Key Class</span></a></li>
+			<li><a class="index" href="#Libraries"><span>Libraries</span></a>
+			  <ol class="nested summary">
+    			<li><a class="index" href="#filters"><span>Filters</span></a></li>
+    			<li><a class="index" href="#patterns"><span>Patterns</span></a></li>
+          <li><a class="index" href="#markers"><span>Markers</span></a></li>
+    			<li><a class="index" href="#symbols"><span>Symbols</span></a></li>
+    			<li><a class="index" href="#shapes"><span>Shapes</span></a></li>
+    			<li><a class="index" href="#cursors"><span>Cursors</span></a></li>
+    			<li><a class="index" href="#quicktips"><span>Quick Tips</span></a></li>
+    			<li><a class="index" href="#messages"><span>Messages</span></a></li>
+          <li><a class="index" href="#skins"><span>Skins</span></a></li>
+  		  </ol>
+      </li>
+      <li><a class="index" href="#HowTos"><span>How To’s</span></a>
+			  <ol class="nested summary">
+    			<li><a class="index" href="#newSkin"><span>Making A New Skin</span></a></li>
+          <li><a class="index" href="#Load"><span>Loading SVG Documents</span></a></li>
+          <li><a class="index" href="#tools"><span>Adding Window Tools</span></a></li>
+          <li><a class="index" href="#createSystemMenu"><span>Creating A System Menu</span></a></li>
+          <li><a class="index" href="#contextMenu"><span>Custom Context Menu</span></a></li>
+          <li><a class="index" href="#find"><span>The Find Dialog</span></a></li>
+          <li><a class="index" href="#file"><span>The File Dialog</span></a></li>
+          <li><a class="index" href="#logoIcon"><span>Adding A Logo Icon</span></a></li>
+          <li><a class="index" href="#maps"><span>Maps</span></a></li>
+          <li><a class="index" href="#datagrid"><span>DataGrid</span></a></li>
+    			<li><a class="index" href="#debugger"><span>Using The Debugger</span></a></li>
+  		  </ol>
+      </li>
+			<li><a class="index" href="#issues"><span>Known Issues</span></a></li>
+		</ol>
+	</div>
+
+
+
+	<div class="chapter">
+
+		<h2 id="introduction" class="header">INTRODUCTION</h2>
+
+		<h4>Description</h4>
+
+		<p>Pergola is a JavaScript SVG native framework for building web applications, user interfaces, mapping applications, presentations, and web sites. Its Object Oriented Development model is designed to be used internally by its classes, and by the developer, in a consistent manner throughout all the development phases.</p>
+
+    <p>Core components and features:
+			<ul class="dot">
+				<li>A comprehensive collection of SVG controls, widgets and services</li>
+				<li>Libraries of SVG objects (filters, patterns, markers, shapes, symbols, cursors)</li>
+				<li>User events and functions implemented in all the low level component classes</li>
+				<li>System logic and hierarchy</li>
+				<li>Utility functions (geometry (+ trigonometry), color, DOM creation and manipulation, class operations, loading external resources, miscellaneous)</li>
+				<li>Skin engine</li>
+        <li>Undo</li>
+        <li>Timer</li>
+        <li>Keyboard</li>
+			</ul>
+		</p>
+
+		<h4>Architecture</h4>
+
+		<p>The architectural scheme of Pergola is based on class inheritance and  prototype extensions of the subclasses, and it's built around the placeholder object <code>pergola</code>, establishing a namespace, a superclass and subclasses. Classes are bound to the <code>pergola</code> namespace, and most of them inherit from the <code>Class</code> superclass, which defines prototype methods and common properties. Each class extends its prototype with specific properties and methods.</p>
+
+		<p>Several services and system components use lazy loading. Therefore, a small application that doesn't use them will not have to carry the overhead weight of the system. You will also see that hevy-duty applications do not suffer from the overhead weight of the system, and that their performance and usability is comparable or slightly inferior to desktop applications, or even superior in some cases.</p>
+
+		<p>Pergola does not define any pseudo-language or proprietary representation of the DOM and its methods. Instead it exposes the SVG library (the browser's implementation) directly thanks to its progressive <a href="#SVGDomHelper">DOM Helper</a> which is at the core of all the building blocks of the classes as well as the user's objects.</p>
+
+		<p>Pergola also implements a feature for some of its classes that allows the user to define, very simply in the call to the constructors, any SVG attributes as instance properties, using SVG vocabulary and grammar. This mechanism also has the advantage of producing SVG elements which are clear of all those attributes that have initial values, as per the specification, resulting in an optimized SVG DOM output as it would be if written manually by a competent SVG coder.</p>
+
+		<p>Pergola runs equally well in a standalone SVG context or in HTML and is fully compatible with all the major SVG implementations: Firefox, Opera, IE (Trident), Safari, Chrome, ASV (definitively dropped since version 1.3.8).</p>
+
+	</div>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *************************************		CONFIGURATION		*************************************** -->
+
+	<div class="chapter">
+
+		<h2 id="configuration" class="header">CONFIGURATION</h2>
+
+		<p>A configuration file is bound to each project where a few environment variables are set. A config.js template can be found in the root folder of the package. Each example demo is treated as a different project and each has its own config.js file at the root level in the example's folder. Note: after the initialization of Pergola these variables are no longer used and can be reassigned.</p>
+
+		<p>The variables in the config.js file: </p>
+
+		<p id="configcontainer" class="property"><strong>container</strong></p>
+    <p>Its value is 0 for standalone SVG context, or ID (string) of the HTML element hosting Pergola, for example container="mySVG".</p>
+
+		<p>If an HTML container is specified, it is referenced by the <a href="files/references.html#container">pergola.container</a> property; Pergola then creates the main &lt;svg&gt; element, referenced by the <a href="files/references.html#pdoc">pergola.doc</a> property, and appends it to <a href="files/references.html#container">pergola.container</a>.</p>
+
+		<p>If an HTML container is not specified <a href="files/references.html#pdoc">pergola.doc</a> references <code>document.documentElement</code>, the original SVG document where Pergola is loaded. Note that in this context <a href="files/references.html#container">pergola.container</a> is undefined.</p>
+
+		<p id="configsvgWidth" class="property"><strong>svgWidth</strong></p>
+    <p>Leave commented for standalone SVG context. When running Pergola in a HTML-SVG context it must be set to the appropriate value if svg goes in an iframe or div with overflow: auto. Default is 100%.</p>
+
+		<p id="configsvgHeight" class="property"><strong>svgHeight</strong></p>
+    <p>Leave commented for standalone SVG context. When running Pergola in a HTML-SVG context it must be set to the appropriate value if svg goes in an iframe or div with overflow: auto. Default is 100%.</p>
+
+    <p id="configpath" class="property"><strong>path</strong></p>
+    <p>The path to the “pergola” folder relative to the arborescence of your project. For each of the demos this is set to "../../pergola/".</p>
+
+    <p id="configskin" class="property"><strong>skin</strong></p>
+    <p>Designates the <a href="#skins">skin</a> to be used by the project. Pergola currently has two skin definitions: <i>rubber</i> and <i>office</i>. They are properties of the <a href="files/skins.html">pergola.skins</a> object.</p>
+
+    <p id="configtheme" class="property"><strong>theme</strong></p>
+    <p>Specifies the base color for the current skin. You can use a color keyword, a <a href="files/color.html#customColorNames">custom color keyword</a> or specify a color in any legal format.</p>
+
+    <p id="configundos" class="property"><strong>undos</strong></p>
+    <p>The number of <a href="files/undo.html">undo</a> levels.</p>
+
+    <p id="systemMenu" class="property"><strong>systemMenu</strong></p>
+    <p>Determines whether pergola has a system menu on the <a href="files/references.html#taskbar">taskbar</a>; if true, a <a href="files/Menubar.html">Menubar</a> object is automatically created and assigned to the <code>pergola.menubar</code> property. Learn how to create a <a href="#createSystemMenu">system menu</a>.</p>
+
+    <p id="taskbarPosition" class="property"><strong>taskbarPosition</strong></p>
+    <p>A string specifying the system <a href="files/references.html#taskbar">taskbar</a> position. The allowed values are "top" and "bottom".</p>
+
+    <p id="taskbarLogo" class="property"><strong>taskbarLogo</strong></p>
+    <p>If set, it allows you to place a logo on the taskbar. Learn how to place a <a href="#logoIcon">logo icon</a> on the taskbar.</p>
+
+    <p id="configdecimals" class="property"><strong>decimals</strong></p>
+    <p>The number of <a href="files/constants.html#decimals">decimals</a>.</p>
+
+    <p id="configdebug" class="property"><strong>debug</strong></p>
+    <p>Specifies if the <a href="files/misc.html#debugger">pergola.debugger</a> has to be used. Values: false, true, or <i>number</i> of lines (default is 20). It should be set to false when releasing your project.</p>
+
+	</div>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ******************************		INSTANTIATION, OBJECTS AND PROPERTIES		******************************* -->
+
+	<div class="chapter">
+
+		<h2 id="constructors" class="header">INSTANTIATION, OBJECTS AND PROPERTIES</h2>
+
+		<p>This chapter is an overview of Pergola's Object Oriented Development model.</p>
+
+		<p>All Pergola classes are in the <code>pergola</code> namespace, and are broadly divided in two categories, those (the majority) that build interface controls and other graphical objects, and those that provide services.</p>
+
+		<p>Classes from the second category are: <a href="files/timer.html">pergola.Timer</a>; <a href="files/key.html">pergola.Key</a> (keyboard input); <a href="files/undo.html">pergola.Undo</a> (undo/redo); <a class="classes" href="files/Layout.html">pergola.Layout</a>; <a href="files/RubberBox.html">pergola.RubberBox</a>; <a href="files/Dragarea.html">pergola.Dragarea</a>; <a href="files/ContextMenu.html">pergola.ContextMenu</a>.</p>
+
+  	<p>All constructors have a prototype method named <code>build</code> (except for <a href="undo.html">pergola.Undo</a> and <a href="key.html">pergola.Key</a>, whose initializer methods are named <code>register</code>, and <a href="timer.html">pergola.Timer</a>, where it is named <code>initialize</code>), allowing both method chaining and deferred construction. The latter allows predefining objects and their component objects, keeping a clean structure that gives at a glance control, and allows dynamic or conditional construction, together with the capability of self-referencing and of accessing the inherited properties and methods. Instantiation is therefore dissociated from the actual construction.</p>
+
+		<p class="first">For a case study let's use the examples in the Examples/Buttons/ folder.</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myButton = new pergola.Button();
+...
+myButton.build();
+]]></script>
+		</div>
+
+    or
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myButton = new pergola.Button().build();
+]]></script>
+		</div>
+
+		<figure>
+		  <img src="graphics/basicButton.png" alt="button" width="31" height="31">
+		  <figcaption>Fig. 1 – Basic button.</figcaption>
+		</figure>
+
+		<p>The constructor, or more precisely the superclass <a href="files/Class.html#Class">constructor</a>, expects one optional string argument that is assigned to the <code>name</code> property, useful for visible names and for debugging, and from which an XML ID is derived and assigned to the <code>id</code> property. If no name is passed, a unique XML name is generated:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myButton = new pergola.Button("My Button");
+]]></script>
+		</div>
+
+		<p id="initializationObject" class="first">The <code>build()</code> method expects an object literal parameter, referred to throughout the Tutorial as <strong>initialization object</strong>, where you can specify instance properties and methods, as well as prototype properties and methods to override. For most of the constructors the argument is not required (if you skip it the instance will have the default appearance and behavior, as defined in the prototype). In those cases where the initialization object is required you will be notified in its absence.</p>
+
+
+		<a id="protoInstProps"></a><h4>Properties</h4>
+		<p>Classes designed to produce interface controls and other graphical constructions extend their prototype with properties that define the default rendering. It's important to know that Pergola uses <strong>SVG vocabulary</strong> for naming these properties.</p>
+
+		<p>Those property names are then very simply SVG attribute names. Pergola only uses pseudo-attribute names whenever a property name is already taken, as is sometimes the case with compound objects.</p>
+
+		<p>To clarify this let's take an example:</p>
+
+		<p>The <a href="files/Button.html">pergola.Button</a> class produces a compound object made of two elements of the same type (a &lt;rect&gt; by default), the <a href="files/Button.html#mask">mask</a> and the <a href="files/Button.html#button">button</a>. These two instance properties are assigned in the <code>build()</code> method, and are references to their respective primitive elements in the DOM. The <a href="files/Button.html#fill">fill</a> property applies for <a href="files/Button.html#button">button</a>, and the <a href="files/Button.html#maskFill">maskFill</a> property applies for <a href="files/Button.html#mask">mask</a>.</p>
+
+		<p>Note that for those SVG attributes which contain a "-" (minus sign), or any other character that is illegal for JavaScript variable/property names, we use the string syntax:</p>
+
+<pre>  myButton.stroke</pre>
+<pre>  myButton["fill-opacity"]</pre>
+
+		<p>All the relevant elements constituting the concrete object are referenced. This allows you to manipulate them without having to use the getElementById() method, or other selection methods. Example:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myButton.container.setAttributeNS(...);
+]]></script>
+		</div>
+
+    <p>The <code>container</code> property is common to all classes that produce visuals; it references the object's outmost container, typically a &lt;g&gt; element, or an &lt;svg&gt; element in some cases.</p>
+
+		<p>Back to our button example, let's take a look at the <a href="#initializationObject">initialization object</a> for the <code>build()</code> method. We have seen that, reduced to its simplest expression, the call can be:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myButton = new pergola.Button().build();
+]]></script>
+		</div>
+
+		<p>The button will have its default appearance and behavior and will be appended to the <a href="files/references.html#user">user</a> layer at position 0,0 (initial values for <a href="files/Class.html#x">x</a> and <a href="files/Class.html#y">y</a> properties inherited from the <a href="files/Class.html">pergola.Class</a> superclass).</p>
+
+		<p>Not terribly exciting. Let's consider a more interesting case, the first button in the demo:</p>
+
+  	<div class="codebox">
+  <script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 11;"><![CDATA[
+var basicButton = new pergola.Button("Basic Button");
+basicButton.build({
+  parent : g,
+  quickTip : "this is the basic, default button",
+  ev : "mouseup",
+  target : legend.tip1,
+  fn : legend.hilight
+});
+  ]]></script>
+  	</div>
+
+		<p>and let's review the properties:</p>
+
+		<p><strong>parent</strong> : by specifying this property it means that you are overriding the default <a href="files/Class.html#parent">parent</a> node, as defined by the <a href="files/Class.html#prototype">superclass prototype</a>. The node must already exist in the DOM tree, or can be created inline. In the buttons demo a &lt;g&gt; element is first created and all the buttons are appended to it:</p>
+
+  	<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 7;"><![CDATA[
+var g = $C({
+  element : "g",
+  transform : "translate(140 100)",
+  appendTo : pergola.user
+});
+]]></script>
+  	</div>
+
+ 		<p><strong>quickTip</strong> : this property can get three different formats, a string, an array or a reference to an existing quick tip object. See the <a class="classes" href="files/QuickTip.html">pergola.QuickTip</a> class and the <a href="#quicktips">Quick Tips library</a> chapter for options.</p>
+
+		<p id="ev"><strong>ev</strong> : one (string) or more (array of strings) event types. The specified event(s) will be registered independently of those registered by default. Remember that as per the JavaScript specification the order in which events of the same type are handled is not guaranteed and is implementation dependent, meaning that if you register a mouseover event, it may be processed before or after the one registered by default. Learn more in the <a href="#events">User Events and Functions</a> section.</p>
+
+		<p><strong>fn</strong> : the callback function associated with the user events <code>ev</code>, or invoked on an appropriate event registered by default if <a href="#ev">ev</a> is not specified. Learn more in the <a href="#events">User Events and Functions</a> section.</p>
+
+		<p>target : example of user defined instance property. You can define any number of arbitrary instance properties. These properties are not processed by the class's <a href="classes.html#handleEvent">handleEvent()</a> method. In the buttons example this property is processed in the <code>fn</code> user function to highlight items in the legend.</p>
+
+		<p class="first">Let's now take a look at the second example, where we can see some more properties:</p>
+
+  	<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 22;"><![CDATA[
+var button = new pergola.Button()
+.build({
+  parent : g,
+  x : 80,
+  extra : {
+    rx : 3,
+    transform : "rotate(-45)"
+  },
+  symbol : {
+    symbol : pergola.symbols.arrow.large.left,
+    x : 5,
+    y : 5
+  },
+  quickTip : {tip : "this button is rotated, \nbut its symbol is straight"},
+  ev : "mouseup",
+  target : legend.tip6,
+  fn : legend.hilight
+});
+]]></script>
+  	</div>
+
+		<figure>
+		  <img src="graphics/button.png" alt="button" width="38" height="38">
+		  <figcaption>Fig. 2 – Basic button rotated, with symbol (not rotated).</figcaption>
+		</figure>
+
+		<p id="extra"><strong>extra</strong> : Aha! An object where we can define any property using SVG vocabulary and grammar! The properties you specify in the <code>extra</code> object are not processed (actually, some are tested and processed for fine positioning of objects in order to achieve correct rendering), they are simply integrated with the default collection of properties defined in the prototype. The object passed to the <a href="#SVGDomHelper">DOM Helper</a> function contains the attributes specified in <code>extra</code>. This means that it is your responsibility to see that those attributes are coherent with the element. Think of the <code>extra</code> object as containing any extra SVG attributes that are not inherited properties of the instance. Note that not all classes are enabled to process the <code>extra</code> property. Where this feature is implemented, it's specified in the class's page of the API reference (<a href="files/classes.html">classes</a>). However, this technique that consists in specifying arbitrary attributes in the SVG vocabulary is widely used. For example, when instantiating classes that are designed to process the <code>text</code> object property, you can declare any number of  &lt;text&gt; element's attributes. This is also true for several other properties of type object, where you can define transformations, coordinates, paint attributes, etc. always using strictly SVG vocabulary. To enumerate all these possibilities would be tedious, experience through use being a better teacher in this case. The numerous examples clarify this concept. The <code>extra</code> property is destroyed after construction of the object and cannot be queried.</p>
+
+		<p id="symbol"><strong>symbol</strong> : full explanation of this object's properties in the chapter <a href="#symbols">SYMBOLS Library</a>.</p>
+
+		<p class="first">Looking further in the buttons examples we find:</p>
+
+  	<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 102;"><![CDATA[
+var button4 = new pergola.Button("Button 4")
+.build({
+  parent : g,
+  y : 100,
+  width : 88,
+  height : 28,
+  extra : {
+    rx : 3
+  },
+  hasTextEffect : false,
+  text : {
+    x : 44,
+    y : 36,
+    textNode : "TALK",
+    fill : "none",
+    stroke : "#FFFFFF",
+    'stroke-width' : 1.5,
+    'font-family' : "'Arial Black', Arial",
+    'font-size' : 22,
+    'font-weight' : "bold",
+    transform : "scale(1 .5)",
+    'text-anchor' : "middle",
+    'letter-spacing' : 2,
+    kerning : 0,
+    'pointer-events' : "none"
+  },
+  quickTip : {tip : [
+    "you can place text and symbols together",
+    "in a button. I don't have a symbol, but",
+    "just to let you know..."
+  ]},
+  ev : "mouseup",
+  target : legend.item9,
+  fn : legend.hilight
+});
+]]></script>
+  	</div>
+
+		<p>This button overrides the properties <a href="files/Class.html#parent"><strong>parent</strong></a>, <a href="files/Class.html#y"><strong>y</strong></a>, <a href="files/Button.html#width"><strong>width</strong></a> and <a href="files/Button.html#height"><strong>height</strong></a>.</p>
+
+		<p><strong>hasTextEffect</strong> : determines whether the text has the video inverse animation effect.</p>
+
+		<p><strong>text</strong> : this property is an object where you can set any &lt;text&gt; attribute using SVG vocabulary, as we have already seen for the <a href="#extra">extra</a> property.</p>
+
+    <p>The <strong>textNode</strong> string property is treated in the <a href="#SVGDomHelper">DOM Helper</a> section.</p>
+
+		<p>Note: the <code>text</code> property is reassigned to reference the produced &lt;text&gt; element, which can be manipulated. For example a button could say &#x201C;TALK&#x201D; in its first state and say &#x201C;SILENCE&#x201D; once clicked:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myButton.text.firstChild.data = "SILENCE";
+]]></script>
+ 		</div>
+
+		<p>but also by invoking the <a href="files/Class.html">superclass</a> prototype method <a href="files/Class.html#textDataUpdate">textDataUpdate()</a>:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myButton.textDataUpdate("SILENCE");
+]]></script>
+ 		</div>
+
+		<p class="first">The monaLisa button example shows how to embed an image:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 210;"><![CDATA[
+var monaLisa = new pergola.Button("Mona Lisa");
+monaLisa.build({
+  parent : g,
+  x : 440,
+  y : 92,
+  width : 59,
+  height : 46,
+  fill : "#F8F2DF",
+  maskFill : "#F8F2DF",
+  stroke : "#F8F2DF",
+  image : {
+    "xlink:href" : pergola.path + "lib/symbols/MonaLisa.jpg",
+    width : 53,
+    height : 40,
+    x : 3,
+    y : 3
+  },
+  extra : {
+    "stroke-width" : 4,
+    "stroke-dasharray" : "3,3",
+    "stroke-dashoffset" : 0
+  },
+  symbol : {
+    symbol : pergola.path + "lib/symbols/MonaLisa_negative.jpg",
+    width : 53,
+    height : 40,
+    x : 3,
+    y : 3,
+    opacity : .8
+  },
+  quickTip : {tip : "Thanks."},
+  ev : "mouseup",
+  target : legend.item10,
+  fn : legend.hilight
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/monalisa.png" alt="button" width="73" height="60">
+		  <figcaption>Fig. 3 – monaLisa button.</figcaption>
+		</figure>
+
+		<p><strong>symbol</strong> : the <code>symbol</code> property of this object can also get an image, in which case the <code>width</code>, and <code>height</code> properties are required. If the x and y properties are not specified the symbol is automatically centered. Note however that this is okay only if the symbol's artwork bounding box origin is at at 0,0–or at least close to that– which is the case for most <a href="files/symbols.html">pergola.symbols</a> (and always the case for images). The symbol is laid over the element referenced by the button's <a href="files/Button.html#mask">mask</a> property (fig. 3 above). Learn more in the <a href="#symbols">SYMBOLS Library</a> chapter.</p>
+
+		<figure>
+		  <img src="graphics/monalisa-hover.png" alt="button" width="84" height="80">
+		  <figcaption>Fig. 4 – monaLisa button hovered.</figcaption>
+		</figure>
+
+		<p><strong>image</strong> : this object property is similar to the <a href="#symbol">symbol</a> property, and they can be used together. The image is laid over the element referenced by the button's <a href="files/Button.html#button">button</a> property (fig. 4 above). For the <code>image</code> object the <code>"xlink:href"</code>, <code>width</code>, and <code>height</code> properties are required.</p>
+
+
+		<h4>Where Do I Find The Initial Values For The Default Set Of Properties?</h4>
+		<p>The properties are defined in the prototype extension of each class. But that is not where their values are actually defined! Instead they are simply references to properties set in the skin. This allows you to edit them, if you need, without having to hack the classes.</p>
+
+		<p>Before anything, you should read carefully the first section of the <a href="#skins">SKINS</a> chapter. The skin is a function that defines the <a href="references/misc.html#presentationAttributes">presentationAttributes</a> object. This object fills a role similar to that of CSS. Each of its properties is an object which refers to a particular class by a close name association, for example the <code>button</code> property of this object correlates with the Button class, as simple as that. The function also defines all gradients and patterns.</p>
+
+		<p>The properties of these objects are mainly paint and geometrical attributes, but not only. A typical example to check out is the <code>slider</code> object: it has a <code>showValue</code> property set to false. If you want all of your sliders to show by default their value while operating, you will then set this property to true (since we are talking sliders, note that scrollbar sliders are a different class from standalone sliders; the former is a system component and the latter is a user control).</p>
+
+		<p>Adding a property will not have any effect. Removing a property will most certainly result in a runtime error.</p>
+
+		<p>The best way to proceed is of course the one suggested in the <a href="#skins">SKINS</a> and <a href="#newSkin">MAKING A NEW SKIN</a> chapters. This shows a huge advantage over a classic CSS file, you can have more than one set of definitions in the same file! Your different projects can then point to the same skin file and for each project you will then set the name of the desired skin in the config file that is bound to it. Another advantage is that the properties take expressions, of course.</p>
+
+	</div>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ******************************************   CLASSES   ***************************************** -->
+
+	<div class="chapter">
+
+		<h2 id="classes" class="header">CLASSES</h2>
+
+		<p>As we have seen in the <a href="#introduction">Introduction</a>, the architectural scheme of Pergola is composed of a placeholder object named <i>pergola</i>, a superclass named <i>Class</i>, and subclasses, all in the <i>pergola</i> namespace.</p>
+
+		<p>The <code>pergola</code> object defines <a href="files/constants.html">constants</a>, <a href="files/references.html">references</a> to system components, <a href="files/lib.html">libraries</a>, a collection of <a href="files/geom.html">geometry</a> functions, a collection of <a href="files/color.html">color</a> functions, the <a href="files/dom.html">DOM</a> functions, <a href="files/classOps.html">class operations</a> functions, <a href="files/nodeManip.html">node manipulation</a> functions, <a href="files/requests.html">loading external resources</a> functions, the <a href="files/undo.html">Undo</a> class, the <a href="files/timer.html">Timer</a> class, the <a href="files/key.html">Key</a> class, <a href="files/misc.html">miscellaneous</a> functions, the <a href="files/Class.html">Class</a> superclass, the <a href="files/classes.html">classes</a>, and builds the layers structure in the DOM tree. The overhead weight of the system built by Pergola is light, thanks also to lazy loading applied to some components, and a well written application will be fast and reactive.</p>
+
+		<p>The <a href="files/Class.html">Class</a> superclass is the class from which most <a href="files/classes.html">classes</a> inherit. Common prototype methods that are used, or likely to be used, by more than one class are defined in the <a href="files/Class.html#prototype">pergola.Class.prototype</a>, where are also defined properties with initial values for some common attributes (<a href="files/Class.html#x">x</a>, <a href="files/Class.html#y">y</a>, <a href="files/Class.html#font-family">"font-family"</a>, <a href="files/Class.html#font-size">"font-size"</a>, and <a href="files/Class.html#stroke">stroke</a>), as well as the default <a href="files/Class.html#parent">parent</a> node.</p>
+
+		<p>The <a href="files/classes.html">classes</a> are specialized constructors and each define their own prototype extensions, besides the inherited prototype. Prototype inheritance is true JavaScript prototype inheritance model, with no referencing or duplication (simple or recursive) or other alien technique.</p>
+
+		<h4 id ="DOM-layers">Organization of the layers in the DOM tree:</h4>
+		<table class="ind" border="1" cellpadding="8" cellspacing="0">
+			<tr>
+				<th width="120" class="center">element</th>
+				<th width="220" class="center">id</th>
+				<th class="center">referenced by</th>
+			</tr>
+			<tr>
+				<td>&lt;g&gt;</td>
+				<td><strong>"pergola_desktop"</strong></td>
+				<td><code>pergola.desktop</code></td>
+			</tr>
+			<tr>
+				<td style="padding-left:4ex;">&lt;g&gt;</td>
+				<td>"pergola_background"</td>
+				<td><code>pergola.background</code></td>
+			</tr>
+			<tr>
+				<td style="padding-left:4ex;">&lt;g&gt;</td>
+				<td><strong>"pergola_userLayer"</strong></td>
+				<td><code>pergola.user</code></td>
+			</tr>
+			<tr>
+				<td style="padding-left:4ex;">&lt;g&gt;</td>
+				<td><strong>"pergola_systemComponents"</strong></td>
+				<td><code>pergola.systemComponents</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:8ex;">&lt;g&gt;</td>
+				<td>"pergola_preemptive"</td>
+				<td><code>pergola.preemptive</code></td>
+			</tr>
+			<tr>
+				<td style="padding-left:8ex;">&lt;g&gt;</td>
+				<td>"pergola_notification"</td>
+				<td><code>pergola.notification</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:8ex;">&lt;g&gt;</td>
+				<td>"pergola_quicktips"</td>
+				<td><code>pergola.quicktips</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:8ex;">&lt;g&gt;</td>
+				<td>"pergola_rubberBox"</td>
+				<td><code>pergola.rubberBox</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:12ex;">&lt;text&gt;</td>
+				<td>"pergola_coordinates"</td>
+				<td><code>pergola.coordinates</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:12ex;">&lt;rect&gt;</td>
+				<td>"pergola_dragarea"</td>
+				<td><code>pergola.dragarea</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:12ex;">&lt;g&gt;</td>
+				<td>"pergola_taskbar"</td>
+				<td><code>pergola.taskbar</code></td>
+			</tr>
+      <tr>
+				<td style="padding-left:12ex;">&lt;g&gt;</td>
+				<td>"pergola_tabsDock"</td>
+				<td><code>pergola.tabsDock</code></td>
+			</tr>
+			<tr>
+				<td style="padding-left:12ex;">&lt;g&gt;</td>
+				<td>"pergola_contextMenus"</td>
+				<td><code>pergola.contextMenus</code></td>
+			</tr>
+		</table>
+
+
+		<p class="first">Before ending this chapter, there is one special instance property introduced by Pergola that mimics the role of the DOM's <code>parentNode</code> property:</p>
+
+		<p id="owner"><strong>owner</strong> : a reference to an existing object (including <code>window</code>), but typically the object that required this instance as a component. For those classes where it is required you get an alert if it's missing. This property allows upstream identification of objects with a higher hierarchical rank, in a manner similar to the DOM's <code>parentNode</code> property, without having to use expensive JavaScript object scan methods, and has a manifold usage, including that of providing access to the owner object's geometrical and other relevant properties during the construction phase of an instance, for example, or that of facilitating dynamic interactivity; we may not know, programmatically speaking, the owner object of some object, but the object does:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myObject.owner.name
+myObject.owner.x
+myObject.owner.owner.constructor
+]]></script>
+ 		</div>
+
+		<p>The <code>owner</code> property always designates an object, not a class or superclass. To get information about those we can query these properties:</p>
+
+		<ul class="none">
+			<li><i>class</i>.prototype.<b>constructor</b> : the class</li>
+			<li><i>class</i>.<b>baseConstructor</b> : the superclass</li>
+			<li><i>class</i>.<b>superClass</b> : the superclass prototype</li>
+		</ul>
+
+		<p class="first">See the list of <a href="files/classes.html">classes</a> in the API Reference.</p>
+
+	</div>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		DOM HELPER		************************************* -->
+
+	<div class="chapter">
+
+		<h2 id="SVGDomHelper" class="header">DOM HELPER</h2>
+
+    <h3 id="SVG">SVG DOM Node Builder</h3>
+
+    <p>As we've seen in the introduction, Pergola does not define proprietary classes for SVG elements. Instead it uses the SVG library represented by the implementation itself. The <a href="files/dom.html#SVG">pergola.SVG()</a> function interfaces the implementation's SVG library.</p>
+
+		<p>The function returns the element. If you reference the call:
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+  var myElement = $C(object);
+]]></script>
+ 		</div>
+
+		<p><code>myElement</code> is then a reference to the newly created element.</p>
+
+		<p>Just like the Pergola constructors do, you will be likely to use the DOM node builder extensively for any SVG elements you may need to create. The DOM node builder is extremely intuitive and easy to use in that you don't need to learn an intermediate proprietary representation such as a special syntax or pseudo-language. You simply pass one object where you define any properties corresponding to SVG attributes that you need to set, using SVG vocabulary and grammar. The rationale of this concept is explained in the  SVG magazine <a href="http://www.svgmagazine.com/jul2011/dom-helper.html">DOM Helper</a> article.</p>
+
+		<p class="first"><i>object</i> defines:</p>
+		<ul class="none">
+			<li>element : the element's "<i>name</i>"</li>
+      <li><i>attributeName</i> : <i>attribute value</i></li>
+      <li>"<i>attribute-Name</i>" : <i>attribute value</i></li>
+			<li>appendTo : Node designating the parent node</li>
+			<li>textNode : String. Use with text element</li>
+		</ul>
+
+    <p>The <code>element</code> string property is required and must be the first property specified. The <code>textNode</code> string property is optional and can be set for text and tspan elements. The <code>appendTo</code> node property is optional; appending can be deferred using the appropriate DOM methods.</p>
+
+    <p>All other property names will correspond strictly to the element's attributes, and attribute names containing illegal characters for JavaScript variable names must use the string notation, for example "font-family", or "xlink:href". The <i>style</i> and <i>class</i> attributes can also be set. To call this function you can use the shortcut $C.</p>
+
+
+
+	<h4>Examples</h4>
+
+		<p class="first">A group:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+$C({
+  element : "g",
+  id : "myGroup"
+  transform : "translate(100 100)",
+  appendTo : pergola.user
+});
+]]></script>
+ 		</div>
+
+
+
+		<p class="first">A rectangle:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+$C({
+  element : "rect",
+  width : ...,
+  height : ...,
+  fill : ...,
+  stroke : ...,
+  'stroke-width' : ...,
+  'fill-opacity' : ...,
+  appendTo : Node
+});
+]]></script>
+ 		</div>
+
+
+
+		<p>Note: Pergola does not carry out any checks for inconsistencies between the element and the attributes you are assigning, or between the attributes and their values. That is left to your responsibility, just like if you were coding SVG.</p>
+
+
+		<p class="first">An image:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+$C({
+  element : "image",
+  width : ...,
+  height : ...,
+  "xlink:href" : URL,
+  preserveAspectRatio : ...,
+  appendTo : Node
+});
+]]></script>
+ 		</div>
+
+
+		<p class="first">When building elements that have descendants you create the element first and then its descendants. Example of a gradient as defined in the skin.js file:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 345;"><![CDATA[
+var gradient = $C({
+  element : "radialGradient",
+  id : "radioButtonGrad",
+  cx : "65%",
+  cy : "65%",
+  r : "100%",
+  fx : "65%",
+  fy : "65%",
+  gradientUnits : "objectBoundingBox",
+  appendTo : pergola.defs
+});
+$C({
+  element : "stop",
+  offset : "0%",
+  "stop-color" : "#F0F0F0",
+  appendTo : gradient
+});
+$C({
+  element : "stop",
+  offset : "100%",
+  "stop-color" : "#A8B0B8",
+  appendTo : gradient
+});
+]]></script>
+ 		</div>
+
+
+		<p class="first">We have seen that the &lt;text&gt; element can have the specific <code>textNode</code> property that takes a string. A text node will be automatically created and appended to the &lt;text&gt; element. A contextual example:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+this.text = $C({
+  element : 'text',
+  x : width / 2 - 1,
+  y : textPos,
+  'font-size' : this['font-size'],
+  fill : this.textFill,
+  'text-anchor' : 'middle',
+  'pointer-events' : 'none',
+  textNode : this.title,
+  appendTo : this.group
+});
+]]></script>
+ 		</div>
+
+
+		<p class="first">That's that and there's nothing more to it.</p>
+
+		<p>The DOM node builder is Open Source. A portable version can be downloaded <a href="http://www.dotuscomus.com/svg/lib/tinytools/DOM_Helper.html">here</a>.</p>
+
+
+<!-- *************************************		HTML NODE BUILDER		************************************* -->
+
+		<h3 id="HTML">HTML Node Builder</h3>
+
+    <p>The SVG node builder has two variants:</p>
+		<ul class="none">
+      <li>pergola.HTML()</code> (shortcut <code>$H</code>) for building HTML elements</li>
+  		<li>pergola.HTML_FO()</code> for building HTML elements as &lt;foreignObject&gt;</li>
+    </ul>
+
+		<p>Example code from the <a href="../ExamplesHTML/Panel/panelWithTabs.html">panelWithTabs.html</a> showing the use of pergola.HTML_FO():</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 60;"><![CDATA[
+var
+  switchTag = $C({
+    element : "switch",
+    appendTo : this.pane.container
+  }),
+  fObj = $C({
+    element : "foreignObject",
+    x : 9,
+    width : this.pane.width,
+    height : this.pane.height,
+    appendTo : switchTag
+  }),
+  body = pergola.HTML_FO({
+    element : "body",
+    xmlns : pergola.ns.xhtml,
+    appendTo : fObj
+  }),
+  table = pergola.HTML_FO({
+    element : "table",
+    border : 1,
+    cellpadding : 2,
+    cellspacing : 2,
+    style : "width: 100%; background-color: #F8F8F8;",
+    appendTo : body
+  });
+
+for (var i = 0; i < 3; i++) {
+  var tr = pergola.HTML_FO({
+    element : "tr",
+    appendTo : table
+  });
+
+  for (var j = 0; j < 3; j++) {
+    var td = pergola.HTML_FO({
+      element : "td",
+      style:"height:"+parseInt((this.pane.height-40)/3)+"px;text-align:center;",
+      appendTo : tr
+    });
+
+    pergola.HTML_FO({
+      element : "p",
+      style : "font-size: 16pt; font-weight: bold; color: #F0F0F0;",
+      textNode : ("CELL " + (i * 3 + j)),
+      appendTo : td
+    });
+  }
+}
+$C({
+  element : "text",
+  x : this.pane.width / 2,
+  y : 80,
+  "font-size" : 16,
+  "text-anchor" : "middle",
+  textNode : "<foreignObject> is not implemented in Internet Explorer Trident",
+  appendTo : switchTag
+});
+]]></script>
+ 		</div>
+
+		<p>The &lt;foreignObject&gt; element was not implemented in ASV, and is not implemented in IE Trident.</p>
+
+		<p>Note that contrary to the <a href="#SVG">pergola.SVG()</a> node builder, where you can use the <code>textNode</code> property only when creating &lt;text&gt; or &lt;tspan&gt; elements, with the pergola.HTML() and pergola.HTML_FO() node builders you can set it for all elements that have a text node, &lt;body&gt;, &lt;div&gt;, &lt;p&gt;, &lt;span&gt;, etc.</p>
+
+	</div>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ***************************		USER EVENTS AND FUNCTIONS		***************************** -->
+
+	<div class="chapter">
+
+		<h2 id="events" class="header">USER EVENTS AND FUNCTIONS</h2>
+
+		<h4>Defining User Events And Callback Functions For Your Objects</h4>
+		<p>Most Pergola objects have built-in event listeners and handlers that ensure systemic functioning, interactivity between objects (where that applies), and effects. Naturally Pergola allows you to set event listeners and associated handlers for all low level component objects. As you probably know well by now, the parameter passed to the classes' build() methods is an <a href="files/classes.html#initializationObject">initialization object</a>. The properties of this object become then instance properties of the new object.</p>
+
+		<h4>How Do I Set The User Function Property?</h4>
+		<p>In the <a href="files/classes.html#initializationObject">initialization object</a> you define the <code>ev</code> and <code>fn</code> properties. If <code>ev</code> is specified, <code>fn</code> must be specified. If <code>ev</code> is not specified and <code>fn</code> is specified, <code>fn</code> will be invoked on appropriate built-in event type.</p>
+
+		<p><code>ev</code> : event type string or array of event type strings.</p>
+		<p><code>fn</code> : its value can be one of several types:
+			<ol class="upperAlpha">
+				<li>prototype or instance method</li>
+				<li>class method</li>
+				<li>top level function</li>
+				<li>function literal</li>
+			</ol>
+		</p>
+		<p class="first">
+			<table border="1" cellpadding="8" cellspacing="0">
+				<tr><th>cases</th><th>value</th><th>example</th></tr>
+				<tr><td>A</td><td>String</td><td>"myFunction"</td></tr>
+				<tr><td>B</td><td>reference to class method</td><td>myClass.myFunction</td></tr>
+				<tr><td>C</td><td>reference to function</td><td>myFunction</td></tr>
+				<tr><td>D</td><td>function literal</td><td>function() {...} or<br>function(evt) {myFunction(evt[, <i>params</i>])}</td></tr>
+			</table>
+		</p>
+
+		<p class="first">All the event types defined for an object are registered with the same callback function.</p>
+
+		<h4>How Do I Decide What Is Best?</h4>
+		<p>While experienced developers will know what fits best their needs depending on the situations, what is important to know is that in all cases the <code>this</code> keyword refers to the object. In all cases the body of the function can be strictly the same. You will generally find instance methods appropriate. It is unlikely that you will need to define a class method, considering that if it relies on the <code>this</code> keyword it will produce unexpected results if invoked directly by other objects unless you use the call() method of the Function class, example: <code>myClass.myFunction.call()</code>.</p>
+		<p>Note that using the string to designate the function name allows to reference a method that has not yet been defined, which can prove extremely useful for the interactivity with external documents, while the hard-coded name implies that the method must have already been defined. However, an undefined method name can always be used like this:</p>
+			<code>fn : function() {return this.myMethod()}</code>
+
+		<h4>Can I Define Events And Functions For Any Object?</h4>
+		<p>Pergola allows to define user events only for objects where it makes sense. In all other cases the user event is ignored. Defining callback functions is more frequent. Each class page in <a href="files/classes.html">classes</a> specifies whether the <code>ev</code> and/or the <code>fn</code> properties can be set.</p>
+
+
+	</div>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		TIMER		******************************************* -->
+
+  <div class="chapter">
+
+		<h2 id="Timer" class="header">TIMER CLASS</h2>
+
+		<p>The <a href="files/timer.html">pergola.Timer</a> class API is fully documented in the SVG Magazine <a href="http://www.svgmagazine.com/nov2011/js_timer.html" target="new">Timer Class</a> article. This class does not inherit from the pergola.Class superclass.</p>
+
+		<p>To create a <a href="files/timer.html">pergola.Timer</a> instance you pass an object to its <a href="files/timer.html#initialize">initialize()</a> method, where the property <code>callback</code> is required, and at least one of the properties <code>delay</code> or <code>frequence</code> is required. Note that the structure of the Timer class allows instantiation with or without the <code>new</code> operator; it will not make any difference. The object can have any number of properties. All properties defined in the object are inherited by the Timer instance.</p>
+
+		<p>A Timer instance can use the <code>window.setTimeout()</code> and <code>window.setInterval()</code> methods independently or combined, depending on the presence of the properties <code>delay</code> and <code>frequence</code> in the call to the <code>initialize</code> method.</p>
+
+		<p>Instantiation:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myTimer = pergola.Timer()
+.initialize({
+  handle : Object,
+  callback : Function,
+  delay : 500,
+  frequence : 50,
+  destroy : "myTimer"
+});
+]]></script>
+ 		</div>
+
+		<p>The <code>callback</code> function property is required. The timer instance is passed as parameter to the callback function.</p>
+
+    <p>If the <code>handle</code> object property is specified the callback function is invoked as a method of <code>handle</code>. You can assign any object to this property, not necessarily that through which you are instantiating the Timer. If the <code>handle</code> is not specified the callback function is invoked as a method of the timer instance, the <code>this</code> value and the variable name designating the parameter (timer instance) in the callback function, are then synonyms.</p>
+
+		<p><code>delay</code> / <code>frequence</code> cases:
+      <ol class="lowerAlpha">
+        <li><code>delay</code> only is specified: setTimeout() is used.</li>
+        <li><code>delay</code> and <code>frequence</code> are specified: setTimeout() and setInterval() are used.</li>
+        <li><code>frequence</code> only is specified: setInterval() is used.</li>
+      </ol>
+    </p>
+
+		<p>If the <code>destroy</code> string is specified, it designates the variable or property to which you are assigning the Timer instance. In this case only, the instance will be destroyed upon termination of the timed process.</p>
+
+		<p>A Timer instance is cleared by invoking its <a href="files/timer.html#clear">clear()</a> method:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myTimer.clear();
+]]></script>
+ 		</div>
+
+		<p>This does not destroy the Timer instance, which you can then reuse by invoking the <a href="files/timer.html#initialize">pergola.Timer.initialize()</a> method with no parameter object for relaunching an animation or a timed process with the same properties. Or you can override any property, including the callback function. The SVG Magazine <a href="http://www.svgmagazine.com/nov2011/js_timer.html" target="new">Timer Class</a> article shows several examples of instantiation, callback functions and recycling, explained in detail.</p>
+
+	</div>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		UNDO		******************************************* -->
+
+  <div class="chapter">
+
+		<h2 id="Undo" class="header">UNDO CLASS</h2>
+
+		<p>The <a href="files/undo.html">pergola.Undo</a> class does not inherit from the pergola.Class superclass.</p>
+
+		<p>To use the undo/redo feature an object must first define a pergola.Undo instance and register it, for example:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myObject.undoManager = new pergola.Undo().register();
+]]></script>
+ 		</div>
+
+    <p>The <code>undoManager</code> property name is arbitrary, note however that a <a href="files/Window.html">pergola.Window</a> object implements the undo/redo feature if its <a href="files/Window.html#hasUndo">hasUndo</a> property is true (the initial value in the prototype is false), and assigns the <a href="files/Window.html#undoManager">undoManager</a> instance property. You may want to be consistent with this.</p>
+
+    <p>To disable the feature temporarily you invoke the <a href="files/undo.html#disable">disable()</a> method:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myObject.undoManager.disable();
+]]></script>
+ 		</div>
+
+    <p>You can then reactivate it by invoking the <a href="files/undo.html#register">register()</a> method.</p>
+
+    <p>Undo is particularly needed in vector editing applications. Suppose you have defined a Line class for drawing lines; at the end of a drawing action (for example on a mouseup event) the properties of the new Line object are set in the callback function, and the line is in the DOM. At that point a memento for the action that just took place must be added to the Undo <a href="files/undo.html#buffer">buffer</a> by invoking the <a href="files/undo.html#add">add()</a> method. Example (contextual):</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+this.undoManager.add([
+  obj : this,
+  undo : this.remove,
+  redo : this.restore,
+  snappers : this.storeSnaps()
+]);
+]]></script>
+ 		</div>
+
+		<p>The <a href="files/undo.html#add">add()</a> method expects an array with one or more memento objects. For a single drawing action you would define only one array element; but if the action deletes a group of SVG elements (like a rubber tool, for example) you will define several array elements.</p>
+
+		<p>The object must define the <code>obj</code> reference, the <code>undo</code> and <code>redo</code> callback properties, and may define any other properties that you need to process in the callback functions. The <code>undo</code> and <code>redo</code> callbacks are invoked on keyboard events CTRL + Z or SHIFT + CTRL + Z, respectively.</p>
+
+		<p>The code above implies that myObject has <code>remove()</code> and <code>restore()</code> methods.</p>
+
+		<p>The actions to carry out in the callbacks range from the very simple to the quite complex. Rather than defining <code>remove()</code> and <code>restore()</code> methods as top level properties of an object, it can be wiser to define <code>undo</code> and <code>redo</code> object properties defining methods, for example:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+undo : {
+  remove : function () {
+    var o = this.obj;
+
+    if (o.tempFront) o.restack();
+    o.deleteArt();
+    o.owner.removeSurfaceOnSingleChange(o);
+    o.owner.updateSelection();
+  },
+  restore : function () {
+    this.obj.restoreArt();
+    this.obj.restoreSnaps(this.snappers);
+    this.obj.owner.updateSelection();
+  },
+  geometry : function () {
+    var o = this.obj,
+        a;
+
+    for (var i in o.anchors) {
+      a = o.anchors[i];
+      a.x = this.anchors[i].x;
+      a.y = this.anchors[i].y;
+      a.move();
+    }
+    o.snapsTo = [this.snapsTo[0], this.snapsTo[1]];
+    o.edit();
+    o.updateContact();
+    o.restoreSnaps(this.snappers);
+    o.owner.removeSurfaceOnSingleChange(o);
+    o.owner.updateSelection();
+  },
+  style : function () {
+    var o = this.obj,
+        hasSplit;
+
+    if (o.hasSplit) {
+      for (var i in o.hasSplit) {
+        hasSplit = o.hasSplit[i];
+        if (!hasSplit) continue;
+        for (var j in hasSplit.generated) {
+          hasSplit.generated[j].deleteArt();
+        }
+        hasSplit.ancestor.redo();
+        o.snapsTo = [this.snapsTo[0], this.snapsTo[1]];
+      }
+    }
+
+    this.action.call(o, this.category, this.subtype);
+    if (o.subtype != "Normal" && o.subtype != "None") o.owner.removeFromStock(o);
+    o.category = this.category;
+    o.subtype = this.subtype;
+    if (o.subtype != "Normal" && o.subtype != "None") o.owner.addToStock(o);
+    o.owner.removeSurfaceOnSingleChange(o);
+  }
+
+},
+
+redo : {
+  remove : function () {
+    var o = this.obj;
+
+    o.deleteArt();
+    o.owner.removeSurfaceOnSingleChange(o);
+    o.owner.updateSelection();
+  },
+  restore : function () {
+    this.obj.restoreArt();
+    this.obj.restoreSnaps(this.snappers);
+    this.obj.owner.updateSelection();
+  },
+  geometry : function () {
+    var o = this.obj,
+        a;
+
+    for (var i in o.anchors) {
+      a = o.anchors[i];
+      a.x = this.newAnchors[i].x;
+      a.y = this.newAnchors[i].y;
+      a.move();
+    }
+    o.snapsTo = [this.newSnapsTo[0], this.newSnapsTo[1]];
+    o.edit();
+    o.updateContact();
+    o.owner.updateSelection();
+  },
+  style : function () {
+    var o = this.obj,
+        category = this.newCategory,
+        subtype = this.newSubtype,
+        hasSplit;
+
+    if (o.hasSplit) {
+      for (var i in o.hasSplit) {
+        hasSplit = o.hasSplit[i];
+        if (!hasSplit) continue;
+        for (var j in hasSplit.generated) {
+          hasSplit.generated[j].restoreArt();
+          hasSplit.generated[j].restoreSnaps(this.snappers);
+        }
+        hasSplit.ancestor.undo();
+        o.snapsTo = [this.snapsTo[0], this.snapsTo[1]];
+      }
+    }
+
+    this.action.call(o, category, subtype);
+    if (o.subtype != "Normal" && o.subtype != "None") o.owner.removeFromStock(o);
+    o.category = category;
+    o.subtype = subtype;
+    if (o.subtype != "Normal" && o.subtype != "None") o.owner.addToStock(o);
+  }
+
+}
+]]></script>
+ 		</div>
+
+		<p>In the case of a class for drawing ordinary lines, or of text input, the callback functions would be simpler. This is to stress the fact that using the undo/redo feature demands a good deal of attention in your downstream code, to ensure that your application continues to run smoothly.</p>
+
+
+	</div>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		Key		******************************************* -->
+
+  <div class="chapter">
+
+		<h2 id="Key" class="header">KEY CLASS</h2>
+
+		<p>The <a href="files/key.html">pergola.Key</a> class does not inherit from the pergola.Class superclass.</p>
+
+		<p>A Key instance is designed to be assigned to a property of some object like a text box, or an input box, for keyboard input.</p>
+
+		<p>To activate the keyboard you instantiate the class and invoke its <a href="files/key.html#register">register()</a> method passing an initialization object, where the <a href="files/key.html#handle">handle</a> property is required:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myObject.key = Key()
+.register({
+  handle : myObject
+});
+]]></script>
+ 		</div>
+
+
+    <p>The instance inherits the properties specified in the initialization object. The <a href="files/key.html#register">register()</a> method adds "keydown", "keypress" and "keyup" event listeners. It also adds "mouseup" event listener with this <a href="files/key.html#mousedown">mousedown()</a> handler; a click on the document stops the current typing process.</p>
+
+    <p>The <a href="files/key.html#active">active</a> class property is a reference to the current typing process –the Key instance that activated keyboard input.</p>
+
+		<p>The <a href="files/key.html#release">release()</a> method handles end of input following a mousedown event on the document (this can be overridden through the <a href="files/key.html#stop">stop</a> property, which we will see further down).</p>
+
+		<p>The <a href="files/key.html#release">release()</a> method may also be explicitly invoked from another scope like this:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+if (Key.active) Key.active.release([params]);
+]]></script>
+ 		</div>
+
+
+		<p>If <a href="files/key.html#handle">handle</a> has a <code>endInput</code> method (to process the result, like sending information to the server, modifying the document, applying a color value to a target object, etc.), it is invoked with the optional parameters passed to the <a href="files/key.html#release">release()</a> method. In this case, the presence of parameters signals to the <code>endInput()</code> function that input was ended by means other than those predefined for the Key instance, letting you take appropriate actions.</p>
+
+		<p class="first">The <a href="files/key.html">pergola.Key</a> class defines generic class methods to handle the keyboard events: <a href="files/key.html#keydown">keydown()</a>, <a href="files/key.html#keypress">keypress()</a>, and <a href="files/key.html#keyup">keyup()</a>. They are suitable for most situations, but for specific needs you can pass callback handlers to the <a href="files/key.html#register">register()</a> method.</p>
+
+		<p>It also defines more specific class methods to handle the keypress event: <a href="files/key.html#keypressNum">keypressNum()</a>, <a href="files/key.html#keypressInt">keypressInt()</a>, <a href="files/key.html#keypressPos">keypressPos()</a>, <a href="files/key.html#keypressPosInt">keypressPosInt()</a>, and <a href="files/key.html#keypressHex">keypressHex()</a>. As their names suggest, they are designed to filter the input: numbers, integers, positive numbers, positive integers, and hexadecimal, respectively.</p>
+
+		<p>These functions expect the <a href="files/key.html#handle">handle</a> object to have a <code>value</code> property and a <code>setValue()</code> method. If <a href="files/key.html#handle">handle</a> does not define these properties you must pass your own handlers.</p>
+
+		<p>Note that these functions, or your overriding functions/methods, are invoked as methods of <a href="files/key.html#handle">handle</a>, and therefore in their scope “this” is <a href="files/key.html#handle">handle</a>.</p>
+
+		<p>To override the default handlers you define the <a href="files/key.html#callback">callback</a> property, where you can define any or all of the custom handlers:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myObject.key = Key()
+.register({
+  handle : myObject,
+  callback : {
+//    keydown : Function,
+    keypress : Function
+//    keyup : Function
+  },
+});
+]]></script>
+ 		</div>
+
+    <p>Note that if <a href="files/key.html#handle">handle</a> has instance or prototype methods named <code>keydown</code>, <code>keypress</code> and <code>keyup</code> (any, or all), you don't actually need to specify them in the callback object, as they will automatically override the default keydown/keypress/keyup functions.</p>
+
+    <p>The <a href="files/key.html#callback">callback</a> property can also get a function. In this case the function that you specify will be the unique handler for the three event types. This is not recommended, as it can easily generate confusion, and can lead to false assumptions in terms of browser's behavior.</p>
+
+    <p class="first">Other instance properties that can be defined in the initialization object are: <a href="files/key.html#cursor">cursor</a> (blinking text cursor), <a href="files/key.html#warn">warn</a> (out of range message), <a href="files/key.html#stop">stop</a>, and <a href="files/key.html#destroy">destroy</a> (the string name of the property to which the Key instance was assigned).</p>
+
+    <p>When the <a href="files/key.html#stop">stop</a> property is statically or dynamically set to false, it will prevent some actions in the interface (acting on a component –like topbar or scrollbar for example– of the input container) from causing end of input. In practice you would never set this property to false when you invoke the <a href="files/key.html#register">register()</a> method, and you actually don't need to set it at all; you would instead set it statically in the event handlers of those interface objects that you do not wish to interfere with the input, or set it dynamically on certain conditions. For those cases, after the interfering action has ended don't forget to set it to true (otherwise input will never end):</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+if (Key.active) Key.active.stop = true;
+]]></script>
+ 		</div>
+
+
+	</div>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- **********************************		LIBRARIES		***************************************** -->
+
+	<div class="chapter">
+
+		<h2 id="Libraries" class="header">LIBRARIES</h2>
+
+
+
+<!-- **********************************		FILTERS		***************************************** -->
+
+		<h3 id="filters">FILTERS library</h3>
+
+	  <p class="first">A filter definition is a function –property of the <a href="files/filters.html">pergola.filter</a> object (defined in lib/filters.js). The function first creates a unique ID based on the function name and values, taking into account the overriding values, and if it doesn't already exist in the document it creates and appends the filter element to <a href="references.html#defs">pergola.defs</a>. Returns the URI string.</p>
+
+	  <p>Currently there are four filter functions: <code>blur</code>, <code>specular</code>, <code>noise</code>, and <code>turbulence</code>. They can provide a very wide variety of effects by simply tweaking the attributes, as you can see in the <a href="../ExamplesHTML/Filters/filters.html">Filters examples page</a>.</p>
+
+	  <p>The filter functions expect an optional object specifying filter attributes to override the default values. The property names use SVG filter vocabulary, and names containing illegal characters for JavaScript variable names are specified using the string notation, for example "flood-opacity". A numeric value can be specified as number or string. Because of the different types of <i>fe</i> components used to fabricate a filter, the expected attributes are not necessarily the same across the functions. In the <a href="files/filters.html">Filters page</a> of the API reference you can find the list of filter attributes for each of the functions.</p>
+
+		<h4>How</h4>
+
+		You can assign the call to the <code>filter</code> property of an element:
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+$C({
+  element : "rect",
+  width : 200,
+  height : 200,
+  filter : pergola.filter.noise({baseFrequency : ".1 0", seed : 2}),
+  appendTo : Node
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/filter1.png" alt="filter" width="210" height="210">
+		  <figcaption>Fig. 5 – Filter. Rosewood texture.</figcaption>
+		</figure>
+
+		<p>or to a variable if you plan on reusing it:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myFilter = pergola.filter.noise({baseFrequency : ".1 0", seed : 2});
+]]></script>
+ 		</div>
+
+
+
+<!-- **********************************		PATTERNS		***************************************** -->
+
+		<h3 id="patterns">PATTERNS library</h3>
+
+	  <p>A pattern definition is a function –property of the <a class="libItem" href="files/patterns.html">pergola.pattern</a> object (defined in lib/patterns.js). The function first creates a unique ID based on the function name and values, taking into account the overriding values, and if it doesn't already exist in the document it creates and appends the pattern element to <a href="references.html#defs">pergola.defs</a>. Returns the URI string.</p>
+
+		<p>The <code>pergola.pattern</code> object is a collection of base models. To create a new pattern you can override properties and let the computer produce a wide range of variations, sometimes with truly surprising results. Most pattern definitions leverage computer logic, yielding design types that can be qualified as “modern”, while Others are more statically oriented towards human made design, like for example the two “pied_de_poule” versions, which are reflections of the traditional pattern industry, but then again, what is not logic?</p>
+
+	<p>The pattern functions expect an optional object specifying overriding properties. Some properties have arbitrary names, and some use SVG vocabulary (names containing illegal characters for JavaScript variable names are specified using the string notation, e.g. "stroke-width"). In the <a href="files/Patterns.html">Patterns page</a> of the API reference you can find the list of pattern attributes for each of the functions.</p>
+
+		<h4>How</h4>
+
+		You assign the call directly to the <code>fill</code> and/or <code>stroke</code> properties of an element:
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+element : "rect",
+  x : 240,
+  width : 90,
+  height : 90,
+  fill : pergola.pattern.hive({
+    colors : ["darkred", "#6E5A5A"],
+    "stroke-width" : 2,
+    transform : "scale(1.5 .75) rotate(45)"
+  }),
+  appendTo : g
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/pattern1.png" alt="button" width="100" height="100">
+		  <figcaption>Fig. 6 – Pattern “hive” with transforms.</figcaption>
+		</figure>
+
+		or to a variable if you plan to reuse it:
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myPattern = pergola.pattern.hive({
+  colors : ["darkred", "#6E5A5A"],
+  "stroke-width" : 2,
+  transform : "scale(1.5 .75) rotate(45)"
+});
+]]></script>
+ 		</div>
+
+    <p class="first"><a href="../ExamplesHTML/Patterns/patterns.html">Patterns examples page</a>.</p>
+
+
+
+<!-- **********************************		MARKERS		***************************************** -->
+
+    <h3 id="markers">MARKERS library</h3>
+
+  	<p>A marker definition is a function –property of the <a href="files/markers.html">pergola.marker</a> object (defined in lib/markers.js). Markers are not created at runtime. The function creates and appends the marker element to <a href="files/references.html#defs">pergola.defs</a> if it doesn't exist in the document. Returns the URI string.</p>
+
+  	<p>Except for the <a href="files/markers.html#dot">dot</a> marker (&lt;circle&gt;), for which you can specify radius, fill, and stroke, the functions don't expect parameters, and the marker cannot be modified programmatically.</p>
+
+		<h4>How</h4>
+
+		<p>You can assign the call to the "marker-start", "marker-mid" and "marker-end" properties. The example below (fig. 7) uses two different markers for "marker-start" and "marker-end":</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 144;"><![CDATA[
+$C({
+  element : "path",
+  d : "M80,550v-150",
+  fill : "none",
+  stroke : "darkorange",
+  "stroke-width" : 3,
+  "marker-start" : pergola.marker.terminalStart(),
+  "marker-end" : pergola.marker.terminalEnd(),
+  appendTo : pergola.desktop
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/marker1.png" alt="marker" width="32" height="167">
+		  <figcaption>Fig. 7 – Markers terminalStart() and terminalEnd().</figcaption>
+		</figure>
+
+		or to a variable if the marker is to be reused:
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var terminalStart = pergola.marker.terminalStart();
+]]></script>
+ 		</div>
+
+		<p>terminalStart is then "url(#terminalStart)".</p>
+
+		<p class="first">Another example using "marker-start", "marker-mid" and "marker-end":</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 32;"><![CDATA[
+$C({
+  element : "path",
+  d : "M100,200h100l50,50h50",
+  fill : "none",
+  stroke : "blue",
+  "stroke-width" : 2,
+  "marker-start" : marker,
+  "marker-mid" : marker,
+  "marker-end" : marker,
+  appendTo : g
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/marker2.png" alt="marker" width="218" height="68">
+		  <figcaption>Fig. 8 – Marker dot().</figcaption>
+		</figure>
+
+		<p class="first">One more example using "marker-mid":</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 120;"><![CDATA[
+$C({
+  element : "path",
+  d : "M140,425h36h36",
+  fill : "none",
+  stroke : "#808090",
+  "stroke-width" : 4,
+  "stroke-linecap" : "round",
+  "marker-mid" : pergola.marker.secant(),
+  appendTo : g
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/marker3.png" alt="marker" width="86" height="34">
+		  <figcaption>Fig. 9 – Marker secant().</figcaption>
+		</figure>
+
+    <p class="first"><a href="../ExamplesHTML/Markers/markers.html">Markers examples page</a>.</p>
+
+
+
+<!-- ***********************************		SYMBOLS		*************************************** -->
+
+		<h3 id="symbols">SYMBOLS library</h3>
+
+	<p><a href="files/symbols.html">pergola.symbols</a> (defined in lib/symbols.js) is an object whose properties represent a collection of symbol definitions. Each property is an array with one or more object elements defining SVG primitives, or text, or image elements, in the format expected by the <a href="files/dom.html#SVG">pergola.SVG()</a> node builder (without the <code>appendTo</code> property). A symbol property can also be an object designating a category, like it's the case for <code>pergola.symbols.arrow</code>, defining in turn the object properties <code>tiny</code>, <code>small</code>, and <code>large</code>, each having a subset of symbol properties <code>up</code>, <code>down</code>, <code>left</code>, and <code>right</code>; the reference to one of those would be: <code>pergola.symbols.arrow.small.left</code>.</p>
+
+		<p><code>pergola.symbols</code> is a proprietary format and is not related to the SVG &lt;symbol&gt; element. Example:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+lens : [
+  {
+    element : "path",
+    d : "M4.5 3.4l6.5,5",
+    stroke : "#323232",
+    "stroke-width" : 1.25,
+    "stroke-linecap" : "round"
+  },
+  {
+    element : "circle",
+    r : 5.75,
+    fill : "#FFFFFF",
+    stroke : "#727272",
+    "stroke-width" : 1.5,
+    "fill-opacity" : .6
+  }
+]]></script>
+ 		</div>
+
+		<p>Note: Pergola does not create a &lt;symbol&gt; element in the &lt;defs&gt; or anywhere, and instances of it are not created by the &lt;use&gt; element.</p>
+
+		<p>You can add new symbol definitions to the <a href="files/symbols.html">pergola.symbols</a> object in the lib/symbols.js file.</p>
+
+		<h4>How</h4>
+
+		<h5>Use With Class Instances</h5>
+
+		<p>A symbol instance is created by invoking the <a href="files/misc.html#symbol">pergola.symbol()</a> utility function, using the function's call() method. The function returns a &lt;group&gt; containing the symbol's elements.</p>
+
+		<p>In practice you don't invoke the function directly when you need to use a symbol with instances of classes that are enabled to use them. You just define the <code>symbol</code> property of the object. Example, a button with an arrow symbol:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var button5 = new pergola.Button();
+button5.Build({
+  ...,
+  symbol : {
+    symbol : pergola.symbols.arrow.large.down,
+    attributes : {
+      transform : "scale(.65 1.5)",
+      fill : "#80C8FF"
+    }
+  },
+  ...
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/symbol1.png" alt="symbol" width="23" height="39">
+		  <figcaption>Fig. 10 – symbol arrow.large.down.</figcaption>
+		</figure>
+
+		<p>The <code>symbol</code> object is a property of <code>button5</code>. The object itself has a <code>symbol</code> property which can be considered to have the same role of the &lt;use&gt; element (it's named &#x201C;use&#x201D; to avoid any equivocal relation with the &lt;use&gt; element).</p>
+
+		<p>The <code>symbol</code> property is an object or a string. Its value can be a reference to a symbol definition, e.g. one of the <a href="files/symbols.html">pergola.symbols</a> definitions–or a nonreusable symbol defined inline, in the same format– or the URL of an image:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+symbol : {
+  symbol : pergola.path + "lib/symbols/spectrum.png",
+  width : 16,
+  height : 16,
+  x : 6.5,
+  y : 4
+}
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/spectrum.png" alt="symbol" width="26" height="26">
+		  <figcaption>Fig. 11 – symbol referencing an image.</figcaption>
+		</figure>
+
+		<p>Note: when using images the <code>width</code> and <code>height</code> properties are required.</p>
+
+		<p>If <code>x</code> and/or <code>y</code> number or string are specified, these are used for the additional transformation "translate(x, y)" of the group, after any specified scale transformation. If x and y are not specified the symbol is automatically centered; this gives a satisfactory result for symbols that have the bounding box origin at 0, 0 or at least close to that, which is the case for the Pergola symbols. Note however that in some cases you may need to tweak x and y manually to get neat contours for the symbol.</p>
+
+		<p>Note that the <code>fill</code> attribute is suited for monochrome symbols.</p>
+
+		<p>In the <code>attributes</code> object property you can specify any attribute to override, or any new attribute using SVG vocabulary. These attributes are applied to the all elements, not to the group.</p>
+
+		<p>If the <code>opacity</code> attribute is specified as property of the symbol object, it is applied to the group.</p>
+
+
+		<h5 id="makeIcons">Use As Standalone</h5>
+
+		<p>Symbols can also be used as standalone objects, for example for creating a desktop icon or a logo.</p>
+
+		<p>Case 1, an orphan symbol:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myIcon = pergola.symbol({
+  symbol : pergola.symbols.penTool,
+  x : 20,
+  y : 20,
+  parent : node
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/penTool.png" alt="symbol" width="20" height="31">
+		  <figcaption>Fig. 12 – symbol “penTool”.</figcaption>
+		</figure>
+
+		<p>Case 2, the symbol is a component of an object. Follow the same procedure as with class instances, then explicitly invoke <code>pergola.symbol()</code> using the function's call() method:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myIcon = {
+  container : $C({
+    element : "g",
+    id : "myIcon",
+    transform : "translate(20 40)",
+    appendTo : pergola.user
+  }),
+  symbol : {
+    symbol : pergola.symbols.banana,
+    x : 20,
+    y : 20,
+  }
+};
+
+pergola.symbol.call(myIcon, myIcon.symbol);
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/banana.png" alt="symbol" width="66" height="42">
+		  <figcaption>Fig. 13 – symbol “banana”.</figcaption>
+		</figure>
+
+		<p>Note that in this case, like for class instances, the symbol is appended to the outmost container of the object, which must be referenced by the property <code>container</code>. If your object does not have such a property you must specify the <code>parent</code> property of the symbol object, like for the orphan symbol of the previous example.</p>
+
+    <p>If your object has <code>width</code> and <code>height</code> properties and you don't specify x and y for the symbol object, the symbol will be centered. Note that in the example above the symbol is positioned at 40, 60 in absolute coordinates (group's translate values + symbol's x,y).</p>
+
+    <p class="first"><a href="../ExamplesHTML/Symbols/symbols.html">Symbols examples page</a>.</p>
+
+
+
+<!-- **********************************		SHAPES		***************************************** -->
+
+		<h3 id="shapes">SHAPES library</h3>
+
+    <p class="first"><a href="files/shapes.html">shapes</a> (defined in lib/shapes.js) is an object whose properties represent a collection of shapes. Each object property defines the <code>element</code> string property –typically "path", "polyline", "polygon", but can be any primitive– and the corresponding geometrical attribute(s) ("d", "points"). A shape object does not define paint attributes.</p>
+
+		<p>The triangle shape definition:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+triangle : {
+  element : "path",
+  d : "M0,32h32l-16-27.7128z"
+}
+]]></script>
+ 		</div>
+
+		<p>The <code>element</code> string property represents the name of an SVG primitive.</p>
+
+		<p>Other properties represent the element's geometrical attributes: <code>d</code> for path; <code>cx</code>, <code>cy</code>, <code>rx</code>, <code>ry</code> for ellipse; <code>points</code> for polygon; etc. Needless to say, shapes corresponding to primitives other than path, polygon and polyline are not as useful, except perhaps for particular art compositions.</p>
+
+		<p class="note">Unlike the <a class="libItem" href="files/symbols.html">pergola.symbols</a>, which can be made of several elements where their name and attributes are defined in one single object for each element, and then passed as is to <a href="files/dom.html#SVG">pergola.SVG()</a>, a shape object is rendered with the specified attributes (using SVG attributes vocabulary).</p>
+
+
+		<h4>How</h4>
+
+		<h5>Use as standalone</h5>
+
+		<p>You can use a shape directly by invoking the utility function <a href="files/misc.html#use">pergola.use()</a>, which simulates the SVG &lt;use&gt; element. Because only the geometry is defined for shapes, you have total control over stroke width/scaling:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+pergola.use({
+  parent : g,
+  shape : pergola.shapes.triangle,
+  attributes : {
+    transform : "rotate(12 32 27.7128) translate(316 -62) scale(3)",
+    fill : "#FFFFC0",
+    stroke : "gray",
+    "stroke-width" : 2,
+    "stroke-linejoin" : "round"
+  }
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/shape1.png" alt="shape" width="111" height="108">
+		  <figcaption>Fig. 14 – shape “triangle”.</figcaption>
+		</figure>
+
+
+		<h5>Use With Classes</h5>
+
+		<p>Currently Pergola implements the use of shapes for the <a href="files/Button.html">pergola.Button</a> class only; its <code>build()</code> method applies the rendering attributes defined in the prototype and, eventually, other attributes and transformations found in the <a href="files/Button.html#extra">extra</a> object.</p>
+
+		<p>You use a shape by defining the <code>shape</code> property in the <a href="files/classes.html#initializationObject">initialization object</a>. Its value is a reference to a shape object from the library:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var shapeButton = new pergola.Button()
+.build({
+  parent : <i>node</i>,
+  x : 272,
+  y : 214.5,
+  fill : "#FF5000",
+  stroke : "lightsteelblue",
+  maskFill : "white",
+  shape : pergola.shapes.triangle,
+  extra : {transform : "scale(2 .5) rotate(180)"},
+  quickTip : {tip : "library shape with transformations"}
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/shape2.png" alt="shape" width="78" height="26">
+		  <figcaption>Fig. 15 – button using shape “triangle”.</figcaption>
+		</figure>
+
+    <p>Note that rotations are always applied about the shape's center and only the shape is rotated, keeping symbols, images, and text upright.</p>
+
+		<p class="first">A shape object can also be defined on the fly using the same format of the library shapes:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+shape : {
+  element : "path",
+  d : "..."
+  }
+}
+]]></script>
+ 		</div>
+
+		<p>in which case the shape will be one of a kind and not reusable.</p>
+
+    <p class="first"><a href="../ExamplesHTML/Shapes/shapes.html">Shapes examples page</a>.</p>
+
+
+
+<!-- **********************************		CURSORS		***************************************** -->
+
+		<h3 id="cursors">CURSORS library</h3>
+
+	<p><a href="files/cursors.html">pergola.cursors</a> (defined in lib/cursors.js) is a function that defines SVG &lt;cursor&gt; elements.</p>
+
+		<p>Cursors are created and appended to the <a href="files/references.html#defs">pergola.defs</a> at runtime. The &lt;cursor&gt; element may be fully, partially or not at all implemented in the existing SVG implementations. In this version of Pergola, bitmap images only are used for cursors. This format has been found to have the highest level of portability at writing time.</p>
+
+		<h4>How</h4>
+
+		<p>Cursor are referenced by their URI string:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+element.setAttributeNS(null, "cursor", "url(#lensCursor)");
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/rotation.png" alt="cursor" width="27" height="21">
+		  <figcaption>Fig. 16 – cursor “rotationCursor”.</figcaption>
+		</figure>
+
+		<p>System cursors are referenced by their CSS names (&#x201C;move&#x201D;, &#x201C;default&#x201D;, &#x201C;se-resize&#x201D;, etc.).</p>
+
+
+
+<!-- **********************************		QUICKTIPS		***************************************** -->
+
+		<h3 id="quicktips">QUICK TIPS library</h3>
+
+	<p><a class="libItem" href="files/qtips.html">pergola.quickTip</a> (defined in lib/qtips.js) is an object defining object properties. Each object property must define the <code>tip</code> string or array of strings property.</p>
+
+		<p>Quick tips are created and appended to <a href="files/references.html#defs">pergola.defs</a> at runtime.</p>
+
+		<h4>How</h4>
+
+		<p>Typically used with <a class="classes" href="files/Button.html">buttons</a> and <a class="classes" href="files/ToolButton.html">tool buttons</a>, quick tips are configurable:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var spy = new pergola.ToolButton()
+.build({
+  x : 340,
+  y : 200,
+  width : 38,
+  height : 22,
+  text : {
+    x : 5,
+    y : 18,
+    'font-size' : 18,
+    fill : "white",
+    textNode : "007",
+    'pointer-events' : "none"
+  },
+  hasTextEffect : false,
+  quickTip : {
+    tip : [
+      "My name is Bond,",
+      "James Bond"
+    ],
+    x : 378,
+    y : 168,
+    delay : 250
+  }
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/quicktip.png" alt="cursor" width="150" height="65">
+		  <figcaption>Fig. 17 – quick tip with fixed position (no mouse tracking) and custom delay.</figcaption>
+		</figure>
+
+    <p>The required <code>tip</code> property is a string that can contain the escape sequence "\n" for new lines, or an array of strings.</p>
+
+    <p>If <code>x</code> and/or <code>y</code> number or string are specified, the mouse tracking is disabled and the quick tip shows at x,y position relative to the object's container.</p>
+
+		<p>If <code>delay</code> number of milliseconds is specified, overrides the default pop up delay (700 ms).</p>
+
+
+
+<!-- **********************************		MESSAGES		***************************************** -->
+
+		<h3 id="messages">MESSAGES library</h3>
+
+	<p><a href="files/messages.html">pergola.messages</a> (defined in lib/messages.js) is a repository object defining string or array of strings properties. A message string (or sequence of array elements) can be passed to <a href="files/misc.html#message">pergola.message()</a> (shortcut $M) or to window.alert().</p>
+
+		<h4>How</h4>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+$M(pergola.messages.missingParent[0] + this.name);
+]]></script>
+ 		</div>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+alert(pergola.messages.missingOwner + "Doc");
+]]></script>
+ 		</div>
+
+
+
+
+
+<!-- **********************************		SKINS		***************************************** -->
+
+		<h3 id="skins">SKINS library</h3>
+
+  	 <p><a class="libItem" href="files/skins.html">pergola.skins</a> (defined in lib/skins.js) is an object defining <i>skin</i> function properties. The <code>skin</code> function specified in the configuration file is invoked at runtime. The function defines color scheme related system constants, the <strong>pergola.presentationAttributes</strong> object, and gradients and patterns (note that since v 2.2.00 symbols' gradients moved to the symbols.js file).</p>
+
+		<p>The Pergola Skin has the primary role of determining the appearance of your application. It is designed to work in a manner similar to that of a CSS file, while adding some notable features:</p>
+		<p>
+			<ul class="dot">
+				<li>The possibility of defining several skins in the same file.</li>
+				<li>The possibility of using references and expressions.</li>
+				<li>The definition and construction of its gradients and patterns.</li>
+				<li>A conversion engine, pergola.colorConvert(), that authorizes not only all the legal color formats but also user defined color names.</li>
+				<li>The definition of these properties (constants) of the <a href="files/color.html">pergola.color</a> object: <a href="files/color.html#neutral">neutral</a>, <a href="files/color.html#components">components</a>, <a href="files/color.html#ingredients">ingredients</a>, and <a href="files/color.html#themeLuminosity">themeLuminosity</a>.</li>
+				<li>An engine, <a href="files/color.html#shade">pergola.color.shade()</a>, for the automatic production of shades based on the theme color.</li>
+			</ul>
+		</p>
+
+		<p>The <code>pergola.skins</code> object currently defines two skin functions: <code>rubber</code> and <code>office</code>. A new skin would then be a new property of <code>pergola.skins</code>, named perhaps <span class="it">galaxy</span>. The <span class="it">galaxy</span> function will be structurally an exact replica of <code>rubber</code> or <code>office</code>.</p>
+
+		<p>The two major roles of this function are:
+			<ol class="decimal">
+				<li>Define the <code>pergola.presentationAttributes</code> object</li>
+				<li>Build the gradients and patterns</li>
+			</ol>
+		</p>
+
+		<p>Each of the property names defined in <code>pergola.presentationAttributes</code> is a direct reference to one of the Pergola classes: <code>button</code> &#x2192; Button, with the exception of two properties: <code>all</code>, which defines some common defaults for all classes, and <code>text</code>, which is used by several classes.</p>
+
+		<p>These properties are objects and their properties designate primarily SVG painting and/or geometrical attributes, but also others. Whenever possible their names are exact replicas of SVG attribute names. Whenever this is not possible for conflicting reasons, Pergola uses pseudo-attribute names, for example a class can have a <code>fill</code> and a <code>maskFill</code> property.</p>
+
+		<p>The values of all the properties here are editable of course, but properties cannot be added or removed. An addition would be simply ignored, while a removal will result in a runtime error or bad rendering.</p>
+
+		<p>So this is the place where to set the default appearance of your objects. No need to hack the classes' prototypes. In any case the rendering properties do not get hard values there; they simply reference their equivalents in the <code>pergola.presentationAttributes</code> object.</p>
+
+		<p>It is not recommended to edit the original skins. Instead, make a new skin by copying one, give it a new name and edit the new skin. Learn more in the <a href="#newSkin">MAKING A NEW SKIN</a> section.</p>
+
+		<p>Worth of note, for those who are not interested in making new skins it is still worthwhile taking a close look at the engine for the automatic production of shades, the <a href="files/color.html#shade">pergola.color.shade()</a> function, as it can be very useful in several situations like the calculation of the  shades for geographical altitudes in a legend, the progressive tone changes in a bar chart, an application for designers/architects for getting coordinate colors, etc.</p>
+
+		<p>You will be able to assign the skin for a particular project in the configuration file that is bound to each of your projects. See the <a href="#configuration">CONFIGURATION</a> chapter.</p>
+
+		<h4>How Does The Skin Work?</h4>
+		<p>A skin needs a theme color to work with. You set the theme color in the configuration file. You then use the <a href="files/color.html#shade">pergola.color.shade()</a> function for setting shades for your gradients, fills, strokes etc. Its use is explained in the next section.</p>
+
+		<h4 id="color_formats">What Format Can I Use To Specify My Theme Color?</h4>
+		<p>The <code>theme</code> property is a string representing a color value specified in any legal format, including color keywords and custom keywords defined in <a href="files/color.html#customColorNames">customColorNames</a> (located at the end of the skins.js file).</p>
+
+
+
+	</div>
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- **********************************		HOW TOs		***************************************** -->
+
+	<div class="chapter">
+
+		<h2 id="HowTos" class="header">HOW TOs</h2>
+
+
+<!-- **********************************		MAKING A NEW SKIN		*************************************** -->
+
+
+		<h3 id="newSkin" class="header">MAKING A NEW SKIN</h3>
+
+		<h4>What Do I Need To Know First?</h4>
+
+		<p>While developing a new skin or simply setting a new theme it is important to keep in mind the relation between the skin and the theme.</p>
+
+		<p>Essentially, the skin is the look and feel. A skin can also suggest a texture. Although SVG filters offer great capabilities for visual  effects, they aren't used yet due to the notorious rendering speed limitations. They may be progressively added as the browser's and hardware performance increases. The current skins effects are largely based on gradients.</p>
+
+		<p>A theme is a base color. The colors of relevant objects are shades of the base color, although they can be unrelated as for example when you need neutrals (black, white, grays), which are known to work with most base colors. These shades are applied to fills, strokes and gradients and are computed by the skin engine.</p>
+
+		<p>You set the skin and theme of a project in its config file:
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+skin = "rubber"
+
+theme = "n&#x00FC;rburgring"
+]]></script>
+ 		</div>
+
+		<p>See the recognized <a href="#color_formats">color formats</a> for the theme value.</p>
+
+		<p>The skin is generated by the skin function, which is a property of the <a href="files/skins.html">pergola.skins</a> object.</p>
+
+		<p class="first">To make Pergola use a new skin that you have perhaps just made and that you named galaxy, you assign the value "galaxy" to the <code>skin</code> property:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+skin : "galaxy"
+]]></script>
+ 		</div>
+
+		<p>That's all. Your application will run with the galaxy skin.</p>
+
+		<p class="first">Consider the base skin &#x201C;rubber&#x201D;, it has a soft touch feel which is suggested by its weak contrasts. Although technically it works with any color scheme determined by the theme color, the best definition is obtained with theme colors that are in the same luminance region of the base theme color (the medium-high register in the case of the &#x201C;rubber&#x201D; skin). In practice, the range of usable themes for the <span class="it">rubber</span> skin goes from the medium dark, like "darkslategray" rgb(47, 79, 79) for example, to the very light, like "gainsboro" rgb(220, 220, 220) or even "papayawhip" rgb(255, 239, 213). Outside of this range the <span class="it">rubber</span> skin may not have enough contrasts, although, objectively, it does work with black and near white as well. After that, it's a matter of personal taste.</p>
+
+		<p>As a general rule, base colors with a very high contrast between its components and extremely light or dark colors will generally produce inappropriate or unpleasant contrasts, no matter how painstaking your attempts to refine them.</p>
+
+
+		<h4>I'm All Set, I Want To Make A New Skin.</h4>
+
+		<p>OK, you want to make a new skin named <span class="it">galaxy</span>. The best way to proceed is this:
+			<ol class="decimal">
+				<li>Copy the <span class="it">rubber</span> skin function, complete with its gradients definitions.</li>
+				<li>Paste below as a new property of <a href="files/skins.html">pergola.skins</a> and name it <span class="it">galaxy</span>.</li>
+				<li>Set the theme color to the base color you have in mind for galaxy.</li>
+				<li>In the config file set the <code>skin</code> property to "galaxy".</li>
+				<li>Proceed with the modifications of the new skin.</li>
+			</ol>
+		</p>
+
+
+		<h4>Yes, But What Are Those Values Passed To <a href="files/color.html#shade">pergola.color.shade()</a>?</h4>
+
+		<p>The fill colors and the stop colors need to work with many color themes and for this reason they cannot be hard coded, of course. Instead, each color component (r, g, b) is expressed as the percentage of its corresponding component of the theme color. They are not absolute rgb percentages! The values are passed as an array. To see how they are defined let's work for example on the toolbar gradient with id "toolbarGrad":
+			<ol class="decimal">
+				<li>Start off by testing with hard coded values until you find those which look terrific with the current theme color. You may want to add or delete stops and tweak the offsets until you are satisfied.</li>
+				<li>For every color that you've set, calculate the percentage of each of its three components in respect to its corresponding component of the theme color. Pass those percentages in the order of magnitude found in the theme color. For example, if the dominant in the theme color is blue, then green, then red, we pass the blue percentage as first parameter, then the green percentage, and last, the red percentage. DO NOT pass them in the rgb natural order unless of course that happens to be the dominance sequence in the theme color. When dealing with neutrals the order doesn't matter because the engine equalizes them. This means that it doesn't make much sense to experiment right off with a neutral theme (black, gray, white), unless you definitely will not care for other theme colors for the skin you are creating. The equalization is necessary to avoid unwanted pinkish or greenish or bluish grays in neutral themes.</li>
+			</ol>
+			When you get acquainted you can skip the first phase.
+		</p>
+
+		<p>Finally, test your skin with different theme colors, bearing in mind that a skin need not necessarily work with a great number of theme colors. It would be hopeless to think for example that a chrome skin would work well with an &#x201C;indianred&#x201D; theme. But sometimes the results can be surprising.</p>
+
+
+		<h4>Why The Call To <a href="files/color.html#shade">pergola.color.shade()</a> Has Sometimes Two Parameters?</h4>
+
+		<p>The second parameter is optional, and can be extremely useful. In fact, whenever you need a shade closely related to the base color it is much simpler and faster to use it, rather than the method above.</p>
+
+		<p>This parameter can have positive or negative values. A positive value produces a lighter shade of the color and a negative value, a darker shade. The values of the components' percentages parameter (the array) are simply the same as the adjacent stop, and more generally just the base color ([100, 100, 100]). The algorithm used acts on the luminance of the shade. For positive values it takes several factors into account to yield a credible result across a wide range of tones, by altering the luminance and the saturation. For negative values it simply darkens the tone. Negative values normally need much smaller figures than positive values. Common uses of the second parameter are typically to highlight or shadow the edges of some objects (like the button gradients), or more generally to get the variations for a one color gradient.</p>
+
+		<p>Another useful effect is to use it as a de-saturator, by passing lower components percentages with a positive value for the second parameter.</p>
+
+		<p>You will see that its use is very intuitive and fun. In simple words, the second parameter is a helper to avoid the long and fastidious trial and error definition of shades.</p>
+
+
+
+
+
+
+<!-- ******************************************************************************************************* -->
+<!-- *********************************************		LOAD		********************************************** -->
+
+
+		<h3 id="Load" class="header">LOADING SVG DOCUMENTS</h3>
+
+		<p>The <a href="files/requests.html#loadSVG">pergola.loadSVG()</a> function loads a remote SVG document or fragment and appends it to the specified container. Browsers that implement XMLHttpRequest 2 also load local documents, otherwise the browsers' security restrictions apply.</p>
+
+
+		<p id="loadSVG" class="property">pergola.<strong>loadSVG</strong>(<i>object</i>)</p>
+		<p><i>object</i> defines these properties:
+			<ul class="none">
+				<li>url : <i>url</i>,</li>
+			  <li>target : <i>object</i> or <i>container</i>,</li>
+			  <li>progress : <i>progress</i>,</li>
+			  <li>container : <i>container</i>,</li>
+			  <li>merge : <i>boolean</i>,</li>
+			  <li>resetScale : <i>boolean</i></li>
+		</ul>
+
+		<p>The function issues a request using the GET method for the specified <i>url</i> and appends the document to the specified <i>target</i> if <i>target</i> is a container element. If <i>target</i> is a <a class="classes" href="files/Window.html">pergola.Window</a> object the document will be appended to the specified <i>container</i> (optional), or to the default container (<a href="Doc.html#transformable">window.doc.transformable</a>).</p>
+
+		<p>If <i>progress</i> is specified the referenced progress bar will be activated. If <i>merge</i> is specified and true, the new document will be merged with existing content, otherwise it will replace the content of the destination container (whether a layer or <a href="Doc.html#transformable">window.doc.transformable</a>). If <i>resetScale</i> is specified the window's zoom value will be reset to 1:1. Other than for a window context, <i>container</i>, <i>merge</i>, and <i>resetScale</i> do not apply.</p>
+
+		<p class="first">Example from a window instantiation context:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+contains : function () {
+  var l = this.layers.keyboard;
+
+  l.container = $C({
+    element : "g",
+    id : "layer_keyboard",
+    appendTo : this.doc.transformable
+  });
+
+  pergola.loadSVG({
+    url : "works/keyboard.svg",
+    target : this,
+    progress : this.progress,
+    container : l.container,
+    resetScale : true
+  });
+}
+]]></script>
+ 		</div>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- **********************************		ADDING WINDOW TOOLS		************************************* -->
+
+
+		<h3 id="tools" class="header">ADDING WINDOW TOOLS</h3>
+
+		<p>The <a href="files/Window.html#addTools">addTools()</a> prototype method of the <a href="files/Window.html">pergola.Window</a> class allows to add tools (<a class="classes" href="files/ToolButton.html">pergola.ToolButton</a> objects with their callback functions) at instantiation time or at any stage after construction of the window.</p>
+
+		<p>Tools are added as groups of one or more tools. You cannot add a single tool not belonging to any group (this restriction may be removed in a future release).</p>
+
+		<p>In the example below a subset of vector editing tools are added by invoking the <a href="files/Window.html#addTools">addTools()</a> method. The tool definitions are properties of the object parameter passed to the function. In this case the call is executed within the context of the window instance (in the body of the function assigned to the window's <a href="files/Window.html#contains">contains</a> instance property), and the tools are added during the window's construction process.</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+this.addTools({
+  drawGroup : {
+    separator : true,
+    lineTool : {
+      type : "edit",
+      exclusive : true,
+      subtype : "Normal",
+      coordinates : true,
+      symbol : {
+        symbol : pergola.symbols.lineTool,
+        x : 5,
+        y : 4
+      },
+      quickTip : {tip : "Line Tool"},
+      cursor : "crosshair",
+      fn : "drawByLineTool"
+    },
+    typeTool : {
+      type : "text",
+      exclusive : true,
+      coordinates : true,
+      symbol : {
+        symbol : pergola.symbols.typeTool,
+        x : 7,
+        y : 19
+      },
+      quickTip : {tip : "Type Tool"},
+      cursor : "text",
+      element : null,
+      fn : "type"
+    },
+    rubberTool : {
+      type : "edit",
+      symbol : {
+        symbol : pergola.symbols.rubberTool,
+        x : 5,
+        y : 5
+      },
+      quickTip : {tip : "Delete Selected Objects"},
+      ev : "click",
+      fn : "deleteSelected"
+    },
+  }
+});
+]]></script>
+ 		</div>
+
+		<figure>
+		  <img src="graphics/tools.png" alt="tools" width="286" height="84">
+		  <figcaption>Fig. 18 – tool buttons with symbols.</figcaption>
+		</figure>
+
+		<p>You can defer the addition of tools by invoking the <a href="files/Window.html#addTools">addTools()</a> method at any stage:<br><code>myWindow.addTools()</code>.</p>
+
+		<p>If the <code>separator</code> property is specified and true, a <a href="files/Separator.html">pergola.Separator</a> object is added between the current group and the previous one.</p>
+
+		<p>For each property name in <code>drawGroup</code> (excluding <code>separator</code>) a <a class="classes" href="files/ToolButton.html">pergola.ToolButton</a> instance is assigned to a property (with the same name) of this <a href="files/Window.html">pergola.Window</a> object and appended to the window's <a href="files/Window.html#toolBar">toolBar</a>. A reference to it is added to the window's <a href="files/Window.html#tools">tools</a> array, and to the <a href="files/Window.html#exclusiveTools">exclusiveTools</a> array if the <code>exclusive</code> property is set for it.</p>
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		CREATING A SYSTEM MENU		******************************************* -->
+
+
+		<h3 id="createSystemMenu" class="header">CREATING A SYSTEM MENU</h3>
+
+		<p>If you create a system <a href="files/Menu.html">menu</a>, which is independent from windows' menus that you eventually create, it must be assigned to the <code>pergola.menu</code> property, and you must assign <code>pergola</code> to the <a href="files/Menu.html#owner">owner</a> property, and <code>pergola.menubar.container</code> to the <a href="files/Menu.html#parent">parent</a> property. Example of system menu "File" with <code>new</code>, <code>open</code> and <code>save</code> items:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+pergola.menu = {
+  file : new pergola.Menu("File").build({
+    owner : pergola,
+    parent : pergola.menubar.container,
+    title : "File",
+    items : {
+      new : {
+        string : "New ...",
+        fn : function () {
+          var panel = myApp.panel.newDocument;
+
+          for (var i in pergola.Window.windows) {
+            var name = pergola.Window.windows[i].name;
+            if (/Untitled/.test(name)) {
+              var index = name.slice(name.lastIndexOf("-") + 1);
+              pergola.Window.untitled = Number(index) + 1;
+            }
+          }
+          panel.nameInput.value = "Untitled-" + pergola.Window.untitled;
+          panel.nameInput.element.firstChild.data = panel.nameInput.value;
+          panel.open();
+        }
+      },
+      open : {
+        string : "Open ...",
+        active : pergola.remote,
+        fn : function () {
+          myApp.getFiles();
+          myApp.panel.openDocument.open();
+        }
+      },
+      save : {
+        string : "Save",
+        active : (pergola.remote && pergola.Window.windows.length),
+        fn : "saveDocument"
+      }
+    }
+  })
+};
+]]></script>
+		</div>
+
+		<figure>
+		  <img src="graphics/sysMenu.png" alt="menu" width="183" height="122">
+		  <figcaption>Fig. 19 – system menu.</figcaption>
+		</figure>
+
+  <p>The dialog panels referenced in the code above do not necessarily need to be properties of some object, they can be top level orphan panels, though it's wiser to keep them in a namespace.</p>
+
+  <p>The same goes for the referenced methods, they could be top level functions or inline function literals. In this example the getFiles() method at line 28 is a method of the <code>myApp</code> object, while the saveDocument() method at line 35 is specified as string, implying that it's either an instance method of the <code>save</code> <a href="files/MenuItem.html">Pergola.MenuItem</a> object or a method of its prototype, or a prototype method inherited by the <a href="files/Class.html">Pergola.Class</a> superclass. Learn about this mechanism in the <a href="#events"><strong>User Events And Functions</strong></a> section.</p>
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		CUSTOM CONTEXT MENU		******************************************* -->
+
+		<h3 id="contextMenu" class="header">CUSTOM CONTEXT MENU</h3>
+
+		<p>Pergola implements custom context menus to override the browser's default context menu. You can define a context menu for random elements and for objects. Right mouse button events disable the browser's context menu only for the element or object's component to which the custom context menu is attached, not for the whole document, meaning that a mouseup with right button on the element displays the custom context menu, while anywhere else on the document it displays the browser's context menu.</p>
+
+		<h4>How</h4>
+
+		<h5 id="cMenuOnElement">Context menu for an element</h5>
+
+		<p>To cater for this Pergola provides the <a href="files/misc.html#contextmenuManager">pergola.contextmenuManager</a> object defining the methods <a href="files/misc.html#browser">browser()</a>, <a href="files/misc.html#custom">custom()</a>, and <a href="files/misc.html#activate">activate()</a>. You normally only need to invoke activate(), which lets you set a custom context menu for any element, acting on the event target.</p>
+
+		<p>When defining a context menu for a random element you must provide event handling for the right mouse button for that element. <b>Note that you must not create an instance of the <a href="files/ContextMenu.html">pergola.ContextMenu</a> class; you only need to define the <code>contextMenuItems</code> object property of the element</b>. The <a href="files/misc.html#activate">pergola.contextmenuManager.activate()</a> method creates the <a href="files/ContextMenu.html">pergola.ContextMenu</a> instance, if it doesn't exist (lazy loading).</p>
+
+		<p>The example below (in folder Examples/Contextmenu/contextmenu.svg) is rather crude and perhaps it's not the best idea to imitate, but it simply and clearly shows how to define and activate a context menu. The handler tests the right mouse button and invokes the <a href="files/misc.html#activate">pergola.contextmenuManager.activate()</a> function passing three parameters: the event, the handler (simply a (self) reference to the current handler), and an object defining the context menu items:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+var p = $C({element : "path", d : "M60,60h60v60h-60", appendTo : pergola.user});
+p.addEventListener("mousedown", handler, false);
+
+p.contextMenuItems = {
+  changeToRed : {
+    string : "Change To Red",
+    fn : function (evt) {p.setAttributeNS(null, "fill", "red");}
+  },
+  changetoBlue : {
+    string : "Change To Blue",
+    fn : function (evt) {p.setAttributeNS(null, "fill", "blue");}
+  },
+  rotate : {
+    string : "Rotate 45°",
+    fn : function (evt) {p.setAttributeNS(null, "transform", "rotate(45, 130, 130)");},
+    separator : new pergola.Separator()
+  },
+  remove : {
+    string : "Delete",
+    fn : function () {p.parentNode.removeChild(p);}
+  }
+};
+
+function handler (evt) {
+  if (evt.button == 2) {
+    pergola.contextmenuManager.activate(evt, handler, evt.target.contextMenuItems);
+    return;
+  }
+}
+]]></script>
+		</div>
+
+		<figure>
+		  <img src="graphics/contextmenu.png" alt="contextmenu" width="204" height="140">
+		  <figcaption>Fig. 20 – custom context menu.</figcaption>
+		</figure>
+
+		<p class="first"><strong>Note: in the event handler the test for the right mouse button must return, and must be carried out before other processing, if any.</strong></p>
+
+
+		<h5 id="cMenuOnObject">Context menu for an object</h5>
+
+		<p>Currently you can attach a custom context menu to instances of these classes:
+			<ul class="dot">
+				<li><a href="files/Button.html">Button</a></li>
+				<li><a href="files/Taskbar.html">Taskbar</a> (including <a href="files/references.html#taskbar">pergola.taskbar</a>)</li>
+				<li><a href="files/ToolBar.html">ToolBar</a></li>
+			</ul>
+		</p>
+
+		<p>You can also attach a custom context menu to these components of <a href="files/Window.html">Window</a> instances:
+			<ul class="dot">
+				<li><a href="files/Window.html#pDoc">doc</a> (applies to the window's <a href="files/Doc.html">doc</a> object <a href="files/Doc.html#background">background</a>)</li>
+				<li><a href="files/Window.html#status">status</a></li>
+				<li><a href="files/Window.html#topBar">topBar</a></li>
+				<li><a href="files/Window.html#toolBar">toolBar</a></li>
+				<li><a href="files/Window.html#tab">tab</a></li>
+			</ul>
+		</p>
+
+		<p>Context menu for <a href="files/Panel.html">Panel</a> components is currently not implemented.</p>
+
+		<p><b>When defining a context menu for an object you must not create an instance of the <a href="files/ContextMenu.html">pergola.ContextMenu</a> class; you only need to define the <code>contextMenuItems</code> object property for that object</b>. The <a href="files/Class.html#setContextmenu">setContextmenu()</a> method creates the <a href="files/ContextMenu.html">pergola.ContextMenu</a> instance, if it doesn't exist (lazy loading).</p>
+
+		<p>Attaching a custom context menu to <a href="files/Button.html">Button</a>, <a href="files/Taskbar.html">Taskbar</a>, <a href="files/ToolBar.html">ToolBar</a> instances at instantiation:
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+var myButton = new pergola.Button()
+.build({
+  ...,
+  contextMenuItems : {
+    action1 : {
+      string : "Action 1",
+      fn : function () {...}
+    },
+    action2 : {
+      separator : new pergola.Separator(),
+      string : "Action 2",
+      fn : function () {...}
+    },
+    ...
+  }
+});
+]]></script>
+		</div>
+
+		</p>
+
+		<p>or deferred:
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+var myButton.contextMenuItems = {
+  action1 : {
+    string : "Action 1",
+    fn : function () {...}
+  },
+  action2 : {
+    separator : new pergola.Separator(),
+		string : "Action 2",
+    fn : function () {...}
+  },
+  ...
+});
+]]></script>
+		</div>
+
+		</p>
+
+		<p>Attaching a custom context menu to components of <a href="files/Window.html">Window</a> instances at instantiation:
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+var myWindow = new pergola.Window()
+.build({
+  ...,
+  contextMenus : {
+    status : {
+      action1 : {
+        string : "Action 1",
+        fn : function () {...}
+      },
+      action2 : {
+        separator : new pergola.Separator(),
+        string : "Action 2",
+        fn : function () {...}
+      },
+      ...
+    },
+    topBar : {
+      ...
+    },
+    ...
+  }
+});
+]]></script>
+		</div>
+
+		</p>
+
+		<p>or deferred:
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+myWindow.status.contextMenuItems = {
+  action1 : {
+    string : "Action 1",
+    fn : function () {...}
+  },
+  action2 : {
+    separator : new pergola.Separator(),
+    string : "Action 2",
+    fn : function () {...}
+  },
+  ...
+};
+]]></script>
+		</div>
+
+		</p>
+
+		<p>Note that if the system already defines context menus for a window component, your context menus will be added after those (a separator is automatically added).</p>
+
+		<p>Note: the callback functions of the context menu items are executed in the context of the object that defines them, not that of the <a href="files/ContextMenuItem.html">ContextMenuItem</a> instance; in the code right above for example, <i>this</i>, in the <code>fn</code> callbacks, is the <code>myWindow.status</code> object.</p>
+
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		THE FIND DIALOG		******************************************* -->
+
+
+		<h3 id="find" class="header">THE FIND DIALOG</h3>
+
+		<p>Pergola creates the <a href="files/references.html#findDialog">pergola.findDialog</a>, an instance of the <a href="files/Panel.html">pergola.Panel</a> class, with lazy loading.</p>
+
+		<p>The best practice for initializing and opening the Find dialog is to invoke the <a href="files/Class.html#find">find()</a> prototype method, if you are working with instances of <a href="files/classes.html">classes</a> inheriting from <a href="files/Class.html">Class</a>, or the <a href="files/misc.html#find">pergola.find()</a> utility function (as a method of the object requiring the service by using the function's call() method) in any other context.</p>
+
+		<figure>
+		  <img src="graphics/find.png" alt="Find dialog" width="368" height="238">
+		  <figcaption>Fig. 21 – the Find dialog.</figcaption>
+		</figure>
+
+		<p>The find() function expects a <i>callback</i> parameter that you can specify as a string (method name) or function (see the <a href="#events">User Events And Functions</a> section). The find dialog is created if it doesn't exist, and initialized with this as <code>user</code> and <i>callback</i> as <code>callback</code>. The latter is invoked on clicking the panel's OK button. The initialization looks like this:</p>
+<pre>  <i>object</i>.find(<i>function</i>);</pre>
+or
+<pre>  pergola.find.call(<i>object</i>, <i>function</i>);</pre>
+
+		<p>To retrieve the dialog's information the panel defines the getData() instance method. The call to this method would tipically be the first statement in the callback function:</p>
+<pre>  var result = pergola.findDialog.getData();</pre>
+
+		<p>The function returns an object with these properties:
+			<ul class="none">
+				<li><b>value</b> string representing the input</li>
+				<li><b>regexp</b> regular expression</li>
+				<li><b>flags</b> the regular expression flags as per panel's “Case Insensitive” checkbox</li>
+				<li><b>wholeWord</b> boolean representing the state of the “Whole Word” checkbox</li>
+			</ul>
+		</p>
+
+		<p>You can then process the data. Here's an example of how this is done by the search() prototype method (the callback) of the <a href="files/DataGrid.html">pergola.DataGrid</a> class:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true; gutter: false;"><![CDATA[
+search : function () {
+  if (!(this.stringData = pergola.findDialog.getData())) return;
+
+  this.doFind();
+
+  if (!this.found.length) {
+    alert("Not found");
+    return;
+  }
+  this.gotoFound(0);
+},
+]]></script>
+		</div>
+
+		<p>and the associated methods:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true; gutter: false;"><![CDATA[
+searchUpdate : function () {
+  if (this.found) {
+    var fIndex = this.foundIndex;
+    this.doFind();
+    this.foundIndex = (fIndex >= this.found.length) ? 0 : fIndex;
+  }
+},
+
+doFind : function () {
+  var
+    sd = this.stringData,
+    i,
+    j,
+    label,
+    row,
+    type,
+    value,
+    start;
+
+  this.found = [];
+  this.foundIndex = 0;
+
+  for (i in this.rows) {
+    row = this.rows[i];
+    for (j in this.displayed) {
+      label = this.displayed[j].label;
+      value = row[label];
+      type = this.displayed[j].type;
+
+      if (type == "number" || type == "boolean") value = value.toString();
+      else if (type == "date") value = row.cells[label].value;
+      if (value.length == sd.value.length && sd.wholeWord) {
+        sd.regexp = new RegExp(sd.value, sd.flags);
+      }
+
+      if ((start = value.search(sd.regexp)) != -1) {
+        this.found.push({
+          label : label,
+          line : row.index,
+          entry : sd.value,
+          textNode : row.cells[label].element.firstChild,
+          start : start,
+          length : sd.value.length
+        });
+
+        this.stringData = sd;
+      }
+    }
+  }
+
+},
+
+gotoFound : function (d) {
+  var
+    f,
+    text,
+    sel = window.getSelection(),
+    range;
+
+  this.foundIndex += d;
+  if (this.foundIndex == this.found.length) {
+    this.foundIndex = 0;
+    if (window.confirm(pergola.messages.nextNotFound[0] + this.found[this.foundIndex].entry + pergola.messages.nextNotFound[1])) this.gotoFound(0);
+    return;
+  }
+
+  if (this.foundIndex < 0) {
+    this.foundIndex = this.found.length - 1;
+    if (window.confirm(pergola.messages.previousNotFound[0] + this.found[this.foundIndex].entry + pergola.messages.previousNotFound[1])) this.gotoFound(0);
+    return;
+  }
+
+  f = this.found[this.foundIndex];
+  text = f.textNode;
+  try {
+    sel.removeAllRanges();
+  }
+  catch(e) {
+
+  }
+
+  this.goToColumn(f.label);
+  this.goToLine(f.line);
+
+  range = document.createRange();
+  range.selectNodeContents(text);
+  range.setStart(text, f.start);
+  range.setEnd(text, f.start + f.length);
+  sel.addRange(range);
+},
+]]></script>
+		</div>
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		THE FILE DIALOG		******************************************* -->
+
+
+		<h3 id="file" class="header">THE FILE DIALOG</h3>
+
+		<p>Pergola creates the <a href="files/references.html#fileDialog">pergola.fileDialog</a>, an instance of the <a href="files/Panel.html">pergola.Panel</a> class, with lazy loading.</p>
+
+		<p>The best practice for initializing and opening the File dialog is to invoke the <a href="files/Class.html#getFiles">getFiles()</a> prototype method, if you are working with instances of <a href="files/classes.html">classes</a> inheriting from <a href="files/Class.html">Class</a>, or the <a href="files/requests.html#getFiles">pergola.getFiles()</a> utility function (as a method of the object requiring the service by using the function's call() method) from any other context.</p>
+
+		<figure>
+		  <img src="graphics/file.png" alt="File dialog" width="477" height="357">
+		  <figcaption>Fig. 22 – the File dialog.</figcaption>
+		</figure>
+
+		<p>The getFiles() function expects an <i>object</i> with these required properties: 
+			<ul class="none">
+				<li><b>title</b> string representing the panel's new title, for example "Save As", or "Open"</li>
+				<li><b>ok</b> string for the OK button text</li>
+				<li><b>callback</b> function, which you can specify as a string (method name) or function (see the <a href="#events">User Events And Functions</a> section)</li>
+				<li><b>path</b> string representing the path to folder</li>
+				<li><b>files</b> string representing the name of the array property in which to store the files list</li>
+			</ul>
+		</p>
+		<p>and the optional property: 
+			<ul class="none">
+				<li><b><a href="files/constants.html#getDir">getDir</a></b> string representing the name of the server script for getting directory listings</li>
+			</ul>
+		</p>
+
+		<p>The file dialog is created if it doesn't exist, and initialized with <i>this</i> as <code>user</code> and <i>callback</i> as <code>callback</code>. The latter is invoked on clicking the panel's OK button.</p>
+		<p>The <i>title</i> and <i>ok</i> properties are required and you get an alert if they're missing. It's very easy to miss a title bar that says "Open" while the OK button says "Save".</p>
+		<p>Note: after the request the <i>files</i> array property contains the updated list of files in the specified <i>path</i> folder. The initial value of this <i>files</i> would typically be the empty array.</p>
+		<p>Note: a copy of the script designated by the <i>getDir</i> property must exist in the root forlder of your application, whether your own script, or the default <a href="files/constants.html#getDir">pergola.getDir</a> script (getDir.php, provided in the lib/PHP folder).</p>
+
+		<p>The initialization can look like this:</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+myObject.getFiles({
+  title : "Save As ...",
+  ok : "Save",
+  callback : "saveAs",
+  path : folder,
+  files : "files"
+});
+]]></script>
+		</div>
+
+		<p>In the callback function that you specify you can query the result (the file name) like this:</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var name = 
+  pergola.fileDialog.comboBox.selection || pergola.fileDialog.input.value;
+]]></script>
+		</div>
+
+		<p>and then do something with it.</p>
+
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- *****************************************		ADDING A LOGO ICON		******************************************* -->
+
+
+		<h3 id="logoIcon" class="header">ADDING A LOGO ICON</h3>
+
+		<p>To place your logo or the application's logo as icon on the <a href="files/references.html#taskbar">pergola.taskbar</a> you can create a <a href="files/Button.html">pergola.Button</a> specifying its <code>symbol</code> property object, or invoke directly the <a href="files/misc.html#symbol">pergola.symbol()</a> utility function passing a symbol object. In both cases the symbol's artwork can be SVG artwork or an image. The symbol's artwork can be defined in the <a href="#symbols">Symbols</a> library or defined inline (using the library's format).</p>
+
+		<p>Using a button:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: true;"><![CDATA[
+myApp.logo.icon = new pergola.Button()
+.build({
+  parent: pergola.taskbar.container,
+  x: 2.5,
+  y: 2,
+  width : 36,
+  height : 26,
+  maskFill: "none",
+  stroke: "none",
+  extra : {
+    opacity : 0
+  },
+  symbol: {
+    symbol : pergola.symbols.myLogo,
+    width : 36,
+    height : 26
+  },
+  quickTip: {
+    tip: "powered by PERGOLA",
+    x: 2,
+    y : 33,
+    fill: "#009895",
+    stroke: "#009895",
+    textFill: "white",
+    opacity : .5,
+    delay: 400
+  }
+});
+]]></script>
+		</div>
+
+		<figure>
+		  <img src="graphics/logo.png" alt="logo icon" width="50" height="41">
+		  <figcaption>Fig. 23 – logo icon on taskbar.</figcaption>
+		</figure>
+
+    <p>Note: the <code>opacity : 0</code> at line 11 prevents the button's highlight on hovering. The button solution allows using interesting effects like those of the monaLisa in the buttons examples. A future version will allow adding filters to the button's <a href="files/Button.html#mask">mask</a> and/or <a href="files/Button.html#button">button</a> elements.</p>
+
+    <p class="first">Using the <a href="files/misc.html#symbol">pergola.symbol()</a> function, as shown in the <a href="#makeIcons">Symbols</a> section. Example with an image as symbol:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var myLogoIcon = pergola.symbol({
+  symbol : pergola.path + "lib/symbols/spectrum.png",
+  x : 16,
+  y : 10,
+  width : 16,
+  height : 16,
+  parent : pergola.taskbar.container
+});
+]]></script>
+		</div>
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ********************************		MAPS		************************************* -->
+
+
+		<h3 id="maps" class="header">MAPS</h3>
+
+		<p>Pergola displays maps within windows. For this, it uses a custom version of the <a href="http://www.polymaps.org" target="_bank">Polymaps</a> 2.4.0 library. The modifications were necessary to make the Polymaps library function in a standalone SVG context. At this stage true multiple instances (different maps in different windows) are not yet possible, in that a new instance in a new window will end up being an exact replica of the other. Currently only Bing maps are supported.</p>
+
+		<p>Case study in <a href="https://www.microsoft.com/learning/en-us/book.aspx?ID=15525" target="new">“Building Web Applications with SVG”</a> (Microsoft Press).</p>
+
+		<p>The Window prototype is extended with specific <a class="classes" href="files/Window.html#mapMethods">mapping utilities</a>, and the behavior of the transformation tools, including scrollbars, overrides the regular behavior by sending tile requests rather than acting on the contained document's viewport. You define a mapping window through its <code>type</code> property: "map".</p>
+
+		<p>A map is instantiated as a property of a newly created window. The window can be populated with a map either manually, as per the Polymaps documentation, or by invoking the prototype method <a class="classes" href="files/Window.html#mapMaker">mapMaker</a> through the <a class="classes" href="files/Window.html#contains">contains</a> property.</p>
+
+		<p>With the first technique you have full control over the Polymaps features:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var bingWin = new pergola.Window("Bing Tiles")
+.build({
+  type : "map",
+  mapWidth : 2048,
+  mapHeight : 1536,
+	...
+});
+
+var owner = bingWin.childDoc;
+
+polymaps.origin = {x : bingWin.x + doc.x, y : bingWin.y + doc.y};
+
+bingWin.map = polymaps.map(owner)
+  .container(owner.transformable.appendChild(
+    $C({
+      element : "svg",
+      id : bingWin.id + "_map",
+      width : 2048,
+      height : 1536
+    })
+  ))
+  .add(polymaps.interact())
+  .add(polymaps.hash());
+
+  queryBing();
+]]></script>
+ 		</div>
+
+		<p>Using the <a class="classes" href="files/Window.html#contains">contains</a> property is easier, but the implemented Polymaps features are preset:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var bingWin = new pergola.Window("Bing Tiles")
+.build({
+  type : "map",
+  mapWidth : 2048,
+  mapHeight : 1536,
+  ...
+  contains : function() {return this.mapMaker()}
+});
+]]></script>
+ 		</div>
+
+		<p>However, other Polymaps features can be added like this:
+    <pre>bingWin.map.add(polymaps.<span class="it">feature</span>());</pre>
+    </p>
+
+		<p>Note that Polymaps navigation buttons are disabled and replaced by Pergola tool buttons. Keyboard navigation is always available.</p>
+
+		<p>See the BingWindow.svg example in folder Examples/BingMaps/ with map layers and features in the window's menu.</p>
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ********************************		DATAGRID		************************************* -->
+
+
+		<h3 id="datagrid" class="header">DATAGRID</h3>
+
+		<p>A <a class="classes" href="files/DataGrid.html">pergola.DataGrid</a> object has these features:
+			<ul class="dot">
+				<li>Menus (optional), + optional custom menus</li>
+				<li>Local or remote mode</li>
+				<li>Data sort (alphanumeric, numeric, date)</li>
+				<li>Go To Column</li>
+        <li>Go To Line</li>
+				<li>Find (uses the <a href="files/references.html#findDialog">pergola.findDialog</a>), Find Next, Find Previous</li>
+				<li>“administrator” or “user” mode</li>
+				<li>Save, Save As, Open</li>
+				<li>Optional readOnly mode</li>
+        <li>Exclude columns containing sensitive data (in readOnly mode)</li>
+        <li>Build datagrids with subsets of columns from a unique dataset</li>
+				<li>Editing (Undo/redo, Cut, Copy, Paste–the latter from internal clipboard only)</li>
+				<li>Toggle column view</li>
+				<li>Reorganize columns</li>
+				<li>Delete columns</li>
+        <li>Context menus</li>
+        <li>Mousewheel scroll</li>
+			</ul>
+		</p>
+
+		<p>A datagrid is wrapped in a window, therefore you must first create a <a class="classes" href="files/Window.html">pergola.Window</a> object in the usual manner, specifying its "datagrid" type:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 5;"><![CDATA[
+var employees = new pergola.Window("EMPLOYEES")
+.build({
+  type : "datagrid",
+  hasZoomAndPan : false,
+  x : 80,
+  y : 80,
+  scrollSize : 15,
+  statusHeight : 32
+})
+]]></script>
+ 		</div>
+
+		<p>And then invoke its <a class="classes" href="files/Window.html#datagridMaker">datagridMaker()</a> method:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 14;"><![CDATA[
+.datagridMaker({
+  readOnly : false,
+  binding : "http://www.yourDomain.com/employees.json",
+  savePath : "Saved Files/",
+  permissions : "administrator", 
+//  fill : "#FFFFFC",
+//  altFill : "#F0F0F0",
+//  stroke : "none",
+//  "font-size" : 30,
+//  "font-family" : "'Comic Sans MS'",
+  gutter : true,
+//  rowHeight : 22,
+  menu : true
+//  exclude : ["Salary"] 
+});
+]]></script>
+ 		</div>
+
+		<p>See the complete list of <a href="files/DataGrid.html#protoProperties">pergola.DataGrid prototype properties</a> in the API reference.</p>
+
+		<p>The required <code id="binding">binding</code> property gets the <b>URL string</b> of the JSON file to load, or a JavaScript <b>object</b>. The latter lets you work in local mode (you would typically assign the object to a variable/property in a separate data file, like in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Examples/DataGrid/datagrid.html" target="new">example</a>). The interest of local mode is when you need to make a file by hand, for whatever reason; it lets you check its validity as you edit. Note that the JavaScript object doesn't have to be a JSON object, i.e. you can use regular JavaScript property naming conventions, not just the string notation; then, when loading the file in remote mode and saving, it will produce the <i>name</i>.json file containing the JSON object.</p>
+<!--
+		<p>If <code>binding</code> is not specified, an empty datagrid is created.</p>
+-->
+		<p>All other <a href="files/DataGrid.html#protoProperties">pergola.Datagrid prototype properties</a> can be overridden here, or let the datagrid use their default values. Worth of note is the <code>rowHeight</code> property: with its initial value "auto" the engine computes the maximum cell height and that value is applied to all cells of a same row; or you can specify a number (user space units) representing a fixed row height.</p>
+
+		<p>Note: the current document can be overwritten only if the <code>permissions</code> property is set to "administrator"; the default value "user" only allows to Save As.</p>
+
+
+		<h4 id="data">Data Format</h4>
+
+		<p>The native format for the datagrid is JSON. The JSON object must define the <code>"columns"</code> and <code>"rows"</code> array properties. The example below shows a table with 7 columns and 4 rows:</p>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+{
+  "columns" : [
+    {"label": "First Name", "type": "string"},
+    {"label": "Last Name", "type": "string"},
+    {"label": "Board Member", "type": "boolean", "options": ["Yes","No"]},
+    {"label": "Birth", "type": "date", "options": {"year": "numeric", "month": "long", "day": "numeric"}},
+    {"label": "Join Date", "type": "date", "options": {"year": "numeric", "month": "2-digit", "day": "2-digit"}},
+    {"label": "Salary", "type": "number", "options": {"style": "currency", "currency" : "USD"}},
+    {"label": "Notice", "type": "string"},
+    {"label": "Email", "type": "string"}
+  ],
+  "rows" : [
+    {"First Name" : "Jack", "Last Name" : "Bushnell", "Board Member" : true, "Birth" : "19 Jan 1970", "Join Date" : "1998-01-02", "Salary" : 10400.00, "Notice" : "8 weeks", "Email" : "jack.bushnell@pDatagrid.com"},
+    {"First Name" : "Peter", "Last Name" : "Fawler", "Board Member" : false, "Birth" : "1976-02-01", "Join Date" : "1999-05-28", "Salary" : 2600.00, "Notice" : "8 weeks", "Email" : "peter.fawler@pDatagrid.com"},
+    {"First Name" : "Paul", "Last Name" : "Best", "Board Member" : false, "Birth" : "1974-06-05", "Join Date" : "1996-12-08", "Salary" : 3000.00, "Notice" : "4 weeks", "Email" : "paul.best@pDatagrid.com"},
+    {"First Name" : "Mary", "Last Name" : "White", "Board Member" : true, "Birth" : "1972-03-21", "Join Date" : "2000-06-24", "Salary" : 15000.00, "Notice" : "2 weeks", "Email" : "mary.white@pDatagrid.com"},
+    {"First Name" : "Alice", "Last Name" : "Danielsson", "Board Member" : false, "Birth" : "1978-08-04", "Join Date" : "2003-03-26", "Salary" : 1800.00, "Notice" : "8 weeks", "Email" : "alice.danielsson@pDatagrid.com"}
+  ]
+}
+]]></script>
+ 		</div>
+
+		<h4 id="editJson">Producing a JSON file</h4>
+
+    <p>
+      <ol>
+				<li>Start by editing a regular JavaScript object literal by hand in local mode.</li>
+				<li>Assign your JavaScript object to the <a href="#binding">binding</a> property.</li>
+				<li>Run the datagrid in remote mode, and Save As <i>file name</i>.</li>
+			</ol>
+      The saved file contains the JSON object.
+    </p>
+
+
+		<h4 id="Columns">Columns</h4>
+
+		<p>Each element of the <code>"columns"</code> array is an object.</p>
+
+		<p>The value of the required <code>"label"</code> property shows in the column's header.</p>
+
+		<p>The required <code>"type"</code> property specifies the type of data in the cells; it can be one of: "<b>string</b>" "<b>date</b>" "<b>number</b>" "<b>boolean</b>".</p>
+
+		<p>Other optional properties are specific to types and are reviewed in the <a href="#dataTypes">Data Types</a> section further down.</p>
+
+
+		<h4 id="Rows">Rows</h4>
+
+		<p>Each element of the <code>"rows"</code> array is an object. Its property names matching the values of the columns' "label" properties are considered; any others are ignored and don't produce errors. Therefore the number of fields in the rows doesn't have to match exactly the number of columns. This eventually allows you to build partial datagrids from a unique dataset. For instance, say that you have a dataset where each row contains 20 fields and that you need to build a datagrid showing 7 fields: you then simply specify in the <a href="#Columns">Columns</a> which fields to use (the <code>"label"</code> property).</p>
+		<p>Note that pergola.DataGrid works internally mostly with objects and therefore the order of the properties in "rows" is not important, though it's certainly neater, visually, to have them in the same order.</p>
+
+
+		<h4 id="dataTypes">Data Types</h4>
+
+		<h5 id="dataTypeString">string</h5>
+    <p>Values of type "string" are not processed.</p>
+
+		<h5 id="dataTypeNumber">number</h5>
+    <p>For columns of type "number" the datagrid uses the <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-9.1" target="new">Intl.NumberFormat</a> where available (all major implementations except Safari, at writing time), or the toLocaleString() method.</p>
+    <p>The optional <code>"options"</code> property is an object as specified by Intl.NumberFormat <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-11.1.1.1" target="new">options</a> (see Mozilla's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NumberFormat" target="new">Intl.NumberFormat</a> for a more friendly language). In the Salary column of the JSON object above, for example, the currency is specified using a <a href="http://www.iso.org/iso/home/standards/currency_codes.htm" target="new">ISO 4217</a> currency code ("USD, "EUR", "JPY"...); the currency symbol is included in the locale string of the input box (or text box in readOnly mode).</p>
+    <p>When editing cells of this type the field is set to its numeric value (stripped of any locale formatting options) and expects a JavaScript number as input–the keypress callback for this type is set to the <a href="files/key.html#keypressNum">keypressNum()</a> class method of the <a href="#Key">pergola.Key</a> class. On input validation the value of the cell (in Rows) is converted live back to (and saved as) type number; the value of the input box is formatted with the locale options.</p>
+    <p>Note: when processing the Intl.NumberFormat "currency" style option, only IE displays trailing decimal zeros, ex: $ 1500.00.</p>
+    <p>Note: at writing time Safari ignores formatting options.</p>
+
+    <h5 id="dataTypeDate">date</h5>
+    <p>For columns of type "date" the datagrid uses the <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-9.1" target="new">Intl.DateTimeFormat</a> where available (all major implementations except Safari, at writing time), or the toDateString() method. When editing cells of this type the field is reset and expects a valid date parameter for the Date constructor. The accepted formats are <a href="http://www.w3.org/TR/NOTE-datetime" target="new">ISO</a> and <a href="http://tools.ietf.org/html/rfc2822#page-14" target="new">RFC</a>.</p>
+    <p>For columns of type "date" you can specify the optional <code>"options"</code> property, an object as specified by Intl.DateTimeFormat <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-12.1.1.1" target="new">options</a> (see Mozilla's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat" target="new">Intl.DateTimeFormat</a> for a more friendly language).</p>
+    <p>Note: at writing time Safari only accepts <a href="http://tools.ietf.org/html/rfc2822#page-14" target="new">RFC</a> dates, and ignores formatting options.</p>
+
+		<h5 id="dataTypeBoolean">boolean</h5>
+    <p>The value of "boolean" cells is converted to a string and back to Boolean on file saving. Columns of this type too can be sorted. For a column of this type you can use The optional <code>"options"</code> array property, containing exactly 2 string elements specifying replacements for <i>true</i> and <i>false</i>, e.g. ["Yes", "No"].</p>
+
+		<h5 id="dataTypeBoolean">The <i>null</i> value</h5>
+    <p>Due to the controversial (and much controverted) nature of <i>null</i> in JavaScript, this value is always converted to string and converted back to <i>null</i> on file saving. As a general rule it would seem more appropriate to use the empty string instead of <i>null</i> when the value of a field is unknown. A thing that may be seen as an advantage in using the empty string is that, whether sorting ascending or descending, empty fields always show at the bottom.</p>
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- **********************************		USING THE DEBUGGER		*************************************** -->
+
+
+		<h3 id="debugger" class="header">USING THE DEBUGGER</h3>
+
+		<p>Pergola implements a <a href="files/misc.html#debugger">debugger</a> that you can use instead of the system alert() for checking variable/property state.</p>
+
+		<p>To activate the debugger follow the instructions in the <a href="#configdebug">Configuration</a> chapter.</p>
+
+
+		<h4>How</h4>
+
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+$D({
+  "var1" : var1,
+  "var2" : var2,
+  "x" : this.x,
+  "target" : evt.target,
+  ...
+});
+]]></script>
+ 		</div>
+
+		<p>$D() is a shortcut for <a href="files/misc.html#vars">pergola.debugger.vars()</a>.</p>
+
+	</div>
+
+
+
+
+
+
+
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ***********************************		KNOWN ISSUES		***************************************** -->
+
+	<div class="chapter">
+
+		<h2 id="issues" class="header">KNOWN ISSUES</h2>
+
+		<div class="contents">
+			<ol type="1" >
+				<li><a href="#smil">SMIL</a></li>
+				<li><a href="#extreference">External reference in downloaded documents</a></li>
+				<li><a href="#localdocs">Local documents download</a></li>
+				<li><a href="#markersIssue">Markers</a></li>
+			</ol>
+		</div>
+
+
+		<h4 id="smil" class="knownIssue">1. SMIL</h4>
+		<div class="issues">
+			<p>SMIL animation in downloaded documents does not resolve in: Chrome, some Safari builds (?), Firefox.</p>
+			<p><span class="bold">Workaround</span><br>
+			No known workaround.</p>
+		</div>
+
+		<h4 id="extreference" class="knownIssue">2. External Reference In Loaded Documents</h4>
+		<div class="issues">
+			<p><span class="bold">Action</span><br>
+			Example: a map referencing a relief image.</p>
+			<p><span class="bold">Effect</span><br>
+			The relative URL of the image will not be valid once the map SVG fragment has been integrated into the document. Affects: Chrome, Opera, Firefox.</p>
+			<p><span class="bold">Workaround</span><br>
+			Set the URL relative to the SVG file that loads the map, or use absolute URL.</p>
+		</div>
+
+		<h4 id="localdocs" class="knownIssue">3. Loading Local Documents</h4>
+		<div class="issues">
+			<p>Loading local documents is only allowed in browsers implementing XMLHttpRequest 2.</p>
+		</div>
+
+		<h4 id="markersIssue" class="knownIssue">4. Markers</h4>
+		<div class="issues">
+			<p>IE 9+: glitches with markers manipulation in live drawing.</p>
+			<p><span class="bold">Workaround</span><br>
+			No known workaround.</p>
+		</div>
+
+	</div>
+</div>
+<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+</body>
+</html>
+

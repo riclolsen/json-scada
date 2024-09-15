@@ -1,0 +1,183 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola Windows - D3 Multiple Documents</title>
+<meta name="description" content="SVG library - Load multiple d3.js documents with Pergola in windows with transformation tools. Standalone SVG or HTML + SVG.">
+<link type="text/css" rel="stylesheet" href="../example.css">
+<link type="text/css" rel="stylesheet" href="style.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+<body>
+
+  <img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Multiple D3 documents</h1>
+  <div class="blurb">
+		<p>An in-depth analysis of this work can be found in the book <a href="https://www.microsoft.com/learning/en-us/book.aspx?ID=15525" target="new">“Building Web Applications with SVG”</a> (Microsoft Press).</p>
+	</div>
+
+
+	<div id="svg" style="width: 840px; height: 620px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- D3  -->
+  <script src="../../pergola/extlib/d3-28b0e22/d3.js" type="text/javascript"></script>
+	<script src="../../pergola/extlib/d3-28b0e22/d3.geom.js" type="text/javascript"></script>
+	<script src="../../pergola/extlib/d3-28b0e22/d3.layout.js" type="text/javascript"></script>
+	<script src="../../pergola/extlib/d3-28b0e22/d3.time.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+	<script src="stream_layers.js" type="text/javascript"></script>
+	<script src="stream.js" type="text/javascript"></script>
+	<script src="clock.js" type="text/javascript"></script>
+	<script src="force.js" type="text/javascript"></script>
+
+	<script src="worm.js" type="text/javascript"></script>
+
+
+  <div class="blurb">
+
+	  <h3><a href="../../Examples/D3/multiD3.svg">View as standalone SVG</a></h3>
+
+    <p>View other D3 examples in windows: <a href="../../Examples/D3/dragon-firefly.svg">dragon-firefly.svg</a>; <a href="../../Examples/D3/ray.svg">ray.svg</a>; <a href="../../Examples/D3/phoenix.svg">phoenix.svg</a>; <a href="../../Examples/D3/worms.svg">worms.svg</a></p>
+
+	  <p>This example shows how you can load multiple D3 examples wrapped in windows, using Pergola with the d3.js library plugged in.</p>
+		<p>An example of interactivity between the “Force” and “Stream” windows is also implemented: a click on any member of a particular group (of characters in Victor Hugo's “Les Misérables”) in the Force window triggers a new transition (with the group's color) in the Stream window, where the D3's types of transition “Layers” and “Waves” are selectable through the Transitions menu.</p>
+
+		<h4>HOW</h4>
+
+		<p>Showing the code for the D3 “stream” example with some interactivity. The example script is the body of the function <code>streamWin.contents</code>, which populates the window. The <code>contains</code> property of the window object, which can get a node or a function, executes the call.</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var streamWin = new pergola.Window("D3 Stream");
+
+/* 
+ * Cleanest way to encapsulate in window:
+ * 1) Define an instance method to populate the window.
+ * 2) Place the call in the "contains" property of the window object.
+*/
+streamWin.contents = function() {
+/* 
+ * Turning some variables of the original D3 example into properties
+ * of the window object to ensure global interactivity.
+*/
+  var n = 20, // number of layers
+      m = 200, // number of samples per layer
+      w = 960,
+      h = 500,
+      o = this,
+      color = d3.interpolateRgb("#aad", "#556");
+
+  this.data0 = d3.layout.stack().offset("wiggle")(stream_layers(n, m));
+  this.data1 = d3.layout.stack().offset("wiggle")(stream_layers(n, m));
+  this.data2 = d3.layout.stack().offset("wiggle")(stream_waves(n, m));
+
+  this.transitFrom = this.data0;
+  this.transitTo = this.data1;
+
+  var mx = m - 1,
+      my = d3.max(this.data0.concat(this.data1), function(d) {
+        return d3.max(d, function(d) {
+          return d.y0 + d.y;
+        });
+      });
+
+  var area = d3.svg.area()
+    .x(function(d) { return d.x * w / mx; })
+    .y0(function(d) { return h - d.y0 * h / my; })
+    .y1(function(d) { return h - (d.y + d.y0) * h / my; });
+
+/* 
+ * The doc.transformable group has DOM Events listeners. IE9 throws runtime errors with getBBox()  
+ * for path elements appended without the "d" attribute (which is required by the spec).
+ * Defer appending the group. 
+*/
+//  var vis = d3.select(this.doc.transformable)
+//    .append("svg:g")
+//    .attr("transform", "translate(" + 10 + "," + 40 + ")");
+
+  var vis = d3.select($C({element : "g", transform : "translate(" + 10 + "," + 40 + ")"}));
+
+  this.chart = vis.selectAll()
+    .data(this.data0)
+    .enter().append("svg:path")
+    .attr("fill", function() { return color(Math.random()); })
+    .attr("d", area);
+
+  this.doc.transformable.appendChild(vis.node());
+
+  this.transition = function (destination, fill) {
+//    $D({"fill": fill, "shade": fill.darken()});
+    color = fill ? d3.interpolateRgb(fill, fill.darken()) : color;
+    this.chart.data(function() {
+      o.transitTo = o.transitFrom;
+      return o.transitFrom = destination;
+    })
+    .transition()
+    .duration(2500)
+    .attr("fill", function() { return color(Math.random()); })
+    .attr("d", area);
+  }
+};
+
+
+streamWin.build({
+  x : 100,
+  y : 100,
+  width : 600,
+  height : 420,
+  menu : {
+    transitions : {
+      title : "Transitions",
+      items : {
+        streamLayers : {
+          string : "Stream Layers",
+          active : true,
+          check : true,
+          exclusive : true,
+          fn : function () {
+            streamWin.transitTo = (streamWin.transitFrom == streamWin.data0) ? streamWin.data1 : streamWin.data0;
+          }
+        },
+        streamWaves : {
+          string : "Stream Waves",
+          active : true,
+          check : false,
+          exclusive : true,
+          fn : function () {streamWin.transitTo = streamWin.data2;}
+        }
+      }
+    }
+  },
+  contains : function () {this.contents();}
+})
+.addTools({
+  streamGroup : {
+    separator : true,
+    transition : {
+      symbol : {
+        symbol : pergola.symbols.transition,
+        x : 6,
+        y : 11
+      },
+      quickTip : {tip : "Apply transition"},
+      ev : "mouseup",
+      fn : function (evt) {this.owner.transition(this.owner.transitTo);}
+    }
+  }
+});
+]]></script>
+		</div>
+
+  </div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Filters</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Filters.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Filters Library</h1>
+
+	<p class="first">A filter definition is a function –property of the <code>pergola.filter</code> object (defined in lib/filters.js). The function first creates a unique ID based on the function name and values, taking into account the overriding values, and if it doesn't already exist in the document it creates and appends the filter element to <a href="references.html#defs">pergola.defs</a>. Returns the URI string.</p>
+
+	<p>The filter functions expect an optional object specifying filter attributes to override the default values. The property names use SVG vocabulary, and names containing illegal characters for JavaScript variable names are specified using the string notation, e.g. "flood-opacity". A numeric value can be specified as number or string. Because of the different types of <i>fe</i> components used to fabricate a filter, the expected attributes are not necessarily the same across the functions.</p>
+
+	<p>See the <a href="http://www.w3.org/TR/SVG11/filters.html" target="new">SVG filters specification</a> for more descriptive explanations on filter attributes.</p>
+
+
+
+	<div class="propList">
+
+		<h3>pergola.filter</h3>
+
+		<p id="blur" class="property">pergola.filter.<strong>blur</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define these filter attributes:
+			<ul class="none">
+				<li>x : <i>number or string (with or without %)</i></li>
+				<li>y : <i>number or string (with or without %)</i></li>
+				<li>stdDeviation : <i>number</i></li>
+				<li>dx : <i>number</i></li>
+				<li>dy : <i>number</i></li>
+				<li>"flood-color" : <i>color string</i></li>
+				<li>"flood-opacity" : <i>number or string</i></li>
+			</ul>
+		</p>
+
+
+		<p id="specular" class="property">pergola.filter.<strong>specular</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define these filter attributes:
+			<ul class="none">
+				<li>x : <i>number or string (with or without %)</i></li>
+				<li>y : <i>number or string (with or without %)</i></li>
+				<li>stdDeviation : <i>number</i></li>
+				<li>dx : <i>number</i></li>
+				<li>dy : <i>number</i></li>
+				<li>"lighting-color" : <i>color string</i></li>
+				<li>surfaceScale : <i>number</i></li>
+				<li>specularExponent : <i>number</i></li>
+				<li>specularConstant : <i>number</i></li>
+				<li>"fePointLight" : <i>object</i> with <code>x</code>, <code>y</code>, <code>z</code> number properties</li>
+			</ul>
+		</p>
+		<p>Note that fePointLight is a filter component, not an attribute. If specified, it must define its three properties.</p>
+
+
+		<p id="noise" class="property">pergola.filter.<strong>noise</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define these filter attributes:
+			<ul class="none">
+				<li>x : <i>number or string (with or without %)</i></li>
+				<li>y : <i>number or string (with or without %)</i></li>
+				<li>baseFrequency : <i>number</i></li>
+				<li>numOctaves : <i>number</i></li>
+				<li>seed : <i>number</i></li>
+				<li>values : <i>string containing exactly 20 values separated by a space</i></li>
+				<li>tableValues : <i>object</i> with <code>R</code>, <code>G</code>, <code>B</code> string properties, each specifying a list of numbers separated by space or comma</li>
+			</ul>
+		</p>
+		<p>Note that tableValues, If specified, must define its three properties.</p>
+
+		<p id="turbulence" class="property">pergola.filter.<strong>turbulence</strong>([<i>object</i>])</p>
+		<p>If <i>object</i> is specified it may define these filter attributes:
+			<ul class="none">
+				<li>x : <i>number or string (with or without %)</i></li>
+				<li>y : <i>number or string (with or without %)</i></li>
+				<li>baseFrequency : <i>number</i></li>
+				<li>numOctaves : <i>number</i></li>
+				<li>seed : <i>number</i></li>
+				<li>values : <i>string containing a list of 20 matrix values separated by a space or comma</i></li>
+				<li>tableValues : <i>object</i> with <code>R</code>, <code>G</code>, <code>B</code> string properties, each specifying a list of numbers separated by space or comma</li>
+			</ul>
+		</p>
+		<p>Note that tableValues, if specified, must define its three properties.</p>
+
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,60 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Timer</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Timer class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Timer</h1>
+
+	<p class="first">pergola.Timer is not subclassed to pergola.Class.</p>
+
+	<p>This class gives full and precise control over timing processes of all kinds, and allows concurrent processes and multiple timing controllers for a same process/animation. Its instances are self-managing (no global or local indexing). If an instance is not specifically destroyed it's reusable, and its properties (including the callback) may be overridden for subsequent uses, or dynamically for the current process by another controller. For extensive information about this class and examples read the SVG magazine <a href="http://svgmagazine.com/nov2011/js_timer.html" target="new">Timer Class</a> article.</p>
+
+
+	<div class="propList">
+
+		<h3>pergola.Timer</h3>
+
+		<p id="initialize" class="property"><strong>initialize</strong>(<i>object</i>)</p>
+		<p>The properties of <i>object</i> are inherited by this. Instantiation/initialization can look like this:
+	<pre> myObject.timer = pergola.Timer()
+  .initialize({
+    handle : <i>object</i>,
+    callback : <i>function</i>,
+    delay : <i>ms</i>,
+    frequence : <i>ms</i>,
+    destroy : "<i>variable/property</i>"
+  });</pre>
+	  where <code>callback</code> is required. If <code>handle</code> is specified <code>callback</code> will be invoked as a method of <code>handle</code> (with this as parameter); if not specified, <code>handle</code> is this, and therefore <code>callback</code> will be invoked as a method of this. The property <code>handle</code> can reference any object (including window), not necessarily the object in the context of which Timer was instantiated (key to multiple controllers).</p>
+
+		<p>If <code>delay</code> and/or <code>frequence</code> are specified window.setInterval() and window.setTimeout() will be used accordingly.</p>
+
+		<p>If <code>destroy</code> is specified the instance will be destroyed and cannot be reused. In most cases destruction is not sought, note however that the class doesn't follow a classic JavaScript OOD model and its methods are not prototype methods; therefore each instance has its own copy of each method, and while this is not important in small or short-lived applications, it may cause so-called memory leaks with large and resident applications.</p>
+
+		<p><i>object</i> can define any other properties relating for example to iterations, date, abortion, etc., all available in the <code>callback</code> function.</p>
+
+		<p>The method dynamically assigns the properties <code>timeout</code> and/or <code>interval</code>.</p>
+
+
+		<p id="setInterval" class="property"><strong>setInterval</strong>()</p>
+		<p>This method is invoked by <a href="#initialize">initialize</a> if <code>frequence</code> was specified. This method must not be invoked explicitly.</p>
+
+
+		<p id="clear" class="property"><strong>clear</strong>()</p>
+		<p>Invoke this method to release the timer. Sets the <code>timeout</code> and/or <code>interval</code> properties (set in <a href="#initialize">initialize()</a>) to null, to the exclusion of any other property, and destroys the instance if <code>destroy</code> was specified.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,209 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – ColorPicker</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – ColorPicker.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+  <h1 id="title">pergola.ColorPicker</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO (callback function is defined by <a href="#user">user</a> and invoked by the OK button of the color picker <a href="Panel.html">panel</a>).</p>
+
+  <p class="first"><a href="../../ExamplesHTML/Colorpicker/colorpicker.html">Example</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+  <p class="first">Note: only the <a href="#init">init()</a> method can be invoked explicitly.</p>
+
+
+
+  <div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="Panel.html">pergola.Panel</a> instance <a href="Panel.html#container">container</a>. Must not be overridden.</p>
+
+    <p id="spectrum" class="property"><strong>spectrum</strong></p>
+    <p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string ("narrow", "wide"). Determines the initial display type.</p>
+
+    <p id="width" class="property"><strong>width</strong></p>
+    <p>256 – number (user space units). Do not override.</p>
+
+    <p id="height" class="property"><strong>height</strong></p>
+    <p>256 – number (user space units). Do not override.</p>
+
+    <p id="maxX" class="property"><strong>maxX</strong></p>
+    <p>255 – number.</p>
+
+    <p id="max" class="property"><strong>max</strong></p>
+    <p>255 – number. Constant. Do not override.</p>
+
+    <p id="mult" class="property"><strong>mult</strong></p>
+    <p>6 – number. Do not override.</p>
+
+    <p id="region" class="property"><strong>region</strong></p>
+    <p>[0, 85, 170] – array. Relates to narrow spectrum.</p>
+
+    </div>
+
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+    <p id="release" class="property"><strong>release</strong>()</p>
+    <p>This method is invoked upon <a href="Dragarea.html#release">release</a> of <a href="references.html#dragarea">pergola.dragarea</a>. You never need to invoke this method explicitly.</p>
+
+    <p id="spectrumIinitDrag" class="property"><strong>spectrumIinitDrag</strong>(<i>evt</i>)</p>
+    <p>Returns an activation object for <a href="references.html#dragarea">pergola.dragarea</a>. You never need to invoke this method explicitly.</p>
+
+    <p id="spectrumScan" class="property"><strong>spectrumScan</strong>(<i>evt</i>)</p>
+    <p>Callback for <a href="references.html#dragarea">pergola.dragarea</a>. Invokes <a href="#setDrop">setDrop</a>. You never need to invoke this method explicitly.</p>
+
+    <p id="setDrop" class="property"><strong>setDrop</strong>()</p>
+    <p>You never need to invoke this method explicitly.</p>
+
+    <p id="brightnessIinitDrag" class="property"><strong>brightnessIinitDrag</strong>(<i>evt</i>)</p>
+    <p>Returns an activation object for <a href="references.html#dragarea">pergola.dragarea</a>. You never need to invoke this method explicitly.</p>
+
+    <p class="property"><strong>brightnessScan</strong>(<i>evt</i>)</p>
+    <p>Callback for <a href="references.html#dragarea">pergola.dragarea</a>. Invokes <a href="#setBrightness">setBrightness</a>. You never need to invoke this method explicitly.</p>
+
+    <p id="setBrightness" class="property"><strong>setBrightness</strong>()</p>
+		<p>You never need to invoke this method explicitly.</p>
+
+    <p id="setByHex" class="property"><strong>setByHex</strong>(<i>v</i>)</p>
+		<p>You never need to invoke this method explicitly.</p>
+
+    <p id="set" class="property"><strong>set</strong>()</p>
+		<p>You never need to invoke this method explicitly.</p>
+
+    <p id="valuesDisplay" class="property"><strong>valuesDisplay</strong>(<i>r</i>, <i>g</i>, <i>b</i>)</p>
+		<p>You never need to invoke this method explicitly.</p>
+
+    <p id="valueFromBrightness" class="property"><strong>valueFromBrightness</strong>(<i>n</i>)</p>
+		<p>You never need to invoke this method explicitly.</p>
+
+    <p id="hueFromValues" class="property"><strong>hueFromValues</strong>(<i>rgb</i>)</p>
+		<p>You never need to invoke this method explicitly.</p>
+
+    <p id="toHex" class="property"><strong>toHex</strong>(<i>n</i>)</p>
+		<p><i>n</i> is a number or string representing a <i>r</i>, <i>g</i>, or <i>b</i> color value. Returns the hexadecimal string representation of <i>n</i>.</p>
+
+    <p id="toRGB" class="property"><strong>toRGB</strong>(<i>c</i>)</p>
+		<p><i>c</i> is a hexadecimal color string without the “#” sign. Returns an array with <i>r</i>, <i>g</i>, <i>b</i> number color values.</p>
+
+    <p id="absoluteX" class="property"><strong>absoluteX</strong>(<i>node</i>)</p>
+		<p>Returns the CTM.e of <i>node</i>.</p>
+
+    <p id="absoluteY" class="property"><strong>absoluteY</strong>(<i>node</i>)</p>
+		<p>Returns the CTM.f of <i>node</i>.</p>
+
+    <p id="layout_narrow" class="property"><strong>layout_narrow</strong>()</p>
+		<p>Switches to basic mode (65536 visible colors).</p>
+
+    <p id="layout_wide" class="property"><strong>layout_wide</strong>()</p>
+		<p>Switches to extended mode (393216 visible colors).</p>
+
+    <p id="init" class="property"><strong>init</strong>(<i>object</i>)</p>
+    <p><i>object</i> must specify the <a href="#user">user</a> object. If <i>object</i> specifies <a href="#color">color</a> (color string in any legal format) it determines the initial color value, otherwise "#FFFFFF" is used.</p>
+
+    <p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+    <p id="build" class="property"><strong>build</strong>()</p>
+    <p>Creates elements. Returns this. Note: this method does not expect an <a href="classes.html#initializationObject">initialization object</a>.</p>
+
+    </div>
+
+
+
+
+    <h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+    <p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p><a href="Panel.html">pergola.Panel</a> instance. Do not override.</p>
+
+    <p id="user" class="property"><strong>user</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; the current user object.</p>
+
+    <p id="color" class="property"><strong>color</strong></p>
+    <p>If specified, color string in any legal format; the initial color value.</p>
+
+    <p id="RGB" class="property"><strong>RGB</strong></p>
+    <p><pre> {
+    r : <i>initial value</i>,
+    g : <i>initial value</i>,
+    b : <i>initial value</i>
+  }</pre></p>
+
+    <p id="container" class="property"><strong>container</strong></p>
+    <p>&lt;g&gt; element.</p>
+
+    <p id="spectrumMask" class="property"><strong>spectrumMask</strong></p>
+    <p>&lt;rect&gt; element.</p>
+
+    <p id="drop" class="property"><strong>drop</strong></p>
+    <p><pre> { container : &lt;g&gt; element }</pre></p>
+
+
+    <p id="brightnessMask" class="property"><strong>brightnessMask</strong></p>
+    <p>&lt;stop&gt; (gradient) element.</p>
+
+    <p id="needle" class="property"><strong>needle</strong></p>
+    <p><pre> {
+    x : 0,
+    y : 0,
+    container : &lt;g&gt; element.
+  }</pre></p>
+
+    <p id="brightnessBar" class="property"><strong>brightnessBar</strong></p>
+    <p>&lt;rect&gt; element.</p>
+
+    <p id="sample" class="property"><strong>sample</strong></p>
+    <p>&lt;rect&gt; element.</p>
+
+    <p id="newSample" class="property"><strong>newSample</strong></p>
+    <p>&lt;rect&gt; element.</p>
+
+    <p id="input" class="property"><strong>input</strong></p>
+    <p><pre> {
+    r : <a href="Input.html">pergola.Input</a> instance,
+    g : <a href="Input.html">pergola.Input</a> instance,
+    b : <a href="Input.html">pergola.Input</a> instance,
+    hex : <a href="Input.html">pergola.Input</a> instance
+  }</pre></p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

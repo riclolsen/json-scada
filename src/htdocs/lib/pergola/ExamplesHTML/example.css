@@ -1,0 +1,115 @@
+
+
+body {
+	background-color: white; 
+	margin: 10px 20px 20px 0;
+	font-size: 12px; 
+	font-family: 'Segoe UI', 'Trebuchet MS', 'Lucida Grande', 'Deja Vu';
+}
+
+
+a {
+	color: #0060C0;
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+
+.blurb {
+	margin: 32px 0 0 20px;
+	font-size: 13px;
+	line-height: 18px;
+}
+
+.blurb h3{
+	font-size: 13px;
+}
+
+p.first {
+	margin-top: 40px;
+}
+
+h1 {
+  font-family: 'Arial','Sans Serif';
+	margin-left: 168px;
+  margin-top: 8px;
+	font-size: 28px;
+	color: #404040;
+}
+
+#svg {
+	margin: 40px;
+	overflow: hidden;
+	border: 1px solid #D0D0D0;
+}
+
+img {
+	border: 0;
+	position: absolute;
+	top: 10px;
+	left: 0;
+}
+
+
+.center {text-align: center;}
+
+
+.right {text-align: right;}
+
+
+.it {font-style: italic;}
+
+
+.bold {font-weight: bold;}
+
+
+.round {border-radius: 12px; -moz-border-radius: 12px;}
+
+.list10 {
+	padding: 3px 0px 8px 6px;
+	font-size: 10pt;
+}
+
+ol.alpha li {list-style: lower-alpha;}
+
+.pointer {
+	cursor: pointer;
+}
+
+div.copyright {
+	text-align: right;
+	font-size: 8pt;
+	color: #404040;
+}
+
+p.codeHeader {
+	margin-top: 48px;
+}
+
+.codebox {
+	margin: 28px 0;
+	background-color: #FFFFFE;
+	border: 1px solid #F0F0F0;
+	line-height: 15px;
+}
+
+code {
+	font-family: Consolas, "Courier New", monospace;
+	font-size: 14px;
+	background-color: #F5F6F7;
+	padding: 1px 2px;
+}
+
+.comment {
+	color: brown;
+	font-style: italic;
+}
+
+ul.dot {
+	list-style-image: url("listDot.png");
+}
+
+
+
+

@@ -1,0 +1,135 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Dragarea</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Dragarea class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Dragarea</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES (<a href="#callback">callback</a> function defined in the <a href="#activate">activation</a> object).</p>
+
+	<p class="first">System component. The <a href="references.html#dragarea">pergola.dragarea</a> object is created at runtime by the system and ready for use. The drag area can be <a href="#resize">resized</a> ad hoc to cover a particular region.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#systemComponents">pergola.systemComponents</a>. Can't be overridden.</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>"100%" – string or number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>"100%" – string or number (user space units).</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>"none" – string.</p>
+
+  	<p id="updateCoordinates" class="property"><strong>updateCoordinates</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="cursor" class="property"><strong>cursor</strong></p>
+  	<p>"default" – string.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+  	<p id="activate" class="property"><strong>activate</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties in <i>object</i>, where the <a href="#callback">callback</a> function and <a href="#handle">handle</a> object properties are required. If this <a href="#updateCoordinates">updateCoordinates</a> is overridden the <code>x</code> and <code>y</code> properties of the <a href="#handle">handle</a> object will not be updated; If this <a href="#cursor">cursor</a> is overridden the specified cursor applies. <i>object</i> defines any other properties that need to be processed in the callback function. Returns this.</p>
+    <p>Note: it's important to remember that the callback function is invoked as a method of this (even where <a href="#callback">callback</a> is a prototype or instance method of this <a href="#handle">handle</a>), and that in its scope this <a href="#handle">handle</a> refers to the object that required the activation of the drag area.</p>
+    <p>Two contextual examples of the activation object:
+    <pre>
+pergola.dragarea.activate({
+  callback : this.rotate,
+  handle : this,
+  cx : this.getCX(),
+  cy : this.getCY(),
+  radius : this.radius(),
+  theta : 0,
+  offset : offset,
+  updateCoordinates : false
+});</pre>
+    <pre>
+pergola.dragarea.resize(this.absoluteX(this.container), this.absoluteY(this.container), this.visibleW, this.visibleH)
+.activate({
+  callback : pergola.rubberBox.update,
+  handle : pergola.rubberBox,
+  offset : this.getOffset(),
+  updateCoordinates : false
+});</pre>
+    </p>
+
+  	<p id="release" class="property"><strong>release</strong>(<i>evt</i>)</p>
+  	<p>Invoked on mouseup event. Deletes the properties inherited upon activation; invokes this <a href="#reset">reset</a>; if this <a href="#handle">handle</a> has a <code>release</code> method, invokes <code>this.handle.release()</code>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="resize" class="property"><strong>resize</strong>(<i>x</i>, <i>y</i>, <i>w</i>, <i>h</i>)</p>
+  	<p>Sets this <a href="#rect">rect</a> to specified <i>x</i>, <i>y</i> number coordinates and <i>w</i>, <i>h</i> number dimensions. Returns this.</p>
+
+  	<p id="reset" class="property"><strong>reset</strong>()</p>
+  	<p>Resets coordinates and dimensions to initial values. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+  	<p>Invokes this <a href="#callback">callback</a> on mousemove event; invokes this <a href="#release">release</a> on mouseup and mouseout events.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#rect">rect</a> ID.</p>
+
+  	<p id="rect" class="property"><strong>rect</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="handle" class="property"><strong>handle</strong></p>
+  	<p>Must be specified in the <a href="#activate">activation</a> object. The object requiring the use of the drag area.</p>
+
+  	<p id="callback" class="property"><strong>callback</strong></p>
+  	<p>Must be specified in the <a href="#activate">activation</a> object. Function.</p>
+  	<p>Note: the callback function is invoked as a method of this (even where the callback is a prototype or instance method of this <a href="#handle">handle</a>), and that in its scope this <a href="#handle">handle</a> refers to the object that required the activation of the drag area.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

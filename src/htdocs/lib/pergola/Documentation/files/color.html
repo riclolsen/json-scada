@@ -1,0 +1,88 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Color</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Color.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Color</h1>
+
+	<p class="first">Utility functions for manipulation of colors.</p>
+
+
+	<div class="propList">
+
+		<h3>pergola.color</h3>
+
+    <h3 id="properties">PROPERTIES</h3>
+
+		<p id="rgbTable" class="property">pergola.color.<strong>rgbTable</strong></p>
+		<p>Array; table of 65536 rgb color values in basic mode, or 393216 rgb color values in extended mode. The <a href="#basic">rgbTablePopulate.basic()</a> and <a href="#extended">rgbTablePopulate.extended()</a> methods are invoked by the pergola.<a href="references.html#colorpicker">colorpicker</a> <a href="ColorPicker.html#layout_narrow">layout_narrow()</a> and <a href="ColorPicker.html#layout_wide">layout_wide()</a> methods when toggling between basic (65536 visible colors) and axtended mode (393216 visible colors).</p>
+
+		<p id="neutral" class="property">pergola.color.<strong>neutral</strong></p>
+		<p>Boolean; true if the current theme color is neutral.</p>
+
+		<p id="components" class="property">pergola.color.<strong>components</strong></p>
+		<p>Object with <code>r</code>, <code>g</code> and <code>b</code> number properties representing the components of to the current <a href="constants.html#theme">theme</a> color.</p>
+
+		<p id="ingredients" class="property">pergola.color.<strong>ingredients</strong></p>
+		<p>Array with sorted color number values of the current <a href="constants.html#theme">theme</a> color.</p>
+
+		<p id="themeLuminosity" class="property">pergola.color.<strong>themeLuminosity</strong></p>
+		<p>Number; the luminosity (0–255) of the current <a href="constants.html#theme">theme</a> color.</p>
+
+		<p id="keywordNames" class="property">pergola.color.<strong>keywordNames</strong></p>
+		<p>Object; the color keywords table with name/value pairs.</p>
+
+		<p id="customColorNames" class="property">pergola.<strong>customColorNames</strong></p>
+		<p>Object defining custom color keywords. Located in skins.js file.</p>
+
+
+
+    <h3 id="methods">METHODS</h3>
+		<p id="hslToRgb" class="property"><strong>hslToRgb</strong>(<i>h</i>, <i>s</i>, <i>l</i>)</p>
+		<p><i>h</i>, <i>s</i> and <i>l</i> are numbers representing the respective values. Returns an array of [r, g, b] values.</p>
+
+		<p id="convert" class="property"><strong>convert</strong>(<i>c</i>[, <i>format</i>])</p>
+		<p>Converts <i>c</i> string specified in any legal format (including keyword and custom keyword names). If <i>format</i> string is specified ("rgb" or "hex") the method returns the formatted string in the specified format, otherwise it returns an array with the [r, g, b] values.</p>
+
+
+		<p id="hexToRGB" class="property"><strong>hexToRGB</strong>(<i>c</i>)</p>
+		<p><i>c</i> is a hexadecimal color string (with the "#" sign). Returns an array of [r, g, b] values.</p>
+
+
+		<p id="rgbToHex" class="property"><strong>rgbToHex</strong>(<i>n</i>)</p>
+		<p><i>n</i> is a number in the range 0–255. Returns two hex digits in the range 00–FF. If the result overflows, the return value is constrained to FF.</p>
+
+
+		<p id="lab" class="property"><strong>lab</strong>()</p>
+		<p>Used by system to define <a href="color.html#neutral">pergola.color.neutral</a>, <a href="color.html#components">pergola.color.components</a>, <a href="color.html#ingredients">pergola.color.ingredients</a>, and <a href="color.html#themeLuminosity">pergola.color.themeLuminosity</a>. These properties are used to determine the color scheme of the interface based on the current color theme and to produce <a href="#shade">shade</a>s. This method must not be invoked explicitly.</p>
+
+
+		<p><p id="shade" class="property"><strong>shade</strong>(<i>cents</i>[, <i>f</i>])</p>
+		Produces a shade of current theme color from the values specified in the <i>cents</i> array. The <i>cents</i> values can affect hue and/or saturation. If <i>f</i> number is specified (positive or negative) the brightness is corrected by the <i>f</i> factor.</p>
+
+
+		<h3 id="rgbTablePopulate">pergola.color.rgbTablePopulate</h3>
+
+		<p id="basic" class="property"><strong>basic</strong>()</p>
+		<p>Populates an array with 65536 rgb colors. Used by <a href="ColorPicker.html">pergola.ColorPicker</a>. You don't normally need to invoke this method explicitly.</p>
+
+
+		<p id="extended" class="property"><strong>extended</strong>()</p>
+		<p>Populates an array with 393216 rgb colors. Used by <a href="ColorPickerExtended.html">pergola.ColorPickerExtended</a>. You don't normally need to invoke this method explicitly.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+

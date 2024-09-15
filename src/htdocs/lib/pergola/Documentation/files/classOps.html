@@ -1,0 +1,46 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – class operations</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – class operations.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">Class operations</h1>
+
+	<p class="first">Designing an OOD model requires efficient subclassing and extension methods. These methods must take into account the typology of the language. Pergola's subclassing method allows subclassing of one or more classes to a superclass, after definition and in one single operation. It also allows to subclass a set of subclasses to a subclass without interfering with the previous superclass inheritance. Subsequent extensions (immediate or deferred) of a class or a prototype with new sets of class or prototype properties and methods is a prerogative of JavaScript, one that doesn't follow a bureaucratic model. This, plus the characteristic that properties always resolve to strings, makes that JavaScript is the OOP language by excellence.</p>
+
+
+	<div class="propList">
+
+		<h3>Subclassing</h3>
+		<p id="subclass" class="property">pergola.<strong>subclass</strong>(<i>subClass</i>, <i>baseClass</i>)</p>
+		<p><i>subClass</i> is a class or an array of classes to be subclassed to <i>baseClass</i>. The function applies inheritance, then reassigns <i>subClass</i> to <code><i>subClass</i>.prototype.constructor</code>, and defines the <i>subClass</i> properties <code>baseConstructor</code> reference to <i>baseClass</i>, and <code>superClass</code> reference to <code><i>baseClass</i>.prototype</code>.</p>
+
+
+
+		<h3>Add collections of properties and methods to objects, classes, and prototypes.</h3>
+		<p id="extend" class="property">pergola.<strong>extend</strong>(<i>entity</i>, <i>ext</i>)</p>
+		<p>The <i>ext</i> object specifies the collection of properties and methods to be inherited by <i>entity</i> object, class, or prototype. Returns <i>entity</i>.</p>
+
+
+		<h3>Destruction</h3>
+		<p id="destroy" class="property">pergola.<strong>destroy</strong>(<i>handle</i>, <i>name</i>)</p>
+		<p>This is a generic function for deleting properties and variables. It deletes the <i>name</i> string property of the <i>handle</i> object, or attempts to delete the global <i>name</i> variable or, if unsuccessful, it sets it to null.</p>
+
+		<p>Note: attempting to delete a variable or property designating a class may require calling the class's private destruction method first for freeing eventual services used by said class, before calling this generic function. Failing to do so may result in strange or unexpected behaviors –depending on the implementation– which may not necessarily throw errors. Initialized service processes may wait forever for termination, and attempting to destroy a reference (from an Undo or Key instance, for example) may throw uneasy to trace errors.</p>
+
+	</div>
+
+
+</div>
+
+</body>
+</html>
+
+

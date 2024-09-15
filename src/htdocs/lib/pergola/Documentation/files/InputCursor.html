@@ -1,0 +1,94 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – InputCursor</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – InputCursor class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.InputCursor</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+  	<p id="visibility" class="property"><strong>visibility</strong></p>
+  	<p>"hidden" – string.</p>
+
+  	<p id="blinkRate" class="property"><strong>blinkRate</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number representing milliseconds.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="blink" class="property"><strong>blink</strong>()</p>
+  	<p>Callback for this <a href="#timer">timer</a>.</p>
+
+  	<p id="setPosition" class="property"><strong>setPosition</strong>()</p>
+  	<p>Sets the position at the current text end position (left-right orientation only).</p>
+
+  	<p id="remove" class="property"><strong>remove</strong>()</p>
+  	<p>Invokes this <a href="timer.html#clear">timer.clear()</a>; removes this <a href="#bar">bar</a>; deletes this <code>user.inputCursor</code>.</p>
+
+  	<p id="init" class="property"><strong>init</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. Prototype properties specified in <i>object</i> are overridden. Creates elements; assigns <a href="timer.html">pergola.Timer</a> instance to this <a href="#timer">timer</a>. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#bar">bar</a> ID.</p>
+
+    <p id="user" class="property"><strong>user</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>. Designates a <a href="Input.html">pergola.Input</a> object.</p>
+
+  	<p id="bar" class="property"><strong>bar</strong></p>
+  	<p>&lt;line&gt; element.</p>
+
+  	<p id="timer" class="property"><strong>timer</strong></p>
+  	<p><a href="timer.html">pergola.Timer</a> instance.</p>
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola Context Menu</title>
+<meta name="description" content="SVG library - The pergola.Contextmenu class allows using a custom context menu on any element, overriding the browser's context menu on that element only. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Contextmenu</h1>
+
+
+	<div id="svg" style="width: 800px; height: 260px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+
+<!-- PROJECT FILES  -->
+	<script src="contextmenu.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Contextmenu/contextmenu.svg">View as standalone SVG</a></h3>
+
+		<p>Pergola implements custom context menus to override the browser's default context menu.</p> 
+
+		<p>Right click on the shape above to show its custom context menu, overriding the browser's context menu for that element, but not for the rest of the document.</p>
+
+		<h4>HOW</h4>
+
+		<p>Set the context menu for a random element (from example):</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var p = $C({element : "path", d : "M100,100h68v68h-68", fill : "#585858", appendTo : pergola.user});
+p.addEventListener("mousedown", handler, false);
+
+p.contextMenuItems = {
+  changeToRed : {
+    string : "Change To Red",
+    fn : function () {p.setAttributeNS(null, "fill", "red");}
+  },
+  changetoBlue : {
+    string : "Change To Blue",
+    fn : function () {p.setAttributeNS(null, "fill", "blue");}
+  },
+  rotate : {
+    string : "Rotate 45°",
+    fn : function () {p.setAttributeNS(null, "transform", "rotate(45, 130, 130)");}
+  },
+  remove : {
+    separator : new pergola.Separator(),
+    string : "Delete",
+    fn : function () {p.parentNode.removeChild(p);}
+  }
+};
+
+function handler (evt) {
+  if (evt.button == 2) {
+    pergola.contextmenuManager.activate(evt, handler, evt.target.contextMenuItems);
+    return;
+  }
+}
+]]></script>
+		</div>
+
+		<p>Set the context menu for an object:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var myButton = new pergola.Button()
+.build({
+  ...,
+  contextMenuItems : {
+    action1 : {
+      string : "Action 1",
+      fn : function () {...}
+    },
+    action2 : {
+      separator : new pergola.Separator(),
+      string : "Action 2",
+      fn : function () {...}
+    },
+    ...
+  }
+});
+]]></script>
+		</div>
+
+
+		<p>Set the context menu for a component of a window object:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var myWindow = new pergola.Window()
+.build({
+  ...,
+  contextMenus : {
+    status : {
+      action1 : {
+        string : "Action 1",
+        fn : function () {...}
+      },
+      action2 : {
+        separator : new pergola.Separator(),
+        string : "Action 2",
+        fn : function () {...}
+      },
+      ...
+    },
+    topBar : {
+      ...
+    },
+    ...
+  }
+});
+]]></script>
+		</div>
+
+		<p>Learn more in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/Tutorial.html#contextMenu">CUSTOM CONTEXT MENU</a> section of the Tutorial.</p>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

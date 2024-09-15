@@ -1,0 +1,118 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – StatusBar</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – StatusBar class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.StatusBar</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO.</p>
+
+  <p class="first">System component. This class is instantiated by <a href="Window.html">pergola.Window</a> objects if the property <code>hasStatus</code> is not specifically set to false in the window's <a href="classes.html#initializationObject">initialization object</a>. You never need to instantiate this class explicitly.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>. Overridden by <a href="Window.html">Window</a> instances.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units).</p>
+
+  	<p id="font-size" class="property"><strong>"font-size"</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string or number (user space units).</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – color string.</p>
+
+  	<p id="advanceX" class="property"><strong>advanceX</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units); dynamically updated margin on each field addition.</p>
+
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="center" class="property"><strong>center</strong>(<i>c</i>)</p>
+  	<p><i>c</i> is an object defining <code>lon</code> and <code>lat</code> properties; updates the values of this <a href="#fields">centerLon</a> and this <a href="#fields">centerLat</a> fields on map displacement. Use for mapping applications.</p>
+
+  	<p id="location" class="property"><strong>location</strong>(<i>c</i>)</p>
+  	<p><i>c</i> is an object defining <code>lon</code> and <code>lat</code> properties; centers the map at specified geo location; updates the values of this <a href="#owner">owner</a>.<a href="#fields">locLon</a> and this <a href="#owner">owner</a>.<a href="#fields">locLat</a> fields. Use for mapping applications.</p>
+
+  	<p id="zoom" class="property"><strong>zoom</strong>(<i>z</i>)</p>
+  	<p><i>z</i> is a number specifying the zoom level for this <a href="#owner">owner</a> (<a href="Window.html">pergola.Window</a>). Assigns <i>z</i> to this <a href="#owner">owner</a>.<a href="#fields">zoomLevel</a>.<code>value</code> and updates this <a href="#owner">owner</a>.<a href="#fields">zoomLevel</a>.<code>element</code> (&lt;text&gt;).</p>
+
+  	<p id="coordinates" class="property"><strong>coordinates</strong>(<i>evt</i>)</p>
+  	<p>Callback function for "mousemove" event registered on <a href="Doc.html#transformable">doc.transformable</a> of <a href="Window.html#active">active window</a> on <a href="Doc.html#currentTool">doc.currentTool</a> <a href="Class.html#activateTool">activation</a> if <a href="Doc.html#currentTool">doc.currentTool</a>.<code>coordinates</code>. The method is not executed in this context. You don't need to invoke this method explicitly.</p>
+
+  	<p id="addFields" class="property"><strong>addFields</strong>([<i>object</i>])</p>
+  	<p>If this <code>fields</code> is not defined, <i>object</i> must define field properties. For each <i>field</i> property specified in <i>object</i>, the method defines this <a href="#owner">owner</a>[<i>field</i>] if field defines the <code>input</code> property, or this[<i>field</i>].</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>; designates the <a href="classes.html#owner">owner object</a> (<a href="Window.html">pergola.Window</a>).</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="bar" class="property"><strong>bar</strong></p>
+  	<p>&lt;rect&gt; element.</p>
+
+  	<p id="fields" class="property"><strong><i>fields</i></strong></p>
+  	<p>Object defining a collection of field properties. Important note: input fields are defined as properties of this <a href="#owner">owner</a> (<a href="Window.html">pergola.Window</a>); plain text fields are instead defined as properties of this (see <a href="#addFields">addFields</a>). See <a href="../Tutorial.html#addFields">Adding Fields To The Status Bar</a> in tutorial for code examples on adding fields.</p>
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

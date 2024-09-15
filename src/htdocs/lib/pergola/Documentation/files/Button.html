@@ -1,0 +1,158 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Button</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Button class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Button</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: YES.</p>
+
+  <p class="first"><a href="../../ExamplesHTML/Buttons/buttons.html">Examples</a>.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="fill-opacity" class="property"><strong>"fill-opacity"</strong></p>
+  	<p>0 – string or number.</p>
+
+  	<p id="stroke" class="property"><strong>stroke</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="maskFill" class="property"><strong>maskFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – String.</p>
+
+  	<p id="large" class="property"><strong>large</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – object with <code>width</code> and <code>height</code> properties; represents a preset for large buttons.</p>
+
+  	<p id="small" class="property"><strong>small</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – object with <code>width</code> and <code>height</code> properties; represents a preset for small buttons.</p>
+
+  	<p id="hasVisualEffects" class="property"><strong>hasVisualEffects</strong></p>
+  	<p>true – boolean. Hovering effect.</p>
+
+  	<p id="hasTextEffect" class="property"><strong>hasTextEffect</strong></p>
+  	<p>true – boolean. Video inverse text effect.</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – color string.</p>
+
+  	<p id="textFillInverse" class="property"><strong>textFillInverse</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – color string.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="handleEvent" class="property"><a href="classes.html#handleEvent"><strong>handleEvent</strong></a>(<i>evt</i>)</p>
+
+  	<p id="build" class="property"><strong>build</strong>([<i>object</i>])</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>. This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+    <p id="size" class="property"><strong>size</strong></p>
+    If specified, a string with allowed values "small" or "large"; respective presets are applied to this <a href="#width">width</a> and this <a href="#height">height</a>.</p>
+
+    <p id="width" class="property"><strong>width</strong></p>
+    <p>Computed number. If <a href="#shape">shape</a> is specified in the <a href="classes.html#initializationObject">initialization object</a>, this <a href="#button">button</a> BBox width.</p>
+
+    <p id="height" class="property"><strong>height</strong></p>
+    <p>Computed number. If <a href="#shape">shape</a> is specified in the <a href="classes.html#initializationObject">initialization object</a>, this <a href="#button">button</a> BBox height.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="buttonGroup" class="property"><strong>buttonGroup</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="mask" class="property"><strong>mask</strong></p>
+  	<p>If <a href="#shape">shape</a> is specified in the <a href="classes.html#initializationObject">initialization object</a>, the &lt;<i>element</i>&gt; specified by this <a href="#shape">shape</a>.<code>element</code>, otherwise &lt;rect&gt; element.</p>
+
+  	<p id="button" class="property"><strong>button</strong></p>
+  	<p>If <a href="#shape">shape</a> is specified in the <a href="classes.html#initializationObject">initialization object</a>, the &lt;<i>element</i>&gt; specified by this <a href="#shape">shape</a>.<code>element</code>, otherwise &lt;rect&gt; element.</p>
+
+  	<p id="shape" class="property"><strong>shape</strong></p>
+  	<p>If specified, this <code>shape.element</code> determines the element for this <a href="#mask">mask</a> and this <a href="#button">button</a>. Note: this <code>shape</code> can reference a shape from the <a href="shapes.html">shapes</a> library or can be defined on the fly (in the library's format).</p>
+
+  	<p id="text" class="property"><strong>text</strong></p>
+  	<p>If specified, object specifying text attributes. The property is reassigned to reference the produced &lt;text&gt; element.</p>
+
+  	<p id="textFill" class="property"><strong>textFill</strong></p>
+  	<p>If specified, the "fill" value for this <a href="#text">text</a>.</p>
+
+  	<p id="symbol" class="property"><strong>symbol</strong></p>
+  	<p>If specified, the &lt;g&gt; element returned by <a href="misc.html#symbol">pergola.symbol()</a>. See <a href="../Tutorial.html#symbols">Symbols</a> in tutorial for proper use, definition, and options of the <code>symbol</code> object.</p>
+
+  	<p id="image" class="property"><strong>image</strong></p>
+  	<p>If specified, object defining <code>"xlink:href"</code>, <code>width</code>, <code>height</code>, and optional <code>x</code> and <code>y</code> properties. Note: this property is overridden after processing to reference the produced &lt;image&gt; element.</p>
+
+  	<p id="quickTip" class="property"><strong>quickTip</strong></p>
+  	<p>If specified, reference to library's quick tip (lib/qtips.js) or new <a href="QuickTip.html">pergola.QuickTip</a> instance (as returned by the <a href="Class.html#quickTipFormat">quickTipFormat()</a> method). See <a href="QuickTip.html">pergola.QuickTip</a> for options.</p>
+
+  	<p id="extra" class="property"><strong>extra</strong></p>
+  	<p>If specified, object defining <a href="../Tutorial.html#extra">extra</a> attributes, specified using SVG vocabulary and grammar, for this <a href="#button">button</a>.</p>
+
+  	<p id="ev" class="property"><strong>ev</strong></p>
+  	<p>If specified (event type string, or array of event type strings), the event type(s) is/are registered on this <a href="#button">button</a>, with this.</p>
+
+  	<p id="fn" class="property"><strong>fn</strong></p>
+  	<p>If specified, callback function for this <a href="#ev">ev</a>. Must be specified if this <a href="#ev">ev</a> is specified.</p>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola Quicktip</title>
+<meta name="description" content="SVG library - Pergola quick tips (static/mouse-tracking, pop-up delay, updates). Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Quick Tip</h1>
+
+
+	<div id="svg" style="width: 800px; height: 240px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+  <script src="quicktip.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Quicktip/quicktip.svg">View as standalone SVG</a></h3>
+
+		<p>The prototype method <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/QuickTip.html#update">update()</a> of the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/QuickTip.html">pergola.QuickTip</a> class allows to update the text value dynamically (use case in the <a href="../Sliders/sliders.html">sliders</a> example).</p>
+
+		<p>Position can be static or mouse-tracking. Pop-up delay is configurable globally and can be overridden.</p>
+
+		<h4>HOW</h4>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var emptyTool = new pergola.ToolButton()
+.build({
+  x : 200,
+  y : 80,
+  width : 28,
+  height : 22,
+  stroke : "sandybrown",
+  extra : {
+    rx : 6
+  },
+  quickTip : {
+    tip : "Quick–tips can be static or mouse–tracking. \nThe pop–up delay is configurable globally \nand can be overridden. A quick–tip can be a \nreference..."
+  }
+});
+
+
+var spy = new pergola.ToolButton()
+.build({
+  x : 340,
+  y : 80,
+  width : 38,
+  height : 22,
+  text : {
+    x : 5,
+    y : 18,
+    'font-size' : 18,
+    fill : "white",
+    textNode : "007",
+    'pointer-events' : "none"
+  },
+  textFillInverse : "#D00000",
+  quickTip : {
+    tip : [
+      "My name is Bond,",
+      "James Bond"
+    ],
+    x : 378,
+    y : 68,
+    delay : 250
+  }
+});
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

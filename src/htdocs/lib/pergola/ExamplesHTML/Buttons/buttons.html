@@ -1,0 +1,153 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola buttons</title>
+<meta name="description" content="SVG library - Pergola buttons gallery. Preset or custom shape. Take images, symbols, text, and quick tip. Fully customizable for accessibility. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+  <img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+  <h1>Buttons</h1>
+
+
+  <div id="svg" style="width: 940px; height: 340px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+
+<!-- PROJECT FILES  -->
+  <script src="legend.js" type="text/javascript"></script>
+  <script src="buttons.js" type="text/javascript"></script>
+
+
+  <div class="blurb">
+
+	  <h3><a href="../../Examples/Buttons/buttons.svg">View as standalone SVG</a></h3>
+
+		<p>The configuration of a button gives full control over its aspect and functionality. You can override the default shape (&lt;rect&gt;) with a library shape, or any shape defined on the fly, with a &lt;path&gt; for example. Buttons can take symbols, images, text and quick-tips. Special buttons like ToolButton, DialogButton, CommandButton, and WindowTab are subclasses of <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Button.html">pergola.Button</a> and are shown in their respective examples.</p>
+		    <p>The User Functions and Events mechanism implemented in all the low level component classes, together with the possibility of overriding properties and methods, allows the addition of accessibility extensions by developers with the right know how. They may also find interesting the possibility of defining a global accessibility <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/skins.html">skin</a>.</p>
+    
+
+		<h4>HOW</h4>
+
+    <p>In this example a &lt;g&gt; element is first defined as container for the buttons:</p>
+
+    <div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 7"><![CDATA[
+var g = $C({element : "g", transform : "translate(40 40)", appendTo : pergola.user});
+]]></script>
+		</div>
+
+		<p>Instantiation of a simple button:</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 10"><![CDATA[
+var basicButton = new pergola.Button("Basic Button")
+.build({
+  parent : g,
+  quickTip : {tip : "this is the basic, default button"},
+  ev : "mouseup",
+  target : legend.item1,
+  fn : legend.hilight
+});
+]]></script>
+		</div>
+		<p>Note: the initial value of the inherited property <code>parent</code> is a reference to the <code>pergola.user</code> layer (system classes override it to <code>pergola.system</code>, a higher ranking layer).</p>
+
+    <p>In the code below you can see the use of the properties <code>extra</code>, an object where we can set properties (SVG attributes) not defined in the prototype, and <code>text</code>, a property that mutates to become a reference to the text element. Note how the SVG vocabulary and grammar is used for properties and sub-elements that have an equivalence, while only those objects/components which don't have an equivalence, like <code>quickTip</code> for example, have a proprietary specification. This approach is consistent throughout the library:</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 101"><![CDATA[
+var button4 = new pergola.Button("Button 4")
+.build({
+  parent : g,
+  y : 100,
+  width : 88,
+  height : 28,
+  extra : {
+    rx : 3
+  },
+  textFillInverse : "red",
+  text : {
+    x : 44,
+    y : 36,
+    textNode : "TALK",
+    fill : "none",
+    stroke : "#FFFFFF",
+    "stroke-width" : 1.5,
+    "font-family" : "'Arial Black', Arial",
+    "font-size" : 22,
+    "font-weight" : "bold",
+    transform : "scale(1 .5)",
+    "text-anchor" : "middle",
+    "letter-spacing" : 2,
+    kerning : 0,
+    "pointer-events" : "none"
+  },
+  quickTip : {tip : [
+    "you can place text and symbols together",
+    "in a button. I don't have a symbol, but",
+    "just to let you know..."
+  ]},
+  ev : "mouseup",
+  target : legend.item9,
+  fn : legend.hilight
+});
+]]></script>
+		</div>
+
+    <p>In the following example you can see the use of the properties <code>image</code> and <code>symbol</code>. The physical structure of a button consists of a &lt;g&gt; element containing two equal elements (&lt;rect&gt; by default) assigned to the <code>mask</code> and <code>button</code> properties, then the <code>symbol</code> and the <code>image</code> are stacked on top. The variety of effects is not just for fancy stuff, it can be controlled for accessibility:</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 209"><![CDATA[
+var monaLisa = new pergola.Button("Mona Lisa")
+.build({
+  parent : g,
+  x : 440,
+  y : 92,
+  width : 59,
+  height : 46,
+  fill : "#F8F2DF",
+  maskFill : "#F8F2DF",
+  stroke : "#F8F2DF",
+  image : {
+    "xlink:href" : pergola.path + "lib/symbols/MonaLisa.jpg",
+    width : 53,
+    height : 40,
+    x : 3,
+    y : 3
+  },
+  extra : {
+    "stroke-width" : 4,
+    "stroke-dasharray" : "3,3",
+    "stroke-dashoffset" : 0
+  },
+  symbol : {
+    symbol : pergola.path + "lib/symbols/MonaLisa_negative.jpg",
+    width : 53,
+    height : 40,
+    x : 3,
+    y : 3,
+    opacity : .8
+  },
+  quickTip : {tip : "Thanks."},
+  ev : "mouseup",
+  target : legend.item10,
+  fn : legend.hilight
+});
+]]></script>
+    </div>
+
+
+  </div>
+
+  <div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

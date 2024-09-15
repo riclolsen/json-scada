@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events" version="1.1" baseProfile="full" xml:space="preserve" zoomAndPan="disable">
+	<title>Pergola Markers</title>
+	<desc>SVG library - Pergola markers gallery. Standalone SVG or HTML + SVG.</desc>
+
+<!-- PERGOLA  -->
+	<script xlink:href="config.js" type="text/javascript"/>
+	<script xlink:href="../../pergola/pergola.js" type="text/javascript"/>
+
+<!-- PROJECT FILES -->
+  <script xlink:href="markers.js" type="text/javascript"/>
+
+</svg>

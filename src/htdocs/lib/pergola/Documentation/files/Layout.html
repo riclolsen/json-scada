@@ -1,0 +1,127 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Layout</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Layout class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Layout</h1>
+
+  <p class="first">System events: NO (does not concern the produced components).</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO (does not concern the produced components).</p>
+
+	<p class="first">Currently there is a limited number of layouts, and they are particularly designed for panels (non-resizable). The layouts methods are not designed to be invoked explicitly; their names are assigned as strings to the <code>type</code> property of the <code>layout</code> <a href="classes.html#initializationObject">initialization object</a>. The <a href="classes.html#owner">owner</a> object that requires a Layout instance, defines the <code>layout</code> property. See also <a href="../Tutorial.html#Layout">Layout</a> in the tutorial.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p>None</p>
+
+    </div>
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p>Only those inherited by <a href="Class.html#prototype">pergola.Class</a>.</p>
+
+    </div>
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+  	<p id="table" class="property"><strong>table</strong>()</p>
+  	<p>Simulation of basic HTML table. This method is invoked by the <a href="#build">build</a> method and must not be invoked explicitly. <a href="../../ExamplesHTML/Panel/panelWithTableLayout.html">Example</a>.</p>
+    <p>The <a href="classes.html#initializationObject">initialization object</a> inherent to this layout type defines these properties:
+      <ul class="none">
+        <li><code>x</code> : table coordinate</li>
+        <li><code>y</code> : table coordinate</li>
+        <li><code>rows</code> : number of rows – required</li>
+        <li><code>cols</code> : number of columns – required</li>
+        <li><code>spacing</code> : cell spacing</li>
+        <li><code>attributes</code> : object – collection of &lt;rect&gt; attributes (including the style and class attributes) applied to cells</li>
+        <li><code>fn</code> : typically a <a href="../Tutorial.html#events">user function</a> to populate the cells</li>
+      </ul>
+    </p>
+    <p>Note: the method defines the <code>cells</code> property (array) of this <code>owner</code>. The elements of the array reference the cells' &lt;g&gt; containers, which can then be easily populated and updated.</p>
+
+  	<p id="combobox" class="property"><strong>combobox</strong>()</p>
+  	<p>Embeds a <a href="ComboBox.html">combobox</a>. <a href="../../ExamplesHTML/combobox/combobox.html">Example</a>.</p>
+    <p>The <a href="classes.html#initializationObject">initialization object</a> inherent to this layout type defines these properties:
+      <ul class="none">
+        <li><code>x</code> : container's x</li>
+        <li><code>y</code> : container's y</li>
+        <li><code>width</code> : if not specified, will be equal to the panel's width</li>
+        <li><code>height</code> : if not specified, will be equal to the panel's height</li>
+        <li><code>list</code> : array of strings (<a href="ListItem.html">ListItem</a> names)</li>
+        <li><code>layout</code> : the combobox can in turn define a layout</li>
+        <li><code>fn</code> : typically a <a href="../Tutorial.html#events">user function</a> to populate the combobox</li>
+      </ul>
+    </p>
+
+  	<p id="tabbed" class="property"><strong>tabbed</strong>()</p>
+  	<p>Create a panel with tabs. A <a href="Tab.html">pergola.Tab</a> instance is created for each property in this <code>tabs</code>. <a href="../../ExamplesHTML/Panel/panelWithTabs.html">Example</a>.</p>
+    <p>The <a href="classes.html#initializationObject">initialization object</a> inherent to this layout type defines these properties:
+      <ul class="none">
+        <li><code>tabs</code> : object defining the <a href="Tab.html">tabs</a></li>
+      </ul>
+    </p>
+    <p>Note: the properties defined in this <code>tabs</code> become properties of this <a href="#owner">owner</a> (the panel).</p>
+
+  	<p id="message" class="property"><strong>message</strong>()</p>
+  	<p>Pergola uses this layout to build the <a href="references.html#notification">pergola.notification</a> system object. <a href="../../ExamplesHTML/Panel/systemNotification.html">Example</a>.</p>
+
+  	<p id="Dialog" class="property"><strong>findDialog</strong>()</p>
+  	<p>Pergola uses this layout to build the <a href="references.html#findDialog">pergola.findDialog</a> system object. <a href="../../ExamplesHTML/Panel/find.html">Example</a>.</p>
+
+  	<p id="fileDialog" class="property"><strong>fileDialog</strong>()</p>
+  	<p>Pergola uses this layout to build the <a href="references.html#fileDialog">pergola.fileDialog</a> system object.</p>
+
+  	<p id="build" class="property"><strong>build</strong>(<i>object</i>)</p>
+  	<p>this inherits the properties specified in <i>object</i>. <i>object</i> must specify <a href="#type">type</a>, representing the name of an existing layout method. Prototype properties specified in <i>object</i> are overridden. Invokes this <a href="#type">[<i>type</i>]</a>(). Returns this.</p>
+
+    </div>
+
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets a generated XML name (<a href="Class.html#Class">Class</a>).
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML()</a>.
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>. Designates the <a href="classes.html#owner">owner object</a>.
+
+    <p id="type" class="property"><strong>type</strong></p>
+    <p>Must be specified in the <a href="classes.html#initializationObject">initialization object</a>. String. The name of an existing layout method.
+
+    </div>
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Pergola - Load SVG Document</title>
+<meta name="description" content="SVG library - Load SVG documents in Pergola windows. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Window - Load SVG Document</h1>
+
+
+	<div id="svg" style="width: 800px; height: 600px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+	<script src="load.js" type="text/javascript"></script>
+
+
+	<div class="blurb">
+		<h3><a href="../../Examples/Load/loadSVG.svg">View as standalone SVG</a></h3>
+
+		<p>Import a remote SVG document into a window or any container, with merge, reset scale and progress bar <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/requests.html#loadSVG">options</a>.</p>
+
+		<p>In this example the imported document is encapsulated into a <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Window.html">window</a>. Windows have a <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Progress.html">progress</a> bar embedded in the top bar (under the menu).</p>
+
+		<h4>HOW</h4>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+var birds = new pergola.Window("Birds")
+.build({
+  x : 60,
+  y : 60,
+  fill : "#FFFFF0",
+  menu : {
+    palaeognathae : {
+      ...
+    },
+    neognathae : {
+      ...
+    }
+  },
+  contains : function () {
+    pergola.loadSVG({
+      url : "docs/birds.svg",
+      target : this,
+      progress : this.progress
+    });
+  }
+});
+
+
+/*
+ * Deferred loading
+*/
+//pergola.loadSVG({
+//  url : "docs/birds.svg",
+//  target : birds,
+//  progress : birds.progress,
+//  merge : true,
+//  resetScale : true
+//});
+
+]]></script>
+		</div>
+
+		<p>You can use the techique for deferred loading (commented code above) to update the contents (merge or replace) of a window or other specified container. Learn more in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/Tutorial.html#Load">LOADING SVG DOCUMENTS</a> section of the Tutorial.</p>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

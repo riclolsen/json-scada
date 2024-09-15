@@ -1,0 +1,252 @@
+@charset "UTF-8";
+@page {
+}
+@media print {
+	body {
+		max-width: 17.59cm;
+		font-family: "Arial";
+		font-size: 8pt;
+		counter-reset: chapter;
+	}
+	div.chapter {
+		page-break-before: always;
+	}
+	a {
+		color: #000000;
+	}
+	.example {
+		margin-left: 1cm;
+	}
+}
+@media screen {
+  body {
+		margin: 0;
+		font-family: 'Segoe UI', 'Trebuchet MS', 'Lucida Grande', 'Deja Vu';
+		font-size: 14px;
+		line-height: 22px;
+		counter-reset: chapter;
+		color: #282828;
+	}
+	div.chapter {
+		margin-top: 8cm;
+		border-top: 1px solid gray;
+	}
+	a {
+		color: #2060A0;
+	}
+}
+a {
+  text-decoration: none;
+}
+a:visited inactive {
+	color: #2060A0;
+}
+a.index {
+	color: #000000;
+}
+a:hover {
+	text-decoration: underline;
+}
+p {line-height: 0.45cm;}
+.center {
+	text-align: center;
+}
+.left {
+	text-align: left;
+}
+h1 {
+	font-size: 30px;
+	letter-spacing: 0.1ex;
+	font-family: 'Arial', sans-serif;
+}
+h2 {
+	font-size: 28px;
+	font-weight: normal;
+	letter-spacing: 0.1ex;
+}
+#contents {
+	margin-top : 60px;
+	font-size : 16px;
+}
+h2.header {
+	margin-top: 200px;
+	border-top: 1px solid #D8D8D8;
+}
+h2.propsHeader {
+	margin-top: 120px;
+	border-top: 1px solid #D8D8D8;
+}
+h3 {
+	margin-top: 60px;
+	font-size: 20px;
+	font-weight: normal;
+}
+.toc h3 {
+	margin-top: 48px;
+}
+h4 {
+	margin-top: 1cm;
+	font-size: 16px;
+	color: #404040;
+}
+h5 {
+	margin-top: 1cm;
+	font-size: 12px;
+	color: #404040;
+}
+.libItem, .classes {
+	font-size: 18px;
+}
+h4.knownIssue {
+	margin-top: 2cm;
+}
+#title {
+	margin-top: 60px;
+}
+#doc {
+	margin: 1cm .5cm 10cm 2cm;
+	line-height: 32px;
+}
+div.category {
+	margin: 1cm 2cm 10cm;
+}
+p.first {
+	margin-top: 40px;
+}
+div.toc {
+	margin-top: 1.2cm;
+	line-height: 24px;
+}
+span.marked {
+	padding: 0 16px;
+	background-color: yellow;
+	font-weight: bold;
+}
+div.properties {
+	margin: 2.5em 0 1.5em 0;
+}
+span.propsHeader {
+	padding: 0 8px;
+	background-color: #E8E8E8;
+	font-size: 8pt;
+}
+.protoProp {
+	margin: 1ex 0 5ex 0;
+}
+span.layoutProp {
+	margin-top: 40px;
+	padding: 0 8px;
+	background-color: #E8E8E8;
+}
+.propsList {
+	list-style-type: none;
+	font-style: italic;
+}
+div.prop {
+	margin-top: 20px;
+}
+div.propList p.property {
+	margin-top: 36px;
+}
+div.propList h3 {
+	margin-top: 68px;
+	font-size: 18px;
+	font-weight: normal;
+}
+.description {
+  margin: 6px 0 0 16px;
+}
+.it {
+	font-style: italic;
+}
+.bold {
+	font-weight: bold;
+}
+.ind {
+	margin-left: 1.5em;
+}
+.codebox {
+	margin: 28px 0;
+	background-color: #FFFFFE;
+	border: 1px solid #F0F0F0;
+	line-height: 15px;
+}
+code {
+	font-family: Consolas, "Courier New", monospace;
+	font-size: 14px;
+	background-color: #FCFEFF;
+	border : 1px solid #ECF0F2;
+	padding: 0px 2px;
+}
+pre {
+	font-family: Consolas, "Courier New", monospace;
+	font-size: 13px;
+}
+.classList a {
+	font-weight: bold;
+	text-decoration: none;
+	color: #204080;
+}
+.classList a:hover {
+	text-decoration: underline;
+}
+.propCell {
+	width: 240px;
+}
+.colonCell {
+	width: 20px;
+}
+ol.decimal {
+	list-style-type: decimal;
+	counter-reset: item;
+}
+ol.lowerAlpha {
+	list-style-type: lower-alpha;
+}
+ol.upperAlpha {
+	list-style-type: upper-alpha;
+}
+ul.none {
+	list-style-type: none;
+	margin-left: -20px;
+}
+ul.dot {
+	list-style-image: url("graphics/listDot.png");
+}
+ol.summary {
+	list-style-type: decimal;
+	counter-reset: item;
+	line-height: 36px;
+}
+ol.nested {
+	line-height: 28px;
+}
+ol.summary li { display: block }
+ol.summary li:before {
+  content: counter(item) ". ";
+  counter-increment: item;
+}
+table.userFn {
+	border: 1px solid gray;
+}
+.note {
+	margin-top: 5ex;
+}
+.note:before {
+	content: "Note: ";
+}
+div.issues {
+	margin-left: 1em;
+}
+p.issue {
+	margin-top: 2.5em;
+}
+.inactive {
+  font-style: italic;
+  color: #B0B0B0;
+}
+div.copyright {
+	margin: 16px;
+	font-size: 11px;
+	color: #404040;
+}

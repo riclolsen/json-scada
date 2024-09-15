@@ -1,0 +1,116 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – System Constants</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – System Constants.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">System Constants</h1>
+
+	<div class="propList">
+
+		<p id="version" class="property">pergola.<strong>version</strong></p>
+		<p>String representing the current version.</p>
+
+		<h3 id="browser">pergola.browser</h3>
+		<p id="trident" class="property">pergola.browser.<strong>trident</strong></p>
+		<p>Boolean; true if browser is IE 9+.</p>
+		<p id="firefox" class="property">pergola.browser.<strong>firefox</strong></p>
+		<p>Boolean; true if browser is Firefox.</p>
+		<p id="opera" class="property">pergola.browser.<strong>opera</strong></p>
+		<p>Boolean; true if browser is Opera.</p>
+		<p id="webkit" class="property">pergola.browser.<strong>webkit</strong></p>
+		<p>Boolean; true if browser is Webkit based.</p>
+		<p id="chrome" class="property">pergola.browser.<strong>chrome</strong></p>
+		<p>Boolean; true if browser is Chrome.</p>
+		<p id="safari" class="property">pergola.browser.<strong>safari</strong></p>
+		<p>Boolean; true if browser is Safari.</p>
+
+		<p id="locale" class="property">pergola.<strong>locale</strong></p>
+		<p>String representing the browser's language.</p>
+
+		<p id="debug" class="property">pergola.<strong>debug</strong></p>
+		<p>Boolean or Number; set the variable <i>debug</i> in the config file to true, false or number of lines (defaults to 16). Configuration.</p>
+
+		<p id="decimals" class="property">pergola.<strong>decimals</strong></p>
+		<p>Number; default number of decimal places (as specified in the configuration file). Default value in the <a href="Number.html#trim">trim()</a> function if parameter is omitted. Use also when saving documents in vector editing application.</p>
+
+		<p id="getDir" class="property">pergola.<strong>getDir</strong></p>
+		<p>String; the name of the server script for getting directory listings. “getDir.php” is the default value used by the <a href="requests.html#getFiles">pergola.getFiles()</a> function. If you need to use another server script, you can override this value in the arguments passed to the function, and you must do so each time you invoke the function. The file getDir.php is located in the lib/PHP folder. A copy of it must exist in the root folder of your application.</p>
+		<p>Disclaimer: if you wish your value to be the default you must hack Pergola (pergola.js file), but in doing so you assume total responsibility of any malfunctioning of the framework/library, or of any of its components, deriving from this service or from its misuse. Any such action, which shall be considered a third party experiment, voids Pergola's guarantee and support (within the context and the time frame of the experiment), and any present or future proprietors of Pergola are not to be considered liable in any manner whatsoever.</p>
+
+		<p id="NF" class="property">pergola.<strong>NF</strong></p>
+	  <p>Boolean; true if <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-11.1">Intl.NumberFormat</a> is implemented.</p>
+
+		<p id="DTF" class="property">pergola.<strong>DTF</strong></p>
+	  <p>Boolean; true if <a href="http://www.ecma-international.org/ecma-402/1.0/#sec-12.1">Intl.DateTimeFormat</a> is implemented.</p>
+
+		<p id="mutationEvnt" class="property">pergola.<strong>mutationEvnt</strong></p>
+	  <p>Boolean; true if "MutationEvents" "2.0" feature or <i>window.MutationEvent</i>.</p>
+
+		<p id="mutationObserver" class="property">pergola.<strong>mutationObserver</strong></p>
+		<p>Boolean; true if <i>window.MutationObserver</i> or <i>window.WebKitMutationObserver</i> or <i>window.MozMutationObserver</i>. Currently not used in Pergola.</p>
+
+		<h3 id="ns">pergola.ns</h3>
+		<p>pergola.ns.<strong>svg</strong></p>
+		<p>String; "http://www.w3.org/2000/svg".</p>
+		<p class="property">pergola.ns.<strong>xlink</strong></p>
+		<p>String; "http://www.w3.org/1999/xlink".</p>
+		<p class="property">pergola.ns.<strong>xhtml</strong></p>
+		<p>String; "http://www.w3.org/1999/xhtml".</p>
+		<p class="property">pergola.ns.<strong>xml</strong></p>
+		<p>String; "http://www.w3.org/XML/1998/namespace".</p>
+		<p class="property">pergola.ns.<strong>xmlns</strong></p>
+		<p>String; "http://www.w3.org/2000/xmlns/".</p>
+
+		<p id="path" class="property">pergola.<strong>path</strong></p>
+		<p>String; path to the pergola folder. Configuration.</p>
+
+		<p id="radixChar" class="property">pergola.<strong>radixChar</strong></p>
+		<p>Object; its locale language properties specify the language's decimal delimiter. Use for passing the "decimal" parameter to the <a href="String.html#unformatNumber">unformatNumber()</a> String prototype method when converting locale strings to numbers, for example:
+ 		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; gutter: false;"><![CDATA[
+var formattedString = "1 284,45 €";    // the "fr-FR" format
+var value = formattedString.unformatNumber(pergola.radixChar[pergola.locale]);    // value = 1284.45
+]]></script>
+ 		</div>
+    </p>
+
+		<p id="remote" class="property">pergola.<strong>remote</strong></p>
+		<p>Boolean; true if pergola is running in remote mode.</p>
+
+		<p id="systemMenu" class="property">pergola.<strong>systemMenu</strong></p>
+		<p>Boolean; determines whether pergola has a system menu on the taskbar. Configuration.</p>
+
+		<p id="taskbarLogo" class="property">pergola.<strong>taskbarLogo</strong></p>
+		<p>Boolean; set it to true if you place a logo on the taskbar. Configuration.</p>
+
+		<p id="theme" class="property">pergola.<strong>theme</strong></p>
+		<p>String; the current theme color, as defined in the config file. Configuration.</p>
+
+		<p id="undos" class="property">pergola.<strong>undos</strong></p>
+		<p>Number; number of undos, as defined in config file. Configuration. When instantiating the <a href="Undo.html">pergola.Undo</a> class you can override this number of undos.</p>
+
+		<p id="writeFile" class="property">pergola.<strong>writeFile</strong></p>
+		<p>String; the name of the server script for writing files. “writeFile.php” is the default value used by the <a href="requests.html#saveJSON">pergola.saveJSON()</a> and <a href="requests.html#saveSVG">pergola.saveSVG()</a> functions. If you need to use another server script, you can override this value in the arguments passed to the function, and you must do so each time you invoke the function. The writeFile.php file is located in the “PHP” folder of the package. If your application uses <a href="requests.html#getFiles">pergola.getFiles()</a> and/or <a href="requests.html#saveJSON">pergola.saveJSON()</a> and <a href="requests.html#saveSVG">pergola.saveSVG()</a>, a copy of writeFile.php must exist in the root folder of the application.</p>
+		<p>Disclaimer: if you wish your value to be the default you must hack Pergola (pergola.js file), but in doing so you assume total responsibility of any malfunctioning of the framework/library, or of any of its components, deriving from this service or from its misuse. Any such action, which shall be considered a third party experiment, voids Pergola's guarantee and support (within the context and the time frame of the experiment), and any present or future proprietors of Pergola are not to be considered liable in any manner whatsoever.</p>
+
+	</div>
+
+</div>
+
+</body>
+</html>
+
+
+

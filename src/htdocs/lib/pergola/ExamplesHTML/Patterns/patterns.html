@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola - SVG Patterns</title>
+<meta name="description" content="SVG library - Pergola patterns gallery. Create an unlimited variety of computer generated patterns (functions) by simply fiddling around with properties. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Patterns</h1>
+	<div class="blurb">
+
+		<p>The <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/patterns.html">pergola.pattern</a> library object defines pattern methods. Pattern elements are not created at runtime The function creates the pattern with unique ID based on parameters–if it doesn't exist–and returns the URI string.</p>
+
+	</div>
+
+	<div id="svg" style="width: 760px; height: 500px; overflow: auto"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+  <script src="patterns.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Patterns/patterns.svg">View as standalone SVG</a></h3>
+
+		<p>All pattern definitions have <code>colors</code>, <code>width</code>, <code>height</code>, <code>opacity</code> and <code>transform</code> properties, and some also have <code>size</code>, <code>spacing</code> and <code>"stroke-width"</code>, where applicable.</p>
+
+		<p>The examples above were obtained by simply fiddling around with values. Overriding the <code>width</code> and/or <code>height</code> can produce dramatic deviations from the original design, while playing with transformations can be more interesting. For some of the types, overridden width and height are ignored. Learn more in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/Tutorial.html#patterns">PATTERNS library</a> section of the Tutorial.<p>
+
+		<h4>HOW</h4>
+
+		<p>To use a pattern assign the call to the <code>fill</code> and, or <code>stroke</code> properties of an element:</p>
+
+		<p>catseye #1</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 29;"><![CDATA[
+$C({
+  element : "rect",
+  width : 90,
+  height : 90,
+  fill : pergola.pattern.catseye({transform : "scale(1.5 1)"}),
+  appendTo : g
+});
+]]></script>
+		</div>
+
+		<p>pirelli #6</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 135;"><![CDATA[
+$C({
+  element : "rect",
+  x : 600,
+  width : 90,
+  height : 90,
+  fill : pergola.pattern.pirelli({
+    colors : ["url(#sliderPatternGrad)", "gainsboro"],
+    transform : "scale(2 6) rotate(45)"
+  }),
+  appendTo : g
+});
+]]></script>
+		</div>
+
+		<p>bar #3</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 264;"><![CDATA[
+  pergola.pattern.bar({
+    colors : ["none", "url(#rooftile)"],
+    size : 40,
+    spacing : 0,
+    transform : "rotate(45)"
+  }),
+]]></script>
+		</div>
+
+		<p>checkers #2</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 370;"><![CDATA[
+  fill : pergola.pattern.checkers({
+    colors : ["seagreen", "white"],
+    transform : "scale(.25) skewX(20)"
+  }),
+]]></script>
+		</div>
+
+		<p>hive #3</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 503;"><![CDATA[
+  fill : pergola.pattern.hive({
+    colors : ["darkred", "#6E5A5A"],
+    "stroke-width" : 2,
+    transform : "scale(1.5 .75) rotate(45)"
+  }),
+]]></script>
+		</div>
+
+		<p>ring #5</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false; first-line: 583;"><![CDATA[
+  fill : pergola.pattern.ring({
+    colors : ["#000000", "yellowgreen", "gold"],
+    spacing : 14,
+    size : 14,
+    "stroke-width" : 11,
+    opacity : .5,
+    transform : "rotate(-45)"
+  }),
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

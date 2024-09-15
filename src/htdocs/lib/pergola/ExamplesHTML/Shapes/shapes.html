@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Pergola - SVG Shapes</title>
+<meta name="description" content="SVG library - Pergola preset shapes library. Total control over stroke width/scaling. Standalone SVG or HTML + SVG."/>
+<link type="text/css" rel="stylesheet" href="../example.css">
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shCore.js"></script>
+<script type="text/javascript" src="../syntaxhighlighter_3.0.83/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="../syntaxhighlighter_3.0.83/styles/shCoreSVGmagazine.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</head>
+
+<body>
+
+	<img src="../pergola_small.png" width="144" height="28" alt="PERGOLA LOGO">
+	<h1>Shapes</h1>
+	<div class="blurb">
+		<p>The <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/shapes.html">pergola.shapes</a> library object defines shape object properties. A shape object defines an SVG element and its geometrical attributes only. No paint attributes or style.</p>
+	</div>
+
+	<div id="svg" style="width: 800px; height: 410px;"></div>
+
+<!-- PERGOLA  -->
+  <script src="config.js" type="text/javascript"></script>
+	<script src="../../pergola/pergola.js" type="text/javascript"></script>
+
+<!-- PROJECT FILES  -->
+  <script src="shapes.js" type="text/javascript"></script>
+
+	<div class="blurb">
+
+		<h3><a href="../../Examples/Shapes/shapes.svg">View as standalone SVG</a></h3>
+
+		<p>A shape object definition:</p>
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+triangle: {
+  element: "path",
+  d : "M0,32h32l-16-27.7128z"
+}
+]]></script>
+		</div>
+
+		<h4>HOW</h4>
+
+		<p>You can use a shape by invoking the utility function <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/misc.html#use">pergola.use()</a>, which simulates the SVG &lt;use&gt; element. Because only the geometry is defined for shapes, you have total control over stroke width/scaling. Some classes are enabled to process the instance property <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/files/Button.html#shape">shape</a> (use cases in the buttons example). Learn more in the <a href="http://www.dotuscomus.com/pergola/currentVersion/Documentation/Tutorial.html#shapes">SHAPES library</a> section of the Tutorial.</p>
+
+		<div class="codebox">
+<script type="syntaxhighlighter" class="brush: js; toolbar: false;"><![CDATA[
+pergola.use({
+  parent : g,
+  shape : pergola.shapes.triangle,
+  attributes : {
+    transform : "rotate(12 32 27.7128) translate(316 -62) scale(3)",
+    fill : "#FFFFC0",
+    stroke : "gray",
+    "stroke-width" : 2,
+    "stroke-linejoin" : "round"
+  }
+});
+
+pergola.use({
+  parent : g,
+  shape : pergola.shapes.triangle,
+  attributes : {
+    transform : "translate(320 -.5) scale(3) skewX(42)",
+    fill : "#FFFFC0",
+    stroke : "black",
+    "stroke-width" : .25
+  }
+});
+]]></script>
+		</div>
+
+	</div>
+
+	<div class="copyright">© 2009 – 2015 Dotuscomus</div>
+
+</body>
+</html>

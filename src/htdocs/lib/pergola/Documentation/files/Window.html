@@ -1,0 +1,426 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>PERGOLA JavaScript SVG Library – API Reference – Window</title>
+<meta name="description" content="Pergola JavaScript SVG native library – API reference – Window class.">
+<link href="../api.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<img src="../graphics/pergola_small.png" width="144" height="28" style="margin-top: 20px" alt="PERGOLA LOGO">
+
+<div class="category">
+
+	<h1 id="title">pergola.Window</h1>
+
+  <p class="first">System events: YES.</p>
+  <p><a href="../Tutorial.html#events">User events and functions</a>: NO</p>
+
+  <p class="first">System component.</p>
+
+  <p class="first">Listed: <a href="#class"><strong>class</strong></a> properties/methods; <a href="#prototype"><strong>prototype</strong></a> <a href="#protoProperties">properties</a> and <a href="#protoMethods">methods</a>; <a href="#instance"><strong>instance</strong></a> properties. Prototype properties and methods inherited by the <a href="Class.html">Class</a> superclass are not listed.</p>
+
+
+
+
+
+	<div class="propList">
+
+  	<h2 id="class" class="propsHeader">class</h2>
+    <div class="ind">
+
+    <p id="active" class="property"><strong>active</strong>()</p>
+    <p>Returns the last element in <a href="#windows">windows</a>. You don't normally need to invoke this method explicitly.</p>
+
+    <p id="exist" class="property"><strong>exist</strong>(<i>name</i>)</p>
+    <p><i>name</i> is a string specifying the tentative name of a window. Returns true if <i>name</i> already exists. You don't normally need to invoke this method explicitly.</p>
+
+    <p id="tabs" class="property"><strong>tabs</strong></p>
+    <p>Array – stores <a href=">WindowTab.html">WindowTab</a> instances.</p>
+
+    <p id="untitled" class="property"><strong>untitled</strong></p>
+    <p>1 – number.</p>
+
+    <p id="unnamed" class="property"><strong>unnamed</strong>()</p>
+    <p>Returns the string "Untitled_" + <a href="#untitled">untitled</a> post-incremented. You don't normally need to invoke this method explicitly.</p>
+
+    <p id="windows" class="property"><strong>windows</strong></p>
+    <p>Array – stores Window instances.</p>
+
+    </div>
+
+
+
+
+
+    <h2 id="prototype" class="propsHeader">prototype</h2>
+
+    <h3 id="protoProperties">PROPERTIES</h3>
+    <div class="ind">
+
+    <p id="parent" class="property"><strong>parent</strong></p>
+    <p><a href="references.html#user">pergola.user</a>.</p>
+
+  	<p id="isOpen" class="property"><strong>isOpen</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="minimized" class="property"><strong>minimized</strong></p>
+  	<p>false – boolean.</p>
+
+  	<p id="isFull" class="property"><strong>isFull</strong></p>
+  	<p>false – boolean.</p>
+
+  	<p id="resizable" class="property"><strong>resizable</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="fill" class="property"><strong>fill</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – string.</p>
+
+  	<p id="scrollSize" class="property"><strong>scrollSize</strong></p>
+  	<p>Defined in <a href="misc.html#presentationAttributes">pergola.presentationAttributes</a> – number (user space units) representing the <a href="Scrollbar.html">Scrollbar</a> size.</p>
+
+  	<p id="x" class="property"><strong>x</strong></p>
+  	<p>200 – number (user space units).</p>
+
+  	<p id="y" class="property"><strong>y</strong></p>
+  	<p>160 – number (user space units).</p>
+
+  	<p id="margin" class="property"><strong>margin</strong></p>
+  	<p>4 – number (user space units).</p>
+
+  	<p id="width" class="property"><strong>width</strong></p>
+  	<p>680 – number (user space units).</p>
+
+  	<p id="height" class="property"><strong>height</strong></p>
+  	<p>520 – number (user space units).</p>
+
+  	<p id="minWidth" class="property"><strong>minWidth</strong></p>
+  	<p>340 – number (user space units).</p>
+
+  	<p id="minHeight" class="property"><strong>minHeight</strong></p>
+  	<p>200 – number (user space units).</p>
+
+  	<p id="hasCommands" class="property"><strong>hasCommands</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="hasToolBar" class="property"><strong>hasToolBar</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="hasZoomAndPan" class="property"><strong>hasZoomAndPan</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="hasStatus" class="property"><strong>hasStatus</strong></p>
+  	<p>true – boolean.</p>
+
+  	<p id="statusHeight" class="property"><strong>statusHeight</strong></p>
+  	<p>0 – number (user space units); if not overridden, default <a href="StatusBar.html">StatusBar</a> height applies.</p>
+
+  	<p id="hasUndo" class="property"><strong>hasUndo</strong></p>
+  	<p>false – boolean.</p>
+
+  	<p id="type" class="property"><strong>type</strong></p>
+  	<p>"regular" – string; allowed values: "regular"; "map"; "editor"; "datagrid".</p>
+
+  	<p id="mousewheel" class="property"><strong>mousewheel</strong></p>
+  	<p>"zoom" – string; allowed values are "zoom" "scroll" "" (empty string). Specifies how the mouse wheel should act on this <a href="#pDoc">doc</a>. The empty string (or any value that resolves to false) disables the mousewheel.</p>
+
+  	<p id="docBgResizable" class="property"><strong>docBgResizable</strong></p>
+  	<p>true – boolean; determines if this <a href="#pDoc">doc</a>.<a href="Doc.html#background">background</a> must be resized on transformations.</p>
+
+  	<p id="scrollType" class="property"><strong>scrollType</strong></p>
+  	<p>"regular" – string; allowed values: "regular"; "navigation".</p>
+
+  	<p id="dependencies" class="property"><strong>dependencies</strong></p>
+  	<p>false – boolean.</p>
+
+    </div>
+
+
+    <h3 id="protoMethods">METHODS</h3>
+    <div class="ind">
+
+		<p id="activateTool" class="property"><strong>activateTool</strong>(<i>tool</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Activates specified <code>exclusive</code> (radio) tool button and releases previous active tool in collection.</p>
+
+  	<p id="addMenu" class="property"><strong>addMenu</strong>(<i>object</i>)</p>
+  	<p><i>object</i> defines <a href="Menu.html">menu</a> object properties. Use this method when you need to reference objects of the window's content that are only known after the window's instantiation and populating processes are completed. The property <code>separator</code> can also be specified as property of a menu item, and its value must be: <code>new pergola.Separator()</code>; a <a href="Separator.html">pergola.Separator</a> object is added between the current item and the following one. Use case of this method in the <a href="../../Examples/DataGrid/datagrid.svg">datagrid</a> example.</p>
+
+  	<p id="addTools" class="property"><strong>addTools</strong>(<i>object</i>)</p>
+  	<p><i>object</i> defines tool properties as a group of <a href="ToolButton.html">tools</a> to add to this <a href="#toolBar">toolBar</a>; the property <code>separator</code> can also be specified (it should typically be the first property), and in this case a <a href="Separator.html">pergola.Separator</a> object is added between the current group and the previous one. The method can be invoked during the construction of this (in this <a href="#contains">contains</a> function), or at any stage after construction. References of the added tools are stored in this <a href="#tools">tools</a>, and in this <a href="#exclusiveTools">exclusiveTools</a> if the <code>exclusive</code> property is set in the tool's initialization object.</p>
+  	<p>Note: currently tools can only be added as groups (but the group may contain one single tool). This restriction may be removed in a future release.</p>
+
+  	<p id="bringToFront" class="property"><strong>bringToFront</strong>()</p>
+  	<p>Makes this the topmost window. Manages suspension/reactivation of this and of previous active window's <a href="#exclusiveTools">exclusiveTools</a>. If this <a href="#dependencies">dependencies</a>, invokes this <a href="#updateDependencies">updateDependencies()</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="build" class="property"><strong>build</strong>([<i>object</i>])</p>
+  	<p>this inherits the properties specified in <i>object</i>; prototype properties specified in <i>object</i> are overridden. Creates elements. Returns this.</p>
+
+  	<p id="close" class="property"><strong>close</strong>()</p>
+  	<p>Closes this (can reopen).</p>
+
+  	<p id="closeGroupPos" class="property"><strong>closeGroupPos</strong>()</p>
+  	<p>Returns the computed position number for this <a href="#closeGroup">closeGroup</a>. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="datagridMaker" class="property"><strong>datagridMaker</strong>(<i>o</i>)</p>
+  	<p><i>o</i> is an object with the required <a href="DataGrid.html#binding">binding</a> URL string property (remote mode), or object property (local mode). <i>o</i> can specify <a href="DataGrid.html#protoProperties">pergola.Datagrid prototype properties</a> to override. The method assigns a <a href="DataGrid.html">pergola.DataGrid</a> instance to this <code>datagrid</code> property and processes the specified <a href="DataGrid.html#dataType">binding</a> property to retrieve the data.</p>
+  	<p>In remote mode the method invokes <a href="requests.html#xhrGET">pergola.pergola.xhrGET()</a>; the <a href="DataGrid.html">pergola.DataGrid</a> <a href="DataGrid.html#build">build()</a> method is invoked asynchronously by the request's callback. Learn more in the <a href="../Tutorial.html#datagrid">DATAGRID</a> section of the Tutorial.</p>
+
+  	<p id="fullH" class="property"><strong>fullH</strong>()</p>
+  	<p>Returns the computed full height number value.</p>
+
+  	<p id="fullW" class="property"><strong>fullW</strong>()</p>
+  	<p>Returns the computed full width number value.</p>
+
+  	<p id="getCandidate" class="property"><strong>getCandidate</strong>()</p>
+  	<p>Finds the next best candidate window and invokes the <a href="#bringToFront">bringToFront()</a> method. You don't normally need to invoke this method explicitly.</p>
+
+		<p id="handToolDoubleClick" class="property"><strong>handToolDoubleClick</strong>(<i>evt</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Handles double click on hand tool (reset to origin).</p>
+
+		<p id="itineraryToolDoubleClick" class="property"><strong>itineraryToolDoubleClick</strong>(<i>evt</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Handles double click on itinerary tool (reset itinerary).</p>
+
+		<p id="lensToolDoubleClick" class="property"><strong>lensToolDoubleClick</strong>(<i>evt</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Handles double click on lens tool (reset zoom level).</p>
+
+		<p id="logoMaker" class="property"><strong>logoMaker</strong>(<i>o</i>)</p>
+	  <p>Creates a window logo placed on the top bar. <i>o</i> is an object specifying the required <code>symbol</code> property, which can get a <a href="symbols.html">symbol</a> or a string representing an image URL. <i>o</i> can specify optional <code>x</code> and <code>y</code> number properties. If <code>symbol</code> represents an image URL, the <code>width</code> and <code>height</code> number properties must be specified. If the <code>replace</code> boolean property is specified and true, the current logo will be replaced.</p>
+
+  	<p id="maximize" class="property"><strong>maximize</strong>()</p>
+  	<p>Maximizes this to full screen.</p>
+
+  	<p id="maximizeInit" class="property"><strong>maximizeInit</strong>()</p>
+  	<p>If this <a href="#isFull">isFull</a> invokes this <a href="#reduce">reduce()</a>, otherwise invokes this <a href="#maximize">maximize()</a>. You don't need to invoke this method explicitly.</p>
+
+  	<p id="minimize" class="property"><strong>minimize</strong>()</p>
+  	<p>Minimizes this. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="move" class="property"><strong>move</strong>()</p>
+  	<p>Reference to <a href="Class.html#moveXY">pergola.Window.superClass.moveXY()</a> method.</p>
+
+  	<p id="reduce" class="property"><strong>reduce</strong>()</p>
+  	<p>Reduces this from full screen.</p>
+
+  	<p id="transformUpdate" class="property"><strong>transformUpdate</strong>()</p>
+  	<p>Invoked on mutations and transformations of this <a href="Doc.html">doc</a>.<a href="Doc.html#transformable">transformable</a> and/or of this <a href="#container">container</a>.</p>
+
+		<p id="releaseTool" class="property"><strong>releaseTool</strong>(<i>tool</i>)</p>
+	  <p>System. Dependency of <a href="#toolInit">toolInit</a>. Releases specified <code>exclusive</code> (radio) <i>tool</i> button.</p>
+
+		<p id="resizeByButton" class="property"><strong>resizeInit</strong>(<i>evt</i>)</p>
+	  <p>System. Returns an object for initialization of <a href="references.html#Dragarea">pergola.dragarea</a> on window resize by button.</p>
+	  <p>Note: window resize by frame is managed by <a href="Frame.html">pergola.Frame</a>.</p>
+
+		<p id="resizeN" class="property"><strong>resizeN</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for window resize by frame.</p>
+
+		<p id="resizeS" class="property"><strong>resizeS</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for window resize by frame.</p>
+
+		<p id="resizeE" class="property"><strong>resizeE</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for window resize by frame.</p>
+
+		<p id="resizeW" class="property"><strong>resizeW</strong>(<i>evt</i>)</p>
+	  <p>System. Callback for window resize by frame.</p>
+
+  	<p id="release" class="property"><strong>release</strong>()</p>
+  	<p>This method is invoked after resize or move operations. The function is empty and it's designed to be overridden by instance methods for windows where layers may need to be repositioned. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="reopen" class="property"><strong>reopen</strong>()</p>
+  	<p>Reopens a closed window.</p>
+
+  	<p id="restore" class="property"><strong>restore</strong>()</p>
+  	<p>Restores this minimized. You don't normally need to invoke this method explicitly.</p>
+
+		<p id="toolInit" class="property"><strong>toolInit</strong>(<i>evt</i>, <i>tool</i>)</p>
+	  <p>System. Initializes activation or release of <i>tool</i> and launches the mechanism for tools management. The method and its cascade of dependencies is currently only used as a method of window instances. The tools are from the set of the window's collection. See <a href="ToolButton.html">pergola.ToolButton</a> for its properties and methods.</p>
+
+  	<p id="terminate" class="property"><strong>terminate</strong>()</p>
+  	<p>Removes this <a href="#container">container</a> from the DOM; releases services; deletes references; destroys this. The value of this <a href="#name">name</a> is available.</p>
+
+  	<p id="updateDependencies" class="property"><strong>updateDependencies</strong>()</p>
+  	<p>If this <a href="#dependencies">dependencies</a> is overridden, this method must also be overridden. In the absence of the instance method this prototype method shows an alert with a reminder. You don't normally need to invoke this method explicitly.</p>
+
+  	<p id="mapMethods" class="property">(Mapping Utilities)</p>
+
+  	<p id="centerMap" class="property"><strong>centerMap</strong>(<i>c</i>)</p>
+  	<p>Mapping utility. <i>c</i> is an object defining the <code>lon</code> and <code>lat</code> properties; centers map at <i>c</i>.</p>
+
+  	<p id="getLocation" class="property"><strong>getLocation</strong>(<i>evt</i>)</p>
+  	<p>Mapping utility. Callback for this <a href="#pDoc">doc</a>.<a href="Doc.html#transformable">transformable</a> on mousemove event (registered upon selection of <a href="ToolButton.html">ToolButton</a> instance with the <code>location</code> property set). This method is not invoked as a method of this. Invokes the <a href="#active">pergola.Window.active</a> class method, passing as parameter the call to this <a href="#map">map</a>.<a href="http://polymaps.org/docs/map.html#pointLocation">pointLocation()</a> method, compensated to this <a href="#pDoc">doc</a>.<a href="Doc.html#ctm">ctm</a> and this <a href="#map">map</a> origin.</p>
+
+  	<p id="setLocation" class="property"><strong>setLocation</strong>()</p>
+  	<p>Mapping utility. Callback for this <a href="#locLon">locLon</a> and this <a href="#locLat">locLat</a>. Invokes this <a href="#map">map</a>.<a href="http://polymaps.org/docs/map.html#center">center()</a> as a setter; invokes this <a href="#status">status</a>.<a href="StatusBar.html#center">center()</a>.</p>
+
+  	<p id="lonToRange" class="property"><strong>lonToRange</strong>(<i>lon</i>)</p>
+  	<p>Mapping utility. If the <i>lon</i> longitude number is outside the -180–180 range, forces <i>lon</i> within the valid range with positive/negative compensation. Returns <i>lon</i>.</p>
+
+  	<p id="showMapFeatureLayer" class="property"><strong>showMapFeatureLayer</strong>(<i>o</i>)</p>
+  	<p><i>o</i> is a <a href="http://polymaps.org/docs/geoJson.html#po.geoJson">geoJson</a> layer (property of this <a href="#map">map</a>). Toggles on/off the layer's display.</p>
+
+  	<p id="mapZoom" class="property"><strong>mapZoom</strong>(<i>z</i>)</p>
+  	<p>Mapping utility. <i>z</i> is a number representing a zoom value. Invokes this <a href="#map">map</a>.<a href="http://polymaps.org/docs/map.html#zoom">zoom()</a> method as setter; invokes this <a href="#mapZoomLevelMark">mapZoomLevelMark()</a>; invokes this <a href="#status">status</a>.<a href="StatusBar.html#zoom">zoom()</a>.</p>
+
+  	<p id="mapZoomLevelMark" class="property"><strong>mapZoomLevelMark</strong>([<i>z</i>])</p>
+  	<p>Mapping utility. <i>z</i> is a nuber representing a zoom value. If not specified, <i>z</i> is the current zoom level (returned by this <a href="#map">map</a>.<a href="http://polymaps.org/docs/map.html#zoom">zoom()</a> method invoked as getter). Updates the check-mark in this "Zoom Level" menu of <a href="../../ExamplesHTML/BingMaps/index.html">mapping application</a>.</p>
+
+  	<p id="mapViewsToggle" class="property"><strong>mapViewsToggle</strong>(<i>view</i>)</p>
+  	<p>Mapping utility. <i>view</i> is a string specifying a "view" type ("Aerial", "Aerial With Labels", "Road"). Callback for this "Views" menu items.</p>
+
+		<p id="mapGutterPositionOnScroll" class="property"><strong>mapGutterPositionOnScroll</strong>()</p>
+	  <p>System. Updates graticule's gutter position on map transformations.</p>
+
+		<p id="mapHelpToggleOn" class="property"><strong>mapHelpToggleOn</strong>(<i>evt</i>)</p>
+	  <p>Toggles on map help panel.</p>
+
+		<p id="mapHelpToggleOff" class="property"><strong>mapHelpToggleOff</strong>(<i>evt</i>)</p>
+	  <p>Toggles off map help panel.</p>
+
+  	<p id="mapMaker" class="property"><strong>mapMaker</strong>()</p>
+  	<p>Mapping utility. Assigns a <a href="http://polymaps.org/docs/map.html#po.map">polymaps.map</a> object to this <a href="#map">map</a> (this <a href="#type">type</a> must be "map"). In the <a href="../../ExamplesHTML/BingMaps/index.html">mapping application</a> example a function that invokes this method is assigned to this <a href="#contains">contains</a>. Note: this <a href="#type">type</a> must be set to "map", but the <a href="#map">map</a> property is not declared automatically. See the <a href="../Tutorial.html#maps">Maps</a> chapter in the tutorial; see also <a href="https://www.microsoft.com/learning/en-us/book.aspx?ID=15525" target="new">“Building Web Applications with SVG”</a> (Microsoft Press) for the case study.</p>
+
+    </div>
+
+
+
+  	<h2 id="instance" class="propsHeader">instance</h2>
+    <div class="ind">
+
+  	<p id="name" class="property"><strong>name</strong></p>
+    <p>String. If not passed to the constructor, gets "Untitled_" + <a href="#untitled">untitled</a>.</p>
+
+  	<p id="id" class="property"><strong>id</strong></p>
+    <p>String. The return value of this <a href="#name">name</a>.<a href="String.html#toXML">toXML(). This <a href="#container">container</a> ID. Used as prefix where other elements' IDs are attributed.</p>
+
+    <p id="owner" class="property"><strong>owner</strong></p>
+    <p>If specified, designates the <a href="classes.html#owner">owner object</a>.</p>
+
+  	<p id="tools" class="property"><strong>tools</strong></p>
+    <p>Array. Stores references to <a href="ToolButton.html">tools</a> added using this <a href="#addTools">addTools()</a> method.</p>
+
+  	<p id="exclusiveTools" class="property"><strong>exclusiveTools</strong></p>
+    <p>Array. Stores references to <a href="ToolButton.html#exclusive">exclusive tools</a> added using this <a href="#addTools">addTools()</a> method.</p>
+
+  	<p id="undoManager" class="property"><strong>undoManager</strong></p>
+  	<p>Object. If this <a href="#hasUndo">hasUndo</a>, new <a href="Undo.html">pergola.Undo</a> instance.</p>
+
+  	<p id="pTitle" class="property"><strong>title</strong></p>
+  	<p>String. The title of this <a href="#topBar">topBar</a>. If this <a href="#name">name</a> was set at instantiation, this <a href="#name">name</a>, otherwise a friendly "Untitled" based string.</p>
+
+  	<p id="container" class="property"><strong>container</strong></p>
+  	<p>&lt;svg&gt; element.</p>
+
+  	<p id="pDoc" class="property"><strong>doc</strong></p>
+  	<p><a href="Doc.html">pergola.Doc</a> instance.</p>
+
+  	<p id="frame" class="property"><strong>frame</strong></p>
+  	<p><a href="Frame.html">pergola.Frame</a> instance.</p>
+
+  	<p id="status" class="property"><strong>status</strong></p>
+  	<p>If this <a href="#hasStatus">hasStatus</a>, <a href="StatusBar.html">pergola.StatusBar</a> instance.</p>
+
+  	<p id="zoomLevel" class="property"><strong>zoomLevel</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="Input.html">pergola.Input</a> instance (statusbar field).</p>
+
+  	<p id="locLon" class="property"><strong>locLon</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="Input.html">pergola.Input</a> instance (statusbar field).</p>
+
+  	<p id="locLat" class="property"><strong>locLat</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="Input.html">pergola.Input</a> instance (statusbar field).</p>
+
+  	<p id="map" class="property"><strong>map</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="http://polymaps.org/docs/map.html#po.map">polymaps.map</a> object.</p>
+
+  	<p id="commands" class="property"><strong>commands</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="topBar" class="property"><strong>topBar</strong></p>
+  	<p><a href="WindowTopBar.html">pergola.WindowTopBar</a> instance.</p>
+
+  	<p id="progress" class="property"><strong>progress</strong></p>
+  	<p><a href="Progress.html">pergola.Progress</a> instance.</p>
+
+  	<p id="closeGroup" class="property"><strong>closeGroup</strong></p>
+  	<p>&lt;g&gt; element.</p>
+
+  	<p id="minimizeBtn" class="property"><strong>minimizeBtn</strong></p>
+  	<p><a href="CommandButton.html">pergola.CommandButton</a> instance.</p>
+
+  	<p id="full" class="property"><strong>full</strong></p>
+  	<p><a href="CommandButton.html">pergola.CommandButton</a> instance.</p>
+
+  	<p id="closeBtn" class="property"><strong>closeBtn</strong></p>
+  	<p><a href="CommandButton.html">pergola.CommandButton</a> instance.</p>
+
+  	<p id="toolBar" class="property"><strong>toolBar</strong></p>
+  	<p>If this <a href="#hasToolBar">hasToolBar</a>, <a href="ToolBar.html">pergola.ToolBar</a> instance.</p>
+
+  	<p id="paneY" class="property"><strong>paneY</strong></p>
+  	<p>The computed y coordinate number for the window pane.</p>
+
+  	<p id="menu" class="property"><strong>menu</strong></p>
+  	<p>If specified, <a href="Menu.html">pergola.Menu</a> instance.</p>
+
+  	<p id="menubar" class="property"><strong>menubar</strong></p>
+  	<p>If this <a href="#menu">menu</a>, <a href="Menubar.html">pergola.Menubar</a> instance.</p>
+
+  	<p id="lensTool" class="property"><strong>lensTool</strong></p>
+  	<p>If this <a href="#hasZoomAndPan">hasZoomAndPan</a>, <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="zoomDown" class="property"><strong>zoomDown</strong></p>
+  	<p>If this <a href="#hasZoomAndPan">hasZoomAndPan</a>, <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="zoomUp" class="property"><strong>zoomUp</strong></p>
+  	<p>If this <a href="#hasZoomAndPan">hasZoomAndPan</a>, <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="handTool" class="property"><strong>handTool</strong></p>
+  	<p>If this <a href="#hasZoomAndPan">hasZoomAndPan</a>, <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="itineraryTool" class="property"><strong>itineraryTool</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="measureTool" class="property"><strong>measureTool</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="mapHelp" class="property"><strong>mapHelp</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="ToolButton.html">pergola.ToolButton</a> instance.</p>
+
+  	<p id="navHelpPanel" class="property"><strong>navHelpPanel</strong></p>
+  	<p>If this <a href="#type">type</a> is "map", <a href="Panel.html">pergola.Panel</a> instance.</p>
+
+  	<p id="background" class="property"><strong>background</strong></p>
+  	<p><a href="Background.html">pergola.Background</a> instance.</p>
+
+  	<p id="hScrollBar" class="property"><strong>hScrollBar</strong></p>
+  	<p><a href="Scrollbar.html">pergola.Scrollbar</a> instance.</p>
+
+  	<p id="vScrollBar" class="property"><strong>vScrollBar</strong></p>
+  	<p><a href="Scrollbar.html">pergola.Scrollbar</a> instance.</p>
+
+  	<p id="resizeBtn" class="property"><strong>resizeBtn</strong></p>
+  	<p><a href="Button.html">pergola.Button</a> instance.</p>
+
+  	<p id="tab" class="property"><strong>tab</strong></p>
+  	<p>If this <a href="#hasCommands">hasCommands</a>, <a href="WindowTab.html">pergola.WindowTab</a> instance.</p>
+
+  	<p id="preview" class="property"><strong>preview</strong></p>
+  	<p>If this <a href="#hasCommands">hasCommands</a>, <a href="Preview.html">pergola.Preview</a> instance.</p>
+
+  	<p id="clone" class="property"><strong>clone</strong></p>
+  	<p>&lt;svg&gt; element containing a clone of this <a href="#pDoc">doc</a> <a href="Doc.html#transformable">transformable</a> group.</p>
+
+  	<p id="contains" class="property"><strong>contains</strong></p>
+  	<p>If specified, node or function.</p>
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+</body>
+</html>
