@@ -1,12 +1,12 @@
 version: '2.1'
 
-# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2023 - Ricardo L. Olsen 
+# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2024 - Ricardo L. Olsen 
 # Requires Internet connection!
 
 services:
 
   dotnet_compile:
-    image: mcr.microsoft.com/dotnet/sdk:6.0
+    image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name: js_dotnet_compile
     command: sh -c "cd /src/lib60870.netcore/lib60870.netcore/ && 
                     dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
@@ -34,7 +34,7 @@ services:
                     cd iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/dnp3/Dnp3Client/ &&
-                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ Dnp3Client.csproj &&
+                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ &&
                     cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
 
     # NOTICE Dnp3Client is Windows-only, so it can only run in docker/linux using Wine.
