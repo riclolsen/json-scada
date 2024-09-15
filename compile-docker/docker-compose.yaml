@@ -22,7 +22,7 @@ services:
                     cd /src/lib60870.netcore/iec104server/ &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
-                    cd /src/lib60870.netcore/lib60870.netcore/
+                    cd /src/lib60870.netcore/lib60870.netcore/ &&
                     rm -rf obj bin &&
                     cd /src/OPC-UA-Client/ && 
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
@@ -46,8 +46,8 @@ services:
                     rm -rf obj bin &&
                     cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
                     rm -rf obj bin &&
-                    cd /src/libiec61850
-                    rm -rf .install
+                    cd /src/libiec61850 &&
+                    rm -rf .install &&
                     cd /src/OPC-DA-Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
                     rm -rf obj bin &&
