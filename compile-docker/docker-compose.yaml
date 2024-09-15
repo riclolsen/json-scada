@@ -46,6 +46,8 @@ services:
                     rm -rf obj bin &&
                     cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
                     rm -rf obj bin &&
+                    cd /src/libiec61850
+                    rm -rf .install
                     cd /src/OPC-DA-Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
                     rm -rf obj bin &&
