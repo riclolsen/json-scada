@@ -18,9 +18,6 @@ copy %SRCPATH%\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll %BINPATH% /y
 
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
-cd %SRCPATH%\dnp3\Dnp3Client\ 
-dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINWINPATH% Dnp3Client.csproj
-
 cd %SRCPATH%\libiec61850\build
 rem set VCTargetsPath="C:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\"
 rem set VCTargetsPath="D:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\"
@@ -49,6 +46,7 @@ cd %SRCPATH%\lib60870.netcore\iec104server\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
 cd %SRCPATH%\dnp3\Dnp3Client\ 
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% Dnp3Client.csproj
+dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINWINPATH% Dnp3Client.csproj
 
 cd %SRCPATH%\libplctag\libplctag.NET\src\libplctag
 dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
@@ -65,6 +63,7 @@ cd %SRCPATH%\OPC-DA-Client\
 rmdir obj /S /Q
 rmdir bin /S /Q
 dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -c Release -o %BINPATH% OPC-DA-Client.csproj
+dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -c Release -o %BINWINPATH% OPC-DA-Client.csproj
 
 cd %SRCPATH%\OPC-UA-Client\  
 rmdir obj /S /Q
