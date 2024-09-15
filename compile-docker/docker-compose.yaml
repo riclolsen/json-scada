@@ -12,18 +12,28 @@ services:
                     dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec101client/ &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
                     cd /src/lib60870.netcore/iec101server/ &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
                     cd /src/lib60870.netcore/iec104client/ &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
                     cd /src/lib60870.netcore/iec104server/ &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
+                    cd /src/lib60870.netcore/lib60870.netcore/
+                    rm -rf obj bin
                     cd /src/OPC-UA-Client/ && 
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/libplctag/PLCTagsClient &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
+                    cd /src/libplctag/libplctag.NET/src/libplctag &&
+                    rm -rf obj bin
                     apt-get update &&
                     apt-get -y install gcc make &&
                     cd /src/libiec61850 &&
@@ -33,10 +43,15 @@ services:
                     dotnet publish --no-self-contained --runtime linux-x64 -c Release IEC61850.NET.core.2.0 &&
                     cd iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    rm -rf obj bin
+                    cd dotnet/core/2.0/IEC61850.NET.core.2.0 &&
+                    rm -rf obj bin
                     cd /src/OPC-DA-Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
+                    rm -rf obj bin
                     cd /src/dnp3/Dnp3Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ &&
+                    rm -rf obj bin
                     cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
 
     # NOTICE Dnp3Client is Windows-only, so it can only run in docker/linux using Wine.
