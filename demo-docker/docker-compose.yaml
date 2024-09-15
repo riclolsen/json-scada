@@ -100,7 +100,7 @@ services:
       - jsdemo_net
 
   grafana:
-    image: grafana/grafana-oss:11
+    image: grafana/grafana-oss:latest
     container_name: jsdemo_grafana
     # you may need to set the docker user:group to be able to write grafana folder 
     # set UID and GID variables 
