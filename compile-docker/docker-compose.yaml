@@ -51,6 +51,7 @@ services:
       - ../src/libplctag:/src/libplctag
       - ../demo-docker/bin:/publish_bin
       - ../src/dnp3:/src/dnp3
+      - ../src/OPC-DA-Client:/src/OPC-DA-Client
       - ../demo-docker/bin_win:/publish_bin_win
 
   calculations_compile:
