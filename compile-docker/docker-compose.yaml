@@ -87,7 +87,7 @@ services:
     image: golang:alpine
     container_name: js_pcl4x_compile
     command: sh -c "apk update &&
-                    apk add --no-cache git libpcap-dev && 
+                    apk add --no-cache git libpcap-dev gcc && 
                     go env -w GO111MODULE=auto CGO_ENABLED=1 &&
                     cd /go/src/plc4x-client/ &&
                     go mod tidy && 
