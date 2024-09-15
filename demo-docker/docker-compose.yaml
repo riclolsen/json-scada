@@ -112,12 +112,23 @@ services:
     environment: 
       - GF_SERVER_DOMAIN=127.0.0.1
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
-      # enable auto login of json-scada user with auth.proxy
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
       - GF_AUTH_PROXY_ENABLED=true
       - GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN=true
       - GF_AUTH_DISABLE_SIGNOUT_MENU=true
-      #- GF_AUTH_PROXY_WHITELIST=127.0.0.1
+      - GF_AUTH_PROXY_WHITELIST=127.0.0.1
+      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=true
+      - GF_SERVER_HTTP_ADDR="127.0.0.1"
+      - GF_SERVER_ENFORCE_DOMAIN=true
+      - GF_SERVER_ENABLE_GZIP=true
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_NAME=grafanaappdb
+      - GF_DATABASE_HOST=127.0.0.1
+      - GF_DATABASE_USER=postgres
+      - GF_DATABASE_PASSWORD=
       #- GF_AUTH_PROXY_HEADER_NAME=X-WEBAUTH-USER
       #- GF_AUTH_PROXY_HEADER_PROPERTY=username
       #- GF_AUTH_PROXY_AUTO_SIGN_UP=true      
