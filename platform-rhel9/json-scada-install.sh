@@ -29,10 +29,10 @@ sudo dnf config-manager --set-enabled crb
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl 
 sudo dnf -y install libpcap-devel
 
-# docker can be used to run DNP3 and OPC-DA on linux
+# docker/podman can be used to run DNP3 and OPC-DA on linux
 sudo yum install -y yum-utils
 sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-sudo yum install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo dnf -y install podman docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 sudo systemctl enable docker
 sudo systemctl start docker
 #sudo usermod -aG docker $JS_USERNAME
