@@ -117,42 +117,42 @@ services:
   cs_data_processor_update:
     image: node:20-alpine
     container_name: js_cs_data_processor_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /cs_data_processor && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /cs_data_processor && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
 
   cs_custom_processor_update:
     image: node:20-alpine
     container_name: js_cs_custom_processor_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /cs_custom_processor && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /cs_custom_processor && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/cs_custom_processor:/cs_custom_processor
 
   server_realtime_update:
     image: node:20-alpine
     container_name: js_server_realtime_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /server_realtime && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /server_realtime && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/server_realtime:/server_realtime
 
   config_server_excel_update:
     image: node:20-alpine
     container_name: js_config_server_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /config_server_for_excel && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /config_server_for_excel && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/config_server_for_excel:/config_server_for_excel
 
   server_realtime_auth_update:
     image: node:20-alpine
     container_name: js_server_realtime_auth_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /server_realtime_auth && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /server_realtime_auth && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
 
   htdocs_admin_update:
     image: node:20-alpine
     container_name: js_htdocs_admin_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /htdocs-admin && npm install && npm run build"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /htdocs-admin && npm install && npm run build && chmod -R 777 node_modules"
     volumes:
       - ../src/htdocs-admin:/htdocs-admin
     environment:
@@ -161,34 +161,34 @@ services:
   alarm_beep_update:
     image: node:20-alpine
     container_name: js_alarm_beep_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /alarm_beep && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /alarm_beep && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/alarm_beep:/alarm_beep
 
   oshmi2json_update:
     image: node:20-alpine
     container_name: js_oshmi2json_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /oshmi2json && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /oshmi2json && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/oshmi2json:/oshmi2json
 
   telegraf_listener_update:
     image: node:20-alpine
     container_name: js_telegraf_listener_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /telegraf-listener && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /telegraf-listener && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/telegraf-listener:/telegraf-listener
 
   opcua_server_update:
     image: node:20-alpine
     container_name: js_opcua_server_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /OPC-UA-Server && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /OPC-UA-Server && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/OPC-UA-Server:/OPC-UA-Server
 
   mqtt_sparkplug_update:
     image: node:20-alpine
     container_name: js_mqtt_sparkplug_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /mqtt-sparkplug && npm install"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /mqtt-sparkplug && npm install && chmod -R 777 node_modules"
     volumes:
       - ../src/mqtt-sparkplug:/mqtt-sparkplug
