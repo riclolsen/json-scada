@@ -34,7 +34,7 @@ services:
                     cd iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     cd /src/OPC-DA-Client/
-                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ 
+                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj
                     cd /src/dnp3/Dnp3Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ &&
                     cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
