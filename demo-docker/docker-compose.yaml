@@ -323,7 +323,21 @@ services:
     networks:
       - jsdemo_net
 
-#  # Dnp3 client: requires wine/proton as it is currently Windows-only
+ # Dnp3 client: requires wine as it is currently Windows-only
+  dnp3_client_wine:
+    image: scottyhardy/docker-wine:latest  
+    container_name: js_dnp3_client_wine   
+    command: sh -c "cd /jsonscada_bin/ && sleep 30 && xvfb-run wine Dnp3Client.exe 1 1"
+    restart: unless-stopped
+    links:
+      - jsdemo_mongorsn1   
+    volumes:
+      - ./conf:/conf
+      - ./bin_win:/jsonscada_bin
+    networks:
+     - jsdemo_net
+
+#  # another option via proton-ge
 #  dnp3_client_wine:
 #    image: mtapiio/wine8:latest
 #    container_name: js_dnp3_client_wine
@@ -343,6 +357,7 @@ services:
 #                    echo 555337b3129e4544846342bd94c9a8ac > /etc/machine-id &&
 #                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 dotnet-runtime-8.0.7-win-x64.exe /q &&
 #                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 ../jsonscada_bin/Dnp3Client.exe "
+#    restart: unless-stopped
 #    volumes:
 #      - ./conf:/conf
 #      - ./bin_win:/jsonscada_bin
