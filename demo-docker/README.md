@@ -38,7 +38,7 @@ docker-compose -f docker-compose.yaml up
 
 Wait until images are pulled, the databases are seeded and the protocol communication begins.
 
-Open http://localhost:8080 on a browser (Chrome, Safari or Firefox).
+Open http://127.0.0.1/login/login.html on a browser (Chrome, Safari or Firefox).
 
 Login credentials are user="admin" and password="jsonscada".
 
