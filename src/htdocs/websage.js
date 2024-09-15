@@ -5637,7 +5637,10 @@ getHistoricalData: function (i, pnt, timeBegin) {
           }
           code += "\n";
           if (importPergola-1 === i) {
-            code += "var container = 'layer1';\n";
+            if (SVGDoc.getElementById("layer1"))
+              code += "var container = 'layer1';\n";
+            else
+              code += "var container = 'svgid';\n";
           }
         }
         eval(code);
@@ -6230,6 +6233,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
       { passive: true }
     );
 
+    /*
     // arraste do mouse para mover a tela
     $(SVGDoc).bind("mousedown", function(event) {
       if (
@@ -6266,6 +6270,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
         window.drgObject = null;
       }
     });
+    */
    
     WebSAGE.pinnedAnnotations();
   } // init
