@@ -52,6 +52,7 @@ services:
       - ../demo-docker/bin:/publish_bin
       - ../src/dnp3:/src/dnp3
       - ../src/OPC-DA-Client:/src/OPC-DA-Client
+      - ../src/opcdaaehda-client-solution-net:/src/opcdaaehda-client-solution-net
       - ../demo-docker/bin_win:/publish_bin_win
 
   calculations_compile:
