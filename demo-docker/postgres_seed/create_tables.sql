@@ -1,16 +1,38 @@
 
 -- psql -h 127.0.0.1 -U postgres -w -f create_tables.sql
 
+CREATE DATABASE "grafanaappdb"
+    WITH OWNER "postgres"
+    ENCODING 'UTF8'
+    -- LC_COLLATE = 'en-US.UTF8' -- can cause errors sometimes
+    -- LC_CTYPE = 'en-US.UTF8' 
+    TEMPLATE template0;
+
+CREATE DATABASE "metabaseappdb"
+    WITH OWNER "postgres"
+    ENCODING 'UTF8'
+    -- LC_COLLATE = 'en-US.UTF8' -- can cause errors sometimes
+    -- LC_CTYPE = 'en-US.UTF8' 
+    TEMPLATE template0;
+
 CREATE DATABASE "json_scada"
     WITH OWNER "postgres"
     ENCODING 'UTF8'
-    LC_COLLATE = 'en_US.UTF-8'
-    LC_CTYPE = 'en_US.UTF-8'
+    -- LC_COLLATE = 'en-US.UTF8' -- can cause errors sometimes
+    -- LC_CTYPE = 'en-US.UTF8' 
     TEMPLATE template0;
 
 \c json_scada
 
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+-- CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit CASCADE;
+
+-- after timescaledb updates
+-- ALTER EXTENSION timescaledb UPDATE;
+-- ALTER EXTENSION timescaledb_toolkit UPDATE;
+
+-- disable timescaledb telemetry
+ALTER SYSTEM SET timescaledb.telemetry_level=off;
 
 -- create tables
 
@@ -36,6 +58,10 @@ comment on column hist.flags is 'Bit mask 0x80=value invalid, 0x40=Time tag at s
 
 -- timescaledb hypertable, partitioned by day
 SELECT create_hypertable('hist', 'time_tag', chunk_time_interval=>86400000000);
+-- data retention policy (older data will be deleted)
+
+-- SELECT add_drop_chunks_policy('hist', INTERVAL '45 days'); -- this is for timescaledb < 2.0
+SELECT add_retention_policy('hist', INTERVAL '45 days');
 
 -- DROP TABLE realtime_data;
 CREATE TABLE IF NOT EXISTS realtime_data (
@@ -87,4 +113,4 @@ GRANT SELECT ON grafana_realtime TO grafana;
 
 CREATE USER json_scada WITH PASSWORD 'json_scada';
 GRANT CONNECT ON DATABASE json_scada TO json_scada;
-GRANT all ON realtime_data, hist TO json_scada;
+GRANT all ON realtime_data, hist, grafana_hist TO json_scada;
