@@ -33,6 +33,8 @@ services:
                     dotnet publish --no-self-contained --runtime linux-x64 -c Release IEC61850.NET.core.2.0 &&
                     cd iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    cd /src/OPC-DA-Client/
+                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ 
                     cd /src/dnp3/Dnp3Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ &&
                     cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
@@ -77,6 +79,20 @@ services:
                     cp i104m /publish_bin/"
     volumes:
       - ../src/i104m:/go/src/i104m
+      - ../demo-docker/bin:/publish_bin
+
+  plc4x_compile:
+    image: golang:alpine
+    container_name: js_pcl4x_compile
+    command: sh -c "apk update &&
+                    apk add --no-cache git && 
+                    go env -w GO111MODULE=auto &&
+                    cd /go/src/plc4x-client/ &&
+                    go mod tidy && 
+                    go build && 
+                    cp plc4x-client /publish_bin/"
+    volumes:
+      - ../src/plc4x-client:/go/src/plc4x-client
       - ../demo-docker/bin:/publish_bin
 
   cs_data_processor_update:
