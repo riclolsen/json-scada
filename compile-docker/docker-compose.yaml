@@ -88,11 +88,10 @@ services:
     container_name: js_pcl4x_compile
     command: sh -c "apk update &&
                     apk add --no-cache git libpcap-dev && 
-                    go env -w GO111MODULE=auto &&
-                    go env -w CGO_ENABLED=1 &&
+                    go env -w GO111MODULE=auto CGO_ENABLED=1 &&
                     cd /go/src/plc4x-client/ &&
                     go mod tidy && 
-                    go build && 
+                    CGO_ENABLED=1 go build && 
                     cp plc4x-client /publish_bin/"
     volumes:
       - ../src/plc4x-client:/go/src/plc4x-client
