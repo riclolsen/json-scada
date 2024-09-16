@@ -1,5 +1,4 @@
 #!/bin/bash
-psql -h 127.0.0.1 -U postgres -w -f data/create_tables.sql template1
-psql -h 127.0.0.1 -U postgres -w -f data/metabaseappdb.sql metabaseappdb 
-psql -h 127.0.0.1 -U postgres -w -f data/grafanaappdb.sql grafanaappdb
-
+psql -U postgres -w -f /sql_data/create_tables.sql template1
+psql -U postgres -w -f /sql_data/grafanaappdb.sql grafanaappdb
+psql -U postgres -w -f /sql_data/metabaseappdb.sql metabaseappdb

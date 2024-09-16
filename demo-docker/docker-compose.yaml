@@ -45,6 +45,7 @@ services:
       #- POSTGRES_PASSWORD=passw0rd
     volumes:
       - ./postgres_seed:/docker-entrypoint-initdb.d/
+      - ./sql_data:/sql_data
       #- ./timescale:/var/lib/postgresql
     # to export postgresql port on main host!
     ports:
