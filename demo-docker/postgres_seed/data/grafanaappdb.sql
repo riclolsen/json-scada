@@ -3365,7 +3365,7 @@ d4dff665-e7b4-4b78-a8b3-43fe9dfabbc8	t	root	secretKey.v1	\\x2a5957567a4c574e6d59
 --
 
 COPY public.data_source (id, org_id, version, type, name, access, url, password, "user", database, basic_auth, basic_auth_user, basic_auth_password, is_default, json_data, created, updated, with_credentials, secure_json_data, read_only, uid) FROM stdin;
-1	1	2	postgres	PostgreSQL-JSON_SCADA	proxy	127.0.0.1:5432		grafana		f			t	{"connMaxLifetime":14400,"database":"json_scada","maxIdleConns":100,"maxIdleConnsAuto":true,"maxOpenConns":100,"postgresVersion":1400,"sslmode":"disable","timescaledb":true}	2024-05-15 15:38:36	2024-05-15 15:42:11	f	{}	f	f4dfcd5e-956e-4186-b0ed-abc6496b08b0
+1	1	2	postgres	PostgreSQL-JSON_SCADA	proxy	timescaledb:5432		grafana		f			t	{"connMaxLifetime":14400,"database":"json_scada","maxIdleConns":100,"maxIdleConnsAuto":true,"maxOpenConns":100,"postgresVersion":1400,"sslmode":"disable","timescaledb":true}	2024-05-15 15:38:36	2024-05-15 15:42:11	f	{}	f	f4dfcd5e-956e-4186-b0ed-abc6496b08b0
 \.
 
 
