@@ -60,7 +60,7 @@ services:
   # NOTICE Dnp3Client and OPC-DA-Client are Windows-only, so it can only run in docker/linux using Wine.
   dotnet_compile_win:
     image: mcr.microsoft.com/dotnet/sdk:6.0
-    container_name: js_dotnet_compile
+    container_name: js_dotnet_compile_win
     command: sh -c "cd /src/OPC-DA-Client/ &&
                     dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -f net6.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
                     rm -rf obj bin &&
