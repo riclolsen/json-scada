@@ -308,14 +308,37 @@ services:
     container_name: jsdemo_dnp3_client_wine
     #dpkg --add-architecture i386 && apt update && apt install -y xvfb wget libfreetype6 wine wine32:i386 && cd /root &&
     #apt update && apt install -y xvfb wget libfreetype6 wine && cd /root &&
-    command: sh -c "export DISPLAY=:0.0 && cd /root &&
+    command: sh -c "export DISPLAY=:0.0 && cd /jsonscada_bin &&
                     export WINEDEBUG=-all &&
                     rm -rf /tmp/.X0-lock && (Xvfb :0 -screen 0 1024x768x16 &) &&
                     wget -nc https://download.visualstudio.microsoft.com/download/pr/3c01bbe6-a49d-468f-8335-f195588f582f/b935469e8480e611eae4d79b2e51965e/dotnet-runtime-6.0.33-win-x64.exe ;
                     wget -nc https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks ;
-                    chmod +x winetricks &&
+                    sh ./winetricks win10 &&
                     wine dotnet-runtime-6.0.33-win-x64.exe /q &&
-                    wine ../jsonscada_bin/Dnp3Client.exe "
+                    wine Dnp3Client.exe "
+    restart: unless-stopped
+    volumes:
+      - ./conf:/conf
+      - ./bin_win:/jsonscada_bin
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  # OPC-DA client: requires wine as it is currently Windows-only
+  opcda_client_wine:
+    image: scottyhardy/docker-wine:latest
+    container_name: jsdemo_opcda_client_wine
+    #dpkg --add-architecture i386 && apt update && apt install -y xvfb wget libfreetype6 wine wine32:i386 && cd /root &&
+    #apt update && apt install -y xvfb wget libfreetype6 wine && cd /root &&
+    command: sh -c "export DISPLAY=:0.0 && cd /jsonscada_bin &&
+                    export WINEDEBUG=-all &&
+                    rm -rf /tmp/.X0-lock && (Xvfb :0 -screen 0 1024x768x16 &) &&
+                    wget -nc https://download.visualstudio.microsoft.com/download/pr/3c01bbe6-a49d-468f-8335-f195588f582f/b935469e8480e611eae4d79b2e51965e/dotnet-runtime-6.0.33-win-x64.exe ;
+                    wget -nc https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks ;
+                    sh ./winetricks win10 &&
+                    wine dotnet-runtime-6.0.33-win-x64.exe /q &&
+                    wine OPC-DA-Client.exe "
     restart: unless-stopped
     volumes:
       - ./conf:/conf
