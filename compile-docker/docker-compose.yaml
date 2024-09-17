@@ -1,5 +1,3 @@
-version: '2.1'
-
 # {json:scada} Docker Compilation for Linux x64 - (c) 2020-2024 - Ricardo L. Olsen 
 # Requires Internet connection!
 
@@ -47,17 +45,7 @@ services:
                     cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
                     rm -rf obj bin &&
                     cd /src/libiec61850 &&
-                    rm -rf .install &&
-                    cd /src/OPC-DA-Client/ &&
-                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
-                    rm -rf obj bin &&
-                    cd /src/dnp3/Dnp3Client/ &&
-                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin_win/ &&
-                    rm -rf obj bin &&
-                    cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
-
-    # NOTICE Dnp3Client is Windows-only, so it can only run in docker/linux using Wine.
-
+                    rm -rf .install "
     environment:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
     #command: tail -f /dev/null
@@ -67,10 +55,28 @@ services:
       - ../src/OPC-UA-Client:/src/OPC-UA-Client
       - ../src/libplctag:/src/libplctag
       - ../demo-docker/bin:/publish_bin
-      - ../src/dnp3:/src/dnp3
-      - ../src/OPC-DA-Client:/src/OPC-DA-Client
       - ../src/opcdaaehda-client-solution-net:/src/opcdaaehda-client-solution-net
+
+  # NOTICE Dnp3Client and OPC-DA-Client are Windows-only, so it can only run in docker/linux using Wine.
+  dotnet_compile_win:
+    image: mcr.microsoft.com/dotnet/sdk:6.0
+    container_name: js_dotnet_compile
+    command: sh -c "cd /src/OPC-DA-Client/ &&
+                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -f net6.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
+                    rm -rf obj bin &&
+                    cd /src/dnp3/Dnp3Client/ &&
+                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o /publish_bin_win/ Dnp3Client.csproj &&
+                    rm -rf obj bin &&
+                    cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
+    environment:
+      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+    #command: tail -f /dev/null
+    volumes:
       - ../demo-docker/bin_win:/publish_bin_win
+      - ../src/dnp3:/src/dnp3
+      - ./Dnp3Client.csproj:/src/dnp3/Dnp3Client/Dnp3Client.csproj
+      - ../src/OPC-DA-Client:/src/OPC-DA-Client
+      - ./OPC-DA-Client.csproj:/src/OPC-DA-Client/OPC-DA-Client.csproj
 
   calculations_compile:
     image: golang:alpine
@@ -189,6 +195,6 @@ services:
   mqtt_sparkplug_update:
     image: node:20-alpine
     container_name: js_mqtt_sparkplug_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /mqtt-sparkplug && npm install && chmod -R 777 node_modules"
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /mqtt-sparkplug && npm install"
     volumes:
       - ../src/mqtt-sparkplug:/mqtt-sparkplug
