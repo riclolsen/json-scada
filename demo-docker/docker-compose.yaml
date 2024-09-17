@@ -1,9 +1,6 @@
-version: '3.8'
-
 # {json:scada} Demo - (c) 2020-2024 - Ricardo L. Olsen 
 
-# ACCESS VIA WEB BROWSER AT http://127.0.0.1:8080
-# Grafana access http://127.0.0.1:3000, user=admin password=jsonscada
+# ACCESS VIA WEB BROWSER AT http://127.0.0.1/login/login.html
 # Must be online to connect to IEC60870-5-104 live demo server at 207.180.242.96:2404. 
 
 services:
@@ -305,48 +302,28 @@ services:
     networks:
       - jsdemo_net
 
- # Dnp3 client: requires wine as it is currently Windows-only
+  # Dnp3 client: requires wine as it is currently Windows-only
   dnp3_client_wine:
-    image: scottyhardy/docker-wine:latest  
-    container_name: jsdemo_dnp3_client_wine   
-    command: sh -c "cd /jsonscada_bin/ && sleep 30 && xvfb-run wine Dnp3Client.exe 1 1"
+    image: scottyhardy/docker-wine:latest
+    container_name: jsdemo_dnp3_client_wine
+    #dpkg --add-architecture i386 && apt update && apt install -y xvfb wget libfreetype6 wine wine32:i386 && cd /root &&
+    #apt update && apt install -y xvfb wget libfreetype6 wine && cd /root &&
+    command: sh -c "export DISPLAY=:0.0 && cd /root &&
+                    export WINEDEBUG=-all &&
+                    rm -rf /tmp/.X0-lock && (Xvfb :0 -screen 0 1024x768x16 &) &&
+                    wget -nc https://download.visualstudio.microsoft.com/download/pr/3c01bbe6-a49d-468f-8335-f195588f582f/b935469e8480e611eae4d79b2e51965e/dotnet-runtime-6.0.33-win-x64.exe ;
+                    wget -nc https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks ;
+                    chmod +x winetricks &&
+                    wine dotnet-runtime-6.0.33-win-x64.exe /q &&
+                    wine ../jsonscada_bin/Dnp3Client.exe "
     restart: unless-stopped
-    links:
-      - jsdemo_mongorsn1   
     volumes:
       - ./conf:/conf
       - ./bin_win:/jsonscada_bin
+    links:
+      - jsdemo_mongorsn1
     networks:
-     - jsdemo_net
-
-#  # another option via proton-ge
-#  dnp3_client_wine:
-#    image: mtapiio/wine8:latest
-#    container_name: jsdemo_dnp3_client_wine
-#    command: sh -c "dpkg --add-architecture i386 &&          
-#                    apt update && apt dist-upgrade -y &&
-#                    apt install -y libc6:i386 libx11-6:i386 libdbus-1-dev:i386 libfreetype6:i386 &&
-#                    apt install -y nano xvfb python3-pip wget libfreetype6 &&
-#                    export WINEDEBUG=-all &&
-#                    pip3 install protonup &&
-#                    rm -rf /tmp/.X0-lock &&
-#                    (Xvfb :0 -screen 0 1024x768x16 &) &&
-#                    export DISPLAY=:0.0 &&
-#                    cd /root &&
-#                    wget -nc https://download.visualstudio.microsoft.com/download/pr/7bb7f85b-9bf0-4c6f-b3e4-a3832720f162/73e280cfd7f686c34748e0bf98d879c7/dotnet-runtime-6.0.19-win-x64.exe &&
-#                    sleep 2 &&
-#                    protonup -t 8.4 -y &&
-#                    echo 555337b3129e4544846342bd94c9a8ac > /etc/machine-id &&
-#                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 dotnet-runtime-8.0.7-win-x64.exe /q &&
-#                    /root/.steam/root/compatibilitytools.d/GE-Proton8-4/files/bin/wine64 ../jsonscada_bin/Dnp3Client.exe "
-#    restart: unless-stopped
-#    volumes:
-#      - ./conf:/conf
-#      - ./bin_win:/jsonscada_bin
-#    links:
-#      - jsdemo_mongorsn1
-#    networks:
-#      - jsdemo_net
+      - jsdemo_net
 
 #  # Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
 #  metabase:
