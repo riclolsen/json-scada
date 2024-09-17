@@ -55,7 +55,6 @@ services:
       - ../src/OPC-UA-Client:/src/OPC-UA-Client
       - ../src/libplctag:/src/libplctag
       - ../demo-docker/bin:/publish_bin
-      - ../src/opcdaaehda-client-solution-net:/src/opcdaaehda-client-solution-net
 
   # NOTICE Dnp3Client and OPC-DA-Client are Windows-only, so it can only run in docker/linux using Wine.
   dotnet_compile_win:
@@ -77,6 +76,7 @@ services:
       - ./Dnp3Client.csproj:/src/dnp3/Dnp3Client/Dnp3Client.csproj
       - ../src/OPC-DA-Client:/src/OPC-DA-Client
       - ./OPC-DA-Client.csproj:/src/OPC-DA-Client/OPC-DA-Client.csproj
+      - ../src/opcdaaehda-client-solution-net:/src/opcdaaehda-client-solution-net
 
   calculations_compile:
     image: golang:alpine
