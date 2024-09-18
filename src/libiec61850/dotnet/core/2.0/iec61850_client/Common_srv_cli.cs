@@ -167,6 +167,7 @@ namespace IEC61850_Client
             public string address;
             public string asdu;
             public bool isDigital;
+            public bool isTransient;
             public double value;
             public string valueString;
             public int cot;

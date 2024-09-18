@@ -69,22 +69,26 @@ namespace IEC61850_Client
             public ReportControlBlock rcb;
         }
 
-        static Boolean MMSTestDoubleStateFailed(MmsValue mv)
+        static bool MMSTestDoubleStateFailed(MmsValue mv)
         { // test for double state inconsistent (bitstring of 2 with same values)
             return (mv.GetType() == MmsType.MMS_BIT_STRING && mv.Size() == 2 && mv.GetBit(0) == mv.GetBit(1));
         }
+        static bool MMSTestDoubleStateTransient(MmsValue mv)
+        { // test for double state inconsistent (bitstring of 2 with same values)
+            return (mv.GetType() == MmsType.MMS_BIT_STRING && mv.Size() == 2 && mv.GetBit(0) == false && mv.GetBit(1) == false);
+        }
 
-        static Boolean MMSGetQualityFailed(MmsValue mv)
+        static bool MMSGetQualityFailed(MmsValue mv)
         { // tries to find a qualifier of iec61850 (bitstring) in a mms structure  
-            Boolean f = false;
-            Boolean found = false;
+            bool f = false;
+            bool found = false;
             switch (mv.GetType())
             {
                 case MmsType.MMS_STRUCTURE:
                     for (int i = 0; i < mv.Size(); i++)
-                        if (mv.GetElement(i).GetType() == MmsType.MMS_BIT_STRING)
+                        if (mv.GetElement(i).GetType() == MmsType.MMS_BIT_STRING && mv.GetElement(i).Size() > 2)
                         {
-                            f = !(mv.GetElement(i).BitStringToUInt32BigEndian() == 0);
+                            f = new Quality((int)mv.GetElement(i).BitStringToUInt32()).GetValidity() != Validity.GOOD;
                             found = true;
                             break;
                         }
@@ -100,11 +104,35 @@ namespace IEC61850_Client
             }
             return f;
         }
+        static bool MMSGetQualityTransient(MmsValue mv)
+        { // tries to find a qualifier of iec61850 (bitstring) in a mms structure  
+            bool t = false;
+            bool found = false;
+            switch (mv.GetType())
+            {
+                case MmsType.MMS_STRUCTURE:
+                    for (int i = 0; i < mv.Size(); i++)
+                        if (mv.Size() == 2 && mv.GetElement(i).GetType() == MmsType.MMS_BIT_STRING)
+                        {
+                            t = mv.GetBit(0) == false && mv.GetBit(1) == false;
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        t = MMSGetQualityFailed(mv.GetElement(0));
+                    break;
+                case MmsType.MMS_BIT_STRING:
+                    if (MMSTestDoubleStateTransient(mv))
+                        t = true;
+                    break;
+            }
+            return t;
+        }
 
         static ulong MMSGetTimestamp(MmsValue mv)
         { // tries to find a timestamp of iec61850 (utc time) in a mms structure, return number of ms UTC
             ulong t = 0;
-            Boolean found = false;
+            bool found = false;
             switch (mv.GetType())
             {
                 case MmsType.MMS_STRUCTURE:
@@ -125,10 +153,10 @@ namespace IEC61850_Client
             return t;
         }
 
-        static Double MMSGetNumericVal(MmsValue mv, out Boolean isBinary)
+        static Double MMSGetNumericVal(MmsValue mv, out bool isBinary)
         { // tries to find a numeric value of iec61850 (flot, integer, unsigned) in a mms structure  
             Double v = 0;
-            Boolean found = false;
+            bool found = false;
             isBinary = false;
             switch (mv.GetType())
             {
@@ -193,7 +221,7 @@ namespace IEC61850_Client
             return v;
         }
 
-        static Double MMSGetDoubleVal(MmsValue mv, out Boolean isBinary)
+        static Double MMSGetDoubleVal(MmsValue mv, out bool isBinary)
         { // tries to convert any mms value into a double
             Double v = 0;
             isBinary = false;
@@ -412,10 +440,11 @@ namespace IEC61850_Client
                                 log += " Included for reason " + report.GetReasonForInclusion(k).ToString() + " \n";
                             string tag = entry.js_tag;
                             var value = values.GetElement(k);
-                            double v;
-                            bool failed;
-                            ulong timestamp;
-                            Boolean isBinary = false;
+                            double v = 0;
+                            bool failed = false;
+                            ulong timestamp = 0;
+                            bool isBinary = false;
+                            bool transient = false;
 
                             if (value.GetType() == MmsType.MMS_STRUCTURE)
                             {
@@ -430,6 +459,7 @@ namespace IEC61850_Client
                                 }
                                 v = MMSGetNumericVal(value, out isBinary);
                                 failed = MMSGetQualityFailed(value);
+                                transient = MMSGetQualityTransient(value);
                                 timestamp = MMSGetTimestamp(value);
 
                                 for (int i = 0; i < value.Size(); i++)
@@ -450,6 +480,7 @@ namespace IEC61850_Client
                                         }
                                     }
                                     failed = MMSGetQualityFailed(value.GetElement(i));
+                                    transient = MMSGetQualityTransient(value.GetElement(i));
                                     timestamp = MMSGetTimestamp(value.GetElement(i));
                                     if (value.GetElement(i).GetType() == MmsType.MMS_BIT_STRING)
                                     {
@@ -460,7 +491,7 @@ namespace IEC61850_Client
                                     if (value.GetElement(i).GetType() == MmsType.MMS_UTC_TIME)
                                     {
                                         if (LogLevel > LogLevelNoLog)
-                                            log += "   -> " + value.GetElement(i).GetUtcTimeAsDateTimeOffset() + "\n";
+                                            log += "   -> " + value.GetElement(i).GetUtcTimeAsDateTimeOffset().ToString("o") + "\n";
                                     }
                                     else
                                     {
@@ -478,6 +509,7 @@ namespace IEC61850_Client
                                 var iv = new IECValue
                                 {
                                     isDigital = isBinary,
+                                    isTransient = transient,
                                     value = v,
                                     valueString = vstr,
                                     valueJson = MMSGetStringValue(value),
@@ -509,7 +541,8 @@ namespace IEC61850_Client
                                     log += " Value is of simple type " + value.GetType() + " " + v;
                                 }
                                 failed = false;
-                                if (MMSTestDoubleStateFailed(value)) failed = true; // double state inconsistent status
+                                failed = MMSTestDoubleStateFailed(value); // double state inconsistent status
+                                transient = MMSTestDoubleStateTransient(value); // double state inconsistent status
                                 string vstr;
                                 if (isBinary)
                                     vstr = v != 0 ? "true" : "false";
@@ -519,6 +552,7 @@ namespace IEC61850_Client
                                 var iv = new IECValue
                                 {
                                     isDigital = isBinary,
+                                    isTransient = transient,
                                     value = v,
                                     valueString = vstr,
                                     valueJson = MMSGetStringValue(value),
@@ -848,6 +882,7 @@ namespace IEC61850_Client
                                                        var tp = value.GetType();
                                                        double v = 0;
                                                        bool failed = false;
+                                                       bool transient = false;
                                                        ulong timestamp = 0;
                                                        bool isBinary = false;
 
@@ -857,6 +892,7 @@ namespace IEC61850_Client
                                                            if (LogLevel >= LogLevelDetailed) log += "\n    Value is of complex type \n";
                                                            v = MMSGetNumericVal(value, out isBinary);
                                                            failed = MMSGetQualityFailed(value);
+                                                           transient = MMSGetQualityTransient(value);
                                                            timestamp = MMSGetTimestamp(value);
 
                                                            for (int i = 0; i < value.Size(); i++)
@@ -874,6 +910,7 @@ namespace IEC61850_Client
                                                                    }
                                                                }
                                                                failed = MMSGetQualityFailed(value.GetElement(i));
+                                                               transient = MMSGetQualityTransient(value.GetElement(i));
                                                                timestamp = MMSGetTimestamp(value.GetElement(i));
                                                                if (value.GetElement(i).GetType() == MmsType.MMS_BIT_STRING)
                                                                {
@@ -882,7 +919,7 @@ namespace IEC61850_Client
                                                                else
                                                                if (value.GetElement(i).GetType() == MmsType.MMS_UTC_TIME)
                                                                {
-                                                                   if (LogLevel >= LogLevelDetailed) log += " -> " + value.GetElement(i).GetUtcTimeAsDateTimeOffset() + "\n";
+                                                                   if (LogLevel >= LogLevelDetailed) log += " -> " + value.GetElement(i).GetUtcTimeAsDateTimeOffset().ToString("o") + "\n";
                                                                }
                                                                else
                                                                {
@@ -899,6 +936,7 @@ namespace IEC61850_Client
                                                            var iv = new IECValue
                                                            {
                                                                isDigital = isBinary,
+                                                               isTransient = transient,
                                                                value = v,
                                                                valueString = vstr,
                                                                valueJson = MMSGetStringValue(value),
@@ -922,7 +960,8 @@ namespace IEC61850_Client
                                                        else
                                                        {
                                                            v = MMSGetDoubleVal(value, out isBinary);
-                                                           if (MMSTestDoubleStateFailed(value)) failed = true; // double state inconsistent status
+                                                           failed = MMSTestDoubleStateFailed(value); // double state inconsistent status
+                                                           transient = MMSTestDoubleStateTransient(value); // double state inconsistent status
                                                            string vstr;
                                                            if (isBinary)
                                                                vstr = v != 0 ? "true" : "false";
@@ -932,6 +971,7 @@ namespace IEC61850_Client
                                                            var iv = new IECValue
                                                            {
                                                                isDigital = isBinary,
+                                                               isTransient = transient,
                                                                value = v,
                                                                valueString = vstr,
                                                                valueJson = MMSGetStringValue(value),

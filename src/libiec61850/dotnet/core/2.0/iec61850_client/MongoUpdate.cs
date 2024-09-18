@@ -224,7 +224,17 @@ namespace IEC61850_Client
                                                         "substitutedAtSource",
                                                         BsonBoolean
                                                             .Create(false)
-                                                    }
+                                                    },
+                                                    {
+                                                        "transientAtSource",
+                                                        BsonBoolean
+                                                            .Create(iv.isTransient)
+                                                    },
+                                                    {
+                                                        "originator",
+                                                        BsonValue
+                                                            .Create(ProtocolDriverName + "|" + iv.conn_number )
+                                                    },
                                                 }
                                             }
                                         }
