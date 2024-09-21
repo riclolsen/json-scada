@@ -3520,6 +3520,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
         WebSAGE.Pass++;
 
         var prop;
+        if (data.Body.Results)
         data.Body.Results.map(element => {
           if (typeof element.StatusCode == "number" && element.StatusCode != 0) // reject a bad result
             return;
@@ -5620,7 +5621,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
 
       // execute scripts in the svg file
       ( async function() { 
-        var scripts = SVGDoc.getElementsByTagName("script");
+        var scripts = SVGDoc?.getElementsByTagName("script")||[];
         var importPergola = -1;
         for (var i = 0; i < scripts.length; i++) {
           if (scripts[i].href.baseVal.endsWith("pergola.js")) {
@@ -6219,6 +6220,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
     WebSAGE.g_toutID = setTimeout(WebSAGE.callServer, 10);
 
     // Mouse wheel event to zoom in/out graphics
+    if (SVGDoc)
     SVGDoc.addEventListener(
       "wheel",
       function(event) {
