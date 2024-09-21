@@ -2,7 +2,8 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
-    "itemsPerPageText": "Items per page:"
+    "itemsPerPageText": "Items per page:",
+    "error": "Error!"
   },
   "app": {
     "title": "JSON-SCADA",
