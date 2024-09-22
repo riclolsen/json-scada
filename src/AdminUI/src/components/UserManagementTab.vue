@@ -240,10 +240,10 @@ const updateUser = async (user) => {
   if (user.value) user = user.value;
   roleChange(user);
   const userDup = Object.assign({}, user);
-  delete userDup["id"];
-  delete userDup["rolesText"];
-  delete userDup["roles"];
-  delete userDup["__v"];
+  if (userDup.id) delete userDup.id;
+  if (userDup.rolesText) delete userDup.rolesText;
+  if (userDup.roles) delete userDup.roles;
+  if (userDup.__v) delete userDup.__v;
   if ("password" in userDup)
     if (userDup.password === "" || userDup.password === null)
       delete userDup["password"];
@@ -352,4 +352,8 @@ const createUser = async () => {
     })
     .catch((err) => { error.value = true; console.warn(err); });
 }
+
+defineExpose({ fetchUsers, fetchRoles })
+
 </script>
+
