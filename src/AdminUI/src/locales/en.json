@@ -2,6 +2,7 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
+    "delete": "Delete",
     "itemsPerPageText": "Items per page:",
     "error": "Error!"
   },
@@ -77,6 +78,7 @@
     "title": "Admin Dashboard",
     "tabs": {
       "userManagement": "User Management",
+      "rolesManagement": "Roles Management",
       "systemSettings": "System Settings",
       "logs": "Logs"
     },
@@ -102,7 +104,51 @@
       "deleteUser": "Delete User",
       "deleteUserConfirm": "Are you sure you want to delete this user?",
       "deleteUserCancel": "Cancel",
-      "deleteUserExecute": "Delete User"
+      "deleteUserExecute": "Delete User",
+      "confirmDelete": "Confirm Delete",
+      "deleteConfirmMessage": "Are you sure you want to delete this user?"
+    },
+    "rolesManagement": {
+      "title": "Roles Management",
+      "headers": {
+        "name": "Name",
+        "description": "Description",
+        "rights": "Rights",
+        "actions": "Actions"
+      },
+      "addRole": "Add Role",
+      "addNewRole": "Add New Role",
+      "roleName": "Role Name",
+      "canViewGroup1List": "Can View - Group1 List",
+      "canCommandGroup1List": "Can Command - Group1 List",
+      "canAccessDisplayList": "Can Access - Display List",
+      "isAdmin": "Is Admin",
+      "isAdminHint": "Add/remove/edit users and roles.",
+      "canChangePassword": "Can Change Password",
+      "canChangePasswordHint": "Can change its own password.",
+      "sendCommands": "Send Commands",
+      "sendCommandsHint": "Can send commands (controls).",
+      "enterAnnotations": "Enter Annotations",
+      "enterAnnotationsHint": "Can create/edit blocking annotations.",
+      "enterNotes": "Enter Notes",
+      "enterNotesHint": "Can create/edit documental notes.",
+      "enterManuals": "Enter Manuals",
+      "enterManualsHint": "Can change the state of manual points.",
+      "enterLimits": "Enter Limits",
+      "enterLimitsHint": "Can change limits for analog points.",
+      "substituteValues": "Substitute Values",
+      "substituteValuesHint": "Can replace (impose) supervised values.",
+      "ackEvents": "Ack Events",
+      "ackEventsHint": "Can acknowledge events.",
+      "ackAlarms": "Ack Alarms",
+      "ackAlarmsHint": "Can acknowledge alarms.",
+      "disableAlarms": "Disable Alarms",
+      "disableAlarmsHint": "Can disable/enable alarms.",
+      "numberOfDaysSession": "Number of days...",
+      "maxSessionDays": "Max Session Days",
+      "maxSessionDaysHint": "Maximum days of session period.",
+      "deleteRole": "Delete Role",
+      "deleteRoleConfirm": "Are you sure you want to delete this role?"
     },
     "systemSettings": {
       "title": "System Settings",

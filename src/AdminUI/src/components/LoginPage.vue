@@ -174,10 +174,10 @@ function testLogin() {
     .then((data) => {
       if ('ok' in data && data.ok) {
         router.push('/dashboard')
-        console.log('User is logged in')
+        // console.log('User is logged in')
       } else {
         router.push('/login')
-        console.log('User is not logged in')
+        // console.log('User is not logged in')
       }
     })
     .catch((error) => {
