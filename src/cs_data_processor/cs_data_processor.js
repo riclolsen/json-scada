@@ -231,25 +231,26 @@ const pipeline = [
     }
 
     doInsertData = false
-    sqlTransaction = 'START TRANSACTION;\n'
+    sqlTransaction = ''
     let cntR = 0
+    sqlTransaction =
+      sqlTransaction +
+      'INSERT INTO realtime_data (tag, time_tag, json_data) VALUES '
     while (!sqlRtDataQueue.isEmpty()) {
       doInsertData = true
       let sql = sqlRtDataQueue.peek()
       sqlRtDataQueue.dequeue()
-      sqlTransaction =
-        sqlTransaction +
-        'INSERT INTO realtime_data (tag, time_tag, json_data) VALUES '
-      sqlTransaction = sqlTransaction + ' (' + sql + ') '
-      sqlTransaction =
-        sqlTransaction +
-        'ON CONFLICT (tag) DO UPDATE SET time_tag=EXCLUDED.time_tag, json_data=EXCLUDED.json_data;\n'
+      sqlTransaction = sqlTransaction + '\n (' + sql + '),'
       cntR++
     }
+    sqlTransaction = sqlTransaction.substring(0, sqlTransaction.length - 1) // remove last comma
+    sqlTransaction = sqlTransaction + ' \n'
+    sqlTransaction =
+      sqlTransaction +
+      'ON CONFLICT (tag) DO UPDATE SET time_tag=EXCLUDED.time_tag, json_data=EXCLUDED.json_data;\n'
     if (cntR) Log.log('PGSQL RT updates ' + cntR)
 
     if (doInsertData) {
-      sqlTransaction = sqlTransaction + 'COMMIT;\n'
       fs.writeFile(
         sqlFilesPath +
           'pg_rtdata_' +
@@ -449,6 +450,19 @@ const pipeline = [
             changeStream.on('change', (change) => {
               try {
                 if (change.operationType === 'delete') return
+
+                // // for older versions of mongodb
+                // if (
+                //   change.operationType === 'replace' &&
+                //   !change?.updateDescription?.updatedFields &&
+                //   change.fullDocument.sourceDataUpdate
+                // ) {
+                //   change['updateDescription'] = {
+                //     updatedFields: {
+                //       sourceDataUpdate: change.fullDocument.sourceDataUpdate,
+                //     },
+                //   }
+                // }
 
                 let isSOE = false
                 let alarmRange = 0
