@@ -1795,11 +1795,59 @@ namespace Iec10XDriver
                         IECCmdAckQueue.Enqueue(ia);
                     }
                     break;
+                case TypeID.M_EI_NA_1: // 70
+                    {
+                        Log(conNameStr +
+                        (asdu.IsNegative ? "Negative" : "Positive") +
+                        " end of initialization.",
+                        LogLevelDetailed);
+                    }
+                    break;
+                case TypeID.C_CI_NA_1: // 101
+                    {
+                        Log(conNameStr +
+                        (asdu.IsNegative ? "Negative" : "Positive") +
+                        " counter interrogation command.",
+                        LogLevelDetailed);
+                    }
+                    break;
+                case TypeID.C_RD_NA_1: // 102
+                    {
+                        Log(conNameStr +
+                        (asdu.IsNegative ? "Negative" : "Positive") +
+                        " read command.",
+                        LogLevelDetailed);
+                    }
+                    break;
+                case TypeID.C_CS_NA_1: // 103 
+                    {
+                        Log(conNameStr +
+                        (asdu.IsNegative ? "Negative" : "Positive") +
+                        " clock synchronization command.",
+                        LogLevelDetailed);
+                    }
+                    break;
                 case TypeID.C_TS_NA_1: // 104
                     {
                         Log(conNameStr +
                         (asdu.IsNegative ? "Negative" : "Positive") +
                         " confirmation for test command.",
+                        LogLevelDetailed);
+                    }
+                    break;
+                case TypeID.C_RP_NA_1: // 105
+                    {
+                        Log(conNameStr +
+                        (asdu.IsNegative ? "Negative" : "Positive") +
+                        " reset process command.",
+                        LogLevelDetailed);
+                    }
+                    break;
+                case TypeID.C_CD_NA_1: // 106
+                    {
+                        Log(conNameStr +
+                        (asdu.IsNegative ? "Negative" : "Positive") +
+                        " delay acquisition command.",
                         LogLevelDetailed);
                     }
                     break;
