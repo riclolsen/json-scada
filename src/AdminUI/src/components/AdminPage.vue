@@ -5,8 +5,9 @@
         <v-tab :value="1" @click="fetchUsersAndRoles">{{
           $t('admin.tabs.userManagement') }}</v-tab>
         <v-tab :value="2" @click="fetchRoles">{{ $t('admin.tabs.rolesManagement') }}</v-tab>
-        <v-tab :value="3">{{ $t('admin.tabs.systemSettings') }}</v-tab>
-        <v-tab :value="4">{{ $t('admin.tabs.logs') }}</v-tab>
+        <v-tab :value="3" @click="fetchProtocolDriverInstances">{{ $t('admin.tabs.protocolDriverInstances') }}</v-tab>  
+        <v-tab :value="4">{{ $t('admin.tabs.systemSettings') }}</v-tab>
+        <v-tab :value="5">{{ $t('admin.tabs.logs') }}</v-tab>
       </v-tabs>
 
       <v-card-text>
@@ -20,10 +21,14 @@
           </v-window-item>
 
           <v-window-item :value="3">
-            <system-settings-tab ref="systemSettingsTabRef" />
+            <protocol-driver-instances-tab ref="protocolDriverInstancesTabRef" />
           </v-window-item>
 
           <v-window-item :value="4">
+            <system-settings-tab ref="systemSettingsTabRef" />
+          </v-window-item>
+
+          <v-window-item :value="5">
             <logs-tab ref="logsTab" />
           </v-window-item>
         </v-window>
@@ -36,12 +41,14 @@
 <script setup>
 import UserManagementTab from './UserManagementTab.vue';
 import RolesManagementTab from './RolesManagementTab.vue';
+import ProtocolDriverInstancesTab from './ProtocolDriverInstancesTab.vue';
 import SystemSettingsTab from './SystemSettingsTab.vue';
 import LogsTab from './LogsTab.vue';
 import { ref } from 'vue';
 
 const userManagementTabRef = ref(null);
 const rolesManagementTabRef = ref(null);
+const protocolDriverInstancesTabRef = ref(null);
 const systemSettingsTabRef = ref(null);
 const logsTab = ref(null);
 
@@ -55,6 +62,11 @@ const fetchUsersAndRoles = () => {
 const fetchRoles = () => {
   if (rolesManagementTabRef?.value?.fetchRoles)
     rolesManagementTabRef.value.fetchRoles();
+}
+
+const fetchProtocolDriverInstances = () => {
+  if (protocolDriverInstancesTabRef?.value?.fetchProtocolDriverInstances)
+    protocolDriverInstancesTabRef.value.fetchProtocolDriverInstances();
 }
 
 const activeTab = ref(1);

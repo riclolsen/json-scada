@@ -7,8 +7,9 @@ import DisplayViewerPage from '../components/DisplayViewerPage.vue'
 import TabularViewerPage from '../components/TabularViewerPage.vue'
 import EventsViewerPage from '../components/EventsViewerPage.vue'
 import GrafanaPage from '../components/GrafanaPage.vue'
-import AlarmsViewerPage from '@/components/AlarmsViewerPage.vue'
-import LogViewerPage from '@/components/LogViewerPage.vue' 
+import MetabasePage from '../components/MetabasePage.vue'
+import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
+import LogViewerPage from '../components/LogViewerPage.vue' 
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -34,7 +35,7 @@ const routes = [
   { path: '/about', component: AboutPage },
   { path: '/admin', component: AdminPage },
   { path: '/grafana', component: GrafanaPage },
-  { path: '/metabase', component: { template: '<div>Metabase</div>' } },
+  { path: '/metabase', component: MetabasePage },
 ]
 
 const router = createRouter({

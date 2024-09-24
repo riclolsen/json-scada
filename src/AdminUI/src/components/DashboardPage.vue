@@ -35,7 +35,7 @@ const shortcuts = ref([
   { titleKey: 'dashboard.logViewer', icon: FileText, color: 'warning', route: '/log-viewer', page: '/log-io', target: "_blank" },
   { titleKey: 'dashboard.grafana', icon: BarChart, color: 'secondary', route: '/grafana', page: '/grafana', target: "_blank" },
   { titleKey: 'dashboard.metabase', icon: Database, color: 'primary', route: '/metabase', page: '/metabase', target: "_blank" },
-  { titleKey: 'dashboard.admin', icon: UserCog, color: 'primary', route: '/admin' },
+  { titleKey: 'dashboard.admin', icon: UserCog, color: 'primary', route: '/admin', page: '/admin', target: "_blank" },
   { titleKey: 'dashboard.about', icon: HelpCircle, color: 'secondary', route: '/about' },
 ]);
 

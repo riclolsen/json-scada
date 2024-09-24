@@ -3,6 +3,7 @@
 
     <v-btn color="primary" class="mt-4" @click="openAddUserDialog">
       {{ $t('admin.userManagement.addUser') }}
+      <v-icon>mdi-plus</v-icon>
     </v-btn>
 
     <v-data-table :headers="headers" :items="users" :items-per-page="5" class="elevation-1" :load-children="fetchUsers"
@@ -136,7 +137,8 @@ const closeDeleteConfirmDialog = () => {
   deleteConfirmDialog.value = false;
 };
 
-const openAddUserDialog = () => {
+const openAddUserDialog = async () => {
+  await fetchRoles();
   error.value = false;
   addUserDialog.value = true;
   editedUserRoles.value = [];
@@ -155,7 +157,8 @@ const editedUser = ref({
 });
 const editedUserRoles = ref([]);
 
-const openEditUserDialog = (user) => {
+const openEditUserDialog = async (user) => {
+  await fetchRoles();
   error.value = false;
   editedUserRoles.value = user.roles.map(role => role.name);
   editedUser.value = user;
