@@ -22,7 +22,7 @@
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 const LoadConfig = require('./load-config')
-const { MongoClient } = require('mongodb')
+const { MongoClient, Double } = require('mongodb')
 
 const pipeline = [
   {
@@ -80,6 +80,7 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
         .updateMany(
           {
             origin: 'supervised',
+            invalid: true,
           },
           [
             {
@@ -99,7 +100,49 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
         })
 
       // simulate protocol writes of digital values
-
+      let tagDocs = await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .find({
+          type: 'digital',
+          origin: 'supervised',
+          $expr: { $eq: [{ $indexOfBytes: ['$tag', 'XSWI'] }, -1] },
+          _id: { $mod: [Math.floor(Math.random() * 500) + 500, 0] },
+        })
+        .toArray()
+      for (let i = 0; i < tagDocs.length; i++) {
+        const document = tagDocs[i]
+        console.log(`${document._id} ${document.tag} ${document.value}`)
+        let res = await db
+          .collection(jsConfig.RealtimeDataCollectionName)
+          .updateOne(
+            {
+              _id: document._id,
+            },
+            {
+              $set: {
+                sourceDataUpdate: {
+                  valueAtSource: document.value == 0 ? 1 : 0,
+                  valueStringAtSource: '',
+                  asduAtSource: 'M_SP_NA_1',
+                  causeOfTransmissionAtSource: '3',
+                  timeTag: new Date(),
+                  timeTagAtSource: new Date(),
+                  timeTagAtSourceOk: true,
+                  invalid: false,
+                  invalidAtSource: false,
+                  substitutedAtSource: false,
+                  overflowAtSource: false,
+                  blockedAtSource: false,
+                  notTopicalAtSource: false,
+                  test: true,
+                  originator: AppDefs.NAME,
+                  CntUpd: cntUpd,
+                },
+              },
+            }
+          )
+      }
+      /*      
       let res = await db
         .collection(jsConfig.RealtimeDataCollectionName)
         .updateMany(
@@ -189,14 +232,65 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
             clientMongo = null
           }
         })
-
+      */
       cntUpd++
     }
-  }, 5777)
+  }, 11777)
 
   setInterval(async function () {
     if (clientMongo !== null && HintMongoIsConnected) {
       const db = clientMongo.db(jsConfig.mongoDatabaseName)
+
+      // simulate protocol writes of analog values
+      let tagDocs = await db
+        .collection(jsConfig.RealtimeDataCollectionName)
+        .find({
+          type: 'analog',
+          origin: 'supervised',
+          _id: {
+            $mod: [
+              1 +
+                Math.floor(Math.random() * 50) +
+                Math.floor(Math.random() * 10),
+              0,
+            ],
+          },
+        })
+        .toArray()
+      for (let i = 0; i < tagDocs.length; i++) {
+        const document = tagDocs[i]
+        console.log(`${document._id} ${document.tag} ${document.value}`)
+        let res = await db
+          .collection(jsConfig.RealtimeDataCollectionName)
+          .updateOne(
+            {
+              _id: document._id,
+            },
+            {
+              $set: {
+                sourceDataUpdate: {
+                  valueAtSource: document.valueDefault * (1 + 0.1 * Math.random() - 0.05),
+                  valueStringAtSource: '',
+                  asduAtSource: 'M_ME_NC_1',
+                  causeOfTransmissionAtSource: '3',
+                  timeTag: new Date(),
+                  timeTagAtSource: null,
+                  timeTagAtSourceOk: false,
+                  invalid: false,
+                  invalidAtSource: false,
+                  substitutedAtSource: false,
+                  overflowAtSource: false,
+                  blockedAtSource: false,
+                  notTopicalAtSource: false,
+                  test: true,
+                  originator: AppDefs.NAME,
+                  CntUpd: cntUpd,
+                },
+              },
+            }
+          )
+      }
+/*
       let res = await db
         .collection(jsConfig.RealtimeDataCollectionName)
         .updateMany(
@@ -291,9 +385,11 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
             clientMongo = null
           }
         })
+
+*/        
       cntUpd++
     }
-  }, 2000)
+  }, 2333)
 
   while (true) {
     if (clientMongo === null)
@@ -336,29 +432,31 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
 
                 let res = await db
                   .collection(jsConfig.RealtimeDataCollectionName)
-                  .updateOne({ _id: data.supervisedOfCommand }, [
+                  .updateOne(
+                    { _id: data.supervisedOfCommand },
                     {
                       $set: {
                         sourceDataUpdate: {
-                          valueAtSource: val,
+                          valueAtSource: new Double(val),
                           valueStringAtSource: '',
-                          asduAtSource: 'M_SP_NA_1',
+                          asduAtSource: change.fullDocument.tag.indexOf('YTAP') === -1 ? 'M_SP_NA_1' : 'M_ST_TB_1',
                           causeOfTransmissionAtSource: '3',
                           invalid: false,
                           timeTag: new Date(),
                           timeTagAtSource: new Date(),
                           timeTagAtSourceOk: true,
+                          invalidAtSource: false,
                           substitutedAtSource: false,
                           overflowAtSource: false,
                           blockedAtSource: false,
                           notTopicalAtSource: false,
                           test: true,
-                          originator: AppDefs.NAME,
+                          originator: AppDefs.NAME + "CMD",
                           CntUpd: cntUpd,
                         },
                       },
-                    },
-                  ])
+                    }
+                  )
                 Log.log(res?.matchedCount)
                 Log.log(res?.modifiedCount)
                 if (res?.matchedCount > 0) {
