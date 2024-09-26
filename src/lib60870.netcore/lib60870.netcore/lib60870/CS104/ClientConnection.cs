@@ -1252,7 +1252,7 @@ namespace lib60870.CS104
 
                         try
                         {
-                            sslStream.AuthenticateAsServer(tlsSecInfo.OwnCertificate, true, System.Security.Authentication.SslProtocols.Tls, false);
+                            sslStream.AuthenticateAsServer(tlsSecInfo.OwnCertificate, true, System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13, false);
 						
                             if (sslStream.IsAuthenticated == true)
                             {
