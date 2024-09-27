@@ -136,14 +136,6 @@ const parseCookie = (str) => {
     }, {})
 }
 
-function LoadFavicon(href) {
-  let link = document.createElement('link')
-  link.type = 'image/x-icon'
-  link.rel = 'shortcut icon'
-  link.href = href
-  document.getElementsByTagName('head')[0].appendChild(link)
-}
-
 function testLogin() {
   let ck = parseCookie(document.cookie)
   if ('json-scada-user' in ck) {
@@ -188,55 +180,4 @@ function testLogin() {
     })
 }
 
-function tryLogin() {
-  fetch('/Invoke/auth/signin', {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-    body: JSON.stringify({
-      username: document.getElementById('username').value,
-      password: document.getElementById('password').value,
-    }),
-  })
-    .then((resp) => resp.json())
-    .then((data) => {
-      if ('ok' in data && data.ok == false) {
-        document.getElementById('divloginerror').style.display = ''
-        setTimeout(function () {
-          document.getElementById('divloginerror').style.display = 'none'
-        }, 3000)
-      }
-    })
-    .catch((error) => {
-      console.log('Error on a fetch operation: ' + error.message)
-    })
-    .finally(() => {
-      testLogin()
-      document.getElementById('password').value = ''
-    })
-}
-
-function tryLogout() {
-  fetch('/Invoke/auth/signout', {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-    body: JSON.stringify({
-      username: document.getElementById('username').value,
-    }),
-  })
-    .then((response) => {
-      // console.log(response)
-    })
-    .catch((error) => {
-      console.log('Error on a fetch operation: ' + error.message)
-    })
-    .finally(() => {
-      testLogin()
-    })
-}
 </script>

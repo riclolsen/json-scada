@@ -1,12 +1,12 @@
 <template>
   <v-container fluid class="user-management-tab">
 
-    <v-btn color="primary" class="mt-4" @click="openAddUserDialog">
+    <v-btn color="primary" size="small" class="mt-0 me-2" @click="openAddUserDialog">
       {{ $t('admin.userManagement.addUser') }}
       <v-icon>mdi-plus</v-icon>
     </v-btn>
 
-    <v-data-table :headers="headers" :items="users" :items-per-page="5" class="elevation-1" :load-children="fetchUsers"
+    <v-data-table :headers="headers" :items="users" :items-per-page="5" class="mt-4 elevation-1" :load-children="fetchUsers"
       :items-per-page-text="$t('common.itemsPerPageText')">
       <template #[`item.actions`]="{ item }">
         <v-icon size="small" class="me-2" @click="openEditUserDialog(item)">

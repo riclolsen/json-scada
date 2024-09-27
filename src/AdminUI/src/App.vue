@@ -14,9 +14,9 @@
       </v-btn>
       <v-menu v-if="loggedInUser" offset-y>
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" text class="ml-2" size="small">
-            {{ loggedInUser }}
+          <v-btn v-bind="props" text class="ml-2">
             <v-icon right size="small">mdi-account-circle</v-icon>
+            {{ loggedInUser }}
           </v-btn>
         </template>
         <v-list>
@@ -46,7 +46,7 @@ const vuetifyTheme = useTheme();
 const { locale, t } = useI18n();
 
 const currentLocale = ref(locale.value);
-const loggedInUser = ref(null);
+const loggedInUser = ref("?");
 
 const availableLocales = [
   { title: 'English', value: 'en' },
@@ -74,7 +74,23 @@ const setLoggedInUser = (username) => {
 
 const logout = () => {
   loggedInUser.value = null;
-  router.push('/login');
+  fetch('/Invoke/auth/signout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        router.push('/login');
+      } else {
+        console.error('Logout failed!');
+      }
+    })
+    .catch(error => {
+      console.error('Error during logout:', error);
+    });
 };
 
 watch(currentLocale, (newLocale) => {

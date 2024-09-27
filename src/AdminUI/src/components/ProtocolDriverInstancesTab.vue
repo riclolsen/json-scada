@@ -1,21 +1,24 @@
 <template>
   <v-container fluid class="protocol-driver-instances-tab">
 
-    <v-btn color="primary" class="mt-4 me-2" @click="openAddProtocolDriverInstanceDialog">{{
+    <v-btn color="primary" size="small" class="mt-0 me-2" @click="openAddProtocolDriverInstanceDialog">{{
       $t('admin.protocolDriverInstances.addProtocolDriverInstance') }}
       <v-icon>mdi-plus</v-icon>
     </v-btn>
 
-    <v-btn color="secondary" class="mt-4" @click="fetchProtocolDriverInstances">
+    <v-btn color="secondary" size="small" class="mt-0" @click="fetchProtocolDriverInstances">
       {{ $t('common.refresh') }}
       <v-icon>mdi-refresh</v-icon>
     </v-btn>
 
-    <v-data-table :headers="headers" :items="driverInstances" :items-per-page="5" class="elevation-1"
+    <v-data-table :headers="headers" :items="driverInstances" :items-per-page="5" class="mt-4 elevation-1"
       :load-children="fetchProtocolDriverInstances" :items-per-page-text="$t('common.itemsPerPageText')">
       <template #[`item.enabled`]="{ item }">
         <v-icon v-if="item.enabled" color="green">mdi-check</v-icon>
         <v-icon v-else color="red">mdi-close</v-icon>
+      </template>
+      <template #[`item.stats`]="{ item }">
+        <span class="text-caption">{{ item.stats }}</span>
       </template>
       <template #[`item.actions`]="{ item }">
         <v-icon size="small" class="me-2" @click="openEditProtocolDriverInstanceDialog(item)">
@@ -44,7 +47,6 @@
 
   </v-container>
 
-
   <v-dialog v-model="dialogEditInstance" max-width="500px">
     <v-card>
       <v-card-title>
@@ -58,8 +60,10 @@
           <v-text-field v-model="editedInstance.protocolDriverInstanceNumber"
             :label="$t('admin.protocolDriverInstances.headers.protocolDriverInstanceNumber')" type="number"
             disabled></v-text-field>
-          <v-switch v-model="editedInstance.enabled"
-            :label="$t('admin.protocolDriverInstances.headers.enabled')"></v-switch>
+          <v-switch v-model="editedInstance.enabled" inset color="primary" :label="`${$t('common.enabled')}${editedInstance.enabled
+            ? $t('common.true')
+            : $t('common.false')
+            }`" class="mb-0"></v-switch>
           <v-select v-model="editedInstance.logLevel" :items="[
             { text: $t('common.logLevels.minimum'), value: 0 },
             { text: $t('common.logLevels.basic'), value: 1 },
@@ -67,10 +71,10 @@
             { text: $t('common.logLevels.maximum'), value: 3 }
           ]" item-title="text" item-value="value" :label="$t('admin.protocolDriverInstances.headers.logLevel')"
             outlined></v-select>
-          <v-select v-model="editedInstance.nodeNames" :items="nodeNames" item-title="name" outlined chips closable-chips
-          small-chips
-            :label="$t('admin.protocolDriverInstances.headers.allowedNodesList')" multiple></v-select>
-          <v-btn  class="mt-4 me-2" @click="dialogAddNode = true">{{
+          <v-select v-model="editedInstance.nodeNames" :items="nodeNames" item-title="name" outlined chips
+            closable-chips small-chips :label="$t('admin.protocolDriverInstances.headers.allowedNodesList')"
+            multiple></v-select>
+          <v-btn class="mt-4 me-2" @click="dialogAddNode = true">{{
             $t('admin.protocolDriverInstances.addNewNode') }}
             <v-icon>mdi-plus</v-icon>
           </v-btn>
@@ -151,7 +155,7 @@ const headers = computed(() => [
   { title: t('admin.protocolDriverInstances.headers.actions'), key: 'actions', sortable: false },
   { title: t('admin.protocolDriverInstances.headers.running'), key: 'running' },
   { title: t('admin.protocolDriverInstances.headers.activeNodeKeepAliveTimeTag'), key: 'localTimeUpdate' },
-  { title: t('admin.protocolDriverInstances.headers.stats'), key: 'stats' },
+  { title: t('admin.protocolDriverInstances.headers.stats'), key: 'stats', sortable: false },
   { title: t('admin.protocolDriverInstances.headers.process'), key: 'process', sortable: false },
 ]);
 

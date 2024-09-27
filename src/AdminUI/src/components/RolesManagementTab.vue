@@ -2,12 +2,12 @@
 
     <v-container fluid class="roles-management-tab">
 
-        <v-btn color="primary" class="mt-4" @click="openAddRoleDialog">
+        <v-btn color="primary" size="small" class="mt-0 me-2" @click="openAddRoleDialog">
             {{ $t('admin.rolesManagement.addRole') }}
             <v-icon>mdi-plus</v-icon>
         </v-btn>
 
-        <v-data-table :headers="headers" :items="roles" :items-per-page="5" class="elevation-1"
+        <v-data-table :headers="headers" :items="roles" :items-per-page="5" class="mt-4 elevation-1"
             :load-children="fetchRoles" :items-per-page-text="$t('common.itemsPerPageText')">
             <template #[`item.actions`]="{ item }">
                 <v-icon size="small" class="me-2" @click="openEditRoleDialog(item)">
@@ -25,7 +25,7 @@
 
     <v-dialog v-model="addRoleDialog" max-width="600px">
         <v-card>
-            <v-card-title>{{ $t('admin.rolesManagement.addRole') }}</v-card-title>
+            <v-card-title>{{ $t('admin.rolesManagement.editRole') }}</v-card-title>
             <v-card-text>
                 <v-text-field v-model="newRole.name" :label="$t('admin.rolesManagement.roleName')" outlined
                     :disabled="newRole.name === 'admin' ? true : false"></v-text-field>
@@ -130,7 +130,7 @@ const { t } = useI18n();
 const headers = computed(() => [
     { title: '#', key: 'id' },
     { title: t('admin.rolesManagement.headers.name'), align: 'start', key: 'name' },
-    { title: t('admin.rolesManagement.headers.rights'), key: 'rights' },
+    { title: t('admin.rolesManagement.headers.rights'), key: 'rights', sortable: false },
     { title: t('admin.rolesManagement.headers.actions'), key: 'actions', sortable: false },
 ]);
 
@@ -350,4 +350,5 @@ defineExpose({ fetchRoles })
 .v-checkbox :deep(.v-label) {
     font-size: .8em;
 }
+
 </style>
