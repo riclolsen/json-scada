@@ -30,14 +30,14 @@
                 <v-text-field v-model="newRole.name" :label="$t('admin.rolesManagement.roleName')" outlined
                     :disabled="newRole.name === 'admin' ? true : false"></v-text-field>
 
-                <v-autocomplete v-model="newRole.group1List" :items="group1ListAll" item-title="name" outlined chips
-                    closable-chips small-chips :label="$t('admin.rolesManagement.canViewGroup1List')" multiple></v-autocomplete>
+                <v-select v-model="newRole.group1List" :items="group1ListAll" item-title="name" outlined chips
+                    closable-chips small-chips :label="$t('admin.rolesManagement.canViewGroup1List')" multiple></v-select>
 
-                <v-autocomplete v-model="newRole.group1CommandList" :items="group1ListAll" item-title="name" outlined chips
-                    closable-chips small-chips :label="$t('admin.rolesManagement.canCommandGroup1List')" multiple></v-autocomplete>
+                <v-select v-model="newRole.group1CommandList" :items="group1ListAll" item-title="name" outlined chips
+                    closable-chips small-chips :label="$t('admin.rolesManagement.canCommandGroup1List')" multiple></v-select>
 
-                <v-autocomplete v-model="newRole.displayList" :items="displayListAll" item-title="name" outlined chips
-                    closable-chips small-chips :label="$t('admin.rolesManagement.canAccessDisplayList')" multiple></v-autocomplete>
+                <v-select v-model="newRole.displayList" :items="displayListAll" item-title="name" outlined chips
+                    closable-chips small-chips :label="$t('admin.rolesManagement.canAccessDisplayList')" multiple></v-select>
 
                 <v-text-field type="number" min="0" max="9999"
                     :label="$t('admin.rolesManagement.maxSessionDays') + ' - ' + $t('admin.rolesManagement.maxSessionDaysHint')"
@@ -123,14 +123,29 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
+// Computed properties
 const headers = computed(() => [
     { title: '#', key: 'id' },
     { title: t('admin.rolesManagement.headers.name'), align: 'start', key: 'name' },
     { title: t('admin.rolesManagement.headers.rights'), key: 'rights' },
     { title: t('admin.rolesManagement.headers.actions'), key: 'actions', sortable: false },
 ]);
+
+// Reactive variables
 const roles = ref([]);
 const error = ref(false);
+const newRole = ref({});
+const addRoleDialog = ref(false);
+const displayListAll = ref([]);
+const group1ListAll = ref([]);
+const deleteRoleDialog = ref(false);
+const roleToDelete = ref({});
+let isNewRole = ref(false);
+
+// Constants
 const defaultRoleConfig = {
     name: '',
     group1List: [],
@@ -149,14 +164,20 @@ const defaultRoleConfig = {
     disableAlarms: true,
     maxSessionDays: 3,
 }
-const newRole = ref({});
-const addRoleDialog = ref(false);
-const displayListAll = ref([]);
-const group1ListAll = ref([]);
 
-const deleteRoleDialog = ref(false);
-const roleToDelete = ref({});
+// Lifecycle hooks
+onMounted(async () => {
+    await fetchRoles();
+    await fetchDisplayList();
+    await fetchGroup1List();
+    document.documentElement.style.overflowY = 'scroll';
+});
 
+onUnmounted(async () => {
+    document.documentElement.style.overflowY = 'auto';
+});
+
+// Methods
 const openDeleteRoleDialog = (role) => {
     error.value = false;
     roleToDelete.value = role;
@@ -172,21 +193,6 @@ const confirmDeleteRole = () => {
     error.value = false;
     deleteRole(roleToDelete.value);
 };
-
-let isNewRole = ref(false);
-
-onMounted(async () => {
-    await fetchRoles();
-    await fetchDisplayList();
-    await fetchGroup1List();
-    document.documentElement.style.overflowY = 'scroll';
-});
-
-onUnmounted(async () => {
-    document.documentElement.style.overflowY = 'auto';
-});
-
-const { t } = useI18n();
 
 const openAddRoleDialog = async () => {
     isNewRole.value = true;
@@ -209,6 +215,7 @@ const openEditRoleDialog = async (item) => {
     addRoleDialog.value = true;
 };
 
+// API calls
 const deleteRole = async (role) => {
     if (role.name === "admin") {
         return;
@@ -266,9 +273,9 @@ const createRole = async () => {
 const updateRole = async (role) => {
     if (role.value) role = role.value;
     var roleDup = Object.assign({}, role);
-    if (roleDup.id) delete roleDup.id;
-    if (roleDup.rights) delete roleDup.rights;
-    if (roleDup.__v) delete roleDup.__v;
+    if ('id' in roleDup) delete roleDup.id;
+    if ('rights' in roleDup) delete roleDup.rights;
+    if ('__v' in roleDup) delete roleDup.__v;
     return await fetch("/Invoke/auth/updateRole", {
         method: "post",
         headers: {
@@ -293,6 +300,7 @@ const fetchDisplayList = async () => {
     return await fetch("/Invoke/auth/listDisplays")
         .then((res) => res.json())
         .then((json) => {
+            if (json.error) { console.log(json); return; }  
             displayListAll.value.length = 0;
             displayListAll.value.push(...json);
         })
@@ -303,6 +311,7 @@ const fetchGroup1List = async () => {
     return await fetch("/Invoke/auth/listGroup1")
         .then((res) => res.json())
         .then((json) => {
+            if (json.error) { console.log(json); return; }  
             group1ListAll.value.length = 0;
             group1ListAll.value.push(...json);
         })
@@ -314,6 +323,7 @@ const fetchRoles = async () => {
     return await fetch("/Invoke/auth/listRoles")
         .then((res) => res.json())
         .then((json) => {
+            if (json.error) { console.log(json); return; }  
             for (let i = 0; i < json.length; i++) {
                 let rights = "";
                 for (const key in json[i]) {
@@ -333,6 +343,7 @@ const fetchRoles = async () => {
 };
 
 defineExpose({ fetchRoles })
+
 </script>
 
 <style scoped>

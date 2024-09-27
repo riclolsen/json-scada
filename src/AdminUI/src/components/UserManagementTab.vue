@@ -32,8 +32,8 @@
           type="email"></v-text-field>
         <v-text-field v-model="newUser.password" :label="$t('admin.userManagement.password')" required
           type="password"></v-text-field>
-        <v-autocomplete v-model="newUser.roles" :items="roles" item-title="name" outlined chips closable-chips
-          small-chips :label="$t('admin.userManagement.roles')" multiple></v-autocomplete>
+        <v-select v-model="newUser.roles" :items="roles" item-title="name" outlined chips closable-chips
+          small-chips :label="$t('admin.userManagement.roles')" multiple></v-select>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -54,8 +54,8 @@
           type="email"></v-text-field>
         <v-text-field v-model="editedUser.password" :label="$t('admin.userManagement.password')" required
           type="password"></v-text-field>
-        <v-autocomplete v-model="editedUser.roles" :items="roles" item-title="name" outlined chips closable-chips
-          small-chips :label="$t('admin.userManagement.roles')" multiple></v-autocomplete>
+        <v-select v-model="editedUser.roles" :items="roles" item-title="name" outlined chips closable-chips
+          small-chips :label="$t('admin.userManagement.roles')" multiple></v-select>
       </v-card-text>
       <v-card-actions>
         <v-spacer> </v-spacer>
@@ -90,6 +90,43 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
+
+// Reactive variables
+const users = ref([]);
+const roles = ref([]);
+const error = ref(false);
+const addUserDialog = ref(false);
+const deleteConfirmDialog = ref(false);
+const editUserDialog = ref(false);
+
+const headers = computed(() => [
+  { title: '#', key: 'id' },
+  { title: t('admin.userManagement.headers.username'), align: 'start', key: 'username' },
+  { title: t('admin.userManagement.headers.email'), key: 'email' },
+  { title: t('admin.userManagement.headers.roles'), key: 'rolesText' },
+  { title: t('admin.userManagement.headers.actions'), key: 'actions', sortable: false },
+]);
+
+const newUser = ref({
+  username: '',
+  email: '',
+  password: '',
+  roles: [],
+});
+
+const userToDelete = ref({});
+
+const editedUser = ref({
+  username: '',
+  email: '',
+  password: '',
+  roles: [],
+});
+
+const editedUserRoles = ref([]);
+
+// Lifecycle hooks
 onMounted(async () => {
   await fetchUsers();
   await fetchRoles();
@@ -100,91 +137,99 @@ onUnmounted(async () => {
   document.documentElement.style.overflowY = 'auto';
 });
 
-const { t } = useI18n();
-
-const headers = computed(() => [
-  { title: '#', key: 'id' },
-  { title: t('admin.userManagement.headers.username'), align: 'start', key: 'username' },
-  { title: t('admin.userManagement.headers.email'), key: 'email' },
-  { title: t('admin.userManagement.headers.roles'), key: 'rolesText' },
-  { title: t('admin.userManagement.headers.actions'), key: 'actions', sortable: false },
-]);
-
-const users = ref([]);
-const roles = ref([]);
-const error = ref(false);
-
-const addUserDialog = ref(false);
-const newUser = ref({
-  username: '',
-  email: '',
-  password: '',
-  roles: [],
-});
-
-const deleteConfirmDialog = ref(false);
-const userToDelete = ref({});
-
-const openDeleteConfirmDialog = (user) => {
+// API calls
+const fetchUsers = async () => {
   error.value = false;
-  userToDelete.value = user;
-  deleteConfirmDialog.value = true;
-};
+  return await fetch("/Invoke/auth/listUsers")
+    .then((res) => res.json())
+    .then((json) => {
+      if (json.error) { console.log(json); error.value = true; return; }  
+      for (let i = 0; i < json.length; i++) {
+        json[i].id = i + 1;
+        json[i].rolesText = json[i].roles.map(role => role.name).join(', ');
+      }
+      users.value.length = 0;
+      users.value.push(...json);
+    })
+    .catch((err) => { error.value = true; console.warn(err); });
+}
 
-const closeDeleteConfirmDialog = () => {
+const fetchRoles = async () => {
   error.value = false;
-  userToDelete.value = {};
-  deleteConfirmDialog.value = false;
-};
+  return await fetch("/Invoke/auth/listRoles")
+    .then((res) => res.json())
+    .then((json) => {
+      if (json.error) { console.log(json); return; }  
+      for (let i = 0; i < json.length; i++)
+        json[i].id = i + 1;
+      roles.value.length = 0;
+      roles.value.push(...json);
+    })
+    .catch((err) => { error.value = true; console.warn(err); });
+}
 
-const openAddUserDialog = async () => {
-  await fetchRoles();
+const createUser = async () => {
+  if (newUser.value.username === "admin") {
+    return;
+  }
+  return await fetch("/Invoke/auth/createUser", {
+    method: "post",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username: newUser.value.username }),
+  })
+    .then((res) => res.json())
+    .then(async (json) => {
+      if (json.error === false) {
+        await fetchUsers(); // refreshes users
+        for (let i = 0; i < users.value.length; i++) {
+          if (users.value[i].username === newUser.value.username) {
+            newUser.value._id = users.value[i]._id;
+            await updateUser(newUser);
+            break;
+          }
+        }
+        closeAddUserDialog();
+      } else {
+        error.value = true;
+      }
+    })
+    .catch((err) => { error.value = true; console.warn(err); });
+}
+
+const updateUser = async (user) => {
   error.value = false;
-  addUserDialog.value = true;
-  editedUserRoles.value = [];
-  newUser.value.roles = [];
-  newUser.value.password = "";
-  newUser.value.email = "";
-  newUser.value.username = "";
-};
-
-const editUserDialog = ref(false);
-const editedUser = ref({
-  username: '',
-  email: '',
-  password: '',
-  roles: [],
-});
-const editedUserRoles = ref([]);
-
-const openEditUserDialog = async (user) => {
-  await fetchRoles();
-  error.value = false;
-  editedUserRoles.value = user.roles.map(role => role.name);
-  editedUser.value = user;
-  editUserDialog.value = true;
-  editedUser.value.password = "";
-};
-
-const closeEditUserDialog = () => {
-  error.value = false;
-  editedUser.value = {
-    username: '',
-    email: '',
-    password: '',
-  };
-  editUserDialog.value = false;
-};
-
-const closeAddUserDialog = () => {
-  error.value = false;
-  addUserDialog.value = false;
-  newUser.value = {
-    username: '',
-    email: '',
-    password: '',
-  };
-};
+  if (user.value) user = user.value;
+  roleChange(user);
+  const userDup = Object.assign({}, user);
+  if ('id' in userDup) delete userDup.id;
+  if ('rolesText' in userDup) delete userDup.rolesText;
+  if ('roles' in userDup) delete userDup.roles;
+  if ('__v' in userDup) delete userDup.__v;
+  if ('password' in userDup)
+    if (userDup.password === "" || userDup.password === null)
+      delete userDup['password'];
+  return await fetch("/Invoke/auth/updateUser", {
+    method: "post",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userDup),
+  })
+    .then((res) => res.json())
+    .then((json) => {
+      if (json.error === false) {
+        closeEditUserDialog();
+      } else {
+        error.value = true;
+      }
+      fetchUsers(); // refreshes users
+    })
+    .catch((err) => { error.value = true; console.warn(err); });
+}
 
 const deleteUser = async (user) => {
   error.value = false;
@@ -209,66 +254,6 @@ const deleteUser = async (user) => {
     })
     .catch((err) => { error.value = true; console.warn(err); });
 };
-
-const fetchUsers = async () => {
-  error.value = false;
-  return await fetch("/Invoke/auth/listUsers")
-    .then((res) => res.json())
-    .then((json) => {
-      for (let i = 0; i < json.length; i++) {
-        json[i].id = i + 1;
-        json[i].rolesText = json[i].roles.map(role => role.name).join(', ');
-      }
-      users.value.length = 0;
-      users.value.push(...json);
-    })
-    .catch((err) => { error.value = true; console.warn(err); });
-}
-
-const fetchRoles = async () => {
-  error.value = false;
-  return await fetch("/Invoke/auth/listRoles")
-    .then((res) => res.json())
-    .then((json) => {
-      for (let i = 0; i < json.length; i++)
-        json[i].id = i + 1;
-      roles.value.length = 0;
-      roles.value.push(...json);
-    })
-    .catch((err) => { error.value = true; console.warn(err); });
-}
-
-const updateUser = async (user) => {
-  error.value = false;
-  if (user.value) user = user.value;
-  roleChange(user);
-  const userDup = Object.assign({}, user);
-  if (userDup.id) delete userDup.id;
-  if (userDup.rolesText) delete userDup.rolesText;
-  if (userDup.roles) delete userDup.roles;
-  if (userDup.__v) delete userDup.__v;
-  if ("password" in userDup)
-    if (userDup.password === "" || userDup.password === null)
-      delete userDup["password"];
-  return await fetch("/Invoke/auth/updateUser", {
-    method: "post",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(userDup),
-  })
-    .then((res) => res.json())
-    .then((json) => {
-      if (json.error === false) {
-        closeEditUserDialog();
-      } else {
-        error.value = true;
-      }
-      fetchUsers(); // refreshes users
-    })
-    .catch((err) => { error.value = true; console.warn(err); });
-}
 
 const addRoleToUser = async (username, roleName) => {
   return await fetch("/Invoke/auth/userAddRole", {
@@ -311,6 +296,7 @@ const removeRoleFromUser = async (username, roleName) => {
     .catch((err) => { error.value = true; console.warn(err); });
 }
 
+// Helper functions
 const roleChange = (user) => {
   for (let i = 0; i < user.roles.length; i++) {
     const roleName = user.roles[i]?.name || user.roles[i];
@@ -325,36 +311,58 @@ const roleChange = (user) => {
   }
 }
 
-const createUser = async () => {
-  if (newUser.value.username === "admin") {
-    return;
-  }
-  return await fetch("/Invoke/auth/createUser", {
-    method: "post",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ username: newUser.value.username }),
-  })
-    .then((res) => res.json())
-    .then(async (json) => {
-      if (json.error === false) {
-        await fetchUsers(); // refreshes users
-        for (let i = 0; i < users.value.length; i++) {
-          if (users.value[i].username === newUser.value.username) {
-            newUser.value._id = users.value[i]._id;
-            await updateUser(newUser);
-            break;
-          }
-        }
-        closeAddUserDialog();
-      } else {
-        error.value = true;
-      }
-    })
-    .catch((err) => { error.value = true; console.warn(err); });
-}
+// Dialog functions
+const openDeleteConfirmDialog = (user) => {
+  error.value = false;
+  userToDelete.value = user;
+  deleteConfirmDialog.value = true;
+};
+
+const closeDeleteConfirmDialog = () => {
+  error.value = false;
+  userToDelete.value = {};
+  deleteConfirmDialog.value = false;
+};
+
+const openAddUserDialog = async () => {
+  await fetchRoles();
+  error.value = false;
+  addUserDialog.value = true;
+  editedUserRoles.value = [];
+  newUser.value.roles = [];
+  newUser.value.password = "";
+  newUser.value.email = "";
+  newUser.value.username = "";
+};
+
+const openEditUserDialog = async (user) => {
+  await fetchRoles();
+  error.value = false;
+  editedUserRoles.value = user.roles.map(role => role.name);
+  editedUser.value = user;
+  editUserDialog.value = true;
+  editedUser.value.password = "";
+};
+
+const closeEditUserDialog = () => {
+  error.value = false;
+  editedUser.value = {
+    username: '',
+    email: '',
+    password: '',
+  };
+  editUserDialog.value = false;
+};
+
+const closeAddUserDialog = () => {
+  error.value = false;
+  addUserDialog.value = false;
+  newUser.value = {
+    username: '',
+    email: '',
+    password: '',
+  };
+};
 
 defineExpose({ fetchUsers, fetchRoles })
 

@@ -4,7 +4,14 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "itemsPerPageText": "Items per page:",
-    "error": "Error!"
+    "error": "Error!",
+    "refresh": "Refresh",
+    "logLevels": {
+      "minimum": "Minimum",
+      "basic": "Basic",
+      "detailed": "Detailed",
+      "maximum": "Maximum"
+    }
   },
   "app": {
     "title": "JSON-SCADA",
@@ -159,7 +166,12 @@
         "enabled": "Enabled",
         "logLevel": "Log Level",
         "allowedNodesList": "Allowed Nodes",
-        "actions": "Actions"
+        "activeNode": "Active Node",
+        "activeNodeKeepAliveTimeTag": "Last update",
+        "stats": "Stats",
+        "actions": "Actions",
+        "process": "Process",
+        "running": "Running"
       },
       "addProtocolDriverInstance": "Add Instance",
       "addNewProtocolDriverInstance": "Add New Protocol Driver Instance",
@@ -173,11 +185,11 @@
       "instanceNumber": "Instance Number",
       "logLevel": "Log Level",  
       "allowedNodesList": "Allowed Nodes List",
-      "addNewNode": "Add a new allowed node!",
+      "addNewNode": "Add new allowed node",
       "newNodeName": "New node name",
-      "addNewNodeCancel": "Cancel",
-      "addNewNodeExecute": "Add node!"
-
+      "deleteInstance": "Delete Instance",  
+      "deleteInstanceConfirm": "Are you sure you want to delete this protocol driver instance?",
+      "editInstance": "Edit Instance"
     },
     "systemSettings": {
       "title": "System Settings",

@@ -5,7 +5,7 @@
         <v-tab :value="1" @click="fetchUsersAndRoles">{{
           $t('admin.tabs.userManagement') }}</v-tab>
         <v-tab :value="2" @click="fetchRoles">{{ $t('admin.tabs.rolesManagement') }}</v-tab>
-        <v-tab :value="3" @click="fetchProtocolDriverInstances">{{ $t('admin.tabs.protocolDriverInstances') }}</v-tab>  
+        <v-tab :value="3" @click="fetchProtocolDriverInstances">{{ $t('admin.tabs.protocolDriverInstances') }}</v-tab>
         <v-tab :value="4">{{ $t('admin.tabs.systemSettings') }}</v-tab>
         <v-tab :value="5">{{ $t('admin.tabs.logs') }}</v-tab>
       </v-tabs>
@@ -46,30 +46,30 @@ import SystemSettingsTab from './SystemSettingsTab.vue';
 import LogsTab from './LogsTab.vue';
 import { ref } from 'vue';
 
-const userManagementTabRef = ref(null);
-const rolesManagementTabRef = ref(null);
-const protocolDriverInstancesTabRef = ref(null);
-const systemSettingsTabRef = ref(null);
-const logsTab = ref(null);
-
-const fetchUsersAndRoles = () => {
-  if (userManagementTabRef?.value?.fetchUsers)
-    userManagementTabRef.value.fetchUsers();
-  if (userManagementTabRef?.value?.fetchRoles)
-    userManagementTabRef.value.fetchRoles();
-}
-
-const fetchRoles = () => {
-  if (rolesManagementTabRef?.value?.fetchRoles)
-    rolesManagementTabRef.value.fetchRoles();
-}
-
-const fetchProtocolDriverInstances = () => {
-  if (protocolDriverInstancesTabRef?.value?.fetchProtocolDriverInstances)
-    protocolDriverInstancesTabRef.value.fetchProtocolDriverInstances();
-}
-
+const userManagementTabRef = ref(1);
+const rolesManagementTabRef = ref(2);
+const protocolDriverInstancesTabRef = ref(3);
+const systemSettingsTabRef = ref(4);
+const logsTab = ref(5);
 const activeTab = ref(1);
+
+const fetchUsersAndRoles = async () => {
+  if (userManagementTabRef?.value?.fetchUsers)
+    await userManagementTabRef.value.fetchUsers();
+  if (userManagementTabRef?.value?.fetchRoles)
+    await userManagementTabRef.value.fetchRoles();
+}
+
+const fetchRoles = async () => {
+  if (rolesManagementTabRef?.value?.fetchRoles)
+    await rolesManagementTabRef.value.fetchRoles();
+}
+
+const fetchProtocolDriverInstances = async () => {
+  if (protocolDriverInstancesTabRef?.value?.fetchProtocolDriverInstances)
+    await protocolDriverInstancesTabRef.value.fetchProtocolDriverInstances();
+}
+
 </script>
 
 <style scoped>
