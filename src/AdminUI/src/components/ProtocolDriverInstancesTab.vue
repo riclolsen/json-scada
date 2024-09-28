@@ -47,17 +47,17 @@
 
   </v-container>
 
-  <v-dialog v-model="dialogEditInstance" max-width="500px">
+  <v-dialog v-model="dialogEditInstance" scrollable max-width="500px">
     <v-card>
       <v-card-title>
         <span class="text-h5">{{ $t('admin.protocolDriverInstances.editInstance') }}</span>
       </v-card-title>
       <v-card-text>
         <v-container>
-          <v-select required v-model="editedInstance.protocolDriver" :items="driverNameItems" item-title="name" outlined
-            :label="$t('admin.protocolDriverInstances.headers.protocolDriver')"
+          <v-select required v-model="editedInstance.protocolDriver" :items="driverNameItems" item-title="name"
+            variant="outlined" :label="$t('admin.protocolDriverInstances.headers.protocolDriver')"
             @update:model-value="onDriverNameChange"></v-select>
-          <v-text-field v-model="editedInstance.protocolDriverInstanceNumber"
+          <v-text-field v-model="editedInstance.protocolDriverInstanceNumber" variant="outlined"
             :label="$t('admin.protocolDriverInstances.headers.protocolDriverInstanceNumber')" type="number"
             disabled></v-text-field>
           <v-switch v-model="editedInstance.enabled" inset color="primary" :label="`${$t('common.enabled')}${editedInstance.enabled
@@ -70,8 +70,8 @@
             { text: $t('common.logLevels.detailed'), value: 2 },
             { text: $t('common.logLevels.maximum'), value: 3 }
           ]" item-title="text" item-value="value" :label="$t('admin.protocolDriverInstances.headers.logLevel')"
-            outlined></v-select>
-          <v-select v-model="editedInstance.nodeNames" :items="nodeNames" item-title="name" outlined chips
+            variant="outlined"></v-select>
+          <v-select v-model="editedInstance.nodeNames" :items="nodeNames" item-title="name" variant="outlined" chips
             closable-chips small-chips :label="$t('admin.protocolDriverInstances.headers.allowedNodesList')"
             multiple></v-select>
           <v-btn class="mt-4 me-2" @click="dialogAddNode = true">{{
@@ -83,8 +83,10 @@
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="blue darken-1" text @click="dialogEditInstance = false">{{ $t('common.cancel') }}</v-btn>
-        <v-btn color="blue darken-1" text @click="updateOrCreateProtocolDriverInstance">{{ $t('common.save') }}</v-btn>
+        <v-btn color="red darken-1" text variant="tonal" @click="dialogEditInstance = false">{{ $t('common.cancel')
+          }}</v-btn>
+        <v-btn color="blue darken-1" text variant="tonal" @click="updateOrCreateProtocolDriverInstance">{{
+          $t('common.save') }}</v-btn>
       </v-card-actions>
       <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
     </v-card>
@@ -103,16 +105,13 @@
       <v-card-actions>
         <v-spacer></v-spacer>
 
-        <v-btn color="blue darken-1" text @click="dialogAddNode = false">
+        <v-btn color="red darken-1" text variant="tonal" @click="dialogAddNode = false">
           {{
             $t("common.cancel")
           }}
         </v-btn>
 
-        <v-btn color="blue darken-1" text @click="
-          dialogAddNode = false;
-        addNewNode(newNode);
-        ">
+        <v-btn color="blue darken-1" text variant="tonal" @click="dialogAddNode = false; addNewNode(newNode);">
           {{
             $t("common.save")
           }}
@@ -132,8 +131,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="blue darken-1" text @click="dialogDeleteInstance = false">{{ $t('common.cancel') }}</v-btn>
-        <v-btn color="red darken-1" text @click="deleteDriverInstance(editedInstance)">{{ $t('common.delete') }}</v-btn>
+        <v-btn color="red darken-1" text variant="tonal" @click="dialogDeleteInstance = false">{{ $t('common.cancel')
+          }}</v-btn>
+        <v-btn color="orange darken-1" text variant="tonal" @click="deleteDriverInstance(editedInstance)">{{
+          $t('common.delete') }}</v-btn>
       </v-card-actions>
       <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
     </v-card>

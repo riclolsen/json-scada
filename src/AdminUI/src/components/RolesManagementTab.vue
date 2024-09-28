@@ -1,5 +1,4 @@
 <template>
-
     <v-container fluid class="roles-management-tab">
 
         <v-btn color="primary" size="small" class="mt-0 me-2" @click="openAddRoleDialog">
@@ -21,25 +20,29 @@
         <div>
             <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
         </div>
+
     </v-container>
 
-    <v-dialog v-model="addRoleDialog" max-width="600px">
+    <v-dialog v-model="addRoleDialog" scrollable max-width="600px">
         <v-card>
             <v-card-title>{{ $t('admin.rolesManagement.editRole') }}</v-card-title>
             <v-card-text>
-                <v-text-field v-model="newRole.name" :label="$t('admin.rolesManagement.roleName')" outlined
+                <v-text-field v-model="newRole.name" :label="$t('admin.rolesManagement.roleName')" variant="outlined"
                     :disabled="newRole.name === 'admin' ? true : false"></v-text-field>
 
-                <v-select v-model="newRole.group1List" :items="group1ListAll" item-title="name" outlined chips
-                    closable-chips small-chips :label="$t('admin.rolesManagement.canViewGroup1List')" multiple></v-select>
+                <v-select v-model="newRole.group1List" :items="group1ListAll" item-title="name" variant="outlined" chips
+                    closable-chips small-chips :label="$t('admin.rolesManagement.canViewGroup1List')"
+                    multiple></v-select>
 
-                <v-select v-model="newRole.group1CommandList" :items="group1ListAll" item-title="name" outlined chips
-                    closable-chips small-chips :label="$t('admin.rolesManagement.canCommandGroup1List')" multiple></v-select>
+                <v-select v-model="newRole.group1CommandList" :items="group1ListAll" item-title="name"
+                    variant="outlined" chips closable-chips small-chips
+                    :label="$t('admin.rolesManagement.canCommandGroup1List')" multiple></v-select>
 
-                <v-select v-model="newRole.displayList" :items="displayListAll" item-title="name" outlined chips
-                    closable-chips small-chips :label="$t('admin.rolesManagement.canAccessDisplayList')" multiple></v-select>
+                <v-select v-model="newRole.displayList" :items="displayListAll" item-title="name" variant="outlined"
+                    chips closable-chips small-chips :label="$t('admin.rolesManagement.canAccessDisplayList')"
+                    multiple></v-select>
 
-                <v-text-field type="number" min="0" max="9999"
+                <v-text-field type="number" min="0" max="9999" variant="outlined"
                     :label="$t('admin.rolesManagement.maxSessionDays') + ' - ' + $t('admin.rolesManagement.maxSessionDaysHint')"
                     hide-details="auto" v-model="newRole.maxSessionDays"></v-text-field>
 
@@ -88,16 +91,17 @@
                 <v-checkbox dense v-model="newRole.disableAlarms" class="mb-n4"
                     :label="$t('admin.rolesManagement.disableAlarms') + ' - ' + $t('admin.rolesManagement.disableAlarmsHint')">
                 </v-checkbox>
-
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="blue darken-1" text @click="closeAddRoleDialog">{{ $t('common.cancel') }}</v-btn>
-                    <v-btn color="blue darken-1" text @click="isNewRole ? createRole(newRole) : updateRole(newRole)">{{
-                        $t('common.save')
-                        }}</v-btn>
-                    <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
-                </v-card-actions>
             </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="red darken-1" text variant="tonal" @click="closeAddRoleDialog">{{ $t('common.cancel')
+                    }}</v-btn>
+                <v-btn color="blue darken-1" text variant="tonal"
+                    @click="isNewRole ? createRole(newRole) : updateRole(newRole)">{{
+                        $t('common.save')
+                    }}</v-btn>
+                <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
+            </v-card-actions>
         </v-card>
     </v-dialog>
 
@@ -112,8 +116,10 @@
             </v-card-text>
             <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="closeDeleteRoleDialog">{{ $t('common.cancel') }}</v-btn>
-                <v-btn color="red darken-1" text @click="confirmDeleteRole">{{ $t('common.delete') }}</v-btn>
+                <v-btn color="red darken-1" text variant="tonal" @click="closeDeleteRoleDialog">{{ $t('common.cancel')
+                    }}</v-btn>
+                <v-btn color="orange darken-1" text variant="tonal" @click="confirmDeleteRole">{{ $t('common.delete')
+                    }}</v-btn>
             </v-card-actions>
             <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
         </v-card>
@@ -300,7 +306,7 @@ const fetchDisplayList = async () => {
     return await fetch("/Invoke/auth/listDisplays")
         .then((res) => res.json())
         .then((json) => {
-            if (json.error) { console.log(json); return; }  
+            if (json.error) { console.log(json); return; }
             displayListAll.value.length = 0;
             displayListAll.value.push(...json);
         })
@@ -311,7 +317,7 @@ const fetchGroup1List = async () => {
     return await fetch("/Invoke/auth/listGroup1")
         .then((res) => res.json())
         .then((json) => {
-            if (json.error) { console.log(json); return; }  
+            if (json.error) { console.log(json); return; }
             group1ListAll.value.length = 0;
             group1ListAll.value.push(...json);
         })
@@ -323,7 +329,7 @@ const fetchRoles = async () => {
     return await fetch("/Invoke/auth/listRoles")
         .then((res) => res.json())
         .then((json) => {
-            if (json.error) { console.log(json); return; }  
+            if (json.error) { console.log(json); return; }
             for (let i = 0; i < json.length; i++) {
                 let rights = "";
                 for (const key in json[i]) {
@@ -350,5 +356,4 @@ defineExpose({ fetchRoles })
 .v-checkbox :deep(.v-label) {
     font-size: .8em;
 }
-
 </style>

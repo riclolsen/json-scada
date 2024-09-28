@@ -6,8 +6,8 @@
       <v-icon>mdi-plus</v-icon>
     </v-btn>
 
-    <v-data-table :headers="headers" :items="users" :items-per-page="5" class="mt-4 elevation-1" :load-children="fetchUsers"
-      :items-per-page-text="$t('common.itemsPerPageText')">
+    <v-data-table :headers="headers" :items="users" :items-per-page="5" class="mt-4 elevation-1"
+      :load-children="fetchUsers" :items-per-page-text="$t('common.itemsPerPageText')">
       <template #[`item.actions`]="{ item }">
         <v-icon size="small" class="me-2" @click="openEditUserDialog(item)">
           mdi-pencil
@@ -20,47 +20,49 @@
     <div>
       <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
     </div>
+
   </v-container>
 
-
-  <v-dialog v-model="addUserDialog" max-width="500px">
+  <v-dialog v-model="addUserDialog" scrollable max-width="500px">
     <v-card>
       <v-card-title>{{ $t('admin.userManagement.addNewUser') }}</v-card-title>
       <v-card-text>
-        <v-text-field v-model="newUser.username" :label="$t('admin.userManagement.username')" required></v-text-field>
-        <v-text-field v-model="newUser.email" :label="$t('admin.userManagement.email')" required
+        <v-text-field v-model="newUser.username" :label="$t('admin.userManagement.username')" required
+          variant="outlined"></v-text-field>
+        <v-text-field v-model="newUser.email" :label="$t('admin.userManagement.email')" required variant="outlined"
           type="email"></v-text-field>
         <v-text-field v-model="newUser.password" :label="$t('admin.userManagement.password')" required
-          type="password"></v-text-field>
-        <v-select v-model="newUser.roles" :items="roles" item-title="name" outlined chips closable-chips
+          variant="outlined" type="password"></v-text-field>
+        <v-select v-model="newUser.roles" :items="roles" item-title="name" variant="outlined" chips closable-chips
           small-chips :label="$t('admin.userManagement.roles')" multiple></v-select>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="blue darken-1" text @click="closeAddUserDialog">{{ $t('common.cancel') }}</v-btn>
-        <v-btn color="blue darken-1" text @click="createUser">{{ $t('common.save') }}</v-btn>
+        <v-btn color="red darken-1" text variant="tonal" @click="closeAddUserDialog">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="blue darken-1" text variant="tonal" @click="createUser">{{ $t('common.save') }}</v-btn>
         <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
       </v-card-actions>
     </v-card>
   </v-dialog>
 
-  <v-dialog v-model="editUserDialog" max-width="500px">
+  <v-dialog v-model="editUserDialog" scrollable max-width="500px">
     <v-card>
       <v-card-title>{{ $t('admin.userManagement.editUser') }}</v-card-title>
       <v-card-text>
-        <v-text-field v-model="editedUser.username" :label="$t('admin.userManagement.username')"
-          required></v-text-field>
-        <v-text-field v-model="editedUser.email" :label="$t('admin.userManagement.email')" required
+        <v-text-field v-model="editedUser.username" :label="$t('admin.userManagement.username')" variant="outlined"
+          required autofocus></v-text-field>
+        <v-text-field v-model="editedUser.email" :label="$t('admin.userManagement.email')" variant="outlined" required
           type="email"></v-text-field>
-        <v-text-field v-model="editedUser.password" :label="$t('admin.userManagement.password')" required
-          type="password"></v-text-field>
-        <v-select v-model="editedUser.roles" :items="roles" item-title="name" outlined chips closable-chips
+        <v-text-field v-model="editedUser.password" :label="$t('admin.userManagement.password')" variant="outlined"
+          required type="password"></v-text-field>
+        <v-select v-model="editedUser.roles" :items="roles" item-title="name" variant="outlined" chips closable-chips
           small-chips :label="$t('admin.userManagement.roles')" multiple></v-select>
       </v-card-text>
       <v-card-actions>
         <v-spacer> </v-spacer>
-        <v-btn color="blue darken-1" text @click="closeEditUserDialog">{{ $t('common.cancel') }}</v-btn>
-        <v-btn color="blue darken-1" text @click="updateUser(editedUser)">{{ $t('common.save') }}</v-btn>
+        <v-btn color="red darken-1" text variant="tonal" @click="closeEditUserDialog">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="blue darken-1" text variant="tonal" @click="updateUser(editedUser)">{{ $t('common.save')
+          }}</v-btn>
         <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
       </v-card-actions>
     </v-card>
@@ -77,8 +79,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="blue darken-1" text @click="closeDeleteConfirmDialog">{{ $t('common.cancel') }}</v-btn>
-        <v-btn color="red darken-1" text @click="deleteUser(userToDelete)">{{ $t('common.delete') }}</v-btn>
+        <v-btn color="red darken-1" text variant="tonal" @click="closeDeleteConfirmDialog">{{ $t('common.cancel')
+          }}</v-btn>
+        <v-btn color="orange darken-1" text variant="tonal" @click="deleteUser(userToDelete)">{{ $t('common.delete')
+          }}</v-btn>
       </v-card-actions>
       <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
     </v-card>
@@ -143,7 +147,7 @@ const fetchUsers = async () => {
   return await fetch("/Invoke/auth/listUsers")
     .then((res) => res.json())
     .then((json) => {
-      if (json.error) { console.log(json); error.value = true; return; }  
+      if (json.error) { console.log(json); error.value = true; return; }
       for (let i = 0; i < json.length; i++) {
         json[i].id = i + 1;
         json[i].rolesText = json[i].roles.map(role => role.name).join(', ');
@@ -159,7 +163,7 @@ const fetchRoles = async () => {
   return await fetch("/Invoke/auth/listRoles")
     .then((res) => res.json())
     .then((json) => {
-      if (json.error) { console.log(json); return; }  
+      if (json.error) { console.log(json); return; }
       for (let i = 0; i < json.length; i++)
         json[i].id = i + 1;
       roles.value.length = 0;
@@ -367,4 +371,3 @@ const closeAddUserDialog = () => {
 defineExpose({ fetchUsers, fetchRoles })
 
 </script>
-
