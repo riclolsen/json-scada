@@ -217,9 +217,16 @@
       "protocolConnectionDescription": "Connection Description",
       "commandsEnabled": "Commands Enabled: ",
       "protocolConnectionParameters": "Protocol Connection Parameters",
+      "username": "Username",
+      "usernameTitle": "Username",
+      "usernameHint": "Username for connection.",
+      "password": "Password",
+      "passwordTitle": "Password",
+      "passwordHint": "Password for connection.",
       "tcpParameters": "TCP Parameters",
       "remoteIpAddresses": "Remote IP Addresses",
       "remoteIpAddressAdd": "Add new remote IP address",
+      "serialParameters": "Serial Parameters",
       "parity": "Parity",
       "parityTitle": "Parity",
       "parityHint": "Parity for serial connections.",
@@ -426,8 +433,10 @@
       "rootCertificateFile": "Root Certificate File",
       "rootCertificateFileTitle": "Root Certificate File",
       "rootCertificateFileHint": "File name with path.",
-      "certChainValidation": "Cert Chain Validation"
-
+      "certChainValidation": "Cert Chain Validation",
+      "pubSub": "Pub/Sub",
+      "topics": "Topics",
+      "topicsAddNew": "Add new topic"
     },
     "systemSettings": {
       "title": "System Settings",
