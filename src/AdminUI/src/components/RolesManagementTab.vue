@@ -93,14 +93,15 @@
                 </v-checkbox>
             </v-card-text>
             <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="red darken-1" text variant="tonal" @click="closeAddRoleDialog">{{ $t('common.cancel')
-                    }}</v-btn>
-                <v-btn color="blue darken-1" text variant="tonal"
-                    @click="isNewRole ? createRole(newRole) : updateRole(newRole)">{{
-                        $t('common.save')
-                    }}</v-btn>
                 <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
+                <v-spacer></v-spacer>
+                <v-btn color="orange darken-1" text variant="tonal" @click="closeAddRoleDialog">
+                    {{ $t('common.cancel') }}
+                </v-btn>
+                <v-btn color="blue darken-1" text variant="tonal"
+                    @click="isNewRole ? createRole(newRole) : updateRole(newRole)">
+                    {{ $t('common.save') }}
+                </v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -116,10 +117,12 @@
             </v-card-text>
             <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn color="red darken-1" text variant="tonal" @click="closeDeleteRoleDialog">{{ $t('common.cancel')
-                    }}</v-btn>
-                <v-btn color="orange darken-1" text variant="tonal" @click="confirmDeleteRole">{{ $t('common.delete')
-                    }}</v-btn>
+                <v-btn color="orange darken-1" text variant="tonal" @click="closeDeleteRoleDialog">
+                    {{ $t('common.cancel') }}
+                </v-btn>
+                <v-btn color="red darken-1" text variant="tonal" @click="confirmDeleteRole">
+                    {{ $t('common.delete') }}
+                </v-btn>
             </v-card-actions>
             <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
         </v-card>
@@ -306,7 +309,7 @@ const fetchDisplayList = async () => {
     return await fetch("/Invoke/auth/listDisplays")
         .then((res) => res.json())
         .then((json) => {
-            if (json.error) { console.log(json); return; }
+            if (json.error) { console.warn(json); return; }
             displayListAll.value.length = 0;
             displayListAll.value.push(...json);
         })
@@ -317,7 +320,7 @@ const fetchGroup1List = async () => {
     return await fetch("/Invoke/auth/listGroup1")
         .then((res) => res.json())
         .then((json) => {
-            if (json.error) { console.log(json); return; }
+            if (json.error) { console.warn(json); return; }
             group1ListAll.value.length = 0;
             group1ListAll.value.push(...json);
         })
@@ -329,7 +332,7 @@ const fetchRoles = async () => {
     return await fetch("/Invoke/auth/listRoles")
         .then((res) => res.json())
         .then((json) => {
-            if (json.error) { console.log(json); return; }
+            if (json.error) { console.warn(json); return; }
             for (let i = 0; i < json.length; i++) {
                 let rights = "";
                 for (const key in json[i]) {

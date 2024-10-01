@@ -74,47 +74,45 @@
           <v-select v-model="editedInstance.nodeNames" :items="nodeNames" item-title="name" variant="outlined" chips
             closable-chips small-chips :label="$t('admin.protocolDriverInstances.headers.allowedNodesList')"
             multiple></v-select>
-          <v-btn class="mt-4 me-2" @click="dialogAddNode = true">{{
-            $t('admin.protocolDriverInstances.addNewNode') }}
+          <v-btn class="mt-4 me-2" color="blue" text variant="tonal" @click="dialogAddNode = true">
+            {{ $t('admin.protocolDriverInstances.addNewNode') }}
             <v-icon>mdi-plus</v-icon>
           </v-btn>
         </v-container>
       </v-card-text>
 
       <v-card-actions>
+        <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
         <v-spacer></v-spacer>
-        <v-btn color="red darken-1" text variant="tonal" @click="dialogEditInstance = false">{{ $t('common.cancel')
-          }}</v-btn>
-        <v-btn color="blue darken-1" text variant="tonal" @click="updateOrCreateProtocolDriverInstance">{{
-          $t('common.save') }}</v-btn>
+        <v-btn color="orange darken-1" text variant="tonal" @click="dialogEditInstance = false">
+          {{ $t('common.cancel') }}
+        </v-btn>
+        <v-btn color="blue darken-1" text variant="tonal" @click="updateOrCreateProtocolDriverInstance">
+          {{ $t('common.save') }}
+        </v-btn>
       </v-card-actions>
-      <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
     </v-card>
   </v-dialog>
 
   <v-dialog v-model="dialogAddNode" max-width="400" class="pa-8">
     <v-card>
-      <v-card-title class="headline">{{
-        $t("admin.protocolDriverInstances.addNewNode")
-      }}</v-card-title>
+      <v-card-title class="headline">
+        {{ $t("admin.protocolDriverInstances.addNewNode") }}
+      </v-card-title>
 
       <v-card-title class="headline">
-        <v-text-field :label="$t('admin.protocolDriverInstances.newNodeName')" v-model="newNode"></v-text-field>
+        <v-text-field autofocus :label="$t('admin.protocolDriverInstances.newNodeName')" v-model="newNode"></v-text-field>
       </v-card-title>
 
       <v-card-actions>
         <v-spacer></v-spacer>
 
-        <v-btn color="red darken-1" text variant="tonal" @click="dialogAddNode = false">
-          {{
-            $t("common.cancel")
-          }}
+        <v-btn color="orange darken-1" text variant="tonal" @click="dialogAddNode = false">
+          {{ $t("common.cancel") }}
         </v-btn>
 
         <v-btn color="blue darken-1" text variant="tonal" @click="dialogAddNode = false; addNewNode(newNode);">
-          {{
-            $t("common.save")
-          }}
+          {{ $t("common.save") }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -131,10 +129,12 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="red darken-1" text variant="tonal" @click="dialogDeleteInstance = false">{{ $t('common.cancel')
-          }}</v-btn>
-        <v-btn color="orange darken-1" text variant="tonal" @click="deleteDriverInstance(editedInstance)">{{
-          $t('common.delete') }}</v-btn>
+        <v-btn color="orange darken-1" text variant="tonal" @click="dialogDeleteInstance = false">
+          {{ $t('common.cancel') }}
+        </v-btn>
+        <v-btn color="red darken-1" text variant="tonal" @click="deleteDriverInstance(editedInstance)">
+          {{ $t('common.delete') }}
+        </v-btn>
       </v-card-actions>
       <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
     </v-card>
@@ -223,7 +223,7 @@ async function fetchNodes() {
   try {
     const res = await fetch("/Invoke/auth/listNodes");
     const json = await res.json();
-    if (json.error) { console.log(json); return; }
+    if (json.error) { console.warn(json); return; }
     nodeNames.value = json;
   } catch (err) {
     console.warn(err);
@@ -235,7 +235,7 @@ async function fetchProtocolDriverInstances() {
   try {
     const res = await fetch("/Invoke/auth/listProtocolDriverInstances");
     const json = await res.json();
-    if (json.error) { console.log(json); return; }
+    if (json.error) { console.wanr(json); return; }
     json.forEach((item, index) => {
       item.id = index + 1;
       item.nodesText = item.nodeNames.join(', ');
@@ -262,7 +262,7 @@ async function startProtocolDriverInstance(item) {
       }),
     });
     const json = await res.json();
-    if (json.error) console.log(json);
+    if (json.error) console.warn(json);
   } catch (err) {
     console.warn(err);
   }
@@ -285,7 +285,7 @@ async function stopProtocolDriverInstance(item) {
       }),
     });
     const json = await res.json();
-    if (json.error) console.log(json);
+    if (json.error) console.warn(json);
   } catch (err) {
     console.warn(err);
   }
@@ -322,7 +322,7 @@ async function deleteDriverInstance(item) {
     });
     const json = await res.json();
     if (json.error) {
-      console.log(json);
+      console.warn(json);
       return;
     }
     dialogDeleteInstance.value = false;
@@ -345,7 +345,7 @@ async function createDriverInstance() {
       body: JSON.stringify({}),
     });
     const json = await res.json();
-    if (json.error || !json._id) { console.log(json); error.value = true; return; }
+    if (json.error || !json._id) { console.warn(json); error.value = true; return; }
     editedInstance.value._id = json._id;
     await updateProtocolDriverInstance();
     dialogEditInstance.value = false;
