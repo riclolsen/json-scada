@@ -147,9 +147,9 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const headers = computed(() => [
-  { title: '#', key: 'id' },
+  { title: '#', key: 'id', align: 'end' },
   { title: t('admin.protocolDriverInstances.headers.protocolDriver'), align: 'start', key: 'protocolDriver' },
-  { title: t('admin.protocolDriverInstances.headers.protocolDriverInstanceNumber'), key: 'protocolDriverInstanceNumber' },
+  { title: t('admin.protocolDriverInstances.headers.protocolDriverInstanceNumber'), align: 'end', key: 'protocolDriverInstanceNumber' },
   { title: t('admin.protocolDriverInstances.headers.enabled'), key: 'enabled' },
   { title: t('admin.protocolDriverInstances.headers.logLevel'), key: 'logLevel' },
   { title: t('admin.protocolDriverInstances.headers.allowedNodesList'), key: 'nodesText' },

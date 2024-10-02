@@ -137,7 +137,7 @@ const { t } = useI18n();
 
 // Computed properties
 const headers = computed(() => [
-    { title: '#', key: 'id' },
+    { title: '#', key: 'id', align: 'end' },
     { title: t('admin.rolesManagement.headers.name'), align: 'start', key: 'name' },
     { title: t('admin.rolesManagement.headers.rights'), key: 'rights', sortable: false },
     { title: t('admin.rolesManagement.headers.actions'), key: 'actions', sortable: false },

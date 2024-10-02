@@ -16,6 +16,9 @@
       <template #[`item.icon`]="{ item }">
         <v-icon v-if="!item.children"> mdi-swap-horizontal </v-icon>
       </template>
+      <template #[`item.protocolDriver`]="{ item }">
+        <span class="text-caption">{{ item.protocolDriver }} <br> {{ item.protocolDriverInstanceNumber }}</span>
+      </template>
       <template #[`item.stats`]="{ item }">
         <span class="text-caption">{{ item.stats }}</span>
       </template>
@@ -61,9 +64,9 @@
           :label="$t('admin.protocolConnections.protocolDriver')" v-model="editedConnection.protocolDriver"
           class="pt-0"></v-select>
 
-        <v-text-field prepend-inner-icon="mdi-play-circle" type="number" variant="outlined" min="1" clearable
-          :label="$t('admin.protocolConnections.protocolDriverInstanceNumber')"
-          v-model="editedConnection.protocolDriverInstanceNumber" class="pt-0"></v-text-field>
+        <v-select prepend-inner-icon="mdi-cogs" :items="driverInstancesByType[editedConnection.protocolDriver]"
+          variant="outlined" :label="$t('admin.protocolConnections.protocolDriverInstanceNumber')"
+          v-model="editedConnection.protocolDriverInstanceNumber" class="pt-0"></v-select>
 
         <v-switch v-model="editedConnection.enabled" inset color="primary" :label="`${$t('common.enabled')}${editedConnection.enabled
           ? $t('common.true')
@@ -150,7 +153,12 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['OPC-UA', 'MQTT-SPARKPLUG-B', 'PLC4X', 'OPC-DA'].includes(
+              [
+                'OPC-UA',
+                'MQTT-SPARKPLUG-B',
+                'PLC4X',
+                'OPC-DA',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -198,7 +206,11 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['MQTT-SPARKPLUG-B', 'IEC61850', 'OPC-DA'].includes(
+              [
+                'MQTT-SPARKPLUG-B',
+                'IEC61850',
+                'OPC-DA',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -224,7 +236,11 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['MQTT-SPARKPLUG-B', 'IEC61850', 'OPC-DA'].includes(
+              [
+                'MQTT-SPARKPLUG-B',
+                'IEC61850',
+                'OPC-DA',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -291,7 +307,12 @@
 
             <v-list-item v-if="
               ['OPC-UA'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags ||
-              ['OPC-DA', 'OPC-DA_SERVER', 'ICCP', 'ICCP_SERVER'].includes(editedConnection.protocolDriver)
+              [
+                'OPC-DA',
+                'OPC-DA_SERVER',
+                'ICCP',
+                'ICCP_SERVER',
+              ].includes(editedConnection.protocolDriver)
             ">
               <template #default="{ isActive }">
                 <v-row>
@@ -396,7 +417,12 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['OPC-DA', 'OPC-DA_SERVER', 'ICCP', 'ICCP_SERVER'].includes(
+              [
+                'OPC-DA',
+                'OPC-DA_SERVER',
+                'ICCP',
+                'ICCP_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -514,7 +540,11 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-101', 'IEC60870-5-104', 'PLCTAG'].includes(
+              [
+                'IEC60870-5-101',
+                'IEC60870-5-104',
+                'PLCTAG',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -541,7 +571,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+              [
+                'IEC60870-5-104',
+                'IEC60870-5-104_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -569,7 +602,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+              [
+                'IEC60870-5-104',
+                'IEC60870-5-104_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -597,7 +633,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+              [
+                'IEC60870-5-104', 
+                'IEC60870-5-104_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -625,7 +664,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+              [
+                'IEC60870-5-104', 
+                'IEC60870-5-104_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -653,7 +695,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+              [
+                'IEC60870-5-104', 
+                'IEC60870-5-104_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -681,7 +726,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104', 'IEC60870-5-104_SERVER'].includes(
+              [
+                'IEC60870-5-104', 
+                'IEC60870-5-104_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -816,7 +864,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-104_SERVER', 'IEC61850_SERVER'].includes(
+              [
+                'IEC60870-5-104_SERVER', 
+                'IEC61850_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -1006,17 +1057,17 @@
               )}${editedConnection.enableUnsolicited
                 ? $t('admin.protocolConnections.enableUnsolicitedTrue')
                 : $t('admin.protocolConnections.enableUnsolicitedFalse')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
 
             <v-list-item v-if="['DNP3'].includes(editedConnection.protocolDriver)">
 
               <v-row>
                 <v-col>
-                  <v-select v-model="editedConnection.rangeScans" :items="editedConnection.rangeScans" 
+                  <v-select v-model="editedConnection.rangeScans" :items="editedConnection.rangeScans"
                     :item-title="item => `G:${item.group} V:${item.variation} A:${item.startAddress}-${item.stopAddress} P:${item.period}s`"
-                    :item-value="item"
-                    chips small-chips closable-chips :label="$t('admin.protocolConnections.rangeScans')" multiple></v-select>
+                    :item-value="item => item" chips small-chips closable-chips
+                    :label="$t('admin.protocolConnections.rangeScans')" multiple></v-select>
                 </v-col>
                 <v-col>
                   <v-btn color="blue darken-1" text variant="tonal" @click="dialogAddRangeScan = true">
@@ -1054,7 +1105,8 @@
                     <v-btn color="orange darken-1" text variant="tonal" @click="dialogAddRangeScan = false">
                       {{ $t("common.cancel") }}
                     </v-btn>
-                    <v-btn color="blue darken-1" text variant="tonal" @click="dialogAddRangeScan = false; addNewRangeScan();">
+                    <v-btn color="blue darken-1" text variant="tonal"
+                      @click="dialogAddRangeScan = false; addNewRangeScan();">
                       {{ $t("common.ok") }}
                     </v-btn>
                   </v-card-actions>
@@ -1063,7 +1115,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-101', 'IEC60870-5-101_SERVER'].includes(
+              [
+                'IEC60870-5-101', 
+                'IEC60870-5-101_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -1091,7 +1146,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-101', 'IEC60870-5-101_SERVER'].includes(
+              [
+                'IEC60870-5-101', 
+                'IEC60870-5-101_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -1119,7 +1177,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['IEC60870-5-101', 'IEC60870-5-101_SERVER'].includes(
+              [
+                'IEC60870-5-101',
+                'IEC60870-5-101_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -1149,7 +1210,7 @@
             <v-list-item v-if="
               [
                 'IEC60870-5-101',
-                'IEC60870-5-101_SERVER'
+                'IEC60870-5-101_SERVER',
               ].includes(editedConnection.protocolDriver)
             ">
               <v-switch v-model="editedConnection.useSingleCharACK" inset color="primary" :label="`${$t(
@@ -1361,19 +1422,18 @@
                 <v-row>
                   <v-col>
                     <v-list-item-action>
-                      <v-text-field type="text" :input-value="active" :label="$t(
-                        'admin.protocolConnections.localCertificateFile'
-                      )
-                        " hide-details="auto" v-model="editedConnection.localCertFilePath"></v-text-field>
+                      <v-text-field type="text" :input-value="active"
+                        :label="$t('admin.protocolConnections.localCertificateFilePath')" hide-details="auto"
+                        v-model="editedConnection.localCertFilePath"></v-text-field>
                     </v-list-item-action>
                   </v-col>
                   <v-col>
 
                     <v-list-item-title>
-                      {{ $t("admin.protocolConnections.localCertificateFileTitle") }}
+                      {{ $t("admin.protocolConnections.localCertificateFilePathTitle") }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
-                      {{ $t("admin.protocolConnections.localCertificateFileHint") }}
+                      {{ $t("admin.protocolConnections.localCertificateFilePathHint") }}
                     </v-list-item-subtitle>
 
                   </v-col>
@@ -1477,32 +1537,28 @@
 
             <v-list-item v-if="
               [
-                'IEC60870-5-104',
-                'IEC60870-5-104_SERVER',
                 'DNP3',
                 'DNP3_SERVER',
-                'IEC61850',
-                'IEC61850_SERVER',
                 'OPC-DA',
+                'OPC-DA_SERVER',
               ].includes(editedConnection.protocolDriver)
             ">
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
                     <v-list-item-action>
-                      <v-text-field type="text" :input-value="active" :label="$t(
-                        'admin.protocolConnections.peerCertificateFile'
-                      )
-                        " hide-details="auto" v-model="editedConnection.peerCertFilePath"></v-text-field>
+                      <v-text-field type="text" :input-value="active"
+                        :label="$t('admin.protocolConnections.peerCertificateFilePath')" hide-details="auto"
+                        v-model="editedConnection.peerCertFilePath"></v-text-field>
                     </v-list-item-action>
                   </v-col>
                   <v-col>
 
                     <v-list-item-title>
-                      {{ $t("admin.protocolConnections.peerCertificateFileTitle") }}
+                      {{ $t("admin.protocolConnections.peerCertificateFilePathTitle") }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
-                      {{ $t("admin.protocolConnections.peerCertificateFileHint") }}
+                      {{ $t("admin.protocolConnections.peerCertificateFilePathHint") }}
                     </v-list-item-subtitle>
 
                   </v-col>
@@ -1520,22 +1576,23 @@
                 'ICCP_SERVER',
               ].includes(editedConnection.protocolDriver)
             ">
-              <v-autocomplete v-model="editedConnection.peerCertFilesPaths" :items="editedConnection.peerCertFilesPaths"
-                chips small-chips closable-chips :label="$t('admin.protocolConnections.peerCertificateFiles')
-                  " multiple></v-autocomplete>
-
-              <v-tooltip bottom>
-                <template v-slot:activator="{ on }">
-                  <v-btn v-bind="on" class="mx-2" fab dark x-small color="blue" @click="dialogAddCertPath = true">
+              <v-row>
+                <v-col>
+                  <v-select v-model="editedConnection.peerCertFilesPaths" :items="editedConnection.peerCertFilesPaths"
+                    chips small-chips closable-chips :label="$t('admin.protocolConnections.peerCertificateFilesPaths')"
+                    multiple></v-select>
+                </v-col>
+                <v-col>
+                  <v-btn color="blue darken-1" text variant="tonal" @click="dialogAddCertPath = true">
                     <v-icon dark> mdi-plus </v-icon>
+                    {{ $t('admin.protocolConnections.peerCertificateFilesPathsAdd') }}
                   </v-btn>
-                </template>
-                <span>{{ $t("admin.protocolConnections.peerCertificateFilesAdd") }}</span>
-              </v-tooltip>
+                </v-col>
+              </v-row>
               <v-dialog v-model="dialogAddCertPath" max-width="400" class="pa-8">
                 <v-card>
                   <v-card-title class="headline">
-                    {{ $t("admin.protocolConnections.peerCertificateFilesAdd") }}
+                    {{ $t("admin.protocolConnections.peerCertificateFilesPathsAdd") }}
                   </v-card-title>
 
                   <v-card-title class="headline">
@@ -1551,7 +1608,7 @@
 
                     <v-btn color="blue darken-1" text variant="tonal"
                       @click="dialogAddCertPath = false; addNewCertPath();">
-                      {{ $t("admin.protocolConnections.peerCertificateFilesExecute") }}
+                      {{ $t("common.ok") }}
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -1573,19 +1630,18 @@
                 <v-row>
                   <v-col>
                     <v-list-item-action>
-                      <v-text-field type="text" :input-value="active" :label="$t(
-                        'admin.protocolConnections.rootCertificateFile'
-                      )
-                        " hide-details="auto" v-model="editedConnection.rootCertFilePath"></v-text-field>
+                      <v-text-field type="text" :input-value="active"
+                        :label="$t('admin.protocolConnections.rootCertificateFilePath')" hide-details="auto"
+                        v-model="editedConnection.rootCertFilePath"></v-text-field>
                     </v-list-item-action>
                   </v-col>
                   <v-col>
 
                     <v-list-item-title>
-                      {{ $t("admin.protocolConnections.rootCertificateFileTitle") }}
+                      {{ $t("admin.protocolConnections.rootCertificateFilePathTitle") }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
-                      {{ $t("admin.protocolConnections.rootCertificateFileHint") }}
+                      {{ $t("admin.protocolConnections.rootCertificateFilePathHint") }}
                     </v-list-item-subtitle>
 
                   </v-col>
@@ -1638,7 +1694,7 @@
               )}${editedConnection.allowTLSv10
                 ? $t('admin.protocolConnections.allowTls10True')
                 : $t('admin.protocolConnections.allowTls10False')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
 
             <v-list-item v-if="
@@ -1657,7 +1713,7 @@
               )}${editedConnection.allowTLSv11
                 ? $t('admin.protocolConnections.allowTls11True')
                 : $t('admin.protocolConnections.allowTls11False')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
 
             <v-list-item v-if="
@@ -1676,7 +1732,7 @@
               )}${editedConnection.allowTLSv12
                 ? $t('admin.protocolConnections.allowTls12True')
                 : $t('admin.protocolConnections.allowTls12False')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
 
             <v-list-item v-if="
@@ -1695,7 +1751,7 @@
               )}${editedConnection.allowTLSv13
                 ? $t('admin.protocolConnections.allowTls13True')
                 : $t('admin.protocolConnections.allowTls13False')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
 
             <v-list-item v-if="
@@ -1714,7 +1770,7 @@
               )}${editedConnection.allowOnlySpecificCertificates
                 ? $t('admin.protocolConnections.allowSpecificCertsTrue')
                 : $t('admin.protocolConnections.allowSpecificCertsFalse')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
 
             <v-list-item v-if="
@@ -1733,13 +1789,14 @@
               )}${editedConnection.chainValidation
                 ? $t('common.true')
                 : $t('common.false')
-                }`"></v-switch>
+                }`" class="mb-n6"></v-switch>
             </v-list-item>
           </v-list>
         </v-card>
 
         <v-card class="mt-6" tile variant="outlined" v-if="
-          ['MQTT-SPARKPLUG-B',
+          [
+            'MQTT-SPARKPLUG-B',
             'OPC-UA_SERVER',
             'IEC61850',
             'IEC61850_SERVER',
@@ -1789,7 +1846,8 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['MQTT-SPARKPLUG-B',
+              [
+                'MQTT-SPARKPLUG-B',
                 'OPC-UA_SERVER',
                 'IEC61850',
                 'IEC61850_SERVER',
@@ -2079,7 +2137,8 @@
             </v-list-item>
 
             <v-list-item class="mt-4" v-if="
-              ['MQTT-SPARKPLUG-B',
+              [
+                'MQTT-SPARKPLUG-B',
                 'PI_DATA_ARCHIVE_INJECTOR',
                 'PI_DATA_ARCHIVE_CLIENT',
               ].includes(editedConnection.protocolDriver)
@@ -2108,7 +2167,10 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['MQTT-SPARKPLUG-B', 'OPC-UA_SERVER'].includes(
+              [
+                'MQTT-SPARKPLUG-B', 
+                'OPC-UA_SERVER',
+              ].includes(
                 editedConnection.protocolDriver
               )
             ">
@@ -2187,7 +2249,11 @@
             </v-list-item>
 
             <v-list-item v-if="
-              ['MQTT-SPARKPLUG-B', 'PI_DATA_ARCHIVE_INJECTOR', 'PI_DATA_ARCHIVE_CLIENT'].includes(editedConnection.protocolDriver)
+              [
+                'MQTT-SPARKPLUG-B', 
+                'PI_DATA_ARCHIVE_INJECTOR', 
+                'PI_DATA_ARCHIVE_CLIENT'
+              ].includes(editedConnection.protocolDriver)
             ">
               <template v-slot:default="{ active }">
                 <v-row>
@@ -2460,19 +2526,23 @@
       </v-card-title>
 
       <v-card-text>
-        {{
-          $t("admin.protocolConnections.deleteProtocolConnectionConfirm")
-        }}
+        {{ $t("admin.protocolConnections.deleteProtocolConnectionConfirm") }}
       </v-card-text>
 
       <v-card-actions>
+        <v-switch v-model="deleteTags" inset color="red"
+         :label="`${$t('admin.protocolConnections.deleteConnectionEraseTags')+' '}${deleteTags
+            ? $t('common.true')
+            : $t('common.false')
+            }`" class="mb-0"></v-switch>
+
         <v-spacer></v-spacer>
 
         <v-btn color="orange darken-1" text variant="tonal" @click="dialogDelConn = false">
           {{ $t("common.cancel") }}
         </v-btn>
 
-        <v-btn color="orange darken-1" text variant="tonal" @click="dialogDelConn = false; deleteProtocolConnection()">
+        <v-btn color="red darken-1" text variant="tonal" @click="dialogDelConn = false; deleteProtocolConnection()">
           {{ $t("common.delete") }}
         </v-btn>
       </v-card-actions>
@@ -2487,10 +2557,10 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const headers = computed(() => [
-  { title: '#', key: 'id' },
+  { title: '#', key: 'id', align: 'end' },
   { title: t('admin.protocolConnections.headers.name'), key: 'name' },
-  { title: t('admin.protocolConnections.headers.protocolDriver'), align: 'start', key: 'protocolDriver' },
-  { title: t('admin.protocolConnections.headers.protocolDriverInstanceNumber'), key: 'protocolDriverInstanceNumber' },
+  { title: t('admin.protocolConnections.headers.protocolConnectionNumber'), align: 'end', key: 'protocolConnectionNumber' },
+  { title: t('admin.protocolConnections.headers.protocolDriverAndInstanceNumber'), align: 'start', key: 'protocolDriver' },
   { title: t('admin.protocolConnections.headers.enabled'), key: 'enabled' },
   { title: t('admin.protocolConnections.headers.stats'), key: 'stats' },
   { title: t('admin.protocolConnections.headers.actions'), key: 'actions', sortable: false },
@@ -2507,10 +2577,9 @@ const dialogAddCertPath = ref(false);
 const dialogAddURL = ref(false);
 const dialogAddTopic = ref(false);
 const dialogAddTopicAsFile = ref(false);
-const dialogAddTopicScripted = ref(false);
-const dialogEditTopicScripted = ref(false);
 const dialogAddRangeScan = ref(false);
 const dialogDelConn = ref(false);
+const deleteTags = ref(false);
 const newRangeScan = ref({
   group: 1,
   variation: 0,
@@ -2523,10 +2592,6 @@ const newCertPath = ref("");
 const newURL = ref("");
 const newTopic = ref("");
 const newTopicAsFile = ref("");
-const newTopicScripted = ref({
-  topic: "",
-  script: "",
-});
 const protocolConnections = ref([]);
 const driverInstancesByType = ref({});
 
@@ -2606,7 +2671,6 @@ const parityItems = ["None", "Even", "Odd", "Mark", "Space"];
 const stopBitsItems = ["One", "One5", "Two"];
 const handshakeItems = ["None", "Rts", "Xon", "RtsXon"];
 const sizeOfLinkAddressItems = [0, 1, 2];
-const timeSyncModeItems = [0, 1, 2];
 
 // Lifecycle hooks
 onMounted(async () => {
@@ -2621,13 +2685,6 @@ onUnmounted(async () => {
 const updateProtocolConnection = async () => {
   var connDup = Object.assign({}, editedConnection.value);
   delete connDup["id"];
-
-  //if ("rangeScans" in connDup) {
-  //  connDup.rangeScans = [];
-  //  for (let i = 0; i < connDup.rangeScansStr.length; i++)
-  //    connDup.rangeScans.push(JSON.parse(connDup.rangeScansStr[i]));
-  //}
-  //delete connDup["rangeScansStr"];
 
   try {
     const response = await fetch("/Invoke/auth/updateProtocolConnection", {
@@ -2644,7 +2701,7 @@ const updateProtocolConnection = async () => {
   } catch (err) {
     console.warn(err);
   }
-  fetchProtocolConnections(); // refreshes connections
+  fetchProtocolConnections(); 
 };
 
 const createProtocolConnection = async () => {
@@ -2665,25 +2722,24 @@ const createProtocolConnection = async () => {
   } catch (err) {
     console.warn(err);
   }
-  fetchProtocolConnections(); // refreshes connections
+  fetchProtocolConnections(); 
 };
 
 const addNewRangeScan = async () => {
   editedConnection.value.rangeScans.push(Object.assign({}, newRangeScan.value));
-  console.log(editedConnection.value.rangeScans);
 };
 
 const addNewIP = async () => {
   if (rules.ipPort(newIP.value) !== true) return;
   if (newIP.value != "" && !editedConnection.value.ipAddresses.includes(newIP.value)) {
-    editedConnection.value.ipAddresses.push(Object.assign({}, newIP.value));
+    editedConnection.value.ipAddresses.push(newIP.value);
   }
   newIP.value = "";
 };
 
 const addNewCertPath = async () => {
   if (newCertPath.value != "" && !editedConnection.value.peerCertFilesPaths.includes(newCertPath.value)) {
-    editedConnection.value.peerCertFilesPaths.push(Object.assign({}, newCertPath.value));
+    editedConnection.value.peerCertFilesPaths.push(newCertPath.value);
     newCertPath.value = "";
   }
 };
@@ -2703,7 +2759,7 @@ const addNewURL = async () => {
     newURL.value != "" &&
     !editedConnection.value.endpointURLs.includes(newURL.value)
   ) {
-    editedConnection.value.endpointURLs.push(Object.assign({}, newURL.value));
+    editedConnection.value.endpointURLs.push(newURL.value);
     newURL.value = "";
   }
 };
@@ -2714,7 +2770,7 @@ const addNewTopic = async () => {
     newTopic.value != "" &&
     !editedConnection.value.topics.includes(newTopic.value)
   ) {
-    editedConnection.value.topics.push(Object.assign({}, newTopic.value));
+    editedConnection.value.topics.push(newTopic.value);
     newTopic.value = "";
   }
 };
@@ -2725,7 +2781,7 @@ const addNewTopicAsFile = async () => {
     newTopicAsFile.value != "" &&
     !editedConnection.value.topicsAsFiles.includes(newTopicAsFile.value)
   ) {
-    editedConnection.value.topicsAsFiles.push(Object.assign({}, newTopicAsFile.value));
+    editedConnection.value.topicsAsFiles.push(newTopicAsFile.value);
     newTopicAsFile.value = "";
   }
 };
@@ -2769,6 +2825,7 @@ const deleteProtocolConnection = async () => {
         protocolConnectionNumber: editedConnection.value.protocolConnectionNumber,
         protocolDriver: editedConnection.value.protocolDriver,
         protocolDriverInstanceNumber: editedConnection.value.protocolDriverInstanceNumber,
+        deleteTags: deleteTags.value,
         _id: editedConnection.value._id,
       }),
     });
@@ -2786,11 +2843,6 @@ const fetchProtocolConnections = async () => {
     const json = await response.json();
     for (let i = 0; i < json.length; i++) {
       json[i].id = i + 1;
-
-      //json[i].rangeScansStr = [];
-      //if ("rangeScans" in json[i])
-      //  for (let j = 0; j < json[i].rangeScans.length; j++)
-      //    json[i].rangeScansStr.push(JSON.stringify(json[i].rangeScans[j]));
     }
     protocolConnections.value = json;
   } catch (err) {
@@ -2824,6 +2876,7 @@ const openEditProtocolConnectionDialog = async (item) => {
 };
 
 const openDeleteProtocolConnectionDialog = (item) => {
+  deleteTags.value = false;
   editedConnection.value = item;
   dialogDelConn.value = true;
 };
@@ -2844,6 +2897,8 @@ async function fetchProtocolDriverInstancesByType() {
     const instances = json;
     instances.forEach(instance => {
       driverInstancesByType.value[instance.protocolDriver] = [];
+    });
+    instances.forEach(instance => {
       driverInstancesByType.value[instance.protocolDriver].push(instance.protocolDriverInstanceNumber);
     });
   } catch (err) {

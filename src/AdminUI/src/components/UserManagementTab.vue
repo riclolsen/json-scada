@@ -110,7 +110,7 @@ const deleteConfirmDialog = ref(false);
 const editUserDialog = ref(false);
 
 const headers = computed(() => [
-  { title: '#', key: 'id' },
+  { title: '#', key: 'id', align: 'end' },
   { title: t('admin.userManagement.headers.username'), align: 'start', key: 'username' },
   { title: t('admin.userManagement.headers.email'), key: 'email' },
   { title: t('admin.userManagement.headers.roles'), key: 'rolesText' },

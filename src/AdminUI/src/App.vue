@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, watch, provide } from 'vue';
+import { ref, watch, provide, onMounted } from 'vue';
 import { useTheme } from 'vuetify';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -62,6 +62,11 @@ const availableLocales = [
   { title: '日本語', value: 'ja' },
   { title: '中文', value: 'zh' },
 ];
+
+onMounted(() => {
+  checkLogin();
+  setInterval(checkLogin, 15000);
+})
 
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light';
@@ -97,6 +102,47 @@ watch(currentLocale, (newLocale) => {
   locale.value = newLocale;
   localStorage.setItem(STORAGE_KEY, newLocale);
 });
+
+function checkLogin() {
+  let ck = parseCookie(document.cookie)
+  if ('json-scada-user' in ck) {
+    ck = JSON.parse(ck['json-scada-user'])
+  }
+
+  fetch('/Invoke/test/user', {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    method: 'GET',
+  })
+    .then((resp) => resp.json())
+    .then((data) => {
+      if ('ok' in data && data.ok) {
+        if (loggedInUser.value !== ck.username) loggedInUser.value = ck.username
+        // console.log('User is logged in')
+      } else {
+        router.push('/login')
+        // console.log('User is not logged in')
+      }
+    })
+    .catch((error) => {
+      console.log(
+        'There has been a problem with your fetch operation: ' + error.message
+      )
+    });
+}
+
+const parseCookie = (str) => {
+  if (str === '') return {};
+  return str
+    .split(';')
+    .map((v) => v.split('='))
+    .reduce((acc, v) => {
+      acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
+      return acc
+    }, {});
+}
 
 // Provide the setLoggedInUser function to be used by child components
 provide('setLoggedInUser', setLoggedInUser);
