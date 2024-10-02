@@ -104,7 +104,7 @@ namespace IEC61850_Client
             [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
             [BsonDefaultValue("")]
-            public string peerCertFilePath { get; set; }
+            public string peerCertFilesPaths { get; set; }
             [BsonDefaultValue("")]
             public string rootCertFilePath { get; set; }
             [BsonDefaultValue(false)]

@@ -101,8 +101,6 @@ namespace Iec10XDriver
             [BsonDefaultValue(new string[] { })]
             public string[] peerCertFilesPaths { get; set; }
             [BsonDefaultValue("")]
-            public string peerCertFilePath { get; set; }
-            [BsonDefaultValue("")]
             public string rootCertFilePath { get; set; }
             [BsonDefaultValue(false)]
             public bool allowOnlySpecificCertificates { get; set; }
@@ -369,7 +367,6 @@ namespace Iec10XDriver
                         secInfo = new TlsSecurityInformation(null, ownCertificate);
 
                         // Add allowed server certificates - not required when AllowOnlySpecificCertificates == false
-                        secInfo.AddAllowedCertificate(new X509Certificate2(srv.peerCertFilePath));
                         foreach (string peerCertFilePath in srv.peerCertFilesPaths)
                             secInfo.AddAllowedCertificate(new X509Certificate2(peerCertFilePath));
 
