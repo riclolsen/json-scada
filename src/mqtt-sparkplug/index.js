@@ -963,7 +963,11 @@ async function processMongoUpdates(
           timeTagAtSource: data.timeTagAtSource,
           timeTagAtSourceOk: data.timeTagAtSourceOk,
           timeTag: new Date(),
-          originator: AppDefs.NAME + '|' + jsConfig.ConnectionNumber,
+          originator:
+            AppDefs.NAME +
+            '|' +
+            jsConfig.ConnectionNumber +
+            (data?.msgType ? '|' + data.msgType : ''),
           invalidAtSource: data.invalid,
           transientAtSource: false,
           notTopicalAtSource: false,
@@ -1638,7 +1642,7 @@ async function sparkplugProcess(
                 )
                 return
               }
-              ProcessNodeBirthOrData(nodeLocator, payload, false)
+              ProcessNodeBirthOrData(nodeLocator, payload, false, splTopic[2])
               break
             case 'DDATA':
               // device data, update metrics (7.4)
@@ -1673,12 +1677,17 @@ async function sparkplugProcess(
                 )
                 return
               }
-              ProcessDeviceBirthOrData(deviceLocator, payload, false)
+              ProcessDeviceBirthOrData(
+                deviceLocator,
+                payload,
+                false,
+                splTopic[2]
+              )
               break
             case 'NBIRTH':
               // on node birth all associated data is invalidated (7.1.2)
               Log.log(logModS + 'Node BIRTH: ' + nodeLocator, Log.levelDetailed)
-              ProcessNodeBirthOrData(nodeLocator, payload, true)
+              ProcessNodeBirthOrData(nodeLocator, payload, true, splTopic[2])
               if (sparkplugProcess.mongoClient)
                 InvalidatePathTags(
                   nodeLocator,
@@ -1694,7 +1703,12 @@ async function sparkplugProcess(
                 logModS + 'Device BIRTH: ' + deviceLocator,
                 Log.levelDetailed
               )
-              ProcessDeviceBirthOrData(deviceLocator, payload, true)
+              ProcessDeviceBirthOrData(
+                deviceLocator,
+                payload,
+                true,
+                splTopic[2]
+              )
               break
             case 'NDEATH':
               // Node death, invalidate all Sparkplug metrics from this node (7.1.1)
@@ -1759,7 +1773,7 @@ async function sparkplugProcess(
   }
 }
 
-function ProcessDeviceBirthOrData(deviceLocator, payload, isBirth) {
+function ProcessDeviceBirthOrData(deviceLocator, payload, isBirth, msgType) {
   if (!('metrics' in payload)) return
 
   if (isBirth) {
@@ -1773,11 +1787,11 @@ function ProcessDeviceBirthOrData(deviceLocator, payload, isBirth) {
 
   // extract metrics info and queue for tags updates on mongodb
   payload.metrics.forEach((metric) => {
-    queueMetric(metric, deviceLocator, isBirth)
+    queueMetric(metric, deviceLocator, isBirth, '', msgType)
   })
 }
 
-function ProcessNodeBirthOrData(nodeLocator, payload, isBirth) {
+function ProcessNodeBirthOrData(nodeLocator, payload, isBirth, msgType) {
   if (!('metrics' in payload)) return
 
   if (isBirth) {
@@ -1791,12 +1805,12 @@ function ProcessNodeBirthOrData(nodeLocator, payload, isBirth) {
 
   // extract metrics info and queue for tags updates on mongodb
   payload.metrics.forEach((metric) => {
-    queueMetric(metric, nodeLocator, isBirth)
+    queueMetric(metric, nodeLocator, isBirth, '', msgType)
   })
 }
 
 // obtain information from sparkplug-b decoded payload and queue for mongo tag updates
-function queueMetric(metric, deviceLocator, isBirth, templateName) {
+function queueMetric(metric, deviceLocator, isBirth, templateName, msgType) {
   let value = 0,
     valueString = '',
     valueJson = '',
@@ -1890,7 +1904,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
         // recurse to publish more metrics
         if ('metrics' in metric.value) {
           metric.value.metrics.forEach((m) => {
-            queueMetric(m, deviceLocator, isBirth, metric.name)
+            queueMetric(m, deviceLocator, isBirth, metric.name, msgType)
           })
           return
         } else {
@@ -2062,6 +2076,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
     metricType: metric.type.toLowerCase(),
+    msgType: msgType,
     isNull: isNull,
     isHistorical: isHistorical,
     isNotForHistorical: isNotForHistorical,
@@ -2297,7 +2312,7 @@ function EnqueueJsonValue(JsonValue, protocolSourceObjectAddress) {
   }
 
   if (isNaN(value)) value = 0
-  if (JsonValue === null) JsonValue = ""
+  if (JsonValue === null) JsonValue = ''
 
   ValuesQueue.enqueue({
     protocolSourceObjectAddress: protocolSourceObjectAddress,
