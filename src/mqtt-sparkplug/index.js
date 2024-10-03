@@ -34,6 +34,7 @@ const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
 const { castSparkplugValue: castSparkplugValue } = require('./cast')
+const autoTag = require('./auto-tag')
 
 const SparkplugNS = 'spBv1.0'
 const DevicesList = [] // contains either EoN nodes or devices
@@ -1406,6 +1407,15 @@ async function sparkplugProcess(
                   // match = true
                 }
 
+                if (
+                  autoTag &&
+                  elem.endsWith('#') &&
+                  topic.startsWith(elem.substring(0, elem.length - 1))
+                ) {
+                  let JsonValue = TryPayloadAsRJson(payload)
+                  EnqueueJsonValue(JsonValue, topic)
+                }
+
                 // keep testing for match when JSONPathPlus syntax is used
                 if (elem.indexOf('$.') === -1) return
 
@@ -1445,18 +1455,6 @@ async function sparkplugProcess(
                 }
               }
             })
-
-          //   if (match) return
-
-          //   // try to detect payload as JSON or RJSON
-
-          //   if (payload.length > 20000) {
-          //     Log.log(logMod + 'Payload too big!')
-          //     return
-          //   }
-
-          //   let JsonValue = TryPayloadAsRJson(payload)
-          //   EnqueueJsonValue(JsonValue, topic)
         }
       )
 
@@ -2299,13 +2297,13 @@ function EnqueueJsonValue(JsonValue, protocolSourceObjectAddress) {
   }
 
   if (isNaN(value)) value = 0
-  if (JsonValue === null) JsonValue = {}
+  if (JsonValue === null) JsonValue = ""
 
   ValuesQueue.enqueue({
     protocolSourceObjectAddress: protocolSourceObjectAddress,
     value: value,
     valueString: valueString,
-    valueJson: JsonValue,
+    valueJson: JSON.stringify(JsonValue),
     invalid: false,
     transient: false,
     causeOfTransmissionAtSource: '3',
