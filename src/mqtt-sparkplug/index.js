@@ -1625,21 +1625,22 @@ async function sparkplugProcess(
                   return
                 }
                 Log.log(logModS + 'Requesting node rebirth...')
-                spClient.handle.publishNodeCmd(
-                  topicInfo.groupId,
-                  topicInfo.edgeNodeId,
-                  {
-                    timestamp: new Date().getTime(),
-                    metrics: [
-                      {
-                        name: 'Node Control/Rebirth',
-                        timestamp: new Date().getTime(),
-                        type: 'Boolean',
-                        value: true,
-                      },
-                    ],
-                  }
-                )
+                if (spClient?.handle)
+                  spClient.handle.publishNodeCmd(
+                    topicInfo.groupId,
+                    topicInfo.edgeNodeId,
+                    {
+                      timestamp: new Date().getTime(),
+                      metrics: [
+                        {
+                          name: 'Node Control/Rebirth',
+                          timestamp: new Date().getTime(),
+                          type: 'Boolean',
+                          value: true,
+                        },
+                      ],
+                    }
+                  )
                 return
               }
               ProcessNodeBirthOrData(nodeLocator, payload, false, splTopic[2])
@@ -1660,21 +1661,22 @@ async function sparkplugProcess(
                   logModS + 'Data from not yet birthed device: ' + deviceLocator
                 )
                 Log.log(logModS + 'Requesting node rebirth...')
-                spClient.handle.publishNodeCmd(
-                  topicInfo.groupId,
-                  topicInfo.edgeNodeId,
-                  {
-                    timestamp: new Date().getTime(),
-                    metrics: [
-                      {
-                        name: 'Node Control/Rebirth',
-                        timestamp: new Date().getTime(),
-                        type: 'Boolean',
-                        value: true,
-                      },
-                    ],
-                  }
-                )
+                if (spClient?.handle)
+                  spClient.handle.publishNodeCmd(
+                    topicInfo.groupId,
+                    topicInfo.edgeNodeId,
+                    {
+                      timestamp: new Date().getTime(),
+                      metrics: [
+                        {
+                          name: 'Node Control/Rebirth',
+                          timestamp: new Date().getTime(),
+                          type: 'Boolean',
+                          value: true,
+                        },
+                      ],
+                    }
+                  )
                 return
               }
               ProcessDeviceBirthOrData(
