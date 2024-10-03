@@ -21,6 +21,7 @@ const Mongo = require('mongodb')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 
+const SparkplugNS = 'spBv1.0'
 let AutoKeyId = 0
 let AutoKeyMultiplier = 1000000 // should be more than estimated maximum points on a connection
 
@@ -121,12 +122,17 @@ async function GetAutoKeyInitialValue(rtCollection, configObj) {
 let ListCreatedTags = []
 
 async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
-  let tag =
-    AppDefs.AUTOTAG_PREFIX +
-    ':' +
-    connectionNumber +
-    ':' +
-    data.protocolSourceObjectAddress
+  let splitTopic = []
+  let tag = AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber + ':'
+  let commonAddress = ''
+  if (data.protocolSourceObjectAddress.indexOf(SparkplugNS + '/') === 0) {
+    commonAddress = SparkplugNS
+    splitTopic = data.protocolSourceObjectAddress.split('/')
+    tag += data.protocolSourceObjectAddress
+      .replace(SparkplugNS + '/', '')
+  } else {
+    tag += data.protocolSourceObjectAddress
+  }
 
   if (!ListCreatedTags.includes(tag)) {
     // possibly not created tag, must check
@@ -145,8 +151,9 @@ async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
       )
       let newTag = NewTag(data)
       newTag.protocolSourceConnectionNumber = new Mongo.Double(connectionNumber)
-
       newTag.protocolSourceObjectAddress = data.protocolSourceObjectAddress
+      newTag.protocolSourceASDU = data?.metricType || data?.asduAtSource || ''
+      newTag.protocolSourceCommonAddress = commonAddress
       newTag.tag = tag
       if ('type' in data) newTag.type = data.type
       if (newTag.type === 'analog') {
@@ -158,13 +165,23 @@ async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
         newTag.stateTextFalse = 'false'
         newTag.stateTextTrue = 'true'
       }
-      newTag.description = data?.description
       newTag.ungroupedDescription =
         data?.ungroupedDescription || data.protocolSourceObjectAddress
       newTag.group1 =
         data?.group1 || AppDefs.AUTOTAG_PREFIX + ':' + connectionNumber
-      newTag.group2 = data?.group2 || ''
-      newTag.group3 = data?.group3
+      newTag.group2 = data?.group2 || splitTopic[1]
+      newTag.group3 =
+        data?.group3 ||
+        splitTopic[2] + (splitTopic.length > 4 ? '/' + splitTopic[3] : '')
+      newTag.description =
+        data?.description ||
+        newTag.group1 + '~' + newTag.group2 + '~' + newTag.ungroupedDescription
+      if (data.protocolSourceObjectAddress.indexOf(SparkplugNS + '/') === 0) {
+        newTag.description = newTag.description
+          .replace(SparkplugNS + '/', '')
+          .replace(data.group2 + '/', '')
+        newTag.ungroupedDescription = splitTopic[splitTopic.length - 1]
+      }
       newTag.value = new Mongo.Double(data.value)
       newTag.valueString = data?.valueString
       newTag.valueJson = data?.valueJson

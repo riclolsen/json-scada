@@ -1618,6 +1618,10 @@ async function sparkplugProcess(
                 Log.log(
                   logModS + 'Data from not yet birthed node: ' + nodeLocator
                 )
+                if (!topicInfo.groupId || !topicInfo.edgeNodeId) {
+                  Log.log(logModS + 'Invalid topic info for node not birthed!')
+                  return
+                }
                 Log.log(logModS + 'Requesting node rebirth...')
                 spClient.handle.publishNodeCmd(
                   topicInfo.groupId,
@@ -1797,7 +1801,7 @@ function ProcessNodeBirthOrData(nodeLocator, payload, isBirth) {
 function queueMetric(metric, deviceLocator, isBirth, templateName) {
   let value = 0,
     valueString = '',
-    valueJson = {},
+    valueJson = '',
     type = 'digital',
     invalid = false,
     isNull = false,
@@ -1864,7 +1868,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
   }
 
   if ('timestamp' in metric) {
-    timestamp = metric.timestamp
+    timestamp = castSparkplugValue('datetime', metric.timestamp).getTime()
   } else {
     timestamp = new Date().getTime()
     timestampGood = false
@@ -1892,7 +1896,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
           })
           return
         } else {
-          valueJson = metric.value
+          valueJson = JSON.stringify(metric)
           valueString = JSON.stringify(metric.value)
         }
       }
@@ -1922,10 +1926,10 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
             }
             v.push(r)
           }
-          valueJson = v
+          valueJson = JSON.stringify(metric)
           valueString = JSON.stringify(v)
         } else {
-          valueJson = metric.value
+          valueJson = JSON.stringify(metric)
           valueString = JSON.stringify(metric.value)
         }
       }
@@ -1941,7 +1945,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
         // metric does have a value
         value = metric.value === false ? 0 : 1
         valueString = metric.value.toString()
-        valueJson = metric
+        valueJson = JSON.stringify(metric)
       }
       break
     case 'uuid':
@@ -1958,10 +1962,10 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
         value = parseFloat(metric.value)
         if (isNaN(value)) value = 0
         valueString = metric.value
-        valueJson = metric
+        valueJson = JSON.stringify(metric)
         // try to parse value as JSON
         try {
-          valueJson = JSON.parse(metric.value)
+          valueJson = JSON.stringify(metric)
         } catch (e) {}
       }
       break
@@ -1978,12 +1982,12 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
         // metric does not have a value
         value = 0
         valueString = '0'
-        valueJson = 0
+        valueJson = JSON.stringify(metric)
       } else {
         // metric does have a value
         value = castSparkplugValue(metric.type, metric.value)
         valueString = value.toString()
-        valueJson = metric
+        valueJson = JSON.stringify(metric)
       }
       break
     case 'int64':
@@ -1994,13 +1998,13 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
         // metric does not have a value
         value = 0
         valueString = '0'
-        valueJson = 0
+        valueJson = JSON.stringify(metric)
       } else {
         // metric does have a value
         value = castSparkplugValue(metric.type, metric.value)
         value = value.toNumber() // warning number may be truncated
         valueString = value.toString()
-        valueJson = metric
+        valueJson = JSON.stringify(metric)
       }
       break
   }
@@ -2059,6 +2063,7 @@ function queueMetric(metric, deviceLocator, isBirth, templateName) {
     timeTagAtSource: new Date(timestamp),
     timeTagAtSourceOk: timestampGood,
     asduAtSource: type,
+    metricType: metric.type.toLowerCase(),
     isNull: isNull,
     isHistorical: isHistorical,
     isNotForHistorical: isNotForHistorical,
@@ -2134,7 +2139,7 @@ async function ProcessDeviceCommand(
     let value = parseFloat(metric.value)
     if (isNaN(value)) value = 0
     let valueString = ''
-    let valueJson = {}
+    let valueJson = ''
 
     if ('type' in metric)
       switch (metric.type.toLowerCase()) {
@@ -2142,16 +2147,13 @@ async function ProcessDeviceCommand(
           if (element.kconv1 === -1) value = metric.value ? 0 : 1
           else value = metric.value ? 1 : 0
           valueString = value ? 'true' : 'false'
-          valueJson = value ? true : false
+          valueJson = JSON.stringify(metric)
           break
         case 'uuid':
         case 'text':
         case 'string':
           valueString = metric.value
-          // try to parse value as JSON
-          try {
-            valueJson = JSON.parse(metric.value)
-          } catch (e) {}
+          valueJson = JSON.stringify(metric)
           break
         case 'int8':
         case 'int16':
@@ -2164,7 +2166,7 @@ async function ProcessDeviceCommand(
           value = castSparkplugValue(metric.type, metric.value)
           value = element.kconv1 * value + element.kconv2
           valueString = value.toString()
-          valueJson = value
+          valueJson = JSON.stringify(metric)
           break
         case 'int64':
         case 'uint64':
@@ -2172,12 +2174,12 @@ async function ProcessDeviceCommand(
           value = value.mul(element.kconv1).add(element.kconv2) // safe Long object
           value = value.toNumber() // warning unsafe number
           valueString = value.toString()
-          valueJson = value
+          valueJson = JSON.stringify(metric)
           break
         // case 'datetime':
         default:
           valueString = JSON.stringify(metric)
-          valueJson = metric
+          valueJson = JSON.stringify(metric)
           break
       }
     else {
