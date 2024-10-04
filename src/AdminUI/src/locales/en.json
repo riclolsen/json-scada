@@ -93,7 +93,8 @@
       "protocolDriverInstances": "Driver Instances",
       "protocolConnections": "Connections",
       "systemSettings": "Settings",
-      "logs": "Logs"
+      "logs": "Logs",
+      "userActions": "User Actions"
     },
     "userManagement": {
       "title": "User Management",
@@ -188,11 +189,11 @@
       "enabledTrue": "True",
       "enabledFalse": "False",
       "instanceNumber": "Instance Number",
-      "logLevel": "Log Level",  
+      "logLevel": "Log Level",
       "allowedNodesList": "Allowed Nodes List",
       "addNewNode": "Add new allowed node",
       "newNodeName": "New node name",
-      "deleteInstance": "Delete Instance",  
+      "deleteInstance": "Delete Instance",
       "deleteInstanceConfirm": "Are you sure you want to delete this protocol driver instance?",
       "editInstance": "Edit Instance"
     },
@@ -498,6 +499,20 @@
         "level": "Level",
         "message": "Message"
       }
+    },
+    "userActions": {
+      "title": "User Actions",
+      "headers": {
+        "username": "user",
+        "action": "Action",
+        "properties": "Properties: ",
+        "pointKey": "Point key",	
+        "tag": "Tag",
+        "time": "time"	
+      },
+      "searchUsername": "Search Username",
+      "searchAction": "Search Action",
+      "searchDateRange": "Date Range"
     }
   },
   "src\\views\\about": {
