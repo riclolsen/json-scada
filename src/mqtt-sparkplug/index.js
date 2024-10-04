@@ -1617,6 +1617,25 @@ async function sparkplugProcess(
                 !(nodeLocator in DevicesList) ||
                 !DevicesList[nodeLocator].birthed
               ) {
+                if (
+                  // wait some time between birth requests
+                  nodeLocator in DevicesList &&
+                  'lastReqDateTime' in DevicesList[nodeLocator] &&
+                  new Date().getTime() <
+                    DevicesList[nodeLocator].lastReqDateTime + AppDefs.SECONDS_BETWEEN_NODE_REQUESTS * 1000
+                ) {
+                  Log.log(
+                    logModS +
+                      'Data from not yet birthed node (waiting time between birth requests): ' +
+                      nodeLocator,
+                    2
+                  )
+                  return
+                }
+                DevicesList[nodeLocator] = {
+                  birthed: false,
+                  lastReqDateTime: new Date().getTime(),
+                }
                 Log.log(
                   logModS + 'Data from not yet birthed node: ' + nodeLocator
                 )
@@ -1624,7 +1643,7 @@ async function sparkplugProcess(
                   Log.log(logModS + 'Invalid topic info for node not birthed!')
                   return
                 }
-                Log.log(logModS + 'Requesting node rebirth...')
+                Log.log(logModS + 'Requesting node rebirth: ' + nodeLocator)
                 if (spClient?.handle)
                   spClient.handle.publishNodeCmd(
                     topicInfo.groupId,
@@ -1657,10 +1676,33 @@ async function sparkplugProcess(
                 !(deviceLocator in DevicesList) ||
                 !DevicesList[deviceLocator].birthed
               ) {
+                if (
+                  // wait some time between birth requests
+                  nodeLocator in DevicesList &&
+                  'lastReqDateTime' in DevicesList[nodeLocator] &&
+                  new Date().getTime() <
+                    DevicesList[nodeLocator].lastReqDateTime + AppDefs.SECONDS_BETWEEN_NODE_REQUESTS * 1000
+                ) {
+                  Log.log(
+                    logModS +
+                      'Data from not yet birthed node (waiting time between birth requests): ' +
+                      nodeLocator,
+                    2
+                  )
+                  return
+                }
+                DevicesList[nodeLocator] = {
+                  birthed: false,
+                  lastReqDateTime: new Date().getTime(),
+                }
                 Log.log(
                   logModS + 'Data from not yet birthed device: ' + deviceLocator
                 )
-                Log.log(logModS + 'Requesting node rebirth...')
+                if (!topicInfo.groupId || !topicInfo.edgeNodeId) {
+                  Log.log(logModS + 'Invalid topic info for node not birthed!')
+                  return
+                }
+                Log.log(logModS + 'Requesting node rebirth: ' + deviceLocator)
                 if (spClient?.handle)
                   spClient.handle.publishNodeCmd(
                     topicInfo.groupId,
