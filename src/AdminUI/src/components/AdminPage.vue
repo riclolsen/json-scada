@@ -2,12 +2,17 @@
   <v-container fluid class="admin-page ma-0 pa-0">
     <v-card class="fill-height d-flex flex-column elevation-0">
       <v-tabs v-model="activeTab" color="primary" align-tabs="center">
-        <v-tab :value="1" @click="fetchUsersAndRoles"><v-icon>mdi-account-multiple</v-icon> {{ $t('admin.tabs.userManagement') }}</v-tab>
-        <v-tab :value="2" @click="fetchRoles"><v-icon>mdi-shield-account</v-icon> {{ $t('admin.tabs.rolesManagement') }}</v-tab>
-        <v-tab :value="3" @click="fetchProtocolDriverInstances"><v-icon>mdi-cogs</v-icon> {{ $t('admin.tabs.protocolDriverInstances') }}</v-tab>
-        <v-tab :value="4" @click="fetchProtocolConnections"><v-icon>mdi-lan-connect</v-icon> {{ $t('admin.tabs.protocolConnections') }}</v-tab>
+        <v-tab :value="1" @click="fetchUsersAndRoles"><v-icon>mdi-account-multiple</v-icon> {{
+          $t('admin.tabs.userManagement') }}</v-tab>
+        <v-tab :value="2" @click="fetchRoles"><v-icon>mdi-shield-account</v-icon> {{ $t('admin.tabs.rolesManagement')
+          }}</v-tab>
+        <v-tab :value="3" @click="fetchProtocolDriverInstances"><v-icon>mdi-cogs</v-icon> {{
+          $t('admin.tabs.protocolDriverInstances') }}</v-tab>
+        <v-tab :value="4" @click="fetchProtocolConnections"><v-icon>mdi-lan-connect</v-icon> {{
+          $t('admin.tabs.protocolConnections') }}</v-tab>
         <v-tab :value="5" @click="fetchTags"><v-icon>mdi-tag-multiple</v-icon> {{ $t('admin.tabs.tags') }}</v-tab>
-        <v-tab :value="6" @click="fetchUserActions"><v-icon>mdi-account-clock</v-icon> {{ $t('admin.tabs.userActions') }}</v-tab>
+        <v-tab :value="6" @click="fetchUserActions"><v-icon>mdi-account-clock</v-icon> {{ $t('admin.tabs.userActions')
+          }}</v-tab>
         <v-tab :value="7"><v-icon>mdi-cog</v-icon> {{ $t('admin.tabs.systemSettings') }}</v-tab>
       </v-tabs>
 
@@ -28,7 +33,7 @@
           <v-window-item :value="4">
             <protocol-connections-tab ref="protocolConnectionsTabRef" />
           </v-window-item>
-          
+
           <v-window-item :value="5">
             <tags-tab ref="tagsTabRef" />
           </v-window-item>
@@ -36,7 +41,7 @@
           <v-window-item :value="6">
             <user-actions-tab ref="userActionsTabRef" />
           </v-window-item>
-          
+
           <v-window-item :value="7">
             <system-settings-tab ref="systemSettingsTabRef" />
           </v-window-item>

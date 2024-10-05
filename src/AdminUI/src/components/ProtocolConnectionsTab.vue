@@ -3,7 +3,7 @@
 
     <v-btn class="mt-0 me-2" size="small" color="blue" @click="openAddProtocolConnectionDialog">
       {{ $t("admin.protocolConnections.addProtocolConnection") }}
-      <v-icon dark> mdi-plus </v-icon>
+      <v-icon> mdi-plus </v-icon>
     </v-btn>
 
     <v-btn color="secondary" size="small" class="mt-0" @click="fetchProtocolConnections">

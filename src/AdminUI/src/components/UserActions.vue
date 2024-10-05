@@ -4,26 +4,26 @@
     class="mi-dataTable elevation-1" density="compact" item-value="timeTag">
     <template v-slot:top>
       <v-toolbar flat class="d-print-none">
-        <v-divider class="mx-4" inset vertical></v-divider>
         <v-text-field density="compact" append-icon="mdi-magnify" v-on:keyup.enter="fetchUserActions()"
           v-model="searchUsername" :label="t('admin.userActions.searchUsername')" hide-details></v-text-field>
-        <v-spacer></v-spacer>
+        <v-divider class="mx-4" inset vertical></v-divider>
 
-        <v-text-field density="compact"  append-icon="mdi-magnify" v-on:keyup.enter="fetchUserActions()"
+        <v-text-field density="compact" append-icon="mdi-magnify" v-on:keyup.enter="fetchUserActions()"
           v-model="searchAction" :label="t('admin.userActions.searchAction')" hide-details></v-text-field>
-        <v-spacer></v-spacer>
+        <v-divider class="mx-4" inset vertical></v-divider>
 
         <v-menu v-model="menu" :close-on-content-click="false" transition="scale-transition" offset-y min-width="auto">
           <template #activator="{ props }">
             <v-text-field class="mt-4 mx-auto" v-model="dateRangeText" :label="t('admin.userActions.searchDateRange')"
-              prepend-icon="mdi-calendar" readonly v-bind="props"></v-text-field>
+              append-icon="mdi-calendar" readonly v-bind="props"></v-text-field>
           </template>
 
           <v-date-picker v-model="dates" :locale="locale" no-title scrollable show-adjacent-months multiple="range"
             @update:model-value="fetchUserActions">
           </v-date-picker>
         </v-menu>
-        <v-spacer></v-spacer>
+        <v-divider class="mx-4" inset vertical></v-divider>
+
         <v-btn color="primary" dark class="mb-2 mr-2" @click="fetchUserActions()">
           <v-icon dark> mdi-refresh </v-icon>
         </v-btn>
@@ -158,7 +158,6 @@ const fetchUserActions = async () => {
     }));
 
     totalUserActions.value = json.countTotal;
-    console.log('Total User Actions:', totalUserActions.value); // Debug log
   } catch (err) {
     console.warn(err);
     totalUserActions.value = 0; // Set to 0 if there's an error
