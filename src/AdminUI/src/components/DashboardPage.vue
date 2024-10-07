@@ -21,9 +21,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Monitor, Bell, Table, Calendar, FileText, UserCog, HelpCircle, BarChart, Database } from 'lucide-vue-next';
+
+// Lifecycle hooks
+onMounted(async () => {
+  document.documentElement.style.overflowY = 'scroll';
+});
+
+onUnmounted(async () => {
+  document.documentElement.style.overflowY = 'hidden';
+});
 
 const router = useRouter();
 

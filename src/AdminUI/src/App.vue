@@ -21,11 +21,43 @@
         </template>
         <v-list>
           <v-list-item @click="logout">
-            <v-list-item-title>{{ $t('app.logout') }}</v-list-item-title>
+            <v-list-item-title>{{ $t('app.logout') }} <v-icon dark> mdi-logout </v-icon> </v-list-item-title>
+          </v-list-item>
+          <v-list-item @click="openChangePasswordDialog">
+            <v-list-item-title>{{ $t('login.changePassword') }} <v-icon dark> mdi-lock-reset </v-icon>
+            </v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
     </v-app-bar>
+
+    <!-- Change Password Dialog -->
+    <v-dialog scrollable v-if="loggedInUser" v-model="showChangePasswordDialog" max-width="400px">
+      <v-card>
+        <v-card-title>{{ $t('login.changePassword') }}</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="loggedInUser" :label="$t('login.username')" type="text" disabled></v-text-field>
+
+          <v-text-field v-model="currentPassword" :label="$t('login.currentPassword')" type="password"
+            required></v-text-field>
+
+          <v-text-field v-model="newPassword" :label="$t('login.newPassword')" type="password" required></v-text-field>
+          <v-text-field v-model="confirmNewPassword" :label="$t('login.confirmNewPassword')" type="password"
+            required></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-alert v-if="errorMessage" type="error" dense>
+            {{ errorMessage }}
+          </v-alert>
+          <v-btn color="orange" variant="tonal" @click="showChangePasswordDialog = false">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn color="primary" variant="tonal" @click="changePwd">
+            {{ $t('common.save') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-main class="flex-grow-1" style="overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
       <router-view></router-view>
@@ -46,7 +78,12 @@ const vuetifyTheme = useTheme();
 const { locale, t } = useI18n();
 
 const currentLocale = ref(locale.value);
-const loggedInUser = ref("?");
+const loggedInUser = ref("");
+const showChangePasswordDialog = ref(false);
+const newPassword = ref("");
+const confirmNewPassword = ref("");
+const currentPassword = ref("");
+const errorMessage = ref("");
 
 const availableLocales = [
   { title: 'English', value: 'en' },
@@ -97,6 +134,69 @@ const logout = () => {
       console.error('Error during logout:', error);
     });
 };
+
+const openChangePasswordDialog = () => {
+  errorMessage.value = ""
+  currentPassword.value = newPassword.value = confirmNewPassword.value = ""
+  showChangePasswordDialog.value = true
+}
+
+const changePwd = () => {
+
+  // Validate passwords
+  if (newPassword.value !== confirmNewPassword.value) {
+    errorMessage.value = t('login.passwordMismatch')
+    setTimeout(() => {
+        errorMessage.value = ""
+      }, 1500)
+    return
+  }
+
+  if (newPassword.value.trim() === "" || newPassword.value.trim().length < 4) {
+    errorMessage.value = t('login.invalidNewPassword')
+    setTimeout(() => {
+        errorMessage.value = ""
+      }, 1500)
+    return
+  }
+
+  let ck = parseCookie(document.cookie)
+  if ('json-scada-user' in ck) {
+    ck = JSON.parse(ck['json-scada-user'])
+  }
+
+  fetch('/Invoke/auth/changePassword', {
+    method: 'post',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: ck.username,
+      currentPassword: currentPassword.value.trim(),
+      newPassword: newPassword.value.trim(),
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (!('error' in data)) {
+        errorMessage.value = ""
+        showChangePasswordDialog.value = false
+      } else {
+        errorMessage.value = t('login.changePasswordFailed')
+        setTimeout(() => {
+        errorMessage.value = ""
+      }, 1500)
+      }
+    })
+    .catch((err) => { 
+      console.warn(err)
+      errorMessage.value = t('login.changePasswordError') 
+      setTimeout(() => {
+        errorMessage.value = ""
+      }, 1500)
+    })
+}
 
 watch(currentLocale, (newLocale) => {
   locale.value = newLocale;
