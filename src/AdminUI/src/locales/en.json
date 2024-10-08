@@ -528,7 +528,7 @@
       "eraseName": "Tag name",
       "newTag": "New Tag",
       "editTag": "Edit Tag",
-      "editId": "Tag _id (unique numeric point key)",
+      "editId": "Tag _id (unique numeric point key, empty for auto-assign)",
       "editName": "Tag name (unique string key)",
       "editDescription": "Description",
       "editUngroupedDescription": "Ungrouped Description",

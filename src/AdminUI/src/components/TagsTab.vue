@@ -50,7 +50,7 @@
         <v-card>
             <v-card-title class="headline">{{
                 $t('admin.tags.confirmErase')
-                }}</v-card-title>
+            }}</v-card-title>
             <v-card-text>
                 <v-text-field density="compact" readonly variant="outlined" v-model="editedTag._id"
                     :label="$t('admin.tags.eraseId')"></v-text-field>
@@ -76,7 +76,8 @@
             </v-card-title>
 
             <v-card-text>
-                <v-text-field v-model="editedTag._id" :label="$t('admin.tags.editId')"></v-text-field>
+                <v-text-field type="number" v-model="editedTag._id" :label="$t('admin.tags.editId')" :disabled="!isNewTag"
+                    min="0"></v-text-field>
                 <v-text-field v-model="editedTag.tag" :label="$t('admin.tags.editName')"></v-text-field>
                 <v-text-field v-model="editedTag.description" :label="$t('admin.tags.editDescription')"></v-text-field>
                 <v-text-field v-model="editedTag.ungroupedDescription"
@@ -216,7 +217,7 @@
                 <v-btn color="orange darken-1" text variant="tonal" @click="closeEditTag">
                     {{ $t('common.cancel') }}
                 </v-btn>
-                <v-btn color="blue darken-1" text variant="tonal" @click="updateTag">
+                <v-btn color="blue darken-1" text variant="tonal" @click="updateOrCreateTag">
                     {{ $t('common.save') }}
                 </v-btn>
             </v-card-actions>
@@ -318,6 +319,7 @@ const { t } = useI18n()
 const dialogEditTag = ref(false)
 const dialogDeleteTag = ref(false)
 const dialogAddParcel = ref(false)
+const isNewTag = ref(false)
 const tags = ref([])
 const protocolConnections = ref([])
 const protocolDriveNameByConnNumber = ref([])
@@ -367,7 +369,7 @@ const defaultTagValue = ref({
     historianDeadBand: 0,
     historianPeriod: 0,
 })
-const editedTag = ref({...defaultTagValue.value})
+const editedTag = ref({ ...defaultTagValue.value })
 
 const headers = computed(() => [
     {
@@ -420,6 +422,7 @@ const handleOptionsUpdate = (newOptions) => {
 }
 
 const newTagOpenDialog = async () => {
+    isNewTag.value = true
     error.value = false;
     editedTag.value = Object.assign({}, defaultTagValue.value);
     await fetchProtocolConnections()
@@ -427,6 +430,7 @@ const newTagOpenDialog = async () => {
 }
 
 const editTagOpenDialog = async (item) => {
+    isNewTag.value = false
     error.value = false;
     editedTag.value = Object.assign({}, item);
     await fetchProtocolConnections()
@@ -447,8 +451,8 @@ const deleteTag = async () => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                tag: editedTag.tag,
-                _id: editedTag._id,
+                tag: editedTag.value.tag,
+                _id: editedTag.value._id,
             }),
         })
         const json = await response.json()
@@ -469,6 +473,38 @@ const closeDeleteTag = () => {
     dialogDeleteTag.value = false
 }
 
+const updateOrCreateTag = async () => {
+    if (editedTag.value._id) {
+        await updateTag();
+    } else {
+        await createTag();
+    }
+}
+
+const createTag = async () => {
+    try {
+        const response = await fetch('/Invoke/auth/createTag', {
+            method: 'post',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(editedTag.value),
+        })
+        const json = await response.json()
+        if (json.error || !json._id) {
+            console.warn(json)
+            error.value = true
+            return
+        }
+        dialogEditTag.value = false
+    } catch (err) {
+        console.warn(err)
+        error.value = true
+    }
+    fetchTags()
+}
+
 const updateTag = async () => {
     try {
         const response = await fetch('/Invoke/auth/updateTag', {
@@ -477,7 +513,7 @@ const updateTag = async () => {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(editedTag),
+            body: JSON.stringify(editedTag.value),
         })
         const json = await response.json()
         if (json.error) { console.log(json); error.value = true; }

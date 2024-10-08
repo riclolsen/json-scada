@@ -3,7 +3,11 @@
     <v-app-bar app height="48">
       <v-app-bar-title class="text-subtitle-1">
         <router-link to="/" class="text-decoration-none">
-          {{ $t('app.title') }}
+          <v-tooltip :text="version">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">{{ $t('app.title') }}</span>
+            </template>
+          </v-tooltip>
         </router-link>
       </v-app-bar-title>
       <v-spacer></v-spacer>
@@ -72,6 +76,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { STORAGE_KEY } from './i18n';
 
+const version = ref("v0.38-alpha");
 const router = useRouter();
 const theme = ref('dark');
 const vuetifyTheme = useTheme();
@@ -147,16 +152,16 @@ const changePwd = () => {
   if (newPassword.value !== confirmNewPassword.value) {
     errorMessage.value = t('login.passwordMismatch')
     setTimeout(() => {
-        errorMessage.value = ""
-      }, 1500)
+      errorMessage.value = ""
+    }, 1500)
     return
   }
 
   if (newPassword.value.trim() === "" || newPassword.value.trim().length < 4) {
     errorMessage.value = t('login.invalidNewPassword')
     setTimeout(() => {
-        errorMessage.value = ""
-      }, 1500)
+      errorMessage.value = ""
+    }, 1500)
     return
   }
 
@@ -185,13 +190,13 @@ const changePwd = () => {
       } else {
         errorMessage.value = t('login.changePasswordFailed')
         setTimeout(() => {
-        errorMessage.value = ""
-      }, 1500)
+          errorMessage.value = ""
+        }, 1500)
       }
     })
-    .catch((err) => { 
+    .catch((err) => {
       console.warn(err)
-      errorMessage.value = t('login.changePasswordError') 
+      errorMessage.value = t('login.changePasswordError')
       setTimeout(() => {
         errorMessage.value = ""
       }, 1500)
