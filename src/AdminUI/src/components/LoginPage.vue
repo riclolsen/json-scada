@@ -11,6 +11,7 @@
               <v-text-field v-model="username" :label="$t('login.username')" name="username" prepend-icon="mdi-account"
                 type="text" required ref="usernameField" autofocus></v-text-field>
               <v-text-field v-model="password" :label="$t('login.password')" name="password" prepend-icon="mdi-lock"
+              v-on:keyup.enter="login"
                 type="password" required></v-text-field>
               <v-alert v-if="errorMessage" type="error" dense>
                 {{ errorMessage }}
