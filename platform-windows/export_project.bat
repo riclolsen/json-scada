@@ -1,3 +1,4 @@
+@ECHO OFF
 set JSPATH=c:\json-scada
 set TMPPATH=%JSPATH%\tmp
 set DATABASE=json_scada
@@ -6,6 +7,9 @@ set MONGOBIN=%JSPATH%\platform-windows\mongodb-runtime\bin
 set JAVAPATH=%JSPATH%\platform-windows\jdk-runtime\bin
 set TARPATH=%JSPATH%\platform-windows
 set SVGPATH=%JSPATH%\src\AdminUI\dist\svg
+set mongoConnectionString=mongodb://127.0.0.1/?tls=false&directConnection=true
+
+cd %JSPATH%\platform-windows\
 
 IF [%1]==[] ( SET "OUTPUTFILE=jsproject.zip" ) ELSE ( SET "OUTPUTFILE=%1" )
 
@@ -15,7 +19,7 @@ mkdir %TMPPATH%
 del %TMPPATH%\*.* /Q
 %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection realtimeData --out %TMPPATH%\realtimeData.json
 %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection processInstances --out %TMPPATH%\processInstances.json
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection protocolDriverInstances --out %TMPPATH%\mongodb-runtime\bin\mongoexport.exe --uri %MONGO_CONNECT_STRING% --db %DATABASE% --collection protocolDriverInstances --out %JSPATH%\tmp\realtimeData.json
+%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection protocolDriverInstances --out %TMPPATH%\protocolDriverInstances 
 %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection protocolConnections --out %TMPPATH%\protocolConnections.json
 %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection users --out %TMPPATH%\users.json
 %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %DATABASE% --collection roles --out %TMPPATH%\roles.json
