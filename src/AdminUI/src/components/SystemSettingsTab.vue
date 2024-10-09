@@ -7,17 +7,14 @@
       </v-card-title>
       <v-card-text>
 
-        <v-form @submit.prevent="saveSettings">
+        <v-form @submit.prevent="saveProject">
 
-          <v-text-field v-model="settings.siteName" :label="$t('admin.systemSettings.siteName')"
-            required></v-text-field>
-
-          <v-text-field v-model="settings.dataRetentionDays" type="number"
-            :label="$t('admin.systemSettings.dataRetentionDays')" required></v-text-field>
+          <v-text-field v-model="settings.projectName" :label="$t('admin.systemSettings.projectName')"></v-text-field>
 
           <v-btn type="submit" color="primary" variant="tonal" class="mt-4">
-            {{ $t('admin.systemSettings.saveSettings') }}
+            {{ $t('admin.systemSettings.saveProject') }}
           </v-btn>
+
         </v-form>
 
       </v-card-text>
@@ -32,21 +29,37 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const languageOptions = [
-  { title: 'English', value: 'en' },
-  { title: 'Español', value: 'es' },
-  { title: 'Français', value: 'fr' },
-];
-
+const error = ref(false)
 const settings = ref({
-  siteName: 'SCADA/IOT Dashboard',
-  defaultLanguage: 'en',
-  enableNotifications: true,
-  dataRetentionDays: 30,
+  projectName: 'jsonscada_project',
 });
 
-const saveSettings = () => {
-  // Implement save settings logic
-  console.log('Save settings:', settings.value);
+const saveProject = async () => {
+  try {
+    const response = await fetch("/Invoke/auth/saveProject", {
+      method: "post",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        project: {
+          fileName: settings.value.projectName + '.zip',
+        }
+      }),
+    });
+    const json = await response.json();
+    if (json.error) { setError(json); return; }
+  }
+  catch (err) {
+    setError(err)
+  }
 };
+
+const setError = (err) => {
+  error.value = true
+  console.warn(err);
+  setTimeout(() => { error.value = false }, 2000)
+}
+
 </script>

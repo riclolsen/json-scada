@@ -549,7 +549,9 @@
       "defaultLanguage": "Default Language",
       "enableNotifications": "Enable Notifications",
       "dataRetentionDays": "Data Retention (days)",
-      "saveSettings": "Save Settings"
+      "saveSettings": "Save Settings",
+      "saveProject": "Save Project",
+      "projectName": "Project Name"
     }
   }
 }
