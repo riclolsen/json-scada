@@ -4,22 +4,20 @@
         class="elevation-1" density="compact">
         <template v-slot:top>
             <v-toolbar flat class="d-print-none">
-                <v-text-field density="compact" @update:model-value="fetchTags" v-model="searchTag"
-                    append-icon="mdi-magnify" :label="$t('admin.tags.searchTag')" hide-details></v-text-field>
-                <v-divider class="mx-4" inset vertical></v-divider>
-
-                <v-text-field density="compact" @update:model-value="fetchTags" v-model="searchDescription"
-                    append-icon="mdi-magnify" :label="$t('admin.tags.searchDescription')" hide-details></v-text-field>
-                <v-divider class="mx-4" inset vertical></v-divider>
-
-                <v-btn color="primary" @click="fetchTags()">
-                    <v-icon>mdi-refresh</v-icon>
-                </v-btn>
                 <v-btn color="blue" size="small" variant="flat" @click="newTagOpenDialog">
                     <v-icon>mdi-plus</v-icon>
                     {{ $t('admin.tags.newTag') }}
                 </v-btn>
-
+                <v-btn color="primary" @click="fetchTags">
+                    <v-icon>mdi-refresh</v-icon>
+                </v-btn>
+                <v-divider class="mx-4" inset vertical></v-divider>
+                <v-text-field density="compact" v-model="searchTag" v-on:keyup.enter="fetchTags"
+                    append-icon="mdi-magnify" :label="$t('admin.tags.searchTag')" hide-details></v-text-field>
+                <v-divider class="mx-4" inset vertical></v-divider>
+                <v-text-field density="compact" v-model="searchDescription" v-on:keyup.enter="fetchTags"
+                    append-icon="mdi-magnify" :label="$t('admin.tags.searchDescription')" hide-details></v-text-field>
+                <v-divider class="mx-4" inset vertical></v-divider>
             </v-toolbar>
         </template>
 
@@ -72,12 +70,12 @@
     <v-dialog scrollable v-model="dialogEditTag" max-width="750px">
         <v-card>
             <v-card-title>
-                <span class="headline">{{ $t('admin.tags.editTag') }}</span>
+                <span class="headline">{{ isNewTag ? $t('admin.tags.newTag') : $t('admin.tags.editTag') }}</span>
             </v-card-title>
 
             <v-card-text>
-                <v-text-field type="number" v-model="editedTag._id" :label="$t('admin.tags.editId')" :disabled="!isNewTag"
-                    min="0"></v-text-field>
+                <v-text-field type="number" v-model="editedTag._id" :label="$t('admin.tags.editId')"
+                    :disabled="!isNewTag" min="1"></v-text-field>
                 <v-text-field v-model="editedTag.tag" :label="$t('admin.tags.editName')"></v-text-field>
                 <v-text-field v-model="editedTag.description" :label="$t('admin.tags.editDescription')"></v-text-field>
                 <v-text-field v-model="editedTag.ungroupedDescription"
@@ -108,6 +106,10 @@
 
                 <v-select :items="['digital', 'analog', 'string', 'json']" :label="$t('admin.tags.editType')"
                     v-model="editedTag.type" class="ma-0"></v-select>
+
+                <v-select v-if="editedTag.type == 'digital'" :items="alarmStateItems" item-title="name" item-value="value"
+                    :label="$t('admin.tags.editAlarmState')" v-model="editedTag.alarmState" class="ma-0"></v-select>
+
                 <v-text-field v-if="editedTag.type == 'digital'" v-model="editedTag.stateTextFalse"
                     :label="$t('admin.tags.editStateTextFalse')"></v-text-field>
                 <v-text-field v-if="editedTag.type == 'digital'" v-model="editedTag.stateTextTrue"
@@ -316,38 +318,6 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const dialogEditTag = ref(false)
-const dialogDeleteTag = ref(false)
-const dialogAddParcel = ref(false)
-const isNewTag = ref(false)
-const tags = ref([])
-const protocolConnections = ref([])
-const protocolDriveNameByConnNumber = ref([])
-const protocolConnectionsDestinations = ref([])
-const totalTags = ref(0)
-const searchTag = ref('')
-const searchDescription = ref('')
-const loading = ref(true)
-const itemsPerPage = ref(10)
-const page = ref(1)
-const sortBy = ref([])
-const sortDesc = ref([])
-const dialogAddProtocolDestination = ref(false);
-const newParcel = ref(0)
-const newProtocolDestination = ref({
-    "protocolDestinationConnectionNumber": 0,
-    "protocolDestinationCommonAddress": 0,
-    "protocolDestinationObjectAddress": 0,
-    "protocolDestinationASDU": 0,
-    "protocolDestinationCommandDuration": 0,
-    "protocolDestinationCommandUseSBO": false,
-    "protocolDestinationKConv1": 1,
-    "protocolDestinationKConv2": 0,
-    "protocolDestinationGroup": 0,
-    "protocolDestinationHoursShift": 0
-});
-const error = ref(false);
-
 const defaultTagValue = ref({
     tag: '',
     description: '',
@@ -368,8 +338,67 @@ const defaultTagValue = ref({
     protocolSourceASDU: "0",
     historianDeadBand: 0,
     historianPeriod: 0,
+    alarmState: 2,
+    kconv1: 1,
+    kconv2: 0,
+    isEvent: false,
+    location: {},
 })
 const editedTag = ref({ ...defaultTagValue.value })
+const dialogEditTag = ref(false)
+const dialogDeleteTag = ref(false)
+const dialogAddParcel = ref(false)
+const isNewTag = ref(false)
+const tags = ref([])
+const protocolConnections = ref([])
+const protocolDriveNameByConnNumber = ref([])
+const protocolConnectionsDestinations = ref([])
+const totalTags = ref(0)
+const searchTag = ref('')
+const searchDescription = ref('')
+const loading = ref(true)
+const itemsPerPage = ref(10)
+const page = ref(1)
+const sortBy = ref([])
+const sortDesc = ref([])
+const dialogAddProtocolDestination = ref(false);
+const newParcel = ref(0)
+const error = ref(false);
+const newProtocolDestination = ref({
+    "protocolDestinationConnectionNumber": 0,
+    "protocolDestinationCommonAddress": 0,
+    "protocolDestinationObjectAddress": 0,
+    "protocolDestinationASDU": 0,
+    "protocolDestinationCommandDuration": 0,
+    "protocolDestinationCommandUseSBO": false,
+    "protocolDestinationKConv1": 1,
+    "protocolDestinationKConv2": 0,
+    "protocolDestinationGroup": 0,
+    "protocolDestinationHoursShift": 0
+});
+
+const alarmStateItems = ref([
+      {
+        value: 0,
+        name: t('admin.tags.editAlarmStateOff'),
+      },
+      {
+        value: 1,
+        name: t('admin.tags.editAlarmStateOn'),
+      },
+      {
+        value: 2,
+        name: t('admin.tags.editAlarmStateBoth'),
+      },
+      {
+        value: 3,
+        name: t('admin.tags.editAlarmStateOffToOn'),
+      },
+      {
+        value: -1,
+        name: t('admin.tags.editAlarmStateNone'),
+      },
+])
 
 const headers = computed(() => [
     {
@@ -423,7 +452,6 @@ const handleOptionsUpdate = (newOptions) => {
 
 const newTagOpenDialog = async () => {
     isNewTag.value = true
-    error.value = false;
     editedTag.value = Object.assign({}, defaultTagValue.value);
     await fetchProtocolConnections()
     dialogEditTag.value = true;
@@ -431,7 +459,6 @@ const newTagOpenDialog = async () => {
 
 const editTagOpenDialog = async (item) => {
     isNewTag.value = false
-    error.value = false;
     editedTag.value = Object.assign({}, item);
     await fetchProtocolConnections()
     dialogEditTag.value = true
@@ -456,11 +483,10 @@ const deleteTag = async () => {
             }),
         })
         const json = await response.json()
-        if (json.error) { console.warn(json); error.value = true; return; }
+        if (json.error) { setError(json); return; }
         dialogDeleteTag.value = false
     } catch (err) {
-        console.warn(err)
-        error.value = true
+        setError(err)
     }
     fetchTags()
 }
@@ -474,10 +500,10 @@ const closeDeleteTag = () => {
 }
 
 const updateOrCreateTag = async () => {
-    if (editedTag.value._id) {
-        await updateTag();
-    } else {
+    if (isNewTag.value) {
         await createTag();
+    } else {
+        await updateTag();
     }
 }
 
@@ -493,14 +519,12 @@ const createTag = async () => {
         })
         const json = await response.json()
         if (json.error || !json._id) {
-            console.warn(json)
-            error.value = true
+            setError(json)
             return
         }
         dialogEditTag.value = false
     } catch (err) {
-        console.warn(err)
-        error.value = true
+        setError(err)
     }
     fetchTags()
 }
@@ -516,11 +540,10 @@ const updateTag = async () => {
             body: JSON.stringify(editedTag.value),
         })
         const json = await response.json()
-        if (json.error) { console.log(json); error.value = true; }
+        if (json.error) { setError(json); return; }
         closeEditTag()
     } catch (err) {
-        console.warn(err)
-        error.value = true
+        setError(err)
     }
     fetchTags()
 }
@@ -553,8 +576,7 @@ const fetchTags = async () => {
         tags.value = json.tags
         totalTags.value = json.countTotal
     } catch (err) {
-        console.warn(err)
-        error.value = true
+        setError(err)
     } finally {
         loading.value = false
     }
@@ -580,8 +602,7 @@ const fetchProtocolConnections = async () => {
             protocolDriveNameByConnNumber[item.protocolConnectionNumber] = item.name
         })
     } catch (err) {
-        console.warn(err)
-        error.value = true
+        setError(err)
     }
 };
 
@@ -594,6 +615,12 @@ const addNewParcel = async () => {
     editedTag.parcels.push(newParcel.value)
     dialogAddParcel.value = false
 };
+
+const setError = (err) => {
+    error.value = true
+    console.warn(err);
+    setTimeout(() => { error.value = false }, 2000)
+}
 
 defineExpose({ fetchTags })
 </script>
