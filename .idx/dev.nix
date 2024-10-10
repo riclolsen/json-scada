@@ -86,7 +86,7 @@
           mongosh json_scada --eval \"db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:'demo'}})\" 
         ";
         init-postgresql = "
-          cp ~/json-scada/platform-nix-idx/postgresql.conf ~/json_scada/.data/postgres/postgresql.conf &&
+          cp ~/json-scada/platform-nix-idx/postgresql.conf ~/json-scada/.idx/.data/postgres/postgresql.conf &&
           /usr/bin/createuser -s postgres &&
           pkill postgres &&
           (/nix/store/sl1i7i0nahp1zvgjpmdl3qn8z4j7y3fg-start-postgres &) &&
