@@ -23,9 +23,13 @@ As you can have multiple JSON-SCADA systems in the same computer server, each in
     }
 
 * **_nodeName_** - Unique name for a computer installation. This name will be used to match the node configuration in the database. This name is used also to control processes on redundant computers. **Mandatory parameter**.
-* **_mongoConnectionString_** - Standard MongoDB connection string pointing to the database server. 
-See https://docs.mongodb.com/manual/reference/connection-string/. **Mandatory parameter**
+* **_mongoConnectionString_** - Standard MongoDB URI connection string pointing to the database server. Please include the database name in this URI string (the same db name from the next parameter) and TLS options. See https://docs.mongodb.com/manual/reference/connection-string/. **Mandatory parameter**
 * **_mongoDatabaseName_** - Database name to be accessed in the MongoDB server. **Mandatory parameter**.
+
+The TLS parameters below are necessary for secure connecions, anyway please include the equivalent TLS options directly in the URI connection string. See https://www.mongodb.com/pt-br/docs/manual/reference/connection-string-options/#std-label-connections-connection-options.
+
+If you encounter secure connection problems, please report your findings.
+
 * **_tlsCaPemFile_** - Path/Name of the certificate root CA PEM file. **Optional parameter, required for TLS connection**.
 * **_tlsClientPemFile_** - Path/Name of the client certificate PEM file. **Optional parameter, required for TLS connection**.
 * **_tlsClientPfxFile_** - Path/Name of the client certificate PFX file. **Optional parameter, required for TLS connection**.
@@ -40,9 +44,9 @@ To use MongoDB authorization, specify the database user and password in the conn
 
 To encrypt connections to the database with TLS it is necessary to create and specify certificates in the config file that can be accepted by the MongoDB server. This is important for connections over the Internet and untrusted networks.
 
-MongoDB servers can be Community, Enterprise or Atlas Cloud, all on 4.2 or later version. Other servers are not tested.
+MongoDB servers can be Community, Enterprise or Atlas Cloud, all on 6.0 or later version. Other servers are not tested or supported.
 
-The hostname(s) used in the connection string must match the hostnames for the MongoDB replica set members. The hostname must be available via DNS or be present in the server's _/etc/hosts_ file. A replica set is mandatory for the change streams to work and must be created with at least one member. A three member replica set is highly recommended for redundancy.
+The hostname(s) used in the connection string must match the hostnames for the MongoDB replica set members. The hostname must be available via DNS or be present in the server's _/etc/hosts_ file. A replica set is mandatory for the change streams to work and must be created with at least one member. A three member replica set is highly recommended for redundancy and high availability.
 
 ## Creating self-signed certificates
 

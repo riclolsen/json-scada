@@ -19,11 +19,10 @@ set tlsInsecure=false
 
 cd %JSPATH%\platform-windows\
 
-IF [%1]==[] ( SET "OUTPUTFILE=jsproject.zip" ) ELSE ( SET "OUTPUTFILE=%1" )
+IF [%1]==[] ( SET "INPUTFILE=jsproject.zip" ) ELSE ( SET "INPUTFILE=%1" )
 
 for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json mongoConnectionString') do set "mongoConnectionString=%%~a"
 for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json database') do set "database=%%~a"
-
 rem for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json tlsCaPemFile') do set "tlsCaPemFile=%%~a"
 rem for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json tlsClientPemFile') do set "tlsClientPemFile=%%~a"
 rem for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json tlsClientKeyFile') do set "tlsClientKeyFile=%%~a"
@@ -36,27 +35,41 @@ rem set TLSFLAGS=--sslCAFile=%tlsCaPemFile% --sslPEMKeyFile=%tlsClientPemFile% -
 rem echo "%TLSFLAGS%"
 
 if not exist "%TMPPATH%" mkdir "%TMPPATH%"
-del %TMPPATH%\*.* /Q
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection realtimeData --out %TMPPATH%\realtimeData.json
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection processInstances --out %TMPPATH%\processInstances.json
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection protocolDriverInstances --out %TMPPATH%\protocolDriverInstances.json
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection protocolConnections --out %TMPPATH%\protocolConnections.json
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection users --out %TMPPATH%\users.json
-%MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection roles --out %TMPPATH%\roles.json
-rem optional historical data
-rem %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection hist --out %TMPPATH%\hist.json
-rem %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection backfillData --out %TMPPATH%\backfillData.json
-rem %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection soeData --out %TMPPATH%\soeData.json
-rem %MONGOBIN%\mongoexport.exe --uri "%mongoConnectionString%" --db %database% --collection userActions --out %TMPPATH%\userActions.json
-
-copy %SVGPATH%\*.svg %TMPPATH%\
-copy %SVGPATH%\screen_list.js %TMPPATH%\
-rem optional
-rem copy %JSPATH%\conf\*.* %TMPPATH%\
-
-rem %TARPATH%\tar -a -c -f  %TMPPATH%\jsproject.zip -C %TMPPATH% *.json 
 cd %TMPPATH%
-%JAVAPATH%\jar -cfM %OUTPUTFILE% *.json 
-%JAVAPATH%\jar -ufM %OUTPUTFILE% *.js
-%JAVAPATH%\jar -ufM %OUTPUTFILE% *.svg 
+
+del %TMPPATH%\*.json /Q
+del %TMPPATH%\*.js /Q
+del %TMPPATH%\*.svg /Q
+del %TMPPATH%\*.conf /Q
+del %TMPPATH%\*.xml /Q
+del %TMPPATH%\*.ini /Q
+
+%JAVAPATH%\jar -xf %INPUTFILE%  
+
+set FLAGS=--mode=upsert
+
+%MONGOBIN%\mongosh --quiet --eval "db.realtimeData.deleteMany({})" "%mongoConnectionString%"
+%MONGOBIN%\mongosh --quiet --eval "db.processInstances.deleteMany({})" "%mongoConnectionString%"
+%MONGOBIN%\mongosh --quiet --eval "db.protocolConnections.deleteMany({})" "%mongoConnectionString%"
+%MONGOBIN%\mongosh --quiet --eval "db.protocolDriverInstances.deleteMany({})" "%mongoConnectionString%"
+%MONGOBIN%\mongosh --quiet --eval "db.users.deleteMany({})" "%mongoConnectionString%"
+%MONGOBIN%\mongosh --quiet --eval "db.roles.deleteMany({})" "%mongoConnectionString%"
+
+%MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection roles  %FLAGS% --file roles.json
+%MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection users %FLAGS% --file users.json 
+%MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection processInstances %FLAGS% --file processInstances.json
+%MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection protocolDriverInstances %FLAGS% --file protocolDriverInstances.json
+%MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection protocolConnections %FLAGS% --file protocolConnections.json
+%MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection realtimeData %FLAGS% --file realtimeData.json
+rem optional historical data
+rem %MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection hist --file hist.json %FLAGS%
+rem %MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection backfillData --file backfillData.json %FLAGS%
+rem %MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection soeData --file soeData.json %FLAGS%
+rem %MONGOBIN%\mongoimport.exe --uri "%mongoConnectionString%" --db %database% --collection userActions --file userActions.json %FLAGS%
+
+copy %TMPPATH%\*.svg %SVGPATH%\*.svg /Y
+copy %TMPPATH%\screen_list.js %SVGPATH%\ /Y
+rem optional
+rem copy %TMPPATH%\ %JSPATH%\conf\*.* 
+
 cd %JSPATH%\platform-windows\
