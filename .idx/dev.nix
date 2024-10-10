@@ -34,10 +34,10 @@
     extensions = [
       "timescaledb"
       "timescaledb_toolkit"
+      "pgvector"
     ];
     enable = true;
   };
-  # services.mongodb.enable = true;
   services.docker.enable = true;
 
   # Sets environment variables in the workspace
@@ -83,7 +83,13 @@
           mongoimport --db json_scada --collection realtimeData --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_data.json &&
           mongoimport --db json_scada --collection processInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_process_instances.json &&
           mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json &&
-          mongosh json_scada --eval \"db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})\" &&
+          mongosh json_scada --eval \"db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:'demo'}})\" 
+        ";
+        init-postgresql = "
+          cp ~/json-scada/platform-nix-idx/postgresql.conf ~/json_scada/.data/postgres/postgresql.conf &&
+          /usr/bin/createuser -s postgres &&
+          pkill postgres &&
+          (/nix/store/sl1i7i0nahp1zvgjpmdl3qn8z4j7y3fg-start-postgres &) &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb &&
