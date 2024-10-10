@@ -102,6 +102,7 @@
         # Example: start a background task to watch and re-build backend code
         # watch-backend = "npm run watch-backend";
         start-mongodb = "/usr/bin/mongod -f ~/json-scada/platform-nix-idx/mongod.conf";
+        start-supervisor = "(supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf &)";
       };
     };
   };
