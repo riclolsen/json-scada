@@ -5,7 +5,10 @@
   channel = "stable-23.11"; # or "unstable"
 
   # Use https://search.nixos.org/packages to find packages
-  packages = [
+  packages = [   
+    pkgs.postgresql_15_jit
+    pkgs.postgresql15Packages.timescaledb
+    pkgs.postgresql15Packages.timescaledb_toolkit
     pkgs.util-linux.bin
     pkgs.dotnet-sdk_8
     pkgs.vscode-extensions.ms-dotnettools.csharp
@@ -30,14 +33,14 @@
     # pkgs.nodePackages.nodemon
   ];
 
-  services.postgres = {
-    extensions = [
-      "timescaledb"
-      "timescaledb_toolkit"
-      "pgvector"
-    ];
-    enable = true;
-  };
+  #services.postgres = {
+  #  extensions = [
+  #    "timescaledb"
+  #    "timescaledb_toolkit"
+  #    "pgvector"
+  #  ];
+  #  enable = true;
+  #};
   services.docker.enable = true;
 
   # Sets environment variables in the workspace
@@ -70,8 +73,6 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        # Example: install JS dependencies from NPM
-        # npm-install = "npm install";
         init-mongodb = "
           mkdir -p ~/mongodb/var/lib/mongo/ && 
           mkdir -p ~/mongodb/var/log/mongodb/ && 
@@ -86,10 +87,12 @@
           mongosh json_scada --eval \"db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:'demo'}})\" 
         ";
         init-postgresql = "
-          cp ~/json-scada/platform-nix-idx/postgresql.conf ~/json-scada/.idx/.data/postgres/postgresql.conf &&
+          mkdir -p ~/postgres &&
+          initdb -D ~/postgres &&
+          cp ~/json-scada/platform-nix-idx/postgresql.conf ~/postgres/postgresql.conf &&
+          cp ~/json-scada/platform-nix-idx/pg_hba.conf ~/postgres/pg_hba.conf &&
+          /usr/bin/pg_ctl -D /home/user/postgres start &&
           /usr/bin/createuser -s postgres &&
-          pkill postgres &&
-          (/nix/store/sl1i7i0nahp1zvgjpmdl3qn8z4j7y3fg-start-postgres &) &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb &&
