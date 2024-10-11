@@ -92,11 +92,10 @@
           cp ~/json-scada/platform-nix-idx/postgresql.conf ~/postgres/postgresql.conf &&
           cp ~/json-scada/platform-nix-idx/pg_hba.conf ~/postgres/pg_hba.conf &&
           /usr/bin/pg_ctl -D /home/user/postgres start &&
-          /usr/bin/createuser -s postgres &&
+          /usr/bin/createuser -h localhost -s postgres &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
-          psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb &&
-          psql -U postgres -w -h localhost -d json_scada -c \"CREATE EXTENSION timescaledb_toolkit;\"
+          psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
         ";
         build-jsonscada = "cd ~/json-scada/platform-linux && ./build.sh";
       };
