@@ -1,12 +1,12 @@
-import { createApp } from 'vue';
-import { createVuetify } from 'vuetify';
-import * as components from 'vuetify/components';
-import * as directives from 'vuetify/directives';
-import 'vuetify/styles';
-import '@mdi/font/css/materialdesignicons.css';
-import App from './App.vue';
-import router from './router';
-import { setupI18n, getStoredLocale } from './i18n';
+import { createApp } from 'vue'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
+import App from './App.vue'
+import router from './router'
+import { setupI18n, getStoredLocale } from './i18n'
 
 const vuetify = createVuetify({
   components,
@@ -40,21 +40,21 @@ const vuetify = createVuetify({
       },
     },
   },
-});
+})
 
 const initApp = async () => {
-    const i18n = await setupI18n();
-    const app = createApp(App);
-  
-    app.use(vuetify);
-    app.use(router);
-    app.use(i18n);
-  
-    // Set the initial locale
-    const storedLocale = getStoredLocale();
-    i18n.global.locale.value = storedLocale;
-  
-    app.mount('#app');
-};
+  const i18n = await setupI18n()
+  const app = createApp(App)
 
-initApp();
+  app.use(vuetify)
+  app.use(router)
+  app.use(i18n)
+
+  // Set the initial locale
+  const storedLocale = getStoredLocale()
+  i18n.global.locale.value = storedLocale
+
+  app.mount('#app')
+}
+
+initApp()

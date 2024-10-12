@@ -78,11 +78,6 @@ cd ../oshmi2json
 npm install
 cd ../oshmi_sync
 npm install
-cd ../htdocs-admin
-export NODE_OPTIONS=--openssl-legacy-provider
-npm install
-npm run build
-export NODE_OPTIONS=
 cd ../shell-api
 npm install
 cd ../alarm_beep
@@ -111,6 +106,17 @@ npm run build
 cd ../inputs/file
 npm install
 npm run build
+
+cd ../AdminUI
+npm install
+npm run build
+
+# deprecated
+cd ../htdocs-admin
+export NODE_OPTIONS=--openssl-legacy-provider
+npm install
+npm run build
+export NODE_OPTIONS=
 
 cd ../../../..
 
