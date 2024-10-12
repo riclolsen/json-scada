@@ -1,29 +1,29 @@
-import { createI18n } from 'vue-i18n';
+import { createI18n } from 'vue-i18n'
 
 const loadLocaleMessages = async () => {
-  const locales = import.meta.glob('./locales/*.json');
-  const messages = {};
+  const locales = import.meta.glob('./locales/*.json')
+  const messages = {}
   for (const path in locales) {
-    const matched = path.match(/([A-Za-z0-9-_]+)\./i);
+    const matched = path.match(/([A-Za-z0-9-_]+)\./i)
     if (matched && matched.length > 1) {
-      const locale = matched[1];
-      messages[locale] = await locales[path]();
+      const locale = matched[1]
+      messages[locale] = await locales[path]()
     }
   }
-  return messages;
-};
+  return messages
+}
 
-export const STORAGE_KEY = 'user-locale';
+export const STORAGE_KEY = 'user-locale'
 
-export const getStoredLocale = () => localStorage.getItem(STORAGE_KEY) || 'en';
+export const getStoredLocale = () => localStorage.getItem(STORAGE_KEY) || 'en'
 
 export const setupI18n = async () => {
-  const messages = await loadLocaleMessages();
-  
+  const messages = await loadLocaleMessages()
+
   return createI18n({
     legacy: false,
     locale: getStoredLocale(),
     fallbackLocale: 'en',
     messages,
-  });
-};
+  })
+}

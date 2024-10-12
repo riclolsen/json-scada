@@ -7,7 +7,13 @@
           width="100%"
           height="100%"
           frameborder="0"
-          style="position: absolute; top: 120; left: 0; width: 100%; height: 100%;"
+          style="
+            position: absolute;
+            top: 120;
+            left: 0;
+            width: 100%;
+            height: 100%;
+          "
         ></iframe>
       </v-col>
     </v-row>
@@ -15,17 +21,17 @@
 </template>
 
 <script setup>
-// No additional setup needed for this component
+  // No additional setup needed for this component
 </script>
 
 <style scoped>
-.fill-height {
-  height: 100%;
-}
+  .fill-height {
+    height: 100%;
+  }
 </style>
 
 <style>
-html {
-  overflow-y: hidden
-}
+  html {
+    overflow-y: hidden;
+  }
 </style>

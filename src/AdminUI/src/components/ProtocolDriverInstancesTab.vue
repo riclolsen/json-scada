@@ -262,368 +262,364 @@
   </v-dialog>
 </template>
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
-const headers = computed(() => [
-  { title: '#', key: 'id', align: 'end' },
-  {
-    title: t('admin.protocolDriverInstances.headers.protocolDriver'),
-    align: 'start',
-    key: 'protocolDriver',
-  },
-  {
-    title: t(
-      'admin.protocolDriverInstances.headers.protocolDriverInstanceNumber'
-    ),
-    align: 'end',
-    key: 'protocolDriverInstanceNumber',
-  },
-  { title: t('admin.protocolDriverInstances.headers.enabled'), key: 'enabled' },
-  {
-    title: t('admin.protocolDriverInstances.headers.logLevel'),
-    key: 'logLevel',
-  },
-  {
-    title: t('admin.protocolDriverInstances.headers.allowedNodesList'),
-    key: 'nodesText',
-  },
-  {
-    title: t('admin.protocolDriverInstances.headers.actions'),
-    key: 'actions',
-    sortable: false,
-  },
-  { title: t('admin.protocolDriverInstances.headers.running'), key: 'running' },
-  {
-    title: t(
-      'admin.protocolDriverInstances.headers.activeNodeKeepAliveTimeTag'
-    ),
-    key: 'localTimeUpdate',
-  },
-  {
-    title: t('admin.protocolDriverInstances.headers.stats'),
-    key: 'stats',
-    sortable: false,
-  },
-  {
-    title: t('admin.protocolDriverInstances.headers.process'),
-    key: 'process',
-    sortable: false,
-  },
-])
+  const { t } = useI18n()
+  const headers = computed(() => [
+    { title: '#', key: 'id', align: 'end' },
+    {
+      title: t('admin.protocolDriverInstances.headers.protocolDriver'),
+      align: 'start',
+      key: 'protocolDriver',
+    },
+    {
+      title: t(
+        'admin.protocolDriverInstances.headers.protocolDriverInstanceNumber'
+      ),
+      align: 'end',
+      key: 'protocolDriverInstanceNumber',
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.enabled'),
+      key: 'enabled',
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.logLevel'),
+      key: 'logLevel',
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.allowedNodesList'),
+      key: 'nodesText',
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.actions'),
+      key: 'actions',
+      sortable: false,
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.running'),
+      key: 'running',
+    },
+    {
+      title: t(
+        'admin.protocolDriverInstances.headers.activeNodeKeepAliveTimeTag'
+      ),
+      key: 'localTimeUpdate',
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.stats'),
+      key: 'stats',
+      sortable: false,
+    },
+    {
+      title: t('admin.protocolDriverInstances.headers.process'),
+      key: 'process',
+      sortable: false,
+    },
+  ])
 
-const dialogEditInstance = ref(false)
-const editedInstanceDefault = ref({
-  protocolDriver: '',
-  protocolDriverInstanceNumber: '',
-  enabled: true,
-  logLevel: 1,
-  activeNodeKeepAliveTimeTag: '',
-  keepProtocolRunningWhileInactive: false,
-  softwareVersion: '',
-  nodeNames: [],
-  activeNodeName: '',
-  stats: '',
-  id: -1,
-  nodesText: '',
-  running: false,
-  localTimeUpdate: '',
-  process: '',
-})
-const editedInstance = ref({ ...editedInstanceDefault.value })
+  const dialogEditInstance = ref(false)
+  const editedInstanceDefault = ref({
+    protocolDriver: '',
+    protocolDriverInstanceNumber: '',
+    enabled: true,
+    logLevel: 1,
+    activeNodeKeepAliveTimeTag: new Date(0),
+    keepProtocolRunningWhileInactive: false,
+    softwareVersion: '',
+    nodeNames: [],
+    activeNodeName: '',
+    stats: '',
+    id: -1,
+    nodesText: '',
+    running: false,
+    localTimeUpdate: '',
+    process: '',
+  })
+  const editedInstance = ref({ ...editedInstanceDefault.value })
 
-const dialogDeleteInstance = ref(false)
-const dialogAddNode = ref(false)
-const newNode = ref('')
-const nodeNames = ref([])
-const driverNameItems = [
-  'IEC60870-5-104',
-  'IEC60870-5-104_SERVER',
-  'IEC60870-5-101',
-  'IEC60870-5-101_SERVER',
-  'IEC61850',
-  'IEC61850_SERVER',
-  'DNP3',
-  'DNP3_SERVER',
-  'MQTT-SPARKPLUG-B',
-  'OPC-UA',
-  'OPC-UA_SERVER',
-  'OPC-DA',
-  'OPC-DA_SERVER',
-  'PLCTAG',
-  'PLC4X',
-  'TELEGRAF-LISTENER',
-  'ICCP',
-  'ICCP_SERVER',
-  'I104M',
-  'PI_DATA_ARCHIVE_INJECTOR',
-  'PI_DATA_ARCHIVE_CLIENT',
-]
-const driverInstances = ref([])
-const error = ref(false)
+  const dialogDeleteInstance = ref(false)
+  const dialogAddNode = ref(false)
+  const newNode = ref('')
+  const nodeNames = ref([])
+  const driverNameItems = [
+    'IEC60870-5-104',
+    'IEC60870-5-104_SERVER',
+    'IEC60870-5-101',
+    'IEC60870-5-101_SERVER',
+    'IEC61850',
+    'IEC61850_SERVER',
+    'DNP3',
+    'DNP3_SERVER',
+    'MQTT-SPARKPLUG-B',
+    'OPC-UA',
+    'OPC-UA_SERVER',
+    'OPC-DA',
+    'OPC-DA_SERVER',
+    'PLCTAG',
+    'PLC4X',
+    'TELEGRAF-LISTENER',
+    'ICCP',
+    'ICCP_SERVER',
+    'I104M',
+    'PI_DATA_ARCHIVE_INJECTOR',
+    'PI_DATA_ARCHIVE_CLIENT',
+  ]
+  const driverInstances = ref([])
+  const error = ref(false)
 
-onMounted(() => {
-  fetchProtocolDriverInstances()
-  document.documentElement.style.overflowY = 'scroll'
-})
+  onMounted(() => {
+    fetchProtocolDriverInstances()
+    document.documentElement.style.overflowY = 'scroll'
+  })
 
-onUnmounted(() => {
-  document.documentElement.style.overflowY = 'auto'
-})
+  onUnmounted(() => {
+    document.documentElement.style.overflowY = 'auto'
+  })
 
-async function fetchNodes() {
-  try {
-    const res = await fetch('/Invoke/auth/listNodes')
-    const json = await res.json()
-    if (json.error) {
-      console.warn(json)
-      return
+  async function fetchNodes() {
+    try {
+      const res = await fetch('/Invoke/auth/listNodes')
+      const json = await res.json()
+      if (json.error) {
+        console.warn(json)
+        return
+      }
+      nodeNames.value = json
+    } catch (err) {
+      console.warn(err)
+      // error.value = true;
     }
-    nodeNames.value = json
-  } catch (err) {
-    console.warn(err)
-    // error.value = true;
   }
-}
 
-async function fetchProtocolDriverInstances() {
-  await fetchNodes()
-  try {
-    const res = await fetch('/Invoke/auth/listProtocolDriverInstances')
-    const json = await res.json()
-    if (json.error) {
-      console.wanr(json)
-      return
+  async function fetchProtocolDriverInstances() {
+    await fetchNodes()
+    try {
+      const res = await fetch('/Invoke/auth/listProtocolDriverInstances')
+      const json = await res.json()
+      if (json.error) {
+        console.wanr(json)
+        return
+      }
+      json.forEach((item, index) => {
+        item.id = index + 1
+        item.nodesText = item.nodeNames.join(', ')
+        item.localTimeUpdate =
+          item.activeNodeName +
+          ' ' +
+          (item.activeNodeKeepAliveTimeTag
+            ? new Date(item.activeNodeKeepAliveTimeTag).toLocaleString()
+            : '')
+        item.running =
+          new Date(item.activeNodeKeepAliveTimeTag).getTime() >
+          new Date().getTime() - 10000
+      })
+      driverInstances.value = json
+    } catch (err) {
+      console.warn(err)
+      // error.value = true;
     }
-    json.forEach((item, index) => {
-      item.id = index + 1
-      item.nodesText = item.nodeNames.join(', ')
-      item.localTimeUpdate =
-        item.activeNodeName +
-        ' ' +
-        (item.activeNodeKeepAliveTimeTag
-          ? new Date(item.activeNodeKeepAliveTimeTag).toLocaleString()
-          : '')
-      item.running =
-        new Date(item.activeNodeKeepAliveTimeTag).getTime() >
-        new Date().getTime() - 10000
-    })
-    driverInstances.value = json
-  } catch (err) {
-    console.warn(err)
-    // error.value = true;
   }
-}
 
-async function startProtocolDriverInstance(item) {
-  try {
-    const res = await fetch('/Invoke/auth/startProtocolDriverInstance', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        protocolDriver: item.protocolDriver,
-        protocolDriverInstanceNumber: item.protocolDriverInstanceNumber,
-      }),
-    })
-    const json = await res.json()
-    if (json.error) {
-      console.warn(json)
+  async function startProtocolDriverInstance(item) {
+    try {
+      const res = await fetch('/Invoke/auth/startProtocolDriverInstance', {
+        method: 'post',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          protocolDriver: item.protocolDriver,
+          protocolDriverInstanceNumber: item.protocolDriverInstanceNumber,
+        }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        console.warn(json)
+        error.value = true
+      }
+    } catch (err) {
+      console.warn(err)
       error.value = true
     }
-  } catch (err) {
-    console.warn(err)
-    error.value = true
+    setTimeout(() => {
+      fetchProtocolDriverInstances() // Refresh instances
+    }, 3000)
   }
-  setTimeout(() => {
-    fetchProtocolDriverInstances() // Refresh instances
-  }, 3000)
-}
 
-async function stopProtocolDriverInstance(item) {
-  try {
-    const res = await fetch('/Invoke/auth/stopProtocolDriverInstance', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        protocolDriver: item.protocolDriver,
-        protocolDriverInstanceNumber: item.protocolDriverInstanceNumber,
-      }),
-    })
-    const json = await res.json()
-    if (json.error) {
-      console.warn(json)
+  async function stopProtocolDriverInstance(item) {
+    try {
+      const res = await fetch('/Invoke/auth/stopProtocolDriverInstance', {
+        method: 'post',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          protocolDriver: item.protocolDriver,
+          protocolDriverInstanceNumber: item.protocolDriverInstanceNumber,
+        }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        console.warn(json)
+        error.value = true
+      }
+    } catch (err) {
+      console.warn(err)
       error.value = true
     }
-  } catch (err) {
-    console.warn(err)
-    error.value = true
+    setTimeout(() => {
+      fetchProtocolDriverInstances() // Refresh instances
+    }, 3000)
   }
-  setTimeout(() => {
+
+  // make sure the protocol driver instance number is unique for the protocol driver
+  async function onDriverNameChange(name) {
+    let instanceNumber = 1
+    for (const instance of driverInstances.value) {
+      if (instance.protocolDriver === name) {
+        instanceNumber = instance.protocolDriverInstanceNumber + 1
+        break
+      }
+    }
+    editedInstance.value.protocolDriverInstanceNumber = instanceNumber
+  }
+
+  async function deleteDriverInstance(item) {
+    try {
+      const res = await fetch('/Invoke/auth/deleteProtocolDriverInstance', {
+        method: 'post',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          protocolDriver: item.protocolDriver,
+          protocolDriverInstanceNumber: item.protocolDriverInstanceNumber,
+          _id: item._id,
+        }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        console.warn(json)
+        return
+      }
+      dialogDeleteInstance.value = false
+    } catch (err) {
+      console.warn(err)
+      error.value = true
+    }
+    fetchProtocolDriverInstances() // refreshes instances
+  }
+
+  async function createDriverInstance() {
+    try {
+      const dup = Object.assign({}, editedInstance.value)
+      if (dup._id) {
+        delete dup._id
+      }
+      const res = await fetch('/Invoke/auth/createProtocolDriverInstance', {
+        method: 'post',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json()
+      if (json.error || !json._id) {
+        console.warn(json)
+        error.value = true
+        return
+      }
+      editedInstance.value._id = json._id
+      await updateProtocolDriverInstance()
+      dialogEditInstance.value = false
+    } catch (err) {
+      console.warn(err)
+      error.value = true
+    }
     fetchProtocolDriverInstances() // Refresh instances
-  }, 3000)
-}
-
-// make sure the protocol driver instance number is unique for the protocol driver
-async function onDriverNameChange(name) {
-  let instanceNumber = 1
-  for (const instance of driverInstances.value) {
-    if (instance.protocolDriver === name) {
-      instanceNumber = instance.protocolDriverInstanceNumber + 1
-      break
-    }
   }
-  editedInstance.value.protocolDriverInstanceNumber = instanceNumber
-}
 
-async function deleteDriverInstance(item) {
-  try {
-    const res = await fetch('/Invoke/auth/deleteProtocolDriverInstance', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        protocolDriver: item.protocolDriver,
-        protocolDriverInstanceNumber: item.protocolDriverInstanceNumber,
-        _id: item._id,
-      }),
-    })
-    const json = await res.json()
-    if (json.error) {
-      console.warn(json)
-      return
-    }
-    dialogDeleteInstance.value = false
-  } catch (err) {
-    console.warn(err)
-    error.value = true
-  }
-  fetchProtocolDriverInstances() // refreshes instances
-}
-
-async function createDriverInstance() {
-  try {
+  async function updateProtocolDriverInstance() {
+    if (editedInstance.value.protocolDriver === '') return
     const dup = Object.assign({}, editedInstance.value)
-    if (dup._id) {
-      delete dup._id
+    if ('id' in dup) {
+      delete dup.id
     }
-    const res = await fetch('/Invoke/auth/createProtocolDriverInstance', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
-    })
-    const json = await res.json()
-    if (json.error || !json._id) {
-      console.warn(json)
+    if ('nodesText' in dup) {
+      delete dup.nodesText
+    }
+    if ('running' in dup) {
+      delete dup.running
+    }
+    if ('localTimeUpdate' in dup) {
+      delete dup.localTimeUpdate
+    }
+    if ('process' in dup) {
+      delete dup.process
+    }
+    try {
+      const res = await fetch('/Invoke/auth/updateProtocolDriverInstance', {
+        method: 'post',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dup),
+      })
+      const json = await res.json()
+      if (json.error) {
+        console.log(json)
+        error.value = true
+        return
+      }
+      dialogEditInstance.value = false
+    } catch (err) {
+      console.warn(err)
       error.value = true
-      return
     }
-    editedInstance.value._id = json._id
-    await updateProtocolDriverInstance()
-    dialogEditInstance.value = false
-  } catch (err) {
-    console.warn(err)
-    error.value = true
+    fetchProtocolDriverInstances() // Refresh instances
   }
-  fetchProtocolDriverInstances() // Refresh instances
-}
 
-async function updateProtocolDriverInstance() {
-  if (editedInstance.value.protocolDriver === '') return
-  const dup = Object.assign({}, editedInstance.value)
-  if ('id' in dup) {
-    delete dup.id
-  }
-  if ('nodesText' in dup) {
-    delete dup.nodesText
-  }
-  if ('running' in dup) {
-    delete dup.running
-  }
-  if ('localTimeUpdate' in dup) {
-    delete dup.localTimeUpdate
-  }
-  if ('process' in dup) {
-    delete dup.process
-  }
-  if ('stats' in dup) {
-    delete dup.stats
-  }
-  if ('activeNodeName' in dup) {
-    delete dup.activeNodeName
-  }
-  if ('activeNodeKeepAliveTimeTag' in dup) {
-    delete dup.activeNodeKeepAliveTimeTag
-  }
-  if ('softwareVersion' in dup) {
-    delete dup.softwareVersion
-  }
-  try {
-    const res = await fetch('/Invoke/auth/updateProtocolDriverInstance', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dup),
-    })
-    const json = await res.json()
-    if (json.error) {
-      console.log(json)
-      error.value = true
-      return
+  async function updateOrCreateProtocolDriverInstance() {
+    if (editedInstance.value._id) {
+      await updateProtocolDriverInstance()
+    } else {
+      await createDriverInstance()
     }
-    dialogEditInstance.value = false
-  } catch (err) {
-    console.warn(err)
-    error.value = true
   }
-  fetchProtocolDriverInstances() // Refresh instances
-}
 
-async function updateOrCreateProtocolDriverInstance() {
-  if (editedInstance.value._id) {
-    await updateProtocolDriverInstance()
-  } else {
-    await createDriverInstance()
+  async function addNewNode() {
+    dialogAddNode.value = false
+    if (!newNode.value || newNode.value === '') return
+    nodeNames.value.push(newNode.value)
+    editedInstance.value.nodeNames.push(newNode.value)
+    editedInstance.value.nodeNames = [
+      ...new Set(editedInstance.value.nodeNames),
+    ]
+    newNode.value = ''
   }
-}
 
-async function addNewNode() {
-  dialogAddNode = false
-  if (!newNode.value || newNode.value === '') return
-  nodeNames.value.push(newNode.value)
-  editedInstance.value.nodeNames.push(newNode.value)
-  editedInstance.value.nodeNames = [...new Set(editedInstance.value.nodeNames)]
-  newNode.value = ''
-}
+  const openAddProtocolDriverInstanceDialog = () => {
+    error.value = false
+    editedInstance.value = Object.assign({}, editedInstanceDefault.value)
+    dialogEditInstance.value = true
+  }
 
-const openAddProtocolDriverInstanceDialog = () => {
-  error.value = false
-  editedInstance.value = Object.assign({}, editedInstanceDefault.value)
-  dialogEditInstance.value = true
-}
+  const openEditProtocolDriverInstanceDialog = (item) => {
+    editedInstance.value = Object.assign({}, item)
+    dialogEditInstance.value = true
+  }
 
-const openEditProtocolDriverInstanceDialog = (item) => {
-  editedInstance.value = Object.assign({}, item)
-  dialogEditInstance.value = true
-}
+  const openDeleteProtocolDriverInstanceDialog = (item) => {
+    editedInstance.value = Object.assign({}, item)
+    dialogDeleteInstance.value = true
+  }
 
-const openDeleteProtocolDriverInstanceDialog = (item) => {
-  editedInstance.value = Object.assign({}, item)
-  dialogDeleteInstance.value = true
-}
-
-defineExpose({ fetchProtocolDriverInstances })
+  defineExpose({ fetchProtocolDriverInstances })
 </script>
