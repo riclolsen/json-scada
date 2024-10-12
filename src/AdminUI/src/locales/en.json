@@ -4,6 +4,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "confirm": "Confirm",
     "true": "True",
     "false": "False",
     "enabled": "Enabled: ",
@@ -60,7 +61,7 @@
       "rolesManagement": "Roles",
       "protocolDriverInstances": "Driver Instances",
       "protocolConnections": "Connections",
-      "systemSettings": "Settings",
+      "systemSettings": "System",
       "logs": "Logs",
       "userActions": "User Actions",
       "tags": "Tags"
@@ -473,6 +474,9 @@
       "eraseId": "Point Key (_id)",
       "eraseName": "Tag name",
       "newTag": "New Tag",
+      "sectionDescription": "Description",
+      "sectionProtocol": "Protocol",
+      "sectionOtherSettings": "Other Settings",
       "editTag": "Edit Tag",
       "editId": "Tag _id (unique numeric point key, empty for auto-assign)",
       "editName": "Tag name (unique string key)",
@@ -484,7 +488,7 @@
       "editOrigin": "Origin",
       "editType": "Type",
       "editHistorianDeadBand": "Historian Dead-band (%)",
-      "editHistorianPeriod": "Historian Integrity Period (s)",
+      "editHistorianPeriod": "Historian Integrity Period (seconds)",
       "editAlarmState": "Alarm State",
       "editAlarmStateOff": "OFF",	
       "editAlarmStateOn": "ON",	
@@ -537,21 +541,30 @@
         "type": "Type",
         "description": "Description",
         "group1": "Group1",
-        "value": "Value",
+        "valueNumeric": "Value (Numeric)",
         "valueJson": "Value (JSON)",
         "valueString": "Value (String)",
+        "quality": "Quality",
         "actions": "Actions"
       }
     },
     "systemSettings": {
-      "title": "System Settings",
+      "title": "System Settings / Project",
       "siteName": "Site Name",
       "defaultLanguage": "Default Language",
       "enableNotifications": "Enable Notifications",
       "dataRetentionDays": "Data Retention (days)",
       "saveSettings": "Save Settings",
-      "saveProject": "Save Project",
-      "projectName": "Project Name"
+      "exportProject": "Export Project",
+      "projectName": "Project Name",
+      "importProject": "Import Project",
+      "uploadFile": "Upload File To Import",
+      "dragDropHere": "Drag and drop file here",
+      "importSuccessful": "Import successful!",
+      "invalidFileType": "Invalid file type!",
+      "restartProcesses": "Restart Processes",
+      "sanitizeDatabase": "Sanitize Database",
+      "advancedOptions": "Advanced Options"
     }
   }
 }
