@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.38"
-!define VERSION_ "0.38.0.0"
+!define VERSION "v.0.39"
+!define VERSION_ "0.39.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -247,7 +247,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-8.0.8-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.10-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -266,7 +266,7 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.8-win-x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.10-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
@@ -331,29 +331,39 @@ SetRegView 64
   File /a "..\src\certificate-creator\server.conf"
   File /a "..\src\certificate-creator\create_certs.sh"
 
-  SetOutPath $INSTDIR\src\htdocs
-  File /a "..\src\htdocs\*.*"
-  File /a ".\release_notes.txt"
-  SetOutPath $INSTDIR\src\htdocs\sounds
-  File /a "..\src\htdocs\sounds\critical.wav"
-  File /a "..\src\htdocs\sounds\noncritical.wav"
-  SetOutPath $INSTDIR\src\htdocs\scripts
-  File /a /r "..\src\htdocs\scripts\*.*"
-  SetOutPath $INSTDIR\src\htdocs\sage-cepel-displays
-  File /a "..\src\htdocs\sage-cepel-displays\README.md"
-  SetOutPath $INSTDIR\src\htdocs\images
-  File /a /r "..\src\htdocs\images\*.*"
-  SetOutPath $INSTDIR\src\htdocs\charts
-  File /a /r "..\src\htdocs\charts\*.*"
-  SetOutPath $INSTDIR\src\htdocs\lib
-  File /a /r "..\src\htdocs\lib\*.*"
-  SetOutPath $INSTDIR\src\htdocs\i18n
-  File /a /r "..\src\htdocs\i18n\*.*"
-
-  SetOutPath $INSTDIR\src\htdocs-admin
-  File /a /r "..\src\htdocs-admin\*.*"
-  SetOutPath $INSTDIR\src\htdocs-login
-  File /a /r "..\src\htdocs-login\*.*"
+  SetOutPath $INSTDIR\svg
+  File /a    "..\conf-templates\*.svg"
+  File /a    "..\conf-templates\screen_list.js"
+  SetOutPath $INSTDIR\src\AdminUI
+  File /a    "..\src\AdminUI\*.*"
+  SetOutPath $INSTDIR\src\AdminUI\src
+  File /a /r "..\src\AdminUI\src\*.*"
+  SetOutPath $INSTDIR\src\AdminUI\dist
+  File /a /r   "..\src\AdminUI\dist\*.*"
+  File /a    ".\release_notes.txt"
+  
+  #SetOutPath $INSTDIR\src\htdocs
+  #File /a "..\src\htdocs\*.*"
+  #File /a ".\release_notes.txt"
+  #SetOutPath $INSTDIR\src\htdocs\sounds
+  #File /a "..\src\htdocs\sounds\critical.wav"
+  #File /a "..\src\htdocs\sounds\noncritical.wav"
+  #SetOutPath $INSTDIR\src\htdocs\scripts
+  #File /a /r "..\src\htdocs\scripts\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\sage-cepel-displays
+  #File /a "..\src\htdocs\sage-cepel-displays\README.md"
+  #SetOutPath $INSTDIR\src\htdocs\images
+  #File /a /r "..\src\htdocs\images\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\charts
+  #File /a /r "..\src\htdocs\charts\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\lib
+  #File /a /r "..\src\htdocs\lib\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\i18n
+  #File /a /r "..\src\htdocs\i18n\*.*"
+  #SetOutPath $INSTDIR\src\htdocs-admin
+  #File /a /r "..\src\htdocs-admin\*.*"
+  #SetOutPath $INSTDIR\src\htdocs-login
+  #File /a /r "..\src\htdocs-login\*.*"
 
   SetOutPath $INSTDIR\src\demo_simul
   File /a /r "..\src\demo_simul\*.*"
