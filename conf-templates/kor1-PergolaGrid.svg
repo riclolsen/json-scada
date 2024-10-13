@@ -17,7 +17,7 @@
    version="1.1"
    inkscape:version="0.92.4 (e05b578f1, 2019-02-26, custom)"
    onload="var src; if (document.documentURI) src = document.documentURI; else if (this.getSrc) src = this.getSrc(); else src = document.location.href + ''; try {parent.preload.load(src);}catch(e) {}"
-   sodipodi:docname="kor1.svg">
+   sodipodi:docname="kor1-PergolaGrid.svg">
   <sodipodi:namedview
      id="base"
      pagecolor="#d7d7d7"
@@ -629,6 +629,398 @@
       </cc:Work>
     </rdf:RDF>
   </metadata>
+
+	<script><![CDATA[
+/*
+ *			 PERGOLA CONFIGURATION FILE
+ *
+ * After runtime these variables are no longer used  
+*/
+
+var
+/*
+ * 0 for standalone SVG context, or ID (string) of HTML element (e.g. container="mySVG").
+ * If svg goes in an iframe or div with overflow: auto, set svgWidth and svgHeight (default 100%).
+*/ 
+container = 0,
+svgWidth=600,
+svgHeight=600,
+
+/*
+ * Path to the Pergola folder 
+*/
+path = "../lib/pergola/pergola/",
+
+/* 
+ * Existing property name in pergola.skins (skins.js)
+*/
+skin = "office",
+
+/*
+ * Color keyword name, custom color name, or color in any legal format.
+*/
+theme = "cube",
+
+/*
+ * Determines whether pergola has a system menu on the taskbar.
+*/
+systemMenu=false,
+
+/*
+ * system taskbar position ("top"; "bottom").
+*/
+taskbarPosition="top",
+
+/*
+ * Logo on taskbar.
+*/
+taskbarLogo=false,
+
+
+undos=16,
+
+/*
+ * Number of decimal places
+*/
+decimals=3,
+
+
+/*
+ * true, false, or number of lines (defaults to 20).
+*/
+debug=false;
+		
+]]></script>
+
+	<script xlink:href="../lib/pergola/pergola/pergola.js" type="text/javascript" />
+	
+	<script><![CDATA[
+
+var object = {
+	columns : [
+		{label: "First Name", type: "string"},
+    {label: "Last Name", type: "string"},
+    {label: "Board Member", type: "boolean", "options": ["Yes","No"]},
+		{label: "Birth", type: "date", options: {year: "numeric", month: "short", day: "numeric"}},
+		{label: "Join Date", type: "date", options: {year: "numeric", month: "2-digit", day: "2-digit"}},
+		{label: "Salary", type: "number", options: {style: "currency", currency : "USD"}},
+		{label: "Notice", type: "string"},
+		{label: "Email", type: "string"}
+	],
+	rows : [
+  	{"First Name" : "Jack", "Last Name" : "Bushnell", "Board Member" : true, Birth : "19 Jan 1970", "Join Date" : "1998-01-02", Salary : 10400.00, Notice : "8 weeks", Email : "jack.bushnell@pDatagrid.com"},
+		{"First Name" : "Peter", "Last Name" : "Fawler", "Board Member" : false, Birth : "1976-02-01", "Join Date" : "1999-04-28", Salary : 2600.00, Notice : "8 weeks", Email : "peter.fawler@pDatagrid.com"},
+		{"First Name" : "Paul", "Last Name" : "Best", "Board Member" : false, Birth : "1974-06-05", "Join Date" : "1996-11-08", Salary : 3000.00, Notice : "4 weeks", Email : "paul.best@pDatagrid.com"},
+		{"First Name" : "Mary", "Last Name" : "White", "Board Member" : true, Birth : "1972-03-21", "Join Date" : "2000-05-17", Salary : 15000.00, Notice : "2 weeks", Email : "mary.white@pDatagrid.com"},
+		{"First Name" : "Alice", "Last Name" : "Danielsson", "Board Member" : false, Birth : "1978-08-04", "Join Date" : "2003-03-26", Salary : 1800.00, Notice : "8 weeks", Email : "alice.danielsson@pDatagrid.com"},
+		{"First Name" : "Melinda", "Last Name" : "Farrow", "Board Member" : false, Birth : "1980-01-22", "Join Date" : "2004-05-18", Salary : 12000.00, Notice : "12 weeks", Email : "melinda.farrow@pDatagrid.com"},
+		{"First Name" : "Noel", "Last Name" : "Moore", "Board Member" : true, Birth : "1965-07-14", "Join Date" : "1990-07-12", Salary : 96000.00, Notice : "12 weeks", Email : "noel.moore@pDatagrid.com"},
+		{"First Name" : "David", "Last Name" : "Bauer", "Board Member" : false, Birth : "1983-11-09", "Join Date" : "1997-12-05", Salary : 2200.00, Notice : "4 weeks", Email : "david.bauer@pDatagrid.com"},
+		{"First Name" : "Andrew", "Last Name" : "Page", "Board Member" : false, Birth : "1986-03-31", "Join Date" : "2002-08-15", Salary : 1440.00, Notice : "2 weeks", Email : "andrew.page@pDatagrid.com"},
+		{"First Name" : "Jerry", "Last Name" : "Goldmeyer", "Board Member" : true, Birth : "1962-02-10", "Join Date" : "1995-06-04", Salary : 32000.00, Notice : "4 weeks", Email : "jerry.goldmeyer@pDatagrid.com"},
+		{"First Name" : "Marilyn", "Last Name" : "Jackson", "Board Member" : true, Birth : "1980-05-25", "Join Date" : "2005-03-01", Salary : 8400.00, Notice : "8 weeks", Email : "marilyn.jackson@pDatagrid.com"},
+		{"First Name" : "Matt", "Last Name" : "Marconi", "Board Member" : false, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "6 weeks", Email : "matt.marconi@pDatagrid.com"},
+		{"First Name" : "Alban", "Last Name" : "Schwartz", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 4600.00, Notice : "8 weeks", Email : "alban.schwartz@pDatagrid.com"},
+	  {"First Name" : "Esteban", "Last Name" : "Guaino", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "esteban.guaino@pDatagrid.com"},
+	  {"First Name" : "John", "Last Name" : "Smith", "Board Member" : false, Birth : "1977-06-20", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "john.smith@pDatagrid.com"},
+	  {"First Name" : "Conrad", "Last Name" : "Doe", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "conrad.doe@pDatagrid.com"},
+	  {"First Name" : "Mae", "Last Name" : "Pyong Lee", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "mae.pyong.lee@pDatagrid.com"},
+	  {"First Name" : "Gustaav", "Last Name" : "Eriksson", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "gustaav.eriksson@pDatagrid.com"},
+	  {"First Name" : "Zoe", "Last Name" : "Morrow", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "zoe.morrow@pDatagrid.com"},
+	  {"First Name" : "Chuck", "Last Name" : "Ferguson", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "chuck.ferguson@pDatagrid.com"},
+	  {"First Name" : "Marius", "Last Name" : "Perez", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "marius.perez@pDatagrid.com"},
+	  {"First Name" : "Ann", "Last Name" : "Gillen", "Board Member" : true, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "ann.gillen@pDatagrid.com"},
+	  {"First Name" : "Pauline", "Last Name" : "Newborne", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "pauline.newborne@pDatagrid.com"},
+	  {"First Name" : "Neal", "Last Name" : "Glitter", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "neal.glitter@pDatagrid.com"},
+	  {"First Name" : "Jim", "Last Name" : "Ventura", "Board Member" : true, Birth : "1976-06-18", "Join Date" : "2000-06-04", Salary : 1400.00, Notice : "8 weeks", Email : "jim.ventura@pDatagrid.com"},
+	  {"First Name" : "Alfred", "Last Name" : "Welles", "Board Member" : false, Birth : "1972-08-04", "Join Date" : "2010-10-17", Salary : 2600.00, Notice : "8 weeks", Email : "alfred.welles@pDatagrid.com"},
+	  {"First Name" : "Orson", "Last Name" : "Hitchcock", "Board Member" : false, Birth : "1982-10-22", "Join Date" : "2002-06-12", Salary : 3000.00, Notice : "4 weeks", Email : "orson.hitchcock@pDatagrid.com"},
+	  {"First Name" : "Graham", "Last Name" : "Dell", "Board Member" : false, Birth : "1979-03-21", "Join Date" : "2006-01-26", Salary : 3400.00, Notice : "2 weeks", Email : "graham.dell@pDatagrid.com"},
+	  {"First Name" : "Mike", "Last Name" : "Michaels", "Board Member" : false, Birth : "1984-11-13", "Join Date" : "2011-04-23", Salary : 2800.00, Notice : "8 weeks", Email : "mike.michaels@pDatagrid.com"},
+	  {"First Name" : "Richard", "Last Name" : "Richardson", "Board Member" : false, Birth : "1980-01-22", "Join Date" : "2004-05-18", Salary : 12000.00, Notice : "12 weeks", Email : "richard.richardson@pDatagrid.com"},
+	  {"First Name" : "Gwendaline", "Last Name" : "Welsh", "Board Member" : false, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "gwendaline.welsh@pDatagrid.com"},
+	  {"First Name" : "Nicholas", "Last Name" : "Taylor", "Board Member" : true, Birth : "1982-07-14", "Join Date" : "2001-07-12", Salary : 3800.00, Notice : "12 weeks", Email : "nicholas.taylor@pDatagrid.com"},
+	  {"First Name" : "Brendan", "Last Name" : "Azvourian", "Board Member" : false, Birth : "1983-11-09", "Join Date" : "1997-12-05", Salary : 2200.00, Notice : "4 weeks", Email : "brendan.azvourian@pDatagrid.com"},
+	  {"First Name" : "George", "Last Name" : "Shillingworth", "Board Member" : false, Birth : "1986-03-31", "Join Date" : "2002-08-15", Salary : 1440.00, Notice : "2 weeks", Email : "george.shillingworth@pDatagrid.com"},
+	  {"First Name" : "Patricia", "Last Name" : "Kerry", "Board Member" : false, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "patricia.kerry@pDatagrid.com"},
+	  {"First Name" : "Luke", "Last Name" : "Warmwater", "Board Member" : false, Birth : "1988-02-10", "Join Date" : "1995-06-04", Salary : 2000.00, Notice : "4 weeks", Email : "luke.warmwater@pDatagrid.com"},
+	  {"First Name" : "Dean", "Last Name" : "Coccola", "Board Member" : false, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "dean.coccola@pDatagrid.com"},
+	  {"First Name" : "Matthew", "Last Name" : "Norton", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "matthew.norton@pDatagrid.com"},
+	  {"First Name" : "Philippe", "Last Name" : "Dugay", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "philippe.dugay@pDatagrid.com"},
+	  {"First Name" : "Natalia", "Last Name" : "Shokarova", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "natalia.shokarova@pDatagrid.com"},
+	  {"First Name" : "Barry", "Last Name" : "Beachcomber", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "barry.beachcomber@pDatagrid.com"},
+	  {"First Name" : "Manuel", "Last Name" : "Manolito", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "manuel.manolito@pDatagrid.com"},
+	  {"First Name" : "Joe", "Last Name" : "Panama", "Board Member" : false, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "joe.panama@pDatagrid.com"},
+	  {"First Name" : "Percy", "Last Name" : "Hammond", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "percy.hammond@pDatagrid.com"},
+	  {"First Name" : "Igor", "Last Name" : "Romanoff", "Board Member" : false, Birth : "1985-10-12", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "igor.romanoff@pDatagrid.com"},
+	  {"First Name" : "Rachid", "Last Name" : "Bensaid", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "rachid.bensaid@pDatagrid.com"},
+	  {"First Name" : "Omar", "Last Name" : "Pecker", "Board Member" : true, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "omar.pecker@pDatagrid.com"},
+	  {"First Name" : "Luisa", "Last Name" : "Mannaggia", "Board Member" : false, Birth : "1977-06-20", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "luisa.mannaggia@pDatagrid.com"},
+	  {"First Name" : "Galina", "Last Name" : "Cocilova", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "galina.cocilova@pDatagrid.com"},
+	  {"First Name" : "Ono", "Last Name" : "Yamamoto", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "ono.yamamoto@pDatagrid.com"},
+	  {"First Name" : "Malcom", "Last Name" : "Barrymore", "Board Member" : false, Birth : "1976-06-18", "Join Date" : "2000-06-04", Salary : 1400.00, Notice : "8 weeks", Email : "malcom.barrymore@pDatagrid.com"},
+	  {"First Name" : "Fred", "Last Name" : "Ashton", "Board Member" : true, Birth : "1972-08-04", "Join Date" : "2010-10-17", Salary : 2600.00, Notice : "8 weeks", Email : "fred.ashton@pDatagrid.com"},
+	  {"First Name" : "Nadine", "Last Name" : "Dupuy", "Board Member" : false, Birth : "1982-10-22", "Join Date" : "2002-06-12", Salary : 3000.00, Notice : "4 weeks", Email : "nadine.dupuy@pDatagrid.com"},
+	  {"First Name" : "Armand", "Last Name" : "Diamond", "Board Member" : false, Birth : "1979-03-21", "Join Date" : "2006-01-26", Salary : 3400.00, Notice : "2 weeks", Email : "armand.diamond@pDatagrid.com"},
+	  {"First Name" : "Felipe", "Last Name" : "Cocho", "Board Member" : false, Birth : "1984-11-13", "Join Date" : "2011-04-23", Salary : 2800.00, Notice : "8 weeks", Email : "felipe.cocho@pDatagrid.com"},
+	  {"First Name" : "Louis", "Last Name" : "Fairbanks", "Board Member" : false, Birth : "1980-01-22", "Join Date" : "2004-05-18", Salary : 12000.00, Notice : "12 weeks", Email : "louis.fairbanks@pDatagrid.com"},
+	  {"First Name" : "Fiona", "Last Name" : "Brooks", "Board Member" : false, Birth : "1982-07-14", "Join Date" : "2001-07-12", Salary : 3800.00, Notice : "12 weeks", Email : "fiona.brooks@pDatagrid.com"},
+	  {"First Name" : "Douglas", "Last Name" : "Crocker", "Board Member" : false, Birth : "1983-11-09", "Join Date" : "1997-12-05", Salary : 2200.00, Notice : "4 weeks", Email : "douglas.crocker@pDatagrid.com"},
+	  {"First Name" : "Stan", "Last Name" : "Baker", "Board Member" : false, Birth : "1986-03-31", "Join Date" : "2002-08-15", Salary : 1440.00, Notice : "2 weeks", Email : "stan.baker@pDatagrid.com"},
+	  {"First Name" : "Joe", "Last Name" : "Capocchia", "Board Member" : false, Birth : "1988-02-10", "Join Date" : "1995-06-04", Salary : 2000.00, Notice : "4 weeks", Email : "joe.capocchia@pDatagrid.com"},
+	  {"First Name" : "Linda", "Last Name" : "Farrell", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "linda.farrell@pDatagrid.com"},
+	  {"First Name" : "Lisa", "Last Name" : "Hampton", "Board Member" : true, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "lisa.hampton@pDatagrid.com"},
+	  {"First Name" : "Pamela", "Last Name" : "McGuire", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "pamela.mcGuire@pDatagrid.com"},
+	  {"First Name" : "Sebastian", "Last Name" : "Wigmore", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "sebastian.wigmore@pDatagrid.com"},
+	  {"First Name" : "John", "Last Name" : "Dove", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "john.dove@pDatagrid.com"},
+	  {"First Name" : "Frederic", "Last Name" : "Mann", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "frederic.mann@pDatagrid.com"},
+	  {"First Name" : "Kim", "Last Name" : "Magnussen", "Board Member" : true, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "kim.magnussen@pDatagrid.com"},
+	  {"First Name" : "Gus", "Last Name" : "Nemeth", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "gus.nemeth@pDatagrid.com"},
+	  {"First Name" : "Zelda", "Last Name" : "Trevor", "Board Member" : true, Birth : "1977-06-20", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "zelda.trevor@pDatagrid.com"},
+	  {"First Name" : "Abraham", "Last Name" : "Katz", "Board Member" : false, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "abraham.katz@pDatagrid.com"},
+	  {"First Name" : "Eve", "Last Name" : "Adams", "Board Member" : false, Birth : "1985-10-12", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "eve.adams@pDatagrid.com"},
+	  {"First Name" : "Kurt", "Last Name" : "Galloway", "Board Member" : true, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "kurt.galloway@pDatagrid.com"},
+	  {"First Name" : "Felicia", "Last Name" : "Cornwall", "Board Member" : true, Birth : "1977-12-03", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "felicia.cornwall@pDatagrid.com"},
+	  {"First Name" : "Paolo", "Last Name" : "Icardi", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "paolo.icardi@pDatagrid.com"},
+	  {"First Name" : "Marie-Claire", "Last Name" : "Bouquet", "Board Member" : false, Birth : "1976-06-18", "Join Date" : "2000-06-04", Salary : 1400.00, Notice : "8 weeks", Email : "marie-claire.bouquet@pDatagrid.com"},
+	  {"First Name" : "Nora", "Last Name" : "Millian", "Board Member" : true, Birth : "1972-08-04", "Join Date" : "2010-10-17", Salary : 2600.00, Notice : "8 weeks", Email : "nora.millian@pDatagrid.com"},
+	  {"First Name" : "Thomas", "Last Name" : "Morton", "Board Member" : false, Birth : "1982-10-22", "Join Date" : "2002-06-12", Salary : 3000.00, Notice : "4 weeks", Email : "thomas.morton@pDatagrid.com"},
+	  {"First Name" : "Gabriel", "Last Name" : "Saint Giles", "Board Member" : false, Birth : "1979-03-21", "Join Date" : "2006-01-26", Salary : 3400.00, Notice : "2 weeks", Email : "gabriel.saintgiles@pDatagrid.com"},
+	  {"First Name" : "Della", "Last Name" : "Robson", "Board Member" : false, Birth : "1984-11-13", "Join Date" : "2011-04-23", Salary : 2800.00, Notice : "8 weeks", Email : "della.robson@pDatagrid.com"},
+	  {"First Name" : "Martha", "Last Name" : "Rich", "Board Member" : false, Birth : "1980-01-22", "Join Date" : "2004-05-18", Salary : 12000.00, Notice : "12 weeks", Email : "martha.rich@pDatagrid.com"},
+	  {"First Name" : "Cole", "Last Name" : "Tyrrel", "Board Member" : false, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "cole.tyrrel@pDatagrid.com"},
+	  {"First Name" : "Jeremiah", "Last Name" : "Goldsmith", "Board Member" : false, Birth : "1982-07-14", "Join Date" : "2001-07-12", Salary : 3800.00, Notice : "12 weeks", Email : "jeremiah.goldsmith@pDatagrid.com"},
+	  {"First Name" : "Jennifer", "Last Name" : "Lewis", "Board Member" : false, Birth : "1983-11-09", "Join Date" : "1997-12-05", Salary : 2200.00, Notice : "4 weeks", Email : "jennifer.lewis@pDatagrid.com"},
+	  {"First Name" : "Paul", "Last Name" : "Shaw", "Board Member" : false, Birth : "1986-03-31", "Join Date" : "2002-08-15", Salary : 1440.00, Notice : "2 weeks", Email : "paul.shaw@pDatagrid.com"},
+	  {"First Name" : "Alison", "Last Name" : "Worth", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "alison.worth@pDatagrid.com"},
+	  {"First Name" : "Emily", "Last Name" : "Johnson", "Board Member" : false, Birth : "1988-02-10", "Join Date" : "1995-06-04", Salary : 2000.00, Notice : "4 weeks", Email : "emily.johnson@pDatagrid.com"},
+	  {"First Name" : "Jessica", "Last Name" : "Penny", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "jessica.penny@pDatagrid.com"},
+	  {"First Name" : "Jeffrey", "Last Name" : "Kessel", "Board Member" : true, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "jeffrey.kessel@pDatagrid.com"},
+	  {"First Name" : "Florence", "Last Name" : "Richmond", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "florence.richmond@pDatagrid.com"},
+	  {"First Name" : "Annabella", "Last Name" : "Serafini", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "annabella.serafini@pDatagrid.com"},
+	  {"First Name" : "Adrian", "Last Name" : "Fawl", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "adrian.fawl@pDatagrid.com"},
+	  {"First Name" : "Bruce", "Last Name" : "Ackerman", "Board Member" : false, Birth : "1979-12-02", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "bruce.ackerman@pDatagrid.com"},
+	  {"First Name" : "Molly", "Last Name" : "Spencer", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "molly.spencer@pDatagrid.com"},
+	  {"First Name" : "Susan", "Last Name" : "Atkins", "Board Member" : false, Birth : "1981-04-15", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "susan.atkins@pDatagrid.com"},
+	  {"First Name" : "Craig", "Last Name" : "Barrett", "Board Member" : false, Birth : "1968-05-25", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "craig.barrett@pDatagrid.com"},
+	  {"First Name" : "Victoria", "Last Name" : "Chandler", "Board Member" : false, Birth : "1991-08-21", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "victoria.chandler@pDatagrid.com"},
+	  {"First Name" : "Rebecca", "Last Name" : "Chamberlain", "Board Member" : false, Birth : "1985-09-08", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "rebecca.chamberlain@pDatagrid.com"},
+	  {"First Name" : "Julie", "Last Name" : "Byrd", "Board Member" : true, Birth : "1977-06-20", "Join Date" : "2005-03-01", Salary : 2600.00, Notice : "8 weeks", Email : "julie.byrd@pDatagrid.com"},
+	  {"First Name" : "Kevin", "Last Name" : "Cork", "Board Member" : false, Birth : "1992-01-03", "Join Date" : "1992-08-18", Salary : 6800.00, Notice : "12 weeks", Email : "kevin.cork@pDatagrid.com"},
+	  {"First Name" : "Karen", "Last Name" : "Curtis", "Board Member" : false, Birth : "1987-07-16", "Join Date" : "2012-06-14", Salary : 6800.00, Notice : "12 weeks", Email : "karen.curtis@pDatagrid.com"}
+	]
+};
+
+
+//=============================   Pergola examples - DataGrid   ==========================
+var grid;
+
+try {
+grid = new pergola.Window("Grid")
+.build({
+  parent : document.getElementById("layer1"),
+  type : "datagrid",
+  hasZoomAndPan : false,
+  hasCommands : false,
+  hasToolBar : false,
+  hasStatus : false,
+  x : 0,
+  y : 0,
+  width : 600,
+  height : 600,
+  scrollSize : 15,
+  statusHeight : 0,
+  // mousewheel : "scroll"
+})
+
+grid.datagridMaker({
+  readOnly : true,
+  binding : object,
+  // savePath : "Saved Files",       // Important: relative to writeFile.php on server. Defaults to root folder
+  permissions : "default",  // "user" (default) or "administrator" 
+//  fill : "#FFFFFC",               // if not set, white
+//  altFill : "#F0F0F0",            // if not set, "#F4F8FF"
+//  stroke : "none",                // if not set, inherited stroke applies
+  "font-size" : 12,
+//  "font-family" : "'Comic Sans MS'",
+  gutter : true,
+//  language : "fr-FR",           // if not set, pergola.locale applies (browser's language)
+//  rowHeight : 22,
+  menu : false                     // or array of strings, any of default ["file", "edit", "view", "search"]
+/*
+  customMenus : {                 // add with regular menu syntax. You can query the data (datagrid menus are post-synchro).
+    custom : {
+      title : "Custom Menu",
+      items : {
+        menuItem : {
+          string : "Item",
+          ...
+        }                           
+      }
+    }
+  },
+*/
+//  exclude : ["Salary"]            // specify columns with sensitive data to exclude in readOnly mode. 
+});
+} catch(e){};
+
+debugger;
+//pergola.doc.setAttribute("x", 1700)
+//pergola.doc.setAttribute("y", -400) 
+grid.container.setAttribute("x", 1700);
+grid.container.setAttribute("y", -400);
+
+var winSld = new pergola.Window("Slider")
+.build({
+  parent : document.getElementById("layer1"),
+  hasZoomAndPan : false,
+  hasCommands : false,
+  hasToolBar : false,
+  hasStatus : false,
+  x : 0,
+  y : 0,
+  width : 120,
+  height : 300,
+  scrollSize : 15,
+  statusHeight : 0,
+  fill: "#dddddd",
+  // mousewheel : "scroll"
+})
+winSld.container.setAttribute("x", 1700);
+winSld.container.setAttribute("y", 200);
+
+var mySlider = new pergola.Slider("My Slider")
+.buildV({
+  owner:  winSld,
+  parent: winSld.container,
+  x : 50,
+  y : 60,
+  extent : 180,
+  shape : "square",
+  size : 20,
+  "font-size" : 12,
+  valueTip : true,
+  initial : "start",
+  type : "discrete",
+  numberOfSteps : 10,
+  fn : "myFunction",
+  stroke: "black",
+  fill: "#444444",
+  trackStroke: "black",
+  trackfill: "#444444",
+  trackOpacity: .2,
+  slotStroke: "black",
+  slotSize: 2,
+});
+mySlider.myFunction = function (evt) {
+}
+
+
+var shirtsPanel = new pergola.Window("Selectors")
+.build({
+  parent : document.getElementById("layer1"),
+  title : "T SHIRTS",
+  x : 0,
+  y : 0,
+  width : 440,
+  height : 330,
+  hasZoomAndPan : false,
+  hasCommands : false,
+  hasToolBar : false,
+  hasStatus : false,
+});
+shirtsPanel.container.setAttribute("x", 1850);
+shirtsPanel.container.setAttribute("y", 200);
+
+var shirt = {container : $C({element : "g", transform : "translate(270 110)", appendTo : shirtsPanel.container})};
+
+pergola.extend(shirt, {
+	x : 18.5,
+  y : 14,
+	shape : $C({element : "path", d : "M0 0h14q4.5 4.5,9 0h14v9h-5v24h-27v-24h-5z", transform : "scale(2)", fill : "#0040C0", appendTo : shirt.container}),
+	text : $C({element : "text", x : 37, y : 28, "font-size" : "10px", "font-weight" : "bold", "text-anchor" : "middle", kerning : 0, fill : "white", textNode : "PERGOLA", appendTo : shirt.container}),
+	colors : ["#FF0000", "#FF8000", "#0040C0", "#D000D0", "#00A040"],
+	colorNames : ["Red", "Orange", "Blue", "Purple", "Green"],
+	sizes : ["Small", "Medium", "Large", "Extra large"],
+	qtyValues : ["10", "50", "100", "500", "1000"],
+	quantity : 10, 
+	size : "Medium",
+	color : "Blue",
+
+  setSize : function (i) {
+  	this.size = this.sizes[i]
+    this.shape.setAttributeNS(null, "transform", "scale(" + ++i + ")");
+		pergola.attribute(this.text, {"font-size" : 5 * i, x : this.x * i, y : this.y * i});
+  },
+
+  setColor : function (i) {
+  	this.color = this.colors[i];
+    this.shape.setAttributeNS(null, "fill", this.color);
+  },
+
+  setQty : function (i) {
+  	this.quantity = this.qtyValues[i];
+  }
+});
+
+new pergola.Selector()
+.build({
+	owner : shirt,
+	parent : shirtsPanel.container,
+	x : 60,
+	y : 110,
+  width : 180,
+	list : shirt.sizes,
+	index : 1,
+	caption : {
+    y : 15,
+    textNode : "Size"
+  },
+  fn : function (evt) {
+		this.owner.setSize(this.index);
+	}
+});
+
+new pergola.Selector()
+.build({
+	owner : shirt,
+	parent : shirtsPanel.container,
+	x : 60,
+	y : 160,
+  width : 180,
+	list : shirt.colorNames,
+	index : 2,
+	caption : {
+    y : 15,
+    textNode : "Color"
+  },
+  fn : function (evt) {
+		this.owner.setColor(this.index);
+	}
+});
+
+new pergola.Selector()
+.build({
+	owner : shirt,
+	parent : shirtsPanel.container,
+	x : 60,
+	y : 210,
+	width : 60,
+	list : shirt.qtyValues,
+	index : 0,
+	caption : {
+    y : 15,
+    textNode : "Qty"
+  },
+  fn : function (evt) {
+		this.owner.setQty(this.index);
+	}
+});
+
+pergola.doc.style.display='none';
+
+]]></script>
+
   <g
      transform="translate(0,447.63782)"
      id="layer1"
