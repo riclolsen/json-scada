@@ -281,10 +281,11 @@ services:
       - PGPASSWORD=
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
-      - ../src/htdocs:/htdocs
-      - ../src/htdocs-admin:/htdocs-admin
-      - ../src/htdocs-login:/htdocs-login
+      #- ../src/htdocs:/htdocs
+      #- ../src/htdocs-admin:/htdocs-admin
+      #- ../src/htdocs-login:/htdocs-login
       - ../src/AdminUI:/AdminUI
+      - ../svg:/svg
       - ./conf:/conf
       - ./log:/log
     links:
