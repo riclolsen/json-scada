@@ -1,10 +1,10 @@
-echo This script builds JSON-SCADA Windows x64 binaries and restores NodeJS NPM modules.
+echo This script builds JSON-SCADA Windows x64 binaries and updates NodeJS NPM modules.
 echo Required tools:
-echo - Dotnet Core SDK 6.0
-echo - Golang 1.14+
+echo - Dotnet Core SDK 8.0
+echo - Golang 1.22+
 echo - Node.js 20+
 
-set JSPATH=c:\json-scada
+set JSPATH=\json-scada
 set SRCPATH=%JSPATH%\src
 set BINPATH=%JSPATH%\bin
 set BINWINPATH=%JSPATH%\demo-docker\bin_win
@@ -115,12 +115,10 @@ call %NPM% update
 cd %SRCPATH%\shell-api
 call %NPM% i --package-lock-only
 call %NPM% update
-cd %SRCPATH%\htdocs-admin
-set NODE_OPTIONS=--openssl-legacy-provider
+cd %SRCPATH%\AdminUI
 call %NPM% i --package-lock-only
 call %NPM% update
 call %NPM% run build
-set NODE_OPTIONS=
 cd %SRCPATH%\grafana_alert2event
 call %NPM% i --package-lock-only
 call %NPM% update
@@ -151,17 +149,33 @@ call %NPM% update
 cd %SRCPATH%\mongowr
 call %NPM% i --package-lock-only
 call %NPM% update
+
 cd %SRCPATH%\log-io\ui
 call %NPM% i --package-lock-only
-call %NPM% update
+rem call %NPM% update
+call %NPM% install
 call %NPM% run build
+
 cd %SRCPATH%\log-io\server
 call %NPM% i --package-lock-only
-call %NPM% update
+rem call %NPM% update
+call %NPM% install
 call %NPM% run build
+call %NPM% prune --omit=dev
+
 cd %SRCPATH%\log-io\inputs\file
+call %NPM% i --package-lock-only
+rem call %NPM% update
+call %NPM% install
+call %NPM% run build
+call %NPM% prune --omit=dev
+
+rem deprecated
+cd %SRCPATH%\htdocs-admin
+set NODE_OPTIONS=--openssl-legacy-provider
 call %NPM% i --package-lock-only
 call %NPM% update
 call %NPM% run build
+set NODE_OPTIONS=
 
 cd %JSPATH%\platform-windows

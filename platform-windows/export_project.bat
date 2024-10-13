@@ -5,7 +5,7 @@ set MONGO_CONNECT_STRING=mongodb://192.168.239.133/?tls=false&directConnection=t
 set MONGOBIN=%JSPATH%\platform-windows\mongodb-runtime\bin
 set JAVAPATH=%JSPATH%\platform-windows\jdk-runtime\bin
 set TARPATH=%JSPATH%\platform-windows
-set SVGPATH=%JSPATH%\src\AdminUI\dist\svg
+set SVGPATH=%JSPATH%\svg
 set mongoConnectionString=mongodb://127.0.0.1/json_scada?tls=false&directConnection=true
 set database=json_scada
 set tlsCaPemFile=
@@ -17,9 +17,9 @@ set tlsAllowInvalidHostnames=true
 set tlsAllowChainErrors=true
 set tlsInsecure=false
 
-cd %JSPATH%\platform-windows\
+cd /d %JSPATH%\platform-windows\
 
-IF [%1]==[] ( SET "OUTPUTFILE=jsproject.zip" ) ELSE ( SET "OUTPUTFILE=%1" )
+if [%1]==[] ( SET "OUTPUTFILE=jsproject.zip" ) ELSE ( SET "OUTPUTFILE=%1" )
 
 for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json mongoConnectionString') do set "mongoConnectionString=%%~a"
 for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json database') do set "database=%%~a"
@@ -55,8 +55,8 @@ rem optional
 rem copy %JSPATH%\conf\*.* %TMPPATH%\
 
 rem %TARPATH%\tar -a -c -f  %TMPPATH%\jsproject.zip -C %TMPPATH% *.json 
-cd %TMPPATH%
+cd /d %TMPPATH%
 %JAVAPATH%\jar -cfM %OUTPUTFILE% *.json 
 %JAVAPATH%\jar -ufM %OUTPUTFILE% *.js
 %JAVAPATH%\jar -ufM %OUTPUTFILE% *.svg 
-cd %JSPATH%\platform-windows\
+cd /d %JSPATH%\platform-windows\
