@@ -135,6 +135,40 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.39:
+
+* ATTENTION: The default SVG folder was moved to "c:\json-scada\svg\".
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* New reconstructed and improved web UI based on Vuetify 3. 
+* New option to export and import project files. 
+* Improved MQTT/Sparkplug-B Client driver.
+* Demo simulator now works with recent versions of MongoDB.
+* SVG displays can now use the Pergola library.
+* Added GraphQL server.
+* Avoid deadlocks on PostgreSQL updates/inserts.
+* IEC 104 Server allows for TLS 1.2 and 1.3 connections.
+* NPM packages updated.
+* Dotnet runtime updated to 8.0.10.
+* MongoDB Community Server updated to 8.0.1.
+* MongoDB Compass updated to 1.44.4.
+* Grafana updated to 11.2.2.
+* Nodejs runtime updated to 20.18.0.
+* Telegraf runtime updated to 1.32.1.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
 Notes for version 0.38:
 
 * Default login credentials: username=admin password=jsonscada.
