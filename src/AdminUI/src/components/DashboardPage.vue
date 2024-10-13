@@ -13,7 +13,7 @@
           dense
           :color="shortcut.color"
           hover
-          @click="if(shortcut.route!='') navigateTo(shortcut.route)"
+          @click="handleCardClick(shortcut)"
         >
           <v-card-title class="text-h6">
             {{ $t(shortcut.titleKey) }}
@@ -118,7 +118,7 @@
       icon: UserCog,
       color: 'warning',
       route: '/admin',
-      page: '/admin',
+      page: '/#/admin',
       target: '_blank',
     },
     {
@@ -134,11 +134,25 @@
       icon: HelpCircle,
       color: 'green',
       route: '/about',
+      page: '/#/about',
+      target: '_blank',
     },
   ])
 
+  const handleCardClick = (shortcut) => {
+    if (shortcut.route) {
+      navigateTo(shortcut.route)
+    } else if (shortcut.page) {
+      window.open(shortcut.page, shortcut.target || '_blank')
+    }
+  }
+
   const navigateTo = (route) => {
-    router.push(route)
+    if (route.startsWith('http://') || route.startsWith('https://')) {
+      window.open(route, '_blank')
+    } else {
+      router.push(route)
+    }
   }
 
   const parseCookie = (str) => {

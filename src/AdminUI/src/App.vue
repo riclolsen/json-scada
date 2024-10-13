@@ -119,7 +119,7 @@
   import { useRouter } from 'vue-router'
   import { STORAGE_KEY } from './i18n'
 
-  const version = ref('v0.38-alpha')
+  const version = ref('v0.39-alpha')
   const router = useRouter()
   const theme = ref('dark')
   const vuetifyTheme = useTheme()
