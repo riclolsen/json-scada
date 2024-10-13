@@ -156,11 +156,12 @@ call %NPM% run build
 cd %SRCPATH%\log-io\server
 call %NPM% install
 call %NPM% run build
+call %NPM% prune --omit=dev
 
 cd %SRCPATH%\log-io\inputs\file
 call %NPM% install
-
 call %NPM% run build
+call %NPM% prune --omit=dev
 
 rem deprecated
 cd %SRCPATH%\htdocs-admin
