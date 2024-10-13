@@ -43,7 +43,7 @@ SetCompress off
 !define /date DATEBAR "%d/%m/%Y"
 Name "JSON-SCADA"
 Caption "{json:scada} Installer ${VERSION} ${DATEBAR}"
-Icon "..\src\htdocs\images\j-s-256.ico"
+Icon "..\src\AdminUI\public\images\j-s-256.ico"
 
 !define /date DATE "%d_%m_%Y"
 OutFile "installer-release\json-scada_setup_${VERSION}.exe"
@@ -476,11 +476,11 @@ SetRegView 64
 
   SetOverwrite off
 
-  SetOutPath $INSTDIR\src\htdocs\conf
-  File /a /r "..\src\htdocs\conf\*.*"
+  SetOutPath $INSTDIR\src\AdminUI\public\conf
+  File /a /r "..\src\AdminUI\public\conf\*.*"
 
-  SetOutPath $INSTDIR\src\htdocs\svg
-  File /a /r "..\src\htdocs\svg\*.*"
+  SetOutPath $INSTDIR\svg
+  File /a /r "..\svg\*.*"
 
   SetOutPath $INSTDIR\src\cs_custom_processor
   File /a "..\src\cs_custom_processor\customized_module.js"
