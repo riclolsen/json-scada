@@ -35,6 +35,7 @@ const COLL_ACTIONS = 'userActions'
 const LoadConfig = require('./load-config')
 const Log = require('./simple-logger')
 const express = require('express')
+const fileUpload = require('express-fileupload');
 const httpProxy = require('express-http-proxy')
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
@@ -89,6 +90,12 @@ let pool = null
 
     app.use(cookieParser())
     app.options(OPCAPI_AP, cors()) // enable pre-flight request
+    // enable files upload
+    app.use(
+      fileUpload({
+        createParentPath: true,
+      })
+    )
     app.use(express.json())
     app.use(
       express.urlencoded({

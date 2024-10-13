@@ -59,6 +59,11 @@ module.exports = function (app, accessPoint) {
     controller.createProtocolConnection
   )
   app.use(
+    accessPoint + 'auth/getProtocolConnectionModel',
+    [authJwt.isAdmin],
+    controller.getProtocolConnectionModel
+  )
+  app.use(
     accessPoint + 'auth/listProtocolConnections',
     [authJwt.isAdmin],
     controller.listProtocolConnections
@@ -151,5 +156,25 @@ module.exports = function (app, accessPoint) {
   app.post(
     accessPoint + 'auth/changePassword',
     controller.changePassword
+  )
+  app.post(
+    accessPoint + 'auth/exportProject',
+    [authJwt.isAdmin],
+    controller.exportProject
+  )
+  app.post(
+    accessPoint + 'auth/importProject',
+    [authJwt.isAdmin],
+    controller.importProject
+  )
+  app.post(
+    accessPoint + 'auth/restartProcesses',
+    [authJwt.isAdmin],
+    controller.restartProcesses
+  )
+  app.post(
+    accessPoint + 'auth/sanitizeDatabase',
+    [authJwt.isAdmin],
+    controller.sanitizeDatabase
   )
 }

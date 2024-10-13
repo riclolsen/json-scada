@@ -106,7 +106,7 @@ isAdmin = async (req, res, next) => {
 checkToken = (req) => {
   let res = false
 
-  Log.log('CheckToken')
+  // Log.log('CheckToken')
   let token = req.headers['x-access-token'] || req.cookies['x-access-token']
 
   if (!token) {
@@ -127,17 +127,30 @@ checkToken = (req) => {
 canSendCommands = async (req) => {
   Log.log('canSendCommands?')
 
+  let tok = checkToken(req)
+  if (tok === false) {
+    Log.log("No token found, can't send commands!")
+    return false
+  }
+
   try {
-    const user = await User.findById(req.userId).exec()
-    if (!user) return false
+    const user = await User.findById(tok.id).exec()
+    if (!user) {
+      Log.log("User not found, can't send commands!")
+      return false
+    }
 
     const roles = await Role.find({
       _id: { $in: user.roles },
     }).exec()
-    if (!roles || roles.length == 0) return false
+    if (!roles || roles.length == 0) {
+      Log.log("No role found, can't send commands!")
+      return false
+    }
 
     for (let i = 0; i < roles.length; i++) {
       if (roles[i].sendCommands) {
+        Log.log('User can send commands!')
         return true
       }
     }
@@ -150,37 +163,54 @@ canSendCommands = async (req) => {
 
 // User in request can send commands to a group1 location?
 canSendCommandTo = async (req, group1) => {
-  Log.log('canSendCommandTo?')
-  let result = true
+  Log.log('canSendCommandTo: ' + group1 + ' ?')
+
+  let tok = checkToken(req)
+  if (tok === false) {
+    Log.log("No token found, can't send commands to: " + group1)
+    return false
+  }
 
   try {
-    const user = await User.findById(req.userId).exec()
-    if (!user) return false
+    const user = await User.findById(tok.id).exec()
+    if (!user) {
+      Log.log("User not found, can't send commands to: " + group1)
+      return false
+    }
 
     const roles = await Role.find({
       _id: { $in: user.roles },
     }).exec()
 
-    if (!roles || roles.length == 0) return false
+    if (!roles || roles.length == 0) {
+      Log.log("No role found, can't send commands to: " + group1)
+      return false
+    }
 
+    let canCmd = true
     for (let i = 0; i < roles.length; i++) {
       if (roles[i].group1CommandList.length > 0) {
         // has a list, so in principle deny command
-        result = false
+        canCmd = false
       }
       if (roles[i].group1CommandList.includes(group1)) {
-        Log.log('User can command!')
+        Log.log('User can send commands to: ' + group1)
         return true
       }
     }
-    if (result) Log.log('User can command!')
-    else Log.log('User has no right to issue commands!')
-    return result
+
+    if (!canCmd) {
+      Log.log('User has no right to issue commands to: ' + group1)
+      return false
+    }
+
+    Log.log('User can send commands to: ' + group1)
+    return canCmd
   } catch (err) {
     Log.log(err)
   }
 
-  Log.log('User has no right to issue commands!')
+  Log.log('User has no right to issue commands to: ' + group1)
   return false
 }
 

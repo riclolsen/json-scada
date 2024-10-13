@@ -1,18 +1,20 @@
 const Log = require('../../simple-logger')
+const LoadConfig = require('../../load-config')
 const config = require('../config/auth.config')
 const db = require('../models')
 const fs = require('fs')
 const path = require('path')
+const UserActionsQueue = require('../../userActionsQueue')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const { spawn } = require('child_process')
+const AdmZip = require('adm-zip')
 const User = db.user
 const Role = db.role
 const Tag = db.tag
 const ProtocolDriverInstance = db.protocolDriverInstance
 const ProtocolConnection = db.protocolConnection
 const UserAction = db.userAction
-const UserActionsQueue = require('../../userActionsQueue')
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
-const { error } = require('console')
 
 // add header to identify json-scada user for Grafana auto-login (auth.proxy)
 exports.addXWebAuthUser = (req) => {
@@ -31,9 +33,10 @@ exports.listUserActions = async (req, res) => {
 
   let limit = req.body.itemsPerPage || 10
   let orderby = {}
-  if ('sortBy' in req.body && 'sortDesc' in req.body) {
+  if ('sortBy' in req.body) {
     for (let i = 0; i < req.body.sortBy.length; i++)
-      orderby[req.body.sortBy[i]] = req.body.sortDesc[i] ? -1 : 1
+      orderby[req.body.sortBy[i].key] =
+        req.body.sortBy[i]?.order === 'desc' ? -1 : 1
     if (req.body.sortBy.length === 0) orderby = { timeTag: 1 }
   } else orderby = { timeTag: 1 }
 
@@ -52,24 +55,44 @@ exports.listUserActions = async (req, res) => {
 }
 
 exports.createTag = async (req, res) => {
+  Log.log('createTag')
   try {
+    if (req.body?._id && req.body?._id != 0) {
+      req.body._id = Math.trunc(parseFloat(req.body._id))
+      const existingTag = await Tag.findOne({ _id: req.body._id })
+      if (existingTag) {
+        res.status(200).send({ error: 'Tag already exists' })
+        return
+      }
+
+      if (!req.body.tag || req.body.tag.trim() == '')
+        req.body.tag = 'new_tag_' + req.body._id
+      req.body.tag = req.body.tag.trim()
+      const tag = new Tag(req.body)
+      await tag.save()
+      req.body = { _id: tag._id }
+      registerUserAction(req, 'createTag')
+      res.status(200).send(tag)
+      return
+    }
+
     // find biggest tag _id
     let biggestTagId = 0
-    let resBiggest = await Tag.find({ _id: { $gt: 0 } })
+    let resBiggest = await Tag.find({})
       .select('_id')
       .sort({ _id: -1 })
       .limit(1)
       .exec()
     if (resBiggest && resBiggest.length > 0 && '_id' in resBiggest[0])
-      biggestTagId = parseFloat(resBiggest[0]._id)
-    // Log.log(biggestTagId)
-
-    req.body._id = parseFloat(biggestTagId + 1)
-    req.body.tag = 'new_tag_' + req.body._id
-    // Log.log(req.body)
+      biggestTagId = Math.trunc(parseFloat(resBiggest[0]._id))
+    if (biggestTagId < 0) biggestTagId = 0
+    req.body._id = Math.trunc(parseFloat(biggestTagId + 1))
+    if (!req.body.tag || req.body.tag.trim() == '')
+      req.body.tag = 'new_tag_' + req.body._id
+    req.body.tag = req.body.tag.trim()
     const tag = new Tag(req.body)
     await tag.save()
-    req.body = { _id: tag._id }
+    req.body = tag
     registerUserAction(req, 'createTag')
     res.status(200).send(tag)
   } catch (err) {
@@ -133,15 +156,16 @@ exports.listTags = async (req, res) => {
     skip = req.body.itemsPerPage * (req.body.page - 1)
   let filter = {}
   if ('filter' in req.body) filter = req.body.filter
+  req.body.filter['_id'] = { $nin: [-1, -2] }
 
   let limit = req.body.itemsPerPage || 10
   let orderby = {}
-  if ('sortBy' in req.body && 'sortDesc' in req.body) {
+  if ('sortBy' in req.body) {
     for (let i = 0; i < req.body.sortBy.length; i++)
-      orderby[req.body.sortBy[i]] = req.body.sortDesc[i] ? -1 : 1
+      orderby[req.body.sortBy[i].key] =
+        req.body.sortBy[i]?.order === 'desc' ? -1 : 1
     if (req.body.sortBy.length === 0) orderby = { tag: 1 }
   } else orderby = { tag: 1 }
-
   try {
     let count = await Tag.countDocuments(filter)
     let tags = await Tag.find(filter)
@@ -709,7 +733,14 @@ exports.deleteProtocolConnection = async (req, res) => {
   try {
     registerUserAction(req, 'deleteProtocolConnection')
 
+    if (req.body?.deleteTags === true) {
+      await Tag.deleteMany({
+        protocolSourceConnectionNumber: req.body.protocolConnectionNumber,
+      })
+    }
+
     await ProtocolConnection.findOneAndDelete({ _id: req.body._id })
+
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
@@ -732,7 +763,28 @@ exports.createProtocolConnection = async (req, res) => {
     await protocolConnection.save()
     req.body = { _id: protocolConnection._id }
     registerUserAction(req, 'createProtocolConnection')
-    res.status(200).send({ error: false })
+    res.status(200).send({ _id: protocolConnection._id, error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
+}
+
+exports.getProtocolConnectionModel = async (req, res) => {
+  try {
+    // find the biggest connection number and increment for the new connection
+    let protocolConnections = await ProtocolConnection.find({}).exec()
+    let connNumber = 0
+    protocolConnections.forEach((element) => {
+      if (element.protocolConnectionNumber > connNumber)
+        connNumber = element.protocolConnectionNumber
+    })
+    const protocolConnection = new ProtocolConnection()
+    protocolConnection.protocolConnectionNumber = connNumber + 1
+    protocolConnection.DriverInstanceNumber = 1
+    res
+      .status(200)
+      .send({ error: false, protocolConnection: protocolConnection })
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: err })
@@ -764,14 +816,16 @@ exports.deleteProtocolDriverInstance = async (req, res) => {
 }
 
 exports.listNodes = async (req, res) => {
+  const cfg = LoadConfig()
   Log.log('listNodes')
   try {
     let driverInstances = await ProtocolDriverInstance.find({}).exec()
     let listNodes = []
+    if (cfg.nodeName) listNodes.push(cfg.nodeName)
     driverInstances.map((element) => {
       listNodes = listNodes.concat(element.nodeNames)
     })
-    res.status(200).send(listNodes)
+    res.status(200).send([...new Set(listNodes)])
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: err })
@@ -784,7 +838,7 @@ exports.createProtocolDriverInstance = async (req, res) => {
     await driverInstance.save()
     req.body = { _id: driverInstance._id }
     registerUserAction(req, 'createProtocolDriverInstance')
-    res.status(200).send({ error: false })
+    res.status(200).send({ _id: driverInstance._id, error: false })
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: err })
@@ -813,16 +867,12 @@ exports.updateProtocolDriverInstance = async (req, res) => {
       { _id: req.body._id },
       req.body
     )
-  } catch (e) {
-    req.body.protocolDriverInstanceNumber =
-      req.body.protocolDriverInstanceNumber + 1
-    await ProtocolDriverInstance.findOneAndUpdate(
-      { _id: req.body._id },
-      req.body
-    )
+    registerUserAction(req, 'updateProtocolDriverInstance')
+    res.status(200).send({ error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
   }
-  registerUserAction(req, 'updateProtocolDriverInstance')
-  res.status(200).send({})
 }
 
 exports.listUsers = async (req, res) => {
@@ -875,6 +925,13 @@ exports.userAddRole = async (req, res) => {
 
 exports.userRemoveRole = async (req, res) => {
   try {
+    if (req?.body?.username === 'admin' && req.body.role === 'admin') {
+      res
+        .status(200)
+        .send({ error: 'Cannot remove admin role from admin user!' })
+      return
+    }
+
     registerUserAction(req, 'userRemoveRole')
 
     let role = await Role.findOne({ name: req.body.role }).exec()
@@ -932,10 +989,10 @@ exports.updateRole = async (req, res) => {
   try {
     registerUserAction(req, 'updateRole')
     await Role.findOneAndUpdate({ _id: req.body._id }, req.body)
-    res.status(200).send({})
+    res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({})
+    res.status(200).send({ error: err })
   }
 }
 
@@ -952,10 +1009,10 @@ exports.updateUser = async (req, res) => {
     else delete req.body['password']
     delete req.body['roles']
     await User.findOneAndUpdate({ _id: req.body._id }, req.body)
-    res.status(200).send({})
+    res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({})
+    res.status(200).send({ error: err })
   }
 }
 
@@ -991,18 +1048,40 @@ exports.createUser = async (req, res) => {
 
 exports.deleteRole = async (req, res) => {
   Log.log('Delete role')
+
+  // do not delete a role that is attributed to a user
+  let users = await User.find({ roles: req.body._id }).exec()
+  if (users.length > 0)
+    return res
+      .status(200)
+      .send({ error: 'Cannot delete role that is attributed to a user!' })
+
   registerUserAction(req, 'deleteRole')
 
-  await Role.findOneAndDelete({ _id: req.body._id })
-  res.status(200).send({ error: false })
+  try {
+    await Role.findOneAndDelete({ _id: req.body._id })
+    res.status(200).send({ error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
 }
 
 exports.deleteUser = async (req, res) => {
   Log.log('Delete user')
+  if (req.body.username === 'admin') {
+    res.status(200).send({ error: 'Cannot delete admin user!' })
+    return
+  }
   registerUserAction(req, 'deleteUser')
 
-  await User.findOneAndDelete({ _id: req.body._id })
-  res.status(200).send({ error: false })
+  try {
+    await User.findOneAndDelete({ _id: req.body._id })
+    res.status(200).send({ error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
 }
 
 // create user profile passing username, email, password and roles
@@ -1206,35 +1285,6 @@ checkToken = (req) => {
   return res
 }
 
-// enqueue use action for later insertion to mongodb
-function registerUserAction(req, actionName) {
-  let body = {}
-  Object.assign(body, req.body)
-
-  let ck = checkToken(req)
-  if (ck !== false) {
-    Log.log(actionName + ' - ' + ck?.username)
-    delete body['password']
-    // register user action
-    UserActionsQueue.enqueue({
-      username: ck?.username,
-      properties: body,
-      action: actionName,
-      timeTag: new Date(),
-    })
-  } else {
-    Log.log(actionName + ' - ' + req.body?.username)
-    delete body['password']
-    // register user action
-    UserActionsQueue.enqueue({
-      username: req.body?.username,
-      properties: body,
-      action: actionName,
-      timeTag: new Date(),
-    })
-  }
-}
-
 // user change its password
 exports.changePassword = async (req, res) => {
   Log.log('User request for password change.')
@@ -1289,8 +1339,162 @@ exports.changePassword = async (req, res) => {
     registerUserAction(req, 'changePassword')
     res.status(200).send({})
     Log.log('Password changed!')
+    delete req.body['currentPassword']
+    delete req.body['newPassword']
+    registerUserAction(req, 'restartProcesses')
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: err })
+  }
+}
+
+// export project file: dump collections and some files to a zip file
+exports.exportProject = async (req, res) => {
+  Log.log('Save project')
+  try {
+    let project = req.body.project
+    if (!project.fileName || project.fileName.trim() == '')
+      project.fileName = 'new_project_' + new Date().getTime() / 1000 + '.zip'
+    project.fileName = project.fileName.trim()
+
+    let cmd = ''
+    let dir = ''
+    if (process.platform === 'win32') {
+      cmd = spawn(
+        'c:\\json-scada\\platform-windows\\export_project.bat',
+        [project.fileName],
+        { shell: true }
+      )
+      dir = 'c:\\json-scada\\tmp\\'
+    } else {
+      cmd = spawn(
+        'sh',
+        ['~/json-scada/platform-linux/export_project.sh', project.fileName],
+        { shell: true }
+      )
+      dir = '~/json-scada/tmp/'
+    }
+    cmd.stdout.on('data', (data) => Log.log(`stdout: ${data}`))
+    cmd.stderr.on('data', (data) => Log.log(`stderr: ${data}`))
+    cmd.on('close', (code) => {
+      Log.log(`child process exited with code ${code}`)
+      if (!fs.existsSync(dir + project.fileName) || code != 0) {
+        Log.log('Project file not found!')
+        res.status(200).send({ error: err })
+        return
+      }
+      registerUserAction(req, 'exportProject')
+      res.download(dir + project.fileName)
+    })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
+}
+
+// import project file: download, extract zip project file, import collections and move some files
+exports.importProject = async (req, res) => {
+  Log.log('Import project')
+  try {
+    const projectFileName = req.body.projectFileName
+    if (!req.files || !req.files.projectFileData)
+      throw new Error('No project file uploaded!')
+
+    let projectPath = ''
+    let importScript = ''
+    if (process.platform === 'win32') {
+      projectPath = 'c:\\json-scada\\tmp\\'
+      importScript = 'c:\\json-scada\\platform-windows\\import_project.bat'
+    } else {
+      projectPath = '~/json-scada/tmp/'
+      importScript = '~/json-scada/platform-linux/import_project.sh'
+    }
+    if (!fs.existsSync(projectPath)) fs.mkdirSync(projectPath)
+    await req.files.projectFileData.mv(projectPath + projectFileName)
+    const zip = new AdmZip(projectPath + projectFileName)
+
+    //var zipEntries = zip.getEntries(); // an array of ZipEntry records - add password parameter if entries are password protected
+    //zipEntries.forEach(function (zipEntry) {
+    //    console.log(zipEntry.toString()); // outputs zip entries information
+    //});
+
+    zip.extractAllTo(projectPath, true)
+    Log.log('Files extracted to: ' + projectPath)
+
+    const cmd = spawn(
+      importScript,
+      // [project.fileName],
+      { shell: true }
+    )
+    cmd.stdout.on('data', (data) => Log.log(`stdout: ${data}`))
+    cmd.stderr.on('data', (data) => Log.log(`stderr: ${data}`))
+    cmd.on('close', (code) => {
+      Log.log(`child process exited with code ${code}`)
+      registerUserAction(req, 'importProject')
+      res.status(200).send({ error: false })
+      return
+    })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
+}
+
+exports.restartProcesses = async (req, res) => {
+  Log.log('restartProcesses')
+  try {
+    let cmd = ''
+    if (process.platform === 'win32') {
+      cmd = spawn('c:\\json-scada\\platform-windows\\restart_services.bat', {
+        shell: true,
+      })
+    } else {
+      cmd = spawn('sh', ['supervisorctl', 'restart', 'all'], {
+        shell: true,
+      })
+    }
+    cmd.stdout.on('data', (data) => Log.log(`stdout: ${data}`))
+    cmd.stderr.on('data', (data) => Log.log(`stderr: ${data}`))
+    cmd.on('close', (code) => Log.log(`child process exited with code ${code}`))
+
+    registerUserAction(req, 'restartProcesses')
+    res.status(200).send({ error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
+}
+
+// placeholder for future use (sanitize database, fill up missing properties, change data types, etc.)
+exports.sanitizeDatabase = async function (req, res) {
+  res.status(200).send({ error: false })
+}
+
+// enqueue use action for later insertion to mongodb
+function registerUserAction(req, actionName) {
+  let body = {}
+  Object.assign(body, req.body)
+
+  let ck = checkToken(req)
+  if (ck !== false) {
+    Log.log(actionName + ' - ' + ck?.username)
+    delete body['password']
+    // register user action
+    UserActionsQueue.enqueue({
+      username: ck?.username,
+      properties: body,
+      action: actionName,
+      timeTag: new Date(),
+    })
+  } else {
+    Log.log(actionName + ' - ' + req.body?.username)
+    delete body['password']
+    // register user action
+    UserActionsQueue.enqueue({
+      username: req.body?.username,
+      properties: body,
+      action: actionName,
+      timeTag: new Date(),
+    })
   }
 }

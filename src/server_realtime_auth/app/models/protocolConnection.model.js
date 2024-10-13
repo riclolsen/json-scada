@@ -24,7 +24,7 @@ const ProtocolConnection = mongoose.model(
     stats: { type: Object, default: null },
 
     // IEC60870-5-104_SERVER, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850_SERVER, ICCP_SERVER, DNP3_SERVER
-    ipAddressLocalBind: { type: String },
+    ipAddressLocalBind: { type: String, default: '' },
 
     // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP, ICCP_SERVER
     ipAddresses: { type: [String], default: [] },
@@ -43,7 +43,7 @@ const ProtocolConnection = mongoose.model(
     remoteSelectors: { type: String, default: '0 0 0 1 0 1 0 1' },
 
     // MQTT-SPARKPLUG-B, OPC-UA_SERVER
-    groupId: { type: String },
+    groupId: { type: String, default: '' },
 
     // MQTT-SPARKPLUG-B, IEC60870-5-104, IEC60870-5-104_SERVER
     passphrase: { type: String, default: '' },
@@ -51,16 +51,16 @@ const ProtocolConnection = mongoose.model(
     // MQTT-SPARKPLUG-B
     topicsAsFiles: { type: [String], default: [] },
     topicsScripted: { type: [Object], default: [] },
-    clientId: { type: String },
-    edgeNodeId: { type: String },
-    deviceId: { type: String },
-    scadaHostId: { type: String },
-    publishTopicRoot: { type: String },
+    clientId: { type: String, default: '' },
+    edgeNodeId: { type: String, default: '' },
+    deviceId: { type: String, default: '' },
+    scadaHostId: { type: String, default: '' },
+    publishTopicRoot: { type: String, default: '' },
     pfxFilePath: { type: String, default: '' },
 
     // MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, OPC-DA
-    username: { type: String },
-    password: { type: String },
+    username: { type: String, default: '' },
+    password: { type: String, default: '' },
 
     // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP
     autoCreateTags: { type: Boolean, default: true },
@@ -158,7 +158,7 @@ const ProtocolConnection = mongoose.model(
     rangeScans: { type: Array, default: [] },
 
     // IEC60870-5-101, IEC60870-5-101_SERVER, DNP3
-    portName: { type: String },
+    portName: { type: String, default: '' },
     baudRate: { type: Double, min: 150, default: 9600.0 },
     parity: { type: String, default: 'Even' },
     stopBits: { type: String, default: 'One' },
