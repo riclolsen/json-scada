@@ -3,16 +3,17 @@
     <v-row>
       <v-col
         v-for="shortcut in shortcuts"
-        :key="shortcut.title"
+        :key="shortcut.titleKey"
         cols="12"
         sm="6"
         md="4"
       >
         <v-card
+          v-if="!(shortcut.titleKey === 'dashboard.admin' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.logViewer' && !isAdmin())"
           dense
           :color="shortcut.color"
           hover
-          @click="navigateTo(shortcut.route)"
+          @click="if(shortcut.route!='') navigateTo(shortcut.route)"
         >
           <v-card-title class="text-h6">
             {{ $t(shortcut.titleKey) }}
@@ -75,7 +76,7 @@
     {
       titleKey: 'dashboard.alarmsViewer',
       icon: Bell,
-      color: 'error',
+      color: 'primary',
       route: '/alarms-viewer',
       page: '/tabular.html?SELMODULO=ALARMS_VIEWER',
       target: '_blank',
@@ -83,7 +84,7 @@
     {
       titleKey: 'dashboard.tabularViewer',
       icon: Table,
-      color: 'success',
+      color: 'primary',
       route: '/tabular-viewer',
       page: '/tabular.html',
       target: '_blank',
@@ -91,17 +92,9 @@
     {
       titleKey: 'dashboard.eventsViewer',
       icon: Calendar,
-      color: 'info',
+      color: 'primary',
       route: '/events-viewer',
       page: '/events.html',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.logViewer',
-      icon: FileText,
-      color: 'warning',
-      route: '/log-viewer',
-      page: '/log-io',
       target: '_blank',
     },
     {
@@ -115,28 +108,56 @@
     {
       titleKey: 'dashboard.metabase',
       icon: Database,
-      color: 'primary',
-      route: '/metabase',
+      color: 'secondary',
+      route: '', // metabase (is not working iframed)
       page: '/metabase',
       target: '_blank',
     },
     {
       titleKey: 'dashboard.admin',
       icon: UserCog,
-      color: 'primary',
+      color: 'warning',
       route: '/admin',
       page: '/admin',
       target: '_blank',
     },
     {
+      titleKey: 'dashboard.logViewer',
+      icon: FileText,
+      color: 'warning',
+      route: '/log-viewer',
+      page: '/log-io',
+      target: '_blank',
+    },
+    {
       titleKey: 'dashboard.about',
       icon: HelpCircle,
-      color: 'secondary',
+      color: 'green',
       route: '/about',
     },
   ])
 
   const navigateTo = (route) => {
     router.push(route)
+  }
+
+  const parseCookie = (str) => {
+    if (str === '') return {}
+    return str
+      .split(';')
+      .map((v) => v.split('='))
+      .reduce((acc, v) => {
+        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
+        return acc
+      }, {})
+  }
+
+  const isAdmin = () => {
+    let ck = parseCookie(document.cookie)
+    if ('json-scada-user' in ck) {
+      ck = JSON.parse(ck['json-scada-user'])
+      if (ck?.rights?.isAdmin) return true
+    }
+    return false
   }
 </script>
