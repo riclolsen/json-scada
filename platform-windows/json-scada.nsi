@@ -113,14 +113,12 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
   nsExec::Exec 'net stop JSON_SCADA_cs_custom_processor'
-  nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
   nsExec::Exec 'net stop JSON_SCADA_config_server_excel'
   nsExec::Exec 'net stop JSON_SCADA_demo_simul'
   nsExec::Exec 'net stop JSON_SCADA_mongofw'
   nsExec::Exec 'net stop JSON_SCADA_mongowr'
   nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
-  nsExec::Exec 'net stop JSON_SCADA_shell_api'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
   nsExec::Exec 'net stop JSON_SCADA_iec101client'
@@ -380,9 +378,6 @@ SetRegView 64
   SetOutPath $INSTDIR\src\alarm_beep
   File /a /r "..\src\alarm_beep\*.*"
 
-  SetOutPath $INSTDIR\src\shell-api
-  File /a /r "..\src\shell-api\*.*"
-
   SetOutPath $INSTDIR\src\backup-mongo
   File /a /r "..\src\backup-mongo\*.*"
 
@@ -409,9 +404,6 @@ SetRegView 64
   File /a "..\src\config_server_for_excel\*.json"
   SetOutPath $INSTDIR\src\config_server_for_excel\node_modules
   File /a /r "..\src\config_Server_for_excel\node_modules\*.*"
-
-  SetOutPath $INSTDIR\src\server_realtime
-  File /a /r "..\src\server_realtime\*.*"
 
   SetOutPath $INSTDIR\src\server_realtime_auth
   File /a /r "..\src\server_realtime_auth\*.*"
@@ -564,11 +556,6 @@ Section "Uninstall"
   ; Close processes
 
   !define SC  `$SYSDIR\sc.exe`
-
-  ExecWait `"${SC}" stop "JSON_SCADA_server_realtime"`
-  Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_server_realtime"`
-  ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_server_realtime_auth"`
   Sleep 50
