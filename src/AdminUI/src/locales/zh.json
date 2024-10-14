@@ -563,6 +563,7 @@
       "importSuccessful": "导入成功！",
       "invalidFileType": "无效的文件类型！",
       "restartProcesses": "重启进程",
+      "restartProtocols": "重启协议",
       "sanitizeDatabase": "清理数据库",
       "advancedOptions": "高级选项"
     }

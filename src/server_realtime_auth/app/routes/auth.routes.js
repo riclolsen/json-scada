@@ -168,6 +168,11 @@ module.exports = function (app, accessPoint) {
     controller.importProject
   )
   app.post(
+    accessPoint + 'auth/restartProtocols',
+    [authJwt.isAdmin],
+    controller.restartProcesses
+  )
+  app.post(
     accessPoint + 'auth/restartProcesses',
     [authJwt.isAdmin],
     controller.restartProcesses

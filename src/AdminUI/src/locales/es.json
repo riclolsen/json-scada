@@ -563,6 +563,7 @@
       "importSuccessful": "¡Importación exitosa!",
       "invalidFileType": "¡Tipo de archivo no válido!",
       "restartProcesses": "Reiniciar procesos",
+      "restartProtocols": "Protocolos de reinicio",
       "sanitizeDatabase": "Sanitizar base de datos",
       "advancedOptions": "Opciones avanzadas"
     }

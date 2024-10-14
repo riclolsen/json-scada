@@ -563,6 +563,7 @@
       "importSuccessful": "Импорт успешен!",
       "invalidFileType": "Неверный тип файла!",
       "restartProcesses": "Перезапуск процессов",
+      "restartProtocols": "Протоколы перезапуска",
       "sanitizeDatabase": "Очистить базу данных",
       "advancedOptions": "Расширенные параметры"
     }

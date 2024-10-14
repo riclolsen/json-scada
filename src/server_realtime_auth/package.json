@@ -1,7 +1,7 @@
 {
-  "name": "server_realtime",
-  "version": "1.0.0",
-  "description": "Realtime tag data server for JSON SCADA.",
+  "name": "server_realtime_auth",
+  "version": "0.2.0",
+  "description": "Realtime data auth server for JSON SCADA.",
   "main": "index.js",
   "dependencies": {
     "@apollo/server": "^4.11.0",

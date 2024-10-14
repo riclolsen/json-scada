@@ -563,6 +563,7 @@
       "importSuccessful": "تم الاستيراد بنجاح!",
       "invalidFileType": "نوع الملف غير صالح!",
       "restartProcesses": "عمليات إعادة التشغيل",
+      "restartProtocols": "بروتوكولات إعادة التشغيل",
       "sanitizeDatabase": "تطهير قاعدة البيانات",
       "advancedOptions": "خيارات متقدمة"
     }
