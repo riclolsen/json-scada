@@ -2,7 +2,7 @@
 
 This NodeJS/Express module can serve JSON-SCADA realtime data for the web-based interface.
 
-It can also server the HTML files from the src/htdocs folder.
+It can also server the HTML files from the src/AdminUI/dist folder.
 
 It is possible to access Grafana on "/grafana" path adjusting the _JS_GRAFANA_SERVER_ environment variable.
 
@@ -33,7 +33,7 @@ It is recommended to apply a reverse proxy (Nginx) on top of this service to ser
 
     # Static files
     location / {
-        root /home/username/json-scada/src/htdocs;
+        root /home/username/json-scada/src/AdminUI/dist;
     }
 
 ## Data Services API

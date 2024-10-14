@@ -968,7 +968,7 @@ exports.listGroup1 = async (req, res) => {
 exports.listDisplays = (req, res) => {
   Log.log('listDisplays')
 
-  fs.readdir('../htdocs/svg', function (err, files) {
+  fs.readdir('../../svg', function (err, files) {
     //handling error
     if (err) {
       Log.log(err)

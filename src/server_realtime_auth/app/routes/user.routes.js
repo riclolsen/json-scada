@@ -30,7 +30,7 @@ module.exports = function (
   app.use(
     '/sage-cepel-displays/',
     [authJwt.verifyToken],
-    express.static('../htdocs/sage-cepel-displays', {
+    express.static('../AdminUI/dist/sage-cepel-displays', {
       setHeaders: function (res, path) {
         if (/.*\.html/.test(path)) {
           res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
@@ -101,14 +101,15 @@ module.exports = function (
   )
 
   app.get(accessPoint + 'test/admin', [authJwt.isAdmin], controller.adminBoard)
+  
+  app.use('/svg', [authJwt.verifyToken], express.static('../../svg'))
 
   // production
   app.use('/', express.static('../AdminUI/dist'))
   app.use('/login', express.static('../AdminUI/dist'))
   app.use('/dashboard', express.static('../AdminUI/dist'))
   app.use('/admin', express.static('../AdminUI/dist'))
-  app.use('/svg', express.static('../../svg'))
-
+  
   // development
   //app.use('/', httpProxy('localhost:3000/'))
   //app.use('/login', httpProxy('localhost:3000/'))
