@@ -563,6 +563,7 @@
       "importSuccessful": "Імпорт успішно!",
       "invalidFileType": "Недійсний тип файлу!",
       "restartProcesses": "Перезапустіть процеси",
+      "restartProtocols": "Перезапустіть протоколи",
       "sanitizeDatabase": "Очистити базу даних",
       "advancedOptions": "Додаткові параметри"
     }

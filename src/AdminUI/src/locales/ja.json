@@ -563,6 +563,7 @@
       "importSuccessful": "インポートに成功しました!",
       "invalidFileType": "無効なファイルタイプです。",
       "restartProcesses": "プロセスを再起動する",
+      "restartProtocols": "再起動プロトコル",
       "sanitizeDatabase": "データベースのサニタイズ",
       "advancedOptions": "詳細オプション"
     }

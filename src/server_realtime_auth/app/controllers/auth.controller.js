@@ -1440,6 +1440,31 @@ exports.importProject = async (req, res) => {
   }
 }
 
+exports.restartProtocols = async (req, res) => {
+  Log.log('restartProtocols')
+  try {
+    let cmd = ''
+    if (process.platform === 'win32') {
+      cmd = spawn('c:\\json-scada\\platform-windows\\restart_protocols.bat', {
+        shell: true,
+      })
+    } else {
+      cmd = spawn('sh', ['~/json-scada/platform-linux/restart_protocols.sh'], {
+        shell: true,
+      })
+    }
+    cmd.stdout.on('data', (data) => Log.log(`stdout: ${data}`))
+    cmd.stderr.on('data', (data) => Log.log(`stderr: ${data}`))
+    cmd.on('close', (code) => Log.log(`child process exited with code ${code}`))
+
+    registerUserAction(req, 'restartProtocols')
+    res.status(200).send({ error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err })
+  }
+}
+
 exports.restartProcesses = async (req, res) => {
   Log.log('restartProcesses')
   try {
@@ -1449,7 +1474,7 @@ exports.restartProcesses = async (req, res) => {
         shell: true,
       })
     } else {
-      cmd = spawn('sh', ['supervisorctl', 'restart', 'all'], {
+      cmd = spawn('sh', ['~/json-scada/platform-linux/restart_processes.sh'], {
         shell: true,
       })
     }

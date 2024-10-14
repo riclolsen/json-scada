@@ -1,7 +1,6 @@
 @ECHO OFF
 set JSPATH=c:\json-scada
 set TMPPATH=%JSPATH%\tmp
-set MONGO_CONNECT_STRING=mongodb://192.168.239.133/?tls=false&directConnection=true
 set MONGOBIN=%JSPATH%\platform-windows\mongodb-runtime\bin
 set JAVAPATH=%JSPATH%\platform-windows\jdk-runtime\bin
 set TARPATH=%JSPATH%\platform-windows

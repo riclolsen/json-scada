@@ -563,6 +563,7 @@
       "importSuccessful": "واردات با موفقیت انجام شد!",
       "invalidFileType": "نوع فایل نامعتبر است!",
       "restartProcesses": "فرآیندها را مجدداً راه اندازی کنید",
+      "restartProtocols": "پروتکل ها را مجددا راه اندازی کنید",
       "sanitizeDatabase": "پاکسازی پایگاه داده",
       "advancedOptions": "گزینه های پیشرفته"
     }

@@ -103,7 +103,16 @@
                     <v-btn
                       color="red"
                       variant="tonal"
-                      @click="showRestartConfirmation"
+                      @click="showRestartProtocolsConfirmation"
+                    >
+                      {{ $t('admin.systemSettings.restartProtocols') }}
+                    </v-btn>
+                  </v-row>
+                  <v-row class="mt-4">
+                    <v-btn
+                      color="red"
+                      variant="tonal"
+                      @click="showRestartProcessesConfirmation"
                     >
                       {{ $t('admin.systemSettings.restartProcesses') }}
                     </v-btn>
@@ -126,17 +135,34 @@
       </v-col>
     </v-row>
 
-    <v-dialog v-model="showRestartDialog" max-width="400">
+    <v-dialog v-model="restartProcessesDialog" max-width="400">
       <v-card>
         <v-card-title>{{
           $t('admin.systemSettings.restartProcesses')
         }}</v-card-title>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="orange" text @click="showRestartDialog = false">
+          <v-btn color="orange" text @click="showRestartProcessesDialog = false">
             {{ $t('common.cancel') }}
           </v-btn>
-          <v-btn color="red" @click="confirmRestart">
+          <v-btn color="red" @click="confirmRestartProcesses">
+            {{ $t('common.confirm') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="restartProtocolsDialog" max-width="400">
+      <v-card>
+        <v-card-title>{{
+          $t('admin.systemSettings.restartProtocols')
+        }}</v-card-title>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="orange" text @click="showRestartProtocolsDialog = false">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn color="red" @click="confirmRestartProtocols">
             {{ $t('common.confirm') }}
           </v-btn>
         </v-card-actions>
@@ -157,7 +183,8 @@
   const projectName = ref('jsonscada_project')
   const file = ref(null)
   const isDragging = ref(false)
-  const showRestartDialog = ref(false)
+  const restartProcessesDialog = ref(false)
+  const restartProtocolsDialog = ref(false)
 
   const isZipFile = (fileName) => {
     return fileName.toLowerCase().endsWith('.zip')
@@ -256,12 +283,41 @@
     }
   }
 
-  const showRestartConfirmation = () => {
-    showRestartDialog.value = true
+  const showRestartProtocolsConfirmation = () => {
+    restartProtocolsDialog.value = true
   }
 
-  const confirmRestart = async () => {
-    showRestartDialog.value = false
+  const confirmRestartProtocols = async () => {
+    restartProtocolsDialog.value = false
+    await restartProtocols()
+  }
+
+  const restartProtocols = async () => {
+    try {
+      const response = await fetch('/Invoke/auth/restartProtocols', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+      const json = await response.json()
+      if (json.error) {
+        setError(json)
+        return
+      }
+      console.log('Restart protocols initiated')
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  const showRestartProcessesConfirmation = () => {
+    restartProcessesDialog.value = true
+  }
+
+  const confirmRestartProcesses = async () => {
+    restartProcessesDialog.value = false
     await restartProcesses()
   }
 

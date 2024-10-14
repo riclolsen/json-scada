@@ -2,6 +2,7 @@ const path = require('path')
 const express = require('express')
 const httpProxy = require('express-http-proxy')
 const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
+const { authJwt } = require('../middlewares')
 const controller = require('../controllers/user.controller')
 const authController = require('../controllers/auth.controller')
 
