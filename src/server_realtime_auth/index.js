@@ -37,7 +37,7 @@ const Log = require('./simple-logger')
 const express = require('express')
 const fileUpload = require('express-fileupload');
 const httpProxy = require('express-http-proxy')
-const { createProxyMiddleware } = require('http-proxy-middleware')
+const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path')
 const cors = require('cors')
 const app = express()
@@ -113,7 +113,7 @@ let pool = null
     // reverse proxy for log.io
     app.use('/log-io', httpProxy(LOGIO_SERVER))
     const wsProxy = createProxyMiddleware({
-      target: logioServer,
+      target: LOGIO_SERVER,
       ws: true, // enable websocket proxy
     })
     app.use('/socket.io', wsProxy)

@@ -1,8 +1,7 @@
 const path = require('path')
 const express = require('express')
 const httpProxy = require('express-http-proxy')
-const { createProxyMiddleware } = require('http-proxy-middleware')
-const { authJwt } = require('../middlewares')
+const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
 const controller = require('../controllers/user.controller')
 const authController = require('../controllers/auth.controller')
 
@@ -73,6 +72,7 @@ module.exports = function (
   )
   const wsProxy = createProxyMiddleware({
     target: logioServer,
+    changeOrigin: true,
     ws: true, // enable websocket proxy
   })
   app.use(
@@ -85,6 +85,7 @@ module.exports = function (
     wsProxy
   )
   app.on('upgrade', wsProxy.upgrade)
+  app.use('/static', express.static('../log-io/ui/build/static'));
 
   app.post(accessPoint, opcApi) // realtime data API
 
