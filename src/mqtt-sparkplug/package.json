@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "fs": "*",
-    "jsonpath-plus": "^9.0.0",
+    "jsonpath-plus": "^10.0.0",
     "mongodb": "^6.7.0",
     "mqtt": "^5.7.0",
     "queue-fifo": "^0.2.6",
