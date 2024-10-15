@@ -5958,7 +5958,7 @@ pergola.doc.style.display='none';
          sodipodi:role="line"
          style="font-size:24px;line-height:1.25">230kV Sector</tspan></text>
     <text
-       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;linename_model&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;linename_model&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
        id="pal9-4"
        y="-107.63782"
        x="672"
@@ -10458,7 +10458,7 @@ pergola.doc.style.display='none';
        transform="matrix(0.90679532,0,0,0.90679532,-1087.9868,63.977275)"
        dragx="1"
        dragy="1"
-       inkscape:label="{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;top.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);WebSAGE.makeDraggable(thisobj);&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;}">
+       inkscape:label="{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;window.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);WebSAGE.makeDraggable(thisobj);&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;}">
       <rect
          y="-407.63782"
          x="1710"
@@ -10467,7 +10467,7 @@ pergola.doc.style.display='none';
          id="rect7654"
          style="opacity:1;fill:#f2f2f2;fill-opacity:1;stroke:#808080;stroke-width:3.51675415;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
       <g
-         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;UP&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64165, \&quot;ON\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;UP&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64165, \&quot;ON\&quot;);&quot;}]}"
          transform="translate(-35,-196.76658)"
          id="g9174">
         <rect
@@ -10491,7 +10491,7 @@ pergola.doc.style.display='none';
       </g>
       <g
          cursor="pointer"
-         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;DOWN&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64165, \&quot;OFF\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;DOWN&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64165, \&quot;OFF\&quot;);&quot;}]}"
          transform="matrix(1,0,0,-1,-35,-262.34421)"
          id="g9174-7">
         <rect
@@ -10514,7 +10514,7 @@ pergola.doc.style.display='none';
       </g>
       <g
          cursor="pointer"
-         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64162, \&quot;OFF\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64162, \&quot;OFF\&quot;);&quot;}]}"
          transform="translate(-71,-114.98824)"
          id="g9274">
         <rect
@@ -10541,7 +10541,7 @@ pergola.doc.style.display='none';
       </g>
       <g
          cursor="pointer"
-         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64162, \&quot;ON\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64162, \&quot;ON\&quot;);&quot;}]}"
          transform="translate(-86.897285,-114.29628)"
          id="g9279">
         <rect
@@ -11017,7 +11017,7 @@ pergola.doc.style.display='none';
            style="font-size:14.08393955px;line-height:1.25">XCBR</tspan></text>
       <g
          id="g9938"
-         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
          cursor="pointer"
          transform="matrix(0.93895795,0,0,0.93895795,120.5063,-28.341996)">
         <ellipse
