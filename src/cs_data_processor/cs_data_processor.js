@@ -65,7 +65,7 @@ if (
 
 const beepPointKey = -1
 const cntUpdatesPointKey = -2
-const invalidDetectCycle = 15000
+const invalidDetectCycle = 43000
 
 Log.log('Connecting to MongoDB server...')
 

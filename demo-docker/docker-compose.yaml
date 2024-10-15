@@ -10,11 +10,11 @@ services:
 
   # must create a mongodb instance or cluster with a replica set
   jsdemo_mongorsn1:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: jsdemo_mongors1
     hostname: jsdemo_mongorsn1
     restart: unless-stopped
-    command: "mongod --bind_ip_all --replSet rs1 --wiredTigerCacheSizeGB 0.25 --dbpath /data/db --port 27017"    
+    command: "mongod --bind_ip_all --replSet rs1 --wiredTigerCacheSizeGB 1 --dbpath /data/db --port 27017"    
     extra_hosts:
       - "jsdemo_mongorsn1:127.0.0.1"
     volumes:
@@ -320,13 +320,15 @@ services:
     container_name: jsdemo_dnp3_client_wine
     #dpkg --add-architecture i386 && apt update && apt install -y xvfb wget libfreetype6 wine wine32:i386 && cd /root &&
     #apt update && apt install -y xvfb wget libfreetype6 wine && cd /root &&
-    command: sh -c "export DISPLAY=:0.0 && cd /jsonscada_bin &&
+    command: sh -c "export DISPLAY=:0.0 &&
                     export WINEDEBUG=-all &&
                     rm -rf /tmp/.X0-lock && (Xvfb :0 -screen 0 1024x768x16 &) &&
+                    cd /tmp &&
                     wget -nc https://download.visualstudio.microsoft.com/download/pr/3c01bbe6-a49d-468f-8335-f195588f582f/b935469e8480e611eae4d79b2e51965e/dotnet-runtime-6.0.33-win-x64.exe ;
                     wget -nc https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks ;
                     sh ./winetricks win10 &&
                     wine dotnet-runtime-6.0.33-win-x64.exe /q &&
+                    cd /jsonscada_bin &&
                     wine Dnp3Client.exe "
     restart: unless-stopped
     volumes:
@@ -344,13 +346,15 @@ services:
     container_name: jsdemo_opcda_client_wine
     #dpkg --add-architecture i386 && apt update && apt install -y xvfb wget libfreetype6 wine wine32:i386 && cd /root &&
     #apt update && apt install -y xvfb wget libfreetype6 wine && cd /root &&
-    command: sh -c "export DISPLAY=:0.0 && cd /jsonscada_bin &&
+    command: sh -c "export DISPLAY=:0.0 &&
                     export WINEDEBUG=-all &&
                     rm -rf /tmp/.X0-lock && (Xvfb :0 -screen 0 1024x768x16 &) &&
+                    cd /tmp &&
                     wget -nc https://download.visualstudio.microsoft.com/download/pr/3c01bbe6-a49d-468f-8335-f195588f582f/b935469e8480e611eae4d79b2e51965e/dotnet-runtime-6.0.33-win-x64.exe ;
                     wget -nc https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks ;
                     sh ./winetricks win10 &&
                     wine dotnet-runtime-6.0.33-win-x64.exe /q &&
+                    cd /jsonscada_bin &&
                     wine OPC-DA-Client.exe "
     restart: unless-stopped
     volumes:
