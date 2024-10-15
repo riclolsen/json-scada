@@ -146,7 +146,7 @@ services:
   iec104client:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name: jsdemo_iec104client
-    command: sh -c "sleep 20 && /jsonscada_bin/iec104client"
+    command: sh -c "sleep 60 && /jsonscada_bin/iec104client"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
@@ -161,7 +161,7 @@ services:
   iec104server:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name:  jsdemo_iec104server
-    command: sh -c "sleep 20 && /jsonscada_bin/iec104server"
+    command: sh -c "sleep 60 && /jsonscada_bin/iec104server"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
@@ -181,7 +181,7 @@ services:
   cs_data_processor:
     image: node:20-alpine
     container_name: jsdemo_cs_data_processor
-    command:  sh -c "cd /cs_data_processor && sleep 10 && node cs_data_processor.js"
+    command:  sh -c "cd /cs_data_processor && sleep 50 && node cs_data_processor.js"
     restart: unless-stopped
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
@@ -197,7 +197,7 @@ services:
   cs_custom_processor:
     image: node:20-alpine
     container_name: jsdemo_cs_custom_processor
-    command:  sh -c "cd /cs_custom_processor && sleep 10 && node cs_custom_processor.js"
+    command:  sh -c "cd /cs_custom_processor && sleep 50 && node cs_custom_processor.js"
     restart: unless-stopped
     volumes:
       - ../src/cs_custom_processor:/cs_custom_processor
@@ -212,7 +212,7 @@ services:
   config_server_excel:
     image: node:20-alpine
     container_name: jsdemo_config_server_excel
-    command:  sh -c "cd /config_server_for_excel && sleep 10 && node index.js"
+    command:  sh -c "cd /config_server_for_excel && sleep 60 && node index.js"
     restart: unless-stopped
     environment:
       - JS_CSEXCEL_IP_BIND=0.0.0.0
@@ -234,7 +234,7 @@ services:
   mqtt-sparkplug:
     image: node:20-alpine
     container_name: jsdemo_mqtt-sparkplug
-    command:  sh -c "cd /mqtt-sparkplug && sleep 20 && node index.js"
+    command:  sh -c "cd /mqtt-sparkplug && sleep 60 && node index.js"
     restart: unless-stopped
     volumes:
       - ../src/mqtt-sparkplug:/mqtt-sparkplug
@@ -249,7 +249,7 @@ services:
   opcua_server:
     image: node:20-alpine
     container_name: jsdemo_opcua_server
-    command:  sh -c "cd /OPC-UA-Server && sleep 10 && node index.js"
+    command:  sh -c "cd /OPC-UA-Server && sleep 60 && node index.js"
     restart: unless-stopped
     ports:
       - 4840:4840
@@ -268,7 +268,7 @@ services:
   server_realtime:
     image: node:20-alpine
     container_name: jsdemo_server_realtime_auth
-    command:  sh -c "cd /server_realtime_auth && sleep 10 && node index.js"
+    command:  sh -c "cd /server_realtime_auth && sleep 50 && node index.js"
     restart: unless-stopped
     environment:
       - JS_IP_BIND=0.0.0.0
@@ -303,7 +303,7 @@ services:
   calculations:
     image: node:20-alpine
     container_name: jsdemo_calculations
-    command:  sh -c "sleep 15 && cd /jsonscada_bin/ && ./calculations"
+    command:  sh -c "sleep 50 && cd /jsonscada_bin/ && ./calculations"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
@@ -329,6 +329,7 @@ services:
                     sh ./winetricks win10 &&
                     wine dotnet-runtime-6.0.33-win-x64.exe /q &&
                     cd /jsonscada_bin &&
+                    sleep 40 &&
                     wine Dnp3Client.exe "
     restart: unless-stopped
     volumes:
@@ -355,6 +356,7 @@ services:
                     sh ./winetricks win10 &&
                     wine dotnet-runtime-6.0.33-win-x64.exe /q &&
                     cd /jsonscada_bin &&
+                    sleep 40 &&
                     wine OPC-DA-Client.exe "
     restart: unless-stopped
     volumes:
@@ -390,10 +392,8 @@ services:
       - ./conf/nginx.conf:/etc/nginx/nginx.conf
       - ./conf/fastcgi.conf:/etc/nginx/fastcgi.conf
       - ./conf/nginx-conf.d:/etc/nginx/conf.d
-      - ../src/htdocs:/htdocs
-      - ../src/htdocs-admin:/htdocs-admin
-      - ../src/htdocs-login:/htdocs-login
       - ../src/AdminUI:/AdminUI
+      - ../svg:/svg
     restart: unless-stopped
     links:
       - server_realtime
