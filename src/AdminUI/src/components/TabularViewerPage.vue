@@ -5,14 +5,14 @@
         <iframe
           src="/tabular.html"
           width="100%"
-          height="100%"
+          height="94%"
           frameborder="0"
           style="
             position: absolute;
             top: 120;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 94%;
           "
         ></iframe>
       </v-col>
@@ -26,7 +26,7 @@
 
 <style scoped>
   .fill-height {
-    height: 100%;
+    height: 94%;
   }
 </style>
 

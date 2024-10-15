@@ -184,9 +184,9 @@ nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 2 
 nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
-nssm set JSON_SCADA_opduaclient AppRotateOnline 1
-nssm set JSON_SCADA_opduaclient AppRotateBytes 10000000
-nssm set JSON_SCADA_opduaclient Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_opcdaclient AppRotateOnline 1
+nssm set JSON_SCADA_opcdaclient AppRotateBytes 10000000
+nssm set JSON_SCADA_opcdaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 2 
 nssm set JSON_SCADA_iec61850client AppStdout C:\json-scada\log\iec61850client.log
@@ -218,7 +218,7 @@ nssm set JSON_SCADA_opcuaserver AppDirectory "C:\json-scada\src\OPC-UA-Server"
 nssm set JSON_SCADA_opcuaserver AppStdout C:\json-scada\log\opcuaserver.log
 nssm set JSON_SCADA_opcuaserver AppRotateOnline 1
 nssm set JSON_SCADA_opcuaserver AppRotateBytes 10000000
-nssm set JSON_SCADA_opcuaserver Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_opcuaserver Start SERVICE_AUTO_START
 
 REM service for telegraf listener
 nssm install JSON_SCADA_telegraf_listener "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\telegraf-listener\index.js" 
