@@ -142,7 +142,7 @@
         }}</v-card-title>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="orange" text @click="showRestartProcessesDialog = false">
+          <v-btn color="orange" text @click="restartProcessesDialog = false">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn color="red" @click="confirmRestartProcesses">
@@ -159,7 +159,7 @@
         }}</v-card-title>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="orange" text @click="showRestartProtocolsDialog = false">
+          <v-btn color="orange" text @click="restartProtocolsDialog = false">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn color="red" @click="confirmRestartProtocols">
