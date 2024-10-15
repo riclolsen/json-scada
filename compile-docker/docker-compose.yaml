@@ -196,14 +196,3 @@ services:
     command:  sh -c "apk add --update npm && npm install -g npm && cd /AdminUI && npm install && npm run build && chmod -R 777 node_modules"
     volumes:
       - ../src/AdminUI:/AdminUI
-
-  # deprecated
-  htdocs_admin_update:
-    image: node:20-alpine
-    container_name: js_htdocs_admin_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /htdocs-admin && npm install && npm run build && chmod -R 777 node_modules"
-    volumes:
-      - ../src/htdocs-admin:/htdocs-admin
-    environment:
-      - NODE_OPTIONS=--openssl-legacy-provider
-
