@@ -1445,9 +1445,13 @@ exports.restartProtocols = async (req, res) => {
   try {
     let cmd = ''
     if (process.platform === 'win32') {
-      cmd = spawn('c:\\json-scada\\platform-windows\\restart_protocols.bat', {
-        shell: true,
-      })
+      cmd = spawn(
+        'cmd',
+        ['/c','c:\\json-scada\\platform-windows\\restart_protocols.bat'],
+        {
+          shell: true,
+        }
+      )
     } else {
       cmd = spawn('sh', ['~/json-scada/platform-linux/restart_protocols.sh'], {
         shell: true,
@@ -1470,9 +1474,13 @@ exports.restartProcesses = async (req, res) => {
   try {
     let cmd = ''
     if (process.platform === 'win32') {
-      cmd = spawn('c:\\json-scada\\platform-windows\\restart_services.bat', {
-        shell: true,
-      })
+      cmd = spawn(
+        'cmd',
+        ['/c','c:\\json-scada\\platform-windows\\restart_services.bat'],
+        {
+          shell: true,
+        }
+      )
     } else {
       cmd = spawn('sh', ['~/json-scada/platform-linux/restart_processes.sh'], {
         shell: true,
