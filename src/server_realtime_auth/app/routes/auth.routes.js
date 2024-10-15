@@ -170,7 +170,7 @@ module.exports = function (app, accessPoint) {
   app.post(
     accessPoint + 'auth/restartProtocols',
     [authJwt.isAdmin],
-    controller.restartProcesses
+    controller.restartProtocols
   )
   app.post(
     accessPoint + 'auth/restartProcesses',
