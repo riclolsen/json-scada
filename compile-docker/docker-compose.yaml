@@ -155,15 +155,6 @@ services:
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
 
-  htdocs_admin_update:
-    image: node:20-alpine
-    container_name: js_htdocs_admin_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /htdocs-admin && npm install && npm run build && chmod -R 777 node_modules"
-    volumes:
-      - ../src/htdocs-admin:/htdocs-admin
-    environment:
-      - NODE_OPTIONS=--openssl-legacy-provider
-
   alarm_beep_update:
     image: node:20-alpine
     container_name: js_alarm_beep_update
@@ -198,3 +189,10 @@ services:
     command:  sh -c "apk add --update npm && npm install -g npm && cd /mqtt-sparkplug && npm install"
     volumes:
       - ../src/mqtt-sparkplug:/mqtt-sparkplug
+
+  htdocs_admin_update:
+    image: node:20-alpine
+    container_name: js_admin_ui_update
+    command:  sh -c "apk add --update npm && npm install -g npm && cd /AdminUI && npm install && npm run build && chmod -R 777 node_modules"
+    volumes:
+      - ../src/AdminUI:/AdminUI

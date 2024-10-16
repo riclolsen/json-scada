@@ -1,11 +1,10 @@
 @ECHO OFF
 set JSPATH=c:\json-scada
 set TMPPATH=%JSPATH%\tmp
-set MONGO_CONNECT_STRING=mongodb://192.168.239.133/?tls=false&directConnection=true
 set MONGOBIN=%JSPATH%\platform-windows\mongodb-runtime\bin
 set JAVAPATH=%JSPATH%\platform-windows\jdk-runtime\bin
 set TARPATH=%JSPATH%\platform-windows
-set SVGPATH=%JSPATH%\src\AdminUI\dist\svg
+set SVGPATH=%JSPATH%\svg
 set mongoConnectionString=mongodb://127.0.0.1/json_scada?tls=false&directConnection=true
 set database=json_scada
 set tlsCaPemFile=
@@ -17,9 +16,9 @@ set tlsAllowInvalidHostnames=true
 set tlsAllowChainErrors=true
 set tlsInsecure=false
 
-cd %JSPATH%\platform-windows\
+cd /d %JSPATH%\platform-windows\
 
-IF [%1]==[] ( SET "INPUTFILE=jsproject.zip" ) ELSE ( SET "INPUTFILE=%1" )
+if [%1]==[] ( SET "INPUTFILE=" ) ELSE ( SET "INPUTFILE=%1" )
 
 for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json mongoConnectionString') do set "mongoConnectionString=%%~a"
 for /f "tokens=* delims=" %%a in ('jsonextractor.bat ..\conf\json-scada.json database') do set "database=%%~a"
@@ -35,16 +34,19 @@ rem set TLSFLAGS=--sslCAFile=%tlsCaPemFile% --sslPEMKeyFile=%tlsClientPemFile% -
 rem echo "%TLSFLAGS%"
 
 if not exist "%TMPPATH%" mkdir "%TMPPATH%"
-cd %TMPPATH%
+cd /d %TMPPATH%
 
-del %TMPPATH%\*.json /Q
-del %TMPPATH%\*.js /Q
-del %TMPPATH%\*.svg /Q
-del %TMPPATH%\*.conf /Q
-del %TMPPATH%\*.xml /Q
-del %TMPPATH%\*.ini /Q
+if not [%INPUTFILE%]==[] (
+    
+    del %TMPPATH%\*.json /Q
+    del %TMPPATH%\*.js /Q
+    del %TMPPATH%\*.svg /Q
+    del %TMPPATH%\*.conf /Q
+    del %TMPPATH%\*.xml /Q
+    del %TMPPATH%\*.ini /Q
 
-%JAVAPATH%\jar -xf %INPUTFILE%  
+     %JAVAPATH%\jar -xf %INPUTFILE% 
+) 
 
 set FLAGS=--mode=upsert
 
@@ -72,4 +74,4 @@ copy %TMPPATH%\screen_list.js %SVGPATH%\ /Y
 rem optional
 rem copy %TMPPATH%\ %JSPATH%\conf\*.* 
 
-cd %JSPATH%\platform-windows\
+cd /d %JSPATH%\platform-windows\

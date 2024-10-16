@@ -21,9 +21,11 @@ const fs = require('fs')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 const { ReadPreference } = require('mongodb')
+let ConfigObject = null;
 
 // load and parse config file
 function LoadConfig(confFileArg, logLevelArg, instArg) {
+  if (ConfigObject) return ConfigObject
   let configFile =
     confFileArg || process.env.JS_CONFIG_FILE || '../../conf/json-scada.json'
   Log.log('Config - Config File: ' + configFile)
@@ -68,6 +70,7 @@ function LoadConfig(confFileArg, logLevelArg, instArg) {
   Log.log('Config - Log level: ' + Log.levelCurrent)
 
   configObj.MongoConnectionOptions = getMongoConnectionOptions(configObj)
+  ConfigObject = configObj
   return configObj
 }
 

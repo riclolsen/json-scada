@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.38"
-!define VERSION_ "0.38.0.0"
+!define VERSION "v.0.39"
+!define VERSION_ "0.39.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -43,7 +43,7 @@ SetCompress off
 !define /date DATEBAR "%d/%m/%Y"
 Name "JSON-SCADA"
 Caption "{json:scada} Installer ${VERSION} ${DATEBAR}"
-Icon "..\src\htdocs\images\j-s-256.ico"
+Icon "..\src\AdminUI\public\images\j-s-256.ico"
 
 !define /date DATE "%d_%m_%Y"
 OutFile "installer-release\json-scada_setup_${VERSION}.exe"
@@ -113,14 +113,12 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_calculations'
   nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
   nsExec::Exec 'net stop JSON_SCADA_cs_custom_processor'
-  nsExec::Exec 'net stop JSON_SCADA_server_realtime'
   nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
   nsExec::Exec 'net stop JSON_SCADA_config_server_excel'
   nsExec::Exec 'net stop JSON_SCADA_demo_simul'
   nsExec::Exec 'net stop JSON_SCADA_mongofw'
   nsExec::Exec 'net stop JSON_SCADA_mongowr'
   nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
-  nsExec::Exec 'net stop JSON_SCADA_shell_api'
   nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
   nsExec::Exec 'net stop JSON_SCADA_process_hist'
   nsExec::Exec 'net stop JSON_SCADA_iec101client'
@@ -247,7 +245,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-8.0.8-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.10-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -266,7 +264,7 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.8-win-x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.10-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
@@ -331,29 +329,39 @@ SetRegView 64
   File /a "..\src\certificate-creator\server.conf"
   File /a "..\src\certificate-creator\create_certs.sh"
 
-  SetOutPath $INSTDIR\src\htdocs
-  File /a "..\src\htdocs\*.*"
-  File /a ".\release_notes.txt"
-  SetOutPath $INSTDIR\src\htdocs\sounds
-  File /a "..\src\htdocs\sounds\critical.wav"
-  File /a "..\src\htdocs\sounds\noncritical.wav"
-  SetOutPath $INSTDIR\src\htdocs\scripts
-  File /a /r "..\src\htdocs\scripts\*.*"
-  SetOutPath $INSTDIR\src\htdocs\sage-cepel-displays
-  File /a "..\src\htdocs\sage-cepel-displays\README.md"
-  SetOutPath $INSTDIR\src\htdocs\images
-  File /a /r "..\src\htdocs\images\*.*"
-  SetOutPath $INSTDIR\src\htdocs\charts
-  File /a /r "..\src\htdocs\charts\*.*"
-  SetOutPath $INSTDIR\src\htdocs\lib
-  File /a /r "..\src\htdocs\lib\*.*"
-  SetOutPath $INSTDIR\src\htdocs\i18n
-  File /a /r "..\src\htdocs\i18n\*.*"
-
-  SetOutPath $INSTDIR\src\htdocs-admin
-  File /a /r "..\src\htdocs-admin\*.*"
-  SetOutPath $INSTDIR\src\htdocs-login
-  File /a /r "..\src\htdocs-login\*.*"
+  SetOutPath $INSTDIR\svg
+  File /a    "..\conf-templates\*.svg"
+  File /a    "..\conf-templates\screen_list.js"
+  SetOutPath $INSTDIR\src\AdminUI
+  File /a    "..\src\AdminUI\*.*"
+  SetOutPath $INSTDIR\src\AdminUI\src
+  File /a /r "..\src\AdminUI\src\*.*"
+  SetOutPath $INSTDIR\src\AdminUI\dist
+  File /a /r   "..\src\AdminUI\dist\*.*"
+  File /a    ".\release_notes.txt"
+  
+  #SetOutPath $INSTDIR\src\htdocs
+  #File /a "..\src\htdocs\*.*"
+  #File /a ".\release_notes.txt"
+  #SetOutPath $INSTDIR\src\htdocs\sounds
+  #File /a "..\src\htdocs\sounds\critical.wav"
+  #File /a "..\src\htdocs\sounds\noncritical.wav"
+  #SetOutPath $INSTDIR\src\htdocs\scripts
+  #File /a /r "..\src\htdocs\scripts\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\sage-cepel-displays
+  #File /a "..\src\htdocs\sage-cepel-displays\README.md"
+  #SetOutPath $INSTDIR\src\htdocs\images
+  #File /a /r "..\src\htdocs\images\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\charts
+  #File /a /r "..\src\htdocs\charts\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\lib
+  #File /a /r "..\src\htdocs\lib\*.*"
+  #SetOutPath $INSTDIR\src\htdocs\i18n
+  #File /a /r "..\src\htdocs\i18n\*.*"
+  #SetOutPath $INSTDIR\src\htdocs-admin
+  #File /a /r "..\src\htdocs-admin\*.*"
+  #SetOutPath $INSTDIR\src\htdocs-login
+  #File /a /r "..\src\htdocs-login\*.*"
 
   SetOutPath $INSTDIR\src\demo_simul
   File /a /r "..\src\demo_simul\*.*"
@@ -369,9 +377,6 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\alarm_beep
   File /a /r "..\src\alarm_beep\*.*"
-
-  SetOutPath $INSTDIR\src\shell-api
-  File /a /r "..\src\shell-api\*.*"
 
   SetOutPath $INSTDIR\src\backup-mongo
   File /a /r "..\src\backup-mongo\*.*"
@@ -399,9 +404,6 @@ SetRegView 64
   File /a "..\src\config_server_for_excel\*.json"
   SetOutPath $INSTDIR\src\config_server_for_excel\node_modules
   File /a /r "..\src\config_Server_for_excel\node_modules\*.*"
-
-  SetOutPath $INSTDIR\src\server_realtime
-  File /a /r "..\src\server_realtime\*.*"
 
   SetOutPath $INSTDIR\src\server_realtime_auth
   File /a /r "..\src\server_realtime_auth\*.*"
@@ -466,11 +468,11 @@ SetRegView 64
 
   SetOverwrite off
 
-  SetOutPath $INSTDIR\src\htdocs\conf
-  File /a /r "..\src\htdocs\conf\*.*"
+  SetOutPath $INSTDIR\src\AdminUI\public\conf
+  File /a /r "..\src\AdminUI\public\conf\*.*"
 
-  SetOutPath $INSTDIR\src\htdocs\svg
-  File /a /r "..\src\htdocs\svg\*.*"
+  SetOutPath $INSTDIR\svg
+  File /a /r "..\svg\*.*"
 
   SetOutPath $INSTDIR\src\cs_custom_processor
   File /a "..\src\cs_custom_processor\customized_module.js"
@@ -554,11 +556,6 @@ Section "Uninstall"
   ; Close processes
 
   !define SC  `$SYSDIR\sc.exe`
-
-  ExecWait `"${SC}" stop "JSON_SCADA_server_realtime"`
-  Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_server_realtime"`
-  ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_server_realtime_auth"`
   Sleep 50

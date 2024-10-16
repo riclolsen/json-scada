@@ -103,8 +103,8 @@ namespace IEC61850_Client
             public bool useSecurity { get; set; }
             [BsonDefaultValue("")]
             public string localCertFilePath { get; set; }
-            [BsonDefaultValue("")]
-            public string peerCertFilesPaths { get; set; }
+            [BsonDefaultValue(new string[] { })]
+            public string[] peerCertFilesPaths { get; set; }
             [BsonDefaultValue("")]
             public string rootCertFilePath { get; set; }
             [BsonDefaultValue(false)]

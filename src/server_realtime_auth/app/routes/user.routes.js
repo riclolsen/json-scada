@@ -1,7 +1,7 @@
 const path = require('path')
 const express = require('express')
 const httpProxy = require('express-http-proxy')
-const { createProxyMiddleware } = require('http-proxy-middleware')
+const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/user.controller')
 const authController = require('../controllers/auth.controller')
@@ -26,34 +26,11 @@ module.exports = function (
     next()
   })
 
-  function sendFavicon(req, res) {
-    res
-      .status(200)
-      .sendFile(
-        path.join(__dirname + '../../../../htdocs-login/images/favicon.ico')
-      )
-  }
-
-  function redirectLogin(req, res) {
-    res.redirect('/login/login.html')
-  }
-
-  app.get('/favicon.ico', sendFavicon)
-  app.get('/', redirectLogin)
-  app.get('/index.html', redirectLogin)
-  app.get('/login.html', redirectLogin)
-  app.get('/login/', redirectLogin)
-  app.get('/login/login.html', controller.login)
-
-  app.use('/login', express.static('../htdocs-login'))
-
-  app.use('/admin', [authJwt.isAdmin], express.static('../htdocs-admin/dist'))
-
   // add charset for special sage displays
   app.use(
     '/sage-cepel-displays/',
     [authJwt.verifyToken],
-    express.static('../htdocs/sage-cepel-displays', {
+    express.static('../AdminUI/dist/sage-cepel-displays', {
       setHeaders: function (res, path) {
         if (/.*\.html/.test(path)) {
           res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
@@ -61,7 +38,6 @@ module.exports = function (
       },
     })
   )
-  app.use([authJwt.verifyToken], express.static('../htdocs')) // serve static files
 
   // reverse proxy for grafana
   app.use(
@@ -97,6 +73,7 @@ module.exports = function (
   )
   const wsProxy = createProxyMiddleware({
     target: logioServer,
+    changeOrigin: true,
     ws: true, // enable websocket proxy
   })
   app.use(
@@ -109,6 +86,7 @@ module.exports = function (
     wsProxy
   )
   app.on('upgrade', wsProxy.upgrade)
+  app.use('/static', express.static('../log-io/ui/build/static'));
 
   app.post(accessPoint, opcApi) // realtime data API
 
@@ -123,4 +101,18 @@ module.exports = function (
   )
 
   app.get(accessPoint + 'test/admin', [authJwt.isAdmin], controller.adminBoard)
+  
+  app.use('/svg', [authJwt.verifyToken], express.static('../../svg'))
+
+  // production
+  app.use('/', express.static('../AdminUI/dist'))
+  app.use('/login', express.static('../AdminUI/dist'))
+  app.use('/dashboard', express.static('../AdminUI/dist'))
+  app.use('/admin', express.static('../AdminUI/dist'))
+  
+  // development
+  //app.use('/', httpProxy('localhost:3000/'))
+  //app.use('/login', httpProxy('localhost:3000/'))
+  //app.use('/dashboard', httpProxy('localhost:3000/'))
+  //app.use('/admin', httpProxy('localhost:3000/'))
 }

@@ -55,13 +55,7 @@ nssm set JSON_SCADA_cs_custom_processor AppRotateBytes 10000000
 nssm set JSON_SCADA_cs_custom_processor Start SERVICE_AUTO_START
 
 
-REM CHOOSE ONE: server_realtime (no user control) or server_realtime_auth (token based auth and RBAC)
-
-REM nssm install JSON_SCADA_server_realtime "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\server_realtime\index.js" NOAUTH
-REM nssm set JSON_SCADA_server_realtime AppDirectory "C:\json-scada\src\server_realtime"
-REM nssm set JSON_SCADA_server_realtime Start SERVICE_AUTO_START
-REM Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-REM nssm set JSON_SCADA_server_realtime AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+REM server_realtime_auth (token based auth and RBAC)
 
 REM CREATE A RANDOM SECRET FOR JWT ENCRYPTION
 setlocal EnableDelayedExpansion
@@ -112,11 +106,6 @@ nssm set JSON_SCADA_config_server_excel AppDirectory "C:\json-scada\src\config_s
 nssm set JSON_SCADA_config_server_excel Start SERVICE_DEMAND_START
 nssm set JSON_SCADA_config_server_excel AppEnvironmentExtra JS_CSEXCEL_IP_BIND=0.0.0.0 JS_CSEXCEL_HTTP_PORT=10001
 rem JS_CSEXCEL_IP_BIND=127.0.0.1 to enable just local access
-
-REM Just for use with OSHMI HMI Shell
-REM nssm install JSON_SCADA_shell_api "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\shell-api\shell-api.js" 
-REM nssm set JSON_SCADA_shell_api AppDirectory "C:\json-scada\src\shell-api"
-REM nssm set JSON_SCADA_shell_api Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_process_rtdata "C:\json-scada\sql\process_pg_rtdata.bat"
 nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\sql"
@@ -195,9 +184,9 @@ nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 2 
 nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
-nssm set JSON_SCADA_opduaclient AppRotateOnline 1
-nssm set JSON_SCADA_opduaclient AppRotateBytes 10000000
-nssm set JSON_SCADA_opduaclient Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_opcdaclient AppRotateOnline 1
+nssm set JSON_SCADA_opcdaclient AppRotateBytes 10000000
+nssm set JSON_SCADA_opcdaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 2 
 nssm set JSON_SCADA_iec61850client AppStdout C:\json-scada\log\iec61850client.log
@@ -229,7 +218,7 @@ nssm set JSON_SCADA_opcuaserver AppDirectory "C:\json-scada\src\OPC-UA-Server"
 nssm set JSON_SCADA_opcuaserver AppStdout C:\json-scada\log\opcuaserver.log
 nssm set JSON_SCADA_opcuaserver AppRotateOnline 1
 nssm set JSON_SCADA_opcuaserver AppRotateBytes 10000000
-nssm set JSON_SCADA_opcuaserver Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_opcuaserver Start SERVICE_AUTO_START
 
 REM service for telegraf listener
 nssm install JSON_SCADA_telegraf_listener "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\telegraf-listener\index.js" 

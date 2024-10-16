@@ -35,8 +35,9 @@ const COLL_ACTIONS = 'userActions'
 const LoadConfig = require('./load-config')
 const Log = require('./simple-logger')
 const express = require('express')
+const fileUpload = require('express-fileupload');
 const httpProxy = require('express-http-proxy')
-const { createProxyMiddleware } = require('http-proxy-middleware')
+const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path')
 const cors = require('cors')
 const app = express()
@@ -89,6 +90,12 @@ let pool = null
 
     app.use(cookieParser())
     app.options(OPCAPI_AP, cors()) // enable pre-flight request
+    // enable files upload
+    app.use(
+      fileUpload({
+        createParentPath: true,
+      })
+    )
     app.use(express.json())
     app.use(
       express.urlencoded({
@@ -106,16 +113,25 @@ let pool = null
     // reverse proxy for log.io
     app.use('/log-io', httpProxy(LOGIO_SERVER))
     const wsProxy = createProxyMiddleware({
-      target: logioServer,
+      target: LOGIO_SERVER,
+      changeOrigin: true,
       ws: true, // enable websocket proxy
     })
     app.use('/socket.io', wsProxy)
     app.on('upgrade', wsProxy.upgrade)
 
+    app.use('/svg', [authJwt.verifyToken], express.static('../../svg'))
+
+    // production
+    app.use('/', express.static('../AdminUI/dist'))
+    app.use('/login', express.static('../AdminUI/dist'))
+    app.use('/dashboard', express.static('../AdminUI/dist'))
+    app.use('/admin', express.static('../AdminUI/dist'))
+    
     // add charset for special sage displays
     app.use(
       '/sage-cepel-displays/',
-      express.static('../htdocs/sage-cepel-displays', {
+      express.static('../AdminUI/dist/sage-cepel-displays', {
         setHeaders: function (res, path) {
           if (/.*\.html/.test(path)) {
             res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
@@ -123,7 +139,6 @@ let pool = null
         },
       })
     )
-    app.use(express.static('../htdocs')) // serve static files
     app.options(OPCAPI_AP, cors()) // enable pre-flight request
     app.use(express.json())
     app.use(
@@ -131,10 +146,6 @@ let pool = null
         extended: true,
       })
     )
-    // Here we serve up the index page
-    app.get('/', function (req, res) {
-      res.sendFile(path.join(__dirname + '../htdocs/index.html'))
-    })
   }
 
   app.listen(HTTP_PORT, IP_BIND, () => {

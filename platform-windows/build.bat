@@ -1,10 +1,10 @@
 echo This script builds JSON-SCADA Windows x64 binaries and restores NodeJS NPM modules.
 echo Required tools:
-echo - Dotnet Core SDK 6.0
-echo - Golang 1.14+
+echo - Dotnet Core SDK 8.0
+echo - Golang 1.22+
 echo - Node.js 20+
 
-set JSPATH=c:\json-scada
+set JSPATH=\json-scada
 set SRCPATH=%JSPATH%\src
 set BINPATH=%JSPATH%\bin
 set BINWINPATH=%JSPATH%\demo-docker\bin_win
@@ -115,11 +115,9 @@ call %NPM% install
 cd %SRCPATH%\shell-api
 call %NPM% install
 
-cd %SRCPATH%\htdocs-admin
-set NODE_OPTIONS=--openssl-legacy-provider
+cd %SRCPATH%\AdminUI
 call %NPM% install
 call %NPM% run build
-set NODE_OPTIONS=
 
 cd %SRCPATH%\grafana_alert2event
 call %NPM% install
@@ -158,10 +156,18 @@ call %NPM% run build
 cd %SRCPATH%\log-io\server
 call %NPM% install
 call %NPM% run build
+call %NPM% prune --omit=dev
 
 cd %SRCPATH%\log-io\inputs\file
 call %NPM% install
-
 call %NPM% run build
+call %NPM% prune --omit=dev
+
+rem deprecated
+cd %SRCPATH%\htdocs-admin
+set NODE_OPTIONS=--openssl-legacy-provider
+call %NPM% install
+call %NPM% run build
+set NODE_OPTIONS=
 
 cd %JSPATH%\platform-windows
