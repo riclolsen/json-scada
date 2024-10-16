@@ -97,6 +97,10 @@ npm install
 cd ../mongowr
 npm install
 
+cd ../AdminUI
+npm install
+npm run build
+
 cd ../log-io/ui
 npm install
 npm run build
@@ -107,16 +111,6 @@ cd ../inputs/file
 npm install
 npm run build
 
-cd ../AdminUI
-npm install
-npm run build
-
-# deprecated
-cd ../htdocs-admin
-export NODE_OPTIONS=--openssl-legacy-provider
-npm install
-npm run build
-export NODE_OPTIONS=
 
 cd ../../../..
 
