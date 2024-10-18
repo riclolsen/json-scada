@@ -8,12 +8,12 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 
 ![](https://img.shields.io/badge/nodejs-20-green 'Node.js 20+')
 ![](https://img.shields.io/badge/golang-1.21-green 'Go 1.21+')
-![](https://img.shields.io/badge/dotnet-6.0-green 'Dotnet 6.0')
+![](https://img.shields.io/badge/dotnet-8.0-green 'Dotnet 8.0')
 
 ![](https://img.shields.io/badge/mongodb-6.0-green 'MongoDB 6.0+')
-![](https://img.shields.io/badge/postgresql-12-green 'PostgreSQL 12+')
+![](https://img.shields.io/badge/postgresql-16-green 'PostgreSQL 16')
 ![](https://img.shields.io/badge/timescaledb-2.0-green 'TimescaleDB 2.0')
-![](https://img.shields.io/badge/grafana-9-green 'Grafana 9+')
+![](https://img.shields.io/badge/grafana-11-green 'Grafana 11')
 
 ![](https://img.shields.io/badge/linux-x86--64-green 'Linux x86-64')
 ![](https://img.shields.io/badge/linux-ARM-green 'Linux ARM-64')
@@ -28,7 +28,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/MQTT-green 'MQTT')
 ![](https://img.shields.io/badge/Sparkplug--B-green 'Sparkplug B')
 ![](https://img.shields.io/badge/OPC--UA-green 'OPC-UA')
-![](https://img.shields.io/badge/OPC--DA-yellow 'OPC-DA')
+![](https://img.shields.io/badge/OPC--DA-green 'OPC-DA')
 ![](https://img.shields.io/badge/Modbus-green 'Modbus')
 
 ![](https://img.shields.io/badge/license-GPL-green 'License GPL')
@@ -48,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.38-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.39-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -89,7 +89,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.38-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.39-alpha)
 - [RedHat/Rocky Linux Installer](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Docker Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
 - [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
