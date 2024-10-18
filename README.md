@@ -1,5 +1,5 @@
 <a href="https://github.com/riclolsen/json-scada/">
-    <img src="https://github.com/riclolsen/json-scada/raw/master/src/htdocs/images/json-scada.svg" alt="JSON:SCADA Logo" title="JSON:SCADA" align="right" height="60" />
+    <img src="https://github.com/riclolsen/json-scada/raw/master/src/AdminUI/public/images/json-scada.svg" alt="JSON:SCADA Logo" title="JSON:SCADA" align="right" height="60" />
 </a>
 
 # {json:scada}
