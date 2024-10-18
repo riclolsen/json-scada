@@ -21,7 +21,7 @@
 
 const APP_NAME = 'TELEGRAF-LISTENER'
 const APP_MSG = '{json:scada} - Telegraf UDP JSON Client Driver'
-const VERSION = '0.1.2'
+const VERSION = '0.1.3'
 let ProcessActive = false // for redundancy control
 let jsConfigFile = '../../conf/json-scada.json'
 let UdpBindPort = process.env.JS_TELEGRAF_LISTENER_BIND_PORT || 51920
@@ -173,7 +173,8 @@ const processMessageJSON = function (data) {
   // add group3 if exists
   grouping += addGrpIfNotEmpty(data.tags?.group3)
 
-  // add other tags to grouping
+  // add other tags to grouping, when group2 or group3 are not defined
+  if (!data.tags.group2 || !data.tags.group3 )
   for (var [key, val] of Object.entries(data.tags)) {
     if (
       ![
@@ -200,9 +201,7 @@ const processMessageJSON = function (data) {
     grouping += addGrpIfNotEmpty(data.tags?.instance)
   }
 
-  let isOpc = false
   let invalid = false
-  if ('Quality' in data.fields) isOpc = true
   for (var [key, value] of Object.entries(data.fields)) {
     let tag
     if (key === 'Quality') {
