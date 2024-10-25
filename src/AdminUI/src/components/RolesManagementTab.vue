@@ -396,7 +396,7 @@
     await fetchRoles()
     isNewRole.value = false
     error.value = false
-    newRole.value = item
+    newRole.value = Object.assign({}, item)
     addRoleDialog.value = true
   }
 

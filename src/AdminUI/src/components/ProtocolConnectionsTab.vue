@@ -3670,7 +3670,7 @@
 
   const openEditProtocolConnectionDialog = async (item) => {
     await fetchProtocolDriverInstancesByType()
-    editedConnection.value = item
+    editedConnection.value =  Object.assign({}, item)
     dialogEditConnection.value = true
   }
 
