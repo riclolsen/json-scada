@@ -22,7 +22,7 @@ net start JSON_SCADA_process_hist
 REM net start JSON_SCADA_config_server_excel
 REM net start JSON_SCADA_alarm_beep
 
-call start_protocols.bat
+call \json-scada\platform-windows\start_protocols.bat
 
 ping -n 3 127.0.0.1
 
