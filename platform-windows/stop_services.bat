@@ -14,7 +14,7 @@ net stop JSON_SCADA_alarm_beep
 net stop JSON_SCADA_config_server_excel
 
 REM STOP PROTOCOL DRIVERS
-call stop_protocols.bat
+call \json-scada\platform-windows\stop_protocols.bat
 ping -n 2
 
 REM STOP OTHER PROCESSES

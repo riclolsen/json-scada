@@ -477,11 +477,11 @@
     newUser.value.username = ''
   }
 
-  const openEditUserDialog = async (user) => {
+  const openEditUserDialog = async (item) => {
     await fetchRoles()
     error.value = false
-    editedUserRoles.value = user.roles.map((role) => role.name)
-    editedUser.value = user
+    editedUserRoles.value = item.roles.map((role) => role.name)
+    editedUser.value = Object.assign({}, item)
     editUserDialog.value = true
     editedUser.value.password = ''
   }

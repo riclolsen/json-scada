@@ -1959,7 +1959,12 @@
 
             <v-list-item
               v-if="
-                ['DNP3', 'DNP3_SERVER', 'OPC-DA', 'OPC-DA_SERVER'].includes(
+                [
+                  'DNP3', 
+                  'DNP3_SERVER', 
+                  'OPC-DA', 
+                  'OPC-DA_SERVER'
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -2141,7 +2146,11 @@
 
             <v-list-item
               v-if="
-                ['DNP3', 'DNP3_SERVER', 'MQTT-SPARKPLUG-B'].includes(
+                [
+                  'DNP3', 
+                  'DNP3_SERVER',
+                  'MQTT-SPARKPLUG-B'
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -2276,9 +2285,13 @@
             <v-list-item
               v-if="
                 [
+                  'IEC60870-5-104',
+                  'IEC60870-5-104_SERVER',
+                  'MQTT-SPARKPLUG-B',
+                  'IEC61850',
+                  'IEC61850_SERVER',
                   'DNP3',
                   'DNP3_SERVER',
-                  'MQTT-SPARKPLUG-B',
                   'ICCP',
                   'ICCP_SERVER',
                 ].includes(editedConnection.protocolDriver)
@@ -2356,7 +2369,10 @@
           <v-list flat dense shaped>
             <v-list-item
               v-if="
-                ['ICCP', 'ICCP_SERVER'].includes(
+                [
+                  'ICCP', 
+                  'ICCP_SERVER'
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -3670,7 +3686,7 @@
 
   const openEditProtocolConnectionDialog = async (item) => {
     await fetchProtocolDriverInstancesByType()
-    editedConnection.value = item
+    editedConnection.value =  Object.assign({}, item)
     dialogEditConnection.value = true
   }
 
