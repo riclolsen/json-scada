@@ -39,7 +39,7 @@ services:
                     make install &&
                     cd dotnet/core/2.0 &&
                     dotnet publish --no-self-contained --runtime linux-x64 -c Release IEC61850.NET.core.2.0 &&
-                    cd iec61850_client &&
+                    cd /src/iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
@@ -50,6 +50,7 @@ services:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
     #command: tail -f /dev/null
     volumes:
+      - ../src/iec61850_client:/src/iec61850_client
       - ../src/libiec61850:/src/libiec61850
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/OPC-UA-Client:/src/OPC-UA-Client

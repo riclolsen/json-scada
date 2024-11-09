@@ -25,8 +25,8 @@ make
 make install
 cd dotnet/core/2.0
 dotnet publish --no-self-contained --runtime $ARG1 -c Release IEC61850.NET.core.2.0
-cd iec61850_client
-dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../../../../../bin/ 
+cd ../../../../iec61850_client
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ 
 
 cd ../../../../../lib60870.netcore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
