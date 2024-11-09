@@ -1,7 +1,7 @@
 /*
  *  config_file_parser.c
  *
- *  Copyright 2014 Michael Zillgith
+ *  Copyright 2014-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -28,10 +28,9 @@
 #include "libiec61850_platform_includes.h"
 #include "stack_config.h"
 
+#include <ctype.h>
+
 #define READ_BUFFER_MAX_SIZE 1024
-
-static uint8_t lineBuffer[READ_BUFFER_MAX_SIZE];
-
 
 static int
 readLine(FileHandle fileHandle, uint8_t* buffer, int maxSize)
@@ -79,7 +78,6 @@ readLine(FileHandle fileHandle, uint8_t* buffer, int maxSize)
         }
     }
 
-
     return bytesRead;
 }
 
@@ -116,18 +114,132 @@ ConfigFileParser_createModelFromConfigFileEx(const char* filename)
     return model;
 }
 
+static bool
+setValue(char* lineBuffer, DataAttribute* dataAttribute)
+{
+    char* valueIndicator = strchr((char*) lineBuffer, '=');
+
+    if (valueIndicator != NULL) {
+        switch (dataAttribute->type) {
+        case IEC61850_UNICODE_STRING_255:
+            {
+                char* stringStart = valueIndicator + 2;
+                terminateString(stringStart, '"');
+                dataAttribute->mmsValue = MmsValue_newMmsString(stringStart);
+            }
+            break;
+
+        case IEC61850_VISIBLE_STRING_255:
+        case IEC61850_VISIBLE_STRING_129:
+        case IEC61850_VISIBLE_STRING_65:
+        case IEC61850_VISIBLE_STRING_64:
+        case IEC61850_VISIBLE_STRING_32:
+        case IEC61850_CURRENCY:
+            {
+                char* stringStart = valueIndicator + 2;
+                terminateString(stringStart, '"');
+                dataAttribute->mmsValue = MmsValue_newVisibleString(stringStart);
+            }
+            break;
+
+        case IEC61850_INT8:
+        case IEC61850_INT16:
+        case IEC61850_INT32:
+        case IEC61850_INT64:
+        case IEC61850_INT128:
+        case IEC61850_ENUMERATED:
+            {
+                int32_t intValue;
+                if (sscanf(valueIndicator + 1, "%i", &intValue) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newIntegerFromInt32(intValue);
+            }
+            break;
+
+        case IEC61850_INT8U:
+        case IEC61850_INT16U:
+        case IEC61850_INT24U:
+        case IEC61850_INT32U:
+            {
+                uint32_t uintValue;
+                if (sscanf(valueIndicator + 1, "%u", &uintValue) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newUnsignedFromUint32(uintValue);
+            }
+            break;
+
+        case IEC61850_FLOAT32:
+            {
+                float floatValue;
+                if (sscanf(valueIndicator + 1, "%f", &floatValue) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newFloat(floatValue);
+            }
+            break;
+
+        case IEC61850_FLOAT64:
+            {
+                double doubleValue;
+                if (sscanf(valueIndicator + 1, "%lf", &doubleValue) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newDouble(doubleValue);
+            }
+            break;
+
+        case IEC61850_BOOLEAN:
+            {
+                int boolean;
+                if (sscanf(valueIndicator + 1, "%i", &boolean) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newBoolean((bool) boolean);
+            }
+            break;
+
+        case IEC61850_OPTFLDS:
+            {
+                int value;
+                if (sscanf(valueIndicator + 1, "%i", &value) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newBitString(-10);
+                MmsValue_setBitStringFromIntegerBigEndian(dataAttribute->mmsValue, value);
+            }
+            break;
+
+        case IEC61850_TRGOPS:
+            {
+                int value;
+                if (sscanf(valueIndicator + 1, "%i", &value) != 1) goto exit_error;
+                dataAttribute->mmsValue = MmsValue_newBitString(-6);
+                MmsValue_setBitStringFromIntegerBigEndian(dataAttribute->mmsValue, value);
+            }
+            break;
+
+        default:
+            break;
+
+        }
+    }
+
+    return true;
+
+exit_error:
+    return false;
+}
+
 IedModel*
 ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 {
+    uint8_t* lineBuffer = (uint8_t*)GLOBAL_MALLOC(READ_BUFFER_MAX_SIZE);
+
+    if (lineBuffer == NULL)
+        goto exit_error;
+
     int bytesRead = 1;
 
     bool stateInModel = false;
     int indendation = 0;
+    bool inArray = false;
+    bool inArrayElement = false;
 
     IedModel* model = NULL;
     LogicalDevice* currentLD = NULL;
     LogicalNode* currentLN = NULL;
     ModelNode* currentModelNode = NULL;
+    ModelNode* currentArrayNode = NULL;
     DataSet* currentDataSet = NULL;
     GSEControlBlock* currentGoCB = NULL;
     SVControlBlock* currentSMVCB = NULL;
@@ -138,16 +250,30 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 
     int currentLine = 0;
 
-    while (bytesRead > 0) {
+    while (bytesRead > 0)
+    {
         bytesRead = readLine(fileHandle, lineBuffer, READ_BUFFER_MAX_SIZE);
 
         currentLine++;
 
-        if (bytesRead > 0) {
+        if (bytesRead > 0)
+        {
             lineBuffer[bytesRead] = 0;
 
-            if (stateInModel) {
+            /* trim trailing spaces */
+            while (bytesRead > 1) {
+                bytesRead--;
 
+                if (isspace(lineBuffer[bytesRead])) {
+                    lineBuffer[bytesRead] = 0;
+                }
+                else {
+                    break;
+                }
+            }
+
+            if (stateInModel)
+            {
                 if (StringUtils_startsWith((char*) lineBuffer, "}")) {
                     if (indendation == 1) {
                         stateInModel = false;
@@ -163,30 +289,55 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         indendation = 3;
                     }
                     else if (indendation > 4) {
+
+                        if (inArrayElement && currentModelNode->parent == currentArrayNode) {
+                            inArrayElement = false;
+                        }
+                        else {
+                            indendation--;
+                        }
+
+                        if (inArray && currentModelNode == currentArrayNode) {
+                            inArray = false;
+                        }
+
                         currentModelNode = currentModelNode->parent;
-                        indendation--;
                     }
                 }
-
-                else if (indendation == 1) {
-                    if (StringUtils_startsWith((char*) lineBuffer, "LD")) {
+                else if (indendation == 1)
+                {
+                    if (StringUtils_startsWith((char*) lineBuffer, "LD"))
+                    {
                         indendation = 2;
 
-                        if (sscanf((char*) lineBuffer, "LD(%s)", nameString) < 1)
+                        char ldName[65];
+                        ldName[0] = 0;
+
+                        if (sscanf((char*) lineBuffer, "LD(%129s %64s)", nameString, ldName) < 1)
                             goto exit_error;
 
                         terminateString(nameString, ')');
 
-                        currentLD = LogicalDevice_create(nameString, model);
+                        if (ldName[0] != 0)
+                        {
+                            terminateString(ldName, ')');
+
+                            currentLD = LogicalDevice_createEx(nameString, model, ldName);
+                        }
+                        else {
+                            currentLD = LogicalDevice_create(nameString, model);
+                        }
                     }
                     else
                         goto exit_error;
                 }
-                else if (indendation == 2) {
-                    if (StringUtils_startsWith((char*) lineBuffer, "LN")) {
+                else if (indendation == 2)
+                {
+                    if (StringUtils_startsWith((char*) lineBuffer, "LN"))
+                    {
                         indendation = 3;
 
-                        if (sscanf((char*) lineBuffer, "LN(%s)", nameString) < 1)
+                        if (sscanf((char*) lineBuffer, "LN(%129s)", nameString) < 1)
                             goto exit_error;
 
                         terminateString(nameString, ')');
@@ -196,26 +347,35 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                     else
                         goto exit_error;
                 }
-                else if (indendation == 3) {
-                    if (StringUtils_startsWith((char*) lineBuffer, "DO")) {
+                else if (indendation == 3)
+                {
+                    if (StringUtils_startsWith((char*) lineBuffer, "DO"))
+                    {
                         indendation = 4;
 
                         int arrayElements = 0;
 
-                        sscanf((char*) lineBuffer, "DO(%s %i)", nameString, &arrayElements);
+                        if (sscanf((char*)lineBuffer, "DO(%129s %i)", nameString, &arrayElements) != 2) {
+                            goto exit_error;
+                        }
 
                         currentModelNode = (ModelNode*)
                                 DataObject_create(nameString, (ModelNode*) currentLN, arrayElements);
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "DS")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "DS"))
+                    {
                         indendation = 4;
 
-                        sscanf((char*) lineBuffer, "DS(%s)", nameString);
+                        if (sscanf((char*)lineBuffer, "DS(%129s)", nameString) != 1) {
+                            goto exit_error;
+                        }
+
                         terminateString(nameString, ')');
 
                         currentDataSet = DataSet_create(nameString, currentLN);
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "RC")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "RC"))
+                    {
                         int isBuffered;
                         uint32_t confRef;
                         int trgOps;
@@ -223,7 +383,7 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         uint32_t bufTm;
                         uint32_t intgPd;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "RC(%s %s %i %s %u %i %i %u %u)",
+                        int matchedItems = sscanf((char*) lineBuffer, "RC(%129s %129s %i %129s %u %i %i %u %u)",
                                 nameString, nameString2, &isBuffered, nameString3, &confRef,
                                 &trgOps, &options, &bufTm, &intgPd);
 
@@ -242,13 +402,14 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         ReportControlBlock_create(nameString, currentLN, rptId,
                                 (bool) isBuffered, dataSetName, confRef, trgOps, options, bufTm, intgPd);
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "LC")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "LC"))
+                    {
                         uint32_t trgOps;
                         uint32_t intgPd;
                         int logEna;
                         int withReasonCode;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "LC(%s %s %s %u %u %i %i)",
+                        int matchedItems = sscanf((char*) lineBuffer, "LC(%129s %129s %129s %u %u %i %i)",
                                 nameString, nameString2, nameString3, &trgOps, &intgPd, &logEna, &withReasonCode);
 
                         if (matchedItems < 7) goto exit_error;
@@ -263,8 +424,9 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 
                         LogControlBlock_create(nameString, currentLN, dataSet, logRef, trgOps, intgPd, logEna, withReasonCode);
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "LOG")) {
-                        int matchedItems = sscanf((char*) lineBuffer, "LOG(%s)", nameString);
+                    else if (StringUtils_startsWith((char*) lineBuffer, "LOG"))
+                    {
+                        int matchedItems = sscanf((char*) lineBuffer, "LOG(%129s)", nameString);
 
                         if (matchedItems < 1) goto exit_error;
 
@@ -273,13 +435,14 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 
                         Log_create(nameString, currentLN);
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "GC")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "GC"))
+                    {
                         uint32_t confRef;
                         int fixedOffs;
                         int minTime = -1;
                         int maxTime = -1;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "GC(%s %s %s %u %i %i %i)",
+                        int matchedItems = sscanf((char*) lineBuffer, "GC(%129s %129s %129s %u %i %i %i)",
                                 nameString, nameString2, nameString3, &confRef, &fixedOffs, &minTime, &maxTime);
 
                         if (matchedItems < 5) goto exit_error;
@@ -288,16 +451,16 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                                 nameString3, confRef, fixedOffs, minTime, maxTime);
 
                         indendation = 4;
-
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "SMVC")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "SMVC"))
+                    {
                         uint32_t confRev;
                         int smpMod;
                         int smpRate;
                         int optFlds;
                         int isUnicast;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "SMVC(%s %s %s %u %i %i %i %i)",
+                        int matchedItems = sscanf((char*) lineBuffer, "SMVC(%129s %129s %129s %u %i %i %i %i)",
                                 nameString, nameString2, nameString3, &confRev, &smpMod, &smpRate, &optFlds, &isUnicast);
 
                         if (matchedItems < 5) goto exit_error;
@@ -305,10 +468,10 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         currentSMVCB = SVControlBlock_create(nameString, currentLN, nameString2, nameString3, confRev, smpMod, smpRate, optFlds, (bool) isUnicast);
 
                         indendation = 4;
-
                     }
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
-                    else if (StringUtils_startsWith((char*) lineBuffer, "SG")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "SG"))
+                    {
 
                         if (strcmp(currentLN->name, "LLN0") != 0) {
                             if (DEBUG_IED_SERVER)
@@ -337,20 +500,93 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                     }
 
                 }
-                else if (indendation > 3) {
-                    if (StringUtils_startsWith((char*) lineBuffer, "DO")) {
+                else if (indendation > 3)
+                {
+                    if (StringUtils_startsWith((char*) lineBuffer, "DO"))
+                    {
                         indendation++;
 
                         int arrayElements = 0;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "DO(%s %i)", nameString, &arrayElements);
+                        int matchedItems = sscanf((char*) lineBuffer, "DO(%129s %i)", nameString, &arrayElements);
 
                         if (matchedItems != 2) goto exit_error;
 
                         currentModelNode = (ModelNode*) DataObject_create(nameString, currentModelNode, arrayElements);
-                    }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "DA")) {
 
+                        if (arrayElements > 0)
+                        {
+                            inArray = true;
+                            currentArrayNode = currentModelNode;
+                        }
+                    }
+                    else if (StringUtils_startsWith((char*) lineBuffer, "["))
+                    {
+                        if (inArray == false) {
+                            goto exit_error;
+                        } 
+
+                        int arrayIndex;
+
+                        if (sscanf((char*)lineBuffer, "[%i]", &arrayIndex) != 1) {
+                            goto exit_error;
+                        }
+
+                        if (arrayIndex < 0) {
+                            goto exit_error;
+                        }
+
+                        if (currentArrayNode->modelType == DataAttributeModelType)
+                        {
+                            if (StringUtils_endsWith((char*)lineBuffer, ";"))
+                            {
+                                /* array of basic data attribute */
+                                ModelNode* arrayElementNode = ModelNode_getChildWithIdx(currentArrayNode, arrayIndex);
+
+                                if (arrayElementNode) {
+                                    setValue((char*)lineBuffer, (DataAttribute*)arrayElementNode);
+                                }
+                                else {
+                                    goto exit_error;
+                                }
+                            }
+                            else if (StringUtils_endsWith((char*)lineBuffer, "{"))
+                            {
+                                /* array of constructed data attribtute */
+                                currentModelNode = ModelNode_getChildWithIdx(currentArrayNode, arrayIndex);
+
+                                if (currentModelNode) {
+                                    inArrayElement = true;
+                                }
+                                else {
+                                    goto exit_error;
+                                }
+                            }
+                        }
+                        else if (currentArrayNode->modelType == DataObjectModelType)
+                        {
+                            if (StringUtils_endsWith((char*)lineBuffer, "{"))
+                            {
+                                /* array of constructed data attribtute */
+                                currentModelNode = ModelNode_getChildWithIdx(currentArrayNode, arrayIndex);
+
+                                if (currentModelNode) {
+                                    inArrayElement = true;
+                                }
+                                else {
+                                    goto exit_error;
+                                }
+                            }
+                            else
+                            {
+                                if (DEBUG_IED_SERVER)
+                                    printf("Unexpected character at end of line: %s\n", lineBuffer);
+                                goto exit_error;
+                            }
+                        }
+                    }
+                    else if (StringUtils_startsWith((char*) lineBuffer, "DA"))
+                    {
                         int arrayElements = 0;
 
                         int attributeType = 0;
@@ -358,121 +594,39 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         int triggerOptions = 0;
                         uint32_t sAddr = 0;
 
-                        sscanf((char*) lineBuffer, "DA(%s %i %i %i %i %u)", nameString, &arrayElements,  &attributeType, &functionalConstraint, &triggerOptions, &sAddr);
+                        if (sscanf((char*)lineBuffer, "DA(%129s %i %i %i %i %u)", nameString, &arrayElements, &attributeType, &functionalConstraint, &triggerOptions, &sAddr) != 6) {
+                            goto exit_error;
+                        }
 
                         DataAttribute* dataAttribute = DataAttribute_create(nameString, currentModelNode,
                                 (DataAttributeType) attributeType, (FunctionalConstraint) functionalConstraint, triggerOptions, arrayElements, sAddr);
 
-                        char* valueIndicator = strchr((char*) lineBuffer, '=');
-
-                        if (valueIndicator != NULL) {
-                            switch (dataAttribute->type) {
-                            case IEC61850_UNICODE_STRING_255:
-                                {
-                                    char* stringStart = valueIndicator + 2;
-                                    terminateString(stringStart, '"');
-                                    dataAttribute->mmsValue = MmsValue_newMmsString(stringStart);
-                                }
-                                break;
-
-                            case IEC61850_VISIBLE_STRING_255:
-                            case IEC61850_VISIBLE_STRING_129:
-                            case IEC61850_VISIBLE_STRING_65:
-                            case IEC61850_VISIBLE_STRING_64:
-                            case IEC61850_VISIBLE_STRING_32:
-                            case IEC61850_CURRENCY:
-                                {
-                                    char* stringStart = valueIndicator + 2;
-                                    terminateString(stringStart, '"');
-                                    dataAttribute->mmsValue = MmsValue_newVisibleString(stringStart);
-                                }
-                                break;
-
-                            case IEC61850_INT8:
-                            case IEC61850_INT16:
-                            case IEC61850_INT32:
-                            case IEC61850_INT64:
-                            case IEC61850_INT128:
-                            case IEC61850_ENUMERATED:
-                                {
-                                    int32_t intValue;
-                                    if (sscanf(valueIndicator + 1, "%i", &intValue) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newIntegerFromInt32(intValue);
-                                }
-                                break;
-
-                            case IEC61850_INT8U:
-                            case IEC61850_INT16U:
-                            case IEC61850_INT24U:
-                            case IEC61850_INT32U:
-                                {
-                                    uint32_t uintValue;
-                                    if (sscanf(valueIndicator + 1, "%u", &uintValue) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newUnsignedFromUint32(uintValue);
-                                }
-                                break;
-
-                            case IEC61850_FLOAT32:
-                                {
-                                    float floatValue;
-                                    if (sscanf(valueIndicator + 1, "%f", &floatValue) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newFloat(floatValue);
-                                }
-                                break;
-
-                            case IEC61850_FLOAT64:
-                                {
-                                    double doubleValue;
-                                    if (sscanf(valueIndicator + 1, "%lf", &doubleValue) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newDouble(doubleValue);
-                                }
-                                break;
-
-                            case IEC61850_BOOLEAN:
-                                {
-                                    int boolean;
-                                    if (sscanf(valueIndicator + 1, "%i", &boolean) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newBoolean((bool) boolean);
-                                }
-                                break;
-
-                            case IEC61850_OPTFLDS:
-                                {
-                                    int value;
-                                    if (sscanf(valueIndicator + 1, "%i", &value) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newBitString(-10);
-                                    MmsValue_setBitStringFromIntegerBigEndian(dataAttribute->mmsValue, value);
-                                }
-                                break;
-
-                            case IEC61850_TRGOPS:
-                                {
-                                    int value;
-                                    if (sscanf(valueIndicator + 1, "%i", &value) != 1) goto exit_error;
-                                    dataAttribute->mmsValue = MmsValue_newBitString(-6);
-                                    MmsValue_setBitStringFromIntegerBigEndian(dataAttribute->mmsValue, value);
-                                }
-                                break;
-
-                            default:
-                                break;
-
-                            }
+                        if (arrayElements > 0)
+                        {
+                            inArray = true;
+                            currentArrayNode = (ModelNode*)dataAttribute;
                         }
+
+                        setValue((char*)lineBuffer, dataAttribute);
 
                         int lineLength = (int) strlen((char*) lineBuffer);
 
-                        if (lineBuffer[lineLength - 1] == '{') {
+                        if (lineBuffer[lineLength - 1] == '{')
+                        {
                             indendation++;
                             currentModelNode = (ModelNode*) dataAttribute;
                         }
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "DE")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "DE"))
+                    {
                         char* start = strchr((char*) lineBuffer, '(');
 
-                        if (start) {
+                        if (start)
+                        {
                             start++;
-                            strncpy(nameString, start, 129);
+
+                            StringUtils_copyStringMax(nameString, 130, start);
+
                             terminateString(nameString, ')');
 
                             int indexVal = -1;
@@ -481,7 +635,8 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                             /* check for index */
                             char* sep = strchr(nameString, ' ');
 
-                            if (sep) {
+                            if (sep)
+                            {
                                 char* indexStr = sep + 1;
                                 *sep = 0;
 
@@ -499,12 +654,13 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                             DataSetEntry_create(currentDataSet, nameString, indexVal, componentVal);
                         }
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "PA")) {
+                    else if (StringUtils_startsWith((char*) lineBuffer, "PA"))
+                    {
                         uint32_t vlanPrio;
                         uint32_t vlanId;
                         uint32_t appId;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "PA(%u %u %u %s)", &vlanPrio, &vlanId, &appId, nameString);
+                        int matchedItems = sscanf((char*) lineBuffer, "PA(%u %u %u %129s)", &vlanPrio, &vlanId, &appId, nameString);
 
                         if ((matchedItems != 4) || ((currentGoCB == NULL) && (currentSMVCB == NULL))) goto exit_error;
 
@@ -514,7 +670,6 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 
                         if (StringUtils_createBufferFromHexString(nameString, (uint8_t*) nameString2) != 6)
                             goto exit_error;
-
 
                         PhyComAddress* dstAddress =
                                 PhyComAddress_create((uint8_t) vlanPrio, (uint16_t) vlanId, (uint16_t) appId,
@@ -531,18 +686,20 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                     else
                         goto exit_error;
                 }
-
-
             }
-            else {
-                if (StringUtils_startsWith((char*) lineBuffer, "MODEL{")) {
-
+            else
+            {
+                if (StringUtils_startsWith((char*) lineBuffer, "MODEL{"))
+                {
                     model = IedModel_create("");
                     stateInModel = true;
                     indendation = 1;
                 }
-                else if (StringUtils_startsWith((char*) lineBuffer, "MODEL(")) {
-                    sscanf((char*) lineBuffer, "MODEL(%s)", nameString);
+                else if (StringUtils_startsWith((char*) lineBuffer, "MODEL("))
+                {
+                    if (sscanf((char*)lineBuffer, "MODEL(%129s)", nameString) != 1)
+                        goto exit_error;
+
                     terminateString(nameString, ')');
                     model = IedModel_create(nameString);
                     stateInModel = true;
@@ -554,14 +711,18 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
         }
     }
 
+    GLOBAL_FREEMEM(lineBuffer);
+
     return model;
 
 exit_error:
+
+    GLOBAL_FREEMEM(lineBuffer);
+
     if (DEBUG_IED_SERVER)
         printf("IED_SERVER: error parsing line %i (indentation level = %i)\n", currentLine, indendation);
 
     IedModel_destroy(model);
+
     return NULL;
 }
-
-

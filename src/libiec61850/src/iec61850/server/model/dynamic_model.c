@@ -1,7 +1,7 @@
 /*
  *  dynamic_model.c
  *
- *  Copyright 2014-2022 Michael Zillgith
+ *  Copyright 2014-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -41,28 +41,31 @@ IedModel_setIedNameForDynamicModel(IedModel* self, const char* name)
 }
 
 IedModel*
-IedModel_create(const char* name/*, MemoryAllocator allocator*/)
+IedModel_create(const char* name)
 {
     IedModel* self = (IedModel*) GLOBAL_CALLOC(1, sizeof(IedModel));
 
-    if (name)
-        self->name = StringUtils_copyString(name);
-    else
-        self->name = NULL;
+    if (self)
+    {
+        if (name)
+            self->name = StringUtils_copyString(name);
+        else
+            self->name = NULL;
 
-    self->rcbs = NULL;
+        self->rcbs = NULL;
 
-    self->dataSets = NULL;
+        self->dataSets = NULL;
 
-    self->gseCBs = NULL;
+        self->gseCBs = NULL;
 
-    self->sgcbs = NULL;
+        self->sgcbs = NULL;
 
-    self->lcbs = NULL;
+        self->lcbs = NULL;
 
-    self->logs = NULL;
+        self->logs = NULL;
 
-    self->initializer = iedModel_emptyVariableInitializer;
+        self->initializer = iedModel_emptyVariableInitializer;
+    }
 
     return self;
 }
@@ -72,10 +75,12 @@ IedModel_addDataSet(IedModel* self, DataSet* dataSet)
 {
     if (self->dataSets == NULL)
         self->dataSets = dataSet;
-    else {
+    else
+    {
         DataSet* lastDataSet = self->dataSets;
 
-        while (lastDataSet != NULL) {
+        while (lastDataSet != NULL)
+        {
             if (lastDataSet->sibling == NULL) {
                 lastDataSet->sibling = dataSet;
                 break;
@@ -91,7 +96,8 @@ IedModel_addLogicalDevice(IedModel* self, LogicalDevice* lDevice)
 {
     if (self->firstChild == NULL)
         self->firstChild = lDevice;
-    else {
+    else
+    {
         LogicalDevice* sibling = self->firstChild;
 
         while (sibling->sibling != NULL)
@@ -106,7 +112,8 @@ IedModel_addLog(IedModel* self, Log* log)
 {
     if (self->logs == NULL)
         self->logs = log;
-    else {
+    else
+    {
         Log* lastLog = self->logs;
 
         while (lastLog->sibling != NULL)
@@ -121,7 +128,8 @@ IedModel_addLogControlBlock(IedModel* self, LogControlBlock* lcb)
 {
     if (self->lcbs == NULL)
         self->lcbs = lcb;
-    else {
+    else
+    {
         LogControlBlock* lastLcb = self->lcbs;
 
         while (lastLcb->sibling != NULL)
@@ -136,7 +144,8 @@ IedModel_addReportControlBlock(IedModel* self, ReportControlBlock* rcb)
 {
     if (self->rcbs == NULL)
         self->rcbs = rcb;
-    else {
+    else
+    {
         ReportControlBlock* lastRcb = self->rcbs;
 
         while (lastRcb->sibling != NULL)
@@ -152,7 +161,8 @@ IedModel_addSettingGroupControlBlock(IedModel* self, SettingGroupControlBlock* s
 {
     if (self->sgcbs == NULL)
         self->sgcbs = sgcb;
-    else {
+    else
+    {
         SettingGroupControlBlock* lastSgcb = self->sgcbs;
 
         while (lastSgcb->sibling != NULL)
@@ -163,35 +173,66 @@ IedModel_addSettingGroupControlBlock(IedModel* self, SettingGroupControlBlock* s
 }
 #endif /* (CONFIG_IEC61850_SETTING_GROUPS == 1) */
 
-
 static void
 IedModel_addGSEControlBlock(IedModel* self, GSEControlBlock* gcb)
 {
     if (self->gseCBs == NULL)
         self->gseCBs = gcb;
-    else {
+    else
+    {
         GSEControlBlock* lastGcb = self->gseCBs;
 
-        while (lastGcb->sibling != NULL)
+        while (lastGcb->sibling)
             lastGcb = lastGcb->sibling;
 
         lastGcb->sibling = gcb;
     }
 }
 
+static void
+IedModel_addSMVControlBlock(IedModel* self, SVControlBlock* smvcb)
+{
+    if (self->svCBs == NULL) {
+        self->svCBs = smvcb;
+    }
+    else
+    {
+        SVControlBlock* lastSvCB = self->svCBs;
+
+        while (lastSvCB->sibling)
+            lastSvCB = lastSvCB->sibling;
+
+        lastSvCB->sibling = smvcb;
+    }
+}
+
 LogicalDevice*
-LogicalDevice_create(const char* name, IedModel* parent)
+LogicalDevice_createEx(const char* inst, IedModel* parent, const char* ldName)
 {
     LogicalDevice* self = (LogicalDevice*) GLOBAL_CALLOC(1, sizeof(LogicalDevice));
 
-    self->name = StringUtils_copyString(name);
-    self->modelType = LogicalDeviceModelType;
-    self->parent = (ModelNode*) parent;
-    self->sibling = NULL;
+    if (self)
+    {
+        self->name = StringUtils_copyString(inst);
+        self->modelType = LogicalDeviceModelType;
+        self->parent = (ModelNode*) parent;
+        self->sibling = NULL;
 
-    IedModel_addLogicalDevice(parent, self);
+        if (ldName)
+            self->ldName = StringUtils_copyString(ldName);
+        else
+            self->ldName = NULL;
+
+        IedModel_addLogicalDevice(parent, self);
+    }
 
     return self;
+}
+
+LogicalDevice*
+LogicalDevice_create(const char* inst, IedModel* parent)
+{
+    return LogicalDevice_createEx(inst, parent, NULL);
 }
 
 static LogicalNode*
@@ -226,13 +267,16 @@ LogicalNode_create(const char* name, LogicalDevice* parent)
 {
     LogicalNode* self = (LogicalNode*) GLOBAL_MALLOC(sizeof(LogicalNode));
 
-    self->name = StringUtils_copyString(name);
-    self->parent = (ModelNode*) parent;
-    self->modelType = LogicalNodeModelType;
-    self->firstChild = NULL;
-    self->sibling = NULL;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->parent = (ModelNode*) parent;
+        self->modelType = LogicalNodeModelType;
+        self->firstChild = NULL;
+        self->sibling = NULL;
 
-    LogicalDevice_addLogicalNode(parent, self);
+        LogicalDevice_addLogicalNode(parent, self);
+    }
 
     return self;
 }
@@ -278,11 +322,14 @@ Log_create(const char* name, LogicalNode* parent)
 {
     Log* self = (Log*) GLOBAL_MALLOC(sizeof(Log));
 
-    self->name = StringUtils_copyString(name);
-    self->parent = parent;
-    self->sibling = NULL;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->parent = parent;
+        self->sibling = NULL;
 
-    LogicalNode_addLog(parent, self);
+        LogicalNode_addLog(parent, self);
+    }
 
     return self;
 }
@@ -301,28 +348,43 @@ LogControlBlock_create(const char* name, LogicalNode* parent, const char* dataSe
 {
     LogControlBlock* self = (LogControlBlock*) GLOBAL_MALLOC(sizeof(LogControlBlock));
 
-    self->name = StringUtils_copyString(name);
-    self->parent = parent;
-    self->sibling = NULL;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->parent = parent;
+        self->sibling = NULL;
 
-    if (dataSetName)
-        self->dataSetName = StringUtils_copyString(dataSetName);
-    else
-        self->dataSetName = NULL;
+        if (dataSetName)
+            self->dataSetName = StringUtils_copyString(dataSetName);
+        else
+            self->dataSetName = NULL;
 
-    if (logRef)
-        self->logRef = StringUtils_copyString(logRef);
-    else
-        self->logRef = NULL;
+        if (logRef)
+            self->logRef = StringUtils_copyString(logRef);
+        else
+            self->logRef = NULL;
 
-    self->trgOps = trgOps;
-    self->intPeriod = intPeriod;
-    self->logEna = logEna;
-    self->reasonCode = reasonCode;
+        self->trgOps = trgOps;
+        self->intPeriod = intPeriod;
+        self->logEna = logEna;
+        self->reasonCode = reasonCode;
 
-    LogicalNode_addLogControlBlock(parent, self);
+        LogicalNode_addLogControlBlock(parent, self);
+    }
 
     return self;
+}
+
+const char*
+LogControlBlock_getName(LogControlBlock* self)
+{
+    return self->name;
+}
+
+LogicalNode*
+LogControlBlock_getParent(LogControlBlock* self)
+{
+    return self->parent;
 }
 
 static void
@@ -339,30 +401,33 @@ ReportControlBlock_create(const char* name, LogicalNode* parent, const char* rpt
 {
     ReportControlBlock* self = (ReportControlBlock*) GLOBAL_MALLOC(sizeof(ReportControlBlock));
 
-    self->name = StringUtils_copyString(name);
-    self->parent = parent;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->parent = parent;
 
-    if (rptId)
-        self->rptId = StringUtils_copyString(rptId);
-    else
-        self->rptId = NULL;
+        if (rptId)
+            self->rptId = StringUtils_copyString(rptId);
+        else
+            self->rptId = NULL;
 
-    self->buffered = isBuffered;
+        self->buffered = isBuffered;
 
-    if (dataSetName)
-        self->dataSetName = StringUtils_copyString(dataSetName);
-    else
-        self->dataSetName = NULL;
+        if (dataSetName)
+            self->dataSetName = StringUtils_copyString(dataSetName);
+        else
+            self->dataSetName = NULL;
 
-    self->confRef = confRef;
-    self->trgOps = trgOps;
-    self->options = options;
-    self->bufferTime = bufTm;
-    self->intPeriod = intgPd;
-    self->sibling = NULL;
-    self->clientReservation[0] = 0; /* no pre-configured client */
+        self->confRef = confRef;
+        self->trgOps = trgOps;
+        self->options = options;
+        self->bufferTime = bufTm;
+        self->intPeriod = intgPd;
+        self->sibling = NULL;
+        self->clientReservation[0] = 0; /* no pre-configured client */
 
-    LogicalNode_addReportControlBlock(parent, self);
+        LogicalNode_addReportControlBlock(parent, self);
+    }
 
     return self;
 }
@@ -418,13 +483,16 @@ SettingGroupControlBlock_create(LogicalNode* parent, uint8_t actSG, uint8_t numO
 
     SettingGroupControlBlock* self = (SettingGroupControlBlock*) GLOBAL_MALLOC(sizeof(SettingGroupControlBlock));
 
-    self->parent = parent;
-    self->actSG = actSG;
-    self->numOfSGs = numOfSGs;
-    self->sibling = NULL;
-    self->editSG = 0;
+    if (self)
+    {
+        self->parent = parent;
+        self->actSG = actSG;
+        self->numOfSGs = numOfSGs;
+        self->sibling = NULL;
+        self->editSG = 0;
 
-    LogicalNode_addSettingGroupControlBlock(parent, self);
+        LogicalNode_addSettingGroupControlBlock(parent, self);
+    }
 
     return self;
 }
@@ -444,32 +512,43 @@ GSEControlBlock_create(const char* name, LogicalNode* parent, const char* appId,
 {
     GSEControlBlock* self = (GSEControlBlock*) GLOBAL_MALLOC(sizeof(GSEControlBlock));
 
-    self->name = StringUtils_copyString(name);
-    self->parent = parent;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->parent = parent;
 
-    if (appId)
-        self->appId = StringUtils_copyString(appId);
-    else
-        self->appId = NULL;
+        if (appId)
+            self->appId = StringUtils_copyString(appId);
+        else
+            self->appId = NULL;
 
-    if (dataSet)
-        self->dataSetName = StringUtils_copyString(dataSet);
-    else
-        self->dataSetName = NULL;
+        if (dataSet)
+            self->dataSetName = StringUtils_copyString(dataSet);
+        else
+            self->dataSetName = NULL;
 
-    self->confRev = confRef;
-    self->fixedOffs = fixedOffs;
-    self->minTime = minTime;
-    self->maxTime = maxTime;
+        self->confRev = confRef;
+        self->fixedOffs = fixedOffs;
+        self->minTime = minTime;
+        self->maxTime = maxTime;
 
-    self->address = NULL;
+        self->address = NULL;
 
-    self->sibling = NULL;
+        self->sibling = NULL;
 
-    if (parent != NULL)
-        LogicalNode_addGSEControlBlock(parent, self);
+        if (parent != NULL)
+            LogicalNode_addGSEControlBlock(parent, self);
+    }
 
     return self;
+}
+
+static void
+LogicalNode_addSMVControlBlock(LogicalNode* self, SVControlBlock* smvcb)
+{
+    IedModel* model = (IedModel*) self->parent->parent;
+
+    IedModel_addSMVControlBlock(model, smvcb);
 }
 
 SVControlBlock*
@@ -478,23 +557,32 @@ SVControlBlock_create(const char* name, LogicalNode* parent, const char* svID, c
 {
     SVControlBlock* self = (SVControlBlock*) GLOBAL_MALLOC(sizeof(SVControlBlock));
 
-    self->name = StringUtils_copyString(name);
-    self->parent = parent;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->parent = parent;
 
-    self->svId = StringUtils_copyString(svID); /* Is there a default value? */
+        self->svId = StringUtils_copyString(svID); /* Is there a default value? */
 
-    if (dataSet)
-        self->dataSetName = StringUtils_copyString(dataSet);
-    else
-        self->dataSetName = NULL;
+        if (dataSet)
+            self->dataSetName = StringUtils_copyString(dataSet);
+        else
+            self->dataSetName = NULL;
 
-    self->confRev = confRev;
+        self->confRev = confRev;
 
-    self->smpMod = smpMod;
-    self->smpRate = smpRate;
+        self->smpMod = smpMod;
+        self->smpRate = smpRate;
 
-    self->optFlds = optFlds;
-    self->isUnicast = isUnicast;
+        self->optFlds = optFlds;
+        self->isUnicast = isUnicast;
+
+        self->dstAddress = NULL;
+        self->sibling = NULL;
+
+        if (parent)
+            LogicalNode_addSMVControlBlock(parent, self);
+    }
 
     return self;
 }
@@ -516,11 +604,14 @@ PhyComAddress_create(uint8_t vlanPriority, uint16_t vlanId, uint16_t appId, uint
 {
     PhyComAddress* self = (PhyComAddress*) GLOBAL_MALLOC(sizeof(PhyComAddress));
 
-    self->vlanPriority = vlanPriority;
-    self->vlanId = vlanId;
-    self->appId = appId;
+    if (self)
+    {
+        self->vlanPriority = vlanPriority;
+        self->vlanId = vlanId;
+        self->appId = appId;
 
-    memcpy(self->dstAddress, dstAddress, 6);
+        memcpy(self->dstAddress, dstAddress, 6);
+    }
 
     return self;
 }
@@ -557,17 +648,46 @@ DataObject_create(const char* name, ModelNode* parent, int arrayElements)
 {
     DataObject* self = (DataObject*) GLOBAL_MALLOC(sizeof(DataObject));
 
-    self->name = StringUtils_copyString(name);
-    self->modelType = DataObjectModelType;
-    self->elementCount = arrayElements;
-    self->firstChild = NULL;
-    self->parent = parent;
-    self->sibling = NULL;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->modelType = DataObjectModelType;
+        self->firstChild = NULL;
+        self->parent = parent;
+        self->sibling = NULL;
 
-    if (parent->modelType == LogicalNodeModelType)
-        LogicalNode_addDataObject((LogicalNode*) parent, self);
-    else if (parent->modelType == DataObjectModelType)
-        DataObject_addChild((DataObject*) parent, (ModelNode*) self);
+        self->elementCount = arrayElements;
+        self->arrayIndex = -1;
+
+        if (arrayElements > 0)
+        {
+            int i;
+
+            for (i = 0; i < arrayElements; i++)
+            {
+                DataObject* arrayElement = (DataObject*) GLOBAL_MALLOC(sizeof(DataObject));
+
+                if (arrayElement)
+                {
+                    arrayElement->name = NULL;
+                    arrayElement->modelType = DataObjectModelType;
+                    arrayElement->firstChild = NULL;
+                    arrayElement->parent = (ModelNode*) self;
+                    arrayElement->sibling = NULL;
+
+                    arrayElement->elementCount = 0;
+                    arrayElement->arrayIndex = i;
+
+                    DataObject_addChild(self, (ModelNode*) arrayElement);
+                }
+            }
+        }
+
+        if (parent->modelType == LogicalNodeModelType)
+            LogicalNode_addDataObject((LogicalNode*) parent, self);
+        else if (parent->modelType == DataObjectModelType)
+            DataObject_addChild((DataObject*) parent, (ModelNode*) self);
+    }
 
     return self;
 }
@@ -605,22 +725,54 @@ DataAttribute_create(const char* name, ModelNode* parent, DataAttributeType type
 {
     DataAttribute* self = (DataAttribute*) GLOBAL_MALLOC(sizeof(DataAttribute));
 
-    self->name = StringUtils_copyString(name);
-    self->elementCount = arrayElements;
-    self->modelType = DataAttributeModelType;
-    self->type = type;
-    self->fc = fc;
-    self->firstChild = NULL;
-    self->mmsValue = NULL;
-    self->parent = parent;
-    self->sibling = NULL;
-    self->triggerOptions = triggerOptions;
-    self->sAddr = sAddr;
+    if (self)
+    {
+        self->name = StringUtils_copyString(name);
+        self->elementCount = arrayElements;
+        self->arrayIndex = -1;
+        self->modelType = DataAttributeModelType;
+        self->type = type;
+        self->fc = fc;
+        self->firstChild = NULL;
+        self->mmsValue = NULL;
+        self->parent = parent;
+        self->sibling = NULL;
+        self->triggerOptions = triggerOptions;
+        self->sAddr = sAddr;
 
-    if (parent->modelType == DataObjectModelType)
-        DataObject_addChild((DataObject*) parent, (ModelNode*) self);
-    else if (parent->modelType == DataAttributeModelType)
-        DataAttribute_addChild((DataAttribute*) parent, (ModelNode*) self);
+        if (arrayElements > 0)
+        {
+            int i;
+
+            for (i = 0; i < arrayElements; i++)
+            {
+                DataAttribute* arrayElement = (DataAttribute*) GLOBAL_MALLOC(sizeof(DataAttribute));
+
+                if (arrayElement)
+                {
+                    arrayElement->name = NULL;
+                    arrayElement->elementCount = 0;
+                    arrayElement->arrayIndex = i;
+                    arrayElement->modelType = DataAttributeModelType;
+                    arrayElement->type = type;
+                    arrayElement->fc = fc;
+                    arrayElement->firstChild = NULL;
+                    arrayElement->mmsValue = NULL;
+                    arrayElement->parent = (ModelNode*)self;
+                    arrayElement->sibling = NULL;
+                    arrayElement->triggerOptions = triggerOptions;
+                    arrayElement->sAddr = sAddr;
+
+                    DataAttribute_addChild(self, (ModelNode*)arrayElement);
+                }
+            }
+        }
+
+        if (parent->modelType == DataObjectModelType)
+            DataObject_addChild((DataObject*) parent, (ModelNode*) self);
+        else if (parent->modelType == DataAttributeModelType)
+            DataAttribute_addChild((DataAttribute*) parent, (ModelNode*) self);
+    }
 
     return self;
 }
@@ -659,15 +811,18 @@ DataSet_create(const char* name, LogicalNode* parent)
 {
     DataSet* self = (DataSet*) GLOBAL_MALLOC(sizeof(DataSet));
 
-    LogicalDevice* ld = (LogicalDevice*) parent->parent;
+    if (self)
+    {
+        LogicalDevice* ld = (LogicalDevice*) parent->parent;
 
-    self->name = StringUtils_createString(3, parent->name, "$", name);
-    self->elementCount = 0;
-    self->sibling = NULL;
-    self->logicalDeviceName = ld->name;
-    self->fcdas = NULL;
+        self->name = StringUtils_createString(3, parent->name, "$", name);
+        self->elementCount = 0;
+        self->sibling = NULL;
+        self->logicalDeviceName = ld->name;
+        self->fcdas = NULL;
 
-    IedModel_addDataSet((IedModel*) ld->parent, self);
+        IedModel_addDataSet((IedModel*) ld->parent, self);
+    }
 
     return self;
 }
@@ -703,11 +858,12 @@ DataSet_addEntry(DataSet* self, DataSetEntry* newEntry)
 
     if (self->fcdas == NULL)
         self->fcdas = newEntry;
-    else {
+    else
+    {
         DataSetEntry* lastEntry = self->fcdas;
 
-        while (lastEntry != NULL) {
-
+        while (lastEntry != NULL)
+        {
             if (lastEntry->sibling == NULL) {
                 lastEntry->sibling = newEntry;
                 break;
@@ -723,37 +879,42 @@ DataSetEntry_create(DataSet* dataSet, const char* variable, int index, const cha
 {
     DataSetEntry* self = (DataSetEntry*) GLOBAL_MALLOC(sizeof(DataSetEntry));
 
-    char variableName[130];
+    if (self)
+    {
+        char variableName[130];
 
-    strncpy(variableName, variable, 129);
+        StringUtils_copyStringMax(variableName, 130, variable);
 
-    char* separator = strchr(variableName, '/');
+        char* separator = strchr(variableName, '/');
 
-    if (separator != NULL) {
-        *separator = 0;
+        if (separator != NULL)
+        {
+            *separator = 0;
 
-        self->variableName = StringUtils_copyString(separator + 1);
-        self->logicalDeviceName = StringUtils_copyString(variableName);
-        self->isLDNameDynamicallyAllocated = true;
+            self->variableName = StringUtils_copyString(separator + 1);
+            self->logicalDeviceName = StringUtils_copyString(variableName);
+            self->isLDNameDynamicallyAllocated = true;
+        }
+        else
+        {
+            self->variableName = StringUtils_copyString(variable);
+            self->logicalDeviceName = dataSet->logicalDeviceName;
+            self->isLDNameDynamicallyAllocated = false;
+        }
+
+        if (component != NULL)
+            self->componentName = StringUtils_copyString(component);
+        else
+            self->componentName = NULL;
+
+        self->index = index;
+
+        self->sibling = NULL;
+
+        self->value = NULL;
+
+        DataSet_addEntry(dataSet, self);
     }
-    else {
-        self->variableName = StringUtils_copyString(variable);
-        self->logicalDeviceName = dataSet->logicalDeviceName;
-        self->isLDNameDynamicallyAllocated = false;
-    }
-
-    if (component != NULL)
-        self->componentName = StringUtils_copyString(component);
-    else
-        self->componentName = NULL;
-
-    self->index = index;
-
-    self->sibling = NULL;
-
-    self->value = NULL;
-
-    DataSet_addEntry(dataSet, self);
 
     return self;
 }
@@ -761,14 +922,15 @@ DataSetEntry_create(DataSet* dataSet, const char* variable, int index, const cha
 static void
 ModelNode_destroy(ModelNode* modelNode)
 {
-    if (modelNode) {
-
+    if (modelNode)
+    {
         if (modelNode->name)
             GLOBAL_FREEMEM(modelNode->name);
 
         ModelNode* currentChild = modelNode->firstChild;
 
-        while (currentChild != NULL) {
+        while (currentChild != NULL)
+        {
             ModelNode* nextChild = currentChild->sibling;
 
             ModelNode_destroy(currentChild);
@@ -776,7 +938,8 @@ ModelNode_destroy(ModelNode* modelNode)
             currentChild = nextChild;
         }
 
-        if (modelNode->modelType == DataAttributeModelType) {
+        if (modelNode->modelType == DataAttributeModelType)
+        {
             DataAttribute* dataAttribute = (DataAttribute*) modelNode;
 
             if (dataAttribute->mmsValue != NULL) {
@@ -799,12 +962,18 @@ IedModel_destroy(IedModel* model)
 
         LogicalDevice* ld = model->firstChild;
 
-        while (ld != NULL) {
-            GLOBAL_FREEMEM (ld->name);
+        while (ld != NULL)
+        {
+            if (ld->name)
+                GLOBAL_FREEMEM(ld->name);
+
+            if (ld->ldName)
+                GLOBAL_FREEMEM (ld->ldName);
 
             LogicalNode* ln = (LogicalNode*) ld->firstChild;
 
-            while (ln != NULL) {
+            while (ln != NULL)
+            {
                 GLOBAL_FREEMEM(ln->name);
 
                 /* delete all data objects */
@@ -824,7 +993,6 @@ IedModel_destroy(IedModel* model)
 
                 GLOBAL_FREEMEM(currentLn);
             }
-
 
             LogicalDevice* currentLd = ld;
             ld = (LogicalDevice*) ld->sibling;
@@ -957,4 +1125,3 @@ IedModel_destroy(IedModel* model)
         GLOBAL_FREEMEM(model);
     }
 }
-

@@ -1,7 +1,7 @@
 /*
  *  mms_server_common.c
  *
- *  Copyright 2013-2020 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -32,7 +32,8 @@ mmsServer_write_out(const void *buffer, size_t size, void *app_key)
 
     int appendedBytes = ByteBuffer_append(writeBuffer, (uint8_t*) buffer, size);
 
-    if (appendedBytes == -1) {
+    if (appendedBytes == -1)
+    {
         if (DEBUG_MMS_SERVER)
             printf("MMS_SERVER: message exceeds maximum PDU size!\n");
     }
@@ -156,9 +157,7 @@ mapErrorTypeToErrorClass(MmsError errorType, uint8_t* tag, uint8_t* value)
         *tag = 0x8c; /* others */
         *value = 0;
         break;
-
     }
-
 }
 
 void
@@ -240,7 +239,8 @@ mmsMsg_createInitiateErrorPdu(ByteBuffer* response, uint8_t initiateErrorCode)
 bool
 mmsServer_isIndexAccess(AlternateAccess_t* alternateAccess)
 {
-    if (alternateAccess->list.array[0]->present == AlternateAccess__Member_PR_unnamed) {
+    if (alternateAccess->list.array[0]->present == AlternateAccess__Member_PR_unnamed)
+    {
         if ((alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present
                 == AlternateAccessSelection__selectAccess_PR_index) ||
                 (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present
@@ -256,15 +256,106 @@ mmsServer_isIndexAccess(AlternateAccess_t* alternateAccess)
 bool
 mmsServer_isComponentAccess(AlternateAccess_t* alternateAccess)
 {
-    if (alternateAccess->list.array[0]->present
-            == AlternateAccess__Member_PR_unnamed) {
+    if (alternateAccess->list.array[0]->present == AlternateAccess__Member_PR_unnamed)
+    {
         if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present
-                == AlternateAccessSelection__selectAccess_PR_component) {
+                == AlternateAccessSelection__selectAccess_PR_component)
+        {
             return true;
         }
     }
 
     return false;
+}
+
+bool
+mmsServer_isAccessToArrayComponent(AlternateAccess_t* alternateAccess)
+{
+    if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAlternateAccess.alternateAccess != NULL)
+    {
+        if (alternateAccess->list.array[0]->choice.unnamed->
+                choice.selectAlternateAccess.alternateAccess->list.array[0]->choice.unnamed->choice.selectAlternateAccess.accessSelection.present ==
+                        AlternateAccessSelection__selectAlternateAccess__accessSelection_PR_component)
+        {
+            return true;
+        }
+        else
+            return false;
+    }
+    else
+        return false;
+}
+
+MmsValue*
+mmsServer_getComponentOfArrayElement(AlternateAccess_t* alternateAccess, MmsVariableSpecification* namedVariable,
+        MmsValue* structuredValue, char* componentId)
+{
+    MmsValue* retValue = NULL;
+
+    if (mmsServer_isAccessToArrayComponent(alternateAccess))
+    {
+        Identifier_t component = alternateAccess->list.array[0]->choice.unnamed->choice.selectAlternateAccess.alternateAccess
+                ->list.array[0]->choice.unnamed->choice.selectAccess.choice.component;
+
+        if (component.size > 129)
+            goto exit_function;
+
+        MmsVariableSpecification* structSpec;
+
+        if (namedVariable->type == MMS_ARRAY)
+            structSpec = namedVariable->typeSpec.array.elementTypeSpec;
+        else if (namedVariable->type == MMS_STRUCTURE)
+            structSpec = namedVariable;
+        else
+            goto exit_function;
+
+        int i;
+        for (i = 0; i < structSpec->typeSpec.structure.elementCount; i++)
+        {
+            if ((int) strlen(structSpec->typeSpec.structure.elements[i]->name)
+                    == component.size)
+            {
+                if (strncmp(structSpec->typeSpec.structure.elements[i]->name,
+                        (char*) component.buf, component.size) == 0)
+                {
+                    MmsValue* value = MmsValue_getElement(structuredValue, i);
+
+                    if (value)
+                    {
+                        if (mmsServer_isAccessToArrayComponent(
+                                alternateAccess->list.array[0]->choice.unnamed->choice.selectAlternateAccess.alternateAccess))
+                        {
+                            if (componentId)
+                            {
+                                strcat(componentId, structSpec->typeSpec.structure.elements[i]->name);
+                                strcat(componentId, "$");
+                            }
+
+                            retValue =
+                                    mmsServer_getComponentOfArrayElement(
+                                            alternateAccess->list.array[0]->choice.unnamed->choice.selectAlternateAccess.alternateAccess,
+                                            structSpec->typeSpec.structure.elements[i],
+                                            value, componentId);
+                        }
+                        else
+                        {
+                            if (componentId)
+                            {
+                                strcat(componentId, structSpec->typeSpec.structure.elements[i]->name);
+                            }
+
+                            retValue = value;
+                        }
+                    }
+
+                    goto exit_function;
+                }
+            }
+        }
+    }
+
+exit_function:
+    return retValue;
 }
 
 int
@@ -320,10 +411,12 @@ mmsServer_getNamedVariableListWithName(LinkedList namedVariableLists, const char
 
     LinkedList element = LinkedList_getNext(namedVariableLists);
 
-    while (element != NULL) {
+    while (element)
+    {
         MmsNamedVariableList varList = (MmsNamedVariableList) element->data;
 
-        if (strcmp(MmsNamedVariableList_getName(varList), variableListName) == 0) {
+        if (strcmp(MmsNamedVariableList_getName(varList), variableListName) == 0)
+        {
             variableList = varList;
             break;
         }
@@ -334,18 +427,18 @@ mmsServer_getNamedVariableListWithName(LinkedList namedVariableLists, const char
     return variableList;
 }
 
-
 void
 mmsServer_deleteVariableList(LinkedList namedVariableLists, char* variableListName)
 {
 	LinkedList previousElement = namedVariableLists;
 	LinkedList element = LinkedList_getNext(namedVariableLists);
 
-	while (element != NULL ) {
+	while (element)
+    {
 		MmsNamedVariableList varList = (MmsNamedVariableList) element->data;
 
-		if (strcmp(MmsNamedVariableList_getName(varList), variableListName)
-				== 0) {
+		if (strcmp(MmsNamedVariableList_getName(varList), variableListName)	== 0)
+        {
 			previousElement->next = element->next;
 			GLOBAL_FREEMEM(element);
 			MmsNamedVariableList_destroy(varList);
@@ -357,5 +450,3 @@ mmsServer_deleteVariableList(LinkedList namedVariableLists, char* variableListNa
 		element = LinkedList_getNext(element);
 	}
 }
-
-

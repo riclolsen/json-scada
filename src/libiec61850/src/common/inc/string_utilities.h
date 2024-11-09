@@ -35,7 +35,23 @@ LIB61850_INTERNAL char*
 StringUtils_copyString(const char* string);
 
 LIB61850_INTERNAL char*
+StringUtils_copyStringMax(char* dest, int maxBufferSize, const char* str1);
+
+LIB61850_INTERNAL char*
 StringUtils_copyStringToBuffer(const char* string, char* buffer);
+
+/**
+ * \brief Copy string to buffer and replace characters
+ *
+ * NOTE: str should be a 0 terminated string. The terminating 0 is also copied.
+ *
+ * \param str the source string to copy
+ * \param buffer the destination buffer
+ * \param oldChar the character that has to be replaced while copying
+ * \param newChar the replacement character
+ */
+LIB61850_INTERNAL char*
+StringUtils_copyStringToBufferAndReplace(const char* str, char* buffer, char oldChar, char newChar);
 
 LIB61850_INTERNAL char*
 StringUtils_copySubString(char* startPos, char* endPos);
@@ -52,7 +68,7 @@ StringUtils_createString(int count, ...);
  * to concatenate.
  */
 LIB61850_INTERNAL char*
-StringUtils_createStringInBuffer(char* buffer, int count, ...);
+StringUtils_createStringInBuffer(char* newStr, int bufSize, int count, ...);
 
 LIB61850_INTERNAL char*
 StringUtils_createStringFromBuffer(const uint8_t* buf, int size);
@@ -60,8 +76,17 @@ StringUtils_createStringFromBuffer(const uint8_t* buf, int size);
 LIB61850_INTERNAL char*
 StringUtils_createStringFromBufferInBuffer(char* newString, const uint8_t* buf, int size);
 
+LIB61850_INTERNAL char*
+StringUtils_createStringFromBufferInBufferMax(char* newString, const uint8_t* buf, int size, int maxBufSize);
+
 LIB61850_INTERNAL void
 StringUtils_replace(char* string, char oldChar, char newChar);
+
+LIB61850_INTERNAL char*
+StringUtils_concatString(char* dest, int maxBufferSize, const char* str1, const char* str2);
+
+LIB61850_INTERNAL char*
+StringUtils_appendString(char* dest, int maxBufferSize, const char* str);
 
 LIB61850_INTERNAL bool
 StringUtils_isDigit(char character);
@@ -79,7 +104,7 @@ StringUtils_createBufferFromHexString(char* hexString, uint8_t* buffer);
  * \brief test if string starts with prefix
  */
 LIB61850_INTERNAL bool
-StringUtils_startsWith(char* string, char* prefix);
+StringUtils_startsWith(const char* string, const char* prefix);
 
 LIB61850_INTERNAL bool
 StringUtils_endsWith(const char* str, const char* suffix);

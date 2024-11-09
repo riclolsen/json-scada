@@ -1,7 +1,7 @@
 /*
  *  model.h
  *
- *  Copyright 2013-2016 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -36,6 +36,8 @@ extern "C" {
 
 /**
  * @defgroup DATA_MODEL General data model definitions, access and iteration functions
+ *
+ * \brief Functions and structures to access and iterate the IEC 61850 data model
  *
  * @{
  */
@@ -121,44 +123,6 @@ typedef enum {
 	IEC61850_CURRENCY = 30,
 	IEC61850_OPTFLDS = 31, /* bit-string(10) */
 	IEC61850_TRGOPS = 32 /* bit-string(6) */
-
-
-#if (CONFIG_IEC61850_USE_COMPAT_TYPE_DECLARATIONS == 1)
-	,
-    BOOLEAN = 0,/* int */
-    INT8 = 1,   /* int8_t */
-    INT16 = 2,  /* int16_t */
-    INT32 = 3,  /* int32_t */
-    INT64 = 4,  /* int64_t */
-    INT128 = 5, /* no native mapping! */
-    INT8U = 6,  /* uint8_t */
-    INT16U = 7, /* uint16_t */
-    INT24U = 8, /* uint32_t */
-    INT32U = 9, /* uint32_t */
-    FLOAT32 = 10, /* float */
-    FLOAT64 = 11, /* double */
-    ENUMERATED = 12,
-    OCTET_STRING_64 = 13,
-    OCTET_STRING_6 = 14,
-    OCTET_STRING_8 = 15,
-    VISIBLE_STRING_32 = 16,
-    VISIBLE_STRING_64 = 17,
-    VISIBLE_STRING_65 = 18,
-    VISIBLE_STRING_129 = 19,
-    VISIBLE_STRING_255 = 20,
-    UNICODE_STRING_255 = 21,
-    TIMESTAMP = 22,
-    QUALITY = 23,
-    CHECK = 24,
-    CODEDENUM = 25,
-    GENERIC_BITSTRING = 26,
-    CONSTRUCTED = 27,
-    ENTRY_TIME = 28,
-    PHYCOMADDR = 29,
-    CURRENCY = 30
-    OPTFLDS = 31,
-    TRGOPS = 32
-#endif
 } DataAttributeType;
 
 typedef enum {
@@ -183,10 +147,11 @@ struct sIedModel {
 
 struct sLogicalDevice {
     ModelNodeType modelType;
-    char* name;
+    char* name; /* LD instance */
     ModelNode* parent;
     ModelNode* sibling;
     ModelNode* firstChild;
+    char* ldName; /* ldName (when using functional naming) */
 };
 
 struct sModelNode {
@@ -212,7 +177,8 @@ struct sDataObject {
     ModelNode* sibling;
     ModelNode* firstChild;
 
-    int elementCount; /* > 0 if this is an array */
+    int elementCount; /* value > 0 if this is an array */
+    int arrayIndex; /* value > -1 when this is an array element */
 };
 
 struct sDataAttribute {
@@ -222,7 +188,8 @@ struct sDataAttribute {
     ModelNode* sibling;
     ModelNode* firstChild;
 
-    int elementCount; /* > 0 if this is an array */
+    int elementCount; /* value > 0 if this is an array */
+    int arrayIndex; /* value > -1 when this is an array element */
 
     FunctionalConstraint fc;
     DataAttributeType type;
@@ -231,11 +198,11 @@ struct sDataAttribute {
 
     MmsValue* mmsValue;
 
-    uint32_t sAddr;
+    uint32_t sAddr; /* TODO remove in version 2.0 */
 };
 
 typedef struct sDataSetEntry {
-    char* logicalDeviceName;
+    char* logicalDeviceName; /* logical device instance name */
     bool isLDNameDynamicallyAllocated;
     char* variableName;
     int index;
@@ -245,7 +212,7 @@ typedef struct sDataSetEntry {
 } DataSetEntry;
 
 struct sDataSet {
-    char* logicalDeviceName;
+    char* logicalDeviceName; /* logical device instance name */
     char* name; /* eg. MMXU1$dataset1 */
     int elementCount;
     DataSetEntry* fcdas;
@@ -366,10 +333,21 @@ ModelNode_getChildCount(ModelNode* self);
  * \param self the model node instance
  * \param name the name of the child model node
  *
- * \return  the model node instance or NULL if model node does not exist.
+ * \return the model node instance or NULL if model node does not exist.
  */
 LIB61850_API ModelNode*
 ModelNode_getChild(ModelNode* self, const char* name);
+
+/**
+ * \brief return the child node of an array or other structure
+ *
+ * \param self the model node instance
+ * \param idx the index (e.g. array index) starting with 0
+ *
+ * \return the model node instance or NULL if model node with given index does not exist.
+ */
+LIB61850_API ModelNode*
+ModelNode_getChildWithIdx(ModelNode* self, int idx);
 
 /**
  * \brief return a child model node with a given functional constraint
@@ -470,6 +448,8 @@ IedModel_setIedName(IedModel* self, const char* iedName);
  * This function uses the full logical device name as part of the object reference
  * as it happens to appear on the wire. E.g. if IED name in SCL file would be "IED1"
  * and the logical device "WD1" the resulting LD name would be "IED1WD".
+ * When using functional naming in the LD (with ldName attribute) then the logical
+ * device name is identical with the ldName attribute.
  *
  * \param self the IedModel instance that holds the model node
  * \param objectReference the IEC 61850 object reference
@@ -486,7 +466,9 @@ IedModel_getSVControlBlock(IedModel* self, LogicalNode* parentLN, const char* sv
  * \brief Lookup a model node by its short (normalized) reference
  *
  * This version uses the object reference that does not contain the
- * IED name as part of the logical device name. This function is useful for
+ * IED name or functional name as part of the logical device name.
+ * Instead the LD part consists of the LD instance name ("inst" attribute).
+ * This function is useful for
  * devices where the IED name can be configured.
  *
  * \param self the IedModel instance that holds the model node

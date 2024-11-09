@@ -19,10 +19,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../server_example_password_auth/static_model.h"
-
-/* import IEC 61850 device model created from SCL-File */
-extern IedModel iedModel;
+#include "static_model.h"
 
 static int running = 0;
 
@@ -162,6 +159,12 @@ readAccessHandler(LogicalDevice* ld, LogicalNode* ln, DataObject* dataObject, Fu
 
 int main(int argc, char** argv) {
 
+    int tcpPort = 102;
+
+    if (argc > 1) {
+        tcpPort = atoi(argv[1]);
+    }
+
 	iedServer = IedServer_create(&iedModel);
 
 	/* Activate authentication */
@@ -197,7 +200,7 @@ int main(int argc, char** argv) {
     IedServer_setReadAccessHandler(iedServer, readAccessHandler, NULL);
 
 	/* MMS server will be instructed to start listening to client connections. */
-	IedServer_start(iedServer, 102);
+	IedServer_start(iedServer, tcpPort);
 
 	if (!IedServer_isRunning(iedServer)) {
 		printf("Starting server failed! Exit.\n");

@@ -1,7 +1,7 @@
 /*
  *  sv_subscriber.h
  *
- *  Copyright 2015-2018 Michael Zillgith
+ *  Copyright 2015-2022 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -26,6 +26,7 @@
 
 #include "libiec61850_common_api.h"
 #include "iec61850_common.h"
+#include "r_session.h"
 #include "hal_ethernet.h"
 
 #ifdef __cplusplus
@@ -133,6 +134,16 @@ LIB61850_API SVReceiver
 SVReceiver_create(void);
 
 /**
+ * \brief Create a new R-SV receiver instance.
+ *
+ * \param session the remote session protocol instance
+ *
+ * \return the newly created receiver instance
+ */
+LIB61850_API SVReceiver
+SVReceiver_createRemote(RSession session);
+
+/**
  * \brief Disable check for destination address of the received SV messages
  *
  * \param self the receiver instance reference
@@ -228,7 +239,7 @@ SVReceiver_destroy(SVReceiver self);
  * Functions for non-threaded operation
  ***************************************/
 
-LIB61850_API EthernetSocket
+LIB61850_API bool
 SVReceiver_startThreadless(SVReceiver self);
 
 LIB61850_API void
@@ -549,72 +560,7 @@ SVSubscriber_ASDU_getDataSize(SVSubscriber_ASDU self);
 uint8_t
 SVSubscriber_ASDU_getSmpSynch(SVSubscriber_ASDU self);
 
-#ifndef DEPRECATED
-#if defined(__GNUC__) || defined(__clang__)
-  #define DEPRECATED __attribute__((deprecated))
-#else
-  #define DEPRECATED
-#endif
-#endif
-
-/**
- * \addtogroup sv_subscriber_deprecated_api_group Deprecated API
- * \ingroup sv_subscriber_api_group IEC 61850 Sampled Values (SV) publisher API
- * \deprecated
- * @{
- */
-
-typedef struct sSVSubscriberASDU* SVClientASDU;
-
-LIB61850_API DEPRECATED uint16_t
-SVClientASDU_getSmpCnt(SVSubscriber_ASDU self);
-
-LIB61850_API DEPRECATED const char*
-SVClientASDU_getSvId(SVSubscriber_ASDU self);
-
-LIB61850_API DEPRECATED uint32_t
-SVClientASDU_getConfRev(SVSubscriber_ASDU self);
-
-LIB61850_API DEPRECATED bool
-SVClientASDU_hasRefrTm(SVSubscriber_ASDU self);
-
-LIB61850_API DEPRECATED uint64_t
-SVClientASDU_getRefrTmAsMs(SVSubscriber_ASDU self);
-
-LIB61850_API DEPRECATED int8_t
-SVClientASDU_getINT8(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED int16_t
-SVClientASDU_getINT16(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED int32_t
-SVClientASDU_getINT32(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED int64_t
-SVClientASDU_getINT64(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED uint8_t
-SVClientASDU_getINT8U(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED uint16_t
-SVClientASDU_getINT16U(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED uint32_t
-SVClientASDU_getINT32U(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED uint64_t
-SVClientASDU_getINT64U(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED float
-SVClientASDU_getFLOAT32(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED double
-SVClientASDU_getFLOAT64(SVSubscriber_ASDU self, int index);
-
-LIB61850_API DEPRECATED int
-SVClientASDU_getDataSize(SVSubscriber_ASDU self);
-
-/**@} @}*/
+/** @}*/
 
 #ifdef __cplusplus
 }

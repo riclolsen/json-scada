@@ -1,7 +1,7 @@
 /*
  *  control.h
  *
- *  Copyright 2013-2019 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -90,6 +90,8 @@ struct sControlObject
     MmsValue* origin;
     MmsValue* timestamp;
 
+    Timestamp T;
+
     MmsValue* ctlNumSt;
     MmsValue* originSt;
 
@@ -172,9 +174,6 @@ ControlObject_getDomain(ControlObject* self);
 
 LIB61850_INTERNAL bool
 ControlObject_select(ControlObject* self, MmsServerConnection connection);
-
-LIB61850_INTERNAL bool
-ControlObject_unselect(ControlObject* self, MmsServerConnection connection);
 
 LIB61850_INTERNAL void
 ControlObject_installListener(ControlObject* self, ControlHandler listener, void* parameter);

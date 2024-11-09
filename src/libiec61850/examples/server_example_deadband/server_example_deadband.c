@@ -15,9 +15,6 @@
 
 #include "static_model.h"
 
-/* import IEC 61850 device model created from SCL-File */
-extern IedModel iedModel;
-
 static int running = 0;
 static IedServer iedServer = NULL;
 
@@ -39,6 +36,12 @@ connectionHandler (IedServer self, ClientConnection connection, bool connected, 
 int
 main(int argc, char** argv)
 {
+    int tcpPort = 102;
+
+    if (argc > 1) {
+        tcpPort = atoi(argv[1]);
+    }
+
     printf("Using libIEC61850 version %s\n", LibIEC61850_getVersionString());
 
     /* Create new server configuration object */
@@ -77,7 +80,7 @@ main(int argc, char** argv)
     IedServer_setWriteAccessPolicy(iedServer, IEC61850_FC_CF, ACCESS_POLICY_ALLOW);
 
     /* MMS server will be instructed to start listening for client connections. */
-    IedServer_start(iedServer, 102);
+    IedServer_start(iedServer, tcpPort);
 
     if (!IedServer_isRunning(iedServer)) {
         printf("Starting server failed (maybe need root permissions or another server is already using the port)! Exit.\n");

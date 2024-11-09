@@ -299,40 +299,70 @@ namespace IEC61850
 
         }
 
+        /// <summary>
+        /// Logical device. Representation of a logical device (LD) in a data model.
+        /// </summary>
         public class LogicalDevice : ModelNode
         {
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr LogicalDevice_create(string name, IntPtr parent);
 
-            private IedModel iedModel = null;
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr LogicalDevice_createEx(string name, IntPtr parent, string ldName);
 
-            public IedModel IedModel { get => iedModel; }
+            public IedModel IedModel { get; }
 
             public LogicalDevice (IntPtr self, IedModel iedModel) : base (self)
             {
-                this.iedModel = iedModel;
+                this.IedModel = iedModel;
             }
 
-            public LogicalDevice(string name, IedModel parent)
+            /// <summary>
+            /// Create a new logical device in a data model
+            /// </summary>
+            /// <param name="inst">LD instance</param>
+            /// <param name="parent">Model containing this logical device</param>
+            public LogicalDevice(string inst, IedModel parent)
             {
-                this.iedModel = parent;
+                this.IedModel = parent;
 
-                self = LogicalDevice_create(name, parent.self);
+                self = LogicalDevice_create(inst, parent.self);
+            }
+
+            /// <summary>
+            /// Create a new logical device in a data model (support for functional naming)
+            /// </summary>
+            /// <param name="inst">LD instance</param>
+            /// <param name="parent">Model containing this logical device</param>
+            /// <param name="ldName">LD name (for functional naming). When set, the exernally visible domain name for this LD</param>
+            public LogicalDevice(string inst, IedModel parent, string ldName)
+            {
+                this.IedModel = parent;
+
+                self = LogicalDevice_createEx(inst, parent.self, ldName);
             }
         }
 
+        /// <summary>
+        /// Logical node. Representation of a logical node (LN) in a data model.
+        /// </summary>
         public class LogicalNode : ModelNode
         {
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr LogicalNode_create(string name, IntPtr parent);
+
+            internal Dictionary<IntPtr, ReportControlBlock> rcbs = new Dictionary<IntPtr, ReportControlBlock>();
 
             public LogicalNode (IntPtr self, ModelNode parent) : base(self)
             {
                 this.parent = parent;
             }
 
-            internal Dictionary<IntPtr, ReportControlBlock> rcbs = new Dictionary<IntPtr, ReportControlBlock>();
-
+            /// <summary>
+            /// Initializes a new instance of the <see cref="T:IEC61850.Server.LogicalNode"/> class.
+            /// </summary>
+            /// <param name="name">LN name</param>
+            /// <param name="parent">Logical device containing this logical node.</param>
             public LogicalNode(string name, LogicalDevice parent)
             {
                 this.parent = parent;
@@ -1309,7 +1339,7 @@ namespace IEC61850
             static extern void ReportControlBlock_setPreconfiguredClient(IntPtr self, byte type, [Out] byte[] buf);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern string ReportControlBlock_getName(IntPtr self);
+            static extern IntPtr ReportControlBlock_getName(IntPtr self);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             [return: MarshalAs(UnmanagedType.I1)]
@@ -1357,6 +1387,10 @@ namespace IEC61850
             static extern UInt16 ReportControlBlock_getResvTms(IntPtr self);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ReportControlBlock_getResv(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ReportControlBlock_getOwner(IntPtr self);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
@@ -1396,7 +1430,7 @@ namespace IEC61850
                 {
                     if (name == null)
                     {
-                        name = ReportControlBlock_getName(self);
+                        name = Marshal.PtrToStringAnsi(ReportControlBlock_getName(self));
                     }
 
                     return name;
@@ -1525,6 +1559,8 @@ namespace IEC61850
 
                         entryId = octetStringVal.getOctetString();
 
+                        octetStringVal.Dispose();
+
                         return entryId;
                     }
                     else
@@ -1545,6 +1581,14 @@ namespace IEC61850
                 get
                 {
                     return ReportControlBlock_getResvTms(self);
+                }
+            }
+
+            public bool Resv
+            {
+                get
+                {
+                    return ReportControlBlock_getResv(self);
                 }
             }
 
@@ -1822,6 +1866,17 @@ namespace IEC61850
             [return: MarshalAs(UnmanagedType.I1)]
             static extern bool ControlAction_isSelect(IntPtr self);
 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ControlAction_getSynchroCheck(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ControlAction_getInterlockCheck(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ControlAction_getT(IntPtr self);
+
             private IntPtr self;
             private IedServer.ControlHandlerInfo info;
             private IedServer iedServer;
@@ -1941,6 +1996,28 @@ namespace IEC61850
             {
                 return ControlAction_isSelect(self);
             }
+
+            public bool GetSynchroCheck()
+            {
+                return ControlAction_getSynchroCheck(self);
+            }
+
+            public bool GetInterlockCheck()
+            {
+                return ControlAction_getInterlockCheck(self);
+            }
+
+            /// <summary>
+            /// Gets the time (paramter T) of the control action
+            /// </summary>
+            public Timestamp GetT()
+            {
+                IntPtr tPtr = ControlAction_getT(self);
+
+                Timestamp t = new Timestamp(tPtr, false);
+
+                return new Timestamp(t);
+            }
         }
 
         public delegate void GoCBEventHandler(MmsGooseControlBlock goCB, int cbEvent, object parameter);
@@ -1981,7 +2058,15 @@ namespace IEC61850
             /// <summary>
             /// Purge buffer procedure executed
             /// </summary>
-            PURGEBUF = 7
+            PURGEBUF = 7,
+            /// <summary>
+            /// Report buffer overflow
+            /// </summary>
+            OVERFLOW = 8,
+            /// <summary>
+            /// A new report was created and inserted into the buffer
+            /// </summary>
+            REPORT_CREATED = 9
         }
 
         public delegate void RCBEventHandler(object parameter, ReportControlBlock rcb, ClientConnection con, RCBEventType eventType, string parameterName, MmsDataAccessError serviceError);
@@ -2136,6 +2221,9 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr IedServer_getAttributeValue(IntPtr self, IntPtr dataAttribute);
 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr IedServer_getFunctionalConstrainedData(IntPtr self, IntPtr dataObject, int fc);
+
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             private delegate int InternalControlPerformCheckHandler (IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test, [MarshalAs(UnmanagedType.I1)] bool interlockCheck);
 
@@ -2172,6 +2260,10 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_handleWriteAccessForComplexAttribute(IntPtr self, IntPtr dataAttribute,
+                InternalWriteAccessHandler handler, IntPtr parameter);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedServer_handleWriteAccessForDataObject(IntPtr self, IntPtr dataObject, int fc,
                 InternalWriteAccessHandler handler, IntPtr parameter);
 
             public delegate void ConnectionIndicationHandler(IedServer iedServer, ClientConnection clientConnection, bool connected, object parameter);
@@ -2217,6 +2309,9 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_setRCBEventHandler(IntPtr self, InternalRCBEventHandler handler, IntPtr parameter);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedServer_setTimeQuality(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool leapSecondKnown, [MarshalAs(UnmanagedType.I1)] bool clockFailure, [MarshalAs(UnmanagedType.I1)] bool clockNotSynchronized, int subsecondPrecision);
 
             private IntPtr self = IntPtr.Zero;
 
@@ -2380,6 +2475,9 @@ namespace IEC61850
             /* store IedModel instance to prevent garbage collector */
             private IedModel iedModel = null;
 
+            /* store TLSConfiguration instance to prevent garbage collector */
+            private TLSConfiguration tlsConfiguration = null;
+
             public IedServer(IedModel iedModel, IedServerConfig config = null)
             {
                 this.iedModel = iedModel;
@@ -2395,6 +2493,7 @@ namespace IEC61850
             public IedServer(IedModel iedModel, TLSConfiguration tlsConfig, IedServerConfig config = null)
             {
                 this.iedModel = iedModel;
+                this.tlsConfiguration = tlsConfig;
 
                 IntPtr nativeConfig = IntPtr.Zero;
                 IntPtr nativeTLSConfig = IntPtr.Zero;
@@ -2484,6 +2583,7 @@ namespace IEC61850
                         self = IntPtr.Zero;
                         internalConnectionHandler = null;
                         this.iedModel = null;
+                        this.tlsConfiguration = null;
                     }
                 }
             }
@@ -2632,12 +2732,27 @@ namespace IEC61850
                 }
             }
 
+            private void AddHandlerInfoForDataObjectRecursive(DataObject dataObject, FunctionalConstraint fc, WriteAccessHandler handler, object parameter, InternalWriteAccessHandler internalHandler)
+            {
+                foreach (ModelNode child in dataObject.GetChildren())
+                {
+                    if (child is DataAttribute && (child as DataAttribute).FC == fc)
+                    {
+                        AddHandlerInfoForDataAttributeRecursive(child as DataAttribute, handler, parameter, internalHandler);
+                    }
+                    else if (child is DataObject)
+                    {
+                        AddHandlerInfoForDataObjectRecursive(child as DataObject, fc, handler, parameter, internalHandler);
+                    }
+                }
+            }
+
             /// <summary>
             /// Install a WriteAccessHandler for a data attribute and for all sub data attributes
             /// </summary>
             /// This instructs the server to monitor write attempts by MMS clients to specific
-            /// data attributes.If a client tries to write to the monitored data attribute the
-            /// handler is invoked.The handler can decide if the write access will be allowed
+            /// data attributes. If a client tries to write to the monitored data attribute the
+            /// handler is invoked. The handler can decide if the write access will be allowed
             /// or denied.If a WriteAccessHandler is set for a specific data attribute - the
             /// default write access policy will not be performed for that data attribute.
             /// <remarks>
@@ -2655,6 +2770,27 @@ namespace IEC61850
                 AddHandlerInfoForDataAttributeRecursive(dataAttr, handler, parameter, internalHandler);
 
                 IedServer_handleWriteAccessForComplexAttribute(self, dataAttr.self, internalHandler, IntPtr.Zero);
+            }
+
+            /// <summary>
+            /// Install a WriteAccessHandler for a data object and for all sub data objects and sub data attributes that have the same functional constraint
+            /// </summary>
+            /// This instructs the server to monitor write attempts by MMS clients to specific
+            /// data attributes. If a client tries to write to the monitored data attribute the
+            /// handler is invoked. The handler can decide if the write access will be allowed
+            /// or denied. If a WriteAccessHandler is set the
+            /// default write access policy will not be performed for the matching data attributes.
+            /// <param name="dataObject">the data object to monitor</param>
+            /// <param name="fc">the functional constraint (FC) to monitor</param>
+            /// <param name="handler">the callback function that is invoked if a client tries to write to a monitored data attribute that is a child of the data object.</param>
+            /// <param name="parameter">a user provided parameter that is passed to the WriteAccessHandler when called.</param>
+            public void HandleWriteAccessForDataObject(DataObject dataObj, FunctionalConstraint fc, WriteAccessHandler handler, object parameter)
+            {
+                InternalWriteAccessHandler internalHandler = new InternalWriteAccessHandler(WriteAccessHandlerImpl);
+
+                AddHandlerInfoForDataObjectRecursive(dataObj, fc, handler, parameter, internalHandler);
+
+                IedServer_handleWriteAccessForDataObject(self, dataObj.self, (int)fc, internalHandler, IntPtr.Zero);
             }
 
             /// <summary>
@@ -2739,7 +2875,7 @@ namespace IEC61850
 
             public void UpdateTimestampAttributeValue(DataAttribute dataAttr, Timestamp timestamp)
             {
-                IedServer_updateTimestampAttributeValue (self, dataAttr.self, timestamp.timestampRef);
+                IedServer_updateTimestampAttributeValue (self, dataAttr.self, timestamp.self);
             }
 
             public void UpdateQuality(DataAttribute dataAttr, ushort value)
@@ -2753,6 +2889,22 @@ namespace IEC61850
 
                 if (mmsValuePtr != IntPtr.Zero)
                     return new MmsValue (mmsValuePtr);
+                else
+                    return null;
+            }
+
+            /// <summary>
+            /// Get the MmsValue object related to a functional constrained data object (FCD)
+            /// </summary>
+            /// <param name="dataObject">the data object to specify the FCD</param>
+            /// <param name="fc">the FC to specify the FCD</param>
+            /// <returns>FCDO corresponding MmsValue object cached by the server</returns>
+            public MmsValue GetFunctionalConstrainedData(DataObject dataObject, FunctionalConstraint fc)
+            {
+                IntPtr mmsValuePtr = IedServer_getFunctionalConstrainedData(self, dataObject.self, (int)fc);
+
+                if (mmsValuePtr != IntPtr.Zero)
+                    return new MmsValue(mmsValuePtr);
                 else
                     return null;
             }
@@ -2865,7 +3017,6 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ReportControlBlock_getParent(IntPtr self);
 
-
             private RCBEventHandler rcbEventHandler = null;
             private object rcbEventHandlerParameter = null;
 
@@ -2924,6 +3075,18 @@ namespace IEC61850
 
                     IedServer_setRCBEventHandler(self, internalRCBEventHandler, IntPtr.Zero);
                 }
+            }
+
+            /// <summary>
+            /// Set the time quality for all timestamps internally generated by this IedServer instance
+            /// </summary>
+            /// <param name="leapSecondKnown">set/unset leap seconds known flag</param>
+            /// <param name="clockFailure">set/unset clock failure flag</param>
+            /// <param name="clockNotSynchronized">set/unset clock not synchronized flag</param>
+            /// <param name="subsecondPrecision">set the subsecond precision (number of significant bits of the fractionOfSecond part of the time stamp)</param>
+            public void SetTimeQuality(bool leapSecondKnown, bool clockFailure, bool clockNotSynchronized, int subsecondPrecision)
+            {
+                IedServer_setTimeQuality(self, leapSecondKnown, clockFailure, clockNotSynchronized, subsecondPrecision);
             }
 
         }

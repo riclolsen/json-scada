@@ -1,7 +1,7 @@
 /*
  *  mms_type_spec.c
  *
- *  Copyright 2013 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -29,6 +29,9 @@
 void
 MmsVariableSpecification_destroy(MmsVariableSpecification* typeSpec)
 {
+    if (typeSpec == NULL)
+        return;
+
     if (typeSpec->name != NULL)
         GLOBAL_FREEMEM(typeSpec->name);
 
@@ -105,36 +108,40 @@ MmsVariableSpecification_getType(MmsVariableSpecification* self)
 bool
 MmsVariableSpecification_isValueOfType(MmsVariableSpecification* self, const MmsValue* value)
 {
-    if ((self->type) == (value->type)) {
-
-        if ((self->type == MMS_STRUCTURE) || (self->type == MMS_ARRAY)) {
-
+    if ((self->type) == (value->type))
+    {
+        if ((self->type == MMS_STRUCTURE) || (self->type == MMS_ARRAY))
+        {
             int componentCount = self->typeSpec.structure.elementCount;
 
             if (componentCount != (int) MmsValue_getArraySize(value))
                     return false;
 
-            if (self->type == MMS_STRUCTURE) {
-
+            if (self->type == MMS_STRUCTURE)
+            {
                 int i;
-                for (i = 0; i < componentCount; i++) {
-
+                for (i = 0; i < componentCount; i++)
+                {
                     if (MmsVariableSpecification_isValueOfType(self->typeSpec.structure.elements[i], MmsValue_getElement(value, i)) == false)
                         return false;
                 }
 
                 return true;
             }
-            else {
+            else
+            {
                 int i;
-                for (i = 0; i < componentCount; i++) {
-
+                for (i = 0; i < componentCount; i++)
+                {
                     if (MmsVariableSpecification_isValueOfType(self->typeSpec.array.elementTypeSpec, MmsValue_getElement(value, i)) == false)
                         return false;
                 }
+
+                return true;
             }
         }
-        else if (self->type == MMS_BIT_STRING) {
+        else if (self->type == MMS_BIT_STRING)
+        {
             if (self->typeSpec.bitString == value->value.bitString.size)
                 return true;
 
@@ -185,6 +192,10 @@ MmsVariableSpecification_getStructureElements(MmsVariableSpecification* self)
 MmsVariableSpecification*
 MmsVariableSpecification_getNamedVariableRecursive(MmsVariableSpecification* variable, const char* nameId)
 {
+    if (variable->type == MMS_ARRAY) {
+        return MmsVariableSpecification_getNamedVariableRecursive(variable->typeSpec.array.elementTypeSpec, nameId);
+    }
+
     const char* separator = strchr(nameId, '$');
 
     int i;

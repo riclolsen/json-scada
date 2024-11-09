@@ -27,6 +27,21 @@ using IEC61850.Common;
 
 namespace IEC61850.Server
 {
+
+    /// <summary>
+    /// RCB properties that are configurable to be writable or read-only
+    /// </summary>
+    [Flags]
+    public enum ReportSettings
+    {
+        RPT_ID = 1,
+        BUF_TIME = 2,
+        DATSET = 4,
+        TRG_OPS = 8,
+        OPT_FIELDS = 16,
+        INTG_PD = 32,
+    }
+
     /// <summary>
     /// IedServer configuration object
     /// </summary>
@@ -123,6 +138,20 @@ namespace IEC61850.Server
 
         [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
         static extern void IedServerConfig_useIntegratedGoosePublisher(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool enable);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        static extern bool IedServerConfig_getSyncIntegrityReportTimes(IntPtr self);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern void IedServerConfig_setSyncIntegrityReportTimes(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool enable);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern void IedServerConfig_setReportSetting(IntPtr self, byte setting, [MarshalAs(UnmanagedType.I1)] bool enable);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        static extern bool IedServerConfig_getReportSetting(IntPtr self, byte setting);
 
         internal IntPtr self;
 
@@ -349,6 +378,49 @@ namespace IEC61850.Server
             {
                 IedServerConfig_useIntegratedGoosePublisher(self, value);
             }
+        }
+
+        /// <summary>
+        /// Enable/Disable synchoronized integrity report times (disabled by default)
+        /// </summary>
+        /// <remarks>
+        /// When this flag is enabled the integrity report generation times are
+        /// aligned with the UTC epoch. Then the unix time stamps are straight multiples of the
+        /// integrity interval.
+        /// </remarks>
+        /// <value><c>true</c> if sync integrity report times; otherwise, <c>false</c>.</value>
+        public bool SyncIntegrityReportTimes
+        {
+            get
+            {
+                return IedServerConfig_getSyncIntegrityReportTimes(self);
+            }
+            set
+            {
+                IedServerConfig_setSyncIntegrityReportTimes(self, value);
+            }
+        }
+
+        /// <summary>
+        /// Make a configurable report setting writeable or read-only
+        /// </summary>
+        /// <note><c>ReportSettings</c> is a flag enum, so you can set multiple settings at once</note>
+        /// <note>Can be used to implement some of Services\ReportSettings options</note>
+        /// <param name="settings">the settings that should be configured writeable or read-only</param>
+        /// <param name="isDyn">true, settings are writeable, false, settings are read-only</param>
+        public void SetReportSetting(ReportSettings settings)
+        {
+            IedServerConfig_setReportSetting(self, (byte)settings, true);
+        }
+
+        /// <summary>
+        /// Get the value of a specific report setting
+        /// </summary>
+        /// <param name="setting">one value of <c>ReportSettings</c></param>
+        /// <returns>true, when setting is writable ("Dyn") or false, when read-only</returns>
+        public bool GetReportSetting(ReportSettings setting)
+        {
+            return IedServerConfig_getReportSetting(self, (byte)setting);
         }
 
         /// <summary>

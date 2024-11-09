@@ -12,9 +12,6 @@
 
 #include "static_model.h"
 
-/* import IEC 61850 device model created from SCL-File */
-extern IedModel iedModel;
-
 static int running = 0;
 static IedServer iedServer = NULL;
 
@@ -129,6 +126,11 @@ int
 main(int argc, char** argv)
 {
     iedServer = IedServer_create(&iedModel);
+    int tcpPort = 102;
+
+    if (argc > 1) {
+        tcpPort = atoi(argv[1]);
+    }
 
     IedServer_setControlHandler(iedServer, IEDMODEL_GenericIO_GGIO1_SPCSO1,
             (ControlHandler) controlHandlerForBinaryOutput,
@@ -172,7 +174,7 @@ main(int argc, char** argv)
             IEDMODEL_GenericIO_GGIO1_SPCSO9);
 
     /* MMS server will be instructed to start listening to client connections. */
-    IedServer_start(iedServer, 102);
+    IedServer_start(iedServer, tcpPort);
 
     if (!IedServer_isRunning(iedServer)) {
         printf("Starting server failed! Exit.\n");

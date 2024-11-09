@@ -1,7 +1,7 @@
 /*
  *  ber_encoder.h
  *
- *  Copyright 2013-2018 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -65,9 +65,6 @@ LIB61850_INTERNAL int
 BerEncoder_encodeBitString(uint8_t tag, int bitStringSize, uint8_t* bitString, uint8_t* buffer, int bufPos);
 
 LIB61850_INTERNAL int
-BerEncoder_determineEncodedBitStringSize(int bitStringSize);
-
-LIB61850_INTERNAL int
 BerEncoder_encodeFloat(uint8_t* floatValue, uint8_t formatWidth, uint8_t exponentWidth,
         uint8_t* buffer, int bufPos);
 
@@ -77,6 +74,9 @@ BerEncoder_encodeFloat(uint8_t* floatValue, uint8_t formatWidth, uint8_t exponen
 
 LIB61850_INTERNAL int
 BerEncoder_UInt32determineEncodedSize(uint32_t value);
+
+LIB61850_INTERNAL int
+BerEncoder_Int32determineEncodedSize(int32_t value);
 
 LIB61850_INTERNAL int
 BerEncoder_determineLengthSize(uint32_t length);

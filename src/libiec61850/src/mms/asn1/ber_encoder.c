@@ -1,7 +1,7 @@
 /*
  *  ber_encoder.c
  *
- *  Copyright 2013 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -67,7 +67,7 @@ BerEncoder_encodeBoolean(uint8_t tag, bool value, uint8_t* buffer, int bufPos)
     buffer[bufPos++] = 1;
 
     if (value)
-        buffer[bufPos++] = 0xff;
+        buffer[bufPos++] = 0x01;
     else
         buffer[bufPos++] = 0x00;
 
@@ -181,15 +181,13 @@ void
 BerEncoder_revertByteOrder(uint8_t* octets, const int size)
 {
     int i;
-    uint8_t temp;
 
     for (i = 0; i < size / 2; i++) {
-        temp = octets[i];
+        uint8_t temp = octets[i];
         octets[i] = octets[(size - 1) - i];
         octets[(size - 1) - i] = temp;
     }
 }
-
 
 int
 BerEncoder_compressInteger(uint8_t* integer, int originalSize)
@@ -359,6 +357,28 @@ BerEncoder_UInt32determineEncodedSize(uint32_t value)
 }
 
 int
+BerEncoder_Int32determineEncodedSize(int32_t value)
+{
+    uint8_t* valueArray = (uint8_t*) &value;
+    uint8_t valueBuffer[5];
+
+    valueBuffer[0] = 0;
+
+    int i;
+    for (i = 0; i < 4; i++) {
+       valueBuffer[i + 1] = valueArray[i];
+    }
+
+#if (ORDER_LITTLE_ENDIAN == 1)
+    BerEncoder_revertByteOrder(valueBuffer + 1, 4);
+#endif
+
+    int size = BerEncoder_compressInteger(valueBuffer, 5);
+
+    return size;
+}
+
+int
 BerEncoder_determineLengthSize(uint32_t length)
 {
     if (length < 128)
@@ -431,13 +451,13 @@ BerEncoder_encodeOIDToBuffer(const char* oidString, uint8_t* buffer, int maxBufL
 
         val = atoi(separator + 1);
 
-        int requiredBytes = 0;
-
         if (val == 0) {
             buffer[encodedBytes++] = 0;
         }
         else {
+            int requiredBytes = 0;
             int val2 = val;
+
             while (val2 > 0) {
                 requiredBytes++;
                 val2 = val2 >> 7;
@@ -459,7 +479,6 @@ BerEncoder_encodeOIDToBuffer(const char* oidString, uint8_t* buffer, int maxBufL
                 requiredBytes--;
             }
         }
-
     }
 
     return encodedBytes;

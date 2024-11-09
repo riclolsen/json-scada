@@ -39,6 +39,8 @@ extern "C" {
 /**
  * @defgroup DYNAMIC_MODEL General dynamic model creation functions
  *
+ * \brief Functions to dynamically create IEC 61850 data models without using SCL or configuration files
+ *
  * @{
  */
 
@@ -82,7 +84,7 @@ LIB61850_API void
 IedModel_destroy(IedModel* model);
 
 /**
- * \brief Create a new logical device model and add it to the IED model
+ * \brief Create a new logical device and add it to the IED model
  *
  * \param name the name of the new logical device
  * \param parent the parent IED model
@@ -92,6 +94,17 @@ IedModel_destroy(IedModel* model);
 LIB61850_API LogicalDevice*
 LogicalDevice_create(const char* name, IedModel* parent);
 
+/**
+ * \brief Create a new logical device and add it to the IED model
+ *
+ * \param name the name of the new logical device
+ * \param parent the parent IED model
+ * \param ldName when not NULL functional naming is used for this LD (ldName <= 64 chars)
+ *
+ * \return the newly created LogicalDevice instance
+ */
+LIB61850_API LogicalDevice*
+LogicalDevice_createEx(const char* inst, IedModel* parent, const char* ldName);
 
 /**
  * \brief Create a new logical mode  and add it to a logical device
@@ -105,9 +118,12 @@ LIB61850_API LogicalNode*
 LogicalNode_create(const char* name, LogicalDevice* parent);
 
 /**
- * \brief create a new data object and add it to a parent model node
+ * \brief create a new data object or array data object and add it to a parent model node
  *
  * The parent model node has to be of type DataObject or LogicalNode.
+ * 
+ * NOTE: When the data object is an array the array elements will also be created by this function.
+ * This will result in child DataObject instances for each array element.
  *
  * \param name the name of the data object (e.h. "Mod", "Health" ...)
  * \param parent the parent model node
@@ -243,27 +259,96 @@ ReportControlBlock_isBuffered(ReportControlBlock* self);
 LIB61850_API LogicalNode*
 ReportControlBlock_getParent(ReportControlBlock* self);
 
+/**
+ * \brief Get the name of the currently set report ID
+ *
+ * \param self the RCB instance
+ *
+ * \return a null terminated string containing the current data set name (the string has to be released by the caller!)
+ */
 LIB61850_API char*
 ReportControlBlock_getRptID(ReportControlBlock* self);
 
-LIB61850_API int
+/**
+ * \brief Check if RCB instance is enabled
+ *
+ * \param self the RCB instance
+ *
+ * \return true when the RCB instance is enabled, false otherwise
+ */
+LIB61850_API bool
 ReportControlBlock_getRptEna(ReportControlBlock* self);
 
+/**
+ * \brief Get the name of the currenlty set data set
+ *
+ * \param self the RCB instance
+ *
+ * \return a null terminated string containing the current data set name (the string has to be released by the caller!)
+ */
 LIB61850_API char*
 ReportControlBlock_getDataSet(ReportControlBlock* self);
 
+/**
+ * \brief Get the confRev value
+ *
+ * \param self the RCB instance
+ *
+ * \return confRev value
+ */
 LIB61850_API uint32_t
 ReportControlBlock_getConfRev(ReportControlBlock* self);
 
+/**
+ * \brief Get the currently set OptFlds value
+ *
+ * The OptField (option field) value is a bit field with the following fields:
+ * - RPT_OPT_SEQ_NUM
+ * - RPT_OPT_TIME_STAMP
+ * - RPT_OPT_REASON_FOR_INCLUSION
+ * - RPT_OPT_DATA_SET
+ * - RPT_OPT_DATA_REFERENCE
+ * - RPT_OPT_BUFFER_OVERFLOW
+ * - RPT_OPT_ENTRY_ID
+ * - RPT_OPT_CONF_REV
+ *
+ * \param self the RCB instance
+ *
+ * \return OptFlds options value
+ */
 LIB61850_API uint32_t
 ReportControlBlock_getOptFlds(ReportControlBlock* self);
 
+/**
+ * \brief Get the BufTm value (buffer time)
+ *
+ * The buffer time is the maximum value between an event and
+ * the actual report generation.
+ *
+ * \param self the RCB instance
+ *
+ * \return bufTm value
+ */
 LIB61850_API uint32_t
 ReportControlBlock_getBufTm(ReportControlBlock* self);
 
 LIB61850_API uint16_t
 ReportControlBlock_getSqNum(ReportControlBlock* self);
 
+/**
+ * \brief Get the currently set trigger options
+ *
+ * The trigger option value is a bit field with the following fields:
+ * - TRG_OPT_DATA_CHANGED
+ * - TRG_OPT_QUALITY_CHANGED
+ * - TRG_OPT_DATA_UPDATE
+ * - TRG_OPT_INTEGRITY
+ * - TRG_OPT_GI
+ *
+ * \param self the RCB instance
+ *
+ * \return trigger options value
+ */
 LIB61850_API uint32_t
 ReportControlBlock_getTrgOps(ReportControlBlock* self);
 
@@ -284,6 +369,9 @@ ReportControlBlock_getTimeofEntry(ReportControlBlock* self);
 
 LIB61850_API int16_t
 ReportControlBlock_getResvTms(ReportControlBlock* self);
+
+LIB61850_API bool
+ReportControlBlock_getResv(ReportControlBlock* self);
 
 LIB61850_API MmsValue*
 ReportControlBlock_getOwner(ReportControlBlock* self);
@@ -308,6 +396,12 @@ ReportControlBlock_getOwner(ReportControlBlock* self);
 LIB61850_API LogControlBlock*
 LogControlBlock_create(const char* name, LogicalNode* parent, const char* dataSetName, const char* logRef, uint8_t trgOps,
         uint32_t intgPd, bool logEna, bool reasonCode);
+
+LIB61850_API const char*
+LogControlBlock_getName(LogControlBlock* self);
+
+LIB61850_API LogicalNode*
+LogControlBlock_getParent(LogControlBlock* self);
 
 /**
  * \brief create a log (used by the IEC 61850 log service)
