@@ -22,8 +22,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using IEC61850.Client;
 using IEC61850.Common;
+using IEC61850.TLS;
+using System.Net.Security;
 
 namespace IEC61850_Client
 {
@@ -597,16 +600,54 @@ namespace IEC61850_Client
                 }
                 else
                 {
-                    IedConnection con = new IedConnection();
+                    IedConnection con = null;
                     try
                     {
+                        if (srv.useSecurity)
+                        {
+                            Log(srv.name + " Using TLS");
+                            TLSConfiguration tlsConfig = new TLSConfiguration();
+                            if (srv.localCertFilePath.Trim() != "")
+                                tlsConfig.SetOwnCertificate(new X509Certificate2(srv.localCertFilePath));
+                            if (srv.privateKeyFilePath.Trim() != "")
+                                tlsConfig.SetOwnKey(srv.privateKeyFilePath, null);
+                            foreach (var peerCertFilePath in srv.peerCertFilesPaths)
+                                tlsConfig.AddAllowedCertificate(new X509Certificate2(peerCertFilePath));
+                            // Add a CA certificate to check the certificate provided by the server - not required when ChainValidation == false
+                            if (srv.rootCertFilePath.Trim() != "")
+                                tlsConfig.AddCACertificate(new X509Certificate2(srv.rootCertFilePath));
+                            // Check if the certificate is signed by a provided CA
+                            tlsConfig.ChainValidation = srv.chainValidation;
+                            // Check that the shown server certificate is in the list of allowed certificates
+                            tlsConfig.AllowOnlyKnownCertificates = srv.allowOnlySpecificCertificates;
+                            tlsConfig.SetMinTlsVersion(TLSConfigVersion.TLS_1_0);
+                            tlsConfig.SetMaxTlsVersion(TLSConfigVersion.TLS_1_3);
+                            if (!srv.allowTLSv10)
+                                tlsConfig.SetMinTlsVersion(TLSConfigVersion.TLS_1_1);
+                            if (srv.allowTLSv11)
+                                tlsConfig.SetMaxTlsVersion(TLSConfigVersion.TLS_1_1);
+                            else
+                                tlsConfig.SetMinTlsVersion(TLSConfigVersion.TLS_1_2);
+                            if (srv.allowTLSv12)
+                                tlsConfig.SetMaxTlsVersion(TLSConfigVersion.TLS_1_2);
+                            else
+                                tlsConfig.SetMinTlsVersion(TLSConfigVersion.TLS_1_3);
+                            if (srv.allowTLSv13)
+                                tlsConfig.SetMaxTlsVersion(TLSConfigVersion.TLS_1_3);
+                            con = new IedConnection(tlsConfig);
+                        }
+                        else
+                        {
+                            con = new IedConnection();
+                        }
+
                         if (srv.password != "")
                         {
                             IsoConnectionParameters parameters = con.GetConnectionParameters();
                             parameters.UsePasswordAuthentication(srv.password);
                         }
 
-                        Log("Connect to " + srv.name);
+                        Log(srv.name + " Connecting to " + srv.ipAddresses[0]);
                         var tcpPort = 102;
                         string[] ipAddrPort = srv.ipAddresses[0].Split(':');
                         if (ipAddrPort.Length > 1)
@@ -1048,10 +1089,13 @@ namespace IEC61850_Client
                             Log(e);
                         else
                             Log(e.Message);
-                        if (con.GetState() == IedConnectionState.IED_STATE_CONNECTED)
-                            con.Abort();
-                        con.Dispose();
-                        con = null;
+                        if (con != null)
+                        {
+                            if (con.GetState() == IedConnectionState.IED_STATE_CONNECTED)
+                                con.Abort();
+                            con.Dispose();
+                            con = null;
+                        }
                         Thread.Sleep(5000);
                     }
                 }

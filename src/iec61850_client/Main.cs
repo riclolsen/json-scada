@@ -35,15 +35,13 @@ namespace IEC61850_Client
     {
         public static String CopyrightMessage = "{json:scada} IEC61850 Client Driver - Copyright 2023 - 2024 Ricardo Olsen";
         public static String ProtocolDriverName = "IEC61850";
-        public static String DriverVersion = "0.1.8";
+        public static String DriverVersion = "0.2.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static Int32 BulkWriteLimit = 1250; // limit of each bulk write to mongodb
 
         public static void Main(string[] args)
         {
-            // var browse = false;
-
             CultureInfo ci = new CultureInfo("en-US");
             Thread.CurrentThread.CurrentCulture = ci;
             Thread.CurrentThread.CurrentUICulture = ci;
@@ -60,8 +58,9 @@ namespace IEC61850_Client
                 bool res = int.TryParse(args[1], out num);
                 if (res) LogLevel = num;
             }
-            Log(CopyrightMessage + " Version " + DriverVersion);
-            Log("Using libiec61850 v" + LibIEC61850.GetVersionString());
+            Log(CopyrightMessage);
+            Log("Driver version " + DriverVersion);
+            Log("Using libiec61850 version " + LibIEC61850.GetVersionString());
             Log("Log level: " + LogLevel);
 
             string fname = JsonConfigFilePath;
