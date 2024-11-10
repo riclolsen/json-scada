@@ -35,9 +35,12 @@ services:
                     apt-get update &&
                     apt-get -y install gcc make &&
                     cd /src/libiec61850 &&
-                    make WITH_MBEDTLS3=1 &&
-                    make install &&
-                    cd dotnet/core/2.0/IEC61850.NET.core.2.0 &&
+                    mkdir build &&
+                    cd build &&
+                    cmake .. &&
+                    make &&
+                    cp src/libiec61850.so src/libiec61850.so.1.6.0 /publish_bin/ &&
+                    cd ../dotnet/core/2.0/IEC61850.NET.core.2.0 &&
                     dotnet publish --no-self-contained --runtime linux-x64 -c Release &&
                     cd /src/iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
