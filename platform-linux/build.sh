@@ -71,8 +71,6 @@ cd ../grafana_alert2event
 npm install
 cd ../demo_simul
 npm install
-cd ../server_realtime
-npm install
 cd ../server_realtime_auth
 npm install
 cd ../updateUser
