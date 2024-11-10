@@ -21,7 +21,7 @@ cd src/dnp3/Dnp3Client
 dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin-wine/ Dnp3Client.csproj
 
 cd ../../libiec61850
-make
+make WITH_MBEDTLS3=1
 make install
 cd dotnet/core/2.0
 dotnet publish --no-self-contained --runtime $ARG1 -c Release IEC61850.NET.core.2.0
