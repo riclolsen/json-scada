@@ -37,8 +37,8 @@ services:
                     cd /src/libiec61850 &&
                     make WITH_MBEDTLS3=1 &&
                     make install &&
-                    cd dotnet/core/2.0 &&
-                    dotnet publish --no-self-contained --runtime linux-x64 -c Release IEC61850.NET.core.2.0 &&
+                    cd dotnet/core/2.0/IEC61850.NET.core.2.0 &&
+                    dotnet publish --no-self-contained --runtime linux-x64 -c Release &&
                     cd /src/iec61850_client &&
                     dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&

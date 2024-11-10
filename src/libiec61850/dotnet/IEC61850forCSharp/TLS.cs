@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
+using System.Net.Security;
 
 using IEC61850.Common;
 
