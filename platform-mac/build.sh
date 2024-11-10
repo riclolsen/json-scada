@@ -29,7 +29,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -c Release
 cd ../../../../../iec61850_client
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ 
 
-cd ../../../../../lib60870.netcore
+cd ../lib60870.netcore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
