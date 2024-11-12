@@ -33,9 +33,9 @@ services:
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     rm -rf obj bin &&
                     apt-get update &&
-                    apt-get -y install gcc make &&
+                    apt-get -y install build-essential cmake &&
                     cd /src/libiec61850 &&
-                    mkdir build &&
+                    mkdir -p build &&
                     cd build &&
                     cmake .. &&
                     make &&
