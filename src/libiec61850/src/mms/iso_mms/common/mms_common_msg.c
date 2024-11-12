@@ -1,7 +1,7 @@
 /*
  *  mms_common_msg.c
  *
- *  Copyright 2013-2019 Michael Zillgith
+ *  Copyright 2013-2022 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -185,232 +185,315 @@ mmsMsg_parseDataElement(Data_t* dataElement)
 {
     MmsValue* value = NULL;
 
-    if (dataElement->present == Data_PR_array) {
-
+    if (dataElement->present == Data_PR_array)
+    {
         int componentCount = dataElement->choice.array->list.count;
 
-        if (componentCount > 0) {
+        if (componentCount > 0)
+        {
             value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
 
-            value->type = MMS_ARRAY;
-            value->value.structure.size = componentCount;
-            value->value.structure.components = (MmsValue**) GLOBAL_CALLOC(componentCount, sizeof(MmsValue*));
+            if (value)
+            {
+                value->type = MMS_ARRAY;
+                value->value.structure.size = componentCount;
+                value->value.structure.components = (MmsValue**) GLOBAL_CALLOC(componentCount, sizeof(MmsValue*));
 
-            int i;
+                int i;
 
-            for (i = 0; i < componentCount; i++) {
-                value->value.structure.components[i] =
-                        mmsMsg_parseDataElement(dataElement->choice.array->list.array[i]);
+                for (i = 0; i < componentCount; i++)
+                {
+                    value->value.structure.components[i] =
+                            mmsMsg_parseDataElement(dataElement->choice.array->list.array[i]);
 
-                if (value->value.structure.components[i] == NULL) {
-                    MmsValue_delete(value);
-                    value = NULL;
-                    break;
+                    if (value->value.structure.components[i] == NULL)
+                    {
+                        MmsValue_delete(value);
+                        value = NULL;
+                        break;
+                    }
                 }
             }
         }
-        else {
+        else
+        {
             if (DEBUG_MMS_CLIENT)
                 printf("MMS CLIENT: error parsing data element (invalid array size)!\n");
         }
-
     }
-    else if (dataElement->present == Data_PR_structure) {
-
+    else if (dataElement->present == Data_PR_structure)
+    {
         int componentCount = dataElement->choice.structure->list.count;
 
-        if (componentCount > 0) {
+        if (componentCount > 0)
+        {
             value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
 
-            value->type = MMS_STRUCTURE;
-            value->value.structure.size = componentCount;
-            value->value.structure.components = (MmsValue**) GLOBAL_CALLOC(componentCount, sizeof(MmsValue*));
+            if (value)
+            {
+                value->type = MMS_STRUCTURE;
+                value->value.structure.size = componentCount;
+                value->value.structure.components = (MmsValue**) GLOBAL_CALLOC(componentCount, sizeof(MmsValue*));
 
-            int i;
+                int i;
 
-            for (i = 0; i < componentCount; i++) {
-                value->value.structure.components[i] =
-                        mmsMsg_parseDataElement(dataElement->choice.structure->list.array[i]);
+                for (i = 0; i < componentCount; i++)
+                {
+                    value->value.structure.components[i] =
+                            mmsMsg_parseDataElement(dataElement->choice.structure->list.array[i]);
 
-                if (value->value.structure.components[i] == NULL) {
-                    MmsValue_delete(value);
-                    value = NULL;
-                    break;
+                    if (value->value.structure.components[i] == NULL)
+                    {
+                        MmsValue_delete(value);
+                        value = NULL;
+                        break;
+                    }
                 }
             }
         }
-        else {
+        else
+        {
             if (DEBUG_MMS_CLIENT)
                 printf("MMS CLIENT: error parsing data element (invalid structure size)!\n");
         }
     }
-    else {
-        if (dataElement->present == Data_PR_integer) {
-
-            if (dataElement->choice.integer.size > 0) {
+    else
+    {
+        if (dataElement->present == Data_PR_integer)
+        {
+            if (dataElement->choice.integer.size > 0)
+            {
                 Asn1PrimitiveValue* berInteger = BerInteger_createFromBuffer(
                         dataElement->choice.integer.buf, dataElement->choice.integer.size);
 
-                value = MmsValue_newIntegerFromBerInteger(berInteger);
+                if (berInteger)
+                    value = MmsValue_newIntegerFromBerInteger(berInteger);
             }
-            else {
+            else
+            {
                 if (DEBUG_MMS_CLIENT)
                     printf("MMS CLIENT: error parsing data element (invalid integer size)!\n");
             }
         }
-        else if (dataElement->present == Data_PR_unsigned) {
-
-            if (dataElement->choice.Unsigned.size > 0) {
+        else if (dataElement->present == Data_PR_unsigned)
+        {
+            if (dataElement->choice.Unsigned.size > 0)
+            {
                 Asn1PrimitiveValue* berInteger = BerInteger_createFromBuffer(
                         dataElement->choice.Unsigned.buf, dataElement->choice.Unsigned.size);
 
-                value = MmsValue_newUnsignedFromBerInteger(berInteger);
+                if (berInteger)
+                    value = MmsValue_newUnsignedFromBerInteger(berInteger);
             }
-            else {
+            else
+            {
                 if (DEBUG_MMS_CLIENT)
                     printf("MMS CLIENT: error parsing data element (invalid unsigned size)!\n");
             }
         }
-        else if (dataElement->present == Data_PR_visiblestring) {
-
-            if (dataElement->choice.visiblestring.size >= 0) {
+        else if (dataElement->present == Data_PR_visiblestring)
+        {
+            if (dataElement->choice.visiblestring.size >= 0)
+            {
                 value = MmsValue_newVisibleStringFromByteArray(dataElement->choice.visiblestring.buf,
                         dataElement->choice.visiblestring.size);
             }
         }
-        else if (dataElement->present == Data_PR_mMSString) {
-
-            if ( dataElement->choice.mMSString.size >= 0) {
+        else if (dataElement->present == Data_PR_mMSString)
+        {
+            if ( dataElement->choice.mMSString.size >= 0)
+            {
                 value = MmsValue_newMmsStringFromByteArray(dataElement->choice.mMSString.buf,
                         dataElement->choice.mMSString.size);
             }
         }
-        else if (dataElement->present == Data_PR_bitstring) {
-
+        else if (dataElement->present == Data_PR_bitstring)
+        {
             int size = dataElement->choice.bitstring.size;
 
-            if (size >= 0) {
-
+            if (size >= 0)
+            {
                 int maxSize = (size * 8);
                 int bitSize = maxSize - dataElement->choice.bitstring.bits_unused;
 
-                if ((bitSize > 0) && (maxSize >= bitSize)) {
+                if ((bitSize > 0) && (maxSize >= bitSize))
+                {
                     value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
 
-                    value->type = MMS_BIT_STRING;
+                    if (value)
+                    {
+                        value->type = MMS_BIT_STRING;
 
-                    value->value.bitString.size = bitSize;
+                        value->value.bitString.size = bitSize;
 
-                    value->value.bitString.buf = (uint8_t*) GLOBAL_MALLOC(size);
-                    memcpy(value->value.bitString.buf,
-                            dataElement->choice.bitstring.buf, size);
+                        value->value.bitString.buf = (uint8_t*) GLOBAL_MALLOC(size);
+
+                        if (value->value.bitString.buf)
+                        {
+                            memcpy(value->value.bitString.buf,
+                                dataElement->choice.bitstring.buf, size);
+                        }
+                        else
+                        {
+                            GLOBAL_FREEMEM(value);
+                            value = 0;
+                        }
+                    }
                 }
-                else if (bitSize == 0) {
+                else if (bitSize == 0)
+                {
                     value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
 
-                    value->type = MMS_BIT_STRING;
-                    value->value.bitString.size = 0;
-                    value->value.bitString.buf = NULL;
+                    if (value)
+                    {
+                        value->type = MMS_BIT_STRING;
+                        value->value.bitString.size = 0;
+                        value->value.bitString.buf = NULL;
+                    }
                 }
-                else {
+                else
+                {
                     if (DEBUG_MMS_CLIENT)
                         printf("MMS CLIENT: error parsing data element (bit string padding problem)!\n");
                 }
             }
-            else {
+            else
+            {
                 if (DEBUG_MMS_CLIENT)
                     printf("MMS CLIENT: error parsing data element (bit string size 0 or negative)!\n");
             }
         }
-        else if (dataElement->present == Data_PR_floatingpoint) {
-
+        else if (dataElement->present == Data_PR_floatingpoint)
+        {
             int size = dataElement->choice.floatingpoint.size;
 
-            if (size == 5) { /* FLOAT32 */
-
+            if (size == 5) /* FLOAT32 */
+            {
                 value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
-                value->type = MMS_FLOAT;
 
-                value->value.floatingPoint.formatWidth = 32;
-                value->value.floatingPoint.exponentWidth = dataElement->choice.floatingpoint.buf[0];
+                if (value)
+                {
+                    value->type = MMS_FLOAT;
 
-                uint8_t* floatBuf = (dataElement->choice.floatingpoint.buf + 1);
+                    value->value.floatingPoint.formatWidth = 32;
+                    value->value.floatingPoint.exponentWidth = dataElement->choice.floatingpoint.buf[0];
+
+                    uint8_t* floatBuf = (dataElement->choice.floatingpoint.buf + 1);
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-                memcpyReverseByteOrder(value->value.floatingPoint.buf, floatBuf, 4);
+                    memcpyReverseByteOrder(value->value.floatingPoint.buf, floatBuf, 4);
 #else
-                memcpy(value->value.floatingPoint.buf, floatBuf, 4);
+                    memcpy(value->value.floatingPoint.buf, floatBuf, 4);
 #endif
+                }
             }
 
-            if (size == 9) { /* FLOAT64 */
-
+            if (size == 9) /* FLOAT64 */
+            {
                 value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
-                value->type = MMS_FLOAT;
 
-                value->value.floatingPoint.formatWidth = 64;
-                value->value.floatingPoint.exponentWidth = dataElement->choice.floatingpoint.buf[0];
+                if (value)
+                {
+                    value->type = MMS_FLOAT;
 
-                uint8_t* floatBuf = (dataElement->choice.floatingpoint.buf + 1);
+                    value->value.floatingPoint.formatWidth = 64;
+                    value->value.floatingPoint.exponentWidth = dataElement->choice.floatingpoint.buf[0];
+
+                    uint8_t* floatBuf = (dataElement->choice.floatingpoint.buf + 1);
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-                memcpyReverseByteOrder(value->value.floatingPoint.buf, floatBuf, 8);
+                    memcpyReverseByteOrder(value->value.floatingPoint.buf, floatBuf, 8);
 #else
-                memcpy(value->value.floatingPoint.buf, floatBuf, 8);
+                    memcpy(value->value.floatingPoint.buf, floatBuf, 8);
 #endif
+                }
             }
         }
-        else if (dataElement->present == Data_PR_utctime) {
-
+        else if (dataElement->present == Data_PR_utctime)
+        {
             int size = dataElement->choice.utctime.size;
 
-            if (size == 8) {
+            if (size == 8)
+            {
                 value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
-                value->type = MMS_UTC_TIME;
-                memcpy(value->value.utcTime, dataElement->choice.utctime.buf, 8);
+
+                if (value)
+                {
+                    value->type = MMS_UTC_TIME;
+                    memcpy(value->value.utcTime, dataElement->choice.utctime.buf, 8);
+                }
             }
-            else {
+            else
+            {
                 if (DEBUG_MMS_CLIENT)
                     printf("MMS CLIENT: error parsing UTC time (size is %i instead of 8\n", size);
             }
         }
-        else if (dataElement->present == Data_PR_octetstring) {
-
-            if (dataElement->choice.octetstring.size >= 0) {
+        else if (dataElement->present == Data_PR_octetstring)
+        {
+            if (dataElement->choice.octetstring.size >= 0)
+            {
                 value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
-                value->type = MMS_OCTET_STRING;
-                int size = dataElement->choice.octetstring.size;
-                value->value.octetString.size = size;
-                value->value.octetString.maxSize = size;
-                value->value.octetString.buf = (uint8_t*) GLOBAL_MALLOC(size);
-                memcpy(value->value.octetString.buf, dataElement->choice.octetstring.buf, size);
-            }
 
+                if (value)
+                {
+                    value->type = MMS_OCTET_STRING;
+                    int size = dataElement->choice.octetstring.size;
+
+                    value->value.octetString.size = size;
+
+                    if (size > 0)
+                        value->value.octetString.maxSize = -size;
+                    else
+                        value->value.octetString.maxSize = -8;
+
+                    value->value.octetString.buf = (uint8_t*) GLOBAL_MALLOC(abs(value->value.octetString.maxSize));
+
+                    if (value->value.octetString.buf)
+                    {
+                        memcpy(value->value.octetString.buf, dataElement->choice.octetstring.buf, size);
+                    }
+                    else
+                    {
+                        GLOBAL_FREEMEM(value);
+                        value = NULL;
+                    }
+                }
+            }
         }
-        else if (dataElement->present == Data_PR_binarytime) {
+        else if (dataElement->present == Data_PR_binarytime)
+        {
             int size = dataElement->choice.binarytime.size;
 
-            if ((size == 4) || (size == 6)) {
+            if ((size == 4) || (size == 6))
+            {
                 value = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
-                value->type = MMS_BINARY_TIME;
-                value->value.binaryTime.size = size;
-                memcpy(value->value.binaryTime.buf, dataElement->choice.binarytime.buf, size);
+
+                if (value)
+                {
+                    value->type = MMS_BINARY_TIME;
+                    value->value.binaryTime.size = size;
+                    memcpy(value->value.binaryTime.buf, dataElement->choice.binarytime.buf, size);
+                }
             }
-            else {
+            else
+            {
                 if (DEBUG_MMS_CLIENT)
                     printf("MMS CLIENT: error parsing binary time (size must be 4 or 6, is %i\n", size);
             }
         }
-        else if (dataElement->present == Data_PR_boolean) {
+        else if (dataElement->present == Data_PR_boolean)
+        {
             value = MmsValue_newBoolean(dataElement->choice.boolean);
         }
-        else if (dataElement->present == Data_PR_booleanArray) {
-
+        else if (dataElement->present == Data_PR_booleanArray)
+        {
+            /* not supported */
         }
-
     }
 
-    if (DEBUG_MMS_CLIENT) {
+    if (DEBUG_MMS_CLIENT)
+    {
         if (value == NULL)
             printf("MMS CLIENT: error parsing data element\n");
     }
@@ -426,16 +509,16 @@ mmsMsg_createStringFromAsnIdentifier(Identifier_t identifier)
     return str;
 }
 
-
 void
 mmsMsg_copyAsn1IdentifierToStringBuffer(Identifier_t identifier, char* buffer, int bufSize)
 {
-    if (identifier.size < bufSize) {
+    if (identifier.size < bufSize)
+    {
         memcpy(buffer, identifier.buf, identifier.size);
         buffer[identifier.size] = 0;
     }
-    else {
-
+    else
+    {
         if (DEBUG_MMS_SERVER || DEBUG_MMS_CLIENT)
             printf("MMS_COMMON: mms_common_msg.c: ASN1 identifier to long!\n");
 
@@ -443,23 +526,108 @@ mmsMsg_copyAsn1IdentifierToStringBuffer(Identifier_t identifier, char* buffer, i
     }
 }
 
+char*
+mmsMsg_getComponentNameFromAlternateAccess(AlternateAccess_t* alternateAccess, char* componentNameBuf, int nameBufPos)
+{
+    if (alternateAccess->list.count == 1)
+    {
+        if (alternateAccess->list.array[0]->present == AlternateAccess__Member_PR_unnamed)
+        {
+            if (alternateAccess->list.array[0]->choice.unnamed->present == AlternateAccessSelection_PR_selectAlternateAccess)
+            {
+                if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAlternateAccess.accessSelection.present ==
+                                AlternateAccessSelection__selectAlternateAccess__accessSelection_PR_component)
+                {
+                    Identifier_t componentIdentifier = alternateAccess->list.array[0]->choice.unnamed->
+                            choice.selectAlternateAccess.accessSelection.choice.component;
+
+                    AlternateAccess_t* nextAlternateAccess = alternateAccess->list.array[0]->choice.unnamed->
+                            choice.selectAlternateAccess.alternateAccess;
+
+                    if (nextAlternateAccess)
+                    {
+                        if (nameBufPos + componentIdentifier.size + 1 < 65)
+                        {
+                            memcpy(componentNameBuf + nameBufPos, componentIdentifier.buf, componentIdentifier.size);
+                            nameBufPos += componentIdentifier.size;
+                            componentNameBuf[nameBufPos++] = '$';
+                            return mmsMsg_getComponentNameFromAlternateAccess(nextAlternateAccess, componentNameBuf, nameBufPos);
+                        }
+                        else
+                        {
+                            if (DEBUG_MMS_SERVER)
+                                printf("MMS_SERVER: component identifier name too long!\n");
+                        }
+                    }
+                    else
+                    {
+                        if (DEBUG_MMS_SERVER)
+                            printf("MMS_SERVER: next alternate access specification is missing!\n");
+                    }
+                }
+            }
+            else if (alternateAccess->list.array[0]->choice.unnamed->present == AlternateAccessSelection_PR_selectAccess)
+            {
+                /* final component part */
+
+                if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present ==
+                        AlternateAccessSelection__selectAccess_PR_component)
+                {
+                    Identifier_t componentIdentifier = alternateAccess->list.array[0]->choice.unnamed->
+                            choice.selectAccess.choice.component;
+
+                    if (nameBufPos + componentIdentifier.size + 1 < 65)
+                    {
+                        memcpy(componentNameBuf + nameBufPos, componentIdentifier.buf, componentIdentifier.size);
+                        nameBufPos += componentIdentifier.size;
+                        componentNameBuf[nameBufPos++] = 0;
+                        return componentNameBuf;
+                    }
+                    else
+                    {
+                        if (DEBUG_MMS_SERVER)
+                            printf("MMS_SERVER: component identifier name too long!\n");
+                    }
+                }
+            }
+        }
+    }
+
+    if (DEBUG_MMS_SERVER)
+        printf("MMS_SERVER: invalid component access specification\n");
+
+    return NULL;
+}
+
 #if (MMS_FILE_SERVICE == 1)
 
 void
-mmsMsg_createExtendedFilename(const char* basepath, char* extendedFileName, char* fileName)
+mmsMsg_createExtendedFilename(const char* basepath, int bufSize, char* extendedFileName, char* fileName)
 {
 #if (CONFIG_SET_FILESTORE_BASEPATH_AT_RUNTIME == 1)
-    strncpy(extendedFileName, basepath, 511);
-    extendedFileName[511] = 0;
-    strncat(extendedFileName, fileName, 511);
-    extendedFileName[511] = 0;
+    StringUtils_concatString(extendedFileName, bufSize, basepath, fileName);
 #else
-    strcpy(extendedFileName, CONFIG_VIRTUAL_FILESTORE_BASEPATH);
-    strncat(extendedFileName, fileName, sizeof(CONFIG_VIRTUAL_FILESTORE_BASEPATH) + 255);
-    extendedFileName[sizeof(CONFIG_VIRTUAL_FILESTORE_BASEPATH) + 255] = 0;
+    StringUtils_concatString(extendedFileName, bufSize, CONFIG_VIRTUAL_FILESTORE_BASEPATH, fileName);
 #endif
 }
 
+bool
+mmsMsg_isFilenameSave(const char* filename)
+{
+    if (filename)
+    {
+        if (strstr(filename, ".."))
+            return false;
+
+        if (strstr(filename, "./"))
+            return false;
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 FileHandle
 mmsMsg_openFile(const char* basepath, char* fileName, bool readWrite)
@@ -470,11 +638,10 @@ mmsMsg_openFile(const char* basepath, char* fileName, bool readWrite)
     char extendedFileName[sizeof(CONFIG_VIRTUAL_FILESTORE_BASEPATH) + 256];
 #endif
 
-    mmsMsg_createExtendedFilename(basepath, extendedFileName, fileName);
+    mmsMsg_createExtendedFilename(basepath, 512, extendedFileName, fileName);
 
     return FileSystem_openFile(extendedFileName, readWrite);
 }
-
 
 bool
 mmsMsg_parseFileName(char* filename, uint8_t* buffer, int* bufPos, int maxBufPos , uint32_t invokeId, ByteBuffer* response)
@@ -484,23 +651,26 @@ mmsMsg_parseFileName(char* filename, uint8_t* buffer, int* bufPos, int maxBufPos
 
     uint8_t tag = buffer[(*bufPos)++];
 
-    if (tag != 0x19) {
-      mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
-      return false;
+    if (tag != 0x19)
+    {
+        mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
+        return false;
     }
 
     int length;
 
     *bufPos = BerDecoder_decodeLength(buffer, &length, *bufPos, maxBufPos);
 
-    if (*bufPos < 0)  {
-      mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
-      return false;
+    if (*bufPos < 0)
+    {
+        mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
+        return false;
     }
 
-    if (length > 255) {
-      mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_REQUEST_INVALID_ARGUMENT, response);
-      return false;
+    if (length > 255)
+    {
+        mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_REQUEST_INVALID_ARGUMENT, response);
+        return false;
     }
 
     memcpy(filename, buffer + *bufPos, length);
@@ -511,8 +681,9 @@ mmsMsg_parseFileName(char* filename, uint8_t* buffer, int* bufPos, int maxBufPos
      * TODO this may be platform dependent. Also depending of the platform there might be other evil
      * characters.
      */
-    if (strstr(filename, "..") != NULL) {
-        mmsMsg_createServiceErrorPdu(invokeId, response, MMS_ERROR_FILE_FILENAME_SYNTAX_ERROR);
+    if (strstr(filename, "..") != NULL)
+    {
+        mmsMsg_createServiceErrorPdu(invokeId, response, MMS_ERROR_FILE_FILE_NON_EXISTENT);
         return false;
     }
 
@@ -520,4 +691,3 @@ mmsMsg_parseFileName(char* filename, uint8_t* buffer, int* bufPos, int maxBufPos
 }
 
 #endif /* (MMS_FILE_SERVICE == 1) */
-

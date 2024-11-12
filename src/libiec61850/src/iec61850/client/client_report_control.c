@@ -3,7 +3,7 @@
  *
  *  Implementation of the ClientReportControlBlock class
  *
- *  Copyright 2013-2018 Michael Zillgith
+ *  Copyright 2013-2022 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -528,39 +528,44 @@ readObjectHandlerInternal(uint32_t invokeId, void* parameter, MmsError err, MmsV
 
     IedConnectionOutstandingCall call = iedConnection_lookupOutstandingCall(self, invokeId);
 
-    if (call) {
-
+    if (call)
+    {
         IedConnection_GetRCBValuesHandler handler =  (IedConnection_GetRCBValuesHandler) call->callback;
         ClientReportControlBlock updateRcb = (ClientReportControlBlock) call->specificParameter;
         char* rcbReference = (char*) call->specificParameter2.pointer;
 
-
-        if (err != MMS_ERROR_NONE) {
+        if (err != MMS_ERROR_NONE)
+        {
             handler(invokeId, call->callbackParameter, iedConnection_mapMmsErrorToIedError(err), NULL);
         }
-        else {
-
-            if (value == NULL) {
+        else
+        {
+            if (value == NULL)
+            {
                 handler(invokeId, call->callbackParameter, IED_ERROR_OBJECT_DOES_NOT_EXIST, NULL);
             }
-            else {
-                if (MmsValue_getType(value) == MMS_DATA_ACCESS_ERROR) {
+            else
+            {
+                if (MmsValue_getType(value) == MMS_DATA_ACCESS_ERROR)
+                {
                     if (DEBUG_IED_CLIENT)
                         printf("DEBUG_IED_CLIENT: getRCBValues returned data-access-error!\n");
 
                     handler(invokeId, call->callbackParameter, iedConnection_mapDataAccessErrorToIedError(MmsValue_getDataAccessError(value)), NULL);
                 }
-                else {
-
+                else
+                {
                     ClientReportControlBlock returnRcb = updateRcb;
 
                     if (returnRcb == NULL)
                         returnRcb = ClientReportControlBlock_create(rcbReference);
 
-                    if (clientReportControlBlock_updateValues(returnRcb, value)) {
+                    if (clientReportControlBlock_updateValues(returnRcb, value))
+                    {
                         handler(invokeId, call->callbackParameter, IED_ERROR_OK, returnRcb);
                     }
-                    else {
+                    else
+                    {
                         if (DEBUG_IED_CLIENT)
                             printf("DEBUG_IED_CLIENT: getRCBValues returned wrong type!\n");
 
@@ -569,19 +574,18 @@ readObjectHandlerInternal(uint32_t invokeId, void* parameter, MmsError err, MmsV
                         if (updateRcb == NULL)
                             ClientReportControlBlock_destroy(returnRcb);
                     }
-
                 }
 
                 MmsValue_delete(value);
             }
-
         }
 
         GLOBAL_FREEMEM(rcbReference);
 
         iedConnection_releaseOutstandingCall(self, call);
     }
-    else {
+    else
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: internal error - no matching outstanding call!\n");
     }
@@ -598,18 +602,19 @@ IedConnection_getRCBValuesAsync(IedConnection self, IedClientError* error, const
 
     char* domainName = MmsMapping_getMmsDomainFromObjectReference(rcbReference, domainId);
 
-    if (domainName == NULL) {
+    if (domainName == NULL)
+    {
         *error = IED_ERROR_USER_PROVIDED_INVALID_ARGUMENT;
         return 0;
     }
 
-    strcpy(itemId, rcbReference + strlen(domainId) + 1);
-
+    StringUtils_copyStringMax(itemId, 65, rcbReference + strlen(domainId) + 1);
     StringUtils_replace(itemId, '.', '$');
 
     IedConnectionOutstandingCall call = iedConnection_allocateOutstandingCall(self);
 
-    if (call == NULL) {
+    if (call == NULL)
+    {
         *error = IED_ERROR_OUTSTANDING_CALL_LIMIT_REACHED;
         return 0;
     }
@@ -628,7 +633,8 @@ IedConnection_getRCBValuesAsync(IedConnection self, IedClientError* error, const
 
     *error = iedConnection_mapMmsErrorToIedError(err);
 
-    if (err != MMS_ERROR_NONE) {
+    if (err != MMS_ERROR_NONE)
+    {
         GLOBAL_FREEMEM(call->specificParameter2.pointer);
         iedConnection_releaseOutstandingCall(self, call);
         return 0;
@@ -653,8 +659,7 @@ IedConnection_getRCBValues(IedConnection self, IedClientError* error, const char
     if (domainName == NULL)
         return NULL;
 
-    strcpy(itemId, rcbReference + strlen(domainId) + 1);
-
+    StringUtils_copyStringMax(itemId, 65, rcbReference + strlen(domainId) + 1);
     StringUtils_replace(itemId, '.', '$');
 
     if (DEBUG_IED_CLIENT)
@@ -810,8 +815,9 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
             handler(param->originalInvokeId, call->callbackParameter, err);
 
             releaseWriteCall(self, call, param);
-        }
 
+            goto exit_function;
+        }
 
         param->currentItemId = LinkedList_getNext(param->currentItemId);
 
@@ -831,6 +837,7 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
             MmsConnection_writeVariableAsync(self->connection, &(call->invokeId), &writeError, param->domainId, itemId, value, writeVariableHandler, self);
 
             if (writeError != MMS_ERROR_NONE) {
+
                 handler(param->originalInvokeId, call->callbackParameter, iedConnection_mapMmsErrorToIedError(writeError));
 
                 releaseWriteCall(self, call, param);
@@ -841,6 +848,10 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: internal error - no matching outstanding call!\n");
     }
+
+exit_function:
+
+    return;
 }
 
 uint32_t
@@ -853,20 +864,19 @@ IedConnection_setRCBValuesAsync(IedConnection self, IedClientError* error, Clien
     bool sendGILast = false; /* GI should be sent last when RptEna=TRUE is included */
 
     char domainId[65];
-    char itemId[129];
+    char itemId[130];
 
      char* rcbReference = ClientReportControlBlock_getObjectReference(rcb);
 
      MmsMapping_getMmsDomainFromObjectReference(rcbReference, domainId);
 
-     strcpy(itemId, rcbReference + strlen(domainId) + 1);
-
+     StringUtils_copyStringMax(itemId, 130, rcbReference + strlen(domainId) + 1);
      StringUtils_replace(itemId, '.', '$');
+
+     int itemIdLen = strlen(itemId);
 
      if (DEBUG_IED_CLIENT)
          printf("DEBUG_IED_CLIENT: setRCBValues for %s\n", rcbReference);
-
-     int itemIdLen = strlen(itemId);
 
      /* prepare data to send -> create the list of requested itemIds references */
      LinkedList itemIds = LinkedList_create();
@@ -877,69 +887,87 @@ IedConnection_setRCBValuesAsync(IedConnection self, IedClientError* error, Clien
          if (isBuffered)
              goto error_invalid_parameter;
 
-         strcpy(itemId + itemIdLen, "$Resv");
+         StringUtils_appendString(itemId, 130, "$Resv");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->resv);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_RESV_TMS) {
          if (!isBuffered)
              goto error_invalid_parameter;
 
-         strcpy(itemId + itemIdLen, "$ResvTms");
+         StringUtils_appendString(itemId, 130, "$ResvTms");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->resvTms);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_RPT_ID) {
-         strcpy(itemId + itemIdLen, "$RptID");
+         StringUtils_appendString(itemId, 130, "$RptID");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->rptId);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_DATSET) {
-         strcpy(itemId + itemIdLen, "$DatSet");
+         StringUtils_appendString(itemId, 130, "$DatSet");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->datSet);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_ENTRY_ID) {
-         strcpy(itemId + itemIdLen, "$EntryID");
+         StringUtils_appendString(itemId, 130, "$EntryID");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->entryId);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_OPT_FLDS) {
-         strcpy(itemId + itemIdLen, "$OptFlds");
+         StringUtils_appendString(itemId, 130, "$OptFlds");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->optFlds);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_BUF_TM) {
-         strcpy(itemId + itemIdLen, "$BufTm");
+         StringUtils_appendString(itemId, 130, "$BufTm");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->bufTm);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_TRG_OPS) {
-         strcpy(itemId + itemIdLen, "$TrgOps");
+         StringUtils_appendString(itemId, 130, "$TrgOps");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->trgOps);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_INTG_PD) {
-         strcpy(itemId + itemIdLen, "$IntgPd");
+         StringUtils_appendString(itemId, 130, "$IntgPd");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->intgPd);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_GI) {
@@ -950,10 +978,12 @@ IedConnection_setRCBValuesAsync(IedConnection self, IedClientError* error, Clien
          }
 
          if (sendGILast == false) {
-             strcpy(itemId + itemIdLen, "$GI");
+             StringUtils_appendString(itemId, 130, "$GI");
 
              LinkedList_add(itemIds, StringUtils_copyString(itemId));
              LinkedList_add(values, rcb->gi);
+
+             itemId[itemIdLen] = 0;
          }
      }
 
@@ -961,34 +991,42 @@ IedConnection_setRCBValuesAsync(IedConnection self, IedClientError* error, Clien
          if (!isBuffered)
              goto error_invalid_parameter;
 
-         strcpy(itemId + itemIdLen, "$PurgeBuf");
+         StringUtils_appendString(itemId, 130, "$PurgeBuf");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->purgeBuf);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_TIME_OF_ENTRY) {
          if (!isBuffered)
              goto error_invalid_parameter;
 
-         strcpy(itemId + itemIdLen, "$TimeofEntry");
+         StringUtils_appendString(itemId, 130, "$TimeofEntry");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->timeOfEntry);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (parametersMask & RCB_ELEMENT_RPT_ENA) {
-         strcpy(itemId + itemIdLen, "$RptEna");
+         StringUtils_appendString(itemId, 130, "$RptEna");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->rptEna);
+
+         itemId[itemIdLen] = 0;
      }
 
      if (sendGILast) {
-         strcpy(itemId + itemIdLen, "$GI");
+         StringUtils_appendString(itemId, 130, "$GI");
 
          LinkedList_add(itemIds, StringUtils_copyString(itemId));
          LinkedList_add(values, rcb->gi);
+
+         itemId[itemIdLen] = 0;
      }
 
      IedConnectionOutstandingCall call = iedConnection_allocateOutstandingCall(self);
@@ -1075,20 +1113,19 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
     bool sendGILast = false; /* GI should be sent last when RptEna=TRUE is included */
 
     char domainId[65];
-    char itemId[129];
+    char itemId[130];
 
     char* rcbReference = ClientReportControlBlock_getObjectReference(rcb);
 
     MmsMapping_getMmsDomainFromObjectReference(rcbReference, domainId);
 
-    strcpy(itemId, rcbReference + strlen(domainId) + 1);
-
+    StringUtils_copyStringMax(itemId, 130, rcbReference + strlen(domainId) + 1);
     StringUtils_replace(itemId, '.', '$');
+
+    int itemIdLen = strlen(itemId);
 
     if (DEBUG_IED_CLIENT)
         printf("DEBUG_IED_CLIENT: setRCBValues for %s\n", rcbReference);
-
-    int itemIdLen = strlen(itemId);
 
     /* create the list of requested itemIds references */
     LinkedList itemIds = LinkedList_create();
@@ -1097,10 +1134,12 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
     /* add rptEna = false as first element */
     if (ClientReportControlBlock_getRptEna(rcb) == false)  {
         if (parametersMask & RCB_ELEMENT_RPT_ENA) {
-            strcpy(itemId + itemIdLen, "$RptEna");
+            StringUtils_appendString(itemId, 130, "$RptEna");
 
             LinkedList_add(itemIds, StringUtils_copyString(itemId));
             LinkedList_add(values, rcb->rptEna);
+
+            itemId[itemIdLen] = 0;
         }
     }
 
@@ -1109,69 +1148,87 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         if (isBuffered)
             goto error_invalid_parameter;
 
-        strcpy(itemId + itemIdLen, "$Resv");
+        StringUtils_appendString(itemId, 130, "$Resv");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->resv);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_RESV_TMS) {
         if (!isBuffered)
             goto error_invalid_parameter;
 
-        strcpy(itemId + itemIdLen, "$ResvTms");
+        StringUtils_appendString(itemId, 130, "$ResvTms");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->resvTms);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_RPT_ID) {
-        strcpy(itemId + itemIdLen, "$RptID");
+        StringUtils_appendString(itemId, 130, "$RptID");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->rptId);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_DATSET) {
-        strcpy(itemId + itemIdLen, "$DatSet");
+        StringUtils_appendString(itemId, 130, "$DatSet");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->datSet);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_ENTRY_ID) {
-        strcpy(itemId + itemIdLen, "$EntryID");
+        StringUtils_appendString(itemId, 130, "$EntryID");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->entryId);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_OPT_FLDS) {
-        strcpy(itemId + itemIdLen, "$OptFlds");
+        StringUtils_appendString(itemId, 130, "$OptFlds");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->optFlds);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_BUF_TM) {
-        strcpy(itemId + itemIdLen, "$BufTm");
+        StringUtils_appendString(itemId, 130, "$BufTm");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->bufTm);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_TRG_OPS) {
-        strcpy(itemId + itemIdLen, "$TrgOps");
+        StringUtils_appendString(itemId, 130, "$TrgOps");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->trgOps);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_INTG_PD) {
-        strcpy(itemId + itemIdLen, "$IntgPd");
+        StringUtils_appendString(itemId, 130, "$IntgPd");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->intgPd);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_GI) {
@@ -1182,10 +1239,12 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         }
 
         if (sendGILast == false) {
-            strcpy(itemId + itemIdLen, "$GI");
+            StringUtils_appendString(itemId, 130, "$GI");
 
             LinkedList_add(itemIds, StringUtils_copyString(itemId));
             LinkedList_add(values, rcb->gi);
+
+            itemId[itemIdLen] = 0;
         }
     }
 
@@ -1193,36 +1252,44 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         if (!isBuffered)
             goto error_invalid_parameter;
 
-        strcpy(itemId + itemIdLen, "$PurgeBuf");
+        StringUtils_appendString(itemId, 130, "$PurgeBuf");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->purgeBuf);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (parametersMask & RCB_ELEMENT_TIME_OF_ENTRY) {
         if (!isBuffered)
             goto error_invalid_parameter;
 
-        strcpy(itemId + itemIdLen, "$TimeofEntry");
+        StringUtils_appendString(itemId, 130, "$TimeofEntry");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->timeOfEntry);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (ClientReportControlBlock_getRptEna(rcb) == true)  {
         if (parametersMask & RCB_ELEMENT_RPT_ENA) {
-            strcpy(itemId + itemIdLen, "$RptEna");
+            StringUtils_appendString(itemId, 130, "$RptEna");
 
             LinkedList_add(itemIds, StringUtils_copyString(itemId));
             LinkedList_add(values, rcb->rptEna);
+
+            itemId[itemIdLen] = 0;
         }
     }
 
     if (sendGILast) {
-        strcpy(itemId + itemIdLen, "$GI");
+        StringUtils_appendString(itemId, 130, "$GI");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
         LinkedList_add(values, rcb->gi);
+
+        itemId[itemIdLen] = 0;
     }
 
     if (singleRequest) {

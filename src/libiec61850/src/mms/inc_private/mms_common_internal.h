@@ -1,7 +1,7 @@
 /*
  *  mms_common_internal.h
  *
- *  Copyright 2013-2019 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -30,9 +30,9 @@
 #include "byte_buffer.h"
 #include "mms_server.h"
 
-#define DEFAULT_MAX_SERV_OUTSTANDING_CALLING 5
-#define DEFAULT_MAX_SERV_OUTSTANDING_CALLED 5
 #define DEFAULT_DATA_STRUCTURE_NESTING_LEVEL 10
+
+typedef struct sMmsOutstandingCall* MmsOutstandingCall;
 
 #if (MMS_FILE_SERVICE == 1)
 
@@ -41,8 +41,6 @@
 #endif
 
 #include "hal_filesystem.h"
-
-typedef struct sMmsOutstandingCall* MmsOutstandingCall;
 
 typedef struct {
         int32_t frsmId;
@@ -77,10 +75,13 @@ LIB61850_INTERNAL bool
 mmsMsg_parseFileName(char* filename, uint8_t* buffer, int* bufPos, int maxBufPos , uint32_t invokeId, ByteBuffer* response);
 
 LIB61850_INTERNAL void
-mmsMsg_createExtendedFilename(const char* basepath, char* extendedFileName, char* fileName);
+mmsMsg_createExtendedFilename(const char* basepath, int bufSize, char* extendedFileName, char* fileName);
 
 LIB61850_INTERNAL FileHandle
 mmsMsg_openFile(const char* basepath, char* fileName, bool readWrite);
+
+LIB61850_INTERNAL bool
+mmsMsg_isFilenameSave(const char* filename);
 
 #endif /* (MMS_FILE_SERVICE == 1) */
 
@@ -117,6 +118,9 @@ mmsMsg_createStringFromAsnIdentifier(Identifier_t identifier);
 
 LIB61850_INTERNAL void
 mmsMsg_copyAsn1IdentifierToStringBuffer(Identifier_t identifier, char* buffer, int bufSize);
+
+LIB61850_INTERNAL char*
+mmsMsg_getComponentNameFromAlternateAccess(AlternateAccess_t* alternateAccess, char* componentNameBuf, int nameBufPos);
 
 LIB61850_INTERNAL void
 mmsMsg_deleteAccessResultList(AccessResult_t** accessResult, int variableCount);

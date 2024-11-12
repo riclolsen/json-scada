@@ -3,7 +3,7 @@
  *
  *  Client implementation for IEC 61850 reporting.
  *
- *  Copyright 2013-2019 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -139,7 +139,7 @@ ClientReport_getRptId(ClientReport self)
 ReasonForInclusion
 ClientReport_getReasonForInclusion(ClientReport self, int elementIndex)
 {
-    if (self->reasonForInclusion != NULL)
+    if ((self->reasonForInclusion != NULL) && (elementIndex < self->dataSetSize) && (elementIndex >= 0))
         return self->reasonForInclusion[elementIndex];
     else
         return IEC61850_REASON_NOT_INCLUDED;
@@ -283,14 +283,27 @@ lookupReportHandler(IedConnection self, const char* rcbReference)
     return NULL;
 }
 
-void
-IedConnection_installReportHandler(IedConnection self, const char* rcbReference, const char* rptId, ReportCallbackFunction handler,
-        void* handlerParameter)
+static void
+uninstallReportHandler(IedConnection self, const char* rcbReference)
 {
     ClientReport report = lookupReportHandler(self, rcbReference);
 
     if (report != NULL) {
-        IedConnection_uninstallReportHandler(self, rcbReference);
+        LinkedList_remove(self->enabledReports, report);
+        ClientReport_destroy(report);
+    }
+}
+
+void
+IedConnection_installReportHandler(IedConnection self, const char* rcbReference, const char* rptId, ReportCallbackFunction handler,
+        void* handlerParameter)
+{
+    Semaphore_wait(self->reportHandlerMutex);
+
+    ClientReport report = lookupReportHandler(self, rcbReference);
+
+    if (report != NULL) {
+        uninstallReportHandler(self, rcbReference);
 
         if (DEBUG_IED_CLIENT)
             printf("DEBUG_IED_CLIENT: Removed existing report callback handler for %s\n", rcbReference);
@@ -306,8 +319,8 @@ IedConnection_installReportHandler(IedConnection self, const char* rcbReference,
     else
         report->rptId = NULL;
 
-    Semaphore_wait(self->reportHandlerMutex);
     LinkedList_add(self->enabledReports, report);
+
     Semaphore_post(self->reportHandlerMutex);
 
     if (DEBUG_IED_CLIENT)
@@ -319,12 +332,7 @@ IedConnection_uninstallReportHandler(IedConnection self, const char* rcbReferenc
 {
 	Semaphore_wait(self->reportHandlerMutex);
 
-    ClientReport report = lookupReportHandler(self, rcbReference);
-
-    if (report != NULL) {
-        LinkedList_remove(self->enabledReports, report);
-        ClientReport_destroy(report);
-    }
+    uninstallReportHandler(self, rcbReference);
 
     Semaphore_post(self->reportHandlerMutex);
 }
@@ -333,17 +341,15 @@ void
 IedConnection_triggerGIReport(IedConnection self, IedClientError* error, const char* rcbReference)
 {
     char domainId[65];
-    char itemId[129];
+    char itemId[65];
 
     MmsMapping_getMmsDomainFromObjectReference(rcbReference, domainId);
 
-    strcpy(itemId, rcbReference + strlen(domainId) + 1);
+    StringUtils_concatString(itemId, 65, rcbReference + strlen(domainId) + 1, "");
 
     StringUtils_replace(itemId, '.', '$');
 
-    int itemIdLen = strlen(itemId);
-
-    strcpy(itemId + itemIdLen, "$GI");
+    StringUtils_appendString(itemId, 65, "$GI");
 
     MmsConnection mmsCon = IedConnection_getMmsConnection(self);
 
@@ -369,6 +375,8 @@ IedConnection_triggerGIReport(IedConnection self, IedClientError* error, const c
 void
 iedConnection_handleReport(IedConnection self, MmsValue* value)
 {
+    Semaphore_wait(self->reportHandlerMutex);
+
     MmsValue* rptIdValue = MmsValue_getElement(value, 0);
 
     if ((rptIdValue == NULL) || (MmsValue_getType(rptIdValue) != MMS_VISIBLE_STRING)) {
@@ -383,12 +391,13 @@ iedConnection_handleReport(IedConnection self, MmsValue* value)
 
     while (element != NULL) {
         ClientReport report = (ClientReport) element->data;
-        char defaultRptId[129];
+        char defaultRptId[130];
         char* rptId = report->rptId;
 
-        if ((rptId == NULL)  || (rptId && (strlen(rptId) == 0))) {
-            strncpy(defaultRptId, report->rcbReference, 129);
+        if ((rptId == NULL) || (strlen(rptId) == 0)) {
+            StringUtils_concatString(defaultRptId, 130, report->rcbReference, "");
             StringUtils_replace(defaultRptId, '.', '$');
+
             rptId = defaultRptId;
         }
 
@@ -478,22 +487,53 @@ iedConnection_handleReport(IedConnection self, MmsValue* value)
             goto exit_function;
         }
 
-        const char* dataSetNameStr = MmsValue_toString(dataSetName);
+        int dataSetNameSize = MmsValue_getStringSize(dataSetName);
 
-        if (matchingReport->dataSetName == NULL) {
-        	matchingReport->dataSetName = (char*) GLOBAL_MALLOC(MmsValue_getStringSize(dataSetName) + 1);
-        	matchingReport->dataSetNameSize = MmsValue_getStringSize(dataSetName) + 1;
+        /* limit to prevent large memory allocation */
+        if (dataSetNameSize < 130) {
+            const char* dataSetNameStr = MmsValue_toString(dataSetName);
+
+            if (matchingReport->dataSetName == NULL) {
+                matchingReport->dataSetName = (char*) GLOBAL_MALLOC(dataSetNameSize + 1);
+
+                if (matchingReport->dataSetName == NULL) {
+                    matchingReport->dataSetNameSize =  0;
+
+                    if (DEBUG_IED_CLIENT)
+                        printf("IED_CLIENT: failed to allocate memory\n");
+
+                    goto exit_function;
+                }
+
+                matchingReport->dataSetNameSize = dataSetNameSize + 1;
+            }
+            else {
+                if (matchingReport->dataSetNameSize < MmsValue_getStringSize(dataSetName) + 1) {
+                    GLOBAL_FREEMEM((void*) matchingReport->dataSetName);
+
+                    matchingReport->dataSetName = (char*) GLOBAL_MALLOC(dataSetNameSize + 1);
+
+                    if (matchingReport->dataSetName == NULL) {
+                        matchingReport->dataSetNameSize =  0;
+
+                        if (DEBUG_IED_CLIENT)
+                            printf("IED_CLIENT: failed to allocate memory\n");
+
+                        goto exit_function;
+                    }
+
+                    matchingReport->dataSetNameSize = dataSetNameSize + 1;
+                }
+            }
+
+            StringUtils_copyStringMax(matchingReport->dataSetName, dataSetNameSize + 1, dataSetNameStr);
         }
         else {
-        	if (matchingReport->dataSetNameSize < MmsValue_getStringSize(dataSetName) + 1) {
-        		GLOBAL_FREEMEM((void*) matchingReport->dataSetName);
+            if (DEBUG_IED_CLIENT)
+                printf("IED_CLIENT: report DatSet name too large (%i)\n", dataSetNameSize);
 
-        		matchingReport->dataSetName = (char*) GLOBAL_MALLOC(MmsValue_getStringSize(dataSetName) + 1);
-				matchingReport->dataSetNameSize = MmsValue_getStringSize(dataSetName) + 1;
-        	}
+            goto exit_function;
         }
-
-    	strcpy(matchingReport->dataSetName, dataSetNameStr);
 
         inclusionIndex++;
     }
@@ -739,15 +779,14 @@ iedConnection_handleReport(IedConnection self, MmsValue* value)
             matchingReport->reasonForInclusion[i] = IEC61850_REASON_NOT_INCLUDED;
         }
     }
-
-    Semaphore_wait(self->reportHandlerMutex);
     
     if (matchingReport->callback != NULL)
         matchingReport->callback(matchingReport->callbackParameter, matchingReport);
 
+exit_function:
+
     Semaphore_post(self->reportHandlerMutex);
 
-exit_function:
     return;
 }
 

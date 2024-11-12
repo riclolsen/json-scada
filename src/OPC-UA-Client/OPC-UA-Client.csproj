@@ -12,6 +12,7 @@
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.374.78" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.5.374.78" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
   </ItemGroup>
 
 </Project>

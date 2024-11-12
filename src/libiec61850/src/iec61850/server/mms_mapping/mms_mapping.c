@@ -1,7 +1,7 @@
 /*
  *  mms_mapping.c
  *
- *  Copyright 2013-2021 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -25,6 +25,7 @@
 #include "mms_mapping.h"
 #include "mms_mapping_internal.h"
 #include "mms_server_internal.h"
+#include "mms_value_internal.h"
 #include "stack_config.h"
 
 #include "mms_goose.h"
@@ -68,10 +69,13 @@ typedef struct
     uint64_t reservationTimeout;
 } SettingGroup;
 
+static MmsValue objectAccessDenied = {MMS_DATA_ACCESS_ERROR, false, {DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED}};
+
 #if (CONFIG_IEC61850_CONTROL_SERVICE == 1)
-MmsValue*
-Control_readAccessControlObject(MmsMapping* self, MmsDomain* domain, char* variableIdOrig,
-        MmsServerConnection connection, bool isDirectAccess);
+
+bool
+ControlObject_unselect(ControlObject* self, MmsServerConnection connection, MmsMapping* mmsMapping);
+
 #endif
 
 void /* Create PHYCOMADDR ACSI type instance */
@@ -114,19 +118,38 @@ createNamedVariableFromDataAttribute(DataAttribute* attribute)
 {
     MmsVariableSpecification* origNamedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1,
             sizeof(MmsVariableSpecification));
-    origNamedVariable->name = StringUtils_copyString(attribute->name);
+
+    if (attribute->name)
+        origNamedVariable->name = StringUtils_copyString(attribute->name);
+    else
+        origNamedVariable->name = NULL;
 
     MmsVariableSpecification* namedVariable = origNamedVariable;
 
-    if (attribute->elementCount > 0) {
+    bool isBasicArray = false;
+    bool isArray = false;
+
+    if (attribute->elementCount > 0)
+    {
+        isArray = true;
+
         namedVariable->type = MMS_ARRAY;
         namedVariable->typeSpec.array.elementCount = attribute->elementCount;
         namedVariable->typeSpec.array.elementTypeSpec = (MmsVariableSpecification*) GLOBAL_CALLOC(1,
                 sizeof(MmsVariableSpecification));
         namedVariable = namedVariable->typeSpec.array.elementTypeSpec;
+
+        if (attribute->type != IEC61850_CONSTRUCTED) {
+            isBasicArray = true;
+        }
     }
 
-    if (attribute->firstChild != NULL) {
+    if ((attribute->firstChild != NULL) && (isBasicArray == false)) {
+
+        if (isArray) {
+            attribute = (DataAttribute*)attribute->firstChild;
+        }
+
         namedVariable->type = MMS_STRUCTURE;
 
         int componentCount = ModelNode_getChildCount((ModelNode*) attribute);
@@ -137,7 +160,8 @@ createNamedVariableFromDataAttribute(DataAttribute* attribute)
         DataAttribute* subDataAttribute = (DataAttribute*) attribute->firstChild;
 
         int i = 0;
-        while (subDataAttribute != NULL) {
+        while (subDataAttribute)
+        {
             namedVariable->typeSpec.structure.elements[i] =
                     createNamedVariableFromDataAttribute(subDataAttribute);
 
@@ -330,6 +354,9 @@ createFCNamedVariableFromDataObject(DataObject* dataObject,
         namedVariable->typeSpec.array.elementTypeSpec = (MmsVariableSpecification*) GLOBAL_CALLOC(1,
                 sizeof(MmsVariableSpecification));
         namedVariable = namedVariable->typeSpec.array.elementTypeSpec;
+
+        /* for arrays use the first child as type template */
+        dataObject = (DataObject*)dataObject->firstChild;
     }
 
     namedVariable->type = MMS_STRUCTURE;
@@ -670,7 +697,7 @@ updateGenericTrackingObjectValues(MmsMapping* self, SettingGroupControlBlock* sg
             MmsValue_setInt32(trkInst->serviceType->mmsValue, (int) serviceType);
 
         if (trkInst->t)
-            MmsValue_setUtcTimeMs(trkInst->t->mmsValue, Hal_getTimeInMs());
+            MmsValue_setUtcTimeMsEx(trkInst->t->mmsValue, Hal_getTimeInMs(), self->iedServer->timeQuality);
 
         if (trkInst->errorCode)
             MmsValue_setInt32(trkInst->errorCode->mmsValue,
@@ -817,7 +844,7 @@ MmsMapping_changeActiveSettingGroup(MmsMapping* self, SettingGroupControlBlock* 
             MmsValue* lActTm = MmsValue_getElement(sg->sgcbMmsValues, 4);
 
             MmsValue_setUint8(actSg, sgcb->actSG);
-            MmsValue_setUtcTimeMs(lActTm, Hal_getTimeInMs());
+            MmsValue_setUtcTimeMsEx(lActTm, Hal_getTimeInMs(), self->iedServer->timeQuality);
 
 #if (CONFIG_IEC61850_SERVICE_TRACKING == 1)
             copySGCBValuesToTrackingObject(self, sgcb);
@@ -1308,8 +1335,8 @@ checkForServiceTrackingVariables(MmsMapping* self, LogicalNode* logicalNode)
 {
     ModelNode* modelNode = logicalNode->firstChild;
 
-    while (modelNode) {
-
+    while (modelNode)
+    {
         if (!strcmp(modelNode->name, "SpcTrk") || !strcmp(modelNode->name, "DpcTrk") || 
                 !strcmp(modelNode->name, "IncTrk") || !strcmp(modelNode->name, "EncTrk1") || 
                 !strcmp(modelNode->name, "ApcFTrk") || !strcmp(modelNode->name, "ApcIntTrk") ||
@@ -1341,21 +1368,23 @@ checkForServiceTrackingVariables(MmsMapping* self, LogicalNode* logicalNode)
             else if (!strcmp(modelNode->name, "BacTrk"))
                 actInstance = &self->bacTrk;
 
-            if (*actInstance != NULL) {
-                if (DEBUG_IED_SERVER)
-                    printf("IED_SERVER: ERROR: multiple %s instances found in server\n", modelNode->name);
-            }
-            else {
-                *actInstance = (ControlTrkInstance) GLOBAL_CALLOC(1, sizeof(struct sControlTrkInstance));
-
+            if (actInstance)
+            {
                 if (*actInstance != NULL) {
-                    (*actInstance)->dobj = actTrk;
+                    if (DEBUG_IED_SERVER)
+                        printf("IED_SERVER: ERROR: multiple %s instances found in server\n", modelNode->name);
+                }
+                else {
+                    *actInstance = (ControlTrkInstance) GLOBAL_CALLOC(1, sizeof(struct sControlTrkInstance));
 
-                    getCommonTrackingAttributes((ServiceTrkInstance) *actInstance, actTrk);
-                    getControlTrackingAttributes(*actInstance, actTrk);
+                    if (*actInstance != NULL) {
+                        (*actInstance)->dobj = actTrk;
+
+                        getCommonTrackingAttributes((ServiceTrkInstance) *actInstance, actTrk);
+                        getControlTrackingAttributes(*actInstance, actTrk);
+                    }
                 }
             }
-
         }
         else if (!strcmp(modelNode->name, "BrcbTrk")) {
             if (DEBUG_IED_SERVER)
@@ -1789,20 +1818,26 @@ createMmsDomainFromIedDevice(MmsMapping* self, LogicalDevice* logicalDevice)
     MmsDomain* domain = NULL;
     char domainName[65];
 
-    int modelNameLength = strlen(self->model->name);
-    int ldInstName = strlen(logicalDevice->name);
+    if (logicalDevice->ldName == NULL) {
+        int modelNameLength = strlen(self->model->name);
+        int ldInstName = strlen(logicalDevice->name);
 
-    if ((modelNameLength + ldInstName) > 64) {
+        if ((modelNameLength + ldInstName) > 64) {
 
-        if (DEBUG_IED_SERVER)
-            printf("IED_SERVER: Resulting domain name (IEDName+LDInst) too long (%i)\n", modelNameLength + ldInstName);
+            if (DEBUG_IED_SERVER)
+                printf("IED_SERVER: Resulting domain name (IEDName+LDInst) too long (%i)\n", modelNameLength + ldInstName);
 
-        goto exit_function;
+            goto exit_function;
+        }
+
+        StringUtils_concatString(domainName, 65, self->model->name, logicalDevice->name);
     }
+    else {
+        if (strlen(logicalDevice->ldName) > 64)
+            goto exit_function;
 
-    strncpy(domainName, self->model->name, 64);
-    strncat(domainName, logicalDevice->name, 64 - modelNameLength);
-    domainName[64] = 0;
+        StringUtils_copyStringMax(domainName, 65, logicalDevice->ldName);
+    }
 
     domain = MmsDomain_create(domainName);
 
@@ -1830,9 +1865,8 @@ createMmsDomainFromIedDevice(MmsMapping* self, LogicalDevice* logicalDevice)
                         printf("IED_SERVER: Log name %s invalid! Resulting journal name too long! Skip log\n", log->name);
                 }
                 else {
-                    strcpy(journalName, log->parent->name);
-                    strcat(journalName, "$");
-                    strcat(journalName, log->name);
+                    StringUtils_concatString(journalName, 65, log->parent->name, "$");
+                    StringUtils_appendString(journalName, 65, log->name);
 
                     MmsDomain_addJournal(domain, journalName);
 
@@ -1914,46 +1948,66 @@ createDataSets(MmsDevice* mmsDevice, IedModel* iedModel)
         goto exit_function;
     }
 
-    while (dataset != NULL) {
-        strncpy(domainName, iedModel->name, 64);
-        strncat(domainName, dataset->logicalDeviceName, 64 - iedModelNameLength);
+    while (dataset)
+    {
+        LogicalDevice* ld = IedModel_getDeviceByInst(iedModel, dataset->logicalDeviceName);
 
-        MmsDomain* dataSetDomain = MmsDevice_getDomain(mmsDevice, domainName);
+        if (ld) {
 
-        if (dataSetDomain == NULL) {
+            if (ld->ldName) {
+                StringUtils_copyStringMax(domainName, 65, ld->ldName);
+            }
+            else {
+                StringUtils_concatString(domainName, 65, iedModel->name, dataset->logicalDeviceName);
+            }
+
+            MmsDomain* dataSetDomain = MmsDevice_getDomain(mmsDevice, domainName);
+
+            if (dataSetDomain == NULL) {
+
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: MMS domain for dataset does not exist!\n");
+
+                goto exit_function;
+            }
 
             if (DEBUG_IED_SERVER)
+                printf("IED_SERVER: create dataset: %s/%s\n", domainName, dataset->name);
+
+            MmsNamedVariableList varList = MmsNamedVariableList_create(dataSetDomain, dataset->name, false);
+
+            DataSetEntry* dataSetEntry = dataset->fcdas;
+
+            while (dataSetEntry != NULL) {
+
+                MmsAccessSpecifier accessSpecifier;
+
+                if (ld->ldName) {
+                    StringUtils_copyStringMax(domainName, 65, ld->ldName);
+                }
+                else {
+                    StringUtils_concatString(domainName, 65, iedModel->name, dataSetEntry->logicalDeviceName);
+                }
+
+                accessSpecifier.domain = MmsDevice_getDomain(mmsDevice, domainName);
+                accessSpecifier.variableName = dataSetEntry->variableName;
+                accessSpecifier.arrayIndex = dataSetEntry->index;
+                accessSpecifier.componentName = dataSetEntry->componentName;
+
+                MmsNamedVariableListEntry variableListEntry =
+                        MmsNamedVariableListEntry_create(accessSpecifier);
+
+                MmsNamedVariableList_addVariable(varList, variableListEntry);
+
+                dataSetEntry = dataSetEntry->sibling;
+            }
+
+            MmsDomain_addNamedVariableList(dataSetDomain, varList);
+        }
+        else {
+            if (DEBUG_IED_SERVER)
                 printf("IED_SERVER: LD for dataset does not exist!\n");
-
-            goto exit_function;
         }
-
-        MmsNamedVariableList varList = MmsNamedVariableList_create(dataSetDomain, dataset->name, false);
-
-        DataSetEntry* dataSetEntry = dataset->fcdas;
-
-        while (dataSetEntry != NULL) {
-
-            MmsAccessSpecifier accessSpecifier;
-
-            strncpy(domainName, iedModel->name, 64);
-            strncat(domainName, dataSetEntry->logicalDeviceName, 64 - iedModelNameLength);
-
-            accessSpecifier.domain = MmsDevice_getDomain(mmsDevice, domainName);
-
-            accessSpecifier.variableName = dataSetEntry->variableName;
-            accessSpecifier.arrayIndex = dataSetEntry->index;
-            accessSpecifier.componentName = dataSetEntry->componentName;
-
-            MmsNamedVariableListEntry variableListEntry =
-                    MmsNamedVariableListEntry_create(accessSpecifier);
-
-            MmsNamedVariableList_addVariable(varList, variableListEntry);
-
-            dataSetEntry = dataSetEntry->sibling;
-        }
-
-        MmsDomain_addNamedVariableList(dataSetDomain, varList);
 
         dataset = dataset->sibling;
     }
@@ -2019,10 +2073,17 @@ MmsMapping_create(IedModel* model, IedServer iedServer)
 
 #if (CONFIG_IEC61850_CONTROL_SERVICE == 1)
     self->controlObjects = LinkedList_create();
+    self->nextControlTimeout = 0xffffffffffffffffLLU;
 #endif
 
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
     self->settingGroups = LinkedList_create();
+#endif
+
+    self->isModelLocked = false;
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    self->isModelLockedMutex = Semaphore_create(1);
 #endif
 
     self->attributeAccessHandlers = LinkedList_create();
@@ -2113,6 +2174,10 @@ MmsMapping_destroy(MmsMapping* self)
     if (self->sgcbTrk) GLOBAL_FREEMEM(self->sgcbTrk);
     if (self->genTrk) GLOBAL_FREEMEM(self->genTrk);
     if (self->locbTrk) GLOBAL_FREEMEM(self->locbTrk);
+#endif
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_destroy(self->isModelLockedMutex);
 #endif
 
     LinkedList_destroy(self->attributeAccessHandlers);
@@ -2279,12 +2344,12 @@ lookupGCB(MmsMapping* self, MmsDomain* domain, char* lnName, char* objectName)
 #endif
 
 static MmsDataAccessError
-writeAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variableIdOrig,
-        MmsValue* value)
+writeAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, const char* variableIdOrig,
+        MmsValue* value, MmsServerConnection connection)
 {
     char variableId[130];
 
-    strncpy(variableId, variableIdOrig, 129);
+    StringUtils_copyStringMax(variableId, 130, variableIdOrig);
 
     char* separator = strchr(variableId, '$');
 
@@ -2311,6 +2376,20 @@ writeAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variable
 
     if (mmsGCB == NULL)
         return DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
+
+    /* check if write access to GoCB is allowed on this connection */
+    if (self->controlBlockAccessHandler)
+    {
+        LogicalNode* ln = MmsGooseControlBlock_getLogicalNode(mmsGCB);
+
+        LogicalDevice* ld = (LogicalDevice*)ln->parent;
+
+        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+        if (self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, ACSI_CLASS_GoCB, ld, ln, MmsGooseControlBlock_getName(mmsGCB), varName, IEC61850_CB_ACCESS_TYPE_WRITE) == false) {
+            return DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
+        }
+    }
 
     if (strcmp(varName, "GoEna") == 0) {
         if (MmsValue_getType(value) != MMS_BOOLEAN)
@@ -2420,43 +2499,6 @@ writeAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variable
 
 #endif /* (CONFIG_INCLUDE_GOOSE_SUPPORT == 1) */
 
-#if 0
-static MmsValue*
-checkIfValueBelongsToModelNode(DataAttribute* dataAttribute, MmsValue* value, MmsValue* newValue)
-{
-    if (dataAttribute->mmsValue == value)
-        return newValue;
-
-    DataAttribute* child = (DataAttribute*) dataAttribute->firstChild;
-
-    while (child != NULL) {
-        MmsValue* tmpValue = checkIfValueBelongsToModelNode(child, value, newValue);
-
-        if (tmpValue != NULL)
-            return tmpValue;
-        else
-            child = (DataAttribute*) child->sibling;
-    }
-
-    if (MmsValue_getType(value) == MMS_STRUCTURE) {
-        int elementCount = MmsValue_getArraySize(value);
-
-        int i;
-        for (i = 0; i < elementCount; i++) {
-            MmsValue* childValue = MmsValue_getElement(value, i);
-            MmsValue* childNewValue = MmsValue_getElement(newValue, i);
-
-            MmsValue* tmpValue = checkIfValueBelongsToModelNode(dataAttribute, childValue, childNewValue);
-
-            if (tmpValue != NULL)
-                return tmpValue;
-        }
-    }
-
-    return NULL;
-}
-#endif
-
 static FunctionalConstraint
 getFunctionalConstraintForWritableNode(char* separator)
 {
@@ -2526,16 +2568,28 @@ getAccessPolicyForFC(MmsMapping* self, FunctionalConstraint fc)
 
 static MmsDataAccessError
 mmsWriteHandler(void* parameter, MmsDomain* domain,
-        char* variableId, MmsValue* value, MmsServerConnection connection)
+        const char* variableId, int arrayIdx, const char* componentId, MmsValue* value, MmsServerConnection connection)
 {
     MmsMapping* self = (MmsMapping*) parameter;
 
     if (DEBUG_IED_SERVER)
-        printf("IED_SERVER: Write requested %s\n", variableId);
+    {
+        if (arrayIdx != -1) {
+            if (componentId) {
+                printf("IED_SERVER: Write requested %s(%i).%s\n", variableId, arrayIdx, componentId);
+            }
+            else {
+                printf("IED_SERVER: Write requested %s(%i)\n", variableId, arrayIdx);
+            }
+        }
+        else {
+            printf("IED_SERVER: Write requested %s\n", variableId);
+        }
+    }
 
     /* Access control based on functional constraint */
 
-    char* separator = strchr(variableId, '$');
+    char* separator = (char*)strchr(variableId, '$');
 
     if (separator == NULL)
         return DATA_ACCESS_ERROR_INVALID_ADDRESS;
@@ -2554,7 +2608,7 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
 
     /* Goose control block - GO */
     if (isGooseControlBlock(separator))
-        return writeAccessGooseControlBlock(self, domain, variableId, value);
+        return writeAccessGooseControlBlock(self, domain, variableId, value, connection);
 
 #endif /* (CONFIG_INCLUDE_GOOSE_SUPPORT == 1) */
 
@@ -2612,7 +2666,7 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                 if (rcNameLen == variableIdLen) {
 
                     if (strncmp(variableId, rc->name, variableIdLen) == 0) {
-                        char* elementName = variableId + rcNameLen + 1;
+                        const char* elementName = variableId + rcNameLen + 1;
 
                         return Reporting_RCBWriteAccessHandler(self, rc, elementName, value, connection);
                     }
@@ -2634,7 +2688,47 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
         if (nextSep != NULL) {
             nextSep = strchr(nextSep + 1, '$');
 
+            if (nextSep == NULL) {
+                return DATA_ACCESS_ERROR_OBJECT_ACCESS_UNSUPPORTED;
+            }
+
             char* nameId = nextSep + 1;
+
+            /* check access permissions */
+            if (self->controlBlockAccessHandler)
+            {
+                MmsDataAccessError retVal = DATA_ACCESS_ERROR_SUCCESS;
+
+                ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                            connection);
+
+                LogicalDevice* ld = IedModel_getDevice(self->model, domain->domainName);
+
+                if (ld) {
+                    char lnName[65];
+                    strncpy(lnName, variableId, 64);
+                    lnName[64] = 0;
+                    lnName[lnNameLength] = 0;
+
+                    LogicalNode* ln = LogicalDevice_getLogicalNode(ld, lnName);
+
+                    if (ln) {
+                        if (self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, ACSI_CLASS_SGCB, ld, ln, "SGCB", nameId, IEC61850_CB_ACCESS_TYPE_WRITE) == false) {
+                            retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
+                        }
+                    }
+                    else {
+                        retVal = DATA_ACCESS_ERROR_OBJECT_NONE_EXISTENT;
+                    }
+                }
+                else {
+                    retVal = DATA_ACCESS_ERROR_OBJECT_NONE_EXISTENT;
+                }
+
+                if (retVal != DATA_ACCESS_ERROR_SUCCESS) {
+                    return retVal;
+                }
+            }
 
             if (strcmp(nameId, "ActSG") == 0) {
                 SettingGroup* sg = getSettingGroupByMmsDomain(self, domain);
@@ -2644,6 +2738,7 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                     uint32_t val = MmsValue_toUint32(value);
 
                     if ((val > 0) && (val <= sg->sgcb->numOfSGs)) {
+
                         if (val != sg->sgcb->actSG) {
 
                             if (sg->actSgChangedHandler) {
@@ -2659,7 +2754,7 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                                     MmsValue* lActTm = MmsValue_getElement(sg->sgcbMmsValues, 4);
 
                                     MmsValue_setUint8(actSg, sg->sgcb->actSG);
-                                    MmsValue_setUtcTimeMs(lActTm, Hal_getTimeInMs());
+                                    MmsValue_setUtcTimeMsEx(lActTm, Hal_getTimeInMs(), self->iedServer->timeQuality);
                                 }
                                 else
                                     retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
@@ -2670,11 +2765,16 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                     }
                     else
                         retVal = DATA_ACCESS_ERROR_OBJECT_VALUE_INVALID;
-                }
+
 #if (CONFIG_IEC61850_SERVICE_TRACKING == 1)
-                copySGCBValuesToTrackingObject(self, sg->sgcb);
-                updateGenericTrackingObjectValues(self, sg->sgcb, IEC61850_SERVICE_TYPE_SELECT_ACTIVE_SG, retVal);
+                    copySGCBValuesToTrackingObject(self, sg->sgcb);
+                    updateGenericTrackingObjectValues(self, sg->sgcb, IEC61850_SERVICE_TYPE_SELECT_ACTIVE_SG, retVal);
 #endif /* (CONFIG_IEC61850_SERVICE_TRACKING == 1) */
+                }
+                else {
+                    retVal = DATA_ACCESS_ERROR_OBJECT_VALUE_INVALID;
+                }
+
                 return retVal;
             }
             else if (strcmp(nameId, "EditSG") == 0) {
@@ -2821,13 +2921,19 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
 #endif /* (CONFIG_IEC61850_SETTING_GROUPS == 1) */
 
     /* writable data model elements - SP, SV, CF, DC, BL */
-    if (fc != IEC61850_FC_NONE) {
+    if (fc != IEC61850_FC_NONE)
+    {
         MmsValue* cachedValue;
 
-        cachedValue = MmsServer_getValueFromCache(self->mmsServer, domain, variableId);
+        if (arrayIdx != -1) {
+            cachedValue = MmsServer_getValueFromCacheEx2(self->mmsServer, domain, variableId, arrayIdx, componentId);
+        }
+        else {
+            cachedValue = MmsServer_getValueFromCache(self->mmsServer, domain, variableId);
+        }
 
-        if (cachedValue) {
-
+        if (cachedValue)
+        {
             if (!MmsValue_equalTypes(cachedValue, value)) {
                 return DATA_ACCESS_ERROR_OBJECT_VALUE_INVALID;
             }
@@ -2840,7 +2946,8 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                 printf("IED_SERVER: write to %s policy:%i\n", variableId, nodeAccessPolicy);
 
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
-            if (isFunctionalConstraint("SE", separator)) {
+            if (isFunctionalConstraint("SE", separator))
+            {
                 SettingGroup* sg = getSettingGroupByMmsDomain(self, domain);
 
                 if (sg != NULL) {
@@ -2857,12 +2964,13 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
             /* Call write access handlers */
             LinkedList writeHandlerListElement = LinkedList_getNext(self->attributeAccessHandlers);
 
-            while (writeHandlerListElement != NULL) {
+            while (writeHandlerListElement)
+            {
                 AttributeAccessHandler* accessHandler = (AttributeAccessHandler*) writeHandlerListElement->data;
                 DataAttribute* dataAttribute = accessHandler->attribute;
 
-                if (dataAttribute->mmsValue == cachedValue) {
-
+                if (dataAttribute->mmsValue == cachedValue)
+                {
                     ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
                             connection);
 
@@ -2870,7 +2978,8 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                         accessHandler->handler(dataAttribute, value, clientConnection,
                                 accessHandler->parameter);
 
-                    if ((handlerResult == DATA_ACCESS_ERROR_SUCCESS) || (handlerResult == DATA_ACCESS_ERROR_SUCCESS_NO_UPDATE)) {
+                    if ((handlerResult == DATA_ACCESS_ERROR_SUCCESS) || (handlerResult == DATA_ACCESS_ERROR_SUCCESS_NO_UPDATE))
+                    {
                         handlerFound = true;
 
                         if (handlerResult == DATA_ACCESS_ERROR_SUCCESS_NO_UPDATE)
@@ -2886,14 +2995,14 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
             }
 
             /* DENY access if no handler is found and default policy is DENY */
-            if (!handlerFound) {
-
+            if (!handlerFound)
+            {
                 if (nodeAccessPolicy == ACCESS_POLICY_DENY)
                     return DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
-
             }
 
-            if (updateValue) {
+            if (updateValue)
+            {
                 DataAttribute* da = IedModel_lookupDataAttributeByMmsValue(self->model, cachedValue);
 
                 if (da)
@@ -2956,13 +3065,13 @@ MmsMapping_installReadAccessHandler(MmsMapping* self, ReadAccessHandler handler,
 #if (CONFIG_INCLUDE_GOOSE_SUPPORT == 1)
 
 static MmsValue*
-readAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variableIdOrig)
+readAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variableIdOrig, MmsServerConnection connection)
 {
     MmsValue* value = NULL;
 
     char variableId[130];
 
-    strncpy(variableId, variableIdOrig, 129);
+    StringUtils_copyStringMax(variableId, 130, variableIdOrig);
 
     char* separator = strchr(variableId, '$');
 
@@ -2980,13 +3089,28 @@ readAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variableI
 
     char* varName = MmsMapping_getNextNameElement(objectName);
 
-    if (varName != NULL)
+    if (varName)
         *(varName - 1) = 0;
 
     MmsGooseControlBlock mmsGCB = lookupGCB(self, domain, lnName, objectName);
 
-    if (mmsGCB != NULL) {
-        if (varName != NULL) {
+    if (mmsGCB) {
+
+        /* check if read access to GoCB is allowed on this connection */
+        if (self->controlBlockAccessHandler)
+        {
+            LogicalNode* ln = MmsGooseControlBlock_getLogicalNode(mmsGCB);
+
+            LogicalDevice* ld = (LogicalDevice*)ln->parent;
+
+            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+            if (self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, ACSI_CLASS_GoCB, ld, ln, MmsGooseControlBlock_getName(mmsGCB), varName, IEC61850_CB_ACCESS_TYPE_READ) == false) {
+                return &objectAccessDenied;
+            }
+        }
+
+        if (varName) {
             value = MmsValue_getSubElement(MmsGooseControlBlock_getMmsValues(mmsGCB),
                     MmsGooseControlBlock_getVariableSpecification(mmsGCB), varName);
         }
@@ -2999,7 +3123,6 @@ readAccessGooseControlBlock(MmsMapping* self, MmsDomain* domain, char* variableI
 }
 
 #endif /* (CONFIG_INCLUDE_GOOSE_SUPPORT == 1) */
-
 
 static MmsValue*
 mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerConnection connection, bool isDirectAccess)
@@ -3026,11 +3149,10 @@ mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerCo
     }
 #endif
 
-
 #if (CONFIG_INCLUDE_GOOSE_SUPPORT == 1)
     /* GOOSE control blocks - GO */
     if (isGooseControlBlock(separator)) {
-        retValue = readAccessGooseControlBlock(self, domain, variableId);
+        retValue = readAccessGooseControlBlock(self, domain, variableId, connection);
         goto exit_function;
     }
 #endif
@@ -3038,7 +3160,7 @@ mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerCo
 #if (CONFIG_IEC61850_SAMPLED_VALUES_SUPPORT == 1)
     /* Sampled Value control blocks - MS/US */
     if (isSampledValueControlBlock(separator)) {
-        retValue = LIBIEC61850_SV_readAccessSampledValueControlBlock(self, domain, variableId);
+        retValue = LIBIEC61850_SV_readAccessSampledValueControlBlock(self, domain, variableId, connection);
         goto exit_function;
     }
 #endif
@@ -3046,15 +3168,15 @@ mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerCo
 #if (CONFIG_IEC61850_LOG_SERVICE == 1)
     /* LOG control block - LG */
     if (isLogControlBlock(separator)) {
-        retValue = LIBIEC61850_LOG_SVC_readAccessControlBlock(self, domain, variableId);
+        retValue = LIBIEC61850_LOG_SVC_readAccessControlBlock(self, domain, variableId, connection);
         goto exit_function;
     }
 #endif
 
 #if (CONFIG_IEC61850_REPORT_SERVICE == 1)
     /* Report control blocks - BR, RP */
-    if (isReportControlBlock(separator)) {
-
+    if (isReportControlBlock(separator))
+    {
         LinkedList reportControls = self->reportControls;
 
         LinkedList nextElement = reportControls;
@@ -3075,11 +3197,12 @@ mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerCo
         else
             variableIdLen = strlen(variableId);
 
-        while ((nextElement = LinkedList_getNext(nextElement)) != NULL) {
+        while ((nextElement = LinkedList_getNext(nextElement)) != NULL)
+        {
             ReportControl* rc = (ReportControl*) nextElement->data;
 
-            if (rc->domain == domain) {
-
+            if (rc->domain == domain)
+            {
                 int parentLNNameStrLen = strlen(rc->parentLN->name);
 
                 if (parentLNNameStrLen != lnNameLength)
@@ -3088,32 +3211,37 @@ mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerCo
                 if (memcmp(rc->parentLN->name, variableId, parentLNNameStrLen) != 0)
                     continue;
 
-                if (strlen(rc->name) == variableIdLen) {
-                    if (strncmp(variableId, rc->name, variableIdLen) == 0) {
-
+                if (strlen(rc->name) == variableIdLen)
+                {
+                    if (strncmp(variableId, rc->name, variableIdLen) == 0)
+                    {
                         char* elementName = MmsMapping_getNextNameElement(reportName);
-
-                        ReportControl_readAccess(rc, self, connection, elementName);
 
                         MmsValue* value = NULL;
 
+                        if (ReportControl_readAccess(rc, self, connection, elementName))
+                        {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-                        Semaphore_wait(rc->rcbValuesLock);
+                            Semaphore_wait(rc->rcbValuesLock);
 #endif
 
-                        if (elementName != NULL)
-                            value = ReportControl_getRCBValue(rc, elementName);
-                        else
-                            value = rc->rcbValues;
+                            if (elementName != NULL)
+                                value = ReportControl_getRCBValue(rc, elementName);
+                            else
+                                value = rc->rcbValues;
 
-                        if (value) {
-                            value = MmsValue_clone(value);
-                            MmsValue_setDeletableRecursive(value);
+                            if (value) {
+                                value = MmsValue_clone(value);
+                                MmsValue_setDeletableRecursive(value);
+                            }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+                            Semaphore_post(rc->rcbValuesLock);
+#endif
                         }
-
-#if (CONFIG_MMS_THREADLESS_STACK != 1)
-                        Semaphore_post(rc->rcbValuesLock);
-#endif
+                        else {
+                            value = &objectAccessDenied;
+                        }
 
                         retValue = value;
 
@@ -3148,12 +3276,52 @@ unselectControlsForConnection(MmsMapping* self, MmsServerConnection connection)
     while (controlObjectElement != NULL) {
         ControlObject* controlObject = (ControlObject*) controlObjectElement->data;
 
-        ControlObject_unselect(controlObject, connection);
+        ControlObject_unselect(controlObject, connection, self);
 
         controlObjectElement = LinkedList_getNext(controlObjectElement);
     }
 }
 #endif /* (CONFIG_IEC61850_CONTROL_SERVICE == 1) */
+
+static bool
+mmsGetNameListHandler(void* parameter, MmsGetNameListType nameListType, MmsDomain* domain, MmsServerConnection connection)
+{
+    MmsMapping* self = (MmsMapping*) parameter;
+
+    bool allowAccess = true;
+
+    if (self->directoryAccessHandler) {
+        
+        LogicalDevice* ld = NULL;
+
+        IedServer_DirectoryCategory category = DIRECTORY_CAT_DATA_LIST;
+
+        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+        if (domain) {
+            ld = IedModel_getDevice(self->model, MmsDomain_getName(domain));
+
+            if (ld == NULL) {
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: mmsGetNameListHandler -> LD not found!\n");
+            }
+        }
+
+        /* convert type to category */
+        if (nameListType == MMS_GETNAMELIST_DATA)
+            category = DIRECTORY_CAT_DATA_LIST;
+        else if (nameListType == MMS_GETNAMELIST_DATASETS)
+            category = DIRECTORY_CAT_DATASET_LIST;
+        else if (nameListType == MMS_GETNAMELIST_DOMAINS)
+            category = DIRECTORY_CAT_LD_LIST;
+        else if (nameListType == MMS_GETNAMELIST_JOURNALS)
+            category = DIRECTORY_CAT_LOG_LIST;
+
+        allowAccess = self->directoryAccessHandler(self->directoryAccessHandlerParameter, clientConnection, category, ld);
+    }
+
+    return allowAccess;
+}
 
 static void /* is called by MMS server layer and runs in the connection handling thread */
 mmsConnectionHandler(void* parameter, MmsServerConnection connection, MmsServerEvent event)
@@ -3165,11 +3333,6 @@ mmsConnectionHandler(void* parameter, MmsServerConnection connection, MmsServerE
     }
     else if (event == MMS_SERVER_CONNECTION_CLOSED) {
         ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
-
-        if (clientConnection == NULL) {
-            printf("clientConnection == NULL -> exit\n");
-            exit(-1);
-        }
 
         /* call user provided handler function */
         if (self->connectionIndicationHandler != NULL)
@@ -3205,6 +3368,275 @@ mmsConnectionHandler(void* parameter, MmsServerConnection connection, MmsServerE
     }
 }
 
+static bool
+mmsListObjectsAccessHandler(void* parameter, MmsGetNameListType listType, MmsDomain* domain, char* variableId, MmsServerConnection connection)
+{
+    MmsMapping* self = (MmsMapping*) parameter;
+
+    if (DEBUG_IED_SERVER)
+        printf("IED_SERVER: mmsListObjectsAccessHandler: Requested %s\n", variableId);
+
+    bool allowAccess = true;
+
+    if (listType == MMS_GETNAMELIST_DATASETS)
+    {
+        if (self->listObjectsAccessHandler)
+        {
+            char str[65];
+
+            char* ldName = MmsDomain_getName(domain);
+
+            LogicalDevice* ld = IedModel_getDevice(self->model, ldName);
+
+            LogicalNode* ln = NULL;
+
+            char* objectName = variableId;
+
+            char* separator = strchr(variableId, '$');
+
+            if (separator)
+            {
+                StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) variableId, separator - variableId, sizeof(str));
+
+                ln = LogicalDevice_getLogicalNode(ld, str);
+
+                if (ln) {
+                    objectName = separator + 1;
+                }
+            }
+
+            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+            allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, ACSI_CLASS_DATA_SET, ld, ln, objectName, NULL, IEC61850_FC_NONE);
+        }
+
+        return allowAccess;
+    }
+    else if (listType == MMS_GETNAMELIST_JOURNALS)
+    {
+        if (self->listObjectsAccessHandler)
+        {
+            char str[65];
+
+            char* ldName = MmsDomain_getName(domain);
+
+            char* objectName = variableId;
+
+            LogicalDevice* ld = IedModel_getDevice(self->model, ldName);
+
+            LogicalNode* ln = NULL;
+
+            char* separator = strchr(variableId, '$');
+
+            if (separator)
+            {
+                StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) variableId, separator - variableId, sizeof(str));
+
+                ln = LogicalDevice_getLogicalNode(ld, str);
+
+                if (ln) {
+                    objectName = separator + 1;
+                }
+            }
+
+            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+            allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, ACSI_CLASS_LOG, ld, ln, objectName, NULL, IEC61850_FC_NONE);
+        }
+
+        return allowAccess;
+    }
+
+    if (self->listObjectsAccessHandler)
+    {
+        char* separator = strchr(variableId, '$');
+        char* ldName = MmsDomain_getName(domain);
+
+        LogicalDevice* ld = IedModel_getDevice(self->model, ldName);
+
+        if (ld)
+        {
+            FunctionalConstraint fc = IEC61850_FC_NONE;
+
+            if (separator)
+            {
+                fc = FunctionalConstraint_fromString(separator + 1);
+
+                if (fc == IEC61850_FC_BR || fc == IEC61850_FC_US ||
+                    fc == IEC61850_FC_MS || fc == IEC61850_FC_RP ||
+                    fc == IEC61850_FC_LG || fc == IEC61850_FC_GO)
+                {
+                    char* subObjectName = NULL;
+
+                    char str[65];
+                    char subObjectBuf[65];
+
+                    StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) variableId, separator - variableId, sizeof(str));
+
+                    LogicalNode* ln = LogicalDevice_getLogicalNode(ld, str);
+
+                    if (ln)
+                    {
+                        char* doStart = strchr(separator + 1, '$');
+
+                        if (doStart != NULL)
+                        {
+                            char* doEnd = strchr(doStart + 1, '$');
+
+                            if (doEnd == NULL)
+                            {
+                                StringUtils_copyStringToBuffer(doStart + 1, str);
+                            }
+                            else
+                            {
+                                doEnd--;
+
+                                StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) (doStart + 1), doEnd - doStart, sizeof(str));
+
+                                subObjectName = StringUtils_copyStringToBufferAndReplace(doEnd + 2, subObjectBuf, '$', '.');
+                            }
+                        }
+                    }
+
+                    ACSIClass acsiClass = ACSI_CLASS_USVCB;
+
+                    switch (fc)
+                    {
+                        case IEC61850_FC_BR:
+                            acsiClass = ACSI_CLASS_BRCB;
+                            break;
+
+                        case IEC61850_FC_RP:
+                            acsiClass = ACSI_CLASS_URCB;
+                            break;
+
+                        case IEC61850_FC_GO:
+                            acsiClass = ACSI_CLASS_GoCB;
+                            break;
+
+                        case IEC61850_FC_LG:
+                            acsiClass = ACSI_CLASS_LCB;
+                            break;
+
+                        case IEC61850_FC_MS:
+                            acsiClass = ACSI_CLASS_MSVCB;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (self->listObjectsAccessHandler)
+                    {
+                        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+                        allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, acsiClass, ld, ln, str, subObjectName, fc);
+                    }
+
+                    goto exit_function;
+                }
+                else
+                {
+                    char str[65];
+                    char* subObjectName = NULL;
+                    char subObjectBuf[65];
+
+                    StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) variableId, separator - variableId, sizeof(str));
+
+                    LogicalNode* ln = LogicalDevice_getLogicalNode(ld, str);
+
+                    if (ln != NULL)
+                    {
+                        char* doStart = strchr(separator + 1, '$');
+
+                        if (doStart != NULL)
+                        {
+                            char* doEnd = strchr(doStart + 1, '$');
+
+                            if (doEnd == NULL)
+                            {
+                                StringUtils_copyStringToBuffer(doStart + 1, str);
+                            }
+                            else
+                            {
+                                doEnd--;
+
+                                StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) (doStart + 1), doEnd - doStart, sizeof(str));
+
+                                subObjectName = StringUtils_copyStringToBufferAndReplace(doEnd + 2, subObjectBuf, '$', '.');
+                            }
+
+                            if (fc == IEC61850_FC_SP)
+                            {
+                                if (!strcmp(str, "SGCB"))
+                                {
+
+                                    ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                                                    connection);
+
+                                    allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, ACSI_CLASS_SGCB, ld, ln, str, subObjectName, fc);
+
+                                    goto exit_function;
+                                }
+                            }
+
+                            ModelNode* dobj = ModelNode_getChild((ModelNode*) ln, str);
+
+                            if (dobj != NULL)
+                            {
+                                if (dobj->modelType == DataObjectModelType)
+                                {
+                                    ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                                                                                      connection);
+
+                                    if (self->listObjectsAccessHandler)
+                                    {
+                                        allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, ACSI_CLASS_DATA_OBJECT, ld, ln, dobj->name, subObjectName, fc);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            /* no data object but with FC specified */
+
+                            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                                                                                      connection);
+
+                            if (self->listObjectsAccessHandler)
+                            {
+                                allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, ACSI_CLASS_DATA_OBJECT, ld, ln, NULL, NULL, fc);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                LogicalNode* ln = LogicalDevice_getLogicalNode(ld, variableId);
+
+                if (ln)
+                {
+                    /* only LN, no FC specified */
+
+                    ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+                    if (self->listObjectsAccessHandler)
+                    {
+                        allowAccess = self->listObjectsAccessHandler(self->listObjectsAccessHandlerParameter, clientConnection, ACSI_CLASS_DATA_OBJECT, ld, ln, NULL, NULL, fc);
+                    }
+                }
+            }
+        }
+        else {
+            /* internal error ? - we should not end up here! */
+        }
+    }
+
+exit_function:
+    return allowAccess;
+}
+
 static MmsDataAccessError
 mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsServerConnection connection, bool isDirectAccess)
 {
@@ -3215,15 +3647,26 @@ mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsS
     if (DEBUG_IED_SERVER)
         printf("IED_SERVER: mmsReadAccessHandler: Requested %s\n", variableId);
 
+    if (self->iedServer->ignoreReadAccess)
+    {
+        if (DEBUG_IED_SERVER)
+            printf("IED_SERVER: mmsReadAccessHandler - ignore request\n");
+
+        return DATA_ACCESS_ERROR_NO_RESPONSE;
+    }
+
     char* separator = strchr(variableId, '$');
 
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
 
-    if (separator) {
-        if (isFunctionalConstraint("SE", separator)) {
+    if (separator)
+    {
+        if (isFunctionalConstraint("SE", separator))
+        {
             SettingGroup* sg = getSettingGroupByMmsDomain(self, domain);
 
-            if (sg != NULL) {
+            if (sg != NULL)
+            {
                 if (sg->sgcb->editSG == 0)
                     return DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
             }
@@ -3241,13 +3684,12 @@ mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsS
 
         LogicalDevice* ld = IedModel_getDevice(self->model, ldName);
 
-        if (ld != NULL) {
+        if (ld != NULL)
+        {
+            FunctionalConstraint fc = IEC61850_FC_NONE;
 
-            char str[65];
-
-            FunctionalConstraint fc;
-
-            if (separator != NULL) {
+            if (separator != NULL)
+            {
                 fc = FunctionalConstraint_fromString(separator + 1);
 
                 if (fc == IEC61850_FC_BR || fc == IEC61850_FC_US ||
@@ -3256,42 +3698,57 @@ mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsS
                 {
                     return DATA_ACCESS_ERROR_SUCCESS;
                 }
-                else {
+                else 
+                {
+                    char str[65];
 
-                    StringUtils_createStringFromBufferInBuffer(str, (uint8_t*) variableId, separator - variableId);
+                    StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) variableId, separator - variableId, sizeof(str));
 
                     LogicalNode* ln = LogicalDevice_getLogicalNode(ld, str);
 
-                    if (ln != NULL) {
-
-
+                    if (ln != NULL)
+                    {
                         char* doStart = strchr(separator + 1, '$');
 
-
-                        if (doStart != NULL) {
-
+                        if (doStart != NULL)
+                        {
                             char* doEnd = strchr(doStart + 1, '$');
 
-                            if (doEnd == NULL) {
+                            if (doEnd == NULL)
+                            {
                                 StringUtils_copyStringToBuffer(doStart + 1, str);
                             }
-                            else {
+                            else
+                            {
                                 doEnd--;
 
-                                StringUtils_createStringFromBufferInBuffer(str, (uint8_t*) (doStart + 1), doEnd - doStart);
+                                StringUtils_createStringFromBufferInBufferMax(str, (uint8_t*) (doStart + 1), doEnd - doStart, sizeof(str));
                             }
 
-                            if (fc == IEC61850_FC_SP) {
+                            if (fc == IEC61850_FC_SP)
+                            {
                                 if (!strcmp(str, "SGCB"))
+                                {
+                                    if (self->controlBlockAccessHandler)
+                                    {
+                                        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                                                    connection);
+
+                                        if (self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, ACSI_CLASS_SGCB, ld, ln, str, "", IEC61850_CB_ACCESS_TYPE_READ) == false) {
+                                            return DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
+                                        }
+                                    }
+
                                     return DATA_ACCESS_ERROR_SUCCESS;
+                                }
                             }
 
                             ModelNode* dobj = ModelNode_getChild((ModelNode*) ln, str);
 
-                            if (dobj != NULL) {
-
-                                if (dobj->modelType == DataObjectModelType) {
-
+                            if (dobj != NULL)
+                            {
+                                if (dobj->modelType == DataObjectModelType)
+                                {
                                     ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
                                                                                                                       connection);
 
@@ -3300,7 +3757,27 @@ mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsS
                                 }
                             }
                         }
+                        else
+                        {
+                            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                                                                                      connection);
+
+                            return self->readAccessHandler(ld, ln, NULL, fc, clientConnection,
+                                    self->readAccessHandlerParameter);
+                        }
                     }
+                }
+            }
+            else
+            {
+                LogicalNode* ln = LogicalDevice_getLogicalNode(ld, variableId);
+
+                if (ln != NULL)
+                {
+                    ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+                    return self->readAccessHandler(ld, ln, NULL, fc, clientConnection,
+                        self->readAccessHandlerParameter);
                 }
             }
         }
@@ -3312,21 +3789,61 @@ mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsS
     return DATA_ACCESS_ERROR_SUCCESS;
 }
 
+static bool
+checkDataSetAccess(MmsMapping* self, MmsServerConnection connection, MmsVariableListType listType, MmsDomain* domain, char* listName, IedServer_DataSetOperation operation)
+{
+    bool accessGranted = true;
+
+    if (self->dataSetAccessHandler)
+    {
+        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+        char dataSetRef[130];
+        dataSetRef[0] = 0;
+
+        if (listType == MMS_ASSOCIATION_SPECIFIC)
+        {
+            dataSetRef[0] = '@';
+            StringUtils_copyStringToBuffer(dataSetRef + 1, listName);
+        }
+        else if (listType == MMS_VMD_SPECIFIC)
+        {
+            StringUtils_copyStringToBuffer(dataSetRef, listName);
+        }
+        else if (listType == MMS_DOMAIN_SPECIFIC)
+        {
+            StringUtils_appendString(dataSetRef, 129, domain->domainName);
+            StringUtils_appendString(dataSetRef, 129, "/");
+            StringUtils_appendString(dataSetRef, 129, listName);
+        }
+
+        accessGranted = self->dataSetAccessHandler(self->dataSetAccessHandlerParameter, clientConnection, operation, dataSetRef);
+    }
+
+    return accessGranted;
+}
+
 static MmsError
-variableListChangedHandler (void* parameter, bool create, MmsVariableListType listType, MmsDomain* domain,
+variableListAccessHandler (void* parameter, MmsVariableListAccessType accessType, MmsVariableListType listType, MmsDomain* domain,
         char* listName, MmsServerConnection connection)
 {
     MmsError allow = MMS_ERROR_NONE;
 
-    (void)connection;
+    MmsMapping* self = (MmsMapping*) parameter;
 
     /* TODO add log message */
 
 #if (DEBUG_IED_SERVER == 1)
-    if (create)
+    if (accessType == MMS_VARLIST_CREATE)
         printf("IED_SERVER: create data set ");
-    else
+    else if (accessType == MMS_VARLIST_DELETE)
         printf("IED_SERVER: delete data set ");
+    else if (accessType == MMS_VARLIST_READ)
+        printf("IED_SERVER: read data set ");
+    else if (accessType == MMS_VARLIST_WRITE)
+        printf("IED_SERVER: write data set ");
+    else if (accessType == MMS_VARLIST_READ)
+        printf("IED_SERVER: get directory of data set ");
 
     switch (listType) {
     case MMS_VMD_SPECIFIC:
@@ -3343,119 +3860,206 @@ variableListChangedHandler (void* parameter, bool create, MmsVariableListType li
     printf("specific (name=%s)\n", listName);
 #endif /* (DEBUG_IED_SERVER == 1) */
 
-    MmsMapping* self = (MmsMapping*) parameter;
+    if (accessType == MMS_VARLIST_CREATE)
+    {
+        if (checkDataSetAccess(self, connection, listType, domain, listName, DATASET_CREATE))
+        {
+            if (listType == MMS_DOMAIN_SPECIFIC)
+            {
+                /* check if LN exists - otherwise reject request (to fulfill test case sDsN1c) */
 
-    if (create) {
-        if (listType == MMS_DOMAIN_SPECIFIC) {
-            /* check if LN exists - otherwise reject request (to fulfill test case sDsN1c) */
+                allow = MMS_ERROR_ACCESS_OBJECT_NON_EXISTENT;
 
-            allow = MMS_ERROR_ACCESS_OBJECT_NON_EXISTENT;
+                IedModel* model = self->model;
 
-            IedModel* model = self->model;
+                LogicalDevice* ld = IedModel_getDevice(model, domain->domainName);
 
-            LogicalDevice* ld = IedModel_getDevice(model, domain->domainName);
+                if (ld != NULL)
+                {
+                    char lnName[129];
 
-            if (ld != NULL) {
+                    char* separator = strchr(listName, '$');
 
-                char lnName[129];
+                    if (separator != NULL)
+                    {
+                        int lnNameLen = separator - listName;
 
-                char* separator = strchr(listName, '$');
+                        memcpy(lnName, listName, lnNameLen);
+                        lnName[lnNameLen] = 0;
 
-                if (separator != NULL) {
-                    int lnNameLen = separator - listName;
-
-                    memcpy(lnName, listName, lnNameLen);
-                    lnName[lnNameLen] = 0;
-
-                    if (LogicalDevice_getLogicalNode(ld, lnName) != NULL)
-                        allow = MMS_ERROR_NONE;
+                        if (LogicalDevice_getLogicalNode(ld, lnName) != NULL)
+                            allow = MMS_ERROR_NONE;
+                    }
                 }
-
             }
-
+        }
+        else {
+            allow = MMS_ERROR_ACCESS_OBJECT_ACCESS_DENIED;
         }
     }
-    else {
-        /* Check if data set is referenced in a report */
+    else if (accessType == MMS_VARLIST_DELETE)
+    {
+        if (checkDataSetAccess(self, connection, listType, domain, listName, DATASET_DELETE))
+        {
+            /* Check if data set is referenced in a report */
 
-        LinkedList rcElement = self->reportControls;
+            LinkedList rcElement = self->reportControls;
 
-        while ((rcElement = LinkedList_getNext(rcElement)) != NULL) {
-            ReportControl* rc = (ReportControl*) rcElement->data;
+            while ((rcElement = LinkedList_getNext(rcElement)) != NULL)
+            {
+                ReportControl* rc = (ReportControl*) rcElement->data;
 
-            if (rc->isDynamicDataSet) {
-                if (rc->dataSet != NULL) {
-
-                    if (listType == MMS_DOMAIN_SPECIFIC) {
-                        if (rc->dataSet->logicalDeviceName != NULL) {
-                            if (strcmp(rc->dataSet->name, listName) == 0) {
-                                if (strcmp(rc->dataSet->logicalDeviceName, MmsDomain_getName(domain) + strlen(self->model->name)) == 0) {
+                if (rc->isDynamicDataSet)
+                {
+                    if (rc->dataSet != NULL)
+                    {
+                        if (listType == MMS_DOMAIN_SPECIFIC)
+                        {
+                            if (rc->dataSet->logicalDeviceName != NULL)
+                            {
+                                if (strcmp(rc->dataSet->name, listName) == 0)
+                                {
+                                    if (strcmp(rc->dataSet->logicalDeviceName, MmsDomain_getName(domain) + strlen(self->model->name)) == 0)
+                                    {
+                                        allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else if (listType == MMS_VMD_SPECIFIC)
+                        {
+                            if (rc->dataSet->logicalDeviceName == NULL)
+                            {
+                                if (strcmp(rc->dataSet->name, listName) == 0)
+                                {
+                                    allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (listType == MMS_ASSOCIATION_SPECIFIC)
+                        {
+                            if (rc->dataSet->logicalDeviceName == NULL)
+                            {
+                                if (strcmp(rc->dataSet->name, listName) == 0)
+                                {
                                     allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
                                     break;
                                 }
                             }
                         }
                     }
-                    else if (listType == MMS_VMD_SPECIFIC) {
-                        if (rc->dataSet->logicalDeviceName == NULL) {
-                            if (strcmp(rc->dataSet->name, listName) == 0) {
-                                allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
-                               break;
-                            }
-                        }
-                    }
-                    else if (listType == MMS_ASSOCIATION_SPECIFIC) {
-                        if (rc->dataSet->logicalDeviceName == NULL) {
-                            if (strcmp(rc->dataSet->name, listName) == 0) {
-                                allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
-                                break;
-                            }
-                        }
-                    }
-
                 }
             }
-        }
-
 
 #if (CONFIG_IEC61850_LOG_SERVICE == 1)
-        /* check if data set is referenced in a log control block*/
-        LinkedList logElement = self->logControls;
+            /* check if data set is referenced in a log control block*/
+            LinkedList logElement = self->logControls;
 
-        while ((logElement = LinkedList_getNext(logElement)) != NULL) {
-            LogControl* lc = (LogControl*) logElement->data;
+            while ((logElement = LinkedList_getNext(logElement)) != NULL)
+            {
+                LogControl* lc = (LogControl*) logElement->data;
 
-            if (lc->isDynamicDataSet) {
-                if (lc->dataSet != NULL) {
-
-                    if (listType == MMS_DOMAIN_SPECIFIC) {
-                        if (lc->dataSet->logicalDeviceName != NULL) {
-                            if (strcmp(lc->dataSet->name, listName) == 0) {
-                                if (strcmp(lc->dataSet->logicalDeviceName, MmsDomain_getName(domain) + strlen(self->model->name)) == 0) {
+                if (lc->isDynamicDataSet)
+                {
+                    if (lc->dataSet != NULL)
+                    {
+                        if (listType == MMS_DOMAIN_SPECIFIC)
+                        {
+                            if (lc->dataSet->logicalDeviceName != NULL)
+                            {
+                                if (strcmp(lc->dataSet->name, listName) == 0)
+                                {
+                                    if (strcmp(lc->dataSet->logicalDeviceName, MmsDomain_getName(domain) + strlen(self->model->name)) == 0)
+                                    {
+                                        allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else if (listType == MMS_VMD_SPECIFIC)
+                        {
+                            if (lc->dataSet->logicalDeviceName == NULL)
+                            {
+                                if (strcmp(lc->dataSet->name, listName) == 0)
+                                {
                                     allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
                                     break;
                                 }
                             }
                         }
                     }
-                    else if (listType == MMS_VMD_SPECIFIC) {
-                        if (lc->dataSet->logicalDeviceName == NULL) {
-                            if (strcmp(lc->dataSet->name, listName) == 0) {
-                                allow = MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT;
-                               break;
-                            }
-                        }
-                    }
-
                 }
             }
-        }
 
 #endif /* (CONFIG_IEC61850_LOG_SERVICE == 1) */
+
+        }
+        else {
+            allow = MMS_ERROR_ACCESS_OBJECT_ACCESS_DENIED;
+        }
+    }
+    else if (accessType == MMS_VARLIST_READ)
+    {
+        if (checkDataSetAccess(self, connection, listType, domain, listName, DATASET_READ) == false) {
+            allow = MMS_ERROR_ACCESS_OBJECT_ACCESS_DENIED;
+        }
+    }
+    else if (accessType == MMS_VARLIST_WRITE) 
+    {
+        if (checkDataSetAccess(self, connection, listType, domain, listName, DATASET_WRITE) == false) {
+            allow = MMS_ERROR_ACCESS_OBJECT_ACCESS_DENIED;
+        }
+    }
+    else if (accessType == MMS_VARLIST_GET_DIRECTORY) {
+        if (checkDataSetAccess(self, connection, listType, domain, listName, DATASET_GET_DIRECTORY) == false) {
+            allow = MMS_ERROR_ACCESS_OBJECT_ACCESS_DENIED;
+        }
     }
 
     return allow;
 }
+
+#if (CONFIG_IEC61850_LOG_SERVICE == 1)
+static bool
+mmsReadJournalHandler(void* parameter, MmsDomain* domain, const char* logName, MmsServerConnection connection)
+{
+    bool allowAccess = true;
+
+    MmsMapping* self = (MmsMapping*)parameter;
+
+    if (self->controlBlockAccessHandler)
+    {
+        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, connection);
+
+        LogicalDevice* ld = IedModel_getDevice(self->model, domain->domainName);
+
+        LogicalNode* ln = NULL;
+
+        char str[65];
+
+        StringUtils_copyStringMax(str, 65, logName);
+
+        char* name = str;
+
+        char* separator = strchr(str, '$');
+
+        if (separator)
+        {
+            name = separator + 1;
+            *separator = 0;
+
+            ln = LogicalDevice_getLogicalNode(ld, str);
+        }
+
+        allowAccess = self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, ACSI_CLASS_LOG, ld, ln, name, NULL, IEC61850_CB_ACCESS_TYPE_READ);
+    }
+    
+    return allowAccess;
+}
+#endif /* (CONFIG_IEC61850_LOG_SERVICE == 1) */
 
 void
 MmsMapping_installHandlers(MmsMapping* self)
@@ -3463,8 +4067,14 @@ MmsMapping_installHandlers(MmsMapping* self)
     MmsServer_installReadHandler(self->mmsServer, mmsReadHandler, (void*) self);
     MmsServer_installWriteHandler(self->mmsServer, mmsWriteHandler, (void*) self);
     MmsServer_installReadAccessHandler(self->mmsServer, mmsReadAccessHandler, (void*) self);
+    MmsServer_installListAccessHandler(self->mmsServer, mmsListObjectsAccessHandler, (void*) self);
     MmsServer_installConnectionHandler(self->mmsServer, mmsConnectionHandler, (void*) self);
-    MmsServer_installVariableListChangedHandler(self->mmsServer, variableListChangedHandler, (void*) self);
+    MmsServer_installVariableListAccessHandler(self->mmsServer, variableListAccessHandler, (void*) self);
+    MmsServer_installGetNameListHandler(self->mmsServer, mmsGetNameListHandler, (void*) self);
+
+#if (CONFIG_IEC61850_LOG_SERVICE == 1)
+    MmsServer_installReadJournalHandler(self->mmsServer, mmsReadJournalHandler, (void*) self);
+#endif /* (CONFIG_IEC61850_LOG_SERVICE == 1) */
 }
 
 void
@@ -3481,15 +4091,18 @@ isMemberValueRecursive(MmsValue* container, MmsValue* value)
 
     if (container == value)
         isMemberValue = true;
-    else {
+    else
+    {
         if ((MmsValue_getType(container) == MMS_STRUCTURE) ||
                 (MmsValue_getType(container) == MMS_ARRAY))
         {
 
             int compCount = MmsValue_getArraySize(container);
             int i;
-            for (i = 0; i < compCount; i++) {
-                if (isMemberValueRecursive(MmsValue_getElement(container, i), value)) {
+            for (i = 0; i < compCount; i++)
+            {
+                if (isMemberValueRecursive(MmsValue_getElement(container, i), value))
+                {
                     isMemberValue = true;
                     break;
                 }
@@ -3509,12 +4122,15 @@ DataSet_isMemberValue(DataSet* dataSet, MmsValue* value, int* index)
 
     DataSetEntry* dataSetEntry = dataSet->fcdas;
 
-    while (dataSetEntry != NULL) {
-
+    while (dataSetEntry != NULL)
+    {
         MmsValue* dataSetValue = dataSetEntry->value;
 
-        if (dataSetValue != NULL) { /* prevent invalid data set members */
-            if (isMemberValueRecursive(dataSetValue, value)) {
+        if (dataSetValue != NULL)
+        {
+            /* prevent invalid data set members */
+            if (isMemberValueRecursive(dataSetValue, value))
+            {
                 if (index != NULL)
                     *index = i;
 
@@ -3540,12 +4156,15 @@ DataSet_isMemberValueWithRef(DataSet* dataSet, MmsValue* value, char* dataRef, c
 
     DataSetEntry* dataSetEntry = dataSet->fcdas;
 
-    while (dataSetEntry != NULL) {
-
+    while (dataSetEntry != NULL)
+    {
         MmsValue *dataSetValue = dataSetEntry->value;
 
-        if (dataSetValue != NULL) { /* prevent invalid data set members */
-            if (isMemberValueRecursive(dataSetValue, value)) {
+        if (dataSetValue != NULL)
+        {
+            /* prevent invalid data set members */
+            if (isMemberValueRecursive(dataSetValue, value))
+            {
                 if (dataRef != NULL)
                     sprintf(dataRef, "%s%s/%s", iedName, dataSetEntry->logicalDeviceName, dataSetEntry->variableName);
 
@@ -3569,11 +4188,12 @@ MmsMapping_triggerLogging(MmsMapping* self, MmsValue* value, LogInclusionFlag fl
 {
     LinkedList element = self->logControls;
 
-    while ((element = LinkedList_getNext(element)) != NULL) {
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
         LogControl* lc = (LogControl*) element->data;
 
-        if ((lc->enabled) && (lc->dataSet != NULL)) {
-
+        if ((lc->enabled) && (lc->dataSet != NULL))
+        {
             uint8_t reasonCode;
 
             switch (flag) {
@@ -3611,15 +4231,16 @@ MmsMapping_triggerLogging(MmsMapping* self, MmsValue* value, LogInclusionFlag fl
 
             int dsEntryIdx = 0;
 
-            if (DataSet_isMemberValueWithRef(lc->dataSet, value, dataRef, self->model->name, &dsEntryIdx)) {
-
-                if (lc->logInstance != NULL) {
-
-                    if (lc->dataSet) {
-
+            if (DataSet_isMemberValueWithRef(lc->dataSet, value, dataRef, self->model->name, &dsEntryIdx))
+            {
+                if (lc->logInstance != NULL)
+                {
+                    if (lc->dataSet)
+                    {
                         DataSetEntry* dsEntry = lc->dataSet->fcdas;
 
-                        while (dsEntry && (dsEntryIdx > 0)) {
+                        while (dsEntry && (dsEntryIdx > 0))
+                        {
                             dsEntry = dsEntry->sibling;
 
                             if (dsEntry == NULL)
@@ -3628,21 +4249,20 @@ MmsMapping_triggerLogging(MmsMapping* self, MmsValue* value, LogInclusionFlag fl
                             dsEntryIdx--;
                         }
 
-                        if (dsEntry) {
+                        if (dsEntry)
+                        {
                             MmsValue* dsValue = dsEntry->value;
 
                             LogInstance_logSingleData(lc->logInstance, dataRef, dsValue, reasonCode);
                         }
-
                     }
-
                 }
-                else {
+                else
+                {
                     if (DEBUG_IED_SERVER)
                         printf("IED_SERVER: No log instance available!\n");
                 }
             }
-
         }
     }
 }
@@ -3655,12 +4275,18 @@ MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, int flag)
 {
     LinkedList element = self->reportControls;
 
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->isModelLockedMutex);
+#endif
+
     bool modelLocked = self->isModelLocked;
 
-    while ((element = LinkedList_getNext(element)) != NULL) {
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
         ReportControl* rc = (ReportControl*) element->data;
 
-        if (rc->enabled || (rc->buffered && rc->dataSet != NULL)) {
+        if (rc->enabled || (rc->buffered && rc->dataSet != NULL))
+        {
             int index;
 
             switch (flag) {
@@ -3669,8 +4295,7 @@ MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, int flag)
                     continue;
                 break;
             case REPORT_CONTROL_VALUE_CHANGED:
-                if (((rc->triggerOps & TRG_OPT_DATA_CHANGED) == 0) &&
-                        ((rc->triggerOps & TRG_OPT_DATA_UPDATE) == 0))
+                if ((rc->triggerOps & TRG_OPT_DATA_CHANGED) == 0)
                     continue;
                 break;
             case REPORT_CONTROL_QUALITY_CHANGED:
@@ -3690,6 +4315,10 @@ MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, int flag)
     if (modelLocked == false) {
         Reporting_processReportEventsAfterUnlock(self);
     }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->isModelLockedMutex);
+#endif
 }
 
 #endif /* (CONFIG_IEC61850_REPORT_SERVICE == 1) */
@@ -3701,20 +4330,30 @@ MmsMapping_triggerGooseObservers(MmsMapping* self, MmsValue* value)
 {
     LinkedList element = self->gseControls;
 
-    bool modelLocked = self->isModelLocked;
-
-    while ((element = LinkedList_getNext(element)) != NULL) {
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
         MmsGooseControlBlock gcb = (MmsGooseControlBlock) element->data;
 
-        if (MmsGooseControlBlock_isEnabled(gcb)) {
+        if (MmsGooseControlBlock_isEnabled(gcb))
+        {
             DataSet* dataSet = MmsGooseControlBlock_getDataSet(gcb);
 
-            if (DataSet_isMemberValue(dataSet, value, NULL)) {
+            if (DataSet_isMemberValue(dataSet, value, NULL))
+            {
                 MmsGooseControlBlock_setStateChangePending(gcb);
 
-                if (modelLocked == false) {
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+                Semaphore_wait(self->isModelLockedMutex);
+#endif
+
+                if (self->isModelLocked == false)
+                {
                     MmsGooseControlBlock_publishNewState(gcb);
                 }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+                Semaphore_post(self->isModelLockedMutex);
+#endif
             }
         }
     }
@@ -3725,10 +4364,12 @@ MmsMapping_enableGoosePublishing(MmsMapping* self)
 {
     LinkedList element = LinkedList_getNext(self->gseControls);
 
-    while (element) {
+    while (element)
+    {
         MmsGooseControlBlock gcb = (MmsGooseControlBlock) LinkedList_getData(element);
 
-        if (MmsGooseControlBlock_enable(gcb, self) == false) {
+        if (MmsGooseControlBlock_enable(gcb, self) == false)
+        {
             if (DEBUG_IED_SERVER)
                 printf("IED_SERVER: failed to enable GoCB %s\n", MmsGooseControlBlock_getName(gcb));
         }
@@ -3742,14 +4383,18 @@ MmsMapping_useGooseVlanTag(MmsMapping* self, LogicalNode* ln, const char* gcbNam
 {
     LinkedList element = self->gseControls;
 
-    while ((element = LinkedList_getNext(element)) != NULL) {
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
         MmsGooseControlBlock gcb = (MmsGooseControlBlock) element->data;
 
-        if (ln == NULL) {
+        if (ln == NULL)
+        {
             MmsGooseControlBlock_useGooseVlanTag(gcb, useVlanTag);
         }
-        else {
-            if ((MmsGooseControlBlock_getLogicalNode(gcb) == ln) && !strcmp(MmsGooseControlBlock_getName(gcb), gcbName)) {
+        else
+        {
+            if ((MmsGooseControlBlock_getLogicalNode(gcb) == ln) && !strcmp(MmsGooseControlBlock_getName(gcb), gcbName))
+            {
                 MmsGooseControlBlock_useGooseVlanTag(gcb, useVlanTag);
             }
         }
@@ -3761,14 +4406,18 @@ MmsMapping_setGooseInterfaceId(MmsMapping* self,  LogicalNode* ln, const char* g
 {
     LinkedList element = self->gseControls;
 
-    while ((element = LinkedList_getNext(element)) != NULL) {
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
         MmsGooseControlBlock gcb = (MmsGooseControlBlock) element->data;
 
-        if (ln == NULL) {
+        if (ln == NULL)
+        {
             MmsGooseControlBlock_setGooseInterfaceId(gcb, interfaceId);
         }
-        else {
-            if ((MmsGooseControlBlock_getLogicalNode(gcb) == ln) && !strcmp(MmsGooseControlBlock_getName(gcb), gcbName)) {
+        else
+        {
+            if ((MmsGooseControlBlock_getLogicalNode(gcb) == ln) && !strcmp(MmsGooseControlBlock_getName(gcb), gcbName))
+            {
                 MmsGooseControlBlock_setGooseInterfaceId(gcb, interfaceId);
             }
         }
@@ -3780,7 +4429,8 @@ MmsMapping_disableGoosePublishing(MmsMapping* self)
 {
     LinkedList element = self->gseControls;
 
-    while ((element = LinkedList_getNext(element)) != NULL) {
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
         MmsGooseControlBlock gcb = (MmsGooseControlBlock) element->data;
 
         MmsGooseControlBlock_disable(gcb, self);
@@ -3810,10 +4460,12 @@ GOOSE_processGooseEvents(MmsMapping* self, uint64_t currentTimeInMs)
 {
     LinkedList element = LinkedList_getNext(self->gseControls);
 
-    while (element != NULL) {
+    while (element != NULL)
+    {
         MmsGooseControlBlock mmsGCB = (MmsGooseControlBlock) element->data;
 
-        if (MmsGooseControlBlock_isEnabled(mmsGCB)) {
+        if (MmsGooseControlBlock_isEnabled(mmsGCB))
+        {
             MmsGooseControlBlock_checkAndPublish(mmsGCB, currentTimeInMs, self);
         }
 
@@ -3866,8 +4518,8 @@ eventWorkerThread(MmsMapping* self)
 {
     bool running = true;
 
-    while (running) {
-
+    while (running)
+    {
         processPeriodicTasks(self);
 
         Thread_sleep(1); /* hand-over control to other threads */
@@ -3894,11 +4546,12 @@ MmsMapping_startEventWorkerThread(MmsMapping* self)
 void
 MmsMapping_stopEventWorkerThread(MmsMapping* self)
 {
-    if (self->reportThreadRunning) {
-
+    if (self->reportThreadRunning)
+    {
         self->reportThreadRunning = false;
 
-        if (self->reportWorkerThread) {
+        if (self->reportWorkerThread)
+        {
             Thread_destroy(self->reportWorkerThread);
             self->reportWorkerThread = NULL;
         }
@@ -3909,85 +4562,123 @@ MmsMapping_stopEventWorkerThread(MmsMapping* self)
 DataSet*
 MmsMapping_createDataSetByNamedVariableList(MmsMapping* self, MmsNamedVariableList variableList)
 {
-    DataSet* dataSet = (DataSet*) GLOBAL_MALLOC(sizeof(DataSet));
+    DataSet* dataSet = (DataSet*) GLOBAL_CALLOC(1, sizeof(DataSet));
 
-    if (variableList->domain != NULL)
-        dataSet->logicalDeviceName = MmsDomain_getName(variableList->domain) + strlen(self->model->name);
-    else
-        dataSet->logicalDeviceName = NULL; /* name is not relevant for association specific data sets */
+    if (dataSet)
+    {
+        if (variableList->domain != NULL)
+        {
+            LogicalDevice* ld = IedModel_getDevice(self->model, MmsDomain_getName(variableList->domain));
 
-    dataSet->name = variableList->name;
-    dataSet->elementCount = LinkedList_size(variableList->listOfVariables);
-
-    LinkedList element = LinkedList_getNext(variableList->listOfVariables);
-
-    DataSetEntry* lastDataSetEntry = NULL;
-
-    while (element != NULL) {
-        MmsAccessSpecifier* listEntry = (MmsAccessSpecifier*) element->data;
-
-        DataSetEntry* dataSetEntry = (DataSetEntry*) GLOBAL_MALLOC(sizeof(DataSetEntry));
-
-        /* use variable name part of domain name as logicalDeviceName */
-        dataSetEntry->logicalDeviceName = MmsDomain_getName(listEntry->domain) + strlen(self->model->name);
-        dataSetEntry->variableName = listEntry->variableName;
-        dataSetEntry->index = listEntry->arrayIndex;
-        dataSetEntry->componentName = listEntry->componentName;
-        dataSetEntry->sibling = NULL;
-        dataSetEntry->value = NULL;
-
-        if (lastDataSetEntry == NULL)
-            dataSet->fcdas =dataSetEntry;
-        else
-            lastDataSetEntry->sibling = dataSetEntry;
-
-        MmsVariableSpecification* dataSetEntryVarSpec = NULL;
-
-        MmsValue* dataSetEntryValue = MmsServer_getValueFromCacheEx(self->mmsServer, listEntry->domain, listEntry->variableName, &dataSetEntryVarSpec);
-
-        if (dataSetEntryValue) {
-            if (dataSetEntry->index != -1) {
-                if (dataSetEntryVarSpec->type == MMS_ARRAY) {
-                    MmsValue* elementValue = MmsValue_getElement(dataSetEntryValue, dataSetEntry->index);
-
-                    if (elementValue) {
-
-                        if (dataSetEntry->componentName) {
-                            MmsVariableSpecification* elementType = dataSetEntryVarSpec->typeSpec.array.elementTypeSpec;
-
-                            MmsValue* subElementValue = MmsVariableSpecification_getChildValue(elementType, elementValue, dataSetEntry->componentName);
-
-                            if (subElementValue) {
-                                dataSetEntry->value = subElementValue;
-                            }
-                            else {
-                                if (DEBUG_IED_SERVER)
-                                    printf("IED_SERVER: ERROR - component %s of array element not found\n", dataSetEntry->componentName);
-                            }
-
-                        }
-                        else {
-                            dataSetEntry->value = elementValue;
-                        }
-                    }
-                    else {
-                        if (DEBUG_IED_SERVER)
-                            printf("IED_SERVER: ERROR - array element %i not found\n", dataSetEntry->index);
-                    }
-                }
-                else {
-                    if (DEBUG_IED_SERVER)
-                        printf("IED_SERVER: ERROR - variable %s/%s is not an array\n", dataSetEntry->logicalDeviceName, dataSetEntry->variableName);
-                }
+            if (ld)
+            {
+                dataSet->logicalDeviceName = ld->name;
             }
-            else {
-                dataSetEntry->value = dataSetEntryValue;
+            else
+            {
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: LD lookup error!");
             }
         }
+        else
+            dataSet->logicalDeviceName = NULL; /* name is not relevant for association specific data sets */
 
-        lastDataSetEntry = dataSetEntry;
+        dataSet->name = variableList->name;
+        dataSet->elementCount = LinkedList_size(variableList->listOfVariables);
 
-        element = LinkedList_getNext(element);
+        LinkedList element = LinkedList_getNext(variableList->listOfVariables);
+
+        DataSetEntry* lastDataSetEntry = NULL;
+
+        while (element != NULL)
+        {
+            MmsAccessSpecifier* listEntry = (MmsAccessSpecifier*) element->data;
+
+            LogicalDevice* entryLd = IedModel_getDevice(self->model, MmsDomain_getName(listEntry->domain));
+
+            if (entryLd)
+            {
+                DataSetEntry* dataSetEntry = (DataSetEntry*) GLOBAL_MALLOC(sizeof(DataSetEntry));
+
+                if (dataSetEntry)
+                {
+                    /* use variable name part of domain name as logicalDeviceName */
+                    dataSetEntry->logicalDeviceName = entryLd->name;
+                    dataSetEntry->variableName = listEntry->variableName;
+                    dataSetEntry->index = listEntry->arrayIndex;
+                    dataSetEntry->componentName = listEntry->componentName;
+                    dataSetEntry->sibling = NULL;
+                    dataSetEntry->value = NULL;
+
+                    if (lastDataSetEntry == NULL)
+                        dataSet->fcdas =dataSetEntry;
+                    else
+                        lastDataSetEntry->sibling = dataSetEntry;
+
+                    MmsVariableSpecification* dataSetEntryVarSpec = NULL;
+
+                    MmsValue* dataSetEntryValue = MmsServer_getValueFromCacheEx(self->mmsServer, listEntry->domain, listEntry->variableName, &dataSetEntryVarSpec);
+
+                    if (dataSetEntryValue)
+                    {
+                        if (dataSetEntry->index != -1)
+                        {
+                            if (dataSetEntryVarSpec->type == MMS_ARRAY)
+                            {
+                                MmsValue* elementValue = MmsValue_getElement(dataSetEntryValue, dataSetEntry->index);
+
+                                if (elementValue)
+                                {
+                                    if (dataSetEntry->componentName)
+                                    {
+                                        MmsVariableSpecification* elementType = dataSetEntryVarSpec->typeSpec.array.elementTypeSpec;
+
+                                        MmsValue* subElementValue = MmsVariableSpecification_getChildValue(elementType, elementValue, dataSetEntry->componentName);
+
+                                        if (subElementValue)
+                                        {
+                                            dataSetEntry->value = subElementValue;
+                                        }
+                                        else
+                                        {
+                                            if (DEBUG_IED_SERVER)
+                                                printf("IED_SERVER: ERROR - component %s of array element not found\n", dataSetEntry->componentName);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        dataSetEntry->value = elementValue;
+                                    }
+                                }
+                                else
+                                {
+                                    if (DEBUG_IED_SERVER)
+                                        printf("IED_SERVER: ERROR - array element %i not found\n", dataSetEntry->index);
+                                }
+                            }
+                            else
+                            {
+                                if (DEBUG_IED_SERVER)
+                                    printf("IED_SERVER: ERROR - variable %s/%s is not an array\n", dataSetEntry->logicalDeviceName, dataSetEntry->variableName);
+                            }
+                        }
+                        else
+                        {
+                            dataSetEntry->value = dataSetEntryValue;
+                        }
+                    }
+
+                    lastDataSetEntry = dataSetEntry;
+                }
+            }
+            else
+            {
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: LD lookup error!\n");
+            }
+
+            element = LinkedList_getNext(element);
+        }
     }
 
     return dataSet;
@@ -3996,10 +4687,9 @@ MmsMapping_createDataSetByNamedVariableList(MmsMapping* self, MmsNamedVariableLi
 MmsNamedVariableList
 MmsMapping_getDomainSpecificVariableList(MmsMapping* self, const char* variableListReference)
 {
-    char variableListReferenceCopy[193];
+    char variableListReferenceCopy[130];
 
-    strncpy(variableListReferenceCopy, variableListReference, 192);
-	variableListReferenceCopy[192] = 0;
+    StringUtils_copyStringMax(variableListReferenceCopy, 130, variableListReference);
 
     char* separator = strchr(variableListReferenceCopy, '/');
 
@@ -4038,7 +4728,8 @@ MmsMapping_freeDynamicallyCreatedDataSet(DataSet* dataSet)
 {
     DataSetEntry* dataSetEntry = dataSet->fcdas;
 
-    while (dataSetEntry != NULL) {
+    while (dataSetEntry)
+    {
         DataSetEntry* nextEntry = dataSetEntry->sibling;
 
         GLOBAL_FREEMEM (dataSetEntry);

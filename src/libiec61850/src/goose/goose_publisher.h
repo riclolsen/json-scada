@@ -1,7 +1,7 @@
 /*
  *  goose_publisher.h
  *
- *  Copyright 2013-2020 Michael Zillgith
+ *  Copyright 2013-2022 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -25,6 +25,7 @@
 #define GOOSE_PUBLISHER_H_
 
 #include "iec61850_common.h"
+#include "r_session.h"
 #include "linked_list.h"
 #include "mms_value.h"
 
@@ -53,19 +54,34 @@ typedef struct sGoosePublisher* GoosePublisher;
  *
  * \param parameters GOOSE communication parameters
  * \param interfaceId name of the Ethernet interface to use (e.g. "eth0")
+ * 
+ * \return the new GoosePublisher instance
  */
 LIB61850_API GoosePublisher
 GoosePublisher_create(CommParameters* parameters, const char* interfaceID);
 
 /**
- * \brief Create a new GoosePublisher instance
+ * \brief Create a new GoosePublisher instance for Ethernet GOOSE
  *
  * \param parameters GOOSE communication parameters
  * \param interfaceId name of the Ethernet interface to use (e.g. "eth0")
  * \param useVlanTag enable or disable the usage of VLAN tags in GOOSE messages
+ * 
+ * \return the new GoosePublisher instance
  */
 LIB61850_API GoosePublisher
 GoosePublisher_createEx(CommParameters* parameters, const char* interfaceID, bool useVlanTag);
+
+/**
+ * \brief Create a new GoosePublisher instance for R-GOOSE
+ *
+ * \param session R-session protocol instance to use
+ * \param appId the appID value to use
+ * 
+ * \return the new GoosePublisher instance
+ */
+LIB61850_API GoosePublisher
+GoosePublisher_createRemote(RSession session, uint16_t appId);
 
 /**
  * \brief Release all resources of the GoosePublisher instance
@@ -170,7 +186,7 @@ GoosePublisher_setStNum(GoosePublisher self, uint32_t stNum);
  * NOTE: Only for testing! The sequence number is increase manually whenever \ref GoosePublisher_publish is called.
  *
  * \param self GoosePublisher instance
- * \param stNum the state number of the next GOOSE message to send
+ * \param sqNum the sequence number of the next GOOSE message to send
  */
 LIB61850_API void
 GoosePublisher_setSqNum(GoosePublisher self, uint32_t sqNum);

@@ -18,19 +18,28 @@ copy %SRCPATH%\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll %BINPATH% /y
 
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
-cd %SRCPATH%\libiec61850\build
-rem set VCTargetsPath="C:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\"
-rem set VCTargetsPath="D:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\"
-rem set VCToolsInstallDir="D:\ProgramFiles\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\"
-rem dotnet clean -c Release libiec61850.sln
+cd %SRCPATH%\libiec61850
+rem mkdir build
+cd build	
+rem Run the line below to create solution file for Visual Studio 2022
+rem cmake -G "Visual Studio 17 2022" .. -A x64 -DCMAKE_SUPPRESS_REGENERATION=ON
+msbuild libiec61850.sln /p:Configuration=Release
 
-dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
+rem cd %SRCPATH%\libiec61850\build
+rem set VCTargetsPath=C:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
+rem set VCTargetsPath=D:\ProgramFiles\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\
+rem set VCTargetsPath=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Microsoft\VC\v170\
+rem set VCToolsInstallDir=D:\ProgramFiles\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\
+rem set VCToolsInstallDir=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.41.34120\
+rem dotnet clean -c Release libiec61850.sln
+rem dotnet publish --no-self-contained --runtime win-x64 -c Release libiec61850.sln
+
 copy %SRCPATH%\libiec61850\build\src\Release\iec61850.dll %BINPATH%
 
 cd %SRCPATH%\libiec61850\dotnet\core\2.0\
 dotnet publish --no-self-contained --runtime win-x64 -c Release -o %BINPATH% IEC61850.NET.core.2.0 
 
-cd %SRCPATH%\libiec61850\dotnet\core\2.0\iec61850_client
+cd %SRCPATH%\iec61850_client
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
 
 cd %SRCPATH%\lib60870.netcore\lib60870.netcore\

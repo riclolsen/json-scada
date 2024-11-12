@@ -1,7 +1,7 @@
 /*
  *  string_utilities.c
  *
- *  Copyright 2013 Michael Zillgith
+ *  Copyright 2013-2023 Michael Zillgith
  *
  *	This file is part of libIEC61850.
  *
@@ -26,30 +26,33 @@
 char*
 StringUtils_copySubString(char* startPos, char* endPos)
 {
-	int newStringLength = endPos - startPos;
+    int newStringLength = endPos - startPos;
 
-	char* newString = (char*) GLOBAL_MALLOC(newStringLength + 1);
+    char* newString = (char*) GLOBAL_MALLOC(newStringLength + 1);
 
-	if (newString) {
-	    memcpy(newString, startPos, newStringLength);
+    if (newString) {
+        memcpy(newString, startPos, newStringLength);
 
-	    newString[newStringLength] = 0;
-	}
+        newString[newStringLength] = 0;
+    }
 
-	return newString;
+    return newString;
 }
 
 char*
-StringUtils_copyString(const char* string)
+StringUtils_copyString(const char* str)
 {
-	int newStringLength = strlen(string) + 1;
+    if (str == NULL)
+        return NULL;
 
-	char* newString = (char*) GLOBAL_MALLOC(newStringLength);
+    int newStringLength = strlen(str) + 1;
 
-	if (newString)
-	    memcpy(newString, string, newStringLength);
+    char* newString = (char*) GLOBAL_MALLOC(newStringLength);
 
-	return newString;
+    if (newString)
+        memcpy(newString, str, newStringLength);
+
+    return newString;
 }
 
 char*
@@ -62,18 +65,39 @@ StringUtils_copyStringToBuffer(const char* string, char* buffer)
     return buffer;
 }
 
+char*
+StringUtils_copyStringToBufferAndReplace(const char* str, char* buffer, char oldChar, char newChar)
+{
+    int i = 0;
+
+    while (true)
+    {
+        if (str[i] == oldChar)
+            buffer[i] = newChar;
+        else
+            buffer[i] = str[i];
+
+        if (str[i] == 0)
+            break;
+
+        i++;
+    }
+
+    return buffer;
+}
+
 
 char*
 StringUtils_createStringFromBuffer(const uint8_t* buf, int size)
 {
-	char* newStr = (char*) GLOBAL_MALLOC(size + 1);
+    char* newStr = (char*) GLOBAL_MALLOC(size + 1);
 
-	if (newStr) {
-	    memcpy(newStr, buf, size);
-	    newStr[size] = 0;
-	}
+    if (newStr) {
+        memcpy(newStr, buf, size);
+        newStr[size] = 0;
+    }
 
-	return newStr;
+    return newStr;
 }
 
 char*
@@ -85,23 +109,34 @@ StringUtils_createStringFromBufferInBuffer(char* newString, const uint8_t* buf, 
     return newString;
 }
 
+char*
+StringUtils_createStringFromBufferInBufferMax(char* newString, const uint8_t* buf, int size, int maxBufSize)
+{
+    if (size >= maxBufSize)
+        size = maxBufSize - 1;
+
+    memcpy(newString, buf, size);
+    newString[size] = 0;
+
+    return newString;
+}
 
 char*
-StringUtils_createStringInBuffer(char* newStr, int count, ...)
+StringUtils_createStringInBuffer(char* newStr, int bufSize, int count, ...)
 {
     va_list ap;
-    char* currentPos = newStr;
-    int i;
 
-    va_start(ap, count);
-    for (i = 0; i < count; i++) {
-        char* str = va_arg(ap, char*);
-        strcpy(currentPos, str);
-        currentPos += strlen(str);
+    if (bufSize > 0) {
+        newStr[0] = 0;
+        int i;
+
+        va_start(ap, count);
+        for (i = 0; i < count; i++) {
+            char* str = va_arg(ap, char*);
+            StringUtils_appendString(newStr, bufSize, str);
+        }
+        va_end(ap);
     }
-    va_end(ap);
-
-    *currentPos = 0;
 
     return newStr;
 }
@@ -111,7 +146,6 @@ StringUtils_createString(int count, ...)
 {
 	va_list ap;
 	char* newStr;
-	char* currentPos;
 	int newStringLength = 0;
 	int i;
 
@@ -127,7 +161,7 @@ StringUtils_createString(int count, ...)
 	newStr = (char*) GLOBAL_MALLOC(newStringLength + 1);
 
 	if (newStr) {
-	    currentPos = newStr;
+	    char* currentPos = newStr;
 
 	    va_start(ap, count);
 	    for (i = 0; i < count; i++) {
@@ -136,11 +170,147 @@ StringUtils_createString(int count, ...)
 	        currentPos += strlen(str);
 	    }
 	    va_end(ap);
-
-	    *currentPos = 0;
 	}
 
 	return newStr;
+}
+
+char*
+StringUtils_concatString(char* dest, int maxBufferSize, const char* str1, const char* str2)
+{
+    char* res = dest;
+
+    if (dest == NULL)
+        res = (char*)GLOBAL_MALLOC(maxBufferSize);
+
+    if (res)
+    {
+        int maxStringSize = maxBufferSize -1;
+
+        int destPos = 0;
+
+        int i = 0;
+        while (str1[i] != 0) {
+
+            if (destPos < maxStringSize) {
+                res[destPos] = str1[i];
+                destPos++;
+            }
+            else {
+                res[destPos] = 0;
+                return res;
+            }
+
+            i++;
+        }
+
+        i = 0;
+        while (str2[i] != 0) {
+
+            if (destPos < maxStringSize) {
+                res[destPos] = str2[i];
+                destPos++;
+            }
+            else {
+                res[destPos] = 0;
+                return res;
+            }
+
+            i++;
+        }
+
+        res[destPos] = 0;
+    }
+
+    return res;
+}
+
+char*
+StringUtils_copyStringMax(char* dest, int maxBufferSize, const char* str1)
+{
+    char* res = dest;
+
+    if (maxBufferSize < 1)
+        return NULL;
+
+    if (dest == NULL)
+        res = (char*)GLOBAL_MALLOC(maxBufferSize);
+
+    if (res)
+    {
+        int maxStringSize = maxBufferSize -1;
+
+        int destPos = 0;
+
+        int i = 0;
+        while (str1[i] != 0) {
+
+            if (destPos < maxStringSize) {
+                res[destPos] = str1[i];
+                destPos++;
+            }
+            else {
+                res[destPos] = 0;
+                return res;
+            }
+
+            i++;
+        }
+
+        res[destPos] = 0;
+    }
+
+    return res;
+}
+
+char*
+StringUtils_appendString(char* dest, int maxBufferSize, const char* str)
+{
+    /* find end of existing string */
+    int i = 0;
+
+    while (i < maxBufferSize) {
+        if (dest[i] == 0) {
+            break;
+        }
+
+        i++;
+    }
+
+    if (i == maxBufferSize) {
+        /* append string terminator and return */
+        if (maxBufferSize > 0) {
+            dest[maxBufferSize - 1] = 0;
+        }
+
+        return dest;
+    }
+
+    int srcPos = 0;
+
+    while (i < maxBufferSize) {
+
+        if (str[srcPos] == 0) {
+            break;
+        }
+
+        dest[i] = str[srcPos];
+
+        i++;
+        srcPos++;
+    }
+
+    if (i == maxBufferSize) {
+        /* append string terminator and return */
+        if (maxBufferSize > 0) {
+            dest[maxBufferSize - 1] = 0;
+        }
+    }
+    else {
+        dest[i] = 0;
+    }
+
+    return dest;
 }
 
 void
@@ -230,7 +400,7 @@ StringUtils_createBufferFromHexString(char* hexString, uint8_t* buffer)
 }
 
 bool
-StringUtils_startsWith(char* string, char* prefix)
+StringUtils_startsWith(const char* string, const char* prefix)
 {
     int index = 0;
 

@@ -72,18 +72,21 @@ LIB_INCLUDE_DIRS += src/sampled_values
 LIB_INCLUDE_DIRS += src/iec61850/inc
 LIB_INCLUDE_DIRS += src/iec61850/inc_private
 LIB_INCLUDE_DIRS += src/logging
+LIB_INCLUDE_DIRS += src/r_session
 LIB_INCLUDE_DIRS += src/tls
 ifeq ($(HAL_IMPL), WIN32)
 LIB_INCLUDE_DIRS += third_party/winpcap/Include
 endif
 
 ifdef WITH_MBEDTLS
-LIB_SOURCE_DIRS += third_party/mbedtls/mbedtls-2.16/library
+LIB_SOURCE_DIRS += third_party/mbedtls/mbedtls-2.28/library
 LIB_SOURCE_DIRS += hal/tls/mbedtls
-LIB_INCLUDE_DIRS += third_party/mbedtls/mbedtls-2.16/include
+LIB_INCLUDE_DIRS += third_party/mbedtls/mbedtls-2.28/include
 LIB_INCLUDE_DIRS += hal/tls/mbedtls
 CFLAGS += -D'MBEDTLS_CONFIG_FILE="mbedtls_config.h"'
 CFLAGS += -D'CONFIG_MMS_SUPPORT_TLS=1'
+CFLAGS += -D'CONFIG_IEC61850_R_GOOSE=1'
+CFLAGS += -D'CONFIG_IEC61850_R_SMV=1'
 endif
 
 LIB_INCLUDES = $(addprefix -I,$(LIB_INCLUDE_DIRS))
@@ -120,6 +123,7 @@ LIB_API_HEADER_FILES += src/goose/goose_publisher.h
 LIB_API_HEADER_FILES += src/sampled_values/sv_subscriber.h
 LIB_API_HEADER_FILES += src/sampled_values/sv_publisher.h
 LIB_API_HEADER_FILES += src/logging/logging_api.h
+LIB_API_HEADER_FILES += src/r_session/r_session.h
 
 get_sources_from_directory  = $(wildcard $1/*.c)
 get_sources = $(foreach dir, $1, $(call get_sources_from_directory,$(dir)))
@@ -137,13 +141,13 @@ ifneq ($(HAL_IMPL), WIN32)
 CFLAGS += -Wuninitialized 
 endif
 
-CFLAGS += -Wsign-compare 
 CFLAGS += -Wpointer-arith 
 CFLAGS += -Wnested-externs 
 CFLAGS += -Wmissing-declarations 
 CFLAGS += -Wshadow
 CFLAGS += -Wall
 CFLAGS += -Wextra
+CFLAGS += -Wno-sign-compare
 CFLAGS += -Wno-format
 #CFLAGS += -Wconditional-uninitialized
 #CFLAGS += -Werror  

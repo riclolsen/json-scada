@@ -1,7 +1,7 @@
 /*
  *  mms_server_libinternal.h
  *
- *  Copyright 2013-2022 Michael Zillgith
+ *  Copyright 2013-2023 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -34,8 +34,11 @@ typedef MmsDataAccessError (*MmsReadAccessHandler) (void* parameter, MmsDomain* 
         char* variableId, MmsServerConnection connection, bool isDirectAccess);
 
 typedef MmsDataAccessError (*MmsWriteVariableHandler)(void* parameter,
-        MmsDomain* domain, char* variableId, MmsValue* value,
+        MmsDomain* domain, const char* variableId, int arrayIdx, const char* componentId, MmsValue* value,
         MmsServerConnection connection);
+
+typedef bool (*MmsListAccessHandler) (void* parameter, MmsGetNameListType listType, MmsDomain* domain,
+        char* variableId, MmsServerConnection connection);
 
 typedef void (*MmsConnectionHandler)(void* parameter,
         MmsServerConnection connection, MmsServerEvent event);
@@ -63,6 +66,9 @@ LIB61850_INTERNAL void
 MmsServer_installWriteHandler(MmsServer self, MmsWriteVariableHandler,
         void* parameter);
 
+LIB61850_INTERNAL void
+MmsServer_installListAccessHandler(MmsServer self, MmsListAccessHandler listAccessHandler, void* parameter);
+
 /**
  * A connection handler will be invoked whenever a new client connection is opened or closed
  */
@@ -81,6 +87,9 @@ MmsServer_getValueFromCache(MmsServer self, MmsDomain* domain, const char* itemI
 
 LIB61850_INTERNAL MmsValue*
 MmsServer_getValueFromCacheEx(MmsServer self, MmsDomain* domain, const char* itemId, MmsVariableSpecification** typeSpec);
+
+LIB61850_INTERNAL MmsValue*
+MmsServer_getValueFromCacheEx2(MmsServer self, MmsDomain* domain, const char* itemId, int idx, const char* componentId);
 
 LIB61850_INTERNAL bool
 MmsServer_isLocked(MmsServer self);
@@ -193,7 +202,7 @@ MmsServer_getConnectionCounter(MmsServer self);
 LIB61850_INTERNAL void
 MmsServer_stopListeningThreadless(MmsServer self);
 
-LIB61850_INTERNAL  const char*
+LIB61850_INTERNAL const char*
 MmsServer_getFilesystemBasepath(MmsServer self);
 
 #endif /* MMS_SERVER_LIBINTERNAL_H_ */
