@@ -274,6 +274,7 @@ services:
       - JS_IP_BIND=0.0.0.0
       - JS_HTTP_PORT=8080
       - JS_GRAFANA_SERVER=http://grafana:3000
+      - JS_LOGIO_SERVER=http://dozzle:6688
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
@@ -281,9 +282,6 @@ services:
       - PGPASSWORD=
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
-      #- ../src/htdocs:/htdocs
-      #- ../src/htdocs-admin:/htdocs-admin
-      #- ../src/htdocs-login:/htdocs-login
       - ../src/AdminUI:/AdminUI
       - ../svg:/svg
       - ./conf:/conf
@@ -291,6 +289,7 @@ services:
     links:
       - jsdemo_mongorsn1
       - grafana
+      - dozzle
     # exports the HTTP port to the main host
     ports:
       - 8080:8080
@@ -397,6 +396,24 @@ services:
     restart: unless-stopped
     links:
       - server_realtime
+    networks:
+      - jsdemo_net
+
+  # monitoring of logs of the docker containers
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOZZLE_ADDR=0.0.0.0:6688
+      - DOZZLE_BASE=/log-io
+      - DOZZLE_NO_ANALYTICS=true
+      # - DOZZLE_LEVEL=debug
+    ports:
+      - 6688:6688
+    expose:
+      - "6688"
     networks:
       - jsdemo_net
 
