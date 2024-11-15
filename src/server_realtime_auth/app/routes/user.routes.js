@@ -1,7 +1,8 @@
-const path = require('path')
 const express = require('express')
 const httpProxy = require('express-http-proxy')
-const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
+const {
+  legacyCreateProxyMiddleware: createProxyMiddleware,
+} = require('http-proxy-middleware')
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/user.controller')
 const authController = require('../controllers/auth.controller')
@@ -61,7 +62,8 @@ module.exports = function (
     httpProxy(metabaseServer)
   )
 
-  // reverse proxy for log.io
+  // reverse proxy for log.io on Windows
+  // for docker it will be used Dozzle
   app.use(
     '/log-io',
     [authJwt.verifyToken],
@@ -69,7 +71,12 @@ module.exports = function (
       authController.addXWebAuthUser(req)
       next()
     },
-    httpProxy(logioServer)
+    logioServer.indexOf('//dozzle') === -1
+      ? httpProxy(logioServer)
+      : createProxyMiddleware({
+          target: logioServer,
+          changeOrigin: true,
+        })
   )
   const wsProxy = createProxyMiddleware({
     target: logioServer,
@@ -86,7 +93,7 @@ module.exports = function (
     wsProxy
   )
   app.on('upgrade', wsProxy.upgrade)
-  app.use('/static', express.static('../log-io/ui/build/static'));
+  app.use('/static', express.static('../log-io/ui/build/static'))
 
   app.post(accessPoint, opcApi) // realtime data API
 
@@ -101,7 +108,7 @@ module.exports = function (
   )
 
   app.get(accessPoint + 'test/admin', [authJwt.isAdmin], controller.adminBoard)
-  
+
   app.use('/svg', [authJwt.verifyToken], express.static('../../svg'))
 
   // production
@@ -109,7 +116,7 @@ module.exports = function (
   app.use('/login', express.static('../AdminUI/dist'))
   app.use('/dashboard', express.static('../AdminUI/dist'))
   app.use('/admin', express.static('../AdminUI/dist'))
-  
+
   // development
   //app.use('/', httpProxy('localhost:3000/'))
   //app.use('/login', httpProxy('localhost:3000/'))
