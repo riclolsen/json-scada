@@ -18,7 +18,7 @@
 //var EventsViewer_AckTxtColor = '#606060'; // acknowledged event color
 //var EventsViewer_ElimTxtColor = '#B0B0B0'; // eliminated event color (until removed)
 //
-//var EventsViewer_RefreshTime = 15; // refresh time in seconds (digital changes triggers a faster refresh)
+//var EventsViewer_RefreshTime = 12; // refresh time in seconds (digital changes triggers a faster refresh)
 //
 // var EventsViewer_MaxRealtimeEvents = 750; // maximum number of realtime events to show 
 //var EventsViewer_MaxHistoricalEvents = 2500; // maximum number of historical events to query from server at each request
@@ -68,7 +68,7 @@
 //
 //var TabularViewer_LineColor = '#DCDCEE'; // line color
 //
-//var TabularViewer_RefreshTime = 7; // refresh time (seconds)
+//var TabularViewer_RefreshTime = 3; // refresh time (seconds)
 //
 //// locale and time zone for date/time formatting (leave empty for browser defaults)
 //// see https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
@@ -87,7 +87,7 @@
 //
 //// Screen Viewer ---------------------------------------------------------------------------------
 //
-//var ScreenViewer_RefreshTime = 5; // refresh time in seconds (digital changes triggers a faster refresh) 
+//var ScreenViewer_RefreshTime = 3; // refresh time in seconds (digital changes triggers a faster refresh) 
 //
 //// SVG Screen dimensions (must match <svg> tag dimensions on SVG screens)
 //// <svg width="3840" height="2160">
