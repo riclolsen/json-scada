@@ -1,11 +1,14 @@
 const express = require('express')
 const httpProxy = require('express-http-proxy')
+const fs = require('fs')
+const path = require('path')
 const {
   legacyCreateProxyMiddleware: createProxyMiddleware,
 } = require('http-proxy-middleware')
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/user.controller')
 const authController = require('../controllers/auth.controller')
+const Log = require('../../simple-logger')
 
 module.exports = function (
   app,
@@ -116,6 +119,30 @@ module.exports = function (
   app.use('/login', express.static('../AdminUI/dist'))
   app.use('/dashboard', express.static('../AdminUI/dist'))
   app.use('/admin', express.static('../AdminUI/dist'))
+
+  // Dynamically create routes for custom developments
+  try {
+    const customDevPath = path.join(__dirname, '../../../custom-developments')
+    const folders = fs
+      .readdirSync(customDevPath)
+      .filter((file) =>
+        fs.statSync(path.join(customDevPath, file)).isDirectory()
+      )
+
+    folders.forEach((folder) => {
+      const routePath = `/custom-developments/${folder}`
+      let folderPath = path.join(customDevPath, folder, 'dist')
+      if (!fs.existsSync(folderPath)) {
+        folderPath = path.join(customDevPath, folder)
+      }
+      app.use(routePath, express.static(folderPath))
+      Log.log(`Created static route for: ${routePath}`)
+    })
+  } catch (error) {
+    console.error('Error setting up custom development routes:', error)
+  }
+
+  // app.use('/test', httpProxy('localhost:4321/'))
 
   // development
   //app.use('/', httpProxy('localhost:3000/'))
