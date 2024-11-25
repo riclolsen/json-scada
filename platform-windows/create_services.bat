@@ -77,7 +77,7 @@ nssm set JSON_SCADA_server_realtime_auth AppRotateOnline 1
 nssm set JSON_SCADA_server_realtime_auth AppRotateBytes 10000000
 
 REM Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-REM nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+REM nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_demo_simul "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\demo_simul\index.js" 
 nssm set JSON_SCADA_demo_simul AppDirectory "C:\json-scada\src\demo_simul"
