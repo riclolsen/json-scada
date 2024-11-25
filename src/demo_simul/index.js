@@ -423,11 +423,15 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
                   .findOne({ tag: change.fullDocument.tag })
                 Log.log('Supervised of command: ' + data.supervisedOfCommand)
                 Log.log('Command value: ' + change.fullDocument.value)
-                let val = change.fullDocument.value
+                let val = new Double(change.fullDocument.value)
                 if (change.fullDocument.tag.indexOf('YTAP') !== -1) {
+                  let res = await db
+                  .collection(jsConfig.RealtimeDataCollectionName)
+                  .findOne({ _id: data.supervisedOfCommand })
+                  val = res.value
                   if (change.fullDocument.value === 0)
-                    val = { $add: ['$value', -1] }
-                  else val = { $add: ['$value', 1] }
+                    val = val - 1 
+                  else val = val + 1
                 }
 
                 let res = await db
@@ -437,7 +441,7 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
                     {
                       $set: {
                         sourceDataUpdate: {
-                          valueAtSource: new Double(val),
+                          valueAtSource: val,
                           valueStringAtSource: '',
                           asduAtSource: change.fullDocument.tag.indexOf('YTAP') === -1 ? 'M_SP_NA_1' : 'M_ST_TB_1',
                           causeOfTransmissionAtSource: '3',
