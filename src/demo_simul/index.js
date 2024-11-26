@@ -259,6 +259,7 @@ Log.log('Connecting to ' + jsConfig.mongoConnectionString)
         .toArray()
       for (let i = 0; i < tagDocs.length; i++) {
         const document = tagDocs[i]
+        if (document.tag.indexOf('YTAP') !== -1) continue
         console.log(`${document._id} ${document.tag} ${document.value}`)
         let res = await db
           .collection(jsConfig.RealtimeDataCollectionName)
