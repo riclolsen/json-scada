@@ -33,6 +33,7 @@
     "admin": "Administración",
     "grafana": "Grafana",
     "metabase": "Metabase",
+    "customDevelopments": "Desarrollos personalizados",
     "open": "Abierto"
   },
   "login": {

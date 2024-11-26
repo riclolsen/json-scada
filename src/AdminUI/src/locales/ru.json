@@ -33,6 +33,7 @@
     "admin": "Админ",
     "grafana": "Графана",
     "metabase": "Метабаза",
+    "customDevelopments": "Индивидуальные разработки",
     "open": "Открыть"
   },
   "login": {

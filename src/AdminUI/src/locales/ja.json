@@ -33,6 +33,7 @@
     "admin": "管理者",
     "grafana": "グラファナ",
     "metabase": "メタベース",
+    "customDevelopments": "カスタム開発",
     "open": "開ける"
   },
   "login": {

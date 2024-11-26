@@ -10,6 +10,7 @@ import GrafanaPage from '../components/GrafanaPage.vue'
 import MetabasePage from '../components/MetabasePage.vue'
 import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
 import LogViewerPage from '../components/LogViewerPage.vue' 
+import CustomDevelopmentsPage from '../components/CustomDevelopmentsPage.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -36,6 +37,7 @@ const routes = [
   { path: '/admin', component: AdminPage },
   { path: '/grafana', component: GrafanaPage },
   { path: '/metabase', component: MetabasePage },
+  { path: '/custom-developments', component: CustomDevelopmentsPage },
 ]
 
 const router = createRouter({

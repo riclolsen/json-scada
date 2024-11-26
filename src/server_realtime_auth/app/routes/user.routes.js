@@ -122,7 +122,7 @@ module.exports = function (
 
   // Dynamically create routes for custom developments
   try {
-    const customDevPath = path.join(__dirname, '../../../custom-developments')
+    const customDevPath = path.join(__dirname, '..', '..', '..', 'custom-developments')
     const folders = fs
       .readdirSync(customDevPath)
       .filter((file) =>
@@ -141,6 +141,72 @@ module.exports = function (
   } catch (error) {
     console.error('Error setting up custom development routes:', error)
   }
+
+  app.use("/custom-developments", (req, res) => {
+    try {
+        const customDevPath = path.join(__dirname, '..', '..', '..', 'custom-developments');
+        
+        // Read directory contents
+        const items = fs.readdirSync(customDevPath, { withFileTypes: true });
+        const folders = items.filter(item => item.isDirectory()).map(item => item.name);
+
+        // Generate HTML response
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Custom Developments</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }
+                    h1 {
+                        color: #333;
+                    }
+                    .folder-list {
+                        list-style: none;
+                        padding: 0;
+                    }
+                    .folder-list li {
+                        margin: 10px 0;
+                        padding: 10px;
+                        background-color: #f5f5f5;
+                        border-radius: 4px;
+                    }
+                    .folder-list li:hover {
+                        background-color: #e0e0e0;
+                    }
+                    a {
+                        color: #2196F3;
+                        text-decoration: none;
+                    }
+                    a:hover {
+                        text-decoration: underline;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Custom Developments</h1>
+                <ul class="folder-list">
+                    ${folders.map(folder => `
+                        <li>
+                            <a href="/custom-developments/${folder}">${folder}</a>
+                        </li>
+                    `).join('')}
+                </ul>
+            </body>
+            </html>
+        `;
+
+        res.send(html);
+    } catch (error) {
+        console.error('Error reading custom developments directory:', error);
+        res.status(500).send('Error reading custom developments directory');
+    }
+});
 
   // app.use('/test', httpProxy('localhost:4321/'))
 

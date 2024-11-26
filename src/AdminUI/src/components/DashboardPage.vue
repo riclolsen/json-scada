@@ -51,6 +51,7 @@
     HelpCircle,
     BarChart,
     Database,
+    Code,
   } from 'lucide-vue-next'
 
   // Lifecycle hooks
@@ -127,6 +128,14 @@
       color: 'warning',
       route: '/log-viewer',
       page: '/log-io',
+      target: '_blank',
+    },
+    {
+      titleKey: 'dashboard.customDevelopments',
+      icon: Code,
+      color: 'secondary',
+      route: '/custom-developments',
+      page: '/custom-developments',
       target: '_blank',
     },
     {
