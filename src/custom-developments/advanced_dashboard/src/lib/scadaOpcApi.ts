@@ -1,4 +1,3 @@
-import type { timeEnd } from 'console'
 import {
   OpcAttributeId,
   OpcFilterOperator,
