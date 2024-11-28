@@ -1,3 +1,4 @@
+import type { timeEnd } from 'console'
 import {
   OpcAttributeId,
   OpcFilterOperator,
@@ -74,7 +75,8 @@ export interface SoeData {
   sourceTimestampOk: boolean
 }
 
-export async function getGroup1List(): Promise<string[]> {
+// Get the group1 (station names) list
+export async function getGroup1List (): Promise<string[]> {
   // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.Extended_RequestUniqueAttributeValues // read data service
   const RequestHandle = Math.floor(Math.random() * 100000000)
@@ -145,7 +147,8 @@ export async function getGroup1List(): Promise<string[]> {
   }
 }
 
-export async function getRealtimeFilteredData(
+// Get realtime filtered data
+export async function getRealtimeFilteredData (
   group1Filter: string,
   group2Filter: string,
   onlyAlarms: boolean
@@ -331,7 +334,8 @@ export async function getRealtimeFilteredData(
   }
 }
 
-export async function readRealTimeData(
+// Get realtime data from tag names list
+export async function readRealTimeData (
   variables: string[]
 ): Promise<DataPoint[]> {
   // use OPC web hmi protocol https://prototyping.opcfoundation.org/
@@ -437,9 +441,11 @@ export async function readRealTimeData(
   }
 }
 
-export async function getHistoricalData(
+// Get historical data for a tag
+export async function getHistoricalData (
   tag: string,
-  timeBegin: Date
+  timeBegin: Date,
+  timeEnd: Date | null | undefined
 ): Promise<HistoricalData[]> {
   // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.HistoryReadRequest // read historical data service
@@ -460,7 +466,7 @@ export async function getHistoricalData(
         ParameterData: {
           IsModified: false,
           StartTime: timeBegin.toISOString(),
-          EndTime: new Date().toISOString(),
+          EndTime: timeEnd || new Date().toISOString(),
         },
       },
       NodesToRead: [
@@ -553,7 +559,8 @@ export async function getHistoricalData(
   }
 }
 
-export async function issueCommand(
+// Issue a command for a tag
+export async function issueCommand (
   commandTag: string,
   value: number
 ): Promise<string> {
@@ -617,7 +624,8 @@ export async function issueCommand(
   }
 }
 
-export async function getSoeData(
+// Get Sequence of Events (SOE) data
+export async function getSoeData (
   group1Filter: string[],
   useSourceTime: boolean,
   aggregate: number,
@@ -675,8 +683,9 @@ export async function getSoeData(
         ReturnDiagnostics: 2,
         AuthenticationToken: null,
       },
-      TimestampsToReturn:
-        useSourceTime ? TimestampsToReturn.Source : TimestampsToReturn.Both,
+      TimestampsToReturn: useSourceTime
+        ? TimestampsToReturn.Source
+        : TimestampsToReturn.Both,
       HistoryReadDetails: {
         ParameterTypeId: OpcServiceCode.ReadRawModifiedDetails,
         ParameterData: {
