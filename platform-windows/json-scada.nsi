@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.40"
-!define VERSION_ "0.40.0.0"
+!define VERSION "v.0.41"
+!define VERSION_ "0.41.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -445,6 +445,15 @@ SetRegView 64
   File /a /r "..\src\log-io\ui\public\*.*"
   SetOutPath $INSTDIR\src\log-io\ui\build
   File /a /r "..\src\log-io\ui\build\*.*"
+
+  SetOutPath $INSTDIR\src\custom-developments
+  File /a    "..\src\custom-developments\README.md"
+  SetOutPath $INSTDIR\src\custom-developments\basic_bargraph
+  File /a /r /x "..\src\custom-developments\basic_bargraph\node_modules" "..\src\custom-developments\basic_bargraph\*.*"
+  SetOutPath $INSTDIR\src\custom-developments\advanced_dashboard
+  File /a /r /x "..\src\custom-developments\advanced_dashboard\node_modules" "..\src\custom-developments\advanced_dashboard\*.*"
+  SetOutPath $INSTDIR\src\custom-developments\transformer_with_command
+  File /a /r /x "..\src\custom-developments\transformer_with_command\node_modules" "..\src\custom-developments\transformer_with_command\*.*"
 
   SetOutPath $INSTDIR\platform-windows\browser-runtime
   File /a /r "..\platform-windows\browser-runtime\*.*"
