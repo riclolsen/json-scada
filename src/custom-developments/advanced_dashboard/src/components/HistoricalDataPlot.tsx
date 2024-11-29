@@ -45,7 +45,7 @@ export function HistoricalDataPlot({
 
         // Fetch historical data for each point
         const historicalDataPromises = selectedPoints.map((point) =>
-          getHistoricalData(point, timeBegin)
+          getHistoricalData(point, timeBegin, null)
         )
 
         const historicalDataResults = await Promise.all(historicalDataPromises)

@@ -364,7 +364,7 @@ export async function readRealTimeData (
   }
 
   try {
-    const response = await fetch('http://127.0.0.1:8080/Invoke/', {
+    const response = await fetch('/Invoke/', {
       method: 'POST',
       body: JSON.stringify(req),
       headers: {
