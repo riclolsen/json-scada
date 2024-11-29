@@ -19,7 +19,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/linux-ARM-green 'Linux ARM-64')
 ![](https://img.shields.io/badge/windows-x86--64-green 'Windows x86-64')
 ![](https://img.shields.io/badge/macosx-x86--64-green 'Mac OSX x86-64')
-![](https://img.shields.io/badge/macosx-ARM--M1-yellow 'Mac ARM M1')
+![](https://img.shields.io/badge/macosx-ARM--M1-yellow 'Mac ARM Mx')
 
 ![](https://img.shields.io/badge/IEC61850-green 'IEC61850')
 ![](https://img.shields.io/badge/IEC60870--5--104-green 'IEC60870-5-104')
@@ -48,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.40-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.41-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -62,6 +62,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 - Easy development of custom applications with modern stacks like MEAN/MERN, etc. Extensive use of JSON from bottom up.
 - Leverage a huge ecosystem of MongoDB/PostgreSQL tools, community, services, etc.
+- Easy AI-helped custom app development using templates/API for tools like WindSurf/Cline/Cursor/Copilot/etc.
 
 ## Use cases
 
@@ -89,7 +90,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 - [Generic Install Guide](docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.40-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.41-alpha)
 - [RedHat/Rocky Linux Installer](docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Install Guide](docs/install.md)
 - [Docker Demo](demo-docker/README.md)
@@ -109,52 +110,57 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [OPC-DA Client Driver](src/OPC-DA-Client/README.md)
 - [PLC4X-GO Modbus Client Driver](src/plc4x-client/README.md)
 - [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
-- [I104M Client Driver](src/i104m/README.md)
 - [Calculations](src/calculations/README.md)
 - [Change Stream Data Processor](src/cs_data_processor/README.md)
 - [Custom Data Processor](src/cs_custom_processor/README.md)
+- [Custom Developments](src/custom-developments/README.md)
 - [Realtime Data Server](src/server_realtime_auth/README.md)
 - [OSHMI2JSON Tool](src/oshmi2json/README.md)
 - [Report Generators](docs/report_generators.md)
+- [I104M Client Driver](src/i104m/README.md)
 - [SAGE-web Displays](src/htdocs/sage-cepel-displays/README.md)
 
 ## Protocols Roadmap
 
 - [x] IEC 60870-5-104 Server TCP/TLS
 - [x] IEC 60870-5-104 Client TCP/TLS
-- [x] IEC 60870-5-101 Server (Serial, TCP)
-- [x] IEC 60870-5-101 Client (Serial, TCP)
+- [x] IEC 60870-5-101 Server Serial/TCP
+- [x] IEC 60870-5-101 Client Serial/TCP
 - [ ] IEC 60870-5-103 Client
-- [x] DNP3 Client (TCP, UDP, TLS, Serial) - Windows x64 only!
-- [ ] DNP3 Server (TCP, UDP, TLS, Serial)
-- [x] MQTT/Sparkplug-B Client
+- [x] IEC 61850 MMS Client TCP/TLS
+- [ ] IEC 61850 MMS Server
+- [ ] IEC 61850 GOOSE/SV Client
+- [x] DNP3 Client TCP/UDP/TLS/Serial - Windows x64 only!
+- [ ] DNP3 Server TCP/UDP/TLS/Serial
+- [x] MQTT/Sparkplug-B PUB/SUB TCP/TLS
 - [x] Modbus Client via PLC4X-GO
-- [x] I104M (adapter for some OSHMI drivers)
-- [ ] ICCP Client
-- [ ] ICCP Server
+- [ ] ICCP Client TCP/TLS
+- [ ] ICCP Server TCP/TLS
 - [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
-- [x] OPC UA Client
-- [x] OPC UA Server
+- [x] OPC UA Client TCP/Secure
+- [x] OPC UA Server TCP/Secure
 - [ ] OPC UA Historical Data Server
 - [ ] OPC UA Server
 - [x] OPC DA Client (Windows)
 - [ ] OPC AE Client (Windows)
 - [ ] OPC DA Server (Windows)
-- [x] IEC 61850 MMS Client
-- [ ] IEC 61850 MMS Server
-- [ ] IEC 61850 GOOSE Client
 - [x] CIP Ethernet/IP (libplctag, experimental)
 - [ ] Siemens S7
 - [ ] BACNET
+- [x] I104M (legacy adapter for some OSHMI drivers)
 
 ## Features Roadmap
 
 - [x] Web-based Viewers
 - [x] Web-based Configuration Manager
+- [x] Excel-based Configuration
+- [x] JWT Authentication
 - [x] User auth/Role-based Access Control (RBAC)
+- [ ] LDAP/AD Authorization
 - [x] Inkscape-based SVG Synoptic Editor
-- [x] Compiled Calculations Engine
-- [ ] Low-latency/Interpreted Calculations Engine
+- [x] Compiled Cyclic Calculations Engine
+- [ ] Low-latency/Asynchronous Calculations Engine
+- [x] Customizable Change-Stream Processor (for user implemented scripts)
 - [x] Basic Alarms Processor
 - [ ] Advanced Alarms Processor
 - [x] PostgreSQL/TimescaleDB Historian
@@ -167,14 +173,18 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] Install Script for RedHat/Rocky 9.4 Linux x86-64 and arm64
 - [ ] Linux Image / VM
 - [x] Supervisor (Linux process manager) examples
+- [ ] Project IDX Configuration
 - [ ] InfluxDB Integration
 - [x] Telegraf Integration
 - [ ] Kafka Integration
 - [x] PowerBI Integration (via PostgreSQL connector)
 - [ ] PowerBI Direct Integration
+- [ ] Supabase Integration
 - [ ] NodeRed Integration
+- [ ] n8n Integration
 - [ ] Alerta Integration (https://alerta.io/)
 - [x] PLC4X-GO Integration (https://plc4x.apache.org/)
+- [x] Example templates/API for fast AI-helped custom app developments
 - [ ] Managed Cloud Service
 - [ ] Supported LTS versions
 

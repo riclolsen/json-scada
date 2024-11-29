@@ -172,11 +172,18 @@ call %NPM% install
 call %NPM% run build
 call %NPM% prune --omit=dev
 
-rem deprecated
-cd %SRCPATH%\htdocs-admin
-set NODE_OPTIONS=--openssl-legacy-provider
+set NODE_OPTIONS=--max-old-space-size=10000
+
+cd %SRCPATH%\custom-developments\basic_bargraph
 call %NPM% install
 call %NPM% run build
-set NODE_OPTIONS=
+
+cd %SRCPATH%\custom-developments\advanced_dashboard
+call %NPM% install
+call %NPM% run build
+
+cd %SRCPATH%\custom-developments\transformer_with_command
+call %NPM% install
+call %NPM% run build
 
 cd %JSPATH%\platform-windows

@@ -165,12 +165,23 @@ let pool = null
     }
 
   if (pool == null) {
+    Log.log('Postgresql - Trying to connect')
     pool = new Pool(pgopt)
+    pool.on('connect', (client) => {
+      Log.log('Postgresql - connection open')
+    })
     pool.on('error', (err, client) => {
-      console.error(err)
+      Log.log('Postgresql - ' + err)
       setTimeout(() => {
         pool = null
       }, 5000)
+    })
+    pool.connect((err, client, done) => {
+      if (err) {
+        Log.log('Postgresql - connection error: ' + err)
+        pool = null
+        done();
+      }
     })
   }
 
@@ -2095,6 +2106,18 @@ let pool = null
           }
 
           // read data from postgreSQL
+          if (!pool) {
+            OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.BadServerNotConnected
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
+                opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
+                'Database not connected!',
+              ]
+              res.send(OpcResp)
+              return
+          }
           pool.query(query, (err, resp) => {
             if (err) {
               OpcResp.ServiceId = opc.ServiceCode.ServiceFault

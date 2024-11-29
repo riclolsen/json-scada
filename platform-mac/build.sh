@@ -101,11 +101,18 @@ cd ../AdminUI
 npm install
 npm run build
 
-# deprecated
-cd ../htdocs-admin
-export NODE_OPTIONS=--openssl-legacy-provider
+export NODE_OPTIONS=--max-old-space-size=10000
+
+cd ../../custom-developments/basic_bargraph
 npm install
 npm run build
-export NODE_OPTIONS=
+
+cd ../../custom-developments/advanced_dashboard
+npm install
+npm run build
+
+cd ../../custom-developments/transformer_with_command
+npm install
+npm run build
 
 cd ../../../..
