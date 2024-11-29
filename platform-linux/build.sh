@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Required tools:
-# Dotnet SDK 6.0+
-# Golang 1.14+
-# Node.js 14+
+# Dotnet SDK 8.0+
+# Golang 1.21+
+# Node.js 20+
 
 # call with argument linux-arm64 for ARM architecture
 
@@ -114,7 +114,7 @@ npm run build
 
 export NODE_OPTIONS=--max-old-space-size=10000
 
-cd ../../custom-developments/basic_bargraph
+cd ../../../custom-developments/basic_bargraph
 npm install
 npm run build
 

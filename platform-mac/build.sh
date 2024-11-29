@@ -1,9 +1,11 @@
 #!/bin/bash
 
 # Required tools:
-# Dotnet SDK 6.0+
-# Golang 1.14+
-# Node.js 14+
+# Dotnet SDK 8.0+
+# Golang 1.21+
+# Node.js 20+
+
+# call with argument osx-arm64 for ARM architecture
 
 ARG1=${1:-osx-x64}
 
@@ -33,7 +35,15 @@ cd ../lib60870.netcore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
+dotnet restore
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+
+cd ../opcdaaehda-client-solution-net
+dotnet build -f net8.0-windows DaAeHdaNetStandard.sln
+
+cd ../OPC-DA-Client
+dotnet restore
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
@@ -87,6 +97,11 @@ cd ../mongofw
 npm install
 cd ../mongowr
 npm install
+
+cd ../AdminUI
+npm install
+npm run build
+
 cd ../log-io/ui
 npm install
 npm run build
@@ -97,13 +112,9 @@ cd ../inputs/file
 npm install
 npm run build
 
-cd ../AdminUI
-npm install
-npm run build
-
 export NODE_OPTIONS=--max-old-space-size=10000
 
-cd ../../custom-developments/basic_bargraph
+cd ../../../custom-developments/basic_bargraph
 npm install
 npm run build
 
