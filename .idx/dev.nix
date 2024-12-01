@@ -6,6 +6,7 @@
 
   # Use https://search.nixos.org/packages to find packages
   packages = [   
+    pkgs.sudo
     pkgs.postgresql_15_jit
     pkgs.postgresql15Packages.timescaledb
     pkgs.postgresql15Packages.timescaledb_toolkit
@@ -16,6 +17,7 @@
     pkgs.icu
     pkgs.gcc
     pkgs.gnumake
+    pkgs.cmake
     pkgs.go
     pkgs.python311
     pkgs.python311Packages.pip
@@ -44,7 +46,9 @@
   services.docker.enable = true;
 
   # Sets environment variables in the workspace
-  env = { };
+  env = { 
+    DOTNET_ROOT = "/nix/store/3frycb58lshfmnkjv1rvqqz1s7wyvvck-dotnet-sdk-8.0.101";
+  };
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
@@ -74,8 +78,9 @@
       # Runs when a workspace is first created
       onCreate = {
         init-mongodb = "
-          mkdir -p ~/mongodb/var/lib/mongo/ && 
-          mkdir -p ~/mongodb/var/log/mongodb/ && 
+          rm -rf ~/.emu/avd
+          mkdir -p /mnt/ephemeral/mongodb/var/lib/mongo/ && 
+          mkdir -p /mnt/ephemeral/mongodb/var/log/mongodb/ && 
           mongod -f ~/json-scada/platform-nix-idx/mongod.conf && 
           mongosh json_scada < ~/json-scada/mongo_seed/a_rs-init.js && 
           mongosh json_scada < ~/json-scada/mongo_seed/b_create-db.js &&
