@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.41"
-!define VERSION_ "0.41.0.0"
+!define VERSION "v.0.42"
+!define VERSION_ "0.42.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -245,7 +245,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-8.0.10-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.11-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -264,7 +264,7 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.10-win-x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.11-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
