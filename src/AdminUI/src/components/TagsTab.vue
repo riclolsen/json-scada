@@ -852,6 +852,7 @@
 
   const closeEditTag = () => {
     dialogEditTag.value = false
+    fetchTags()
   }
 
   const closeDeleteTag = () => {
@@ -972,12 +973,12 @@
   }
 
   const addNewProtocolDestination = async () => {
-    editedTag.protocolDestinations.push(newProtocolDestination.value)
+    editedTag.value.protocolDestinations.push(newProtocolDestination.value)
     dialogAddProtocolDestination.value = false
   }
 
   const addNewParcel = async () => {
-    editedTag.parcels.push(newParcel.value)
+    editedTag.value.parcels.push(newParcel.value)
     dialogAddParcel.value = false
   }
 
