@@ -84,7 +84,6 @@
           mongoimport --db json_scada --collection realtimeData --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_data.json &&
           mongoimport --db json_scada --collection processInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_process_instances.json &&
           mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json &&
-          mongosh json_scada --eval \"db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:'demo'}})\" 
         ";
         init-postgresql = "
           mkdir -p ~/postgres &&
