@@ -43,6 +43,7 @@ const SparkplugPublishQueue = new Queue() // queue of values to publish as Spark
 let SparkplugDeviceBirthed = false
 let AutoCreateTags = true
 const MongoStatus = { HintMongoIsConnected: false }
+let LastNodeRebirth = 0
 
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
@@ -1144,16 +1145,22 @@ async function sparkplugProcess(
 
       spClient.handle.on('error', function (error) {
         Log.log(logMod + "Event: Can't connect" + error)
+        if (spClient?.handle) spClient.handle.stop()
+        spClient.handle = null
       })
 
       spClient.handle.on('close', function () {
         SparkplugDeviceBirthed = false
         Log.log(logMod + 'Event: Connection Closed')
+        if (spClient?.handle) spClient.handle.stop()
+        spClient.handle = null
       })
 
       spClient.handle.on('offline', function () {
         SparkplugDeviceBirthed = false
         Log.log(logMod + 'Event: Connection Offline...')
+        if (spClient?.handle) spClient.handle.stop()
+        spClient.handle = null
       })
 
       // Create 'birth' handler
@@ -1406,9 +1413,8 @@ async function sparkplugProcess(
               if (elem) {
                 // test if published topic matches subscribed element
                 if (topic == elem) {
-                  let JsonValue = TryPayloadAsRJson(payload)
+                  const JsonValue = TryPayloadAsRJson(payload)
                   EnqueueJsonValue(JsonValue, topic)
-                  // match = true
                 }
 
                 if (
@@ -1416,7 +1422,7 @@ async function sparkplugProcess(
                   elem.endsWith('#') &&
                   topic.startsWith(elem.substring(0, elem.length - 1))
                 ) {
-                  let JsonValue = TryPayloadAsRJson(payload)
+                  const JsonValue = TryPayloadAsRJson(payload)
                   EnqueueJsonValue(JsonValue, topic)
                 }
 
@@ -1425,7 +1431,7 @@ async function sparkplugProcess(
 
                 // when used '*~' at the end of JSONPathPlus explode property names
                 if (elem.endsWith('*~')) {
-                  let jpt = JsonPathTopic(elem)
+                  const jpt = JsonPathTopic(elem)
                   if (jpt.jsonPath !== '' && topicMatchSub(topic)(jpt.topic)) {
                     const jpPropNames = JSONPath({
                       path: jpt.jsonPath,
@@ -1434,7 +1440,9 @@ async function sparkplugProcess(
                     })
                     jpPropNames.forEach((propName) => {
                       let newTopic = elem.replace('*~', propName)
-                      let jptNew = JsonPathTopic(newTopic)
+                      const jptNew = JsonPathTopic(newTopic)
+                      newTopic = newTopic.replace('$.', '')
+
                       // extract value from payload using JSON PATH
                       const jpRes = JSONPath({
                         path: jptNew.jsonPath,
@@ -1444,9 +1452,10 @@ async function sparkplugProcess(
                       EnqueueJsonValue(jpRes, newTopic)
                     })
                   }
+                  return
                 }
 
-                let jpt = JsonPathTopic(elem)
+                const jpt = JsonPathTopic(elem)
                 if (jpt.jsonPath !== '' && topicMatchSub(topic)(jpt.topic)) {
                   // extract value from payload using JSON PATH
                   const jpRes = JSONPath({
@@ -1477,7 +1486,20 @@ async function sparkplugProcess(
                   jscadaConnection.groupId.trim() === ''
                 )
                   return
+
                 if (metric?.value === true) {
+                  if (
+                    LastNodeRebirth + AppDefs.SECONDS_BETWEEN_REBIRTHS * 1000 >
+                    new Date().getTime()
+                  ) {
+                    Log.log(
+                      logModS +
+                        `Node Rebirth command received, ignoring until after ${AppDefs.SECONDS_BETWEEN_REBIRTHS} seconds`
+                    )
+                    return
+                  }
+                  LastNodeRebirth = new Date().getTime()
+
                   Log.log(logModS + 'Node Rebirth command received')
                   // Publish Node BIRTH certificate
                   let nbc = getNodeBirthPayload(configObj)
@@ -1622,7 +1644,8 @@ async function sparkplugProcess(
                   nodeLocator in DevicesList &&
                   'lastReqDateTime' in DevicesList[nodeLocator] &&
                   new Date().getTime() <
-                    DevicesList[nodeLocator].lastReqDateTime + AppDefs.SECONDS_BETWEEN_NODE_REQUESTS * 1000
+                    DevicesList[nodeLocator].lastReqDateTime +
+                      AppDefs.SECONDS_BETWEEN_NODE_REQUESTS * 1000
                 ) {
                   Log.log(
                     logModS +
@@ -1681,7 +1704,8 @@ async function sparkplugProcess(
                   nodeLocator in DevicesList &&
                   'lastReqDateTime' in DevicesList[nodeLocator] &&
                   new Date().getTime() <
-                    DevicesList[nodeLocator].lastReqDateTime + AppDefs.SECONDS_BETWEEN_NODE_REQUESTS * 1000
+                    DevicesList[nodeLocator].lastReqDateTime +
+                      AppDefs.SECONDS_BETWEEN_NODE_REQUESTS * 1000
                 ) {
                   Log.log(
                     logModS +
