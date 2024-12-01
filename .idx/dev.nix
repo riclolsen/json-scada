@@ -88,7 +88,7 @@
           mongoimport --db json_scada --collection protocolConnections --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_connections_linux.json &&
           mongoimport --db json_scada --collection realtimeData --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_data.json &&
           mongoimport --db json_scada --collection processInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_process_instances.json &&
-          mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json &&
+          mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json
         ";
         init-postgresql = "
           mkdir -p ~/postgres &&
