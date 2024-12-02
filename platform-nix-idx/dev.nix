@@ -79,8 +79,8 @@
       onCreate = {
         init-mongodb = "
           rm -rf ~/.emu/avd
-          mkdir -p /mnt/ephemeral/mongodb/var/lib/mongo/ && 
-          mkdir -p /mnt/ephemeral/mongodb/var/log/mongodb/ && 
+          mkdir -p ~/json-scada/mongodb/var/lib/mongo/ && 
+          mkdir -p ~/json-scada/mongodb/var/log/mongodb/ && 
           mongod -f ~/json-scada/platform-nix-idx/mongod.conf && 
           mongosh json_scada < ~/json-scada/mongo_seed/a_rs-init.js && 
           mongosh json_scada < ~/json-scada/mongo_seed/b_create-db.js &&
@@ -101,7 +101,17 @@
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
         ";
-        build-jsonscada = "cd ~/json-scada/platform-linux && ./build.sh";
+        build-jsonscada = "
+          cd ~/json-scada/platform-linux && 
+          ./build.sh &&
+          rm -rf /home/user/json-scada/src/AdminUI/node_modules &&
+          rm -rf /home/user/json-scada/src/custom-developments/basic_bargraph/node_modules &&
+          rm -rf /home/user/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
+          rm -rf /home/user/json-scada/src/custom-developments/transformer_with_commands/node_modules &&
+          rm -rf /home/user/json-scada/src/log-io &&
+          rm -rf /home/user/.cache &&
+          rm -rf /home/user/go
+        ";
       };
       # Runs when the workspace is (re)started
       onStart = {
