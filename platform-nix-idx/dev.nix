@@ -88,9 +88,11 @@
           mongoimport --db json_scada --collection protocolConnections --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_connections_linux.json &&
           mongoimport --db json_scada --collection realtimeData --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_data.json &&
           mongoimport --db json_scada --collection processInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_process_instances.json &&
+          mongoimport --db json_scada --collection roles --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_roles.json &&
           mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json
         ";
         init-postgresql = "
+          mkdir -p ~/json-scada/log &&
           mkdir -p ~/postgres &&
           initdb -D ~/postgres &&
           cp ~/json-scada/platform-nix-idx/postgresql.conf ~/postgres/postgresql.conf &&
@@ -117,7 +119,7 @@
         # Example: start a background task to watch and re-build backend code
         # watch-backend = "npm run watch-backend";
         start-mongodb = "/usr/bin/mongod -f ~/json-scada/platform-nix-idx/mongod.conf";
-        start-supervisor = "(supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf &)";
+        start-supervisor = "supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf";
       };
     };
   };
