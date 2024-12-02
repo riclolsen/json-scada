@@ -109,8 +109,7 @@
           rm -rf /home/user/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
           rm -rf /home/user/json-scada/src/custom-developments/transformer_with_commands/node_modules &&
           rm -rf /home/user/json-scada/src/log-io &&
-          rm -rf /home/user/.cache &&
-          rm -rf /home/user/go
+          rm -rf /home/user/.cache
         ";
       };
       # Runs when the workspace is (re)started
