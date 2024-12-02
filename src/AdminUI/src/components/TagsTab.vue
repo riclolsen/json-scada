@@ -535,27 +535,22 @@
 
         <v-text-field
           :label="$t('admin.tags.protocolDestinationCommonAddress')"
-          type="number"
-          min="0"
           v-model="newProtocolDestination.protocolDestinationCommonAddress"
         ></v-text-field>
 
         <v-text-field
           :label="$t('admin.tags.protocolDestinationObjectAddress')"
-          type="number"
-          min="0"
           v-model="newProtocolDestination.protocolDestinationObjectAddress"
         ></v-text-field>
 
         <v-text-field
           :label="$t('admin.tags.protocolDestinationASDU')"
-          type="number"
-          min="0"
           v-model="newProtocolDestination.protocolDestinationASDU"
         ></v-text-field>
 
         <v-text-field
           v-if="
+            !isNaN(parseInt(newProtocolDestination.protocolDestinationASDU)) &&
             newProtocolDestination.protocolDestinationASDU >= 45 &&
             newProtocolDestination.protocolDestinationASDU <= 64
           "
@@ -595,8 +590,6 @@
 
         <v-text-field
           :label="$t('admin.tags.protocolDestinationGroup')"
-          type="number"
-          min="0"
           v-model="newProtocolDestination.protocolDestinationGroup"
         ></v-text-field>
 
@@ -960,6 +953,7 @@
       protocolConnectionsDestinations.value = []
       protocolConnections.value.forEach((item) => {
         if (
+          item.protocolDriver === 'OPC-UA_SERVER' ||
           item.protocolDriver === 'IEC60870-5-104_SERVER' ||
           item.protocolDriver === 'IEC60870-5-101_SERVER'
         ) {
@@ -973,6 +967,21 @@
   }
 
   const addNewProtocolDestination = async () => {
+    if (!isNaN(parseInt(newProtocolDestination.value.protocolDestinationObjectAddress))) {
+      newProtocolDestination.value.protocolDestinationObjectAddress = parseInt(newProtocolDestination.value.protocolDestinationObjectAddress)
+    }
+    if (!isNaN(parseInt(newProtocolDestination.value.protocolDestinationCommonAddress))) {
+      newProtocolDestination.value.protocolDestinationCommonAddress = parseInt(newProtocolDestination.value.protocolDestinationCommonAddress)
+    }
+    if (!isNaN(parseInt(newProtocolDestination.value.protocolDestinationASDU))) {
+      newProtocolDestination.value.protocolDestinationASDU = parseInt(newProtocolDestination.value.protocolDestinationASDU)
+    }
+    if (!isNaN(parseInt(newProtocolDestination.value.protocolDestinationCommandDuration))) {
+      newProtocolDestination.value.protocolDestinationCommandDuration = parseInt(newProtocolDestination.value.protocolDestinationCommandDuration)
+    }
+    if (!isNaN(parseInt(newProtocolDestination.value.protocolDestinationGroup))) {
+      newProtocolDestination.value.protocolDestinationGroup = parseInt(newProtocolDestination.value.protocolDestinationGroup)
+    }
     editedTag.value.protocolDestinations.push(newProtocolDestination.value)
     dialogAddProtocolDestination.value = false
   }
