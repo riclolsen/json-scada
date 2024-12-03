@@ -92,6 +92,9 @@
           mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json
         ";
         init-postgresql = "
+          mkdir -p ~/json-scada/grafana/data &&
+          mkdir -p ~/json-scada/grafana/logs &&
+          mkdir -p ~/json-scada/grafana/plugins
           mkdir -p ~/json-scada/log &&
           mkdir -p ~/postgres &&
           initdb -D ~/postgres &&
@@ -101,11 +104,7 @@
           /usr/bin/createuser -h localhost -s postgres ;
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
-          psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb && 
-          mkdir -p ~/json-scada/grafana/data &&
-          mkdir -p ~/json-scada/grafana/logs &&
-          mkdir -p ~/json-scada/grafana/plugins &&
-          grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/454jp6ww3nr2k7jxfp4il4a3l9kq0l3h-grafana-10.2.8/share/grafana/
+          psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
         ";
         build-jsonscada = "
           cd ~/json-scada/platform-linux && 
@@ -125,6 +124,8 @@
         # Example: start a background task to watch and re-build backend code
         # watch-backend = "npm run watch-backend";
         start-mongodb = "/usr/bin/mongod -f ~/json-scada/platform-nix-idx/mongod.conf";
+        start-postgresql = "/usr/bin/pg_ctl -D /home/user/postgres start >/dev/null 2>&1";
+        start-grafana = "grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/454jp6ww3nr2k7jxfp4il4a3l9kq0l3h-grafana-10.2.8/share/grafana/ >/dev/null 2>&1 &";
         start-supervisor = "supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf";
       };
     };
