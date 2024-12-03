@@ -79,12 +79,14 @@
       onCreate = {
         init-mongodb = "
           rm -rf ~/.emu/avd
+          rm -rf ~/.androidsdkroot/* &&
           mkdir -p ~/json-scada/mongodb/var/lib/mongo/ && 
           mkdir -p ~/json-scada/mongodb/var/log/mongodb/ && 
           mongod -f ~/json-scada/platform-nix-idx/mongod.conf && 
           mongosh json_scada < ~/json-scada/mongo_seed/a_rs-init.js && 
           mongosh json_scada < ~/json-scada/mongo_seed/b_create-db.js &&
           mongoimport --db json_scada --collection protocolDriverInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_instances.json &&
+          mongoimport --db json_scada --collection protocolConnections --type json --file ~/json-scada/platform-nix-idx/demo_connections.json &&
           mongoimport --db json_scada --collection protocolConnections --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_connections_linux.json &&
           mongoimport --db json_scada --collection realtimeData --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_data.json &&
           mongoimport --db json_scada --collection processInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_process_instances.json &&
@@ -94,29 +96,43 @@
         init-postgresql = "
           mkdir -p ~/json-scada/grafana/data &&
           mkdir -p ~/json-scada/grafana/logs &&
-          mkdir -p ~/json-scada/grafana/plugins
+          mkdir -p ~/json-scada/grafana/plugins &&
           mkdir -p ~/json-scada/log &&
           mkdir -p ~/postgres &&
           initdb -D ~/postgres &&
           cp ~/json-scada/platform-nix-idx/postgresql.conf ~/postgres/postgresql.conf &&
           cp ~/json-scada/platform-nix-idx/pg_hba.conf ~/postgres/pg_hba.conf &&
-          /usr/bin/pg_ctl -D /home/user/postgres start >/dev/null 2>&1 &&
+          /usr/bin/pg_ctl -D ~/postgres start >/dev/null 2>&1 &&
           /usr/bin/createuser -h localhost -s postgres ;
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
         ";
         build-jsonscada = "
+          rm -rf ~/json-scada/src/AdminUI/node_modules &&
           cd ~/json-scada/platform-linux && 
           ./build.sh &&
-          rm -rf /home/user/json-scada/src/AdminUI/node_modules &&
-          rm -rf /home/user/json-scada/src/custom-developments/basic_bargraph/node_modules &&
-          rm -rf /home/user/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
-          rm -rf /home/user/json-scada/src/custom-developments/transformer_with_commands/node_modules &&
-          rm -rf /home/user/json-scada/src/log-io/inputs/file/node_modules &&
-          rm -rf /home/user/json-scada/src/log-io/ui/node_modules &&
-          rm -rf /home/user/json-scada/src/log-io/server/node_modules &&
-          rm -rf /home/user/.cache
+          rm -rf ~/json-scada/src/AdminUI/node_modules &&
+          rm -rf ~/json-scada/src/custom-developments/basic_bargraph/node_modules &&
+          rm -rf ~/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
+          rm -rf ~/json-scada/src/custom-developments/transformer_with_commands/node_modules &&
+          rm -rf ~/json-scada/src/log-io/inputs/file/node_modules &&
+          rm -rf ~/json-scada/src/log-io/ui/node_modules &&
+          rm -rf ~/json-scada/src/log-io/server/node_modules &&
+          rm -rf ~/.cache &&
+          rm -rf ~/.nuget &&
+          cd ~/json-scada/src/custom-developments/basic_bargraph &&
+          npm install &&
+          npm run build &&
+          rm -rf ~/json-scada/src/custom-developments/basic_bargraph/node_modules &&
+          cd ~/json-scada/src/custom-developments/advanced_dashboard &&
+          npm install &&
+          npm run build &&
+          rm -rf ~/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
+          cd ~/json-scada/src/custom-developments/transformer_with_commands &&
+          npm install &&
+          npm run build &&
+          rm -rf ~/json-scada/src/custom-developments/transformer_with_commands/node_modules
         ";
       };
       # Runs when the workspace is (re)started
@@ -124,7 +140,7 @@
         # Example: start a background task to watch and re-build backend code
         # watch-backend = "npm run watch-backend";
         start-mongodb = "/usr/bin/mongod -f ~/json-scada/platform-nix-idx/mongod.conf";
-        start-postgresql = "/usr/bin/pg_ctl -D /home/user/postgres start >/dev/null 2>&1";
+        start-postgresql = "/usr/bin/pg_ctl -D ~/postgres start >/dev/null 2>&1";
         start-grafana = "grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/454jp6ww3nr2k7jxfp4il4a3l9kq0l3h-grafana-10.2.8/share/grafana/ >/dev/null 2>&1 &";
         start-supervisor = "supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf";
       };
