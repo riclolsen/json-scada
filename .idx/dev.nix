@@ -97,11 +97,15 @@
           initdb -D ~/postgres &&
           cp ~/json-scada/platform-nix-idx/postgresql.conf ~/postgres/postgresql.conf &&
           cp ~/json-scada/platform-nix-idx/pg_hba.conf ~/postgres/pg_hba.conf &&
-          /usr/bin/pg_ctl -D /home/user/postgres start &&
-          /usr/bin/createuser -h localhost -s postgres &&
+          /usr/bin/pg_ctl -D /home/user/postgres start >/dev/null 2>&1 &&
+          /usr/bin/createuser -h localhost -s postgres ;
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
-          psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
+          psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb && 
+          mkdir -p ~/json-scada/grafana/data &&
+          mkdir -p ~/json-scada/grafana/logs &&
+          mkdir -p ~/json-scada/grafana/plugins &&
+          grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/454jp6ww3nr2k7jxfp4il4a3l9kq0l3h-grafana-10.2.8/share/grafana/
         ";
         build-jsonscada = "
           cd ~/json-scada/platform-linux && 
@@ -110,7 +114,9 @@
           rm -rf /home/user/json-scada/src/custom-developments/basic_bargraph/node_modules &&
           rm -rf /home/user/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
           rm -rf /home/user/json-scada/src/custom-developments/transformer_with_commands/node_modules &&
-          rm -rf /home/user/json-scada/src/log-io &&
+          rm -rf /home/user/json-scada/src/log-io/inputs/file/node_modules &&
+          rm -rf /home/user/json-scada/src/log-io/ui/node_modules &&
+          rm -rf /home/user/json-scada/src/log-io/server/node_modules &&
           rm -rf /home/user/.cache
         ";
       };
