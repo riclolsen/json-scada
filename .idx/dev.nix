@@ -111,7 +111,7 @@
         build-jsonscada = "
           rm -rf ~/json-scada/src/AdminUI/node_modules &&
           cd ~/json-scada/platform-linux && 
-          ./build.sh &&
+          ./build.sh ;
           rm -rf ~/json-scada/src/AdminUI/node_modules &&
           rm -rf ~/json-scada/src/custom-developments/basic_bargraph/node_modules &&
           rm -rf ~/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
