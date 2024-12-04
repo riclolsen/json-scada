@@ -110,7 +110,7 @@
         ";
         build-jsonscada = "
           cd ~/json-scada/platform-nix-idx &&
-          ./build.sh
+          sh ./build.sh
         ";
       };
       # Runs when the workspace is (re)started
