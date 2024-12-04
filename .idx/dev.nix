@@ -109,30 +109,8 @@
           psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
         ";
         build-jsonscada = "
-          rm -rf ~/json-scada/src/AdminUI/node_modules &&
-          cd ~/json-scada/platform-linux && 
-          ./build.sh ;
-          rm -rf ~/json-scada/src/AdminUI/node_modules &&
-          rm -rf ~/json-scada/src/custom-developments/basic_bargraph/node_modules &&
-          rm -rf ~/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
-          rm -rf ~/json-scada/src/custom-developments/transformer_with_commands/node_modules &&
-          rm -rf ~/json-scada/src/log-io/inputs/file/node_modules &&
-          rm -rf ~/json-scada/src/log-io/ui/node_modules &&
-          rm -rf ~/json-scada/src/log-io/server/node_modules &&
-          rm -rf ~/.cache &&
-          rm -rf ~/.nuget &&
-          cd ~/json-scada/src/custom-developments/basic_bargraph &&
-          npm install &&
-          npm run build &&
-          rm -rf ~/json-scada/src/custom-developments/basic_bargraph/node_modules &&
-          cd ~/json-scada/src/custom-developments/advanced_dashboard &&
-          npm install &&
-          npm run build &&
-          rm -rf ~/json-scada/src/custom-developments/advanced_dashboard/node_modules &&
-          cd ~/json-scada/src/custom-developments/transformer_with_commands &&
-          npm install &&
-          npm run build &&
-          rm -rf ~/json-scada/src/custom-developments/transformer_with_commands/node_modules
+          cd ~/json-scada/platform-nix-idx &&
+          ./build.sh
         ";
       };
       # Runs when the workspace is (re)started
