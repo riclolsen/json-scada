@@ -80,8 +80,8 @@
         init-mongodb = "
           rm -rf ~/.emu/avd
           rm -rf ~/.androidsdkroot/* &&
-          mkdir -p ~/json-scada/mongodb/var/lib/mongo/ && 
-          mkdir -p ~/json-scada/mongodb/var/log/mongodb/ && 
+          mkdir -p ~/mongodb/var/lib/mongo/ && 
+          mkdir -p ~/mongodb/var/log/mongodb/ && 
           mongod -f ~/json-scada/platform-nix-idx/mongod.conf && 
           mongosh json_scada < ~/json-scada/mongo_seed/a_rs-init.js && 
           mongosh json_scada < ~/json-scada/mongo_seed/b_create-db.js &&
