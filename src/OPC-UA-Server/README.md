@@ -76,6 +76,17 @@ Parameters for communication with OPC-UA servers.
 - _**privateKeyFilePath**_ [String] - File (\*.PEM) that contains the private key corresponding to the local certificate (equiv. to NodeJS TLS option 'key'). **Optional parameter**.
 - _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
+## Commands Routing
+
+Commands received on this driver (OPC tag writes) can be routed to protocol clients. A command tag that is associated to a client via protocolSource* parameters can be used to route commands to the client by configuring a protocolDestination for the command tag.
+
+Use the AdminUI to add a new destination for a command tag. Configure the following parameters:
+
+- Protocol Connection - Select the protocol OPC-UA_SERVER connection to use for the destination.
+- Object Address - Use the command tag name as the object address.
+- ASDU TI Type - Use "boolean" for digital commands or "double" for analog commands.
+- Leave the rest of the parameters as default.
+
 ## Command Line Arguments
 
 This driver has the following command line arguments.
