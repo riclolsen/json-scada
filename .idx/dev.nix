@@ -79,36 +79,48 @@
       onCreate = {
         init-mongodb = "
           rm -rf ~/.emu/avd
-          mkdir -p /mnt/ephemeral/mongodb/var/lib/mongo/ && 
-          mkdir -p /mnt/ephemeral/mongodb/var/log/mongodb/ && 
+          rm -rf ~/.androidsdkroot/* &&
+          mkdir -p ~/mongodb/var/lib/mongo/ && 
+          mkdir -p ~/mongodb/var/log/mongodb/ && 
           mongod -f ~/json-scada/platform-nix-idx/mongod.conf && 
           mongosh json_scada < ~/json-scada/mongo_seed/a_rs-init.js && 
           mongosh json_scada < ~/json-scada/mongo_seed/b_create-db.js &&
           mongoimport --db json_scada --collection protocolDriverInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_instances.json &&
+          mongoimport --db json_scada --collection protocolConnections --type json --file ~/json-scada/platform-nix-idx/demo_connections.json &&
           mongoimport --db json_scada --collection protocolConnections --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_connections_linux.json &&
           mongoimport --db json_scada --collection realtimeData --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_data.json &&
           mongoimport --db json_scada --collection processInstances --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_process_instances.json &&
+          mongoimport --db json_scada --collection roles --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_roles.json &&
           mongoimport --db json_scada --collection users --type json --file ~/json-scada/demo-docker/mongo_seed/files/demo_users.json
         ";
         init-postgresql = "
+          mkdir -p ~/json-scada/grafana/data &&
+          mkdir -p ~/json-scada/grafana/logs &&
+          mkdir -p ~/json-scada/grafana/plugins &&
+          mkdir -p ~/json-scada/log &&
           mkdir -p ~/postgres &&
           initdb -D ~/postgres &&
           cp ~/json-scada/platform-nix-idx/postgresql.conf ~/postgres/postgresql.conf &&
           cp ~/json-scada/platform-nix-idx/pg_hba.conf ~/postgres/pg_hba.conf &&
-          /usr/bin/pg_ctl -D /home/user/postgres start &&
-          /usr/bin/createuser -h localhost -s postgres &&
+          /usr/bin/pg_ctl -D ~/postgres start >/dev/null 2>&1 &&
+          /usr/bin/createuser -h localhost -s postgres ;
           psql -U postgres -w -h localhost -f ~/json-scada/sql/create_tables.sql template1 &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/metabaseappdb.sql metabaseappdb &&
           psql -U postgres -w -h localhost -f ~/json-scada/sql/grafanaappdb.sql grafanaappdb
         ";
-        build-jsonscada = "cd ~/json-scada/platform-linux && ./build.sh";
+        build-jsonscada = "
+          cd ~/json-scada/platform-nix-idx &&
+          sh ./build.sh
+        ";
       };
       # Runs when the workspace is (re)started
       onStart = {
         # Example: start a background task to watch and re-build backend code
         # watch-backend = "npm run watch-backend";
         start-mongodb = "/usr/bin/mongod -f ~/json-scada/platform-nix-idx/mongod.conf";
-        start-supervisor = "(supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf &)";
+        start-postgresql = "/usr/bin/pg_ctl -D ~/postgres start >/dev/null 2>&1";
+        start-grafana = "grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/454jp6ww3nr2k7jxfp4il4a3l9kq0l3h-grafana-10.2.8/share/grafana/ >/dev/null 2>&1 &";
+        start-supervisor = "supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf";
       };
     };
   };
