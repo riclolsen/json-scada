@@ -69,11 +69,19 @@ To configure safe remote client access, configure IP address access control, HTT
 
 For more info about configuration please read the protocols documentation.
 
-## RHEL9.4 and compatible systems (automated installation)
+## RHEL9.4 and compatible systems (Rocky/Alma/Oracle Linux), scripted installation
 
 Execute commands below for scripted installation:
 
     # firstly create a user named "jsonscada" that can do "sudo". Login as "jsonscada".
+
+    sudo adduser jsonscada
+    sudo usermod -aG wheel jsonscada
+    sudo usermod -aG docker jsonscada
+    sudo passwd jsonscada
+    sudo su - jsonscada
+
+    # next, clone the json-scada repo
 
     sudo dnf -y install git
     cd /home/jsonscada
