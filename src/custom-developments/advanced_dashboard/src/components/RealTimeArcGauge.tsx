@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import GaugeChart from 'react-gauge-chart'
-import { type DataPoint, readRealTimeData } from '../lib/scadaOpcApi'
+import { type DataPoint, getRealTimeData } from '../lib/scadaOpcApi'
 import { CircleIcon } from '@radix-ui/react-icons'
 
 interface RealTimeArcGaugeProps {
@@ -23,7 +23,7 @@ export function RealTimeArcGauge({
 
     const fetchData = async () => {
       try {
-        const result = await readRealTimeData(selectedPoints)
+        const result = await getRealTimeData(selectedPoints)
         const filteredResult = result.filter(Boolean)
 
         // Only update if values have changed

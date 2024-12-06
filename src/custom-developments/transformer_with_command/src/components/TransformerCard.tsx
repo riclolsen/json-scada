@@ -40,7 +40,7 @@ export function TransformerCard() {
   const fetchRealtimeData = async () => {
     try {
       setDataStatus('fetching')
-      const data = await scadaOpcApi.readRealTimeData([
+      const data = await scadaOpcApi.getRealTimeData([
         'KAW2TR1-2MTWT', // HV MW
         'KAW2TR1-2MTVR', // HV Mvar
         'KAW2TR1-0MTWT', // LV MW

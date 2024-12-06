@@ -1,8 +1,10 @@
-// OPC-UA Standard Codes (and some extensions).
-// {json:scada} - Copyright 2020 - Ricardo L. Olsen
+// OPC-UA Standard Codes (and some extensions adapted to use to interact with the SCADA).
+// {json:scada} - Copyright 2024 - Ricardo L. Olsen
 
-export const OpcNamespaceMongodb = 2 // first user namespace
-export const OpcNamespacePostgresql = 3 // second user namespace
+export const OpcNamespaces = {
+  Mongodb: 2,
+  Postgresql: 3,
+}
 
 export const OpcAcknowledge = {
   AckOneEvent: 0x00000001,
@@ -171,4 +173,12 @@ export const OpcFilterOperator = {
   RelatedTo: 15,
   BitwiseAnd: 16,
   BitwiseOr: 17,
+} as const
+
+export const OpcDiagnosticInfoMask = {
+  SymbolicId: 1,
+  LocalizedText: 2,
+  AdditionalInfo: 4,
+  InnerStatusCode: 8,
+  InnerDiagnosticInfo: 16,
 } as const
