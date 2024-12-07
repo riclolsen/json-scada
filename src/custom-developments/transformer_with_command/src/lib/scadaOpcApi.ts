@@ -1,21 +1,194 @@
 // API to interact with the SCADA server
+// Inspired by OPC WebHMI protocol 
+// https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
+// https://web.archive.org/web/20211018094004/https://prototyping.opcfoundation.org/
+// OPC-UA Standard Codes (and some extensions adapted to use to interact with the SCADA).
 // {json:scada} - Copyright 2024 - Ricardo L. Olsen
 
-import {
-  OpcAttributeId,
-  OpcFilterOperator,
-  OpcKeyType,
-  OpcNamespaces,
-  OpcDiagnosticInfoMask,
-  OpcOperand,
-  OpcServiceCode,
-  OpcStatusCodes,
-  OpcValueTypes,
-  TimestampsToReturn,
-} from './opcCodes'
+export const OpcNamespaces = {
+  Mongodb: 2,
+  Postgresql: 3,
+}
+
+export const OpcAcknowledge = {
+  AckOneEvent: 0x00000001,
+  RemoveOneEvent: 0x00000002,
+  AckPointEvents: 0x00000004,
+  RemovePointEvents: 0x00000008,
+  AckAllEvents: 0x00000040,
+  RemoveAllEvents: 0x00000080,
+  AckOneAlarm: 0x00000100,
+  AckAllAlarms: 0x00000400,
+  SilenceBeep: 0x00001000,
+} as const
+
+export const OpcStatusCodes = {
+  Good: 0,
+  GoodNoData: 0x00a50000,
+  GoodMoreData: 0x00a60000,
+  Uncertain: 0x40000000,
+  Bad: 0x80000000,
+  BadTimeout: 0x800a0000,
+  BadNodeAttributesInvalid: 0x80620000,
+  BadNodeIdInvalid: 0x80330000,
+  BadNodeIdUnknown: 0x80340000,
+  BadRequestHeaderInvalid: 0x802a0000,
+  BadRequestNotAllowed: 0x80e40000,
+  BadServiceUnsupported: 0x800b0000,
+  BadShutdown: 0x800c0000,
+  BadServerNotConnected: 0x800d0000,
+  BadServerHalted: 0x800e0000,
+  BadNothingToDo: 0x800f0000,
+  BadUserAccessDenied: 0x801f0000,
+  BadIdentityTokenInvalid: 0x80200000,
+  BadIdentityTokenRejected: 0x80210000,
+  BadUnexpectedError: 0x80010000,
+  BadInternalError: 0x80020000,
+  BadOutOfMemory: 0x80030000,
+  BadResourceUnavailable: 0x80040000,
+  BadCommunicationError: 0x80050000,
+  BadInvalidArgument: 0x80ab0000,
+  BadDisconnect: 0x80ad0000,
+  BadConnectionClosed: 0x80ae0000,
+  BadInvalidState: 0x80af0000,
+  BadNoDataAvailable: 0x80b10000,
+  BadWaitingForResponse: 0x80b20000,
+} as const
+
+export const TimestampsToReturn = {
+  Source: 0,
+  Server: 1,
+  Both: 2,
+  Neither: 3,
+  Invalid: 4,
+} as const
+
+export const OpcValueTypes = {
+  Null: 0,
+  Boolean: 1,
+  SByte: 2,
+  Byte: 3,
+  Int16: 4,
+  UInt16: 5,
+  Int32: 6,
+  UInt32: 7,
+  Int64: 8,
+  UInt64: 9,
+  Float: 10,
+  Double: 11,
+  String: 12,
+  DateTime: 13,
+  Guid: 14,
+  ByteString: 15,
+  XmlElement: 16,
+  NodeId: 17,
+  ExpandedNodeId: 18,
+  StatusCode: 19,
+  QualifiedName: 20,
+  LocalizedText: 21,
+  ExtensionObject: 22,
+  DataValue: 23,
+  Variant: 24,
+  DiagnosticInfo: 25,
+  Number: 26,
+  Integer: 27,
+  UInteger: 28,
+  Enumeration: 29,
+} as const
+
+export const OpcKeyType = {
+  Numeric: 0,
+  String: 1,
+} as const
+
+export const OpcServiceCode = {
+  ServiceFault: 395,
+  RequestHeader: 389,
+  ResponseHeader: 392,
+  ReadValueId: 626,
+  ReadRequest: 629,
+  ReadResponse: 632,
+  ReadRawModifiedDetails: 647,
+  HistoryReadRequest: 662,
+  HistoryReadResponse: 665,
+  WriteValue: 668,
+  WriteRequest: 671,
+  WriteResponse: 674,
+  DataChangeNotification: 809,
+  StatusChangeNotification: 818,
+  Extended_RequestUniqueAttributeValues: 100000001,
+  Extended_ResponseUniqueAttributeValues: 100000002,
+} as const
+
+export const OpcOperand = {
+  Attribute: 598,
+  Literal: 595,
+  Element: 592,
+  SimpleAttributeOperand: 601,
+} as const
+
+export const OpcAttributeId = {
+  NodeID: 1,
+  NodeClass: 2,
+  BrowseName: 3,
+  DisplayName: 4,
+  Description: 5,
+  WriteMask: 6,
+  UserWriteMask: 7,
+  IsAbstract: 8,
+  Symmetric: 9,
+  InverseName: 10,
+  ContainsNoLoops: 11,
+  EventNotifier: 12,
+  Value: 13,
+  DataType: 14,
+  ValueRank: 15,
+  ArrayDimensions: 16,
+  AccessLevel: 17,
+  UserAccessLevel: 18,
+  MinimumSamplingInterval: 19,
+  Historizing: 20,
+  Executable: 21,
+  UserExecutable: 22,
+  ExtendedGroup1: 100000001,
+  ExtendedGroup2: 100000002,
+  ExtendedGroup3: 100000003,
+  ExtendedAlarmEventsAck: 100000004,
+  ExtendedBlockingAnnotation: 100000005,
+  ExtendedDocumentalAnnotation: 100000006,
+} as const
+
+export const OpcFilterOperator = {
+  Equals: 0,
+  IsNull: 1,
+  GreaterThan: 2,
+  LessThan: 3,
+  GreaterThanOrEqual: 4,
+  LessThanOrEqual: 5,
+  Like: 6,
+  Not: 7,
+  Between: 8,
+  InList: 9,
+  And: 10,
+  Or: 11,
+  Cast: 12,
+  InView: 13,
+  OfType: 14,
+  RelatedTo: 15,
+  BitwiseAnd: 16,
+  BitwiseOr: 17,
+} as const
+
+export const OpcDiagnosticInfoMask = {
+  SymbolicId: 1,
+  LocalizedText: 2,
+  AdditionalInfo: 4,
+  InnerStatusCode: 8,
+  InnerDiagnosticInfo: 16,
+} as const
 
 /**
- * Represents a node identifier, which includes the type of identifier,
+ * Represents a node (tag) identifier, which includes the type of identifier,
  * the actual identifier value, and the namespace index. The `IdType` indicates
  * how the `Id` should be interpreted, while the `Namespace` specifies the
  * namespace to which the node belongs. The `Id` can be a string or undefined.
@@ -30,7 +203,7 @@ export interface OpcNodeId {
 }
 
 /**
- * Represents a node to be read. It includes the node's identifier
+ * Represents a node (tag) to be read. It includes the node's identifier
  * and the specific attribute of the node that needs to be read. The `NodeId` contains
  * details about the node's type, identifier, and namespace, while `AttributeId` specifies
  * the attribute of the node to be accessed.
@@ -41,6 +214,65 @@ export interface OpcNodeToRead {
   NodeId: OpcNodeId
   AttributeId: (typeof OpcAttributeId)[keyof typeof OpcAttributeId]
   ClientHandle?: string
+}
+
+/**
+ * Represents additional properties of an OPC value, such as alarm settings, annotation, and notes.
+ *
+ * @property {boolean} [alarmDisabled] - Whether the alarm is disabled.
+ * @property {string} [annotation] - The (blocking) annotation of the value.
+ * @property {number} [loLimit] - The low limit of the value for out of range alarms.
+ * @property {number} [hiLimit] - The high limit of the value for out of range alarms.
+ * @property {number} [hysteresis] - The hysteresis of the value for out of range alarms.
+ * @property {string} [notes] - The documental notes of the value.
+ * @property {number} [newValue] - The new value of the value.
+ * @property {boolean} [substituted] - Whether the value is substituted (manually imposed).
+ */
+export interface ExtendedProperties {
+  alarmDisabled?: boolean
+  annotation?: string
+  loLimit?: number
+  hiLimit?: number
+  hysteresis?: number
+  notes?: string
+  newValue?: number
+  substituted?: boolean
+}
+
+/**
+ * Represents an OPC value for a tag (node), which includes the type of the value and the
+ * actual value content. The `Type` property specifies the type of the value,
+ * which can be one of the values in `OpcValueTypes`. The `Body` property
+ * contains the actual value content, which can be a number, string, or boolean.
+ * The `_Properties` property is an optional object that contains additional
+ * information about the value, such as alarm settings, annotation, and notes.
+ * The properties in `_Properties` are specific to the type of value and are not
+ * required to be present.
+ * @property {typeof OpcValueTypes[keyof typeof OpcValueTypes]} Type - The type of the value, which can be one of the values in `OpcValueTypes`.
+ * @property {number | string | boolean} Body - The actual value content, which can be a number, string, or boolean.
+ * @property {object} _Properties - An optional object that contains additional information about the value, such as alarm settings, annotation, and notes.
+ */
+export interface OpcValue {
+  Type?: (typeof OpcValueTypes)[keyof typeof OpcValueTypes]
+  Body?: number | string | boolean
+  _Properties?: ExtendedProperties
+}
+
+/**
+ * Represents a node (tag) to be written. It includes the node's identifier
+ * and the specific attribute of the node that needs to be written. The
+ * `NodeId` contains details about the node's type, identifier, and namespace,
+ * while `AttributeId` specifies the attribute of the node to be accessed.
+ * The `Value` property contains the value to be written to the node.
+ *
+ * @property {OpcNodeId} NodeId - The node identifier.
+ * @property {typeof OpcAttributeId[keyof typeof OpcAttributeId]} AttributeId - The specific attribute of the node to be written.
+ * @property {OpcValue} Value - The value to be written to the node.
+ */
+export interface OpcNodeToWrite {
+  NodeId: OpcNodeId
+  AttributeId: (typeof OpcAttributeId)[keyof typeof OpcAttributeId]
+  Value: OpcValue
 }
 
 /**
@@ -98,22 +330,34 @@ export interface OpcContentFilter {
 /**
  * The parameters for the OPC UA HistoryRead request.
  *
- * The `IsModified` flag is set to true if the start time or end time has been modified.
+ * The `IsModified` flag must be set to false.
  * The `StartTime` and `EndTime` properties are ISO strings representing the start and end times
  * of the history data to be read.
- * @property {boolean} IsModified - A flag indicating if the start time or end time has been modified.
+ * @property {boolean} IsModified - A flag that must be set to false.
  * @property {string} StartTime - The start time of the history data to be read in ISO string format.
  * @property {string} EndTime - The end time of the history data to be read in ISO string format.
+ * @property {number} NumValuesPerNode - The number of values to be read per node.
  */
 export interface OpcParameterData {
-  IsModified: boolean
+  IsReadModified: boolean
   StartTime: string
   EndTime: string
+  NumValuesPerNode?: number
 }
 
+/**
+ * The details of the OPC UA HistoryRead request.
+ *
+ * The `ParameterTypeId` specifies the type of history read request.
+ * The `ParameterData` contains the parameters for the history read request.
+ */
 export interface OpcHistoryReadDetails {
   ParameterTypeId: (typeof OpcServiceCode)[keyof typeof OpcServiceCode]
   ParameterData: OpcParameterData
+}
+
+export interface OpcAggregateFilter {
+  AggregateType: string
 }
 
 /**
@@ -139,7 +383,8 @@ export interface OpcRequestBody {
   ContentFilter?: any
   HistoryReadDetails?: OpcHistoryReadDetails
   NodesToRead?: OpcNodeToRead[]
-  NodesToWrite?: any
+  NodesToWrite?: OpcNodeToWrite[]
+  AggregateFilter?: OpcAggregateFilter
 }
 
 /**
@@ -240,7 +485,6 @@ export interface CommandResult {
  * @returns {Promise<string[]>} a promise that resolves to a list of group1 names
  */
 export async function getGroup1List(): Promise<string[]> {
-  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.Extended_RequestUniqueAttributeValues // read data service
   const RequestHandle = Math.floor(Math.random() * 100000000)
   const req: OpcRequest = {
@@ -274,7 +518,6 @@ export async function getGroup1List(): Promise<string[]> {
       !data.Body.ResponseHeader.RequestHandle ||
       !data.Body.Results
     ) {
-      console.log('RequestUniqueAttributeValues invalid service response!')
       return []
     }
 
@@ -285,13 +528,9 @@ export async function getGroup1List(): Promise<string[]> {
         OpcServiceCode.Extended_ResponseUniqueAttributeValues &&
         data.ServiceId !== OpcServiceCode.ServiceFault)
     ) {
-      console.log(
-        'RequestUniqueAttributeValues invalid or unexpected service response!'
-      )
       return []
     }
     if (data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good) {
-      console.log('RequestUniqueAttributeValues service error!')
       return []
     }
 
@@ -305,7 +544,6 @@ export async function getGroup1List(): Promise<string[]> {
       })
     return group1List
   } catch (error) {
-    console.log(error)
     return []
   }
 }
@@ -397,7 +635,6 @@ export async function getRealtimeFilteredData(
       ContentFilter.push(ContFiltElem)
     }
 
-    // use OPC web hmi protocol https://prototyping.opcfoundation.org/
     const ServiceId = OpcServiceCode.ReadRequest // read data service
     const RequestHandle = Math.floor(Math.random() * 100000000)
     const req: OpcRequest = {
@@ -432,7 +669,6 @@ export async function getRealtimeFilteredData(
       !data.Body.ResponseHeader ||
       !data.Body.ResponseHeader.RequestHandle
     ) {
-      console.log('ReadRequest invalid service response!')
       return []
     }
 
@@ -442,14 +678,12 @@ export async function getRealtimeFilteredData(
       (data.ServiceId !== OpcServiceCode.ReadResponse &&
         data.ServiceId !== OpcServiceCode.ServiceFault)
     ) {
-      console.log('ReadRequest invalid or unexpected service response!')
       return []
     }
     if (
       data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good &&
       data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData
     ) {
-      console.log('ReadRequest service error!')
       // check access control denied, in this case go to initial page
       if (
         data.Body.ResponseHeader.ServiceResult ===
@@ -498,7 +732,6 @@ export async function getRealtimeFilteredData(
       }
     })
   } catch (error) {
-    console.log(error)
     return []
   }
 }
@@ -511,7 +744,6 @@ export async function getRealtimeFilteredData(
 export async function getRealTimeData(
   variables: string[]
 ): Promise<DataPoint[]> {
-  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.ReadRequest // read data service
   const RequestHandle = Math.floor(Math.random() * 100000000)
   const req: OpcRequest = {
@@ -554,7 +786,6 @@ export async function getRealTimeData(
       !data.Body.ResponseHeader ||
       !data.Body.ResponseHeader.RequestHandle
     ) {
-      console.log('ReadRequest invalid service response!')
       return []
     }
 
@@ -564,7 +795,6 @@ export async function getRealTimeData(
       (data.ServiceId !== OpcServiceCode.ReadResponse &&
         data.ServiceId !== OpcServiceCode.ServiceFault)
     ) {
-      console.log('ReadRequest invalid or unexpected service response!')
       return []
     }
 
@@ -572,7 +802,6 @@ export async function getRealTimeData(
       data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good &&
       data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData
     ) {
-      console.log('ReadRequest service error!')
       return []
     }
 
@@ -609,7 +838,6 @@ export async function getRealTimeData(
       }
     })
   } catch (error) {
-    console.error(error)
     return []
   }
 }
@@ -627,7 +855,6 @@ export async function getHistoricalData(
   timeBegin: Date,
   timeEnd: Date | null | undefined
 ): Promise<HistoricalData[]> {
-  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.HistoryReadRequest // read historical data service
   const RequestHandle = Math.floor(Math.random() * 100000000)
   const req: OpcRequest = {
@@ -644,7 +871,7 @@ export async function getHistoricalData(
       HistoryReadDetails: {
         ParameterTypeId: OpcServiceCode.ReadRawModifiedDetails,
         ParameterData: {
-          IsModified: false,
+          IsReadModified: false,
           StartTime: timeBegin.toISOString(),
           EndTime: timeEnd?.toISOString() || new Date().toISOString(),
         },
@@ -680,7 +907,6 @@ export async function getHistoricalData(
       !data.Body.ResponseHeader.RequestHandle ||
       !data.Body.Results
     ) {
-      console.log('Historian invalid service response!')
       return []
     }
     // response must have same request handle and be a read response or service fault
@@ -689,18 +915,16 @@ export async function getHistoricalData(
       (data.ServiceId !== OpcServiceCode.HistoryReadResponse &&
         data.ServiceId !== OpcServiceCode.ServiceFault)
     ) {
-      console.log('Historian invalid or unexpected service response!')
       return []
     }
     if (data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good) {
-      console.log('Historian service error!')
       return []
     }
     if (
       typeof data.Body.Results[0].StatusCode === 'number' &&
       data.Body.Results[0].StatusCode !== 0
     ) {
-      console.log('Historical data not found for point ' + tag + ' !')
+      return []
     }
 
     return data.Body.Results[0].HistoryData.map((elem: any) => {
@@ -734,7 +958,6 @@ export async function getHistoricalData(
       }
     })
   } catch (error) {
-    console.log(error)
     return []
   }
 }
@@ -790,15 +1013,14 @@ export async function getSoeData(
     ContentFilter.push(ContFiltElem)
   }
 
-  let AggregateFilter = null
+  let AggregateFilter = undefined
   if (aggregate) {
     AggregateFilter = { AggregateType: 'Count' }
   }
 
-  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.HistoryReadRequest // history read service
   const RequestHandle = Math.floor(Math.random() * 100000000)
-  const req = {
+  const req: OpcRequest = {
     ServiceId: ServiceId,
     Body: {
       RequestHeader: {
@@ -813,7 +1035,7 @@ export async function getSoeData(
       HistoryReadDetails: {
         ParameterTypeId: OpcServiceCode.ReadRawModifiedDetails,
         ParameterData: {
-          IsModified: false,
+          IsReadModified: false,
           StartTime: timeBegin,
           EndTime: timeEnd,
           NumValuesPerNode: limit,
@@ -841,7 +1063,6 @@ export async function getSoeData(
       !data.Body.ResponseHeader ||
       !data.Body.ResponseHeader.RequestHandle
     ) {
-      console.log('Historian invalid service response!')
       return []
     }
     // response must have same request handle and be a read response or service fault
@@ -850,14 +1071,12 @@ export async function getSoeData(
       (data.ServiceId !== OpcServiceCode.HistoryReadResponse &&
         data.ServiceId !== OpcServiceCode.ServiceFault)
     ) {
-      console.log('Historian invalid or unexpected service response!')
       return []
     }
     if (
       data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good &&
       data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData
     ) {
-      console.log('Historian service error!')
       return []
     }
     if (
@@ -886,7 +1105,6 @@ export async function getSoeData(
       }
     })
   } catch (error) {
-    console.log(error)
     return []
   }
 }
@@ -901,7 +1119,6 @@ export async function issueCommand(
   commandTag: string,
   value: number
 ): Promise<CommandResult> {
-  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
   const ServiceId = OpcServiceCode.WriteRequest // write data service
   const RequestHandle = Math.floor(Math.random() * 100000000)
   const req: OpcRequest = {
@@ -989,10 +1206,9 @@ export async function getCommandAckStatus(
 ): Promise<(typeof OpcStatusCodes)[keyof typeof OpcStatusCodes]> {
   // track command acknowledgment from server/protocol, use CHANDLE to verify results
 
-  // use OPC web hmi protocol https://prototyping.opcfoundation.org/
-  var ServiceId = OpcServiceCode.ReadRequest // READ, query command ack results reading attribute 12 (EventNotifier)
-  var RequestHandle = Math.floor(Math.random() * 100000000)
-  var req: OpcRequest = {
+  const ServiceId = OpcServiceCode.ReadRequest // READ, query command ack results reading attribute 12 (EventNotifier)
+  const RequestHandle = Math.floor(Math.random() * 100000000)
+  const req: OpcRequest = {
     ServiceId: ServiceId,
     Body: {
       RequestHeader: {
@@ -1069,5 +1285,147 @@ export async function getCommandAckStatus(
     return OpcStatusCodes.BadInvalidState
   } catch (error) {
     return OpcStatusCodes.BadInternalError
+  }
+}
+
+/**
+ * Write the given extended properties of a tag.
+ * @param {string} tag - the tag name
+ * @param {ExtendedProperties} properties - the properties to write
+ * @returns {Promise<boolean>} a promise that resolves to true if the write was successful, false otherwise
+ */
+export async function writeTagProperties(
+  tag: string,
+  properties: ExtendedProperties
+): Promise<boolean> {
+  const ServiceId = OpcServiceCode.WriteRequest // write data service
+  const RequestHandle = Math.floor(Math.random() * 100000000)
+  const req: OpcRequest = {
+    ServiceId: ServiceId,
+    Body: {
+      RequestHeader: {
+        Timestamp: new Date().toISOString(),
+        RequestHandle: RequestHandle,
+        TimeoutHint: 1250,
+        ReturnDiagnostics: OpcDiagnosticInfoMask.LocalizedText,
+        AuthenticationToken: null,
+      },
+      NodesToWrite: [
+        {
+          NodeId: {
+            IdType: OpcKeyType.String,
+            Id: tag,
+            Namespace: OpcNamespaces.Mongodb,
+          },
+          AttributeId: OpcAttributeId.Description,
+          Value: {
+            _Properties: properties,
+          },
+        },
+      ],
+    },
+  }
+
+  try {
+    const response = await fetch('/Invoke/', {
+      method: 'POST',
+      body: JSON.stringify(req),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    const data = await response.json()
+    if (
+      !data.ServiceId ||
+      !data.Body ||
+      !data.Body.ResponseHeader ||
+      !data.Body.ResponseHeader.RequestHandle ||
+      !data.Body.Results ||
+      data.ServiceId !== OpcServiceCode.WriteResponse ||
+      data.Body.ResponseHeader.RequestHandle !== RequestHandle ||
+      data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good
+    ) {
+      return false
+    }
+    if (data.Body.Results[0] !== OpcStatusCodes.Good) {
+      return false
+    }
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+/**
+ * Acknowledge alarm(s)/event(s) for a given tag.
+ * To acknowledge all alarms for all tags call ackAlarmsEvents('', OpcAcknowledge.AckAllAlarms)
+ * To acknowledge all events for all tags call ackAlarmsEvents('', OpcAcknowledge.AckAllEvents)
+ * To remove all events for all tags call ackAlarmsEvents('', OpcAcknowledge.RemoveAllEvents)
+ *
+ * @param {string} tag - The tag name for which alarms/events are to be acknowledged.
+ * @param {number} action - A bit mask of the enum type OpcAcknowledge that specifies the acknowledgment action.
+ * @returns {Promise<boolean>} A promise that resolves to true if the alarm acknowledgment is successful, false otherwise.
+ */
+export async function ackAlarmsEvents(
+  tag: string,
+  action: number // bit mask of enum type OpcAcknowledge
+): Promise<boolean> {
+  const ServiceId = OpcServiceCode.WriteRequest
+  const RequestHandle = Math.floor(Math.random() * 100000000)
+  const req = {
+    ServiceId: ServiceId,
+    Body: {
+      RequestHeader: {
+        Timestamp: new Date().toISOString(),
+        RequestHandle: RequestHandle,
+        TimeoutHint: 1000,
+        ReturnDiagnostics: OpcDiagnosticInfoMask.LocalizedText,
+        AuthenticationToken: null,
+      },
+      NodesToWrite: [
+        {
+          NodeId: {
+            IdType: OpcKeyType.String,
+            Id: tag,
+            Namespace: OpcNamespaces.Mongodb,
+          },
+          AttributeId: OpcAttributeId.ExtendedAlarmEventsAck,
+          Value: {
+            Type: OpcValueTypes.Integer,
+            Body: action,
+          },
+        },
+      ],
+    },
+  }
+
+  try {
+    const response = await fetch('/Invoke/', {
+      method: 'POST',
+      body: JSON.stringify(req),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const data = await response.json()
+
+    if (
+      !data.ServiceId ||
+      !data.Body ||
+      !data.Body.ResponseHeader ||
+      !data.Body.ResponseHeader.RequestHandle ||
+      !data.Body.Results ||
+      data.ServiceId !== OpcServiceCode.WriteResponse ||
+      data.Body.ResponseHeader.RequestHandle !== RequestHandle ||
+      (data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good &&
+        data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData)
+    ) {
+      return false
+    }
+
+    return true
+  } catch (error) {
+    return false
   }
 }
