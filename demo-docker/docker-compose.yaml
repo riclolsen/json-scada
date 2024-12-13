@@ -60,7 +60,7 @@ services:
   process_pg_hist:
     image: timescale/timescaledb-ha:pg17
     container_name: jsdemo_process_pg_hist
-    command: /sql/process_pg_hist.sh
+    command: /bin/sh /sql/process_pg_hist.sh
     restart: unless-stopped
     environment:
       - PSQL_PATH=/usr/local/bin
@@ -81,7 +81,7 @@ services:
   process_pg_rtdata:
     image: timescale/timescaledb-ha:pg17
     container_name: jsdemo_process_pg_rtdata
-    command: /sql/process_pg_rtdata.sh
+    command: /bin/sh /sql/process_pg_rtdata.sh
     restart: unless-stopped
     environment:
       - PSQL_PATH=/usr/local/bin
