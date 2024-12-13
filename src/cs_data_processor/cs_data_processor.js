@@ -235,7 +235,7 @@ const pipeline = [
     let cntR = 0
     sqlTransaction =
       sqlTransaction +
-      'INSERT INTO realtime_data (tag, time_tag, json_data) VALUES '
+      'WITH ordered_values AS (  SELECT DISTINCT ON (tag) tag, time_tag, json_data FROM (VALUES '
     while (!sqlRtDataQueue.isEmpty()) {
       doInsertData = true
       let sql = sqlRtDataQueue.peek()
@@ -247,7 +247,16 @@ const pipeline = [
     sqlTransaction = sqlTransaction + ' \n'
     sqlTransaction =
       sqlTransaction +
-      'ON CONFLICT (tag) DO UPDATE SET time_tag=EXCLUDED.time_tag, json_data=EXCLUDED.json_data;\n'
+      `) AS t(tag, time_tag, json_data)
+          ORDER BY tag, time_tag DESC
+        )
+        INSERT INTO realtime_data (tag, time_tag, json_data)
+        SELECT tag, time_tag::timestamptz, json_data::jsonb
+        FROM ordered_values
+        ON CONFLICT (tag) DO UPDATE 
+        SET time_tag = EXCLUDED.time_tag,
+            json_data = EXCLUDED.json_data;
+    `
     if (cntR) Log.log('PGSQL RT updates ' + cntR)
 
     if (doInsertData) {
