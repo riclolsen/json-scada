@@ -36,7 +36,7 @@ services:
     image: timescale/timescaledb-ha:pg17
     container_name: jsdemo_timescaledb
     restart: unless-stopped
-    command: postgres -c shared_preload_libraries=timescaledb
+    #command: postgres -c shared_preload_libraries=timescaledb
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_USER=postgres
