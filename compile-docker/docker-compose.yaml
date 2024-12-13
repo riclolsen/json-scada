@@ -51,7 +51,6 @@ services:
                     rm -rf .install "
     environment:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
-    #command: tail -f /dev/null
     volumes:
       - ../src/iec61850_client:/src/iec61850_client
       - ../src/libiec61850:/src/libiec61850
@@ -73,7 +72,6 @@ services:
                     cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
     environment:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
-    #command: tail -f /dev/null
     volumes:
       - ../demo-docker/bin_win:/publish_bin_win
       - ../src/dnp3:/src/dnp3
@@ -124,79 +122,35 @@ services:
       - ../src/plc4x-client:/go/src/plc4x-client
       - ../demo-docker/bin:/publish_bin
 
-  cs_data_processor_update:
-    image: node:20-alpine
-    container_name: js_cs_data_processor_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /cs_data_processor && npm install && chmod -R 777 node_modules"
+  nodejs_update:
+    image: node:22-alpine
+    container_name: js_nodejs_update
+    command:  sh -c "apk add --update npm && npm install -g npm && 
+                     cd /cs_data_processor && npm install && chmod -R 777 node_modules &&
+                     cd /cs_custom_processor && npm install && chmod -R 777 node_modules &&
+                     cd /config_server_for_excel && npm install && chmod -R 777 node_modules &&
+                     cd /server_realtime_auth && npm install && chmod -R 777 node_modules &&
+                     cd /alarm_beep && npm install && chmod -R 777 node_modules &&
+                     cd /oshmi2json && npm install && chmod -R 777 node_modules &&
+                     cd /telegraf-listener && npm install && chmod -R 777 node_modules &&
+                     cd /OPC-UA-Server && npm install && chmod -R 777 node_modules &&
+                     cd /mqtt-sparkplug && npm install && chmod -R 777 node_modules &&
+                     cd /AdminUI && npm install && npm run build && chmod -R 777 node_modules &&
+                     cd /custom-developments/basic_bargraph && npm install && npx astro telemetry disable && npm run build &&
+                     cd /custom-developments/advanced_dashboard && npm install && npm run build &&
+                     cd /custom-developments/transformer_with_command && npm install && npm run build"
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=10000
     volumes:
       - ../src/cs_data_processor:/cs_data_processor
-
-  cs_custom_processor_update:
-    image: node:20-alpine
-    container_name: js_cs_custom_processor_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /cs_custom_processor && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/cs_custom_processor:/cs_custom_processor
-
-  server_realtime_update:
-    image: node:20-alpine
-    container_name: js_server_realtime_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /server_realtime && npm install && chmod -R 777 node_modules"
-    volumes:
-      - ../src/server_realtime:/server_realtime
-
-  config_server_excel_update:
-    image: node:20-alpine
-    container_name: js_config_server_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /config_server_for_excel && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/config_server_for_excel:/config_server_for_excel
-
-  server_realtime_auth_update:
-    image: node:20-alpine
-    container_name: js_server_realtime_auth_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /server_realtime_auth && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
-
-  alarm_beep_update:
-    image: node:20-alpine
-    container_name: js_alarm_beep_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /alarm_beep && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/alarm_beep:/alarm_beep
-
-  oshmi2json_update:
-    image: node:20-alpine
-    container_name: js_oshmi2json_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /oshmi2json && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/oshmi2json:/oshmi2json
-
-  telegraf_listener_update:
-    image: node:20-alpine
-    container_name: js_telegraf_listener_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /telegraf-listener && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/telegraf-listener:/telegraf-listener
-
-  opcua_server_update:
-    image: node:20-alpine
-    container_name: js_opcua_server_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /OPC-UA-Server && npm install && chmod -R 777 node_modules"
-    volumes:
       - ../src/OPC-UA-Server:/OPC-UA-Server
-
-  mqtt_sparkplug_update:
-    image: node:20-alpine
-    container_name: js_mqtt_sparkplug_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /mqtt-sparkplug && npm install"
-    volumes:
       - ../src/mqtt-sparkplug:/mqtt-sparkplug
-
-  htdocs_admin_update:
-    image: node:20-alpine
-    container_name: js_admin_ui_update
-    command:  sh -c "apk add --update npm && npm install -g npm && cd /AdminUI && npm install && npm run build && chmod -R 777 node_modules"
-    volumes:
       - ../src/AdminUI:/AdminUI
+      - ../src/custom-developments/:/custom-developments
+
