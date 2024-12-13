@@ -283,6 +283,7 @@ services:
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
       - ../src/AdminUI:/AdminUI
+      - ../src/custom-developments:/custom-developments
       - ../svg:/svg
       - ./conf:/conf
       - ./log:/log
@@ -392,6 +393,7 @@ services:
       - ./conf/fastcgi.conf:/etc/nginx/fastcgi.conf
       - ./conf/nginx-conf.d:/etc/nginx/conf.d
       - ../src/AdminUI:/AdminUI
+      - ../src/custom-developments:/custom-developments
       - ../svg:/svg
     restart: unless-stopped
     links:
