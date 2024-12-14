@@ -142,11 +142,26 @@ services:
     networks:
       - jsdemo_net
   
-  # IEC60870-5-104 CLIENT, will connect to a demo server on 207.180.242.96:2404
+  # IEC60870-5-104 CLIENT, will connect to a demo server
   iec104client:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name: jsdemo_iec104client
     command: sh -c "sleep 60 && /jsonscada_bin/iec104client"
+    restart: unless-stopped
+    volumes:
+      - ./conf:/conf
+      - ./bin:/jsonscada_bin
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  # OPC-UA CLIENT
+  opcua_client:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: jsdemo_opcua_client
+    command: sh -c "sleep 60 && /jsonscada_bin/OPC-UA-Client"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
