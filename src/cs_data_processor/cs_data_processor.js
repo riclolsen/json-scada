@@ -1072,7 +1072,7 @@ const pipeline = [
                     sqlHistQueue.enqueue({
                       sql:
                         "'" +
-                        change.fullDocument.tag +
+                        change.fullDocument.tag.replaceAll("'", "''") +
                         "'," +
                         "'" +
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTag.toISOString() +
@@ -1081,10 +1081,10 @@ const pipeline = [
                         ',' +
                         "'{" +
                         '"v": ' +
-                        JSON.stringify(valueJson).replaceAll("'", ' ') +
+                        JSON.stringify(valueJson).replaceAll("'", "''") +
                         ',' +
                         '"s": "' +
-                        valueString.replaceAll("'", ' ') +
+                        valueString.replaceAll("'", "''") +
                         '"}\',' +
                         (update.timeTagAtSource !== null
                           ? "'" +
@@ -1144,13 +1144,13 @@ const pipeline = [
                   change.fullDocument.alarmed = alarmed
                   let queueStr =
                     "'" +
-                    change.fullDocument.tag +
+                    change.fullDocument.tag.replaceAll("'", "''") +
                     "'," +
                     "'" +
                     new Date().toISOString() +
                     "'," +
                     "'" +
-                    JSON.stringify(change.fullDocument) +
+                    JSON.stringify(change.fullDocument).replaceAll("'", "''") +
                     "'"
                   sqlRtDataQueue.enqueue(queueStr)
                 } else
