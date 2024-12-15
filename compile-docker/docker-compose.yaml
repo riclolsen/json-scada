@@ -22,7 +22,8 @@ services:
                     rm -rf obj bin &&
                     cd /src/lib60870.netcore/lib60870.netcore/ &&
                     rm -rf obj bin &&
-                    cd /src/OPC-UA-Client/ && 
+                    cd /src/OPC-UA-Client/ &&
+                    rm -rf obj bin && dotnet clean &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
