@@ -21,6 +21,7 @@
     <Compile Include="..\..\..\IEC61850forCSharp\SampledValuesControlBlock.cs" Link="SampledValuesControlBlock.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\SampledValuesSubscriber.cs" Link="SampledValuesSubscriber.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\TLS.cs" Link="TLS.cs" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
