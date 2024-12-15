@@ -174,27 +174,27 @@ const processMessageJSON = function (data) {
   grouping += addGrpIfNotEmpty(data.tags?.group3)
 
   // add other tags to grouping, when group2 or group3 are not defined
-  if (!data.tags.group2 || !data.tags.group3 )
-  for (var [key, val] of Object.entries(data.tags)) {
-    if (
-      ![
-        'instance',
-        // 'objectname',
-        'host',
-        'hostname',
-        'node_type',
-        'rs_name',
-        'topic',
-        'group1',
-        'group2',
-        'group3',
-      ].includes(key)
-    )
-      if (val !== '' && grouping.indexOf(val) === -1) {
-        grouping += `${val}${grpSep}`
-        // ungroupedDescription += `${value}${grpSep}`
-      }
-  }
+  if (!data.tags.group2 || !data.tags.group3)
+    for (var [key, val] of Object.entries(data.tags)) {
+      if (
+        ![
+          'instance',
+          // 'objectname',
+          'host',
+          'hostname',
+          'node_type',
+          'rs_name',
+          'topic',
+          'group1',
+          'group2',
+          'group3',
+        ].includes(key)
+      )
+        if (val !== '' && grouping.indexOf(val) === -1) {
+          grouping += `${val}${grpSep}`
+          // ungroupedDescription += `${value}${grpSep}`
+        }
+    }
 
   // add instance if exists
   if (data.tags?.instance != '') {
@@ -346,8 +346,12 @@ if (
               let newTag = rtData(data)
               if (logLevel >= LogLevelDetailed)
                 console.log('Tag not found, will create: ' + data.tag)
-              let resIns = await collection.insertOne(newTag)
-              if (resIns.acknowledged) ListCreatedTags.push(data.tag)
+              try {
+                let resIns = await collection.insertOne(newTag)
+                if (resIns.acknowledged) ListCreatedTags.push(data.tag)
+              } catch (e) {
+                console.log('Error on insert: ' + e)
+              }
             } else {
               // found (already exists, no need to create), just list as created
               ListCreatedTags.push(data.tag)

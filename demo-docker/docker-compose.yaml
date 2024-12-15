@@ -383,6 +383,33 @@ services:
     networks:
       - jsdemo_net
 
+  telegraf_listener:
+    image: node:20-alpine
+    container_name: jsdemo_telegraf_listener
+    command:  sh -c "cd /telegraf-listener && sleep 50 && node index.js"
+    restart: unless-stopped
+    volumes:
+      - ../src/telegraf-listener:/telegraf-listener
+      - ./conf:/conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  telegraf_tool:
+    image: telegraf:alpine
+    container_name: jsdemo_telegraf_tool
+    restart: unless-stopped
+    volumes:
+      - ./conf/telegraf.conf:/etc/telegraf/telegraf.conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+      - telegraf_listener
+    networks:
+      - jsdemo_net
+
 #  # Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
 #  metabase:
 #    image: metabase/metabase:latest
@@ -418,7 +445,7 @@ services:
 
   # monitoring of logs of the docker containers
   dozzle:
-    container_name: dozzle
+    container_name: jsdemo_dozzle
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
