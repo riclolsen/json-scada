@@ -113,9 +113,6 @@ call %NPM% update
 cd %SRCPATH%\alarm_beep
 call %NPM% i --package-lock-only
 call %NPM% update
-cd %SRCPATH%\server_realtime
-call %NPM% i --package-lock-only
-call %NPM% update
 cd %SRCPATH%\server_realtime_auth
 call %NPM% i --package-lock-only
 call %NPM% update

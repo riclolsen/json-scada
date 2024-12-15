@@ -113,9 +113,6 @@ call %NPM% install
 cd %SRCPATH%\alarm_beep
 call %NPM% install
 
-cd %SRCPATH%\server_realtime
-call %NPM% install
-
 cd %SRCPATH%\server_realtime_auth
 call %NPM% install
 
