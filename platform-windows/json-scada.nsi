@@ -17,8 +17,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.42"
-!define VERSION_ "0.42.0.0"
+!define VERSION "v.0.43"
+!define VERSION_ "0.43.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
@@ -300,13 +300,13 @@ SetRegView 64
   File /a /r "..\platform-windows\mongodb-compass-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\mongodb-runtime
-  File /a /r "..\platform-windows\mongodb-runtime\*.*"
+  File /a /r /x *.pdb "..\platform-windows\mongodb-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\mongodb-conf
   File /a /r "..\platform-windows\mongodb-conf\*.*"
 
   SetOutPath $INSTDIR\platform-windows\postgresql-runtime
-  File /a /r "..\platform-windows\postgresql-runtime\*.*"
+  File /a /r /x *.pdb "..\platform-windows\postgresql-runtime\*.*"
 
   SetOutPath $INSTDIR\sql
   File /a "..\sql\*.bat"
