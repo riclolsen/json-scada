@@ -1,8 +1,0 @@
-# {json:scada} Timescaledb docker container - (c) 2023 - Ricardo L. Olsen 
-
-FROM timescale/timescaledb:latest-pg15
-COPY ./demo-docker/postgres_seed /docker-entrypoint-initdb.d/
-COPY ./demo-docker/sql /sql/
-ENV POSTGRES_HOST_AUTH_METHOD=trust
-ENV POSTGRES_USER=postgres
-    

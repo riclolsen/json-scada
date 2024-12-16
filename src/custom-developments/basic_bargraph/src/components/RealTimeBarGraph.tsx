@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { type DataPoint, readRealTimeData } from '../lib/scadaOpcApi'
+import { type DataPoint, getRealTimeData } from '../lib/scadaOpcApi'
 
 export function RealTimeBarGraph() {
   const [data, setData] = useState<DataPoint[]>([])
@@ -17,7 +17,7 @@ export function RealTimeBarGraph() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await readRealTimeData([
+        const result = await getRealTimeData([
           'KAW2TR1-2MTWT',
           'KAW2TR1-2MTVR',
           'KAW2TR2-2MTWT',

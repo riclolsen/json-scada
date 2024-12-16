@@ -29,7 +29,7 @@ while [ 1 ]; do
   if [ "$file" != "pg_hist_*.sql" ]; then
 
 # process sql file into the database
-    res=`$psqlPath/psql -h $dbHost -U "$dbUser" -d $dbName -p $dbPort < "$file" `
+    res=` psql -h $dbHost -U "$dbUser" -d $dbName -p $dbPort < "$file" `
 
     if [ "$?" = "0" ]; then
 

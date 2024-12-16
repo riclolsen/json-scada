@@ -116,6 +116,7 @@ export NODE_OPTIONS=--max-old-space-size=10000
 
 cd ../../../custom-developments/basic_bargraph
 npm install
+npx astro telemetry disable
 npm run build
 
 cd ../../custom-developments/advanced_dashboard

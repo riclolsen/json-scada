@@ -9,6 +9,7 @@ set SRCPATH=%JSPATH%\src
 set BINPATH=%JSPATH%\bin
 set BINWINPATH=%JSPATH%\demo-docker\bin_win
 set NPM=%JSPATH%\platform-windows\nodejs-runtime\npm
+set NPX=%JSPATH%\platform-windows\nodejs-runtime\npx
 rem _set NPM="%programfiles%\nodejs\npm"
 
 cd %JSPATH%
@@ -112,9 +113,6 @@ call %NPM% install
 cd %SRCPATH%\alarm_beep
 call %NPM% install
 
-cd %SRCPATH%\server_realtime
-call %NPM% install
-
 cd %SRCPATH%\server_realtime_auth
 call %NPM% install
 
@@ -176,6 +174,7 @@ set NODE_OPTIONS=--max-old-space-size=10000
 
 cd %SRCPATH%\custom-developments\basic_bargraph
 call %NPM% install
+call %NPX% astro telemetry disable
 call %NPM% run build
 
 cd %SRCPATH%\custom-developments\advanced_dashboard

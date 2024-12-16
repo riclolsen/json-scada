@@ -1,6 +1,0 @@
-# {json:scada} Mongodb docker container - (c) 2023 - Ricardo L. Olsen 
-
-FROM mongo:7
-COPY ./demo-docker/mongors1/files /files
-COPY ./demo-docker/mongo_seed/files /docker-entrypoint-initdb.d
-ENV MONGO_INITDB_DATABASE=json_scada

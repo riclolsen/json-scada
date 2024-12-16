@@ -26,8 +26,8 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rp
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl cmake
-sudo dnf -y install libpcap-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel
+sudo dnf -y install curl --allowerasing
 
 # to compile inkscape
 sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
@@ -63,13 +63,13 @@ sudo systemctl enable disable-transparent-huge-pages
 sudo systemctl daemon-reload
 sudo systemctl start disable-transparent-huge-pages
 
-sudo tee /etc/yum.repos.d/mongodb-org-7.0.repo <<EOF
-[mongodb-org-7.0]
+sudo tee /etc/yum.repos.d/mongodb-org-8.0.repo <<EOF
+[mongodb-org-8.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/\$basearch/
+baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/\$basearch/
 gpgcheck=1
 enabled=1
-gpgkey=https://pgp.mongodb.com/server-7.0.asc
+gpgkey=https://pgp.mongodb.com/server-8.0.asc
 EOF
 sudo tee /etc/yum.repos.d/influxdata.repo <<EOF
 [influxdata]

@@ -33,10 +33,10 @@ services:
   
   # Postgresql/TimescaleDB historian. Without auth! 
   timescaledb:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb-ha:pg17
     container_name: jsdemo_timescaledb
     restart: unless-stopped
-    command: postgres -c shared_preload_libraries=timescaledb
+    #command: postgres -c shared_preload_libraries=timescaledb
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_USER=postgres
@@ -58,9 +58,9 @@ services:
 
   # Postgresql/TimescaleDB Process SQL hist files 
   process_pg_hist:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb-ha:pg17
     container_name: jsdemo_process_pg_hist
-    command: /sql/process_pg_hist.sh
+    command: /bin/sh /sql/process_pg_hist.sh
     restart: unless-stopped
     environment:
       - PSQL_PATH=/usr/local/bin
@@ -79,9 +79,9 @@ services:
 
   # Postgresql/TimescaleDB Process SQL current data files 
   process_pg_rtdata:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb-ha:pg17
     container_name: jsdemo_process_pg_rtdata
-    command: /sql/process_pg_rtdata.sh
+    command: /bin/sh /sql/process_pg_rtdata.sh
     restart: unless-stopped
     environment:
       - PSQL_PATH=/usr/local/bin
@@ -142,11 +142,26 @@ services:
     networks:
       - jsdemo_net
   
-  # IEC60870-5-104 CLIENT, will connect to a demo server on 207.180.242.96:2404
+  # IEC60870-5-104 CLIENT, will connect to a demo server
   iec104client:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name: jsdemo_iec104client
     command: sh -c "sleep 60 && /jsonscada_bin/iec104client"
+    restart: unless-stopped
+    volumes:
+      - ./conf:/conf
+      - ./bin:/jsonscada_bin
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  # OPC-UA CLIENT
+  opcua_client:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: jsdemo_opcua_client
+    command: sh -c "sleep 60 && /jsonscada_bin/OPC-UA-Client"
     restart: unless-stopped
     volumes:
       - ./conf:/conf
@@ -283,6 +298,7 @@ services:
     volumes:
       - ../src/server_realtime_auth:/server_realtime_auth
       - ../src/AdminUI:/AdminUI
+      - ../src/custom-developments:/custom-developments
       - ../svg:/svg
       - ./conf:/conf
       - ./log:/log
@@ -367,6 +383,33 @@ services:
     networks:
       - jsdemo_net
 
+  telegraf_listener:
+    image: node:20-alpine
+    container_name: jsdemo_telegraf_listener
+    command:  sh -c "cd /telegraf-listener && sleep 50 && node index.js"
+    restart: unless-stopped
+    volumes:
+      - ../src/telegraf-listener:/telegraf-listener
+      - ./conf:/conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  telegraf_tool:
+    image: telegraf:alpine
+    container_name: jsdemo_telegraf_tool
+    restart: unless-stopped
+    volumes:
+      - ./conf/telegraf.conf:/etc/telegraf/telegraf.conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+      - telegraf_listener
+    networks:
+      - jsdemo_net
+
 #  # Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
 #  metabase:
 #    image: metabase/metabase:latest
@@ -392,6 +435,7 @@ services:
       - ./conf/fastcgi.conf:/etc/nginx/fastcgi.conf
       - ./conf/nginx-conf.d:/etc/nginx/conf.d
       - ../src/AdminUI:/AdminUI
+      - ../src/custom-developments:/custom-developments
       - ../svg:/svg
     restart: unless-stopped
     links:
@@ -401,7 +445,7 @@ services:
 
   # monitoring of logs of the docker containers
   dozzle:
-    container_name: dozzle
+    container_name: jsdemo_dozzle
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

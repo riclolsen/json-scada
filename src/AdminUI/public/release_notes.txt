@@ -135,6 +135,34 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.43:
+
+* ATTENTION: The default SVG folder has been moved to "c:\json-scada\svg\".
+
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* Fix Grafana vars in URLs not working (Curves Viewer).
+* Allow to set protocolDestination for OPC-UA_SERVER driver in Tags/AdminUI.
+* cs_data_processor: Fix single quote escape for postgres insert.
+* cs_data_processor: avoid conflicts when updating postgresql with repeated tag on same insert.
+* NPM packages updated.
+* Custom developments: Astro framework update to version 5.0.5. API improvements.
+* MongoDB Compass updated to 1.45.0.
+* MongoDB Community Server updated to 8.0.4.
+* Telegraf runtime updated to 1.33.0.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
 Notes for version 0.42:
 
 * ATTENTION: The default SVG folder has been moved to "c:\json-scada\svg\".

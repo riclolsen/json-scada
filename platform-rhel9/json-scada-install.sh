@@ -26,8 +26,8 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rp
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php curl cmake
-sudo dnf -y install libpcap-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel
+sudo dnf -y install curl --allowerasing
 
 # docker/podman can be used to run DNP3 and OPC-DA on linux
 sudo yum install -y yum-utils
@@ -71,13 +71,13 @@ sudo systemctl enable disable-transparent-huge-pages
 sudo systemctl daemon-reload
 sudo systemctl start disable-transparent-huge-pages
 
-sudo tee /etc/yum.repos.d/mongodb-org-7.0.repo <<EOF
-[mongodb-org-7.0]
+sudo tee /etc/yum.repos.d/mongodb-org-8.0.repo <<EOF
+[mongodb-org-8.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/\$basearch/
+baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/\$basearch/
 gpgcheck=1
 enabled=1
-gpgkey=https://pgp.mongodb.com/server-7.0.asc
+gpgkey=https://pgp.mongodb.com/server-8.0.asc
 EOF
 sudo tee /etc/yum.repos.d/influxdata.repo <<EOF
 [influxdata]
@@ -112,16 +112,16 @@ metadata_expire=300
 EOL
 sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo dnf -y install timescaledb-2-postgresql-16 postgresql16 postgresql16-contrib
-sudo dnf -y install timescaledb-toolkit-postgresql-16
-sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
+sudo dnf -y install timescaledb-2-postgresql-17 postgresql17 postgresql17-contrib
+sudo dnf -y install timescaledb-toolkit-postgresql-17
+sudo /usr/pgsql-17/bin/postgresql-17-setup initdb
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/16/data/
-sudo chown postgres:postgres /var/lib/pgsql/16/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/16/data/
-sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
-sudo systemctl enable postgresql-16
-sudo timescaledb-tune -yes --pg-config=/usr/pgsql-16/bin/pg_config
+sudo cp pg_hba.conf /var/lib/pgsql/17/data/
+sudo chown postgres:postgres /var/lib/pgsql/17/data/pg_hba.conf
+sudo cp postgresql.conf /var/lib/pgsql/17/data/
+sudo chown postgres:postgres /var/lib/pgsql/17/data/postgresql.conf
+sudo systemctl enable postgresql-17
+sudo timescaledb-tune -yes --pg-config=/usr/pgsql-17/bin/pg_config
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -155,7 +155,7 @@ sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-16
+sudo systemctl start postgresql-17
 sudo systemctl start mongod
 
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1

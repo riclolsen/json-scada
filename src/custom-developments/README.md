@@ -15,7 +15,7 @@ Use the example templates to create your own custom developments.
         scadaOpcApi.getGroup1List(): Promise<string[]>
 
         // Get realtime data from tag names list
-        scadaOpcApi.readRealTimeData(
+        scadaOpcApi.getRealTimeData(
             variables: string[]
         ): Promise<DataPoint[]>
 
@@ -48,6 +48,12 @@ Use the example templates to create your own custom developments.
             commandTag: string,
             value: number
         ): Promise<string>
+
+        // Write the given extended properties of a tag
+        scadaOpcApi.writeTagProperties(
+            tag: string,
+            properties: ExtendedProperties
+        ): Promise<boolean>
         ```
 
 6. Build the project and run it.

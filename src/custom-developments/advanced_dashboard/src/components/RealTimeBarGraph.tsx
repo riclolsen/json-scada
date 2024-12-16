@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { type DataPoint, readRealTimeData } from '../lib/scadaOpcApi'
+import { type DataPoint, getRealTimeData } from '../lib/scadaOpcApi'
 import { CircleIcon } from '@radix-ui/react-icons'
 
 interface RealTimeBarGraphProps {
@@ -31,7 +31,7 @@ export function RealTimeBarGraph({
 
     const fetchData = async () => {
       try {
-        const result = await readRealTimeData(selectedPoints)
+        const result = await getRealTimeData(selectedPoints)
         setData(result.filter(Boolean))
       } catch (err) {
         setError(err as Error)
