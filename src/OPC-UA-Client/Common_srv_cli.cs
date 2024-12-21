@@ -109,6 +109,7 @@ namespace OPCUAClientDriver
             public SortedSet<string> InsertedTags = new SortedSet<string>();
             public OPCUAClient connection;
             public Thread thrOPCStack;
+            public Dictionary<double, List<rtMonitTag>> OpcSubscriptions = new Dictionary<double, List<rtMonitTag>>();
         }
         [BsonIgnoreExtraElements]
         public class protocolDriverInstancesClass
@@ -141,6 +142,14 @@ namespace OPCUAClientDriver
             public string conn_name;
             public string common_address;
             public string display_name;
+        }
+        public class rtMonitTag
+        {
+            public string protocolSourceObjectAddress;
+            public string tag;
+            public string ungroupedDescription;
+            public double protocolSourceSamplingInterval;
+            public double protocolSourceQueueSize;
         }
         public class rtFilt
         {

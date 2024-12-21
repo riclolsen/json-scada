@@ -34,15 +34,15 @@ namespace OPCUAClientDriver
         static public int AutoKeyMultiplier = 1000000; // maximum number of points on each connection self-published (auto numbered points)
 
         // This process updates acquired values in the mongodb collection for realtime data
-        static public async void ProcessMongo(JSONSCADAConfig jsConfig)
+        static public async void ProcessMongo()
         {
             do
             {
                 try
                 {
                     var serializer = new BsonValueSerializer();
-                    var Client = ConnectMongoClient(jsConfig);
-                    var DB = Client.GetDatabase(jsConfig.mongoDatabaseName);
+                    var Client = ConnectMongoClient(JSConfig);
+                    var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
                     var collection =
                         DB.GetCollection<rtData>(RealtimeDataCollectionName);
                     var collectionId =
@@ -150,7 +150,7 @@ namespace OPCUAClientDriver
                                     // will imediatelly be followed by an update below (to the same tag)
                                 }
                             }
-
+                            
                             // update one existing document with received tag value (realtimeData)
                             var update =
                                 new BsonDocument {

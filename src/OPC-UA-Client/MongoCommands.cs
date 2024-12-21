@@ -28,14 +28,14 @@ namespace OPCUAClientDriver
     {
         // This process watches (via change stream) for commands inserted to a commands collection
         // When the command is considered valid it is forwarded to the RTU
-        static async void ProcessMongoCmd(JSONSCADAConfig jsConfig)
+        static async void ProcessMongoCmd()
         {
             do
             {
                 try
                 {
-                    var Client = ConnectMongoClient(jsConfig);
-                    var DB = Client.GetDatabase(jsConfig.mongoDatabaseName);
+                    var Client = ConnectMongoClient(JSConfig);
+                    var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
                     var collection =
                         DB
                             .GetCollection
@@ -46,7 +46,7 @@ namespace OPCUAClientDriver
                             .RunCommandAsync((Command<BsonDocument>)"{ping:1}")
                             .Wait(1000);
                     if (!isMongoLive)
-                        throw new Exception("Error on connection " + jsConfig.mongoConnectionString);
+                        throw new Exception("Error on connection " + JSConfig.mongoConnectionString);
 
                     Log("MongoDB CMD CS - Start listening for commands via changestream...");
                     var filter = "{ operationType: 'insert' }";

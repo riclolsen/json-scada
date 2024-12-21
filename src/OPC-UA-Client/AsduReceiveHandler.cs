@@ -207,11 +207,11 @@ namespace OPCUAClientDriver
                     return;
                 }
 
-                Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
-                exitCode = ExitCode.ErrorBrowseNamespace;
-
                 if (OPCUA_conn.autoCreateTags)
                 {
+                    Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
+                    exitCode = ExitCode.ErrorBrowseNamespace;
+
                     await FindObjects(session, ObjectIds.ObjectsFolder);
 
                     await Task.Delay(50);
@@ -223,7 +223,7 @@ namespace OPCUAClientDriver
                     ListMon.ForEach(i => i.QueueSize = System.Convert.ToUInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagQueueSize)));
                     Log(conn_name + " - " + ListMon.Count + " Objects found");
 
-                    Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + "seconds");
+                    Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + " seconds");
                     exitCode = ExitCode.ErrorCreateSubscription;
                     var subscription =
                         new Subscription(session.DefaultSubscription)
@@ -242,10 +242,70 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - " + "Add the subscription to the session.");
                     Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items");
                     exitCode = ExitCode.ErrorAddSubscription;
-                    session.AddSubscription(subscription);
-                    subscription.Create();
+                    try
+                    {
+                        session.AddSubscription(subscription);
+                        subscription.Create();
+                        subscription.ApplyChanges();
+                    }
+                    catch (Exception e)
+                    {
+                        Log(conn_name + " - Error creating subscription: " + e.Message);
+                    }
+                }
+                else
+                {
+                    Log(conn_name + " - " + "Create subscription for inserted tags.");
+                    exitCode = ExitCode.ErrorBrowseNamespace;
 
-                    subscription.ApplyChanges();
+                    foreach (var sub in OPCUA_conn.OpcSubscriptions)
+                    {
+                        List<MonitoredItem> lm = new List<MonitoredItem>();
+                        foreach (var tm in sub.Value)
+                        {
+                            lm.Add(new MonitoredItem()
+                            {
+                                DisplayName = tm.ungroupedDescription,
+                                StartNodeId = tm.protocolSourceObjectAddress,
+                                SamplingInterval = (int)(tm.protocolSourceSamplingInterval * 1000),
+                                QueueSize = (uint)OPCUA_conn.autoCreateTagQueueSize,
+                                MonitoringMode = MonitoringMode.Reporting,
+                                DiscardOldest = true,
+                                AttributeId = Attributes.Value,
+                            });
+                        }
+                        lm.ForEach(i => i.Notification += OnNotification);
+
+                        Log(conn_name + " - " + "Create a subscription with publishing interval of " + sub.Key + " seconds");
+                        exitCode = ExitCode.ErrorCreateSubscription;
+                        var subscription =
+                            new Subscription(session.DefaultSubscription)
+                            {
+                                PublishingInterval = (int)(sub.Key * 1000),
+                                PublishingEnabled = true,
+                                TimestampsToReturn = TimestampsToReturn.Both,
+                                // MaxNotificationsPerPublish = 1,
+                                SequentialPublishing = false,
+                            };
+
+                        await Task.Delay(50);
+                        subscription.AddItems(lm);
+
+                        await Task.Delay(50);
+                        Log(conn_name + " - " + "Add the subscription to the session.");
+                        Log(conn_name + " - " + subscription.MonitoredItemCount + " Monitored items");
+                        exitCode = ExitCode.ErrorAddSubscription;
+                        try
+                        {
+                            session.AddSubscription(subscription);
+                            subscription.Create();
+                            subscription.ApplyChanges();
+                        }
+                        catch (Exception e)
+                        {
+                            Log(conn_name + " - Error creating subscription: " + e.Message);
+                        }
+                    }
                 }
 
                 Log(conn_name + " - " + "Running...");
