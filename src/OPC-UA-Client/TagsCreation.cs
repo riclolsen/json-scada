@@ -128,7 +128,7 @@ namespace OPCUAClientDriver
             public BsonString protocolSourceObjectAddress { get; set; }
 
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(5.0)]
-            public BsonDouble protocolSourcePublishingInterval { get; set; } 
+            public BsonDouble protocolSourcePublishingInterval { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(2.0)]
             public BsonDouble protocolSourceSamplingInterval { get; set; }
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(10.0)]
@@ -240,6 +240,7 @@ namespace OPCUAClientDriver
                     protocolDestinations = BsonNull.Value,
                     sourceDataUpdate = BsonNull.Value,
                     supervisedOfCommand = 0.0,
+                    substituted = false,
                     timeTag = BsonNull.Value,
                     timeTagAlarm = BsonNull.Value,
                     timeTagAtSource = BsonNull.Value,
@@ -251,7 +252,11 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0
                 };
             else
-            if (iv.asdu.ToLower() == "string" || iv.asdu.ToLower() == "extensionobject")
+            if (iv.asdu.ToLower() == "string" ||
+                iv.asdu.ToLower() == "localizedtext" ||
+                iv.asdu.ToLower() == "nodeid" ||
+                iv.asdu.ToLower() == "expandednodeid" ||
+                iv.asdu.ToLower() == "guid")
                 return new rtData()
                 {
                     _id = _id,
@@ -278,6 +283,85 @@ namespace OPCUAClientDriver
                     origin = "supervised",
                     tag = TagFromOPCParameters(iv),
                     type = "string",
+                    value = 0.0,
+                    valueString = iv.valueString,
+
+                    alarmDisabled = false,
+                    alerted = false,
+                    alarmed = false,
+                    alertedState = "",
+                    annotation = "",
+                    commandBlocked = false,
+                    commandOfSupervised = 0.0,
+                    commissioningRemarks = "",
+                    formula = 0.0,
+                    frozen = false,
+                    frozenDetectTimeout = 0.0,
+                    hiLimit = Double.MaxValue,
+                    hihiLimit = Double.MaxValue,
+                    hihihiLimit = Double.MaxValue,
+                    historianDeadBand = 0.0,
+                    historianPeriod = 0.0,
+                    hysteresis = 0.0,
+                    invalid = true,
+                    invalidDetectTimeout = 60000,
+                    isEvent = false,
+                    kconv1 = 1.0,
+                    kconv2 = 0.0,
+                    location = BsonNull.Value,
+                    loLimit = -Double.MaxValue,
+                    loloLimit = -Double.MaxValue,
+                    lololoLimit = -Double.MaxValue,
+                    notes = "",
+                    overflow = false,
+                    parcels = BsonNull.Value,
+                    priority = 0.0,
+                    protocolDestinations = BsonNull.Value,
+                    sourceDataUpdate = BsonNull.Value,
+                    supervisedOfCommand = 0.0,
+                    substituted = false,
+                    timeTag = BsonNull.Value,
+                    timeTagAlarm = BsonNull.Value,
+                    timeTagAtSource = BsonNull.Value,
+                    timeTagAtSourceOk = false,
+                    transient = false,
+                    unit = "",
+                    updatesCnt = 0,
+                    valueDefault = 0.0,
+                    zeroDeadband = 0.0,
+                };
+            else
+            if (iv.asdu.ToLower() == "extensionobject" || 
+                iv.asdu.ToLower() == "xmlelement" ||
+                iv.asdu.ToLower() == "qualifiedname" ||
+                iv.asdu.ToLower().StartsWith("array") || 
+                iv.asdu.ToLower() == "bytestring")
+                return new rtData()
+                {
+                    _id = _id,
+                    protocolSourceASDU = iv.asdu,
+                    protocolSourceCommonAddress = iv.common_address,
+                    protocolSourceConnectionNumber = iv.conn_number,
+                    protocolSourceObjectAddress = iv.address,
+                    protocolSourceCommandUseSBO = false,
+                    protocolSourceCommandDuration = 0.0,
+                    protocolSourcePublishingInterval = 5.0,
+                    protocolSourceSamplingInterval = 2.0,
+                    protocolSourceQueueSize = 10.0,
+                    protocolSourceDiscardOldest = true,
+                    alarmState = -1.0,
+                    description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
+                    ungroupedDescription = iv.display_name,
+                    group1 = iv.conn_name,
+                    group2 = iv.common_address,
+                    group3 = "",
+                    stateTextFalse = "",
+                    stateTextTrue = "",
+                    eventTextFalse = "",
+                    eventTextTrue = "",
+                    origin = "supervised",
+                    tag = TagFromOPCParameters(iv),
+                    type = "json",
                     value = 0.0,
                     valueString = iv.valueString,
 
@@ -388,6 +472,7 @@ namespace OPCUAClientDriver
                 protocolDestinations = BsonNull.Value,
                 sourceDataUpdate = BsonNull.Value,
                 supervisedOfCommand = 0.0,
+                substituted = false,
                 timeTag = BsonNull.Value,
                 timeTagAlarm = BsonNull.Value,
                 timeTagAtSource = BsonNull.Value,

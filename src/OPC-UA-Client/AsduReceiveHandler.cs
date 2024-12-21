@@ -30,6 +30,10 @@ namespace OPCUAClientDriver
 {
     partial class MainClass
     {
+        public static JsonSerializerOptions jsonSerOpts = new JsonSerializerOptions
+        {
+            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
+        };
         public enum ExitCode : int
         {
             Ok = 0,
@@ -42,7 +46,8 @@ namespace OPCUAClientDriver
             ErrorAddSubscription = 0x17,
             ErrorRunning = 0x18,
             ErrorNoKeepAlive = 0x30,
-            ErrorInvalidCommandLine = 0x100
+            ErrorInvalidCommandLine = 0x100,
+            ErrorClient = 0x200,
         };
         public class OPCUAClient
         {
@@ -75,8 +80,9 @@ namespace OPCUAClientDriver
                 }
                 catch (Exception ex)
                 {
-                    // Utils.Trace("ServiceResultException:" + ex.Message);
-                    Log(conn_name + " - " + "Exception: " + ex.Message);
+                    Log(conn_name + " - " + "Exception in ConsoleClient: " + ex.Message);
+                    exitCode = ExitCode.ErrorClient;
+                    failed = true;
                     return;
                 }
 
@@ -197,7 +203,7 @@ namespace OPCUAClientDriver
                 {
                     Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
                     failed = true;
-                    // Environment.Exit(1);
+                    exitCode = ExitCode.ErrorCreateSession;
                     return;
                 }
 
@@ -212,8 +218,9 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
                     exitCode = ExitCode.ErrorMonitoredItem;
                     ListMon.ForEach(i => i.Notification += OnNotification);
-                    //ListMon.ForEach(i => i.SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000);
-                    // ListMon.ForEach(i => Log(conn_name + " - " + i.DisplayName));
+                    //OPCUA_conn.connection.session.Notification += OnSessionNotification;
+                    ListMon.ForEach(i => i.SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000));
+                    ListMon.ForEach(i => i.QueueSize = System.Convert.ToUInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagQueueSize)));
                     Log(conn_name + " - " + ListMon.Count + " Objects found");
 
                     Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + "seconds");
@@ -222,7 +229,10 @@ namespace OPCUAClientDriver
                         new Subscription(session.DefaultSubscription)
                         {
                             PublishingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) * 1000),
-                            PublishingEnabled = true
+                            PublishingEnabled = true,
+                            TimestampsToReturn = TimestampsToReturn.Both,
+                            // MaxNotificationsPerPublish = 1,
+                            SequentialPublishing = false,
                         };
 
                     await Task.Delay(50);
@@ -293,15 +303,12 @@ namespace OPCUAClientDriver
                         {
                             NodeIdsFromObjects.Add(nodeid.ToString());
                             await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
-                            //Thread.Yield();
-                            //Thread.Sleep(1);
-                            //await Task.Delay(1);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(conn_name + " - " + ex.Message);
+                    Log(conn_name + " - FindObjects - " + ex.Message);
                 }
             }
             private void Client_KeepAlive(ISession sender, KeepAliveEventArgs e)
@@ -336,10 +343,13 @@ namespace OPCUAClientDriver
 
             private void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
             {
-
                 //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
                 //Console.WriteLine("Notification Received for Variable \"{0}\" and Value = {1} type {2}.", item.DisplayName, notification.Value, notification.TypeId);
 
+                foreach (var efl in item.DequeueEvents())
+                {
+                    // Log(efl.ToString());
+                }
                 foreach (var value in item.DequeueValues())
                 {
                     if (value != null)
@@ -349,24 +359,25 @@ namespace OPCUAClientDriver
 
                         try
                         {
-
-                            if (value.WrappedValue.TypeInfo != null)
-                            {
-                                tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
-                                isArray = value.Value.GetType().ToString().Contains("[]");
-                                // Log(conn_name + " - " + item.ResolvedNodeId + "TYPE: " + tp, LogLevelDetailed);
-                            }
-                            else
-                            {
-                                Log(conn_name + " - " + item.ResolvedNodeId + " TYPE: ?????", LogLevelDetailed);
-                            }
-
-                            Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode, LogLevelDetailed);
-
                             if (value.Value != null)
                             {
+                                CntNotificEvents++;
+
                                 Double dblValue = 0.0;
                                 string strValue = "";
+
+                                if (value.WrappedValue.TypeInfo != null)
+                                {
+                                    tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
+                                    isArray = value.Value.GetType().ToString().Contains("[]");
+                                    // Log(conn_name + " - " + item.ResolvedNodeId + "TYPE: " + tp, LogLevelDetailed);
+                                }
+                                else
+                                {
+                                    Log(conn_name + " - " + item.ResolvedNodeId + " TYPE: ?????", LogLevelDetailed);
+                                }
+
+                                Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode, LogLevelDetailed);
 
                                 try
                                 {
@@ -394,11 +405,7 @@ namespace OPCUAClientDriver
                                                     dblValue = 0;
                                                     try
                                                     {
-                                                        var opt = new JsonSerializerOptions
-                                                        {
-                                                            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
-                                                        };
-                                                        strValue = JsonSerializer.Serialize(value.Value, opt);
+                                                        strValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
                                                     }
                                                     catch
                                                     {
@@ -426,28 +433,23 @@ namespace OPCUAClientDriver
                                             dblValue = System.Convert.ToDouble(value.Value);
                                             strValue = value.Value.ToString();
                                         }
-                                        catch 
+                                        catch
                                         {
                                             dblValue = 0;
                                             strValue = value.Value.ToString();
-                                        }                                        
+                                        }
                                     }
                                 }
-                                catch 
+                                catch
                                 {
                                     dblValue = 0;
                                     strValue = value.Value.ToString();
                                 }
 
-                                var options = new JsonSerializerOptions
-                                {
-                                    NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
-                                };
-
                                 OPC_Value iv =
                                     new OPC_Value()
                                     {
-                                        valueJson = JsonSerializer.Serialize(value, options),
+                                        valueJson = JsonSerializer.Serialize(value.Value, jsonSerOpts),
                                         selfPublish = true,
                                         address = item.ResolvedNodeId.ToString(),
                                         asdu = tp,
@@ -464,7 +466,16 @@ namespace OPCUAClientDriver
                                         common_address = "",
                                         display_name = item.DisplayName
                                     };
-                                OPCDataQueue.Enqueue(iv);
+                                if (OPCDataQueue.Count < DataBufferLimit)
+                                    OPCDataQueue.Enqueue(iv);
+                                else
+                                    CntLostDataUpdates++;
+                                //if (item.ResolvedNodeId.ToString().ToLower().Contains("byteswritten"))
+                                //{
+                                //    MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
+                                //    Console.WriteLine("Notification Received for Variable \"{0}\" and Value = {1} type {2}.", item.DisplayName, notification.Value, notification.TypeId);
+                                //    Console.WriteLine($"----------------------- {conn_name} {iv.address} {iv.value} {iv.sourceTimestamp}");
+                                //}
                             }
                         }
                         catch (Exception excpt)
@@ -478,15 +489,7 @@ namespace OPCUAClientDriver
                     {
                         Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " NULL VALUE!", LogLevelDetailed);
                     }
-
-                    Thread.Yield();
-                    Thread.Sleep(1);
-                    //if ((OPCDataQueue.Count % 50) == 0)
-                    //{
-                    //    await Task.Delay(200);
-                    //}
                 }
-
             }
 
             private void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
@@ -503,6 +506,34 @@ namespace OPCUAClientDriver
                         Log(conn_name + " - " + "Rejected Certificate: " + e.Certificate.Subject);
                     }
                 }
+            }
+
+            // not used yet (session events)
+            private void OnSessionNotification(ISession session, NotificationEventArgs e)
+            {
+                var notificationMsg = e.NotificationMessage;
+                Console.WriteLine(conn_name + " - Notification Received Value = {0} type {1}.", notificationMsg.NotificationData, notificationMsg.TypeId);
+
+                int count = 0;
+
+                for (int ii = 0; ii < e.NotificationMessage.NotificationData.Count; ii++)
+                {
+                    DataChangeNotification notification = e.NotificationMessage.NotificationData[ii].Body as DataChangeNotification;
+
+                    if (notification == null)
+                    {
+                        continue;
+                    }
+
+                    for (int jj = 0; jj < notification.MonitoredItems.Count; jj++)
+                    {
+                        CntNotificEvents++;
+                        count++;
+                        var value = notification.MonitoredItems[jj].Value;
+                    }
+                }
+
+                // ReportMessage("OnDataChange. Time={0} ({3}), Count={1}/{2}", DateTime.UtcNow.ToString("mm:ss.fff"), count, m_totalItemUpdateCount, (m_lastMessageTime - m_firstMessageTime).TotalMilliseconds);
             }
         }
     }
