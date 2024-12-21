@@ -66,10 +66,10 @@ const ProtocolConnection = mongoose.model(
     autoCreateTags: { type: Boolean, default: true },
 
     // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
-    autoCreateTagPublishingInterval: { type: Double, min: 0, default: 2.5 },
+    autoCreateTagPublishingInterval: { type: Double, min: 0, default: 5.0 },
     
     // OPC-UA, OPC-DA
-    autoCreateTagSamplingInterval: { type: Double, min: 0, default: 0.0 },
+    autoCreateTagSamplingInterval: { type: Double, min: 0, default: 5.0 },
     autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
 
     // OPC-UA, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA
