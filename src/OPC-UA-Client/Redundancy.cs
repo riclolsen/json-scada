@@ -20,6 +20,9 @@ using System;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.Serialization;
+using System.Linq;
 
 namespace OPCUAClientDriver
 {
@@ -46,13 +49,14 @@ namespace OPCUAClientDriver
                             >(ProtocolDriverInstancesCollectionName);
                     do
                     {
-                        bool isMongoLive =
+                        var serializer = new BsonValueSerializer();
+                        var resStatus =
                             DB
-                                .RunCommandAsync((Command<BsonDocument>)
-                                "{ping:1}")
-                                .Wait(1000);
-                        if (!isMongoLive)
-                            throw new Exception("Error on MongoDB connection ");
+                                .RunCommand((Command<BsonDocument>)
+                                "{ping:1}");
+                                //.Wait(15000);
+                        if (resStatus.Elements.Count() < 1 || resStatus.Elements.ElementAt(0).Value.AsDouble == 0)
+                           throw new Exception("Error on MongoDB connection!");
 
                         var collconns =
                             DB
@@ -117,7 +121,7 @@ namespace OPCUAClientDriver
 
                             if (Active)
                             {
-                                Log("Redundancy - This node is active.");
+                                Log($"Redundancy - This node is active. - Notification events: {CntNotificEvents} - Lost updates: {CntLostDataUpdates}");
 
                                 // update keep alive time 
                                 var filter1 =

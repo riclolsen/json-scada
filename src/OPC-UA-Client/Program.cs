@@ -30,13 +30,12 @@ namespace OPCUAClientDriver
     {
         public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2024 RLO";
         public static String ProtocolDriverName = "OPC-UA";
-        public static String DriverVersion = "0.2.0";
+        public static String DriverVersion = "0.3.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
-        public static Int32 DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
-        public static Int32 BulkWriteLimit = 1250; // limit of each bulk write to mongodb
-        //public static int OPCDefaultPublishingInterval = 2500;
-        //public static int OPCDefaultSamplingInterval = 1000;
-        //public static uint OPCDefaultQueueSize = 10;
+        public static UInt32 DataBufferLimit = 50000; // limit to start dequeuing and discarding data from the acquisition buffer
+        public static UInt32 CntNotificEvents = 0; // count events of data updates (on notification)
+        public static UInt32 CntLostDataUpdates = 0; // count of lost data updates (when DataBufferLimit exceeeded)
+        public static UInt32 BulkWriteLimit = 6000; // limit of writes for each bulk write to mongodb
 
         public static int Main(string[] args)
         {
@@ -225,10 +224,8 @@ namespace OPCUAClientDriver
                         ProcessMongo(JSConfig));
             thrMongo.Start();
 
-            // thrMongo.Priority = ThreadPriority.AboveNormal;
-
             // start thread to watch for commands in the database using a change stream
-            Thread thrMongoCmd =
+            var thrMongoCmd =
                 new Thread(() =>
                         ProcessMongoCmd(JSConfig));
             thrMongoCmd.Start();

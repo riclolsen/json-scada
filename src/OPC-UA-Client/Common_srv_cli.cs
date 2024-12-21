@@ -95,9 +95,9 @@ namespace OPCUAClientDriver
             public string configFileName { get; set; }
             [BsonDefaultValue(true)]
             public bool autoCreateTags { get; set; }
-            [BsonDefaultValue(2.5)]
+            [BsonDefaultValue(5.0)]
             public double autoCreateTagPublishingInterval { get; set; }
-            [BsonDefaultValue(0.0)]
+            [BsonDefaultValue(5.0)]
             public double autoCreateTagSamplingInterval { get; set; }
             [BsonDefaultValue(5.0)]
             public double autoCreateTagQueueSize { get; set; }
@@ -118,12 +118,12 @@ namespace OPCUAClientDriver
             public String protocolDriver { get; set; } = "";
             public Boolean enabled { get; set; } = true;
             public Int32 logLevel { get; set; } = 1;
-            public String[] nodeNames { get; set; } = new string[0];
+            public String[] nodeNames { get; set; } = Array.Empty<string>();
             public String activeNodeName { get; set; } = "";
             public DateTime activeNodeKeepAliveTimeTag { get; set; } = DateTime.MinValue;
             public Boolean keepProtocolRunningWhileInactive { get; set; } = false;
         }
-        public struct OPC_Value
+        public class OPC_Value
         {
             public string valueJson;
             public bool selfPublish;

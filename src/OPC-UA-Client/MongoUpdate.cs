@@ -23,6 +23,9 @@ using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Diagnostics;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.IO;
 
 namespace OPCUAClientDriver
 {
@@ -37,6 +40,7 @@ namespace OPCUAClientDriver
             {
                 try
                 {
+                    var serializer = new BsonValueSerializer();
                     var Client = ConnectMongoClient(jsConfig);
                     var DB = Client.GetDatabase(jsConfig.mongoDatabaseName);
                     var collection =
@@ -47,28 +51,22 @@ namespace OPCUAClientDriver
                         DB
                             .GetCollection
                             <rtCommand>(CommandsQueueCollectionName);
+                    var listWrites = new List<WriteModel<rtData>>();
+                    var filt = new rtFilt
+                    {
+                        protocolSourceConnectionNumber = 0,
+                        protocolSourceObjectAddress = "",
+                        origin = "supervised"
+                    };
 
                     Log("MongoDB Update Thread Started...");
 
-                    var listWrites = new List<WriteModel<rtData>>();
                     do
                     {
-                        //if (LogLevel >= LogLevelBasic && OPCDataQueue.Count > 0)
-                        //  Log("MongoDB - Data queue size: " +  OPCDataQueue.Count, LogLevelBasic);
-
-                        bool isMongoLive =
-                            DB
-                                .RunCommandAsync((Command<BsonDocument>)
-                                "{ping:1}")
-                                .Wait(2500);
-                        if (!isMongoLive)
-                            throw new Exception("Error on MongoDB connection ");
-
                         Stopwatch stopWatch = new Stopwatch();
                         stopWatch.Start();
 
-                        OPC_Value iv;
-                        while (!OPCDataQueue.IsEmpty && OPCDataQueue.TryPeek(out iv) && OPCDataQueue.TryDequeue(out iv))
+                        while (OPCDataQueue.TryDequeue(result: out var iv))
                         {
                             DateTime tt = DateTime.MinValue;
                             BsonValue bsontt = BsonNull.Value;
@@ -85,14 +83,17 @@ namespace OPCUAClientDriver
                                 bsontt = BsonNull.Value;
                             }
 
-                            BsonDocument valJSON = new BsonDocument();
-                            try
+                            BsonValue valBSON = BsonNull.Value;
+                            if (iv.valueJson != string.Empty)
                             {
-                                valJSON = BsonDocument.Parse(iv.valueJson);
-                            }
-                            catch (Exception e)
-                            {
-                                Log(iv.conn_name + " - " + e.Message);
+                                try
+                                {
+                                    valBSON = serializer.Deserialize(BsonDeserializationContext.CreateRoot(new JsonReader(iv.valueJson)));
+                                }
+                                catch (Exception e)
+                                {
+                                    Log(iv.conn_name + " - " + e.Message);
+                                }
                             }
 
                             if (iv.selfPublish)
@@ -106,12 +107,8 @@ namespace OPCUAClientDriver
                                 }
 
                                 string tag = TagFromOPCParameters(iv);
-                                if (!OPCUAconns[conn_index].InsertedTags.Contains(tag))
-                                { // tag not yet inserted
-                                    // put the tag in the list of inserted, then insert it
-
-                                    OPCUAconns[conn_index].InsertedTags.Add(tag);
-
+                                if (OPCUAconns[conn_index].InsertedTags.Add(tag))
+                                { // added, then insert it
                                     Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
 
                                     // find a new freee _id key based on the connection number
@@ -164,7 +161,10 @@ namespace OPCUAClientDriver
                                                 "sourceDataUpdate",
                                                 new BsonDocument {
                                                     {
-                                                        "valueBsonAtSource", valJSON
+                                                        "valueBsonAtSource", valBSON
+                                                    },
+                                                    {
+                                                        "valueJsonAtSource", iv.valueJson
                                                     },
                                                     {
                                                         "valueAtSource",
@@ -234,55 +234,53 @@ namespace OPCUAClientDriver
                                 };
 
                             // update filter, avoids updating commands that can have the same address as supervised points
-                            var filt =
-                                new rtFilt
-                                {
-                                    protocolSourceConnectionNumber =
-                                        iv.conn_number,
-                                    protocolSourceObjectAddress = iv.address,
-                                    origin = "supervised"
-                                };
-                            Log("MongoDB - ADD " + iv.address + " " + iv.value,
-                            LogLevelDebug);
+                            filt.protocolSourceConnectionNumber = iv.conn_number;
+                            filt.protocolSourceObjectAddress = iv.address;
+                            Log("MongoDB - ADD " + iv.address + " " + iv.value, LogLevelDebug);
 
                             listWrites
-                                .Add(new UpdateOneModel<rtData>(filt
-                                        .ToBsonDocument(),
+                                .Add(new UpdateOneModel<rtData>(
+                                    filt.ToBsonDocument(),
                                     update));
 
                             if (listWrites.Count >= BulkWriteLimit)
                                 break;
 
-                            if (stopWatch.ElapsedMilliseconds > 400)
+                            if (stopWatch.ElapsedMilliseconds > 750)
+                            {
+                                Log($"break ms {stopWatch.ElapsedMilliseconds}");
                                 break;
-
-                            // Log("Write buffer " + listWrites.Count + " Data " + OPCDataQueue.Count);
-
-                            // give time to breath each 250 dequeues
-                            //if ((listWrites.Count % 250)==0)
-                            //{
-                            //   await Task.Delay(10);
-                            //Thread.Yield();
-                            //Thread.Sleep(1);
-                            //}
+                            }
                         }
 
                         if (listWrites.Count > 0)
                         {
+                            stopWatch.Restart();
                             Log("MongoDB - Bulk writing " + listWrites.Count + ", Total enqueued data " + OPCDataQueue.Count);
-                            var bulkWriteResult =
-                                await collection.BulkWriteAsync(listWrites);
-                            listWrites.Clear();
-
-                            Log($"MongoDB - OK:{bulkWriteResult.IsAcknowledged} - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
-
-                            //Thread.Yield();
-                            //Thread.Sleep(1);
+                            try
+                            {
+                                var bulkWriteResult =
+                                  collection
+                                    .WithWriteConcern(WriteConcern.W1)
+                                    .BulkWrite(listWrites, new BulkWriteOptions
+                                    {
+                                        IsOrdered = true,
+                                        BypassDocumentValidation = true,
+                                    });
+                                Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
+                                double ups = (double)listWrites.Count / ((double)stopWatch.ElapsedMilliseconds / 1000);
+                                Log($"MongoDB - Bulk written in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
+                                listWrites.Clear();
+                            }
+                            catch (Exception e)
+                            {
+                                Log($"MongoDB - Bulk write error - " + e.Message);
+                            }
                         }
 
-                        if (OPCDataQueue.IsEmpty)
+                        if (OPCDataQueue.Count == 0)
                         {
-                            await Task.Delay(250);
+                            await Task.Delay(200);
                         }
                     }
                     while (true);
@@ -296,14 +294,6 @@ namespace OPCUAClientDriver
                         .Substring(0,
                         e.ToString().IndexOf(Environment.NewLine)));
                     Thread.Sleep(1000);
-
-                    while (OPCDataQueue.Count > DataBufferLimit // do not let data queue grow more than a limit
-                    )
-                    {
-                        Log("MongoDB - Dequeue Data", LogLevelDetailed);
-                        OPC_Value iv;
-                        OPCDataQueue.TryDequeue(out iv);
-                    }
                 }
             }
             while (true);
