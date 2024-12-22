@@ -29,7 +29,7 @@ namespace OPCUAClientDriver
     partial class MainClass
     {
         // This process monitor and updates redundancy control of the driver instance in mongodb
-        static async void ProcessRedundancyMongo(JSONSCADAConfig jsConfig)
+        static async void ProcessRedundancyMongo()
         {
             do
             {
@@ -38,8 +38,8 @@ namespace OPCUAClientDriver
                     var lastActiveNodeKeepAliveTimeTag = DateTime.MinValue;
                     var countKeepAliveUpdates = 0;
                     var countKeepAliveUpdatesLimit = 4;
-                    var Client = ConnectMongoClient(jsConfig);
-                    var DB = Client.GetDatabase(jsConfig.mongoDatabaseName);
+                    var Client = ConnectMongoClient(JSConfig);
+                    var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
 
                     // read and process instances configuration
                     var collinsts =
@@ -77,7 +77,7 @@ namespace OPCUAClientDriver
                             var nodefound = false || inst.nodeNames.Length == 0;
                             foreach (var name in inst.nodeNames)
                             {
-                                if (JSConfig.nodeName == name)
+                                if (MainClass.JSConfig.nodeName == name)
                                 {
                                     nodefound = true;
                                 }
@@ -85,12 +85,12 @@ namespace OPCUAClientDriver
                             if (!nodefound)
                             {
                                 Log("Node '" +
-                                JSConfig.nodeName +
+                                MainClass.JSConfig.nodeName +
                                 "' not found in instances configuration!");
                                 Environment.Exit(-1);
                             }
 
-                            if (inst.activeNodeName == JSConfig.nodeName)
+                            if (inst.activeNodeName == MainClass.JSConfig.nodeName)
                             {
                                 if (!Active) // will go active
                                     Log("Redundancy - ACTIVATING this Node!");
@@ -164,7 +164,7 @@ namespace OPCUAClientDriver
                                         var upd =
                                             new BsonDocument("$set", new BsonDocument{
                                             {"stats", new BsonDocument{
-                                                { "nodeName", JSConfig.nodeName },
+                                                { "nodeName", MainClass.JSConfig.nodeName },
                                                 { "timeTag", BsonDateTime.Create(DateTime.Now) },
                                                 }},
                                                 });

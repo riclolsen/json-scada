@@ -185,18 +185,30 @@ namespace OPCUAClientDriver
 
             foreach (OPCUA_connection isrv in conns)
             {
-                if (isrv.autoCreateTags)
-                {
-                    // look for existing tags in this connections, missing tags will be inserted later when discovered
-                    var results = collRtData.Find<rtData>(new BsonDocument {
+                var results = collRtData.Find<rtData>(new BsonDocument {
                                         { "protocolSourceConnectionNumber", isrv.protocolConnectionNumber },
                                         { "origin", "supervised" }
                                     }).ToList();
-                    for (int i = 0; i < results.Count; i++)
+                Log(isrv.name.ToString() + " - Found " + results.Count.ToString() + " tags in database.");
+                // look for existing tags in this connections, missing tags will be inserted later when discovered
+                for (int i = 0; i < results.Count; i++)
+                {
+                    if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval.AsDouble))
                     {
-                        isrv.InsertedTags.Add(results[i].tag.ToString());
+                        Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval.AsDouble + " seconds.");
+                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble] = new List<rtMonitTag>();
                     }
+                    isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble].Add(new rtMonitTag
+                    {
+                        tag = results[i].tag.ToString(),
+                        protocolSourceObjectAddress = results[i].protocolSourceObjectAddress.AsString,
+                        protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval.AsDouble,
+                        protocolSourceQueueSize = results[i].protocolSourceQueueSize.AsDouble,
+                        ungroupedDescription = results[i].ungroupedDescription.AsString,
+                    });
+                    isrv.InsertedTags.Add(results[i].tag.ToString());
                 }
+
                 isrv.LastNewKeyCreated = 0;
                 if (isrv.endpointURLs.Length < 1)
                 {
@@ -215,19 +227,19 @@ namespace OPCUAClientDriver
             // start thread to process redundancy control
             var thrMongoRedundacy =
                 new Thread(() =>
-                        ProcessRedundancyMongo(JSConfig));
+                        ProcessRedundancyMongo());
             thrMongoRedundacy.Start();
 
             // start thread to update acquired data to database
             var thrMongo =
                 new Thread(() =>
-                        ProcessMongo(JSConfig));
+                        ProcessMongo());
             thrMongo.Start();
 
             // start thread to watch for commands in the database using a change stream
             var thrMongoCmd =
                 new Thread(() =>
-                        ProcessMongoCmd(JSConfig));
+                        ProcessMongoCmd());
             thrMongoCmd.Start();
 
             Log("Setting up OPC-UA Connections & ASDU handlers...");

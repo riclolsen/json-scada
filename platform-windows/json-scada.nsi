@@ -4,7 +4,10 @@
 
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
-SetCompressor LZMA 
+SetCompress Auto
+SetCompressor lzma
+SetCompressorDictSize 32
+SetDatablockOptimize Off
 
 Unicode True
 ; RequestExecutionLevel user
@@ -17,13 +20,13 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.43"
-!define VERSION_ "0.43.0.0"
+!define VERSION "v.0.44"
+!define VERSION_ "0.44.0.0"
 
 Function .onInit
- System::Call 'keexrnel32::CreateMutexA(i 0, i 0, t "MutexJsonScadaInstall") i .r1 ?e'
- Pop $R0
- StrCmp $R0 0 +3
+ System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
+ Pop $0
+ IntCmpU $0 183 0 +3 +3
    MessageBox MB_OK|MB_ICONEXCLAMATION "Installer already executing!"
    Abort
 FunctionEnd

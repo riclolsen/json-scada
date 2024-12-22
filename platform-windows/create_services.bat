@@ -134,7 +134,7 @@ nssm set JSON_SCADA_mqttsparkplugclient AppRotateOnline 1
 nssm set JSON_SCADA_mqttsparkplugclient AppRotateBytes 10000000
 nssm set JSON_SCADA_mqttsparkplugclient Start SERVICE_DELAYED_AUTO_START
 
-nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe" 1 2
+nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe" 1 1
 nssm set JSON_SCADA_iec104client AppStdout C:\json-scada\log\iec104client.log
 nssm set JSON_SCADA_iec104client AppRotateOnline 1
 nssm set JSON_SCADA_iec104client AppRotateBytes 10000000
@@ -170,25 +170,25 @@ rem nssm set JSON_SCADA_iccpserver AppRotateOnline 1
 rem nssm set JSON_SCADA_iccpserver AppRotateBytes 10000000
 rem nssm set JSON_SCADA_iccpserver Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\Dnp3Client.exe" 1 2 
+nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\Dnp3Client.exe" 1 1
 nssm set JSON_SCADA_dnp3client AppStdout C:\json-scada\log\dnp3client.log
 nssm set JSON_SCADA_dnp3client AppRotateOnline 1
 nssm set JSON_SCADA_dnp3client AppRotateBytes 10000000
 nssm set JSON_SCADA_dnp3client Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\OPC-UA-Client.exe" 1 2 
+nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\OPC-UA-Client.exe" 1 1
 nssm set JSON_SCADA_opcuaclient AppStdout C:\json-scada\log\opcuaclient.log
 nssm set JSON_SCADA_opcuaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcuaclient AppRotateBytes 10000000
-nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_opcuaclient Start SERVICE_DELAYED_AUTO_START
 
-nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 2 
+nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 1
 nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
 nssm set JSON_SCADA_opcdaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcdaclient AppRotateBytes 10000000
 nssm set JSON_SCADA_opcdaclient Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 2 
+nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 1 
 nssm set JSON_SCADA_iec61850client AppStdout C:\json-scada\log\iec61850client.log
 nssm set JSON_SCADA_iec61850client AppRotateOnline 1
 nssm set JSON_SCADA_iec61850client AppRotateBytes 10000000

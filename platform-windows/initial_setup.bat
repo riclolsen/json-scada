@@ -20,8 +20,9 @@ call create_services.bat
 ping -n 10 127.0.0.1
 call mongodb-start.bat
 ping -n 12 127.0.0.1
-mongodb-runtime\bin\mongo json_scada < ..\mongo_seed_demo\a_rs-init.js
-mongodb-runtime\bin\mongo json_scada < ..\mongo_seed_demo\b_create-db.js
+mongodb-runtime\bin\mongo json_scada < ..\mongo_seed\a_rs-init.js
+ping -n 2 127.0.0.1
+mongodb-runtime\bin\mongo json_scada < ..\mongo_seed\b_create-db.js
 mongodb-runtime\bin\mongoimport --db json_scada --collection protocolDriverInstances --type json --file ..\mongo_seed_demo\demo_instances.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection protocolConnections --type json --file ..\mongo_seed_demo\demo_connections.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection realtimeData --type json --file ..\mongo_seed_demo\demo_data.json 
