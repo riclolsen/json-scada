@@ -35,7 +35,7 @@
 
 // This Viewer shows Sequence Of Events (SOE) data from the SCADA System.
 
-// {json:scada} - Copyright 2020-2023 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2024 - Ricardo L. Olsen
 // Derived from: OSHMI/Open Substation HMI - Copyright 2008-2021 - Ricardo L. Olsen
 
 var L = []; // Event list
@@ -2056,24 +2056,28 @@ tbl_prepare: function()
         function( col, width ) 
         {
             WebSAGE.g_tbl.larguraCol[col] = width;
-            try { // can cause error in IE
-                  WebSAGE.g_tblhead.rows[0].cells[col].width = width;
-            } catch (e) { 
-            WebSAGE.g_tblhead.rows[0].cells[col].width = width + 1;
-            }			
+            
+            // Set width for header cells
+            WebSAGE.g_tblhead.rows[0].cells[col].style.width = width + "px";
             WebSAGE.g_tblhead.rows[0].cells[col].style.minWidth = width + "px";
+            WebSAGE.g_tblhead.rows[0].cells[col].style.maxWidth = width + "px";
             WebSAGE.g_tblhead.rows[0].cells[col].style.display = (width == 0) ? 'none' : '';
+            WebSAGE.g_tblhead.rows[0].cells[col].style.boxSizing = 'border-box';
+            WebSAGE.g_tblhead.rows[0].cells[col].style.padding = '1px 0px 1px 0px';
+            WebSAGE.g_tblhead.rows[0].cells[col].style.textOverflow = 'ellipsis';
+            
+            // Set width for data cells
             for (var i=0; i < WebSAGE.g_tbl.rows.length; i++) 
-              {
-                try { // can cause error in IE
-                        WebSAGE.g_tbl.rows[i].cells[col].width = width;
-                } catch (e) { 
-                        WebSAGE.g_tbl.rows[i].cells[col].width = width + 1;
-                }			
+            {
+                WebSAGE.g_tbl.rows[i].cells[col].style.width = width + "px";
                 WebSAGE.g_tbl.rows[i].cells[col].style.minWidth = width + "px";
+                WebSAGE.g_tbl.rows[i].cells[col].style.maxWidth = width + "px";
                 WebSAGE.g_tbl.rows[i].cells[col].style.display = (width == 0) ? 'none' : '';
-              }
-        return 0;
+                WebSAGE.g_tbl.rows[i].cells[col].style.boxSizing = 'border-box';
+                WebSAGE.g_tbl.rows[i].cells[col].style.padding = '1px 0px 1px 0px';
+                WebSAGE.g_tbl.rows[i].cells[col].style.textOverflow = 'ellipsis';
+            }
+            return 0;
         };
 
     WebSAGE.g_tbl.setStyle = 
@@ -2104,8 +2108,8 @@ showInfo: function()
     var wid=WebSAGE.g_tbl.getColWidth(WebSAGE.g_COL_NPONTO);
     if ( wid == 0 )
       {
-      WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_NPONTO, 60 * WebSAGE.g_fontsize / 16 );
-      WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_ID, 230 * WebSAGE.g_fontsize / 16 );    
+      WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_NPONTO, 80 * WebSAGE.g_fontsize / 16 );
+      WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_ID, 280 * WebSAGE.g_fontsize / 16 );    
       WebSAGE.g_tbl.witdh = '1200px';
       WebSAGE.g_tblhead.witdh = '1200px';
       }
@@ -2339,8 +2343,24 @@ init: function()
     gridstyle = gridstyle + 'color:' + EventsViewer_AlmTxtColor + ';'; 
     gridstyle = gridstyle + 'font-family:' + EventsViewer_Font + ';'; 
     WebSAGE.g_tbl.setStyle(';', 'height:auto;font-size:' + WebSAGE.g_fontsize + 'px;' + gridstyle,';',';');
-    WebSAGE.g_tbl.setInitWidths("80,80,40,0,0,70,400,170,0,55,0,0");
-
+    var colWidths = "80,80,40,0,0,70,400,170,0,55,0,0";
+    WebSAGE.g_tbl.setInitWidths(colWidths);
+   // Apply same widths to header and data columns
+   var widths = colWidths.split(',');
+    for (var i = 0; i < widths.length; i++) {
+      // Style header cells
+      if (WebSAGE.g_tblhead.rows[0] && WebSAGE.g_tblhead.rows[0].cells[i]) {
+        var cell = WebSAGE.g_tblhead.rows[0].cells[i];
+        cell.style.width = widths[i] + 'px';
+        cell.style.minWidth = widths[i] + 'px';
+        cell.style.maxWidth = widths[i] + 'px';
+        cell.style.boxSizing = 'border-box';
+        cell.style.overflow = 'hidden';
+        cell.style.textOverflow = 'ellipsis';
+        cell.style.whiteSpace = 'nowrap';
+        cell.style.display = (widths[i] == '0') ? 'none' : '';
+      }
+    }
     WebSAGE.g_tbl.setHeader(Msg.EveNomesColunas);
 
     $('#gridbox').css('background-color', EventsViewer_TableColor);
@@ -2349,14 +2369,55 @@ init: function()
     WebSAGE.g_tblhead.cellSpacing = "0px";
     WebSAGE.g_tblhead.cellSpacing = "0px";
     WebSAGE.g_tblhead.cellPadding = "0px";
-    $('#TBLHEAD').css('overflow', 'hidden');
-    $('#TBLHEAD').css('white-space', 'nowrap');
-    $('#TBLHEAD').css('margin-left', '5px');
-    $('#TBLHEAD').css('table-layout', 'fixed');
-    $('#TBLHEAD').css('background-color', 'gainsboro');
+    // Apply consistent styling to both tables
+    var tableStyle = {
+        'overflow': 'hidden',
+        'white-space': 'nowrap',
+        'margin-left': '5px',
+        'table-layout': 'fixed',
+        'width': '100%',
+        'border-collapse': 'collapse',
+        'border-spacing': '0',
+        'padding': '0',
+    };
+    
+    // Apply same styling to both tables
+    $('#TBLHEAD, #TBLEVE').css(tableStyle);
+    
+    // Force same container width and synchronize scrolling
+    var scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    $('#divhead, #gridbox').css({
+        'width': '100%',
+        'box-sizing': 'border-box',
+        'padding-right': scrollbarWidth + 'px' // Compensate for scrollbar width
+    });
+
+    // Ensure header cells maintain same width as data cells
+    $('#TBLHEAD th, #TBLHEAD td').css({
+        'overflow': 'hidden',
+        'text-overflow': 'ellipsis'
+    });
+
+    // Synchronize column widths between header and data table
+    var observer = new ResizeObserver(() => {
+        var dataCells = $('#TBLEVE tr:first-child td');
+        var headerCells = $('#TBLHEAD tr:first-child td');
+        dataCells.each((index, cell) => {
+            if (headerCells[index]) {
+                $(headerCells[index]).width($(cell).width());
+            }
+        });
+    });
+    observer.observe(document.getElementById('gridbox'));
+    
+    $('#TBLHEAD').css({
+        'background-color': 'gainsboro',
+        'color': 'black',
+        'font-family': EventsViewer_Font,
+        'font-size': WebSAGE.g_fontsize + 'px'
+    });
+    
     document.body.bgColor = 'gainsboro';
-    $('#TBLHEAD').css('color', 'black');
-    $('#TBLHEAD').css('font-family', EventsViewer_Font);
     
     WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_MSEC, WebSAGE.g_gpstime * 40 );            
       

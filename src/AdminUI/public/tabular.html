@@ -37,7 +37,7 @@
 
 // This Viewer presents data in a grid, it also acts as Alarms Viewer.
 //
-// {json:scada} - Copyright 2020-2023 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2024 - Ricardo L. Olsen
 // Derived from: OSHMI/Open Substation HMI - Copyright 2008-2021 - Ricardo L. Olsen
 
 var L = []; // Event list
@@ -2696,18 +2696,22 @@ tbl_prepare: function()
                     
         for (var i=0; i < varr.length; i++)
            {
-           WebSAGE.g_tbl.rows[line].insertCell(i);
-           WebSAGE.g_tbl.rows[line].cells[i].innerHTML = varr[i];
-           WebSAGE.g_tbl.rows[line].cells[i].style.boxSizing = "border-box";
-           WebSAGE.g_tbl.rows[line].cells[i].style.borderBottom = '1px solid ' + TabularViewer_GridColor;
-           WebSAGE.g_tbl.rows[line].cells[i].style.padding = "1px 0px";
+           var cell = WebSAGE.g_tbl.rows[line].insertCell(i);
+           cell.innerHTML = varr[i];
+           cell.style.boxSizing = "border-box";
+           cell.style.borderBottom = '1px solid ' + TabularViewer_GridColor;
+           cell.style.padding = "1px 0px";
+           cell.style.overflow = "hidden";
+           cell.style.textOverflow = "ellipsis";
+           cell.style.whiteSpace = "nowrap";
+           
            if ( WebSAGE.g_tbl.larguraCol[i] == 0 )
-             WebSAGE.g_tbl.rows[line].cells[i].style.display = 'none';
+             cell.style.display = 'none';
           else
              {
-             WebSAGE.g_tbl.rows[line].cells[i].width = WebSAGE.g_tbl.larguraCol[i];  
-             WebSAGE.g_tbl.rows[line].cells[i].style.minWidth = WebSAGE.g_tbl.larguraCol[i] + "px";  
-             WebSAGE.g_tbl.rows[line].cells[i].style.textOverflow = "ellipsis";  
+             cell.style.width = WebSAGE.g_tbl.larguraCol[i] + "px";  
+             cell.style.minWidth = WebSAGE.g_tbl.larguraCol[i] + "px";
+             cell.style.maxWidth = WebSAGE.g_tbl.larguraCol[i] + "px";
              }
            } 
         WebSAGE.g_tbl.rows[line].userData = vals;
@@ -2925,7 +2929,26 @@ init: function()
     gridstyle = gridstyle + 'color:' + TabularViewer_AckTxtColor + ';'; 
     gridstyle = gridstyle + 'font-family:' + TabularViewer_Font + ';'; 
     WebSAGE.g_tbl.setStyle(';', 'height:auto;font-size:' + WebSAGE.g_fontsize + 'px;' + gridstyle,';',';');
-    WebSAGE.g_tbl.setInitWidths("0,0,70,400,180,0,0,55,0,170,200");
+    // Set initial widths for both header and data columns
+    var colWidths = "0,0,70,400,180,0,0,55,0,170,200";
+    WebSAGE.g_tbl.setInitWidths(colWidths);
+    
+    // Apply same widths to header and data columns
+    var widths = colWidths.split(',');
+    for (var i = 0; i < widths.length; i++) {
+      // Style header cells
+      if (WebSAGE.g_tblhead.rows[0] && WebSAGE.g_tblhead.rows[0].cells[i]) {
+        var cell = WebSAGE.g_tblhead.rows[0].cells[i];
+        cell.style.width = widths[i] + 'px';
+        cell.style.minWidth = widths[i] + 'px';
+        cell.style.maxWidth = widths[i] + 'px';
+        cell.style.boxSizing = 'border-box';
+        cell.style.overflow = 'hidden';
+        cell.style.textOverflow = 'ellipsis';
+        cell.style.whiteSpace = 'nowrap';
+        cell.style.display = (widths[i] == '0') ? 'none' : '';
+      }
+    }
     WebSAGE.g_tbl.setHeader(Msg.TabNomesColunas);
 
     $('#gridbox').css('background-color', TabularViewer_TableColor);
@@ -2933,9 +2956,19 @@ init: function()
     WebSAGE.g_tbl.cellPadding = "0px";
     WebSAGE.g_tblhead.cellSpacing = "0px";
     WebSAGE.g_tblhead.cellPadding = "0px";
-    $('#TBLHEAD').css('margin-left', '5px');
-    $('#TBLHEAD').css('table-layout', 'fixed');
-    $('#TBLHEAD').css('background-color', 'gainsboro');
+    // Style header table
+    // Style both tables consistently
+    var tableStyle = {
+      'margin-left': '5px',
+      'table-layout': 'fixed',
+      'background-color': 'gainsboro',
+      'width': '100%',
+      'border-collapse': 'collapse',
+      'box-sizing': 'border-box',
+    };
+    
+    $('#TBLHEAD').css(tableStyle);
+    $('#TBLEVE').css(tableStyle);
     document.body.bgColor = 'gainsboro';
     $('#TBLHEAD').css('color', 'black');
     $('#TBLHEAD').css('font-family', TabularViewer_Font);
@@ -3079,7 +3112,7 @@ Core.start(WebSAGE);
 </tr>
 </table>
 </div>
-<div id="divhead" style="position:fixed;width:100%;top:80px;height:18px;">
+<div id="divhead" style="position:fixed;width:100%;top:80px;height:18px;overflow:hidden;">
 <table id="TBLHEAD">
 <tr><td></td></tr>
 </table>
