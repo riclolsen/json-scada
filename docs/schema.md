@@ -67,11 +67,15 @@ Example document.
         "protocolSourceCommonAddress": 1.0,
         "protocolSourceConnectionNumber": 61.0,
         "protocolSourceObjectAddress": 3285.0,
+        "protocolSourcePublishingInterval": 5.0,
+        "protocolSourceSamplingInterval": 5.0,
+        "protocolSourceQueueSize": 5.0,
+        "protocolSourceDiscardOldest": true,
         "sourceDataUpdate": {
             "valueAtSource": 2.9959075450897217,
             "valueStringAtSource": "2.9959075450897217",
-            "valueJsonAtSource": {},
-            "valueBsonAtSource": null,
+            "valueJsonAtSource": "",
+            "valueBsonAtSource": {},
             "asduAtSource": "M_ME_NC_1",
             "causeOfTransmissionAtSource": "3",
             "timeTagAtSource": null,
@@ -158,6 +162,10 @@ Example document.
 * _**_protocolSourceASDU_**_ [Double or String] - Protocol information ASDU TI type. Only meaningful when _origin=supervised_ or _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolSourceCommandDuration_**_ [Double] - Additional command specification. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
 * _**_protocolSourceCommandUseSBO_**_ [Boolean] - Use or not Select Before Operate for commands. Only meaningful when _origin=command_. See protocol documentation. **Mandatory parameter**.
+* _**_protocolSourceQueueSize_**_ [Double] - Queue size for data sampling/publishing. See protocol documentation. **Optional parameter**.
+* _**_protocolSourceSamplingInterval_**_ [Double] - Sampling interval. See protocol documentation. **Optional parameter**.
+* _**_protocolSourcePublishingInterval_**_ [Double] - Publishing interval. See protocol documentation. **Optional parameter**.
+* _**_protocolSourceDiscardOldest_**_ [Boolean] - Discard oldest data when queue is full. See protocol documentation. **Optional parameter**.
 * _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or empty array when not point is not to be distributed. See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinationConnectionNumber_**_ [Double] - Indicates the protocol connection that will monitor updates to the point. Should contain only integer values. **Mandatory parameter**.
 * _**_protocolDestinationCommonAddress_**_ [Double or String] - Protocol common address (device address). See protocol documentation. **Mandatory parameter**.

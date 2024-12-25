@@ -304,6 +304,39 @@
                 v-model="editedTag.protocolSourceObjectAddress"
                 :label="$t('admin.tags.editProtocolSourceObjectAddress')"
               ></v-text-field>
+              <v-text-field
+                variant="outlined"
+                type="number"
+                v-if="['supervised'].includes(editedTag.origin)"
+                v-model="editedTag.protocolSourcePublishingInterval"
+                :label="$t('admin.tags.editProtocolSourcePublishingInterval')"
+              ></v-text-field>
+              <v-text-field
+                variant="outlined"
+                type="number"
+                v-if="['supervised'].includes(editedTag.origin)"
+                v-model="editedTag.protocolSourceSamplingInterval"
+                :label="$t('admin.tags.editProtocolSourceSamplingInterval')"
+              ></v-text-field>
+              <v-text-field
+                variant="outlined"
+                type="number"
+                v-if="['supervised'].includes(editedTag.origin)"
+                v-model="editedTag.protocolSourceQueueSize"
+                :label="$t('admin.tags.editProtocolSourceQueueSize')"
+              ></v-text-field>
+              <v-switch
+                v-if="['supervised'].includes(editedTag.origin)"
+                v-model="editedTag.protocolSourceDiscardOldest"
+                inset
+                color="primary"
+                :label="`${$t('admin.tags.editProtocolSourceDiscardOldest')}${
+                  editedTag.protocolSourceDiscardOldest
+                    ? $t('common.true')
+                    : $t('common.false')
+                }`"
+                class="mt-0"
+              ></v-switch>
 
               <v-text-field
                 variant="outlined"
@@ -683,7 +716,15 @@
     priority: 0,
     parcels: [],
     protocolDestinations: [],
-    protocolSourceASDU: '0',
+    protocolSourceASDU: '',
+    protocolSourceCommonAddress: '',
+    protocolSourceObjectAddress: '',
+    protocolSourceCommandDuration: 0,
+    protocolSourceCommandUseSBO: false,
+    protocolSourcePublishingInterval: 5.0,
+    protocolSourceSamplingInterval: 5.0,
+    protocolSourceQueueSize: 5.0,
+    protocolSourceDiscardOldest: true,
     historianDeadBand: 0,
     historianPeriod: 0,
     alarmState: 2,
