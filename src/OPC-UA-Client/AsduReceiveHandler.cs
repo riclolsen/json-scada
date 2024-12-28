@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.IO;
+using Mono.Options;
 
 namespace OPCUAClientDriver
 {
@@ -136,11 +137,11 @@ namespace OPCUAClientDriver
                 {
                     if (!File.Exists(OPCUA_conn.configFileName))
                     {
-                        if (File.Exists(Path.Join("..","conf","Opc.Ua.DefaultClient.Config.xml")))
+                        if (File.Exists(Path.Join("..", "conf", "Opc.Ua.DefaultClient.Config.xml")))
                             OPCUA_conn.configFileName = Path.Join("..", "conf", "Opc.Ua.DefaultClient.Config.xml");
                         else
                         if (File.Exists(Path.Combine("\\", "json-scada", "conf", "Opc.Ua.DefaultClient.Config.xml")))
-                            OPCUA_conn.configFileName = Path.Combine("\\","json-scada", "conf", "Opc.Ua.DefaultClient.Config.xml");
+                            OPCUA_conn.configFileName = Path.Combine("\\", "json-scada", "conf", "Opc.Ua.DefaultClient.Config.xml");
                     }
                     // load the application configuration.
                     Log(conn_name + " - " + "Load config from " + OPCUA_conn.configFileName);
@@ -175,10 +176,43 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - WARN: " + e.Message);
                 }
 
-                if (config == null)
+                if (OPCUA_conn.useSecurity && config == null)
                 {
                     Log(conn_name + " - " + "FATAL: error in XML config file!", LogLevelNoLog);
                     Environment.Exit(1);
+                }
+
+                if (config == null)
+                {
+                    config = new ApplicationConfiguration
+                    {
+                        ApplicationUri = "urn:localhost:OPCUA:JSON_SCADA_OPCUAClient",
+                        ApplicationName = "JSON-SCADA OPC-UA Client",
+                        ApplicationType = ApplicationType.Client,
+                        CertificateValidator = new CertificateValidator(),
+                        ServerConfiguration = null,
+                        SecurityConfiguration = new SecurityConfiguration
+                        {
+                            AutoAcceptUntrustedCertificates = true,
+                        },
+                        TransportQuotas = new TransportQuotas
+                        {
+                            OperationTimeout = 600000,
+                            MaxStringLength = 1048576,
+                            MaxByteStringLength = 1048576,
+                            MaxArrayLength = 65535,
+                            MaxMessageSize = 4194304,
+                            MaxBufferSize = 65535,
+                            ChannelLifetime = 600000,
+                            SecurityTokenLifetime = 3600000,
+                        },
+                        ClientConfiguration = new ClientConfiguration
+                        {
+                            DefaultSessionTimeout = 60000,
+                            MinSubscriptionLifetime = 10000,
+                        },
+                        DisableHiResClock = true,
+                    };
                 }
 
                 try
@@ -193,7 +227,6 @@ namespace OPCUAClientDriver
                     exitCode = ExitCode.ErrorCreateSession;
                     var endpointConfiguration = EndpointConfiguration.Create(config);
                     var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
-
                     await Task.Delay(50);
                     session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
 
