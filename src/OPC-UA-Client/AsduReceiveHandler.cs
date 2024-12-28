@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.IO;
 
 namespace OPCUAClientDriver
 {
@@ -133,6 +134,14 @@ namespace OPCUAClientDriver
 
                 try
                 {
+                    if (!File.Exists(OPCUA_conn.configFileName))
+                    {
+                        if (File.Exists(Path.Join("..","conf","Opc.Ua.DefaultClient.Config.xml")))
+                            OPCUA_conn.configFileName = Path.Join("..", "conf", "Opc.Ua.DefaultClient.Config.xml");
+                        else
+                        if (File.Exists(Path.Combine("\\", "json-scada", "conf", "Opc.Ua.DefaultClient.Config.xml")))
+                            OPCUA_conn.configFileName = Path.Combine("\\","json-scada", "conf", "Opc.Ua.DefaultClient.Config.xml");
+                    }
                     // load the application configuration.
                     Log(conn_name + " - " + "Load config from " + OPCUA_conn.configFileName);
                     config = await application.LoadApplicationConfiguration(OPCUA_conn.configFileName, false);
