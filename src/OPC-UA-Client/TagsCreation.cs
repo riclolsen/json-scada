@@ -196,8 +196,8 @@ namespace OPCUAClientDriver
                     description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
+                    group2 = iv.parentName,
+                    group3 = iv.path,
                     stateTextFalse = "FALSE",
                     stateTextTrue = "TRUE",
                     eventTextFalse = "FALSE",
@@ -253,9 +253,13 @@ namespace OPCUAClientDriver
                 };
             else
             if (iv.asdu.ToLower() == "string" ||
+                iv.asdu.ToLower() == "bytestring" ||
+                iv.asdu.ToLower() == "localeid" ||
                 iv.asdu.ToLower() == "localizedtext" ||
                 iv.asdu.ToLower() == "nodeid" ||
                 iv.asdu.ToLower() == "expandednodeid" ||
+                iv.asdu.ToLower() == "xmlelement" ||
+                iv.asdu.ToLower() == "qualifiedname" ||
                 iv.asdu.ToLower() == "guid")
                 return new rtData()
                 {
@@ -274,8 +278,8 @@ namespace OPCUAClientDriver
                     description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
+                    group2 = iv.parentName,
+                    group3 = iv.path,
                     stateTextFalse = "",
                     stateTextTrue = "",
                     eventTextFalse = "",
@@ -331,11 +335,9 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0,
                 };
             else
-            if (iv.asdu.ToLower() == "extensionobject" || 
-                iv.asdu.ToLower() == "xmlelement" ||
-                iv.asdu.ToLower() == "qualifiedname" ||
-                iv.asdu.ToLower().StartsWith("array") || 
-                iv.asdu.ToLower() == "bytestring")
+            if (iv.asdu.ToLower() == "extensionobject" ||
+                iv.asdu.Contains("[") ||
+                iv.asdu.ToLower().StartsWith("array"))
                 return new rtData()
                 {
                     _id = _id,
@@ -353,8 +355,8 @@ namespace OPCUAClientDriver
                     description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
-                    group2 = iv.common_address,
-                    group3 = "",
+                    group2 = iv.parentName,
+                    group3 = iv.path,
                     stateTextFalse = "",
                     stateTextTrue = "",
                     eventTextFalse = "",
@@ -427,8 +429,8 @@ namespace OPCUAClientDriver
                 description = "OPC-UA~" + iv.conn_name + "~" + iv.display_name,
                 ungroupedDescription = iv.display_name,
                 group1 = iv.conn_name,
-                group2 = iv.common_address,
-                group3 = "",
+                group2 = iv.parentName,
+                group3 = iv.path,
                 stateTextFalse = "",
                 stateTextTrue = "",
                 eventTextFalse = "",

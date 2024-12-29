@@ -26,7 +26,8 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.IO;
-using Mono.Options;
+using Opc.Ua.Export;
+using System.Linq;
 
 namespace OPCUAClientDriver
 {
@@ -51,6 +52,13 @@ namespace OPCUAClientDriver
             ErrorInvalidCommandLine = 0x100,
             ErrorClient = 0x200,
         };
+        public class NodeDetails
+        {
+            public string DisplayName;
+            public string BrowseName;
+            public string ParentName;
+            public string Path;
+        }
         public class OPCUAClient
         {
             public bool failed = false;
@@ -65,6 +73,7 @@ namespace OPCUAClientDriver
             List<MonitoredItem> ListMon = new List<MonitoredItem>();
             HashSet<string> NodeIds = new HashSet<string>();
             HashSet<string> NodeIdsFromObjects = new HashSet<string>();
+            Dictionary<string, NodeDetails> NodeIdsDetails = new Dictionary<string, NodeDetails>();
             OPCUA_connection OPCUA_conn;
 
             public OPCUAClient(OPCUA_connection _OPCUA_conn)
@@ -254,7 +263,7 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
                     exitCode = ExitCode.ErrorBrowseNamespace;
 
-                    await FindObjects(session, ObjectIds.ObjectsFolder);
+                    await FindObjects(session, ObjectIds.ObjectsFolder, "");
 
                     await Task.Delay(50);
                     Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
@@ -353,7 +362,7 @@ namespace OPCUAClientDriver
                 Log(conn_name + " - " + "Running...");
                 exitCode = ExitCode.ErrorRunning;
             }
-            private async Task FindObjects(Opc.Ua.Client.ISession session, NodeId nodeid)
+            private async Task FindObjects(Opc.Ua.Client.ISession session, NodeId nodeid, string path)
             {
                 if (session == null)
                     return;
@@ -366,7 +375,9 @@ namespace OPCUAClientDriver
                     if (NodeIdsFromObjects.Contains(nodeid.ToString()))
                         return;
 
-                    Log(conn_name + " - Browsing object: " + nodeid.ToString());
+                    var parentNode = await session.ReadNodeAsync(nodeid);
+                    path += "/" + parentNode.BrowseName.Name;
+                    Log(conn_name + " - Browsing object: " + path + ", " + nodeid.ToString() + ", " + parentNode.BrowseName.Name);
                     session.Browse(
                         null,
                         null,
@@ -381,12 +392,26 @@ namespace OPCUAClientDriver
 
                     Log(conn_name + " - Found " + references.Count.ToString() + " refereces on object " + nodeid.ToString());
 
+                    if (continuationPoint!=null && continuationPoint.Length>0)
+                    {
+                        Console.WriteLine(continuationPoint);
+                    }
+
                     foreach (var rd in references)
                     {
-
-                        Log(conn_name + " - " + rd.NodeId + ", " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
+                        Log(conn_name + " - " + path + ", " + rd.NodeId + ", " + rd.DisplayName + ", " + rd.BrowseName + ", " + rd.NodeClass);
+                        if (rd.NodeClass == NodeClass.Method) continue;
                         if (rd.NodeClass == NodeClass.Variable && !NodeIds.Contains(rd.NodeId.ToString()))
                         {
+                            // var resp = await session.ReadNodeAsync(rd.NodeId.ToString());
+
+                            NodeIdsDetails[rd.NodeId.ToString()] = new NodeDetails
+                            {
+                                BrowseName = rd.BrowseName.Name,
+                                DisplayName = rd.DisplayName.Text,
+                                ParentName = parentNode.BrowseName.Name,
+                                Path = path,
+                            };
                             NodeIds.Add(rd.NodeId.ToString());
                             ListMon.Add(
                             new MonitoredItem()
@@ -401,10 +426,10 @@ namespace OPCUAClientDriver
                             });
                         }
                         else
-                        if (rd.NodeClass == NodeClass.Object)
+                        if (rd.NodeClass == NodeClass.Object || rd.NodeClass == NodeClass.View || rd.NodeClass == NodeClass.Unspecified)
                         {
                             NodeIdsFromObjects.Add(nodeid.ToString());
-                            await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris));
+                            await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris), path);
                         }
                     }
                 }
@@ -454,6 +479,12 @@ namespace OPCUAClientDriver
                 }
                 foreach (var value in item.DequeueValues())
                 {
+                    //if (value == null || value.Value == null)
+                    //{
+                    //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
+                    //Console.WriteLine("Notification Received for Variable \"{0}\" value=null type {1}.", item.DisplayName, notification.TypeId);
+                    //}
+
                     if (value != null)
                     {
                         string tp = "unknown";
@@ -467,6 +498,7 @@ namespace OPCUAClientDriver
 
                                 Double dblValue = 0.0;
                                 string strValue = "";
+                                string jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
 
                                 if (value.WrappedValue.TypeInfo != null)
                                 {
@@ -479,11 +511,11 @@ namespace OPCUAClientDriver
                                     Log(conn_name + " - " + item.ResolvedNodeId + " TYPE: ?????", LogLevelDetailed);
                                 }
 
-                                Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode, LogLevelDetailed);
+                                if (LogLevel >= LogLevelDetailed)
+                                    Log(conn_name + " - " + item.ResolvedNodeId + " " + item.DisplayName + " " + value.Value + " " + value.SourceTimestamp + " " + value.StatusCode, LogLevelDetailed);
 
                                 try
                                 {
-
                                     if (tp == "Variant")
                                     {
                                         try
@@ -518,12 +550,51 @@ namespace OPCUAClientDriver
                                         }
                                     }
                                     else
-                                    if (tp == "DateTime")
+                                    if (tp == "DateTime" || tp == "UtcTime")
                                     {
                                         dblValue = ((DateTimeOffset)System.Convert.ToDateTime(value.Value)).ToUnixTimeMilliseconds();
                                         strValue = System.Convert.ToDateTime(value.Value).ToString("o");
                                     }
-                                    else if (tp == "String" || tp == "ExtensionObject" || isArray)
+                                    else
+                                    if (tp == "XmlElement")
+                                    {
+                                        dblValue = 0;
+                                        strValue = value.WrappedValue.ToString();
+                                        jsonValue = "\"" + value.WrappedValue.ToString() + "\"";
+                                    }
+                                    else
+                                    if (tp == "ByteString")
+                                    {
+                                        dblValue = 0;
+                                        strValue = System.Convert.ToBase64String(value.GetValue<byte[]>([]));
+                                    }
+                                    else
+                                    if (
+                                        (tp == "String" ||
+                                        tp == "LocaleId" ||
+                                        tp == "LocalizedText" ||
+                                        tp == "NodeId" ||
+                                        tp == "ExpandedNodeId" ||
+                                        tp == "XmlElement" ||
+                                        tp == "QualifiedName" ||
+                                        tp == "Guid")
+                                        && isArray
+                                        )
+                                    {
+                                        dblValue = 0;
+                                        strValue = jsonValue;
+                                    }
+                                    else
+                                    if (tp == "String" ||
+                                        tp == "LocaleId" ||
+                                        tp == "LocalizedText" ||
+                                        tp == "NodeId" ||
+                                        tp == "ExpandedNodeId" ||
+                                        tp == "XmlElement" ||
+                                        tp == "QualifiedName" ||
+                                        tp == "Guid" ||
+                                        // tp == "ExtensionObject" ||
+                                        isArray)
                                     {
                                         dblValue = 0;
                                         strValue = System.Convert.ToString(value.Value);
@@ -548,10 +619,18 @@ namespace OPCUAClientDriver
                                     strValue = value.Value.ToString();
                                 }
 
+                                var parentName = "";
+                                var path = "";
+                                var details = NodeIdsDetails[item.ResolvedNodeId.ToString()];
+                                if (details != null)
+                                {
+                                    parentName = details.ParentName;
+                                    path = details.Path;
+                                }
                                 OPC_Value iv =
                                     new OPC_Value()
                                     {
-                                        valueJson = JsonSerializer.Serialize(value.Value, jsonSerOpts),
+                                        valueJson = jsonValue,
                                         selfPublish = true,
                                         address = item.ResolvedNodeId.ToString(),
                                         asdu = tp,
@@ -566,7 +645,9 @@ namespace OPCUAClientDriver
                                         conn_number = conn_number,
                                         conn_name = conn_name,
                                         common_address = "",
-                                        display_name = item.DisplayName
+                                        display_name = item.DisplayName,
+                                        parentName = parentName,
+                                        path = path,
                                     };
                                 if (OPCDataQueue.Count < DataBufferLimit)
                                     OPCDataQueue.Enqueue(iv);

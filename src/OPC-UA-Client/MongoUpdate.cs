@@ -268,7 +268,7 @@ namespace OPCUAClientDriver
                                         BypassDocumentValidation = true,
                                     });
                                 Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
-                                double ups = (double)listWrites.Count / ((double)stopWatch.ElapsedMilliseconds / 1000);
+                                var ups = (uint)((float)listWrites.Count / ((float)stopWatch.ElapsedMilliseconds / 1000));
                                 Log($"MongoDB - Bulk written in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
                                 listWrites.Clear();
                             }

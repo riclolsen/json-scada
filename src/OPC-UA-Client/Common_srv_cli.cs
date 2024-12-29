@@ -142,6 +142,8 @@ namespace OPCUAClientDriver
             public string conn_name;
             public string common_address;
             public string display_name;
+            public string parentName;
+            public string path;
         }
         public class rtMonitTag
         {
