@@ -12,11 +12,103 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />    
 <link rel="apple-touch-icon" href="images/tabular.png" />
 <style>
+:root {
+  /* Light theme */
+  --bg-color: gainsboro;
+  --text-color: black;
+  --text-color-cnt: black;
+  --toolbar-color: #f0f0f0;
+  --table-color: #ffffff;
+  --grid-color: #cccccc;
+  --header-bg: #e0e0e0;
+  --row-hover: #f5f5f5;
+  --shadow-color: #888888;
+  --button-bg: white;
+  --button-border: #777;
+  --button-shadow: #666666;
+}
+
+[data-theme="dark"] {
+  /* Dark theme */
+  --bg-color: #1d1c1c;
+  --text-color: #e0e0e0;
+  --text-color-cnt: black;
+  --toolbar-color: #424141;
+  --table-color: #111112;
+  --grid-color: #404040;
+  --header-bg: #333333;
+  --row-hover: #2a2d2e;
+  --shadow-color: #000000;
+  --button-bg: #3d3d3d;
+  --button-border: #555;
+  --button-shadow: #000000;
+}
+
 @font-face {
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 400;
   src: local('Source Sans Pro'), local('SourceSansPro-Regular'), url(lib/SourceSansPro-Regular.woff2) format('woff2');
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+#TOOLBAR_ID {
+  background-color: var(--toolbar-color) !important;
+  color: var(--text-color);
+  box-shadow: 2px 2px 2px var(--shadow-color);
+}
+
+#gridbox {
+  background-color: var(--table-color) !important;
+}
+
+#TBLHEAD, #TBLEVE {
+  background-color: var(--table-color);
+  color: var(--text-color);
+}
+
+#TBLHEAD td {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--grid-color);
+}
+
+#TBLEVE tr:hover {
+  background-color: var(--row-hover);
+}
+
+select, input {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--grid-color);
+}
+
+[id^="DIV_"] {
+  background-color: var(--button-bg) !important;
+  border-color: var(--button-border) !important;
+  box-shadow: 1px 1px 1px var(--button-shadow) !important;
+}
+
+[id^="SP_"] {
+  color: var(--text-color-cnt);
+}
+
+#DIV_SUBSTALMFILT {
+  background-color: var(--toolbar-color) !important;
+}
+
+.theme-toggle {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 20px;
+  padding: 0;
+  margin: 0 10px;
+  transform: translateY(3px);
 }
 </style>
 <script src="util.js"></script>
@@ -32,6 +124,24 @@
 <script src="pntserver.js"></script>
 <script src="images.js"></script>
 <script src="opc-codes.js"></script>
+<script>
+// Add theme toggle functionality
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  
+  // Save theme preference
+  localStorage.setItem('theme', newTheme);
+}
+
+// Load saved theme preference
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+});
+</script>
 <script>
 "use strict";
 
@@ -1316,7 +1426,7 @@ if ( WebSAGE.isAlarmsViewer() )
       }
     }
 
-  var xleft = 230 + 68;
+    var xleft = 270 + 68;
     var ytop = 5;
     for ( var priority in [0,1,2,3,4,5,7,8,9] ) 
     {
@@ -2909,7 +3019,7 @@ init: function()
     $('#SPSUBEST').text( Msg.SPSUBEST );
     $('#SPMODULO').text( Msg.SPMODULO );
     $('#SPFILTROID').text( Msg.SPFILTROID );
-    $('#TOOLBAR_ID').css('background-color', TabularViewer_ToolbarColor);
+    //$('#TOOLBAR_ID').css('background-color', TabularViewer_ToolbarColor);
     $('#TOOLBAR_ID').css('display', ''); // shows toolbar
 
     // WebSAGE.g_tbl.setColAlign("center,left,center,left,center,right,right,center,center,center");
@@ -2951,7 +3061,7 @@ init: function()
     }
     WebSAGE.g_tbl.setHeader(Msg.TabNomesColunas);
 
-    $('#gridbox').css('background-color', TabularViewer_TableColor);
+    // $('#gridbox').css('background-color', TabularViewer_TableColor);
     WebSAGE.g_tbl.cellSpacing = "0px";
     WebSAGE.g_tbl.cellPadding = "0px";
     WebSAGE.g_tblhead.cellSpacing = "0px";
@@ -2961,7 +3071,7 @@ init: function()
     var tableStyle = {
       'margin-left': '5px',
       'table-layout': 'fixed',
-      'background-color': 'gainsboro',
+      'background-color': 'var(--table-color)',
       'width': '100%',
       'border-collapse': 'collapse',
       'box-sizing': 'border-box',
@@ -2969,8 +3079,8 @@ init: function()
     
     $('#TBLHEAD').css(tableStyle);
     $('#TBLEVE').css(tableStyle);
-    document.body.bgColor = 'gainsboro';
-    $('#TBLHEAD').css('color', 'black');
+    document.body.style.backgroundColor = 'var(--bg-color)';
+    $('#TBLHEAD').css('color', 'var(--text-color)');
     $('#TBLHEAD').css('font-family', TabularViewer_Font);
 
     shortcut.add( "F8", // reconhece tudo
@@ -3041,6 +3151,10 @@ init: function()
     // desabilita o botão direito 
     document.oncontextmenu = function() { return false; };
 
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
     // alarm beep sound
     if (WebSAGE.isAlarmsViewer())
       document.getElementById('btSound').style.display='';
@@ -3081,6 +3195,7 @@ Core.start(WebSAGE);
 <img id="imgFontSizeDown" alt='' src='' align='middle' width="27" height="27" onclick='WebSAGE.fontSize(0)' style='cursor:pointer;' />
 <img id='imgReconheceTudo' alt='' src='' align='middle' width="32" height="32" onclick='WebSAGE.ackAllAlarms(0);' style='cursor:pointer;display:none' />
 <img id='imgClipboard' alt='' src='' onclick='CopyClipboard("TBLEVE")' align='middle' border='0' width='32' height='32' style='cursor:pointer;' />
+<button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light">☾☀︎</button>
 <input id="btSound" title="Beep ON/OFF" style="display:none;cursor:pointer;vertical-align:middle;background:none;border:0px;font-size:20px;transform: translateY(3px);" type="button" value="🔈" />&nbsp;
 <audio id="criticalSound"><source src="sounds/critical.wav" muted type="audio/wav"></audio>
 <audio id="nonCriticalSound"><source src="sounds/nonCritical.wav" muted type="audio/wav"></audio>

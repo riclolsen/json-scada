@@ -55,18 +55,13 @@ function EventsViewer_NotificationClick( nponto, id, group1 ) {
     }
 
 // Tabular Viewer ----------------------------------------------------------------------------------
-var TabularViewer_ToolbarColor = '#AA9E97'; // toolbar color
-
 var TabularViewer_Font = 'Segoe UI,Source Sans Pro,calibri,consolas,arial,helvetica'; // font 
 
-var TabularViewer_TableColor = '#DCDCEE'; // table background color 
-var TabularViewer_GridColor = '#ECECEE'; // table grid color
+var TabularViewer_GridColor = '#BBBBBB'; // table grid color
 
-var TabularViewer_AlmTxtColor = 'mediumblue'; // alarmed color
-var TabularViewer_FailTxtColor = 'white'; // failed value color
-var TabularViewer_AckTxtColor = '484848'; // acknowledged alarm color
-
-var TabularViewer_LineColor = '#DCDCEE'; // line color
+var TabularViewer_AlmTxtColor = 'rgb(37, 132, 211)'; // alarmed color
+var TabularViewer_FailTxtColor = '#AAAAAA'; // failed value color
+var TabularViewer_AckTxtColor = 'rgb(17, 91, 151)'; // acknowledged alarm color
 
 var TabularViewer_RefreshTime = 3; // refresh time (seconds)
 
