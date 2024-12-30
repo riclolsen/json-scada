@@ -263,10 +263,7 @@ var WebSAGE = {
 
   // Return flags from tag or number
   getFlags: function(tagornumber) {
-    var f = F[tagornumber] || F[NPTS[tagornumber]];
-    if (isNaN(f))
-      return 0xa0 | (WebSAGE.getValue(tagornumber) == 0 ? 0x02 : 0x01);
-    else return f;
+    return F[tagornumber] || F[NPTS[tagornumber]] || 0;
   },
 
   // Return inferior limit from tag or number
