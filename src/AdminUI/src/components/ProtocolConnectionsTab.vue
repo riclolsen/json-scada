@@ -578,7 +578,13 @@
 
             <v-list-item
               v-if="
-                ['OPC-DA', 'OPC-DA_SERVER', 'ICCP', 'ICCP_SERVER'].includes(
+                [
+                 'OPC-UA', 
+                 'OPC-DA', 
+                 'OPC-DA_SERVER', 
+                 'ICCP', 
+                 'ICCP_SERVER'
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -655,6 +661,7 @@
                   'PI_DATA_ARCHIVE_INJECTOR',
                   'PI_DATA_ARCHIVE_CLIENT',
                   'PLC4X',
+                  'OPC-UA',
                   'OPC-DA',
                   'ICCP',
                 ].includes(editedConnection.protocolDriver)
@@ -2406,6 +2413,7 @@
               v-if="
                 [
                   'MQTT-SPARKPLUG-B',
+                  'OPC-UA',
                   'OPC-UA_SERVER',
                   'IEC61850',
                   'IEC61850_SERVER',
