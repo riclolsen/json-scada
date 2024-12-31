@@ -105,7 +105,12 @@ namespace OPCUAClientDriver
             public double timeoutMs { get; set; }
             [BsonDefaultValue(false)]
             public bool useSecurity { get; set; }
-            public Double LastNewKeyCreated;
+            [BsonDefaultValue(0.0)]
+            public double hoursShift { get; set; }
+            [BsonDefaultValue(300.0)]
+            public double giInterval { get; set; }
+            public string[] topics { get; set; }
+            public double LastNewKeyCreated;
             public SortedSet<string> InsertedTags = new SortedSet<string>();
             public OPCUAClient connection;
             public Thread thrOPCStack;
@@ -130,7 +135,7 @@ namespace OPCUAClientDriver
             public bool selfPublish;
             public string address;
             public string asdu;
-            public bool isDigital;
+            public bool isArray;
             public double value;
             public string valueString;
             public int cot;

@@ -1,20 +1,20 @@
 ﻿/* 
- * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
- * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
- * the Free Software Foundation, version 3.
- *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* OPC-UA Client Protocol driver for {json:scada}
+* {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
+* This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+* 
+* This program is free software: you can redistribute it and/or modify  
+* it under the terms of the GNU General Public License as published by  
+* the Free Software Foundation, version 3.
+*
+* This program is distributed in the hope that it will be useful, but 
+* WITHOUT ANY WARRANTY; without even the implied warranty of 
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+* General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License 
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 using System;
 using Opc.Ua;
@@ -26,8 +26,8 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.IO;
-using Opc.Ua.Export;
 using System.Linq;
+using System.Diagnostics;
 
 namespace OPCUAClientDriver
 {
@@ -263,7 +263,35 @@ namespace OPCUAClientDriver
                     Log(conn_name + " - " + "Browsing the OPC UA server namespace.");
                     exitCode = ExitCode.ErrorBrowseNamespace;
 
-                    await FindObjects(session, ObjectIds.ObjectsFolder, "");
+                    var uac = new UAClient(session);
+                    var refDescr =
+                                        await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
+                    //var variableIds = new NodeIdCollection(referenceDescriptions
+                    //    .Where(r => r.NodeClass == NodeClass.Variable && r.TypeDefinition.NamespaceIndex != 0)
+                    //    .Select(r => ExpandedNodeId.ToNodeId(r.NodeId, session.NamespaceUris)));
+                    foreach (var (reference, path) in refDescr.Values)
+                    {
+                        m_output.WriteLine("NodeId {0} {1} {2} Path: {3}", reference.NodeId, reference.NodeClass, reference.BrowseName, path);
+                        ListMon.Add(new MonitoredItem()
+                        {
+                            DisplayName = reference.BrowseName.Name,
+                            StartNodeId = reference.NodeId.ToString(),
+                            SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
+                            QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
+                            MonitoringMode = MonitoringMode.Reporting,
+                            DiscardOldest = true,
+                            AttributeId = Attributes.Value
+                        });
+                        NodeIdsDetails[reference.NodeId.ToString()] = new NodeDetails
+                        {
+                            BrowseName = reference.BrowseName.Name,
+                            DisplayName = reference.DisplayName.Text,
+                            ParentName = Path.GetFileNameWithoutExtension(path),
+                            Path = path,
+                        };
+                    }
+                    Log($"{conn_name} - Found {refDescr.Count} objects and variables.");
+                    // await FindObjects(session, ObjectIds.ObjectsFolder, "");
 
                     await Task.Delay(50);
                     Log(conn_name + " - " + "Add a list of items (server current time and status) to the subscription.");
@@ -378,6 +406,10 @@ namespace OPCUAClientDriver
                     var parentNode = await session.ReadNodeAsync(nodeid);
                     path += "/" + parentNode.BrowseName.Name;
                     Log(conn_name + " - Browsing object: " + path + ", " + nodeid.ToString() + ", " + parentNode.BrowseName.Name);
+                    if (path.StartsWith("/Objects/DeviceSet/BottleFiller/Admin"))
+                    {
+                        Log(conn_name + " - Browsing object: " + path + ", " + nodeid.ToString() + ", " + parentNode.BrowseName.Name);
+                    }
                     session.Browse(
                         null,
                         null,
@@ -390,9 +422,9 @@ namespace OPCUAClientDriver
                         out continuationPoint,
                         out references);
 
-                    Log(conn_name + " - Found " + references.Count.ToString() + " refereces on object " + nodeid.ToString());
+                    Log(conn_name + " - Found " + references.Count.ToString() + " references on object " + nodeid.ToString());
 
-                    if (continuationPoint!=null && continuationPoint.Length>0)
+                    if (continuationPoint != null && continuationPoint.Length > 0)
                     {
                         Console.WriteLine(continuationPoint);
                     }
@@ -424,9 +456,12 @@ namespace OPCUAClientDriver
                                 DiscardOldest = true,
                                 AttributeId = Attributes.Value
                             });
+
+                            //NodeIdsFromObjects.Add(nodeid.ToString());
+                            //await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris), path);
                         }
                         else
-                        if (rd.NodeClass == NodeClass.Object || rd.NodeClass == NodeClass.View || rd.NodeClass == NodeClass.Unspecified)
+                        if (rd.NodeClass == NodeClass.Object)
                         {
                             NodeIdsFromObjects.Add(nodeid.ToString());
                             await FindObjects(session, ExpandedNodeId.ToNodeId(rd.NodeId, session.NamespaceUris), path);
@@ -470,7 +505,8 @@ namespace OPCUAClientDriver
 
             private void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
             {
-                //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
+                //MonitoredItemNotification notification = e.N
+                //otificationValue as MonitoredItemNotification;
                 //Console.WriteLine("Notification Received for Variable \"{0}\" and Value = {1} type {2}.", item.DisplayName, notification.Value, notification.TypeId);
 
                 foreach (var efl in item.DequeueEvents())
@@ -503,7 +539,7 @@ namespace OPCUAClientDriver
                                 if (value.WrappedValue.TypeInfo != null)
                                 {
                                     tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
-                                    isArray = value.Value.GetType().ToString().Contains("[]");
+                                    isArray = value.Value.GetType().ToString().Contains("[");
                                     // Log(conn_name + " - " + item.ResolvedNodeId + "TYPE: " + tp, LogLevelDetailed);
                                 }
                                 else
@@ -516,7 +552,7 @@ namespace OPCUAClientDriver
 
                                 try
                                 {
-                                    if (tp == "Variant")
+                                    if (tp == "Variant" && !isArray)
                                     {
                                         try
                                         {
@@ -550,13 +586,13 @@ namespace OPCUAClientDriver
                                         }
                                     }
                                     else
-                                    if (tp == "DateTime" || tp == "UtcTime")
+                                    if ((tp == "DateTime" || tp == "UtcTime") && !isArray)
                                     {
                                         dblValue = ((DateTimeOffset)System.Convert.ToDateTime(value.Value)).ToUnixTimeMilliseconds();
                                         strValue = System.Convert.ToDateTime(value.Value).ToString("o");
                                     }
                                     else
-                                    if (tp == "XmlElement")
+                                    if (tp == "XmlElement" && !isArray)
                                     {
                                         dblValue = 0;
                                         strValue = value.WrappedValue.ToString();
@@ -633,8 +669,8 @@ namespace OPCUAClientDriver
                                         valueJson = jsonValue,
                                         selfPublish = true,
                                         address = item.ResolvedNodeId.ToString(),
+                                        isArray = isArray,
                                         asdu = tp,
-                                        isDigital = true,
                                         value = dblValue,
                                         valueString = strValue,
                                         hasSourceTimestamp = value.SourceTimestamp != DateTime.MinValue,
@@ -717,6 +753,277 @@ namespace OPCUAClientDriver
                 }
 
                 // ReportMessage("OnDataChange. Time={0} ({3}), Count={1}/{2}", DateTime.UtcNow.ToString("mm:ss.fff"), count, m_totalItemUpdateCount, (m_lastMessageTime - m_firstMessageTime).TotalMilliseconds);
+            }
+
+            public interface IUAClient
+            {
+                /// <summary>
+                /// The session to use.
+                /// </summary>
+                ISession Session { get; }
+            }
+
+            public class UAClient : IUAClient
+            {
+                public ISession Session { get; private set; }
+
+                public UAClient(ISession session)
+                {
+                    Session = session;
+                }
+            }
+
+            private static BrowseDescriptionCollection CreateBrowseDescriptionCollectionFromNodeId(
+                   NodeIdCollection nodeIdCollection,
+                   BrowseDescription template)
+            {
+                var browseDescriptionCollection = new BrowseDescriptionCollection();
+                foreach (var nodeId in nodeIdCollection)
+                {
+                    BrowseDescription browseDescription = (BrowseDescription)template.MemberwiseClone();
+                    browseDescription.NodeId = nodeId;
+                    browseDescriptionCollection.Add(browseDescription);
+                }
+                return browseDescriptionCollection;
+
+            }
+            const int kMaxSearchDepth = 128;
+            private readonly TextWriter m_output = Console.Out;
+            private readonly ManualResetEvent m_quitEvent;
+            private readonly bool m_verbose = false;
+            private static ByteStringCollection PrepareBrowseNext(BrowseResultCollection browseResultCollection)
+            {
+                var continuationPoints = new ByteStringCollection();
+                foreach (var browseResult in browseResultCollection)
+                {
+                    if (browseResult.ContinuationPoint != null)
+                    {
+                        continuationPoints.Add(browseResult.ContinuationPoint);
+                    }
+                }
+                return continuationPoints;
+            }
+            public async Task<Dictionary<ExpandedNodeId, (ReferenceDescription Reference, string Path)>> BrowseFullAddressSpaceAsync(
+                IUAClient uaClient,
+                NodeId startingNode = null,
+                BrowseDescription browseDescription = null,
+                CancellationToken ct = default)
+            {
+                Stopwatch stopWatch = new Stopwatch();
+                stopWatch.Start();
+
+                // Browse template
+                const int kMaxReferencesPerNode = 1000;
+                var browseTemplate = browseDescription ?? new BrowseDescription
+                {
+                    NodeId = startingNode ?? ObjectIds.RootFolder,
+                    BrowseDirection = BrowseDirection.Forward,
+                    ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
+                    IncludeSubtypes = true,
+                    NodeClassMask = (uint)NodeClass.Variable | (uint)NodeClass.Object,
+                    ResultMask = (uint)BrowseResultMask.All
+                };
+                var browseDescriptionCollection = CreateBrowseDescriptionCollectionFromNodeId(
+                    new NodeIdCollection(new NodeId[] { startingNode ?? ObjectIds.RootFolder }),
+                    browseTemplate);
+
+                // Browse
+                var referenceDescriptions = new Dictionary<ExpandedNodeId, (ReferenceDescription Reference, string Path)>();
+                var startingNodeName = (await uaClient.Session.ReadNodeAsync(startingNode ?? ObjectIds.RootFolder)).BrowseName.Name;
+                var rootPath = startingNodeName;
+
+                int searchDepth = 0;
+                uint maxNodesPerBrowse = uaClient.Session.OperationLimits.MaxNodesPerBrowse;
+                while (browseDescriptionCollection.Any() && searchDepth < kMaxSearchDepth)
+                {
+                    searchDepth++;
+                    Utils.LogInfo("{0}: Browse {1} nodes after {2}ms",
+                        searchDepth, browseDescriptionCollection.Count, stopWatch.ElapsedMilliseconds);
+
+                    BrowseResultCollection allBrowseResults = new BrowseResultCollection();
+                    bool repeatBrowse;
+                    BrowseResultCollection browseResultCollection = new BrowseResultCollection();
+                    BrowseDescriptionCollection unprocessedOperations = new BrowseDescriptionCollection();
+                    DiagnosticInfoCollection diagnosticsInfoCollection;
+                    BrowseDescriptionCollection browseCollection = new BrowseDescriptionCollection();
+                    do
+                    {
+                        if (m_quitEvent?.WaitOne(0) == true)
+                        {
+                            m_output.WriteLine("Browse aborted.");
+                            break;
+                        }
+
+                        browseCollection = (maxNodesPerBrowse == 0) ?
+                            browseDescriptionCollection :
+                            browseDescriptionCollection.Take((int)maxNodesPerBrowse).ToArray();
+                        repeatBrowse = false;
+                        try
+                        {
+                            var browseResponse = await uaClient.Session.BrowseAsync(null, null,
+                                kMaxReferencesPerNode, browseCollection, ct).ConfigureAwait(false);
+                            browseResultCollection = browseResponse.Results;
+                            diagnosticsInfoCollection = browseResponse.DiagnosticInfos;
+                            ClientBase.ValidateResponse(browseResultCollection, browseCollection);
+                            ClientBase.ValidateDiagnosticInfos(diagnosticsInfoCollection, browseCollection);
+
+                            // separate unprocessed nodes for later
+                            int ii = 0;
+                            foreach (BrowseResult browseResult in browseResultCollection)
+                            {
+                                // check for error.
+                                StatusCode statusCode = browseResult.StatusCode;
+                                if (StatusCode.IsBad(statusCode))
+                                {
+                                    // this error indicates that the server does not have enough simultaneously active 
+                                    // continuation points. This request will need to be resent after the other operations
+                                    // have been completed and their continuation points released.
+                                    if (statusCode == StatusCodes.BadNoContinuationPoints)
+                                    {
+                                        unprocessedOperations.Add(browseCollection[ii++]);
+                                        continue;
+                                    }
+                                }
+
+                                // save results.
+                                allBrowseResults.Add(browseResult);
+                                ii++;
+                            }
+                        }
+                        catch (ServiceResultException sre)
+                        {
+                            if (sre.StatusCode == StatusCodes.BadEncodingLimitsExceeded ||
+                                sre.StatusCode == StatusCodes.BadResponseTooLarge)
+                            {
+                                // try to address by overriding operation limit
+                                maxNodesPerBrowse = maxNodesPerBrowse == 0 ?
+                                    (uint)browseCollection.Count / 2 : maxNodesPerBrowse / 2;
+                                repeatBrowse = true;
+                            }
+                            else
+                            {
+                                m_output.WriteLine("Browse error: {0}", sre.Message);
+                                throw;
+                            }
+                        }
+                    } while (repeatBrowse);
+
+                    if (maxNodesPerBrowse == 0)
+                    {
+                        browseDescriptionCollection.Clear();
+                    }
+                    else
+                    {
+                        browseDescriptionCollection = browseDescriptionCollection.Skip(browseResultCollection.Count).ToArray();
+                    }
+
+                    // Browse next
+                    var continuationPoints = PrepareBrowseNext(browseResultCollection);
+                    while (continuationPoints.Any())
+                    {
+                        if (m_quitEvent?.WaitOne(0) == true)
+                        {
+                            m_output.WriteLine("Browse aborted.");
+                        }
+
+                        Utils.LogInfo("BrowseNext {0} continuation points.", continuationPoints.Count);
+                        var browseNextResult = await uaClient.Session.BrowseNextAsync(null, false, continuationPoints, ct).ConfigureAwait(false);
+                        var browseNextResultCollection = browseNextResult.Results;
+                        diagnosticsInfoCollection = browseNextResult.DiagnosticInfos;
+                        ClientBase.ValidateResponse(browseNextResultCollection, continuationPoints);
+                        ClientBase.ValidateDiagnosticInfos(diagnosticsInfoCollection, continuationPoints);
+                        allBrowseResults.AddRange(browseNextResultCollection);
+                        continuationPoints = PrepareBrowseNext(browseNextResultCollection);
+                    }
+
+                    // Build browse request for next level
+                    var browseTable = new NodeIdCollection();
+                    int duplicates = 0;
+                    /*
+                    foreach (var browseResult in allBrowseResults)
+                    {
+                        foreach (ReferenceDescription reference in browseResult.References)
+                        {
+                            if (!referenceDescriptions.ContainsKey(reference.NodeId))
+                            {
+                                referenceDescriptions[reference.NodeId] = reference;
+                                if (reference.ReferenceTypeId != ReferenceTypeIds.HasProperty)
+                                {
+                                    browseTable.Add(ExpandedNodeId.ToNodeId(reference.NodeId, uaClient.Session.NamespaceUris));
+                                }
+                            }
+                            else
+                            {
+                                duplicates++;
+                            }
+                        }
+                    }
+                    */
+
+                    // Process each browse result to build paths
+                    for (int i = 0; i < browseCollection.Count; i++)
+                    {
+                        var parentNodeId = browseCollection[i].NodeId;
+                        var parentPath = "/" + rootPath;
+
+                        // Try to get parent path from existing references
+                        var parentExpandedNodeId = new ExpandedNodeId(parentNodeId);
+                        if (referenceDescriptions.TryGetValue(parentExpandedNodeId, out var parentRef))
+                        {
+                            parentPath = parentRef.Path;
+                        }
+
+                        if (i < browseResultCollection.Count && browseResultCollection[i].References != null)
+                        {
+                            foreach (ReferenceDescription reference in browseResultCollection[i].References)
+                            {
+                                // Build complete path by appending this node's browse name to its parent's path
+                                var newPath = parentPath.TrimEnd('/') + "/" + reference.BrowseName;
+
+                                if (!referenceDescriptions.ContainsKey(reference.NodeId))
+                                {
+                                    referenceDescriptions[reference.NodeId] = (reference, newPath);
+                                    if (reference.ReferenceTypeId != ReferenceTypeIds.HasProperty)
+                                    {
+                                        browseTable.Add(ExpandedNodeId.ToNodeId(reference.NodeId, uaClient.Session.NamespaceUris));
+                                    }
+                                }
+                                else
+                                {
+                                    duplicates++;
+                                }
+                            }
+                        }
+                  
+                    }
+                          
+                    
+                    if (duplicates > 0)
+                    {
+                        Utils.LogInfo("Browse Result {0} duplicate nodes were ignored.", duplicates);
+                    }
+                    browseDescriptionCollection.AddRange(CreateBrowseDescriptionCollectionFromNodeId(browseTable, browseTemplate));
+
+                    // add unprocessed nodes if any
+                    browseDescriptionCollection.AddRange(unprocessedOperations);
+                }
+                stopWatch.Stop();
+
+                var result = new ReferenceDescriptionCollection(referenceDescriptions.Values.Select(v => v.Reference));
+                result.Sort((x, y) => (x.NodeId.CompareTo(y.NodeId)));
+
+                m_output.WriteLine("BrowseFullAddressSpace found {0} references on server in {1}ms.",
+                    referenceDescriptions.Count, stopWatch.ElapsedMilliseconds);
+
+                if (m_verbose)
+                {
+                    foreach (var (reference, path) in referenceDescriptions.Values)
+                    {
+                        m_output.WriteLine("NodeId {0} {1} {2} Path: {3}", reference.NodeId, reference.NodeClass, reference.BrowseName, path);
+                    }
+                }
+
+                return referenceDescriptions;
             }
         }
     }

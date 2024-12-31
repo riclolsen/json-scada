@@ -29,7 +29,7 @@ namespace OPCUAClientDriver
         public class rtDataId
         {
             [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-            public BsonDouble _id;
+            public BsonDouble _id = 0.0;
         }
         [BsonIgnoreExtraElements]
         public class rtData
@@ -335,9 +335,7 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0,
                 };
             else
-            if (iv.asdu.ToLower() == "extensionobject" ||
-                iv.asdu.Contains("[") ||
-                iv.asdu.ToLower().StartsWith("array"))
+            if (iv.asdu.ToLower() == "extensionobject" || iv.isArray)
                 return new rtData()
                 {
                     _id = _id,
