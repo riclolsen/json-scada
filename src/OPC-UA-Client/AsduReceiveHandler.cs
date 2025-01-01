@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
@@ -264,11 +265,7 @@ namespace OPCUAClientDriver
                     exitCode = ExitCode.ErrorBrowseNamespace;
 
                     var uac = new UAClient(session);
-                    var refDescr =
-                                        await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
-                    //var variableIds = new NodeIdCollection(referenceDescriptions
-                    //    .Where(r => r.NodeClass == NodeClass.Variable && r.TypeDefinition.NamespaceIndex != 0)
-                    //    .Select(r => ExpandedNodeId.ToNodeId(r.NodeId, session.NamespaceUris)));
+                    var refDescr = await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
                     foreach (var (reference, path) in refDescr.Values)
                     {
                         m_output.WriteLine("NodeId {0} {1} {2} Path: {3}", reference.NodeId, reference.NodeClass, reference.BrowseName, path);
@@ -282,12 +279,14 @@ namespace OPCUAClientDriver
                             DiscardOldest = true,
                             AttributeId = Attributes.Value
                         });
+                        var pathMinusLastName = Path.GetDirectoryName(path).Replace('\\', '/');
+                        Regex regex = new Regex("/Objects/");
                         NodeIdsDetails[reference.NodeId.ToString()] = new NodeDetails
                         {
                             BrowseName = reference.BrowseName.Name,
                             DisplayName = reference.DisplayName.Text,
-                            ParentName = Path.GetFileNameWithoutExtension(path),
-                            Path = path,
+                            ParentName = Path.GetFileName(pathMinusLastName),
+                            Path = regex.Replace(pathMinusLastName, "", 1), // remove initial /Objects from the path
                         };
                     }
                     Log($"{conn_name} - Found {refDescr.Count} objects and variables.");
@@ -789,7 +788,7 @@ namespace OPCUAClientDriver
             }
             const int kMaxSearchDepth = 128;
             private readonly TextWriter m_output = Console.Out;
-            private readonly ManualResetEvent m_quitEvent;
+            // private readonly ManualResetEvent m_quitEvent;
             private readonly bool m_verbose = false;
             private static ByteStringCollection PrepareBrowseNext(BrowseResultCollection browseResultCollection)
             {
@@ -848,11 +847,11 @@ namespace OPCUAClientDriver
                     BrowseDescriptionCollection browseCollection = new BrowseDescriptionCollection();
                     do
                     {
-                        if (m_quitEvent?.WaitOne(0) == true)
-                        {
-                            m_output.WriteLine("Browse aborted.");
-                            break;
-                        }
+                        //if (m_quitEvent?.WaitOne(0) == true)
+                        //{
+                        //    m_output.WriteLine("Browse aborted.");
+                        //    break;
+                        //}
 
                         browseCollection = (maxNodesPerBrowse == 0) ?
                             browseDescriptionCollection :
@@ -921,10 +920,10 @@ namespace OPCUAClientDriver
                     var continuationPoints = PrepareBrowseNext(browseResultCollection);
                     while (continuationPoints.Any())
                     {
-                        if (m_quitEvent?.WaitOne(0) == true)
-                        {
-                            m_output.WriteLine("Browse aborted.");
-                        }
+                        //if (m_quitEvent?.WaitOne(0) == true)
+                        //{
+                        //    m_output.WriteLine("Browse aborted.");
+                        //}
 
                         Utils.LogInfo("BrowseNext {0} continuation points.", continuationPoints.Count);
                         var browseNextResult = await uaClient.Session.BrowseNextAsync(null, false, continuationPoints, ct).ConfigureAwait(false);
@@ -939,27 +938,6 @@ namespace OPCUAClientDriver
                     // Build browse request for next level
                     var browseTable = new NodeIdCollection();
                     int duplicates = 0;
-                    /*
-                    foreach (var browseResult in allBrowseResults)
-                    {
-                        foreach (ReferenceDescription reference in browseResult.References)
-                        {
-                            if (!referenceDescriptions.ContainsKey(reference.NodeId))
-                            {
-                                referenceDescriptions[reference.NodeId] = reference;
-                                if (reference.ReferenceTypeId != ReferenceTypeIds.HasProperty)
-                                {
-                                    browseTable.Add(ExpandedNodeId.ToNodeId(reference.NodeId, uaClient.Session.NamespaceUris));
-                                }
-                            }
-                            else
-                            {
-                                duplicates++;
-                            }
-                        }
-                    }
-                    */
-
                     // Process each browse result to build paths
                     for (int i = 0; i < browseCollection.Count; i++)
                     {
@@ -978,7 +956,7 @@ namespace OPCUAClientDriver
                             foreach (ReferenceDescription reference in browseResultCollection[i].References)
                             {
                                 // Build complete path by appending this node's browse name to its parent's path
-                                var newPath = parentPath.TrimEnd('/') + "/" + reference.BrowseName;
+                                var newPath = parentPath.TrimEnd('/') + "/" + reference.BrowseName.Name;
 
                                 if (!referenceDescriptions.ContainsKey(reference.NodeId))
                                 {
