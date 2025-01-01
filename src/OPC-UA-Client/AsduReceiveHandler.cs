@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Linq;
@@ -268,6 +269,20 @@ namespace OPCUAClientDriver
                     var refDescr = await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
                     foreach (var (reference, path) in refDescr.Values)
                     {
+                        if (reference.NodeClass == NodeClass.Object) continue;
+
+                        var addToMonitoring = false;
+                        if (OPCUA_conn.topics.Length == 0) addToMonitoring = true;
+                        foreach (var topic in OPCUA_conn.topics)
+                        {
+                            if (path.Contains(topic))
+                            {
+                                addToMonitoring = true;
+                                break;
+                            }
+                        }
+                        if (!addToMonitoring) continue;
+
                         m_output.WriteLine("NodeId {0} {1} {2} Path: {3}", reference.NodeId, reference.NodeClass, reference.BrowseName, path);
                         ListMon.Add(new MonitoredItem()
                         {
@@ -289,7 +304,6 @@ namespace OPCUAClientDriver
                             Path = regex.Replace(pathMinusLastName, "", 1), // remove initial /Objects from the path
                         };
                     }
-                    Log($"{conn_name} - Found {refDescr.Count} objects and variables.");
                     // await FindObjects(session, ObjectIds.ObjectsFolder, "");
 
                     await Task.Delay(50);
@@ -299,7 +313,7 @@ namespace OPCUAClientDriver
                     //OPCUA_conn.connection.session.Notification += OnSessionNotification;
                     ListMon.ForEach(i => i.SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000));
                     ListMon.ForEach(i => i.QueueSize = System.Convert.ToUInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagQueueSize)));
-                    Log(conn_name + " - " + ListMon.Count + " Objects found");
+                    Log(conn_name + " - " + ListMon.Count + " variables added to monitoring.");
 
                     Log(conn_name + " - " + "Create a subscription with publishing interval of " + System.Convert.ToDouble(OPCUA_conn.autoCreateTagPublishingInterval) + " seconds");
                     exitCode = ExitCode.ErrorCreateSubscription;
@@ -589,6 +603,25 @@ namespace OPCUAClientDriver
                                     {
                                         dblValue = ((DateTimeOffset)System.Convert.ToDateTime(value.Value)).ToUnixTimeMilliseconds();
                                         strValue = System.Convert.ToDateTime(value.Value).ToString("o");
+                                    }
+                                    else
+                                    if (tp == "ExtensionObject" && !isArray)
+                                    {
+                                        dblValue = 0;
+                                        try
+                                        {
+                                            var obj = JsonNode.Parse(JsonSerializer.Serialize(value.Value, jsonSerOpts));
+                                            obj = obj["Body"];
+                                            obj.AsObject().Remove("TypeId");
+                                            obj.AsObject().Remove("BinaryEncodingId");
+                                            obj.AsObject().Remove("XmlEncodingId");
+                                            obj.AsObject().Remove("JsonEncodingId");
+                                            strValue = obj.ToString();
+                                        }
+                                        catch
+                                        {
+                                            strValue = jsonValue;
+                                        }
                                     }
                                     else
                                     if (tp == "XmlElement" && !isArray)
@@ -972,10 +1005,10 @@ namespace OPCUAClientDriver
                                 }
                             }
                         }
-                  
+
                     }
-                          
-                    
+
+
                     if (duplicates > 0)
                     {
                         Utils.LogInfo("Browse Result {0} duplicate nodes were ignored.", duplicates);

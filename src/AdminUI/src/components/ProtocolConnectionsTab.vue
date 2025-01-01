@@ -2354,6 +2354,7 @@
           v-if="
             [
               'MQTT-SPARKPLUG-B',
+              'OPC-UA',
               'OPC-UA_SERVER',
               'IEC61850',
               'IEC61850_SERVER',

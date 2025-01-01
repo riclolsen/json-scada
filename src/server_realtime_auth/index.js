@@ -1536,7 +1536,7 @@ let pool = null
                           beepGroup1List: pointInfo?.beepGroup1List,
                         }
                       }
-                      if (pointInfo.type === 'string')
+                      if (pointInfo.type === 'string' || pointInfo.type === 'json')
                         Result.Value = {
                           Type: opc.DataType.String,
                           Body: pointInfo.valueString,
@@ -1575,7 +1575,7 @@ let pool = null
                 // no NodesToRead so it is a filtered query
                 results.map((node) => {
                   let Value = {}
-                  if (node.type === 'string')
+                  if (node.type === 'string' || node.type === 'json')
                     Value = {
                       Type: opc.DataType.String,
                       Body: node.valueString,
