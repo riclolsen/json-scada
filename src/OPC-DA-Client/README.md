@@ -83,6 +83,8 @@ Parameters for communication with OPC-DA servers.
 - _**autoCreateTagQueueSize**_ [Double] - Currently not used. **Mandatory parameter**.
 - _**deadBand**_ [Double] - Default dead-band (percent) for generating data updates by exception. **Mandatory parameter**.
 - _**hoursShift**_ [Double] - Time shift to be applied to server timestamps (hours). **Mandatory parameter**.
+- _**giInterval**_ [Double] - Integrity interval (seconds). **Mandatory parameter**.
+- _**topics**_ [Array of Strings] - List of browse paths where to create tags automatically. **Mandatory parameter**.
 - _**timeoutMs**_ [Double] - Currently not used. **Mandatory parameter**.
 - _**useSecurity**_ [Boolean] - Use (true) or not (false) certificates. **Mandatory parameter**.
 - _**localCertFilePath**_ [String] - Name of the file that contains the certificate that will be presented to the remote side of the connection. **Mandatory parameter**.

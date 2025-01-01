@@ -57,6 +57,9 @@ Each instance for this driver can have many client connection defined that must 
         autoCreateTagQueueSize: 5.0,
         timeoutMs: 20000,
         useSecurity: false,
+        topics: [],
+        giInterval: 300.0,
+        hoursShift: 0.0,
         stats: {}
     });
 
@@ -77,6 +80,9 @@ Parameters for communication with OPC-UA servers.
 - _**autoCreateTagQueueSize**_ [Double] - Default queue size for subscription of auto created tags. **Mandatory parameter**.
 - _**timeoutMs**_ [Double] - Timeout for keepalive messages. **Mandatory parameter**.
 - _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
+- _**hoursShift**_ [Double] - Time shift to be applied to server timestamps (hours). **Mandatory parameter**.
+- _**giInterval**_ [Double] - Integrity interval for items not on subscription (seconds). **Mandatory parameter**.
+- _**topics**_ [Array of Strings] - List of browse paths where to create tags automatically (e.g. "/Objects/Path", "Boiler"). **Mandatory parameter**.
 - _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 ## Configure JSON-SCADA tags for update (reading from an OPC-UA Server)
