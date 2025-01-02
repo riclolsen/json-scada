@@ -528,12 +528,6 @@ namespace OPCUAClientDriver
                 }
                 foreach (var value in item.DequeueValues())
                 {
-                    //if (value == null || value.Value == null)
-                    //{
-                    //MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
-                    //Console.WriteLine("Notification Received for Variable \"{0}\" value=null type {1}.", item.DisplayName, notification.TypeId);
-                    //}
-
                     if (value != null)
                     {
                         string tp = "unknown";
@@ -547,13 +541,18 @@ namespace OPCUAClientDriver
 
                                 Double dblValue = 0.0;
                                 string strValue = "";
-                                string jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                                string jsonValue = "";
+                                try
+                                {
+                                    jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                                }
+                                catch (Exception)
+                                { }
 
                                 if (value.WrappedValue.TypeInfo != null)
                                 {
                                     tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
                                     isArray = value.Value.GetType().ToString().Contains("[");
-                                    // Log(conn_name + " - " + item.ResolvedNodeId + "TYPE: " + tp, LogLevelDetailed);
                                 }
                                 else
                                 {
@@ -588,7 +587,7 @@ namespace OPCUAClientDriver
                                                     dblValue = 0;
                                                     try
                                                     {
-                                                        strValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                                                        strValue = jsonValue;
                                                     }
                                                     catch
                                                     {
@@ -610,7 +609,7 @@ namespace OPCUAClientDriver
                                         dblValue = 0;
                                         try
                                         {
-                                            var obj = JsonNode.Parse(JsonSerializer.Serialize(value.Value, jsonSerOpts));
+                                            var obj = JsonNode.Parse(jsonValue);
                                             obj = obj["Body"];
                                             obj.AsObject().Remove("TypeId");
                                             obj.AsObject().Remove("BinaryEncodingId");
@@ -631,7 +630,7 @@ namespace OPCUAClientDriver
                                         jsonValue = "\"" + value.WrappedValue.ToString() + "\"";
                                     }
                                     else
-                                    if (tp == "ByteString")
+                                    if (tp == "ByteString" && !isArray)
                                     {
                                         dblValue = 0;
                                         strValue = System.Convert.ToBase64String(value.GetValue<byte[]>([]));
@@ -660,12 +659,16 @@ namespace OPCUAClientDriver
                                         tp == "ExpandedNodeId" ||
                                         tp == "XmlElement" ||
                                         tp == "QualifiedName" ||
-                                        tp == "Guid" ||
-                                        // tp == "ExtensionObject" ||
-                                        isArray)
+                                        tp == "Guid")
                                     {
                                         dblValue = 0;
                                         strValue = System.Convert.ToString(value.Value);
+                                    }
+                                    else
+                                    if (isArray)
+                                    {
+                                        dblValue = 0;
+                                        strValue = jsonValue;
                                     }
                                     else
                                     {
@@ -855,8 +858,7 @@ namespace OPCUAClientDriver
 
                 // Browse
                 var referenceDescriptions = new Dictionary<ExpandedNodeId, (ReferenceDescription Reference, string Path)>();
-                var startingNodeName = (await uaClient.Session.ReadNodeAsync(startingNode ?? ObjectIds.RootFolder)).BrowseName.Name;
-                var rootPath = startingNodeName;
+                var rootPath = (await uaClient.Session.ReadNodeAsync(startingNode ?? ObjectIds.RootFolder)).BrowseName.Name;
 
                 int searchDepth = 0;
                 uint maxNodesPerBrowse = uaClient.Session.OperationLimits.MaxNodesPerBrowse;
@@ -874,12 +876,6 @@ namespace OPCUAClientDriver
                     BrowseDescriptionCollection browseCollection = new BrowseDescriptionCollection();
                     do
                     {
-                        //if (m_quitEvent?.WaitOne(0) == true)
-                        //{
-                        //    m_output.WriteLine("Browse aborted.");
-                        //    break;
-                        //}
-
                         browseCollection = (maxNodesPerBrowse == 0) ?
                             browseDescriptionCollection :
                             browseDescriptionCollection.Take((int)maxNodesPerBrowse).ToArray();
@@ -936,7 +932,7 @@ namespace OPCUAClientDriver
 
                     if (maxNodesPerBrowse == 0)
                     {
-                        browseDescriptionCollection.Clear();
+                        // browseDescriptionCollection.Clear();
                     }
                     else
                     {
@@ -947,11 +943,6 @@ namespace OPCUAClientDriver
                     var continuationPoints = PrepareBrowseNext(browseResultCollection);
                     while (continuationPoints.Any())
                     {
-                        //if (m_quitEvent?.WaitOne(0) == true)
-                        //{
-                        //    m_output.WriteLine("Browse aborted.");
-                        //}
-
                         Utils.LogInfo("BrowseNext {0} continuation points.", continuationPoints.Count);
                         var browseNextResult = await uaClient.Session.BrowseNextAsync(null, false, continuationPoints, ct).ConfigureAwait(false);
                         var browseNextResultCollection = browseNextResult.Results;
@@ -999,9 +990,7 @@ namespace OPCUAClientDriver
                                 }
                             }
                         }
-
                     }
-
 
                     if (duplicates > 0)
                     {
