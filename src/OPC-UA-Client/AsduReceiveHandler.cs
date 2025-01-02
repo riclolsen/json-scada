@@ -706,7 +706,7 @@ namespace OPCUAClientDriver
                                         value = dblValue,
                                         valueString = strValue,
                                         hasSourceTimestamp = value.SourceTimestamp != DateTime.MinValue,
-                                        sourceTimestamp = value.SourceTimestamp,
+                                        sourceTimestamp = value.SourceTimestamp != DateTime.MinValue ? value.SourceTimestamp.AddHours(OPCUA_conn.hoursShift) : DateTime.MinValue,
                                         serverTimestamp = DateTime.Now,
                                         quality = StatusCode.IsGood(value.StatusCode),
                                         cot = 3,
@@ -721,12 +721,6 @@ namespace OPCUAClientDriver
                                     OPCDataQueue.Enqueue(iv);
                                 else
                                     CntLostDataUpdates++;
-                                //if (item.ResolvedNodeId.ToString().ToLower().Contains("byteswritten"))
-                                //{
-                                //    MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
-                                //    Console.WriteLine("Notification Received for Variable \"{0}\" and Value = {1} type {2}.", item.DisplayName, notification.Value, notification.TypeId);
-                                //    Console.WriteLine($"----------------------- {conn_name} {iv.address} {iv.value} {iv.sourceTimestamp}");
-                                //}
                             }
                         }
                         catch (Exception excpt)
