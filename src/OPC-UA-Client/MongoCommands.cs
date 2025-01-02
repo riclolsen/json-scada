@@ -138,6 +138,27 @@ namespace OPCUAClientDriver
                                             srv.commandsEnabled
                                             )
                                             {
+                                                /*
+                                                // when method, call
+                                                VariantCollection inputArguments = new VariantCollection();
+                                                CallMethodRequest request = new CallMethodRequest();
+                                                request.ObjectId = new NodeId(System
+                                                        .Convert
+                                                        .ToString(change.FullDocument.protocolSourceObjectAddress));
+                                                // request.MethodId = m_methodId;
+                                                request.InputArguments = inputArguments;
+                                                CallMethodRequestCollection requests = new CallMethodRequestCollection();
+                                                requests.Add(request);
+                                                CallMethodResultCollection results;
+                                                DiagnosticInfoCollection diagnosticInfos;
+                                                ResponseHeader responseHeader = srv.connection.session.Call(
+                                                    null,
+                                                    requests,
+                                                    out results,
+                                                    out diagnosticInfos);
+                                                */
+
+                                                // when variable, write
                                                 WriteValueCollection nodesToWrite = new WriteValueCollection();
                                                 WriteValue WriteVal = new WriteValue();
                                                 WriteVal.NodeId =
