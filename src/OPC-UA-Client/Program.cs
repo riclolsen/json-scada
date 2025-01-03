@@ -187,25 +187,28 @@ namespace OPCUAClientDriver
             {
                 var results = collRtData.Find<rtData>(new BsonDocument {
                                         { "protocolSourceConnectionNumber", isrv.protocolConnectionNumber },
-                                        { "origin", "supervised" }
+                                        // { "origin", "supervised" }
                                     }).ToList();
                 Log(isrv.name.ToString() + " - Found " + results.Count.ToString() + " tags in database.");
                 // look for existing tags in this connections, missing tags will be inserted later when discovered
                 for (int i = 0; i < results.Count; i++)
                 {
-                    if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval.AsDouble))
+                    if (results[i].origin == "supervised")
                     {
-                        Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval.AsDouble + " seconds.");
-                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble] = new List<rtMonitTag>();
+                        if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval.AsDouble))
+                        {
+                            Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval.AsDouble + " seconds.");
+                            isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble] = new List<rtMonitTag>();
+                        }
+                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble].Add(new rtMonitTag
+                        {
+                            tag = results[i].tag.ToString(),
+                            protocolSourceObjectAddress = results[i].protocolSourceObjectAddress.AsString,
+                            protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval.AsDouble,
+                            protocolSourceQueueSize = results[i].protocolSourceQueueSize.AsDouble,
+                            ungroupedDescription = results[i].ungroupedDescription.AsString,
+                        });
                     }
-                    isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble].Add(new rtMonitTag
-                    {
-                        tag = results[i].tag.ToString(),
-                        protocolSourceObjectAddress = results[i].protocolSourceObjectAddress.AsString,
-                        protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval.AsDouble,
-                        protocolSourceQueueSize = results[i].protocolSourceQueueSize.AsDouble,
-                        ungroupedDescription = results[i].ungroupedDescription.AsString,
-                    });
                     isrv.InsertedTags.Add(results[i].tag.ToString());
                 }
 

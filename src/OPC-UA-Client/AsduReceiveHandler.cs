@@ -31,6 +31,8 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using DnsClient.Protocol;
+using Opc.Ua.Export;
 
 namespace OPCUAClientDriver
 {
@@ -74,8 +76,6 @@ namespace OPCUAClientDriver
             bool autoAccept = true;
             static ExitCode exitCode;
             List<MonitoredItem> ListMon = new List<MonitoredItem>();
-            HashSet<string> NodeIds = new HashSet<string>();
-            HashSet<string> NodeIdsFromObjects = new HashSet<string>();
             Dictionary<string, NodeDetails> NodeIdsDetails = new Dictionary<string, NodeDetails>();
             OPCUA_connection OPCUA_conn;
 
@@ -268,23 +268,36 @@ namespace OPCUAClientDriver
                     var refDescr = await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
                     Regex regexp = new Regex("/Objects/");
                     string pathMinusLastName;
+                    IList<NodeId> nodesList = [];
+
                     foreach (var (reference, path) in refDescr.Values)
                     {
                         if (reference.NodeClass == NodeClass.Object) continue;
-                        if (reference.NodeClass == NodeClass.Method)
+                        if (reference.NodeClass == NodeClass.Method && !OPCUA_conn.commandsEnabled) continue;
+                        nodesList.Add(reference.NodeId.ToString());
+                    }
+
+                    (IList<Node> sourceNodes, IList<ServiceResult> readErrors) = await session.ReadNodesAsync(nodesList);
+                    for (int i = 0; i < sourceNodes.Count; i++)
+                    {
+                        if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString())) continue;
+                        if (!StatusCode.IsGood(readErrors[i].StatusCode)) continue;
+                        var reference = refDescr[sourceNodes[i].NodeId];
+                        
+                        if (sourceNodes[i].NodeClass == NodeClass.Method && OPCUA_conn.commandsEnabled)
                         {
-                            var res = (MethodNode)await session.ReadNodeAsync(reference.NodeId.ToString());
+                            var res = (MethodNode)sourceNodes[i];
                             if (res.Executable && res.UserExecutable)
                             {
                                 // if not created, create a new command/method tag
                                 // Console.WriteLine(res);
-                                pathMinusLastName = Path.GetDirectoryName(path).Replace('\\', '/');
+                                pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');
                                 OPC_Value iv =
                                     new OPC_Value()
                                     {
                                         valueJson = "",
                                         selfPublish = true,
-                                        address = reference.NodeId.ToString(),
+                                        address = sourceNodes[i].NodeId.ToString(),
                                         isArray = false,
                                         asdu = "method",
                                         value = 0,
@@ -297,7 +310,7 @@ namespace OPCUAClientDriver
                                         conn_number = conn_number,
                                         conn_name = conn_name,
                                         common_address = "",
-                                        display_name = reference.DisplayName.Text,
+                                        display_name = sourceNodes[i].DisplayName.Text,
                                         parentName = Path.GetFileName(pathMinusLastName),
                                         path = regexp.Replace(pathMinusLastName, "", 1), // remove initial /Objects from the path,
                                     };
@@ -309,7 +322,7 @@ namespace OPCUAClientDriver
                         if (OPCUA_conn.topics.Length == 0) addToMonitoring = true;
                         foreach (var topic in OPCUA_conn.topics)
                         {
-                            if (path.Contains(topic))
+                            if (reference.Path.Contains(topic))
                             {
                                 addToMonitoring = true;
                                 break;
@@ -317,25 +330,29 @@ namespace OPCUAClientDriver
                         }
                         if (!addToMonitoring) continue;
 
-                        Log(conn_name + " - " + string.Format("NodeId {0} {1} {2} Path: {3}", reference.NodeId, reference.NodeClass, reference.BrowseName, path));
+                        Log(conn_name + " - " + string.Format("NodeId {0} {1} {2} Path: {3}", sourceNodes[i].NodeId, sourceNodes[i].NodeClass, sourceNodes[i].BrowseName, reference.Path));
                         ListMon.Add(new MonitoredItem()
                         {
-                            DisplayName = reference.BrowseName.Name,
-                            StartNodeId = reference.NodeId.ToString(),
+                            DisplayName = sourceNodes[i].BrowseName.Name,
+                            StartNodeId = sourceNodes[i].NodeId.ToString(),
                             SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
                             QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value
                         });
-                        pathMinusLastName = Path.GetDirectoryName(path).Replace('\\', '/');
-                        NodeIdsDetails[reference.NodeId.ToString()] = new NodeDetails
+                        pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');
+                        NodeIdsDetails[sourceNodes[i].NodeId.ToString()] = new NodeDetails
                         {
-                            BrowseName = reference.BrowseName.Name,
-                            DisplayName = reference.DisplayName.Text,
+                            BrowseName = sourceNodes[i].BrowseName.Name,
+                            DisplayName = sourceNodes[i].DisplayName.Text,
                             ParentName = Path.GetFileName(pathMinusLastName),
                             Path = regexp.Replace(pathMinusLastName, "", 1), // remove initial /Objects from the path
                         };
+                        if (sourceNodes[i].UserWriteMask == 0)
+                        {
+
+                        }
                     }
 
                     await Task.Delay(50);
