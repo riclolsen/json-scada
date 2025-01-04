@@ -30,9 +30,6 @@ using System.Text.RegularExpressions;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
-using System.Reflection.Metadata;
-using DnsClient.Protocol;
-using Opc.Ua.Export;
 
 namespace OPCUAClientDriver
 {
@@ -267,7 +264,6 @@ namespace OPCUAClientDriver
                     var uac = new UAClient(session);
                     var refDescr = await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
                     Regex regexp = new Regex("/Objects/");
-                    string pathMinusLastName;
                     IList<NodeId> nodesList = [];
 
                     foreach (var (reference, path) in refDescr.Values)
@@ -277,81 +273,136 @@ namespace OPCUAClientDriver
                         nodesList.Add(reference.NodeId.ToString());
                     }
 
-                    (IList<Node> sourceNodes, IList<ServiceResult> readErrors) = await session.ReadNodesAsync(nodesList);
-                    for (int i = 0; i < sourceNodes.Count; i++)
+                    const int maxNodesToRead = 100;
+                    for (var j = 0; j < nodesList.Count; j = j + maxNodesToRead)
                     {
-                        if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString())) continue;
-                        if (!StatusCode.IsGood(readErrors[i].StatusCode)) continue;
-                        var reference = refDescr[sourceNodes[i].NodeId];
-                        
-                        if (sourceNodes[i].NodeClass == NodeClass.Method && OPCUA_conn.commandsEnabled)
+                        try
                         {
-                            var res = (MethodNode)sourceNodes[i];
-                            if (res.Executable && res.UserExecutable)
+                            var nodesToRead = nodesList.Skip(j).Take(maxNodesToRead).ToList();
+                            (IList<Node> sourceNodes, IList<ServiceResult> readErrors) = await session.ReadNodesAsync(nodesToRead);
+                            DataValueCollection dataValues = []; IList<ServiceResult> readErrorsDv = [];
+                            try
                             {
-                                // if not created, create a new command/method tag
-                                // Console.WriteLine(res);
-                                pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');
-                                OPC_Value iv =
-                                    new OPC_Value()
+                                (dataValues, readErrorsDv) = await session.ReadValuesAsync(nodesToRead);
+                            }
+                            catch (Exception)
+                            {
+                                Log(conn_name + " - Error reading values " + j, LogLevelDetailed);
+                            }
+                            Log(conn_name + " - " + " Autotag - Readed " + sourceNodes.Count + " nodes at offset " + j + " from a total of " + nodesList.Count);
+                            for (int i = 0; i < sourceNodes.Count; i++)
+                            {
+                                if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString())) continue;
+                                if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString() + "-Cmd")) continue;
+                                if (!StatusCode.IsGood(readErrors[i].StatusCode)) continue;
+                                if (sourceNodes.Count == readErrorsDv.Count && !StatusCode.IsGood(readErrorsDv[i].StatusCode)) continue;
+                                var reference = refDescr[sourceNodes[i].NodeId];
+                                var pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');
+                                var parentName = Path.GetFileName(pathMinusLastName);
+                                var path = regexp.Replace(pathMinusLastName, "", 1); // remove initial /Objects from the path,
+
+                                if (sourceNodes[i].NodeClass == NodeClass.Method && OPCUA_conn.commandsEnabled)
+                                {
+                                    var res = (MethodNode)sourceNodes[i];
+                                    if (res.Executable && res.UserExecutable)
                                     {
-                                        valueJson = "",
-                                        selfPublish = true,
-                                        address = sourceNodes[i].NodeId.ToString(),
-                                        isArray = false,
-                                        asdu = "method",
-                                        value = 0,
-                                        valueString = "",
-                                        hasSourceTimestamp = false,
-                                        sourceTimestamp = DateTime.MinValue,
-                                        serverTimestamp = DateTime.Now,
-                                        quality = false,
-                                        cot = 0,
-                                        conn_number = conn_number,
-                                        conn_name = conn_name,
-                                        common_address = "",
-                                        display_name = sourceNodes[i].DisplayName.Text,
-                                        parentName = Path.GetFileName(pathMinusLastName),
-                                        path = regexp.Replace(pathMinusLastName, "", 1), // remove initial /Objects from the path,
-                                    };
-                                OPCDataQueue.Enqueue(iv);
+                                        // if not created, create a new command/method tag
+                                        // Console.WriteLine(res);
+                                        OPC_Value iv =
+                                            new OPC_Value()
+                                            {
+                                                isCommand = true,
+                                                valueJson = "",
+                                                selfPublish = true,
+                                                address = sourceNodes[i].NodeId.ToString(),
+                                                isArray = false,
+                                                asdu = "method",
+                                                value = 0,
+                                                valueString = "",
+                                                hasSourceTimestamp = false,
+                                                sourceTimestamp = DateTime.MinValue,
+                                                serverTimestamp = DateTime.Now,
+                                                quality = false,
+                                                cot = 0,
+                                                conn_number = conn_number,
+                                                conn_name = conn_name,
+                                                common_address = "",
+                                                display_name = sourceNodes[i].DisplayName.Text,
+                                                parentName = parentName,
+                                                path = path,
+                                            };
+                                        OPCDataQueue.Enqueue(iv);
+                                    }
+                                    continue;
+                                }
+
+                                var addToMonitoring = false;
+                                if (OPCUA_conn.topics.Length == 0) addToMonitoring = true;
+                                foreach (var topic in OPCUA_conn.topics)
+                                {
+                                    if (reference.Path.Contains(topic))
+                                    {
+                                        addToMonitoring = true;
+                                        break;
+                                    }
+                                }
+                                if (!addToMonitoring) continue;
+
+                                Log(conn_name + " - " + string.Format("NodeId {0} {1} {2} Path: {3}", sourceNodes[i].NodeId, sourceNodes[i].NodeClass, sourceNodes[i].BrowseName, reference.Path), LogLevelDetailed);
+                                ListMon.Add(new MonitoredItem()
+                                {
+                                    DisplayName = sourceNodes[i].BrowseName.Name,
+                                    StartNodeId = sourceNodes[i].NodeId.ToString(),
+                                    SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
+                                    QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
+                                    MonitoringMode = MonitoringMode.Reporting,
+                                    DiscardOldest = true,
+                                    AttributeId = Attributes.Value
+                                });
+                                NodeIdsDetails[sourceNodes[i].NodeId.ToString()] = new NodeDetails
+                                {
+                                    BrowseName = sourceNodes[i].BrowseName.Name,
+                                    DisplayName = sourceNodes[i].DisplayName.Text,
+                                    ParentName = parentName,
+                                    Path = path,
+                                };
+
+                                if (sourceNodes.Count == dataValues.Count)
+                                    if (OPCUA_conn.commandsEnabled && dataValues[i].Value != null &&
+                                        ((sourceNodes[i] as VariableNode).UserAccessLevel == AccessLevels.CurrentReadOrWrite ||
+                                        (sourceNodes[i] as VariableNode).UserAccessLevel == AccessLevels.CurrentWrite))
+                                    { // variable can be written, create a command for it
+                                        OPC_Value iv =
+                                                new OPC_Value()
+                                                {
+                                                    isCommand = true,
+                                                    valueJson = "",
+                                                    selfPublish = true,
+                                                    address = sourceNodes[i].NodeId.ToString(),
+                                                    isArray = false,
+                                                    asdu = dataValues[i].WrappedValue.TypeInfo.BuiltInType.ToString(),
+                                                    value = 0,
+                                                    valueString = "",
+                                                    hasSourceTimestamp = false,
+                                                    sourceTimestamp = DateTime.MinValue,
+                                                    serverTimestamp = DateTime.Now,
+                                                    quality = false,
+                                                    cot = 0,
+                                                    conn_number = conn_number,
+                                                    conn_name = conn_name,
+                                                    common_address = "",
+                                                    display_name = sourceNodes[i].DisplayName.Text,
+                                                    parentName = parentName,
+                                                    path = path,
+                                                };
+                                        OPCDataQueue.Enqueue(iv);
+                                    }
                             }
                         }
-
-                        var addToMonitoring = false;
-                        if (OPCUA_conn.topics.Length == 0) addToMonitoring = true;
-                        foreach (var topic in OPCUA_conn.topics)
+                        catch (Exception e)
                         {
-                            if (reference.Path.Contains(topic))
-                            {
-                                addToMonitoring = true;
-                                break;
-                            }
-                        }
-                        if (!addToMonitoring) continue;
-
-                        Log(conn_name + " - " + string.Format("NodeId {0} {1} {2} Path: {3}", sourceNodes[i].NodeId, sourceNodes[i].NodeClass, sourceNodes[i].BrowseName, reference.Path));
-                        ListMon.Add(new MonitoredItem()
-                        {
-                            DisplayName = sourceNodes[i].BrowseName.Name,
-                            StartNodeId = sourceNodes[i].NodeId.ToString(),
-                            SamplingInterval = System.Convert.ToInt32(System.Convert.ToDouble(OPCUA_conn.autoCreateTagSamplingInterval) * 1000),
-                            QueueSize = System.Convert.ToUInt32(OPCUA_conn.autoCreateTagQueueSize),
-                            MonitoringMode = MonitoringMode.Reporting,
-                            DiscardOldest = true,
-                            AttributeId = Attributes.Value
-                        });
-                        pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');
-                        NodeIdsDetails[sourceNodes[i].NodeId.ToString()] = new NodeDetails
-                        {
-                            BrowseName = sourceNodes[i].BrowseName.Name,
-                            DisplayName = sourceNodes[i].DisplayName.Text,
-                            ParentName = Path.GetFileName(pathMinusLastName),
-                            Path = regexp.Replace(pathMinusLastName, "", 1), // remove initial /Objects from the path
-                        };
-                        if (sourceNodes[i].UserWriteMask == 0)
-                        {
-
+                            Log(conn_name + " - Error reading nodes " + j);
+                            Log(e);
                         }
                     }
 
@@ -563,12 +614,19 @@ namespace OPCUAClientDriver
                                     try
                                     {
                                         var obj = JsonNode.Parse(jsonValue);
-                                        obj = obj["Body"];
-                                        obj.AsObject().Remove("TypeId");
-                                        obj.AsObject().Remove("BinaryEncodingId");
-                                        obj.AsObject().Remove("XmlEncodingId");
-                                        obj.AsObject().Remove("JsonEncodingId");
-                                        strValue = obj.ToString();
+                                        var obj2 = obj["Body"];
+                                        if (obj2 != null)
+                                        {
+                                            obj2.AsObject().Remove("TypeId");
+                                            obj2.AsObject().Remove("BinaryEncodingId");
+                                            obj2.AsObject().Remove("XmlEncodingId");
+                                            obj2.AsObject().Remove("JsonEncodingId");
+                                            strValue = obj2.ToString();
+                                        }
+                                        else
+                                        {
+                                            strValue = obj.ToString();
+                                        }
                                     }
                                     catch
                                     {
@@ -680,6 +738,7 @@ namespace OPCUAClientDriver
                             OPC_Value iv =
                                 new OPC_Value()
                                 {
+                                    isCommand = false,
                                     valueJson = jsonValue,
                                     selfPublish = true,
                                     address = item.ResolvedNodeId.ToString(),

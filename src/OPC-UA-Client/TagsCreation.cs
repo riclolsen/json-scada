@@ -178,7 +178,7 @@ namespace OPCUAClientDriver
         }
         public static rtData newRealtimeDoc(OPC_Value iv, double _id)
         {
-            if (iv.asdu.ToLower() == "boolean")
+            if (iv.isCommand)
                 return new rtData()
                 {
                     _id = _id,
@@ -188,12 +188,12 @@ namespace OPCUAClientDriver
                     protocolSourceObjectAddress = iv.address,
                     protocolSourceCommandUseSBO = false,
                     protocolSourceCommandDuration = 0.0,
-                    protocolSourcePublishingInterval = 5.0,
-                    protocolSourceSamplingInterval = 2.0,
-                    protocolSourceQueueSize = 10.0,
+                    protocolSourcePublishingInterval = 0.0,
+                    protocolSourceSamplingInterval = 0.0,
+                    protocolSourceQueueSize = 0.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
-                    description = iv.conn_name + "~" + iv.path + "~" + iv.display_name,
+                    description = iv.conn_name + "~" + iv.path + "~" + iv.display_name + "-Command",
                     ungroupedDescription = iv.display_name,
                     group1 = iv.conn_name,
                     group2 = iv.path,
@@ -202,10 +202,10 @@ namespace OPCUAClientDriver
                     stateTextTrue = "TRUE",
                     eventTextFalse = "FALSE",
                     eventTextTrue = "TRUE",
-                    origin = "supervised",
+                    origin = "command",
                     tag = TagFromOPCParameters(iv),
                     type = "digital",
-                    value = iv.value,
+                    value = 0.0,
                     valueString = "????",
                     alarmDisabled = false,
                     alerted = false,
@@ -252,7 +252,7 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0
                 };
             else
-            if (iv.asdu.ToLower() == "method")
+            if (iv.asdu.ToLower() == "boolean")
                 return new rtData()
                 {
                     _id = _id,
@@ -262,9 +262,9 @@ namespace OPCUAClientDriver
                     protocolSourceObjectAddress = iv.address,
                     protocolSourceCommandUseSBO = false,
                     protocolSourceCommandDuration = 0.0,
-                    protocolSourcePublishingInterval = 0.0,
-                    protocolSourceSamplingInterval = 0.0,
-                    protocolSourceQueueSize = 0.0,
+                    protocolSourcePublishingInterval = 5.0,
+                    protocolSourceSamplingInterval = 2.0,
+                    protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
                     description = iv.conn_name + "~" + iv.path + "~" + iv.display_name,
@@ -276,10 +276,10 @@ namespace OPCUAClientDriver
                     stateTextTrue = "TRUE",
                     eventTextFalse = "FALSE",
                     eventTextTrue = "TRUE",
-                    origin = "command",
+                    origin = "supervised",
                     tag = TagFromOPCParameters(iv),
                     type = "digital",
-                    value = 0.0,
+                    value = iv.value,
                     valueString = "????",
                     alarmDisabled = false,
                     alerted = false,

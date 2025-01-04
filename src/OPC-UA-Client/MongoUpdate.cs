@@ -109,7 +109,7 @@ namespace OPCUAClientDriver
                                 string tag = TagFromOPCParameters(iv);
                                 if (OPCUAconns[conn_index].InsertedTags.Add(tag))
                                 { // added, then insert it
-                                    Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address);
+                                    Log(iv.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + iv.address, LogLevelDetailed);
 
                                     // find a new freee _id key based on the connection number
                                     if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
@@ -300,7 +300,10 @@ namespace OPCUAClientDriver
         }
         static string TagFromOPCParameters(OPC_Value ov)
         {
-            return ov.conn_name + ";" + ov.address;
+            if (ov.isCommand)
+                return ov.conn_name + ";" + ov.address + "-Cmd";
+            else
+                return ov.conn_name + ";" + ov.address;
         }
     }
 }

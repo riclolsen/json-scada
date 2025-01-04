@@ -20,6 +20,7 @@ using System;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Threading;
+using System.Text.Json.Nodes;
 using Opc.Ua;
 
 namespace OPCUAClientDriver
@@ -188,6 +189,7 @@ namespace OPCUAClientDriver
                                                     case "int32":
                                                         WriteVal.Value.Value = Convert.ToInt32(change.FullDocument.value);
                                                         break;
+                                                    case "statuscode":
                                                     case "uint32":
                                                         WriteVal.Value.Value = Convert.ToUInt32(change.FullDocument.value);
                                                         break;
@@ -206,9 +208,27 @@ namespace OPCUAClientDriver
                                                     case "datetime":
                                                         WriteVal.Value.Value = Convert.ToDateTime(change.FullDocument.value);
                                                         break;
+                                                    case "bytestring":
                                                     case "string":
-                                                        WriteVal.Value.Value = Convert.ToString(change.FullDocument.value);
+                                                    case "localizedtext":
+                                                    case "qualifiedname":
+                                                    case "nodeid":
+                                                    case "guid":
+                                                    case "expandednodeid":
+                                                    case "xmlelement":
+                                                        WriteVal.Value.Value = Convert.ToString(change.FullDocument.valueString);
                                                         break;
+                                                    case "extensionobject":
+                                                    case "numericrange":
+                                                    case "variant":
+                                                    case "diagnosticinfo":
+                                                    case "datavalue":
+                                                        WriteVal.Value.Value = JsonNode.Parse(change.FullDocument.valueString.ToString());
+                                                        break;
+                                                }
+                                                if (change.FullDocument.protocolSourceASDU.ToString().Contains("["))
+                                                {
+                                                    WriteVal.Value.Value = JsonNode.Parse(change.FullDocument.valueString.ToString());
                                                 }
 
                                                 nodesToWrite.Add(WriteVal);

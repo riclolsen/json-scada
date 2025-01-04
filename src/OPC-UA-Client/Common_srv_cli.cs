@@ -131,6 +131,7 @@ namespace OPCUAClientDriver
         }
         public class OPC_Value
         {
+            public bool isCommand;
             public string valueJson;
             public bool selfPublish;
             public string address;
