@@ -565,7 +565,9 @@ namespace OPCUAClientDriver
                             if (value.WrappedValue.TypeInfo != null)
                             {
                                 tp = value.WrappedValue.TypeInfo.BuiltInType.ToString();
-                                isArray = value.Value.GetType().ToString().Contains("[");
+                                isArray = value.Value.GetType().ToString().Contains("[") || 
+                                    value.Value.GetType().ToString().ToLower().Contains("matrix") ||
+                                    value.Value.GetType().ToString().ToLower().Contains("array");
                             }
                             else
                             {
