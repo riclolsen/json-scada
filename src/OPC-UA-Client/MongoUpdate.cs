@@ -107,7 +107,7 @@ namespace OPCUAClientDriver
                                 }
 
                                 string tag = TagFromOPCParameters(ov);
-                                if (OPCUAconns[conn_index].InsertedTags.Add(tag))
+                                if (OPCUAconns[conn_index].InsertedAddresses.Add(ov.address))
                                 { // added, then insert it
                                     Log(ov.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + ov.address, LogLevelDetailed);
 

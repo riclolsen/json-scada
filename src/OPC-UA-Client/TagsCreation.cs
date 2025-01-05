@@ -203,7 +203,7 @@ namespace OPCUAClientDriver
                     eventTextFalse = "FALSE",
                     eventTextTrue = "TRUE",
                     origin = "command",
-                    tag = TagFromOPCParameters(iv) + "-Cmd",
+                    tag = TagFromOPCParameters(iv) + ";cmd",
                     type = "digital",
                     value = 0.0,
                     valueString = "????",

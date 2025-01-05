@@ -187,7 +187,6 @@ namespace OPCUAClientDriver
             {
                 var results = collRtData.Find<rtData>(new BsonDocument {
                                         { "protocolSourceConnectionNumber", isrv.protocolConnectionNumber },
-                                        // { "origin", "supervised" }
                                     }).ToList();
                 Log(isrv.name.ToString() + " - Found " + results.Count.ToString() + " tags in database.");
                 // look for existing tags in this connections, missing tags will be inserted later when discovered
@@ -209,7 +208,7 @@ namespace OPCUAClientDriver
                             ungroupedDescription = results[i].ungroupedDescription.AsString,
                         });
                     }
-                    isrv.InsertedTags.Add(results[i].tag.ToString());
+                    isrv.InsertedAddresses.Add(results[i].protocolSourceObjectAddress.ToString());
                 }
 
                 isrv.LastNewKeyCreated = 0;

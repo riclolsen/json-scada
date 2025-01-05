@@ -292,8 +292,7 @@ namespace OPCUAClientDriver
                             Log(conn_name + " - " + " Autotag - Readed " + sourceNodes.Count + " nodes at offset " + j + " from a total of " + nodesList.Count);
                             for (int i = 0; i < sourceNodes.Count; i++)
                             {
-                                if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString())) continue;
-                                if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString() + "-Cmd")) continue;
+                                if (OPCUA_conn.InsertedAddresses.Contains(sourceNodes[i].NodeId.ToString())) continue;
                                 if (!StatusCode.IsGood(readErrors[i].StatusCode)) continue;
                                 var reference = refDescr[sourceNodes[i].NodeId];
                                 var pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');

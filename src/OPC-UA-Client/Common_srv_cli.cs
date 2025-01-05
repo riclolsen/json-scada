@@ -111,7 +111,7 @@ namespace OPCUAClientDriver
             public double giInterval { get; set; }
             public string[] topics { get; set; }
             public double LastNewKeyCreated;
-            public SortedSet<string> InsertedTags = new SortedSet<string>();
+            public SortedSet<string> InsertedAddresses = new SortedSet<string>();
             public OPCUAClient connection;
             public Thread thrOPCStack;
             public Dictionary<double, List<rtMonitTag>> OpcSubscriptions = new Dictionary<double, List<rtMonitTag>>();
