@@ -176,16 +176,41 @@ namespace OPCUAClientDriver
             public BsonDouble zeroDeadband;
 
         }
-        public static rtData newRealtimeDoc(OPC_Value iv, double _id, double commandOfSupervised)
+        public static rtData newRealtimeDoc(OPC_Value ov, double _id, double commandOfSupervised)
         {
-            if (iv.createCommandForMethod || iv.createCommandForSupervised)
+            var type = "analog";
+            switch (ov.asdu.ToLower())
+            {
+                case "boolean":
+                    type = "digital";
+                    break;
+                case "string":
+                case "bytestring":
+                case "localeid":
+                case "localizedtext":
+                case "nodeid":
+                case "expandednodeid":
+                case "xmlelement":
+                case "qualifiedname":
+                case "guid":
+                    type = "string";
+                    break;
+                case "extensionobject":
+                    type = "json";
+                    break;
+            }
+            if (ov.isArray)
+                type = "json";
+
+            if (ov.createCommandForMethod || ov.createCommandForSupervised)
+            {
                 return new rtData()
                 {
                     _id = _id,
-                    protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
-                    protocolSourceConnectionNumber = iv.conn_number,
-                    protocolSourceObjectAddress = iv.address,
+                    protocolSourceASDU = ov.asdu,
+                    protocolSourceCommonAddress = ov.common_address,
+                    protocolSourceConnectionNumber = ov.conn_number,
+                    protocolSourceObjectAddress = ov.address,
                     protocolSourceCommandUseSBO = false,
                     protocolSourceCommandDuration = 0.0,
                     protocolSourcePublishingInterval = 0.0,
@@ -193,18 +218,18 @@ namespace OPCUAClientDriver
                     protocolSourceQueueSize = 0.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
-                    description = iv.conn_name + "~" + iv.path + "~" + iv.display_name + "-Command",
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.path,
+                    description = ov.conn_name + "~" + ov.path + "~" + ov.display_name + "-Command",
+                    ungroupedDescription = ov.display_name,
+                    group1 = ov.conn_name,
+                    group2 = ov.path,
                     group3 = "",
-                    stateTextFalse = "FALSE",
-                    stateTextTrue = "TRUE",
-                    eventTextFalse = "FALSE",
-                    eventTextTrue = "TRUE",
+                    stateTextFalse = type == "digital" ? "FALSE" : "",
+                    stateTextTrue = type == "digital" ? "TRUE" : "",
+                    eventTextFalse = type == "digital" ? "FALSE" : "",
+                    eventTextTrue = type == "digital" ? "TRUE" : "",
                     origin = "command",
-                    tag = TagFromOPCParameters(iv) + ";cmd",
-                    type = "digital",
+                    tag = TagFromOPCParameters(ov) + ";cmd",
+                    type = type,
                     value = 0.0,
                     valueString = "????",
                     alarmDisabled = false,
@@ -239,7 +264,7 @@ namespace OPCUAClientDriver
                     priority = 0.0,
                     protocolDestinations = BsonNull.Value,
                     sourceDataUpdate = BsonNull.Value,
-                    supervisedOfCommand = iv.createCommandForSupervised ? _id + 1 : 0.0,
+                    supervisedOfCommand = ov.createCommandForSupervised ? _id + 1 : 0.0,
                     substituted = false,
                     timeTag = BsonNull.Value,
                     timeTagAlarm = BsonNull.Value,
@@ -251,15 +276,16 @@ namespace OPCUAClientDriver
                     valueDefault = 0.0,
                     zeroDeadband = 0.0
                 };
+            }
             else
-            if (iv.asdu.ToLower() == "boolean")
+            if (type == "digital")
                 return new rtData()
                 {
                     _id = _id,
-                    protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
-                    protocolSourceConnectionNumber = iv.conn_number,
-                    protocolSourceObjectAddress = iv.address,
+                    protocolSourceASDU = ov.asdu,
+                    protocolSourceCommonAddress = ov.common_address,
+                    protocolSourceConnectionNumber = ov.conn_number,
+                    protocolSourceObjectAddress = ov.address,
                     protocolSourceCommandUseSBO = false,
                     protocolSourceCommandDuration = 0.0,
                     protocolSourcePublishingInterval = 5.0,
@@ -267,19 +293,19 @@ namespace OPCUAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = 2.0,
-                    description = iv.conn_name + "~" + iv.path + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.path,
+                    description = ov.conn_name + "~" + ov.path + "~" + ov.display_name,
+                    ungroupedDescription = ov.display_name,
+                    group1 = ov.conn_name,
+                    group2 = ov.path,
                     group3 = "",
                     stateTextFalse = "FALSE",
                     stateTextTrue = "TRUE",
                     eventTextFalse = "FALSE",
                     eventTextTrue = "TRUE",
                     origin = "supervised",
-                    tag = TagFromOPCParameters(iv),
-                    type = "digital",
-                    value = iv.value,
+                    tag = TagFromOPCParameters(ov),
+                    type = type,
+                    value = ov.value,
                     valueString = "????",
                     alarmDisabled = false,
                     alerted = false,
@@ -326,22 +352,14 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0
                 };
             else
-            if (iv.asdu.ToLower() == "string" ||
-                iv.asdu.ToLower() == "bytestring" ||
-                iv.asdu.ToLower() == "localeid" ||
-                iv.asdu.ToLower() == "localizedtext" ||
-                iv.asdu.ToLower() == "nodeid" ||
-                iv.asdu.ToLower() == "expandednodeid" ||
-                iv.asdu.ToLower() == "xmlelement" ||
-                iv.asdu.ToLower() == "qualifiedname" ||
-                iv.asdu.ToLower() == "guid")
+            if (type == "string")
                 return new rtData()
                 {
                     _id = _id,
-                    protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
-                    protocolSourceConnectionNumber = iv.conn_number,
-                    protocolSourceObjectAddress = iv.address,
+                    protocolSourceASDU = ov.asdu,
+                    protocolSourceCommonAddress = ov.common_address,
+                    protocolSourceConnectionNumber = ov.conn_number,
+                    protocolSourceObjectAddress = ov.address,
                     protocolSourceCommandUseSBO = false,
                     protocolSourceCommandDuration = 0.0,
                     protocolSourcePublishingInterval = 5.0,
@@ -349,20 +367,20 @@ namespace OPCUAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = -1.0,
-                    description = iv.conn_name + "~" + iv.path + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.path,
+                    description = ov.conn_name + "~" + ov.path + "~" + ov.display_name,
+                    ungroupedDescription = ov.display_name,
+                    group1 = ov.conn_name,
+                    group2 = ov.path,
                     group3 = "",
                     stateTextFalse = "",
                     stateTextTrue = "",
                     eventTextFalse = "",
                     eventTextTrue = "",
                     origin = "supervised",
-                    tag = TagFromOPCParameters(iv),
-                    type = "string",
+                    tag = TagFromOPCParameters(ov),
+                    type = type,
                     value = 0.0,
-                    valueString = iv.valueString,
+                    valueString = ov.valueString,
 
                     alarmDisabled = false,
                     alerted = false,
@@ -409,14 +427,14 @@ namespace OPCUAClientDriver
                     zeroDeadband = 0.0,
                 };
             else
-            if (iv.asdu.ToLower() == "extensionobject" || iv.isArray)
+            if (type == "json")
                 return new rtData()
                 {
                     _id = _id,
-                    protocolSourceASDU = iv.asdu,
-                    protocolSourceCommonAddress = iv.common_address,
-                    protocolSourceConnectionNumber = iv.conn_number,
-                    protocolSourceObjectAddress = iv.address,
+                    protocolSourceASDU = ov.asdu,
+                    protocolSourceCommonAddress = ov.common_address,
+                    protocolSourceConnectionNumber = ov.conn_number,
+                    protocolSourceObjectAddress = ov.address,
                     protocolSourceCommandUseSBO = false,
                     protocolSourceCommandDuration = 0.0,
                     protocolSourcePublishingInterval = 5.0,
@@ -424,20 +442,20 @@ namespace OPCUAClientDriver
                     protocolSourceQueueSize = 10.0,
                     protocolSourceDiscardOldest = true,
                     alarmState = -1.0,
-                    description = iv.conn_name + "~" + iv.path + "~" + iv.display_name,
-                    ungroupedDescription = iv.display_name,
-                    group1 = iv.conn_name,
-                    group2 = iv.path,
+                    description = ov.conn_name + "~" + ov.path + "~" + ov.display_name,
+                    ungroupedDescription = ov.display_name,
+                    group1 = ov.conn_name,
+                    group2 = ov.path,
                     group3 = "",
                     stateTextFalse = "",
                     stateTextTrue = "",
                     eventTextFalse = "",
                     eventTextTrue = "",
                     origin = "supervised",
-                    tag = TagFromOPCParameters(iv),
-                    type = "json",
+                    tag = TagFromOPCParameters(ov),
+                    type = type,
                     value = 0.0,
-                    valueString = iv.valueString,
+                    valueString = ov.valueString,
 
                     alarmDisabled = false,
                     alerted = false,
@@ -487,10 +505,10 @@ namespace OPCUAClientDriver
             return new rtData()
             {
                 _id = _id,
-                protocolSourceASDU = iv.asdu,
-                protocolSourceCommonAddress = iv.common_address,
-                protocolSourceConnectionNumber = iv.conn_number,
-                protocolSourceObjectAddress = iv.address,
+                protocolSourceASDU = ov.asdu,
+                protocolSourceCommonAddress = ov.common_address,
+                protocolSourceConnectionNumber = ov.conn_number,
+                protocolSourceObjectAddress = ov.address,
                 protocolSourceCommandUseSBO = false,
                 protocolSourceCommandDuration = 0.0,
                 protocolSourcePublishingInterval = 5.0,
@@ -498,19 +516,19 @@ namespace OPCUAClientDriver
                 protocolSourceQueueSize = 10.0,
                 protocolSourceDiscardOldest = true,
                 alarmState = -1.0,
-                description = iv.conn_name + "~" + iv.path + "~" + iv.display_name,
-                ungroupedDescription = iv.display_name,
-                group1 = iv.conn_name,
-                group2 = iv.path,
+                description = ov.conn_name + "~" + ov.path + "~" + ov.display_name,
+                ungroupedDescription = ov.display_name,
+                group1 = ov.conn_name,
+                group2 = ov.path,
                 group3 = "",
                 stateTextFalse = "",
                 stateTextTrue = "",
                 eventTextFalse = "",
                 eventTextTrue = "",
                 origin = "supervised",
-                tag = TagFromOPCParameters(iv),
-                type = "analog",
-                value = iv.value,
+                tag = TagFromOPCParameters(ov),
+                type = type,
+                value = ov.value,
                 valueString = "????",
 
                 alarmDisabled = false,

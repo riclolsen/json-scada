@@ -111,7 +111,7 @@ namespace OPCUAClientDriver
                                 { // added, then insert it
                                     Log(ov.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + ov.address, LogLevelDetailed);
 
-                                    // find a new freee _id key based on the connection number
+                                    // find a new free _id key based on the connection number
                                     if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
                                     {
                                         double AutoKeyId = ov.conn_number * AutoKeyMultiplier;
