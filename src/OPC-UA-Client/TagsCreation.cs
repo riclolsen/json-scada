@@ -176,9 +176,9 @@ namespace OPCUAClientDriver
             public BsonDouble zeroDeadband;
 
         }
-        public static rtData newRealtimeDoc(OPC_Value iv, double _id)
+        public static rtData newRealtimeDoc(OPC_Value iv, double _id, double commandOfSupervised)
         {
-            if (iv.isCommand)
+            if (iv.createCommandForMethod || iv.createCommandForSupervised)
                 return new rtData()
                 {
                     _id = _id,
@@ -203,7 +203,7 @@ namespace OPCUAClientDriver
                     eventTextFalse = "FALSE",
                     eventTextTrue = "TRUE",
                     origin = "command",
-                    tag = TagFromOPCParameters(iv),
+                    tag = TagFromOPCParameters(iv) + "-Cmd",
                     type = "digital",
                     value = 0.0,
                     valueString = "????",
@@ -239,7 +239,7 @@ namespace OPCUAClientDriver
                     priority = 0.0,
                     protocolDestinations = BsonNull.Value,
                     sourceDataUpdate = BsonNull.Value,
-                    supervisedOfCommand = 0.0,
+                    supervisedOfCommand = iv.createCommandForSupervised ? _id + 1 : 0.0,
                     substituted = false,
                     timeTag = BsonNull.Value,
                     timeTagAlarm = BsonNull.Value,
@@ -287,7 +287,7 @@ namespace OPCUAClientDriver
                     alertedState = "",
                     annotation = "",
                     commandBlocked = false,
-                    commandOfSupervised = 0.0,
+                    commandOfSupervised = commandOfSupervised,
                     commissioningRemarks = "",
                     formula = 0.0,
                     frozen = false,
@@ -370,7 +370,7 @@ namespace OPCUAClientDriver
                     alertedState = "",
                     annotation = "",
                     commandBlocked = false,
-                    commandOfSupervised = 0.0,
+                    commandOfSupervised = commandOfSupervised,
                     commissioningRemarks = "",
                     formula = 0.0,
                     frozen = false,
@@ -445,7 +445,7 @@ namespace OPCUAClientDriver
                     alertedState = "",
                     annotation = "",
                     commandBlocked = false,
-                    commandOfSupervised = 0.0,
+                    commandOfSupervised = commandOfSupervised,
                     commissioningRemarks = "",
                     formula = 0.0,
                     frozen = false,
@@ -519,7 +519,7 @@ namespace OPCUAClientDriver
                 alertedState = "",
                 annotation = "",
                 commandBlocked = false,
-                commandOfSupervised = 0.0,
+                commandOfSupervised = commandOfSupervised,
                 commissioningRemarks = "",
                 formula = 0.0,
                 frozen = false,

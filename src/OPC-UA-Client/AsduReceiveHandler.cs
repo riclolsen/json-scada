@@ -295,7 +295,6 @@ namespace OPCUAClientDriver
                                 if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString())) continue;
                                 if (OPCUA_conn.InsertedTags.Contains(sourceNodes[i].NodeId.ToString() + "-Cmd")) continue;
                                 if (!StatusCode.IsGood(readErrors[i].StatusCode)) continue;
-                                if (sourceNodes.Count == readErrorsDv.Count && !StatusCode.IsGood(readErrorsDv[i].StatusCode)) continue;
                                 var reference = refDescr[sourceNodes[i].NodeId];
                                 var pathMinusLastName = Path.GetDirectoryName(reference.Path).Replace('\\', '/');
                                 var parentName = Path.GetFileName(pathMinusLastName);
@@ -308,10 +307,11 @@ namespace OPCUAClientDriver
                                     {
                                         // if not created, create a new command/method tag
                                         // Console.WriteLine(res);
-                                        OPC_Value iv =
+                                        OPC_Value ov =
                                             new OPC_Value()
                                             {
-                                                isCommand = true,
+                                                createCommandForMethod = true,
+                                                createCommandForSupervised = false,
                                                 valueJson = "",
                                                 selfPublish = true,
                                                 address = sourceNodes[i].NodeId.ToString(),
@@ -331,10 +331,13 @@ namespace OPCUAClientDriver
                                                 parentName = parentName,
                                                 path = path,
                                             };
-                                        OPCDataQueue.Enqueue(iv);
+                                        OPCDataQueue.Enqueue(ov);
                                     }
                                     continue;
                                 }
+                                if (sourceNodes.Count != readErrorsDv.Count) continue; // must have read all the values to proceed
+                                if (sourceNodes.Count != dataValues.Count) continue;
+                                if (!StatusCode.IsGood(readErrorsDv[i].StatusCode)) continue;
 
                                 var addToMonitoring = false;
                                 if (OPCUA_conn.topics.Length == 0) addToMonitoring = true;
@@ -367,36 +370,39 @@ namespace OPCUAClientDriver
                                     Path = path,
                                 };
 
-                                if (sourceNodes.Count == dataValues.Count)
-                                    if (OPCUA_conn.commandsEnabled && dataValues[i].Value != null &&
-                                        ((sourceNodes[i] as VariableNode).UserAccessLevel == AccessLevels.CurrentReadOrWrite ||
-                                        (sourceNodes[i] as VariableNode).UserAccessLevel == AccessLevels.CurrentWrite))
-                                    { // variable can be written, create a command for it
-                                        OPC_Value iv =
-                                                new OPC_Value()
-                                                {
-                                                    isCommand = true,
-                                                    valueJson = "",
-                                                    selfPublish = true,
-                                                    address = sourceNodes[i].NodeId.ToString(),
-                                                    isArray = false,
-                                                    asdu = dataValues[i].WrappedValue.TypeInfo.BuiltInType.ToString(),
-                                                    value = 0,
-                                                    valueString = "",
-                                                    hasSourceTimestamp = false,
-                                                    sourceTimestamp = DateTime.MinValue,
-                                                    serverTimestamp = DateTime.Now,
-                                                    quality = false,
-                                                    cot = 0,
-                                                    conn_number = conn_number,
-                                                    conn_name = conn_name,
-                                                    common_address = "",
-                                                    display_name = sourceNodes[i].DisplayName.Text,
-                                                    parentName = parentName,
-                                                    path = path,
-                                                };
-                                        OPCDataQueue.Enqueue(iv);
-                                    }
+                                if (dataValues[i].Value == null) continue;
+                                ConvertOpcValue(dataValues[i], out string tp, out double dblValue, out string strValue, out string jsonValue, out bool isArray);
+
+                                var createCommandForSupervised = false;
+                                if (OPCUA_conn.commandsEnabled &&
+                                    ((sourceNodes[i] as VariableNode).UserAccessLevel == AccessLevels.CurrentReadOrWrite ||
+                                    (sourceNodes[i] as VariableNode).UserAccessLevel == AccessLevels.CurrentWrite))
+                                    createCommandForSupervised = true; // variable can be written, create a command for it
+                                OPC_Value iv =
+                                        new OPC_Value()
+                                        {
+                                            createCommandForMethod = false,
+                                            createCommandForSupervised = createCommandForSupervised,
+                                            valueJson = jsonValue,
+                                            selfPublish = true,
+                                            address = sourceNodes[i].NodeId.ToString(),
+                                            isArray = isArray,
+                                            asdu = tp,
+                                            value = dblValue,
+                                            valueString = strValue,
+                                            hasSourceTimestamp = false,
+                                            sourceTimestamp = DateTime.MinValue,
+                                            serverTimestamp = DateTime.Now,
+                                            quality = false,
+                                            cot = 20,
+                                            conn_number = conn_number,
+                                            conn_name = conn_name,
+                                            common_address = "",
+                                            display_name = sourceNodes[i].DisplayName.Text,
+                                            parentName = parentName,
+                                            path = path,
+                                        };
+                                OPCDataQueue.Enqueue(iv);
                             }
                         }
                         catch (Exception e)
@@ -736,28 +742,29 @@ namespace OPCUAClientDriver
                                 path = details.Path;
                             }
                             OPC_Value iv =
-                                new OPC_Value()
-                                {
-                                    isCommand = false,
-                                    valueJson = jsonValue,
-                                    selfPublish = true,
-                                    address = item.ResolvedNodeId.ToString(),
-                                    isArray = isArray,
-                                    asdu = tp,
-                                    value = dblValue,
-                                    valueString = strValue,
-                                    hasSourceTimestamp = value.SourceTimestamp != DateTime.MinValue,
-                                    sourceTimestamp = value.SourceTimestamp != DateTime.MinValue ? value.SourceTimestamp.AddHours(OPCUA_conn.hoursShift) : DateTime.MinValue,
-                                    serverTimestamp = DateTime.Now,
-                                    quality = StatusCode.IsGood(value.StatusCode),
-                                    cot = 3,
-                                    conn_number = conn_number,
-                                    conn_name = conn_name,
-                                    common_address = "",
-                                    display_name = item.DisplayName,
-                                    parentName = parentName,
-                                    path = path,
-                                };
+                            new OPC_Value()
+                            {
+                                createCommandForMethod = false,
+                                createCommandForSupervised = false,
+                                valueJson = jsonValue,
+                                selfPublish = true,
+                                address = item.ResolvedNodeId.ToString(),
+                                isArray = isArray,
+                                asdu = tp,
+                                value = dblValue,
+                                valueString = strValue,
+                                hasSourceTimestamp = value.SourceTimestamp != DateTime.MinValue,
+                                sourceTimestamp = value.SourceTimestamp != DateTime.MinValue ? value.SourceTimestamp.AddHours(OPCUA_conn.hoursShift) : DateTime.MinValue,
+                                serverTimestamp = DateTime.Now,
+                                quality = StatusCode.IsGood(value.StatusCode),
+                                cot = 3,
+                                conn_number = conn_number,
+                                conn_name = conn_name,
+                                common_address = "",
+                                display_name = item.DisplayName,
+                                parentName = parentName,
+                                path = path,
+                            };
                             if (OPCDataQueue.Count < DataBufferLimit)
                                 OPCDataQueue.Enqueue(iv);
                             else
