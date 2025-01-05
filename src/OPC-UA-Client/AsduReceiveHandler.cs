@@ -1,6 +1,6 @@
 ﻿/* 
 * OPC-UA Client Protocol driver for {json:scada}
-* {json:scada} - Copyright (c) 2020-2022 - Ricardo L. Olsen
+* {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
 * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
 * 
 * This program is free software: you can redistribute it and/or modify  
@@ -289,7 +289,7 @@ namespace OPCUAClientDriver
                             {
                                 Log(conn_name + " - Error reading values " + j, LogLevelDetailed);
                             }
-                            Log(conn_name + " - " + " Autotag - Readed " + sourceNodes.Count + " nodes at offset " + j + " from a total of " + nodesList.Count);
+                            Log(conn_name + " - " + " Autotag - Read " + sourceNodes.Count + " nodes at offset " + j + " from a total of " + nodesList.Count);
                             for (int i = 0; i < sourceNodes.Count; i++)
                             {
                                 if (OPCUA_conn.InsertedAddresses.Contains(sourceNodes[i].NodeId.ToString())) continue;

@@ -1,6 +1,6 @@
 ﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  * 
  * This program is free software: you can redistribute it and/or modify  
@@ -28,7 +28,7 @@ namespace OPCUAClientDriver
 {
     partial class MainClass
     {
-        public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2024 RLO";
+        public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2025 RLO";
         public static String ProtocolDriverName = "OPC-UA";
         public static String DriverVersion = "0.3.0";
         public static bool Active = false; // indicates this driver instance is the active node in the moment

@@ -795,8 +795,8 @@ let pool = null
                     if (
                       typeof node.Value !== 'object' ||
                       typeof node.Value.Type !== 'number' ||
-                      node.Value.Type !== opc.DataType.Double || // only accepts a double value for the command
-                      typeof node.Value.Body !== 'number'
+                      (node.Value.Type !== opc.DataType.Double && node.Value.Type !== opc.DataType.String) || // only accepts a double or string value for the command
+                      (typeof node.Value.Body !== 'number' && typeof node.Value.Body !== 'string')
                     ) {
                       OpcResp.Body.ResponseHeader.ServiceResult =
                         opc.StatusCode.BadNodeAttributesInvalid
@@ -816,7 +816,8 @@ let pool = null
                     // look for the command info in the database
 
                     let cmd_id = node.NodeId.Id
-                    let cmd_val = node.Value.Body
+                    let cmd_val = node.Value.Type === opc.DataType.Double? node.Value.Body : 0.0
+                    let cmd_val_str = node.Value.Type === opc.DataType.String? node.Value.Body : parseFloat(cmd_val).toString()
                     let query = { _id: parseInt(cmd_id) }
                     if (isNaN(parseInt(cmd_id))) query = { tag: cmd_id }
 
@@ -906,7 +907,7 @@ let pool = null
                       tag: data.tag,
                       timeTag: new Date(),
                       value: new Double(cmd_val),
-                      valueString: parseFloat(cmd_val).toString(),
+                      valueString: cmd_val_str,
                       originatorUserName: username,
                       originatorIpAddress:
                         req.headers['x-real-ip'] ||
@@ -932,7 +933,7 @@ let pool = null
 
                     // insert command action on SOE list, if desired
                     if (DoInsertCommandAsSOE) {
-                      let eventText = cmd_val.toString()
+                      let eventText = cmd_val_str
                       if (data.type === 'digital') {
                         if (cmd_val) eventText = data.eventTextTrue
                         else eventText = data.eventTextFalse
@@ -959,7 +960,7 @@ let pool = null
                       action: 'Command',
                       properties: {
                         value: new Double(cmd_val),
-                        valueString: parseFloat(cmd_val).toString(),
+                        valueString: cmd_val_str,
                       },
                       timeTag: new Date(),
                     })
@@ -1502,6 +1503,7 @@ let pool = null
                         annotation: pointInfo.annotation,
                         notes: pointInfo.notes,
                         origin: pointInfo.origin,
+                        type: pointInfo.type,
                       }
                       if (info) {
                         Result._Properties = {
@@ -1534,6 +1536,7 @@ let pool = null
                           origin: pointInfo.origin,
                           beepType: pointInfo?.beepType,
                           beepGroup1List: pointInfo?.beepGroup1List,
+                          type: pointInfo.type,
                         }
                       }
                       if (pointInfo.type === 'string' || pointInfo.type === 'json')
@@ -1644,6 +1647,7 @@ let pool = null
                         'timeTagAtSourceOk' in node
                           ? node.TimeTagAtSourceOk
                           : null,
+                      type: node.type,
                     },
                   }
                   Result.ServerTimestamp = node.timeTag

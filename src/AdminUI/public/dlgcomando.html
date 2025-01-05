@@ -55,6 +55,14 @@ function anachg()
   document.getElementById('EXECUTAR').disabled = false;
 }
 
+// altera o texto do botão de comando conforme o valor digitado
+function strchg()
+{
+  document.getElementById('EXECUTAR').innerHTML = document.getElementById( "COMANDOSTR" ).value;
+  document.getElementById('EXECUTAR').style.display = "";
+  document.getElementById('EXECUTAR').disabled = false;
+}
+
 function testOpener()
 {
 selchg(); // faço o ajuste do texto do botão de comando repetidas vezes pois às vezes não trocava o texto quando era feito uma única vez.
@@ -203,11 +211,14 @@ function executa_cmd()
 {
 if ( document.getElementById('COMANDO').style.display != "none" )
   window.opener.WebSAGE.executeCommand( document.getElementById('COMANDO').selectedIndex==0?"OFF":"ON" );
-else  
+else if ( document.getElementById('COMANDOANA').style.display != "none" )
   window.opener.WebSAGE.executeCommand( document.getElementById('COMANDOANA').value );
+else 
+  window.opener.WebSAGE.executeCommand( document.getElementById('COMANDOSTR').value );
 
 document.getElementById('COMANDO').disabled = true;  
-document.getElementById('COMANDOANA').disabled = true;  
+document.getElementById('COMANDOANA').disabled = true;
+document.getElementById('COMANDOSTR').disabled = true;
 document.getElementById("SAIR").style.visibility = "hidden";
 document.getElementById("EXECUTAR").style.visibility = "hidden";
 
@@ -249,9 +260,10 @@ $( init );
   <option id="CMD_OFF">COMANDO_OFF</option>
   <option id="CMD_ON">COMANDO_ON</option>
   </select>
-  <input id="COMANDOANA" type="number" size=9 style="display:none;font-family:tahoma; font-size:14pt;" onkeydown="setTimeout('anachg()',100);cnttout = toutMaxCnt;" onchange="setTimeout('anachg()',150);cnttout = toutMaxCnt;">
-  </input>
-  &nbsp;&nbsp;&nbsp;<button id="EXECUTAR" disabled="disabled" style="display:none; font-family:tahoma; font-size:14pt; cursor:pointer;" onclick="executa_cmd();" tabindex="1" value="1" type="button"></button>
+  <input id="COMANDOANA" type="number" size=9 style="display:none;font-family:tahoma; font-size:14pt;" onkeydown="setTimeout('anachg()',100);cnttout = toutMaxCnt;" onchange="setTimeout('anachg()',150);cnttout = toutMaxCnt;"/>
+  <input id="COMANDOSTR" type="text" size=20 style="display:none;font-family:tahoma; font-size:14pt;" onkeydown="setTimeout('strchg()',100);cnttout = toutMaxCnt;" onchange="setTimeout('strchg()',100);cnttout = toutMaxCnt;"/>
+  &nbsp;&nbsp;&nbsp;
+  <button id="EXECUTAR" disabled="disabled" style="display:none; font-family:tahoma; font-size:14pt; cursor:pointer;" onclick="executa_cmd();" tabindex="1" value="1" type="button"></button>
   <span id='TXTACK_CMD' style='color:red'>&nbsp;</span><br>
   
 </fieldset>
