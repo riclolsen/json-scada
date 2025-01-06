@@ -1,4 +1,4 @@
-﻿/* 
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿/* 
  * OPC-UA Client Protocol driver for {json:scada}
  * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
@@ -22,6 +22,7 @@ using MongoDB.Driver;
 using System.Threading;
 using System.Text.Json.Nodes;
 using Opc.Ua;
+using System.Text.Json;
 
 namespace OPCUAClientDriver
 {
@@ -167,7 +168,12 @@ namespace OPCUAClientDriver
                                                         .Convert
                                                         .ToString(change.FullDocument.protocolSourceObjectAddress));
                                                 WriteVal.AttributeId = Attributes.Value;
-                                                WriteVal.Value = new DataValue();
+                                                WriteVal.Value = new DataValue
+                                                {
+                                                    StatusCode = StatusCodes.Good,
+                                                    SourceTimestamp = DateTime.UtcNow,
+                                                    ServerTimestamp = DateTime.UtcNow
+                                                };
 
                                                 switch (change.FullDocument.protocolSourceASDU.ToString().ToLower())
                                                 {
@@ -226,9 +232,105 @@ namespace OPCUAClientDriver
                                                         WriteVal.Value.Value = JsonNode.Parse(change.FullDocument.valueString.ToString());
                                                         break;
                                                 }
+                                                
                                                 if (change.FullDocument.protocolSourceASDU.ToString().Contains("["))
                                                 {
-                                                    WriteVal.Value.Value = JsonNode.Parse(change.FullDocument.valueString.ToString());
+                                                    try 
+                                                    {
+                                                        var jsonString = change.FullDocument.valueString.ToString();
+                                                        if (string.IsNullOrEmpty(jsonString))
+                                                        {
+                                                            Log("MongoDB CMD CS - " + srv.name + " - Empty array value string");
+                                                            throw new ArgumentException("Empty array value string");
+                                                        }
+
+                                                        var jsonNode = JsonNode.Parse(jsonString);
+                                                        if (jsonNode is JsonArray jsonArray)
+                                                        {
+                                                            // Get array type from ASDU string (e.g. "Float[3]" -> "Float")
+                                                            var arrayType = change.FullDocument.protocolSourceASDU.ToString()
+                                                                .Split('[')[0].Trim().ToLower();
+
+                                                            // Convert array elements based on type
+                                                            switch (arrayType)
+                                                            {
+                                                                case "int16":
+                                                                    var int16Array = new short[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        int16Array[i] = jsonArray[i].GetValue<short>();
+                                                                    WriteVal.Value.Value = new Variant(int16Array);
+                                                                    break;
+                                                                case "uint16":
+                                                                    var uint16Array = new ushort[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        uint16Array[i] = jsonArray[i].GetValue<ushort>();
+                                                                    WriteVal.Value.Value = new Variant(uint16Array);
+                                                                    break;
+                                                                case "uint32":
+                                                                    var uint32Array = new uint[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        uint32Array[i] = jsonArray[i].GetValue<uint>();
+                                                                    WriteVal.Value.Value = new Variant(uint32Array);
+                                                                    break;
+                                                                case "int64":
+                                                                    var int64Array = new long[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        int64Array[i] = jsonArray[i].GetValue<long>();
+                                                                    WriteVal.Value.Value = new Variant(int64Array);
+                                                                    break;
+                                                                case "uint64":
+                                                                    var uint64Array = new ulong[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        uint64Array[i] = jsonArray[i].GetValue<ulong>();
+                                                                    WriteVal.Value.Value = new Variant(uint64Array);
+                                                                    break;
+                                                                case "float":
+                                                                    var floatArray = new float[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        floatArray[i] = jsonArray[i].GetValue<float>();
+                                                                    WriteVal.Value.Value = new Variant(floatArray);
+                                                                    break;
+                                                                case "double":
+                                                                    var doubleArray = new double[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        doubleArray[i] = jsonArray[i].GetValue<double>();
+                                                                    WriteVal.Value.Value = new Variant(doubleArray);
+                                                                    break;
+                                                                case "int32":
+                                                                case "integer":
+                                                                    var intArray = new int[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        intArray[i] = jsonArray[i].GetValue<int>();
+                                                                    WriteVal.Value.Value = new Variant(intArray);
+                                                                    break;
+                                                                case "boolean":
+                                                                    var boolArray = new bool[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        boolArray[i] = jsonArray[i].GetValue<bool>();
+                                                                    WriteVal.Value.Value = new Variant(boolArray);
+                                                                    break;
+                                                                case "string":
+                                                                    var strArray = new string[jsonArray.Count];
+                                                                    for (int i = 0; i < jsonArray.Count; i++)
+                                                                        strArray[i] = jsonArray[i].GetValue<string>();
+                                                                    WriteVal.Value.Value = new Variant(strArray);
+                                                                    break;
+                                                                default:
+                                                                    Log("MongoDB CMD CS - " + srv.name + " - Unsupported array type: " + arrayType);
+                                                                    throw new ArgumentException($"Unsupported array type: {arrayType}");
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            Log("MongoDB CMD CS - " + srv.name + " - Invalid array JSON format");
+                                                            throw new ArgumentException("Invalid array JSON format");
+                                                        }
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        Log("MongoDB CMD CS - " + srv.name + " - Array conversion error: " + ex.Message);
+                                                        throw;
+                                                    }
                                                 }
 
                                                 nodesToWrite.Add(WriteVal);
@@ -240,10 +342,78 @@ namespace OPCUAClientDriver
                                                 Log("MongoDB CMD CS - " + srv.name + " - Writing node...");
 
                                                 // Call Write Service
-                                                srv.connection.session.Write(null,
-                                                                nodesToWrite,
-                                                                out results,
-                                                                out diagnosticInfos);
+                                                try
+                                                {
+                                                    // Set proper request header with timeout
+                                                    var requestHeader = new RequestHeader
+                                                    {
+                                                        Timestamp = DateTime.UtcNow,
+                                                        TimeoutHint = 10000  // 10 second timeout
+                                                    };
+
+                                                    // Validate node before writing
+                                                    var nodesToRead = new ReadValueIdCollection();
+                                                    nodesToRead.Add(new ReadValueId()
+                                                    {
+                                                        NodeId = WriteVal.NodeId,
+                                                        AttributeId = Attributes.Value
+                                                    });
+
+                                                    DataValueCollection readResults;
+                                                    DiagnosticInfoCollection readDiagnostics;
+                                                    srv.connection.session.Read(
+                                                        null,
+                                                        0,
+                                                        TimestampsToReturn.Neither,
+                                                        nodesToRead,
+                                                        out readResults,
+                                                        out readDiagnostics
+                                                    );
+
+                                                    if (readResults[0].StatusCode.Code != StatusCodes.Good)
+                                                    {
+                                                        Log("MongoDB CMD CS - " + srv.name + " - Node validation failed: " + readResults[0].StatusCode);
+                                                        throw new ServiceResultException(readResults[0].StatusCode);
+                                                    }
+
+                                                    // Perform write operation
+                                                    srv.connection.session.Write(
+                                                        requestHeader,
+                                                        nodesToWrite,
+                                                        out results,
+                                                        out diagnosticInfos);
+
+                                                    // Log diagnostic information if available
+                                                    if (diagnosticInfos != null && diagnosticInfos.Count > 0)
+                                                    {
+                                                        foreach (var diagnostic in diagnosticInfos)
+                                                        {
+                                                            if (diagnostic != null)
+                                                            {
+                                                                Log("MongoDB CMD CS - " + srv.name + " - Write diagnostic: " + diagnostic.ToString());
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                catch (ServiceResultException sre)
+                                                {
+                                                    Log("MongoDB CMD CS - " + srv.name + " - Write error: " + sre.Message);
+                                                    Log("MongoDB CMD CS - " + srv.name + " - Status code: " + sre.StatusCode);
+                                                    if (sre.InnerException != null)
+                                                    {
+                                                        Log("MongoDB CMD CS - " + srv.name + " - Inner error: " + sre.InnerException.Message);
+                                                    }
+                                                    throw;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    Log("MongoDB CMD CS - " + srv.name + " - Unexpected error: " + ex.Message);
+                                                    if (ex.InnerException != null)
+                                                    {
+                                                        Log("MongoDB CMD CS - " + srv.name + " - Inner error: " + ex.InnerException.Message);
+                                                    }
+                                                    throw;
+                                                }
 
                                                 var okres = false;
                                                 var resultDescription = "";
@@ -342,6 +512,69 @@ namespace OPCUAClientDriver
                 }
             }
             while (true);
+        }
+        public static class JsonToVariantConverter
+        {
+            public static Variant BuildVariantFromJsonString(string jsonString)
+            {
+                // Parse the JSON string into a JsonNode
+                JsonNode jsonNode = JsonNode.Parse(jsonString);
+
+                // Convert the JsonNode to a Variant
+                Variant variant = ConvertJsonNodeToVariant(jsonNode);
+
+                return variant;
+            }
+
+            private static Variant ConvertJsonNodeToVariant(JsonNode jsonNode)
+            {
+                if (jsonNode is JsonValue jsonValue)
+                {
+                    return new Variant(ConvertJsonValueToObject(jsonValue));
+                }
+                else if (jsonNode is JsonArray jsonArray)
+                {
+                    var variantArray = new Variant[jsonArray.Count];
+                    for (int i = 0; i < jsonArray.Count; i++)
+                    {
+                        variantArray[i] = ConvertJsonNodeToVariant(jsonArray[i]);
+                    }
+                    return new Variant(variantArray);
+                }
+                else if (jsonNode is JsonObject jsonObject)
+                {
+                    var variantObject = new Variant[jsonObject.Count];
+                    int index = 0;
+                    foreach (var kvp in jsonObject)
+                    {
+                        variantObject[index++] = ConvertJsonNodeToVariant(kvp.Value);
+                    }
+                    return new Variant(variantObject);
+                }
+                else
+                {
+                    throw new ArgumentException("Unsupported JSON node type");
+                }
+            }
+
+            private static object ConvertJsonValueToObject(JsonValue jsonValue)
+            {
+                var value = jsonValue.GetValue<object>();
+
+                return value switch
+                {
+                    JsonElement jsonElement => jsonElement.ValueKind switch
+                    {
+                        JsonValueKind.String => jsonElement.GetString(),
+                        JsonValueKind.Number => jsonElement.TryGetInt32(out int intValue) ? intValue : jsonElement.GetDouble(),
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.Null => null,
+                        _ => throw new ArgumentException("Unsupported JSON value kind")
+                    },
+                    _ => value
+                };
+            }
         }
     }
 }

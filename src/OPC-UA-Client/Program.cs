@@ -23,6 +23,8 @@ using System.Text.Json;
 using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Opc.Ua.Client;
+using Opc.Ua;
 
 namespace OPCUAClientDriver
 {
@@ -189,7 +191,7 @@ namespace OPCUAClientDriver
                                         { "protocolSourceConnectionNumber", isrv.protocolConnectionNumber },
                                     }).ToList();
                 Log(isrv.name.ToString() + " - Found " + results.Count.ToString() + " tags in database.");
-                // look for existing tags in this connections, missing tags will be inserted later when discovered
+                // look for existing tags in this connection, missing tags will be inserted later when discovered if autotag enabled
                 for (int i = 0; i < results.Count; i++)
                 {
                     if (results[i].origin == "supervised")
@@ -207,6 +209,23 @@ namespace OPCUAClientDriver
                             protocolSourceQueueSize = results[i].protocolSourceQueueSize.AsDouble,
                             ungroupedDescription = results[i].ungroupedDescription.AsString,
                         });
+                        try
+                        {
+                            isrv.ListMon.Add(new MonitoredItem()
+                            {
+                                DisplayName = results[i].ungroupedDescription.ToString(),
+                                StartNodeId = results[i].protocolSourceObjectAddress.ToString(),
+                                SamplingInterval = System.Convert.ToInt32(results[i].protocolSourceSamplingInterval.AsDouble) * 1000,
+                                QueueSize = System.Convert.ToUInt32(results[i].protocolSourceQueueSize.AsDouble),
+                                MonitoringMode = MonitoringMode.Reporting,
+                                DiscardOldest = true,
+                                AttributeId = Attributes.Value
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Log(isrv.name + " - Error adding monitored item: " + ex.Message);
+                        }
                     }
                     isrv.InsertedAddresses.Add(results[i].protocolSourceObjectAddress.ToString());
                 }

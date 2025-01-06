@@ -103,7 +103,10 @@ namespace OPCUAClientDriver
                                 for (int index = 0; index < OPCUAconns.Count; index++)
                                 {
                                     if (OPCUAconns[index].protocolConnectionNumber == ov.conn_number)
+                                    {
                                         conn_index = index;
+                                        break;
+                                    }
                                 }
 
                                 string tag = TagFromOPCParameters(ov);
@@ -138,6 +141,18 @@ namespace OPCUAClientDriver
                                         OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
 
                                     // will enqueue to insert the new tag into mongo DB
+
+                                    if (OPCUAconns[conn_index].NodeIdsDetails.TryGetValue(ov.address, out var details))
+                                    {
+                                        ov.parentName = details.ParentName;
+                                        ov.path = details.Path;
+                                    }
+                                    else
+                                    {
+                                        ov.parentName = "";
+                                        ov.path = "";
+                                        Log(ov.conn_name + " - NodeId not found in NodeIdsDetails: " + ov.address, LogLevelDetailed);
+                                    }
 
                                     // will create a new command tag when the variable is writable
                                     var commandOfSupervised = 0.0;

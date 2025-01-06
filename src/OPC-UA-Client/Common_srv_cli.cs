@@ -27,6 +27,7 @@ using MongoDB.Bson.Serialization.Attributes;
 using System.Net.Security;
 using MongoDB.Driver;
 using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Client;
 
 namespace OPCUAClientDriver
 {
@@ -115,6 +116,8 @@ namespace OPCUAClientDriver
             public OPCUAClient connection;
             public Thread thrOPCStack;
             public Dictionary<double, List<rtMonitTag>> OpcSubscriptions = new Dictionary<double, List<rtMonitTag>>();
+            public Dictionary<string, NodeDetails> NodeIdsDetails = new Dictionary<string, NodeDetails>();
+            public List<MonitoredItem> ListMon = new List<MonitoredItem>();
         }
         [BsonIgnoreExtraElements]
         public class protocolDriverInstancesClass
