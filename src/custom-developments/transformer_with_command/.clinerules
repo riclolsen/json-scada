@@ -1,0 +1,30 @@
+# Obtaining SCADA data
+
+To obtain SCADA data, call the API from the ./src/lib/scadaOpcApi.ts file.
+
+- To get the group1 (station names) list, call scadaOpcApi.getGroup1List().
+- To get realtime filtered data by group1, group2 and alarmed status, call scadaOpcApi.getRealtimeFilteredData().
+- To get realtime data and catalog data for tag names list, call scadaOpcApi.getRealTimeData().
+- To get historical data for a tag, call scadaOpcApi.getHistoricalData().
+- To get Sequence of Events (SOE) data, call scadaOpcApi.getSoeData().
+- To issue a command for a tag, call scadaOpcApi.issueCommand().
+- To write the given extended properties of a tag, call scadaOpcApi.writeTagProperties().
+
+# General Rules
+
+- Think step-by-step.
+- Provide a clear and concise description of the problem solving strategy.
+- Prioritize modularity, DRY principles, and performance.
+- Do not make assumptions or speculate without clear evidence.
+- Don't invent changes other than what's explicitly requested.
+- Adhere to the existing coding style in the project for consistency.
+- Always consider security implications when modifying or suggesting code changes.
+- Implement robust error handling and logging where necessary.
+- Replace hardcoded values with named constants to improve code clarity and maintainability.
+- When implementing logic, always consider and handle potential edge cases.
+
+# Framework Rules
+
+- Use the Astro framework.
+- Use Astro 5.0 or later, Vite, TypeScript, and TailwindCSS. 
+- Ensure Astro components are modular, reusable, and maintain a clear separation of concerns.
