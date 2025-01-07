@@ -27,161 +27,159 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.IO;
 
-namespace OPCUAClientDriver
+partial class MainClass
 {
-    partial class MainClass
+    static public int AutoKeyMultiplier = 1000000; // maximum number of points on each connection self-published (auto numbered points)
+
+    // This process updates acquired values in the mongodb collection for realtime data
+    static public async void ProcessMongo()
     {
-        static public int AutoKeyMultiplier = 1000000; // maximum number of points on each connection self-published (auto numbered points)
-
-        // This process updates acquired values in the mongodb collection for realtime data
-        static public async void ProcessMongo()
+        do
         {
-            do
+            try
             {
-                try
+                var serializer = new BsonValueSerializer();
+                var Client = ConnectMongoClient(JSConfig);
+                var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
+                var collection =
+                    DB.GetCollection<rtData>(RealtimeDataCollectionName);
+                var collectionId =
+                    DB.GetCollection<rtDataId>(RealtimeDataCollectionName);
+                var collection_cmd =
+                    DB
+                        .GetCollection
+                        <rtCommand>(CommandsQueueCollectionName);
+                var listWrites = new List<WriteModel<rtData>>();
+                var filt = new rtFilt
                 {
-                    var serializer = new BsonValueSerializer();
-                    var Client = ConnectMongoClient(JSConfig);
-                    var DB = Client.GetDatabase(JSConfig.mongoDatabaseName);
-                    var collection =
-                        DB.GetCollection<rtData>(RealtimeDataCollectionName);
-                    var collectionId =
-                        DB.GetCollection<rtDataId>(RealtimeDataCollectionName);
-                    var collection_cmd =
-                        DB
-                            .GetCollection
-                            <rtCommand>(CommandsQueueCollectionName);
-                    var listWrites = new List<WriteModel<rtData>>();
-                    var filt = new rtFilt
+                    protocolSourceConnectionNumber = 0,
+                    protocolSourceObjectAddress = "",
+                    origin = "supervised"
+                };
+
+                Log("MongoDB Update Thread Started...");
+
+                do
+                {
+                    Stopwatch stopWatch = new Stopwatch();
+                    stopWatch.Start();
+
+                    while (OPCDataQueue.TryDequeue(result: out var ov))
                     {
-                        protocolSourceConnectionNumber = 0,
-                        protocolSourceObjectAddress = "",
-                        origin = "supervised"
-                    };
-
-                    Log("MongoDB Update Thread Started...");
-
-                    do
-                    {
-                        Stopwatch stopWatch = new Stopwatch();
-                        stopWatch.Start();
-
-                        while (OPCDataQueue.TryDequeue(result: out var ov))
+                        DateTime tt = DateTime.MinValue;
+                        BsonValue bsontt = BsonNull.Value;
+                        try
                         {
-                            DateTime tt = DateTime.MinValue;
-                            BsonValue bsontt = BsonNull.Value;
+                            if (ov.hasSourceTimestamp)
+                            {
+                                bsontt = BsonValue.Create(ov.sourceTimestamp);
+                            }
+                        }
+                        catch
+                        {
+                            tt = DateTime.MinValue;
+                            bsontt = BsonNull.Value;
+                        }
+
+                        BsonValue valBSON = BsonNull.Value;
+                        if (ov.valueJson != string.Empty)
+                        {
                             try
                             {
-                                if (ov.hasSourceTimestamp)
-                                {
-                                    bsontt = BsonValue.Create(ov.sourceTimestamp);
-                                }
+                                valBSON = serializer.Deserialize(BsonDeserializationContext.CreateRoot(new JsonReader(ov.valueJson)));
                             }
-                            catch
+                            catch (Exception e)
                             {
-                                tt = DateTime.MinValue;
-                                bsontt = BsonNull.Value;
+                                Log(ov.conn_name + " - " + e.Message);
                             }
+                        }
 
-                            BsonValue valBSON = BsonNull.Value;
-                            if (ov.valueJson != string.Empty)
+                        if (ov.selfPublish)
+                        {
+                            // find the json-scada connection for this received value 
+                            int conn_index = 0;
+                            for (int index = 0; index < OPCUAconns.Count; index++)
                             {
-                                try
+                                if (OPCUAconns[index].protocolConnectionNumber == ov.conn_number)
                                 {
-                                    valBSON = serializer.Deserialize(BsonDeserializationContext.CreateRoot(new JsonReader(ov.valueJson)));
-                                }
-                                catch (Exception e)
-                                {
-                                    Log(ov.conn_name + " - " + e.Message);
+                                    conn_index = index;
+                                    break;
                                 }
                             }
 
-                            if (ov.selfPublish)
-                            {
-                                // find the json-scada connection for this received value 
-                                int conn_index = 0;
-                                for (int index = 0; index < OPCUAconns.Count; index++)
+                            string tag = TagFromOPCParameters(ov);
+                            if (OPCUAconns[conn_index].InsertedAddresses.Add(ov.address))
+                            { // added, then insert it
+                                Log(ov.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + ov.address, LogLevelDetailed);
+
+                                // find a new free _id key based on the connection number
+                                if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
                                 {
-                                    if (OPCUAconns[index].protocolConnectionNumber == ov.conn_number)
-                                    {
-                                        conn_index = index;
-                                        break;
-                                    }
-                                }
-
-                                string tag = TagFromOPCParameters(ov);
-                                if (OPCUAconns[conn_index].InsertedAddresses.Add(ov.address))
-                                { // added, then insert it
-                                    Log(ov.conn_name + " - INSERT NEW TAG: " + tag + " - Addr:" + ov.address, LogLevelDetailed);
-
-                                    // find a new free _id key based on the connection number
-                                    if (OPCUAconns[conn_index].LastNewKeyCreated == 0)
-                                    {
-                                        double AutoKeyId = ov.conn_number * AutoKeyMultiplier;
-                                        var results = collectionId.Find<rtDataId>(new BsonDocument {
+                                    double AutoKeyId = ov.conn_number * AutoKeyMultiplier;
+                                    var results = collectionId.Find<rtDataId>(new BsonDocument {
                                             { "_id", new BsonDocument{
                                                 { "$gt", AutoKeyId },
                                                 { "$lt", ( ov.conn_number + 1) * AutoKeyMultiplier }
                                                 }
                                             }
                                             }).Sort(Builders<rtDataId>.Sort.Descending("_id"))
-                                            .Limit(1)
-                                            .ToList();
+                                        .Limit(1)
+                                        .ToList();
 
-                                        if (results.Count > 0)
-                                        {
-                                            OPCUAconns[conn_index].LastNewKeyCreated = results[0]._id.ToDouble() + 1;
-                                        }
-                                        else
-                                        {
-                                            OPCUAconns[conn_index].LastNewKeyCreated = AutoKeyId;
-                                        }
-                                    }
-                                    else
-                                        OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
-
-                                    // will enqueue to insert the new tag into mongo DB
-
-                                    if (OPCUAconns[conn_index].NodeIdsDetails.TryGetValue(ov.address, out var details))
+                                    if (results.Count > 0)
                                     {
-                                        ov.parentName = details.ParentName;
-                                        ov.path = details.Path;
+                                        OPCUAconns[conn_index].LastNewKeyCreated = results[0]._id.ToDouble() + 1;
                                     }
                                     else
                                     {
-                                        ov.parentName = "";
-                                        ov.path = "";
-                                        Log(ov.conn_name + " - NodeId not found in NodeIdsDetails: " + ov.address, LogLevelDetailed);
+                                        OPCUAconns[conn_index].LastNewKeyCreated = AutoKeyId;
                                     }
-
-                                    // will create a new command tag when the variable is writable
-                                    var commandOfSupervised = 0.0;
-                                    if (OPCUAconns[conn_index].commandsEnabled && ov.createCommandForSupervised)
-                                    {
-                                        var insert_ = newRealtimeDoc(ov, OPCUAconns[conn_index].LastNewKeyCreated, commandOfSupervised);
-                                        insert_.protocolSourcePublishingInterval = 0;
-                                        insert_.protocolSourceSamplingInterval = 0;
-                                        insert_.protocolSourceQueueSize = 0;
-                                        listWrites.Add(new InsertOneModel<rtData>(insert_));
-
-                                        commandOfSupervised = OPCUAconns[conn_index].LastNewKeyCreated;
-                                        OPCUAconns[conn_index].LastNewKeyCreated++;
-                                    }
-
-                                    ov.createCommandForSupervised = false;
-                                    var insert = newRealtimeDoc(ov, OPCUAconns[conn_index].LastNewKeyCreated, commandOfSupervised);
-                                    insert.protocolSourcePublishingInterval = OPCUAconns[conn_index].autoCreateTagPublishingInterval;
-                                    insert.protocolSourceSamplingInterval = OPCUAconns[conn_index].autoCreateTagSamplingInterval;
-                                    insert.protocolSourceQueueSize = OPCUAconns[conn_index].autoCreateTagQueueSize;
-                                    listWrites.Add(new InsertOneModel<rtData>(insert));
-
-                                    // will imediatelly be followed by an update below (to the same tag)
                                 }
-                            }
+                                else
+                                    OPCUAconns[conn_index].LastNewKeyCreated = OPCUAconns[conn_index].LastNewKeyCreated + 1;
 
-                            // update one existing document with received tag value (realtimeData)
-                            var update =
-                                new BsonDocument {
+                                // will enqueue to insert the new tag into mongo DB
+
+                                if (OPCUAconns[conn_index].NodeIdsDetails.TryGetValue(ov.address, out var details))
+                                {
+                                    ov.parentName = details.ParentName;
+                                    ov.path = details.Path;
+                                }
+                                else
+                                {
+                                    ov.parentName = "";
+                                    ov.path = "";
+                                    Log(ov.conn_name + " - NodeId not found in NodeIdsDetails: " + ov.address, LogLevelDetailed);
+                                }
+
+                                // will create a new command tag when the variable is writable
+                                var commandOfSupervised = 0.0;
+                                if (OPCUAconns[conn_index].commandsEnabled && ov.createCommandForSupervised)
+                                {
+                                    var insert_ = newRealtimeDoc(ov, OPCUAconns[conn_index].LastNewKeyCreated, commandOfSupervised);
+                                    insert_.protocolSourcePublishingInterval = 0;
+                                    insert_.protocolSourceSamplingInterval = 0;
+                                    insert_.protocolSourceQueueSize = 0;
+                                    listWrites.Add(new InsertOneModel<rtData>(insert_));
+
+                                    commandOfSupervised = OPCUAconns[conn_index].LastNewKeyCreated;
+                                    OPCUAconns[conn_index].LastNewKeyCreated++;
+                                }
+
+                                ov.createCommandForSupervised = false;
+                                var insert = newRealtimeDoc(ov, OPCUAconns[conn_index].LastNewKeyCreated, commandOfSupervised);
+                                insert.protocolSourcePublishingInterval = OPCUAconns[conn_index].autoCreateTagPublishingInterval;
+                                insert.protocolSourceSamplingInterval = OPCUAconns[conn_index].autoCreateTagSamplingInterval;
+                                insert.protocolSourceQueueSize = OPCUAconns[conn_index].autoCreateTagQueueSize;
+                                listWrites.Add(new InsertOneModel<rtData>(insert));
+
+                                // will imediatelly be followed by an update below (to the same tag)
+                            }
+                        }
+
+                        // update one existing document with received tag value (realtimeData)
+                        var update =
+                            new BsonDocument {
                                     {
                                         "$set",
                                         new BsonDocument {
@@ -259,76 +257,75 @@ namespace OPCUAClientDriver
                                             }
                                         }
                                     }
-                                };
+                            };
 
-                            // update filter, avoids updating commands that can have the same address as supervised points
-                            filt.protocolSourceConnectionNumber = ov.conn_number;
-                            filt.protocolSourceObjectAddress = ov.address;
-                            Log("MongoDB - ADD " + ov.address + " " + ov.value, LogLevelDebug);
+                        // update filter, avoids updating commands that can have the same address as supervised points
+                        filt.protocolSourceConnectionNumber = ov.conn_number;
+                        filt.protocolSourceObjectAddress = ov.address;
+                        Log("MongoDB - ADD " + ov.address + " " + ov.value, LogLevelDebug);
 
-                            listWrites
-                                .Add(new UpdateOneModel<rtData>(
-                                    filt.ToBsonDocument(),
-                                    update));
+                        listWrites
+                            .Add(new UpdateOneModel<rtData>(
+                                filt.ToBsonDocument(),
+                                update));
 
-                            if (listWrites.Count >= BulkWriteLimit)
-                                break;
+                        if (listWrites.Count >= BulkWriteLimit)
+                            break;
 
-                            if (stopWatch.ElapsedMilliseconds > 750)
-                            {
-                                Log($"break ms {stopWatch.ElapsedMilliseconds}");
-                                break;
-                            }
-                        }
-
-                        if (listWrites.Count > 0)
+                        if (stopWatch.ElapsedMilliseconds > 750)
                         {
-                            stopWatch.Restart();
-                            Log("MongoDB - Bulk writing " + listWrites.Count + ", Total enqueued data " + OPCDataQueue.Count);
-                            try
-                            {
-                                var bulkWriteResult =
-                                  collection
-                                    .WithWriteConcern(WriteConcern.W1)
-                                    .BulkWrite(listWrites, new BulkWriteOptions
-                                    {
-                                        IsOrdered = true,
-                                        BypassDocumentValidation = true,
-                                    });
-                                Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
-                                var ups = (uint)((float)listWrites.Count / ((float)stopWatch.ElapsedMilliseconds / 1000));
-                                Log($"MongoDB - Bulk written in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
-                                listWrites.Clear();
-                            }
-                            catch (Exception e)
-                            {
-                                Log($"MongoDB - Bulk write error - " + e.Message);
-                            }
-                        }
-
-                        if (OPCDataQueue.Count == 0)
-                        {
-                            await Task.Delay(200);
+                            Log($"break ms {stopWatch.ElapsedMilliseconds}");
+                            break;
                         }
                     }
-                    while (true);
+
+                    if (listWrites.Count > 0)
+                    {
+                        stopWatch.Restart();
+                        Log("MongoDB - Bulk writing " + listWrites.Count + ", Total enqueued data " + OPCDataQueue.Count);
+                        try
+                        {
+                            var bulkWriteResult =
+                              collection
+                                .WithWriteConcern(WriteConcern.W1)
+                                .BulkWrite(listWrites, new BulkWriteOptions
+                                {
+                                    IsOrdered = true,
+                                    BypassDocumentValidation = true,
+                                });
+                            Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
+                            var ups = (uint)((float)listWrites.Count / ((float)stopWatch.ElapsedMilliseconds / 1000));
+                            Log($"MongoDB - Bulk written in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
+                            listWrites.Clear();
+                        }
+                        catch (Exception e)
+                        {
+                            Log($"MongoDB - Bulk write error - " + e.Message);
+                        }
+                    }
+
+                    if (OPCDataQueue.Count == 0)
+                    {
+                        await Task.Delay(200);
+                    }
                 }
-                catch (Exception e)
-                {
-                    Log("Exception Mongo");
-                    Log(e);
-                    Log(e
-                        .ToString()
-                        .Substring(0,
-                        e.ToString().IndexOf(Environment.NewLine)));
-                    Thread.Sleep(1000);
-                }
+                while (true);
             }
-            while (true);
+            catch (Exception e)
+            {
+                Log("Exception Mongo");
+                Log(e);
+                Log(e
+                    .ToString()
+                    .Substring(0,
+                    e.ToString().IndexOf(Environment.NewLine)));
+                Thread.Sleep(1000);
+            }
         }
-        static string TagFromOPCParameters(OPC_Value ov)
-        {
-            return ov.conn_name + ";" + ov.address;
-        }
+        while (true);
+    }
+    static string TagFromOPCParameters(OPC_Value ov)
+    {
+        return ov.conn_name + ";" + ov.address;
     }
 }
