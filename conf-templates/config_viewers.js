@@ -34,6 +34,8 @@
 //
 //var EventsViewer_Notific = 1;  // 0: disable desktop notifications, 1=enable desktop notifications
 //
+// var EventsViewer_PanicModePriorityLimit = 1; // limit priorities shown in panic mode (up to)
+//
 //// locale and time zone for date/time formatting (leave empty for browser defaults)
 //// see https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
 //var EventsViewer_LocaleTime = ""; // locale for time format e.g "en-US"
@@ -53,20 +55,16 @@
 //    }
 //
 //// Tabular Viewer ----------------------------------------------------------------------------------
-//var TabularViewer_ToolbarColor = '#AA9E97'; // toolbar color
-//
 //var TabularViewer_Font = 'Segoe UI,Source Sans Pro,calibri,consolas,arial,helvetica'; // font 
 //
-//var TabularViewer_TableColor = '#DCDCEE'; // table background color 
-//var TabularViewer_GridColor = '#ECECEE'; // table grid color
+//var TabularViewer_GridColor = '#BBBBBB'; // table grid color
 //
-//var TabularViewer_AlmTxtColor = 'mediumblue'; // alarmed color
-//var TabularViewer_FailTxtColor = 'white'; // failed value color
-//var TabularViewer_AckTxtColor = '484848'; // acknowledged alarm color
-//
-//var TabularViewer_LineColor = '#DCDCEE'; // line color
+//var TabularViewer_AlmTxtColor = 'rgb(37, 132, 211)'; // alarmed color
+//var TabularViewer_FailTxtColor = '#AAAAAA'; // failed value color
+//var TabularViewer_AckTxtColor = 'rgb(17, 91, 151)'; // acknowledged alarm color
 //
 //var TabularViewer_RefreshTime = 3; // refresh time (seconds)
+//
 //
 //// locale and time zone for date/time formatting (leave empty for browser defaults)
 //// see https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
@@ -76,14 +74,21 @@
 //    // weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3, timeZone: 'America/New_York'
 //}; 
 //
+//// use this to create custom buttons that can select a set of group1 filters on Alarms Viewer
+//var TabularViewer_CustomFiltersSelectors = [
+//    { name: 'Test1', group1List: ['KAW2', 'KOR1'] },
+//    { name: 'Test2', group1List: ['KIK3', 'KNH2'] },
+//];
+//
+//
 //// Screen Viewer ---------------------------------------------------------------------------------
 //
 //var ScreenViewer_RefreshTime = 3; // refresh time in seconds (digital changes triggers a faster refresh) 
 //
 //// SVG Screen dimensions (must match <svg> tag dimensions on SVG screens)
-//// <svg width="2400" height="1500">
-//var ScreenViewer_SVGMaxWidth = 2400; // default SVG screen width in pixels
-//var ScreenViewer_SVGMaxHeight  = 1500; // default SVG screen height in pixels
+//// <svg width="3840" height="2160">
+//var ScreenViewer_SVGMaxWidth = 3840; // default SVG screen width in pixels
+//var ScreenViewer_SVGMaxHeight  = 2160; // default SVG screen height in pixels
 //
 //var ScreenViewer_Background  = '#DDDDDD'; // background color for Inkscape SAGE SVG screens
 //var ScreenViewer_ToolbarColor = 'lightslategray'; // toolbar color
@@ -177,6 +182,7 @@
 //
 //var ScreenViewer_SlideShowInterval = 10; // slide show time in seconds
 //var ScreenViewer_EnableTimeMachine = 1; // 1 = enable time machine, 0 = disable time machine
+//var ScreenViewer_SecurityCardScale = 1.0; // scale to represent an annotation security card
 //
 //// Command dialog
 //var CommandDialog_Background = 'wheat'; // background color
