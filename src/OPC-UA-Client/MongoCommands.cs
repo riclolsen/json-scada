@@ -71,9 +71,9 @@ partial class MainClass
                                 {
                                     // update as expired
                                     Log("MongoDB CMD CS - " + srv.name + " - Address " +
-                                    change.FullDocument.protocolSourceObjectAddress +
-                                    " value " + change.FullDocument.value +
-                                    " Command Timeout Expired, " + timeDif + " Seconds old");
+                                        change.FullDocument.protocolSourceObjectAddress +
+                                        " value " + change.FullDocument.value +
+                                        " Command Timeout Expired, " + timeDif + " Seconds old");
                                     filter = new BsonDocument(new BsonDocument("_id", change.FullDocument.id));
                                     update = new BsonDocument("$set", new BsonDocument("cancelReason", "expired"));
                                     await collection.UpdateOneAsync(filter, update);
@@ -84,26 +84,12 @@ partial class MainClass
                                 {
                                     // update as canceled (not connected)
                                     Log("MongoDB CMD CS - " +
-                                    srv.name +
-                                    " OA " +
-                                    change
-                                        .FullDocument
-                                        .protocolSourceObjectAddress +
-                                    " value " +
-                                    change.FullDocument.value +
-                                    (
-                                    srv.commandsEnabled
-                                        ? " Not Connected"
-                                        : " Commands Disabled"
-                                    ));
+                                        srv.name + " Address " + change.FullDocument.protocolSourceObjectAddress +
+                                        " value " + change.FullDocument.value +
+                                        (srv.commandsEnabled ? " Not Connected" : " Commands Disabled"));
                                     filter = new BsonDocument(new BsonDocument("_id", change.FullDocument.id));
                                     update = new BsonDocument("$set", new BsonDocument("cancelReason",
-                                                (
-                                                srv
-                                                    .commandsEnabled
-                                                    ? "not connected"
-                                                    : "commands disabled"
-                                                )));
+                                                srv.commandsEnabled ? "not connected" : "commands disabled"));
                                     await collection.UpdateOneAsync(filter, update);
                                 }
 
@@ -122,74 +108,20 @@ partial class MainClass
                                     ServerTimestamp = DateTime.UtcNow
                                 };
 
-                                switch (change.FullDocument.protocolSourceASDU.ToString().ToLower())
+                                try
                                 {
-                                    case "boolean":
-                                        WriteVal.Value.Value = Convert.ToBoolean(Convert.ToDouble(change.FullDocument.value) != 0.0);
-                                        break;
-                                    case "sbyte":
-                                        WriteVal.Value.Value = Convert.ToSByte(change.FullDocument.value);
-                                        break;
-                                    case "byte":
-                                        WriteVal.Value.Value = Convert.ToByte(change.FullDocument.value);
-                                        break;
-                                    case "int16":
-                                        WriteVal.Value.Value = Convert.ToInt16(change.FullDocument.value);
-                                        break;
-                                    case "uint16":
-                                        WriteVal.Value.Value = Convert.ToUInt16(change.FullDocument.value);
-                                        break;
-                                    case "integer":
-                                    case "int32":
-                                        WriteVal.Value.Value = Convert.ToInt32(change.FullDocument.value);
-                                        break;
-                                    case "uint32":
-                                        WriteVal.Value.Value = Convert.ToUInt32(change.FullDocument.value);
-                                        break;
-                                    case "int64":
-                                        WriteVal.Value.Value = Convert.ToInt64(change.FullDocument.value);
-                                        break;
-                                    case "uint64":
-                                        WriteVal.Value.Value = Convert.ToUInt64(change.FullDocument.value);
-                                        break;
-                                    case "float":
-                                        WriteVal.Value.Value = Convert.ToSingle(change.FullDocument.value);
-                                        break;
-                                    case "double":
-                                        WriteVal.Value.Value = Convert.ToDouble(change.FullDocument.value);
-                                        break;
-                                    case "datetime":
-                                        WriteVal.Value.Value = new DateTime((long)change.FullDocument.value.AsDouble);
-                                        break;
-                                    case "string":
-                                    case "bytestring":
-                                    case "localizedtext":
-                                    case "qualifiedname":
-                                    case "nodeid":
-                                    case "guid":
-                                    case "expandednodeid":
-                                    case "xmlelement":
-                                        WriteVal.Value.Value = Convert.ToString(change.FullDocument.valueString);
-                                        break;
-                                    case "extensionobject":
-                                    case "numericrange":
-                                    case "variant":
-                                    case "diagnosticinfo":
-                                    case "datavalue":
-                                        WriteVal.Value.Value = JsonNode.Parse(change.FullDocument.valueString.ToString());
-                                        break;
-                                }
-
-                                // test for array type
-                                if (change.FullDocument.protocolSourceASDU.ToString().Split('[').Length - 1 == 1)
-                                {
-                                    try
+                                    // test for array type
+                                    if (change.FullDocument.protocolSourceASDU.ToString().Split('[').Length - 1 == 1)
                                     {
                                         var jsonString = change.FullDocument.valueString.ToString();
                                         if (string.IsNullOrEmpty(jsonString))
                                         {
                                             Log("MongoDB CMD CS - " + srv.name + " - Empty array value string");
-                                            throw new ArgumentException("Empty array value string");
+                                            // update as canceled (empty array error)
+                                            filter = new BsonDocument(new BsonDocument("_id", change.FullDocument.id));
+                                            update = new BsonDocument("$set", new BsonDocument("cancelReason", "empty array json error"));
+                                            await collection.UpdateOneAsync(filter, update);
+                                            break;
                                         }
 
                                         var jsonNode = JsonNode.Parse(jsonString);
@@ -283,97 +215,118 @@ partial class MainClass
                                         }
                                         else
                                         {
-                                            Log("MongoDB CMD CS - " + srv.name + " - Invalid array JSON format");
-                                            throw new ArgumentException("Invalid array JSON format");
+                                            Log("MongoDB CMD CS - " + srv.name + " - Invalid array JSON format error!");
+                                            // update as canceled (not array conversion error)
+                                            filter = new BsonDocument(new BsonDocument("_id", change.FullDocument.id));
+                                            update = new BsonDocument("$set", new BsonDocument("cancelReason", "array invalid json format error"));
+                                            await collection.UpdateOneAsync(filter, update);
+                                            break;
                                         }
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        Log("MongoDB CMD CS - " + srv.name + " - Array conversion error: " + ex.Message);
-                                        throw;
+                                        switch (change.FullDocument.protocolSourceASDU.ToString().ToLower())
+                                        {
+                                            case "boolean":
+                                                WriteVal.Value.Value = Convert.ToBoolean(Convert.ToDouble(change.FullDocument.value) != 0.0);
+                                                break;
+                                            case "sbyte":
+                                                WriteVal.Value.Value = Convert.ToSByte(change.FullDocument.value);
+                                                break;
+                                            case "byte":
+                                                WriteVal.Value.Value = Convert.ToByte(change.FullDocument.value);
+                                                break;
+                                            case "int16":
+                                                WriteVal.Value.Value = Convert.ToInt16(change.FullDocument.value);
+                                                break;
+                                            case "uint16":
+                                                WriteVal.Value.Value = Convert.ToUInt16(change.FullDocument.value);
+                                                break;
+                                            case "integer":
+                                            case "int32":
+                                                WriteVal.Value.Value = Convert.ToInt32(change.FullDocument.value);
+                                                break;
+                                            case "uint32":
+                                                WriteVal.Value.Value = Convert.ToUInt32(change.FullDocument.value);
+                                                break;
+                                            case "int64":
+                                                WriteVal.Value.Value = Convert.ToInt64(change.FullDocument.value);
+                                                break;
+                                            case "uint64":
+                                                WriteVal.Value.Value = Convert.ToUInt64(change.FullDocument.value);
+                                                break;
+                                            case "float":
+                                                WriteVal.Value.Value = Convert.ToSingle(change.FullDocument.value);
+                                                break;
+                                            case "double":
+                                                WriteVal.Value.Value = Convert.ToDouble(change.FullDocument.value);
+                                                break;
+                                            case "datetime":
+                                                WriteVal.Value.Value = new DateTime((long)change.FullDocument.value.AsDouble);
+                                                break;
+                                            case "string":
+                                            case "bytestring":
+                                            case "localizedtext":
+                                            case "qualifiedname":
+                                            case "nodeid":
+                                            case "guid":
+                                            case "expandednodeid":
+                                            case "xmlelement":
+                                                WriteVal.Value.Value = Convert.ToString(change.FullDocument.valueString);
+                                                break;
+                                            case "extensionobject":
+                                            case "numericrange":
+                                            case "variant":
+                                            case "diagnosticinfo":
+                                            case "datavalue":
+                                                WriteVal.Value.Value = JsonNode.Parse(change.FullDocument.valueString.ToString());
+                                                break;
+                                        }
                                     }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log("MongoDB CMD CS - " + srv.name + " - Type conversion error! " + ex.Message);
+                                    // update as canceled (not type conversion error)
+                                    filter = new BsonDocument(new BsonDocument("_id", change.FullDocument.id));
+                                    update = new BsonDocument("$set", new BsonDocument("cancelReason", "type conversion error"));
+                                    await collection.UpdateOneAsync(filter, update);
+                                    break;
                                 }
 
                                 nodesToWrite.Add(WriteVal);
 
                                 // Write the node attributes
                                 StatusCodeCollection results = null;
-                                DiagnosticInfoCollection diagnosticInfos;
 
                                 Log("MongoDB CMD CS - " + srv.name + " - Writing node...");
 
                                 // Call Write Service
-                                try
+
+                                // Set proper request header with timeout
+                                var requestHeader = new RequestHeader
                                 {
-                                    // Set proper request header with timeout
-                                    var requestHeader = new RequestHeader
+                                    Timestamp = DateTime.UtcNow,
+                                    TimeoutHint = 10000  // 10 second timeout
+                                };
+
+                                // Perform write operation
+                                srv.connection.session.Write(
+                                    requestHeader,
+                                    nodesToWrite,
+                                    out results,
+                                    out var diagnosticInfos);
+
+                                // Log diagnostic information if available
+                                if (diagnosticInfos != null && diagnosticInfos.Count > 0)
+                                {
+                                    foreach (var diagnostic in diagnosticInfos)
                                     {
-                                        Timestamp = DateTime.UtcNow,
-                                        TimeoutHint = 10000  // 10 second timeout
-                                    };
-
-                                    // Validate node before writing
-                                    var nodesToRead = new ReadValueIdCollection();
-                                    nodesToRead.Add(new ReadValueId()
-                                    {
-                                        NodeId = WriteVal.NodeId,
-                                        AttributeId = Attributes.Value
-                                    });
-
-                                    DataValueCollection readResults;
-                                    DiagnosticInfoCollection readDiagnostics;
-                                    srv.connection.session.Read(
-                                        null,
-                                        0,
-                                        TimestampsToReturn.Neither,
-                                        nodesToRead,
-                                        out readResults,
-                                        out readDiagnostics
-                                    );
-
-                                    if (readResults[0].StatusCode.Code != StatusCodes.Good)
-                                    {
-                                        Log("MongoDB CMD CS - " + srv.name + " - Node validation failed: " + readResults[0].StatusCode);
-                                        throw new ServiceResultException(readResults[0].StatusCode);
-                                    }
-
-                                    // Perform write operation
-                                    srv.connection.session.Write(
-                                        requestHeader,
-                                        nodesToWrite,
-                                        out results,
-                                        out diagnosticInfos);
-
-                                    // Log diagnostic information if available
-                                    if (diagnosticInfos != null && diagnosticInfos.Count > 0)
-                                    {
-                                        foreach (var diagnostic in diagnosticInfos)
+                                        if (diagnostic != null)
                                         {
-                                            if (diagnostic != null)
-                                            {
-                                                Log("MongoDB CMD CS - " + srv.name + " - Write diagnostic: " + diagnostic.ToString());
-                                            }
+                                            Log("MongoDB CMD CS - " + srv.name + " - Write diagnostic: " + diagnostic.ToString());
                                         }
                                     }
-                                }
-                                catch (ServiceResultException sre)
-                                {
-                                    Log("MongoDB CMD CS - " + srv.name + " - Write error: " + sre.Message);
-                                    Log("MongoDB CMD CS - " + srv.name + " - Status code: " + sre.StatusCode);
-                                    if (sre.InnerException != null)
-                                    {
-                                        Log("MongoDB CMD CS - " + srv.name + " - Inner error: " + sre.InnerException.Message);
-                                    }
-                                    throw;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log("MongoDB CMD CS - " + srv.name + " - Unexpected error: " + ex.Message);
-                                    if (ex.InnerException != null)
-                                    {
-                                        Log("MongoDB CMD CS - " + srv.name + " - Inner error: " + ex.InnerException.Message);
-                                    }
-                                    throw;
                                 }
 
                                 var okres = false;
@@ -386,7 +339,7 @@ partial class MainClass
 
                                 Log("MongoDB CMD CS - " + srv.name + " - Address: " +
                                     change.FullDocument.protocolSourceObjectAddress +
-                                    " value " + change.FullDocument.value +
+                                    " value: " + change.FullDocument.value + " valueString: " + change.FullDocument.valueString +
                                     " - Command delivered - " + results[0].ToString());
 
                                 // update as delivered
@@ -399,7 +352,7 @@ partial class MainClass
                                                                 { "resultDescription", resultDescription }
                                                             }
                                                         } };
-                                await collection.UpdateOneAsync(filter,update);
+                                await collection.UpdateOneAsync(filter, update);
                                 break;
                             }
                         });
