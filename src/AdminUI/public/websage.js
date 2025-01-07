@@ -1490,11 +1490,11 @@ else
         // response must have same request handle and be a data change notification response or service fault 
         if (data.Body.ResponseHeader.RequestHandle !== RequestHandle ||
             (data.ServiceId !== OpcServiceCode.DataChangeNotification && data.ServiceId !== OpcServiceCode.ServiceFault ) ||
-            typeof data.Body.MonitoredItems !== "object" ){
+            typeof data.Body.MonitoredItems !== "object" ) {
           console.log("Invalid or unexpected service response!");
           return;
           }
-        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ){
+        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ) {
           console.log("Service error!");
           return;
         }
@@ -1505,8 +1505,12 @@ else
       if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Good )
         WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Ok!";
       else   
-      if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Bad )
-        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Rejected!";   
+      if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Bad ) {
+        if ( data.Body.ResponseHeader?.StringTable && data.Body.ResponseHeader?.StringTable?.length>0 )
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Canceled: " + data.Body.ResponseHeader.StringTable[0];
+        else
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Rejected!"
+        }
       })
       .catch(function (error) {
         console.log(error);
