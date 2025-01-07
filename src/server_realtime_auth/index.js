@@ -35,9 +35,11 @@ const COLL_ACTIONS = 'userActions'
 const LoadConfig = require('./load-config')
 const Log = require('./simple-logger')
 const express = require('express')
-const fileUpload = require('express-fileupload');
+const fileUpload = require('express-fileupload')
 const httpProxy = require('express-http-proxy')
-const { legacyCreateProxyMiddleware: createProxyMiddleware } = require('http-proxy-middleware');
+const {
+  legacyCreateProxyMiddleware: createProxyMiddleware,
+} = require('http-proxy-middleware')
 const path = require('path')
 const cors = require('cors')
 const app = express()
@@ -127,7 +129,7 @@ let pool = null
     app.use('/login', express.static('../AdminUI/dist'))
     app.use('/dashboard', express.static('../AdminUI/dist'))
     app.use('/admin', express.static('../AdminUI/dist'))
-    
+
     // add charset for special sage displays
     app.use(
       '/sage-cepel-displays/',
@@ -180,7 +182,7 @@ let pool = null
       if (err) {
         Log.log('Postgresql - connection error: ' + err)
         pool = null
-        done();
+        done()
       }
     })
   }
@@ -795,8 +797,10 @@ let pool = null
                     if (
                       typeof node.Value !== 'object' ||
                       typeof node.Value.Type !== 'number' ||
-                      (node.Value.Type !== opc.DataType.Double && node.Value.Type !== opc.DataType.String) || // only accepts a double or string value for the command
-                      (typeof node.Value.Body !== 'number' && typeof node.Value.Body !== 'string')
+                      (node.Value.Type !== opc.DataType.Double &&
+                        node.Value.Type !== opc.DataType.String) || // only accepts a double or string value for the command
+                      (typeof node.Value.Body !== 'number' &&
+                        typeof node.Value.Body !== 'string')
                     ) {
                       OpcResp.Body.ResponseHeader.ServiceResult =
                         opc.StatusCode.BadNodeAttributesInvalid
@@ -816,8 +820,14 @@ let pool = null
                     // look for the command info in the database
 
                     let cmd_id = node.NodeId.Id
-                    let cmd_val = node.Value.Type === opc.DataType.Double? node.Value.Body : 0.0
-                    let cmd_val_str = node.Value.Type === opc.DataType.String? node.Value.Body : parseFloat(cmd_val).toString()
+                    let cmd_val =
+                      node.Value.Type === opc.DataType.Double
+                        ? node.Value.Body
+                        : 0.0
+                    let cmd_val_str =
+                      node.Value.Type === opc.DataType.String
+                        ? node.Value.Body
+                        : parseFloat(cmd_val).toString()
                     let query = { _id: parseInt(cmd_id) }
                     if (isNaN(parseInt(cmd_id))) query = { tag: cmd_id }
 
@@ -1267,12 +1277,15 @@ let pool = null
             let status = -1,
               ackTime,
               cmdTime
-            if (typeof data.ack === 'boolean') {
-              // ack received
-              if ((data.ack = true)) status = opc.StatusCode.Good
-              else status = opc.StatusCode.Bad
-              cmdTime = data.timeTag
-              ackTime = data.ackTimeTag
+            if (
+              typeof data?.ack === 'boolean' ||
+              typeof data?.cancelReason === 'string'
+            ) {
+              // ack received or cancelled
+              status = opc.StatusCode.Bad
+              if (data.ack === true) status = opc.StatusCode.Good
+              cmdTime = data?.timeTag || new Date()
+              ackTime = data?.ackTimeTag || new Date()
             } else status = opc.StatusCode.BadWaitingForResponse
 
             OpcResp.ServiceId = opc.ServiceCode.DataChangeNotification
@@ -1293,6 +1306,11 @@ let pool = null
               },
             ]
             OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
+            if (typeof data?.cancelReason === 'string') {
+              OpcResp.Body.ResponseHeader.StringTable = [
+                data.cancelReason,
+              ]
+            }
             res.send(OpcResp)
             return
           }
@@ -1539,7 +1557,10 @@ let pool = null
                           type: pointInfo.type,
                         }
                       }
-                      if (pointInfo.type === 'string' || pointInfo.type === 'json')
+                      if (
+                        pointInfo.type === 'string' ||
+                        pointInfo.type === 'json'
+                      )
                         Result.Value = {
                           Type: opc.DataType.String,
                           Body: pointInfo.valueString,
@@ -2112,15 +2133,15 @@ let pool = null
           // read data from postgreSQL
           if (!pool) {
             OpcResp.ServiceId = opc.ServiceCode.ServiceFault
-              OpcResp.Body.ResponseHeader.ServiceResult =
-                opc.StatusCode.BadServerNotConnected
-              OpcResp.Body.ResponseHeader.StringTable = [
-                opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
-                opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
-                'Database not connected!',
-              ]
-              res.send(OpcResp)
-              return
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.BadServerNotConnected
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
+              opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
+              'Database not connected!',
+            ]
+            res.send(OpcResp)
+            return
           }
           pool.query(query, (err, resp) => {
             if (err) {
