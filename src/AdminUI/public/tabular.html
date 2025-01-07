@@ -1748,7 +1748,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
         RequestHeader: {
           Timestamp: new Date().toISOString(),
           RequestHandle: RequestHandle,
-          TimeoutHint: 1500,
+          TimeoutHint: 3000,
           ReturnDiagnostics: 2,
           AuthenticationToken: null
         },
@@ -1759,7 +1759,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
       }
     }
 
-    fetchTimeout("/Invoke/", 1500, {
+    fetchTimeout("/Invoke/", 3000, {
       method: "POST",
       body: JSON.stringify(req),
       headers: {
@@ -1957,7 +1957,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
       RequestHeader: {
         Timestamp: new Date().toISOString(),
         RequestHandle: RequestHandle,
-        TimeoutHint: 1500,
+        TimeoutHint: 3000,
         ReturnDiagnostics: 2,
         AuthenticationToken: null
       },
@@ -1989,7 +1989,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
   });
   req.Body.NodesToRead = NodesToRead;
 
-  fetchTimeout("/Invoke/", 1500, {
+  fetchTimeout("/Invoke/", 3000, {
     method: "POST",
     body: JSON.stringify(req),
     headers: {
@@ -2129,7 +2129,7 @@ if (pointId === undefined)
         RequestHeader: {
           Timestamp: new Date().toISOString(),
           RequestHandle: RequestHandle,
-          TimeoutHint: 1000,
+          TimeoutHint: 1500,
           ReturnDiagnostics: 2,
           AuthenticationToken: null
         },

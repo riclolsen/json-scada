@@ -762,7 +762,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
       RequestHeader: {
         Timestamp: new Date().toISOString(),
         RequestHandle: RequestHandle,
-        TimeoutHint: 1500,
+        TimeoutHint: 2500,
         ReturnDiagnostics: 2,
         AuthenticationToken: null
       },
@@ -794,7 +794,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
   });
   req.Body.NodesToRead = NodesToRead;
 
-  fetchTimeout("/Invoke/", 1500, {
+  fetchTimeout("/Invoke/", 2500, {
     method: "POST",
     body: JSON.stringify(req),
     headers: {
