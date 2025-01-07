@@ -243,9 +243,9 @@ $( init );
   <legend id='FSCMDINFO'>Command Info</legend>
 
   <strong>
-  <div id='fc_inst' class='fadeIn' style='font-size:16pt;text-align:center;animation-fill-mode:forwards;-webkit-animation-fill-mode:forwards;animation-delay: 0s;-webkit-animation-delay: 0s;opacity: 0.0'>?</div>
-  <div id='fc_mod' class='fadeIn' style='font-size:20pt;text-align:center;animation-fill-mode:forwards;-webkit-animation-fill-mode:forwards;animation-delay: 0.75s;-webkit-animation-delay: 0.75s;opacity: 0.0'>?</div>
-  <div id='fc_info' class='fadeIn' style='font-size:18pt;text-align:center;animation-fill-mode:forwards;-webkit-animation-fill-mode:forwards;animation-delay: 1.5s;-webkit-animation-delay: 1.5s;opacity: 0.0'>?</div>
+  <div id='fc_inst' class='fadeIn' style='font-size:16pt;animation-fill-mode:forwards;-webkit-animation-fill-mode:forwards;animation-delay: 0s;-webkit-animation-delay: 0s;opacity: 0.0'>?</div>
+  <div id='fc_mod' class='fadeIn' style='font-size:20pt;animation-fill-mode:forwards;-webkit-animation-fill-mode:forwards;animation-delay: 0.75s;-webkit-animation-delay: 0.75s;opacity: 0.0'>?</div>
+  <div id='fc_info' class='fadeIn' style='font-size:18pt;animation-fill-mode:forwards;-webkit-animation-fill-mode:forwards;animation-delay: 1.5s;-webkit-animation-delay: 1.5s;opacity: 0.0'>?</div>
   <span id='CDESCR_SUP' style="display:none;">0</span>
   </strong>
   
@@ -262,10 +262,9 @@ $( init );
   </select>
   <input id="COMANDOANA" type="number" size=9 style="display:none;font-family:tahoma; font-size:14pt;" onkeydown="setTimeout('anachg()',100);cnttout = toutMaxCnt;" onchange="setTimeout('anachg()',150);cnttout = toutMaxCnt;"/>
   <input id="COMANDOSTR" type="text" size=20 style="display:none;font-family:tahoma; font-size:14pt;" onkeydown="setTimeout('strchg()',100);cnttout = toutMaxCnt;" onchange="setTimeout('strchg()',100);cnttout = toutMaxCnt;"/>
-  &nbsp;&nbsp;&nbsp;
-  <button id="EXECUTAR" disabled="disabled" style="display:none; font-family:tahoma; font-size:14pt; cursor:pointer;" onclick="executa_cmd();" tabindex="1" value="1" type="button"></button>
+  <button id="EXECUTAR" disabled="disabled" style="display:none; float:left; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-family:tahoma; font-size:14pt; cursor:pointer;" onclick="executa_cmd();" tabindex="1" value="1" type="button"></button>
   <span id='TXTACK_CMD' style='color:red'>&nbsp;</span><br>
-  
+
 </fieldset>
 
 <fieldset>
@@ -285,7 +284,9 @@ $( init );
   <span id='ESTADO_SUP'>?</span>
   </div>
   </div>
+
 </fieldset>
+
   <span id='TXTTOUT_CMD'>&nbsp;</span>
   <b><span id='ACK_CMD'>&nbsp;</span></b>
   <button id="SAIR" style='font-family:tahoma; cursor:pointer;background-color: green;box-shadow: 0 2px 0 darkgreen, 0 4px 0 forestgreen, 0 6px 0 limegreen, 0 6px 10px lightgreen, 0 6px 11px darkgreen, 0 0 10px green;' onclick="window.focus();window.close();" tabindex="0" value="0" type="button">?</button>
