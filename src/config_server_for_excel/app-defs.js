@@ -23,5 +23,5 @@ module.exports = {
   HTTP_PORT: 10001,
   IP_BIND: '127.0.0.1',
   MSG: '{json:scada} - Config Server for Excel',
-  VERSION: '0.1.1',
+  VERSION: '0.2.0',
 }
