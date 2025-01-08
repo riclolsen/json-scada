@@ -199,7 +199,7 @@ Example document.
 * _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
 * _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1=hiLimit violated, -1=loLimit violated. **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
-* _**_alertState_**_ [Boolean] - Grafana alert state name. **Optional parameter**.
+* _**_alertState_**_ [String] - Grafana alert state name. **Optional parameter**.
 * _**_historianLastValue_**_ [Double] - Last value sent to historian (for dead band processing). Only for analog tags. **Mandatory parameter**.
 * _**_invalid_**_ [Boolean] - When true value is considered old or not trusted. **Mandatory parameter**.
 * _**_overflow_**_ [Boolean] - Overflow detected for _type=analog_ value. **Mandatory parameter**.
