@@ -43,7 +43,7 @@ partial class MainClass
         [BsonDefaultValue(false)]
         public BsonBoolean alerted { get; set; }
         [BsonDefaultValue("")]
-        public BsonString alertedState { get; set; }
+        public BsonString alertState { get; set; }
         [BsonDefaultValue("")]
         public BsonString annotation { get; set; }
         [BsonDefaultValue(false)]
@@ -233,7 +233,7 @@ partial class MainClass
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
-                alertedState = "",
+                alertState = "",
                 annotation = "",
                 commandBlocked = false,
                 commandOfSupervised = 0.0,
@@ -308,7 +308,7 @@ partial class MainClass
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
-                alertedState = "",
+                alertState = "",
                 annotation = "",
                 commandBlocked = false,
                 commandOfSupervised = commandOfSupervised,
@@ -383,7 +383,7 @@ partial class MainClass
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
-                alertedState = "",
+                alertState = "",
                 annotation = "",
                 commandBlocked = false,
                 commandOfSupervised = commandOfSupervised,
@@ -458,7 +458,7 @@ partial class MainClass
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
-                alertedState = "",
+                alertState = "",
                 annotation = "",
                 commandBlocked = false,
                 commandOfSupervised = commandOfSupervised,
@@ -532,7 +532,7 @@ partial class MainClass
             alarmDisabled = false,
             alerted = false,
             alarmed = false,
-            alertedState = "",
+            alertState = "",
             annotation = "",
             commandBlocked = false,
             commandOfSupervised = commandOfSupervised,
