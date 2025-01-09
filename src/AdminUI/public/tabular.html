@@ -12,11 +12,103 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />    
 <link rel="apple-touch-icon" href="images/tabular.png" />
 <style>
+:root {
+  /* Light theme */
+  --bg-color: gainsboro;
+  --text-color: black;
+  --text-color-cnt: black;
+  --toolbar-color: #f0f0f0;
+  --table-color: #ffffff;
+  --grid-color: #cccccc;
+  --header-bg: #e0e0e0;
+  --row-hover: #f5f5f5;
+  --shadow-color: #888888;
+  --button-bg: white;
+  --button-border: #777;
+  --button-shadow: #666666;
+}
+
+[data-theme="dark"] {
+  /* Dark theme */
+  --bg-color: #1d1c1c;
+  --text-color: #e0e0e0;
+  --text-color-cnt: black;
+  --toolbar-color: #424141;
+  --table-color: #111112;
+  --grid-color: #404040;
+  --header-bg: #333333;
+  --row-hover: #2a2d2e;
+  --shadow-color: #000000;
+  --button-bg: #3d3d3d;
+  --button-border: #555;
+  --button-shadow: #000000;
+}
+
 @font-face {
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 400;
   src: local('Source Sans Pro'), local('SourceSansPro-Regular'), url(lib/SourceSansPro-Regular.woff2) format('woff2');
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+#TOOLBAR_ID {
+  background-color: var(--toolbar-color) !important;
+  color: var(--text-color);
+  box-shadow: 2px 2px 2px var(--shadow-color);
+}
+
+#gridbox {
+  background-color: var(--table-color) !important;
+}
+
+#TBLHEAD, #TBLEVE {
+  background-color: var(--table-color);
+  color: var(--text-color);
+}
+
+#TBLHEAD td {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--grid-color);
+}
+
+#TBLEVE tr:hover {
+  background-color: var(--row-hover);
+}
+
+select, input {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--grid-color);
+}
+
+[id^="DIV_"] {
+  background-color: var(--button-bg) !important;
+  border-color: var(--button-border) !important;
+  box-shadow: 1px 1px 1px var(--button-shadow) !important;
+}
+
+[id^="SP_"] {
+  color: var(--text-color-cnt);
+}
+
+#DIV_SUBSTALMFILT {
+  background-color: var(--toolbar-color) !important;
+}
+
+.theme-toggle {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 20px;
+  padding: 0;
+  margin: 0 10px;
+  transform: translateY(3px);
 }
 </style>
 <script src="util.js"></script>
@@ -33,11 +125,29 @@
 <script src="images.js"></script>
 <script src="opc-codes.js"></script>
 <script>
+// Add theme toggle functionality
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  
+  // Save theme preference
+  localStorage.setItem('theme', newTheme);
+}
+
+// Load saved theme preference
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+});
+</script>
+<script>
 "use strict";
 
 // This Viewer presents data in a grid, it also acts as Alarms Viewer.
 //
-// {json:scada} - Copyright 2020-2023 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2024 - Ricardo L. Olsen
 // Derived from: OSHMI/Open Substation HMI - Copyright 2008-2021 - Ricardo L. Olsen
 
 var L = []; // Event list
@@ -69,7 +179,7 @@ var CNTUPDATES_POINTKEY = -2;
 var BEEP_GROUP1_LIST = []; // list of alarmed groups
 
 // variáveis para o diálogo de comando
-var NPTO, ID, ESTACAO, MODULO, DESC, ST_ON, ST_OFF, VAL_STR, CNPTO, CHANDLE, CID, CDESC, CST_ON, CST_OFF;
+var NPTO, ID, ESTACAO, MODULO, DESC, ST_ON, ST_OFF, VAL_STR, CNPTO, CHANDLE, CID, CDESC, CST_ON, CST_OFF, CMD_TYPE;
 var LIMS, LIMI, HISTER, ALRIN, ANOT, VLNOR, ESTALM, UNIDADE, SIMULACAO = 0;
 var ComandoAck = ''; // texto para confirmação do comando 
 var ComandoEnviado = '';
@@ -140,10 +250,7 @@ getStringValue: function(tagornumber) {
 
 // Return flags from tag or number
 getFlags: function(tagornumber) {
-  var f = F[tagornumber] || F[NPTS[tagornumber]];
-  if (isNaN(f))
-    return 0xa0 | (WebSAGE.getValue(tagornumber) == 0 ? 0x02 : 0x01);
-  else return f;
+  return F[tagornumber] || F[NPTS[tagornumber]] || 0;
 },
 
 // Return inferior limit from tag or number
@@ -296,7 +403,7 @@ return false;
       WebSAGE.writeElemByIdWnd(
         WebSAGE.g_win_cmd,
         "ESTADO_SUP",
-        WebSAGE.getValue(NPTO)==0?ST_ON:ST_OFF
+        WebSAGE.getStringValue(NPTO)
       );
 
       var SQ = "";
@@ -636,6 +743,7 @@ return false;
           CST_OFF = prop.stateTextFalse;
           CDESC = prop.description;
           CID = TAGS[cmdPointKey];
+          CMD_TYPE = prop.type;
           setTimeout(WebSAGE.showValsCmd1, 100);
           }
         );  
@@ -740,27 +848,103 @@ return false;
     WebSAGE.writeElemByIdWnd(WebSAGE.g_win_cmd, "CNPONTO_SUP", CNPTO + "-" + CID);
     WebSAGE.writeElemByIdWnd(WebSAGE.g_win_cmd, "CDESCR_SUP", se + CDESC);
 
-    WebSAGE.g_win_cmd.document.getElementById(
-      "CMD_OFF"
-    ).text = CST_OFF.toUpperCase();
-    WebSAGE.g_win_cmd.document.getElementById(
-      "CMD_ON"
-    ).text = CST_ON.toUpperCase();
+    WebSAGE.g_win_cmd.document.getElementById("CMD_OFF").text = CST_OFF.toUpperCase();
+    WebSAGE.g_win_cmd.document.getElementById("CMD_ON").text = CST_ON.toUpperCase();
     WebSAGE.g_win_cmd.document.getElementById("EXECUTAR").style.display = "";
     WebSAGE.g_win_cmd.document.getElementById("EXECUTAR").disabled = true;
     WebSAGE.g_win_cmd.document.getElementById("COMANDO").style.display = "none";
-    WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display =
-      "none";
+    WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display = "none";
+    WebSAGE.g_win_cmd.document.getElementById("COMANDOSTR").style.display = "none";
 
-    if (CST_OFF != "" || CST_ON != "") {
+    if (CMD_TYPE === "digital") {
       // Digital Command
       WebSAGE.g_win_cmd.document.getElementById("COMANDO").style.display = "";
-    } else {
+    } else if (CMD_TYPE === "analog") {
       // Analog Command
-      WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display =
-        "";
+      WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display = "";
       WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").value = V[NPTO];
+    } else { // string or json
+      WebSAGE.g_win_cmd.document.getElementById("COMANDOSTR").style.display = "";
+      WebSAGE.g_win_cmd.document.getElementById("COMANDOSTR").value = S[NPTO];
     }
+  },
+
+  directCommandExecStr: function(point, value) {
+
+    // use OPC web hmi protocol https://prototyping.opcfoundation.org/
+    var ServiceId = OpcServiceCode.WriteRequest // write data service
+    var RequestHandle = Math.floor(Math.random() * 100000000)
+    var req = {
+      ServiceId: ServiceId,
+      Body: {
+        RequestHeader: {
+          Timestamp: new Date().toISOString(),
+          RequestHandle: RequestHandle,
+          TimeoutHint: 1500,
+          ReturnDiagnostics: 2,
+          AuthenticationToken: null
+        },
+        NodesToWrite: [
+          {
+            NodeId: {
+              IdType: OpcKeyType.Numeric, // type: numeric key
+              Id: point, // numeric key for the point
+              Namespace: OpcNamespaceMongodb
+            },
+            AttributeId: OpcAttributeId.Value, // OPC attribute to write: Value
+            Value: {
+              Type: OpcValueTypes.String,
+              Body: value
+            }
+          }
+        ]
+      }
+    }
+
+    fetchTimeout("/Invoke/", 1500, {
+      method: "POST",
+      body: JSON.stringify(req),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(function (response) {
+        return response;
+      })
+      .then(response => response.json())
+      .then(data => {
+        if ( (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle || !data.Body.Results) ||
+             (data.ServiceId !== OpcServiceCode.WriteResponse || data.Body.ResponseHeader.RequestHandle !== RequestHandle) ||
+             (data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good)) {
+          CNPTO = 0;
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+          return;
+        }
+        if ( data.Body.Results[0] !== OpcStatusCodes.Good ){
+          CNPTO = 0;
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+        }
+
+        // success
+        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = " ... ";
+        CHANDLE = data.Body._CommandHandles[0];
+
+        // Command log in browser's localStorage
+        if (storageAvailable("localStorage")) {
+          var lastlogcnt = 0;
+          if (localStorage.hasOwnProperty("lastlogcnt"))
+            lastlogcnt = parseInt(localStorage["lastlogcnt"]);
+          lastlogcnt++;
+          lastlogcnt = lastlogcnt % 1000; // circular buffer of 1000
+          localStorage[printf("%03d", lastlogcnt)] =
+            Date() + " Point:" + point + " Id:?" + " Value:" + value;
+          localStorage["lastlogcnt"] = lastlogcnt;
+        }
+      })
+      .catch(err => {
+        CNPTO = 0;
+        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+      });
   },
 
   directCommandExec: function(point, value) {
@@ -852,7 +1036,10 @@ return false;
   },
 
   executeCommand: function(cmd_val) {
-    WebSAGE.directCommandExec(CNPTO, cmd_val);
+    if (CMD_TYPE === "digital" || CMD_TYPE === "analog")
+      WebSAGE.directCommandExec(CNPTO, cmd_val);
+    else
+      WebSAGE.directCommandExecStr(CNPTO, cmd_val);
   },
 
   // função auxiliar para escrever dados na janela de comando pelo id do objeto
@@ -913,11 +1100,11 @@ return false;
         // response must have same request handle and be a data change notification response or service fault 
         if (data.Body.ResponseHeader.RequestHandle !== RequestHandle ||
             (data.ServiceId !== OpcServiceCode.DataChangeNotification && data.ServiceId !== OpcServiceCode.ServiceFault ) ||
-            typeof data.Body.MonitoredItems !== "object" ){
+            typeof data.Body.MonitoredItems !== "object" ) {
           console.log("Invalid or unexpected service response!");
           return;
           }
-        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ){
+        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ) {
           console.log("Service error!");
           return;
         }
@@ -928,8 +1115,12 @@ return false;
       if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Good )
         WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Ok!";
       else   
-      if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Bad )
-        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Rejected!";   
+      if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Bad ) {
+        if ( data.Body.ResponseHeader?.StringTable && data.Body.ResponseHeader?.StringTable?.length>0 )
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Canceled: " + data.Body.ResponseHeader.StringTable[0];
+        else
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Rejected!"
+        }
       })
       .catch(function (error) {
         console.log(error);
@@ -1316,7 +1507,7 @@ if ( WebSAGE.isAlarmsViewer() )
       }
     }
 
-  var xleft = 230 + 68;
+    var xleft = 270 + 68;
     var ytop = 5;
     for ( var priority in [0,1,2,3,4,5,7,8,9] ) 
     {
@@ -1561,7 +1752,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
         RequestHeader: {
           Timestamp: new Date().toISOString(),
           RequestHandle: RequestHandle,
-          TimeoutHint: 1500,
+          TimeoutHint: 3000,
           ReturnDiagnostics: 2,
           AuthenticationToken: null
         },
@@ -1572,7 +1763,7 @@ getRealtimeFilteredData: function (group1Filter, group2Filter, onlyAlarms, callb
       }
     }
 
-    fetchTimeout("/Invoke/", 1500, {
+    fetchTimeout("/Invoke/", 3000, {
       method: "POST",
       body: JSON.stringify(req),
       headers: {
@@ -1770,7 +1961,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
       RequestHeader: {
         Timestamp: new Date().toISOString(),
         RequestHandle: RequestHandle,
-        TimeoutHint: 1500,
+        TimeoutHint: 3000,
         ReturnDiagnostics: 2,
         AuthenticationToken: null
       },
@@ -1802,7 +1993,7 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
   });
   req.Body.NodesToRead = NodesToRead;
 
-  fetchTimeout("/Invoke/", 1500, {
+  fetchTimeout("/Invoke/", 3000, {
     method: "POST",
     body: JSON.stringify(req),
     headers: {
@@ -1942,7 +2133,7 @@ if (pointId === undefined)
         RequestHeader: {
           Timestamp: new Date().toISOString(),
           RequestHandle: RequestHandle,
-          TimeoutHint: 1000,
+          TimeoutHint: 1500,
           ReturnDiagnostics: 2,
           AuthenticationToken: null
         },
@@ -2696,18 +2887,22 @@ tbl_prepare: function()
                     
         for (var i=0; i < varr.length; i++)
            {
-           WebSAGE.g_tbl.rows[line].insertCell(i);
-           WebSAGE.g_tbl.rows[line].cells[i].innerHTML = varr[i];
-           WebSAGE.g_tbl.rows[line].cells[i].style.boxSizing = "border-box";
-           WebSAGE.g_tbl.rows[line].cells[i].style.borderBottom = '1px solid ' + TabularViewer_GridColor;
-           WebSAGE.g_tbl.rows[line].cells[i].style.padding = "1px 0px";
+           var cell = WebSAGE.g_tbl.rows[line].insertCell(i);
+           cell.innerHTML = varr[i];
+           cell.style.boxSizing = "border-box";
+           cell.style.borderBottom = '1px solid ' + TabularViewer_GridColor;
+           cell.style.padding = "1px 0px";
+           cell.style.overflow = "hidden";
+           cell.style.textOverflow = "ellipsis";
+           cell.style.whiteSpace = "nowrap";
+           
            if ( WebSAGE.g_tbl.larguraCol[i] == 0 )
-             WebSAGE.g_tbl.rows[line].cells[i].style.display = 'none';
+             cell.style.display = 'none';
           else
              {
-             WebSAGE.g_tbl.rows[line].cells[i].width = WebSAGE.g_tbl.larguraCol[i];  
-             WebSAGE.g_tbl.rows[line].cells[i].style.minWidth = WebSAGE.g_tbl.larguraCol[i] + "px";  
-             WebSAGE.g_tbl.rows[line].cells[i].style.textOverflow = "ellipsis";  
+             cell.style.width = WebSAGE.g_tbl.larguraCol[i] + "px";  
+             cell.style.minWidth = WebSAGE.g_tbl.larguraCol[i] + "px";
+             cell.style.maxWidth = WebSAGE.g_tbl.larguraCol[i] + "px";
              }
            } 
         WebSAGE.g_tbl.rows[line].userData = vals;
@@ -2905,7 +3100,7 @@ init: function()
     $('#SPSUBEST').text( Msg.SPSUBEST );
     $('#SPMODULO').text( Msg.SPMODULO );
     $('#SPFILTROID').text( Msg.SPFILTROID );
-    $('#TOOLBAR_ID').css('background-color', TabularViewer_ToolbarColor);
+    //$('#TOOLBAR_ID').css('background-color', TabularViewer_ToolbarColor);
     $('#TOOLBAR_ID').css('display', ''); // shows toolbar
 
     // WebSAGE.g_tbl.setColAlign("center,left,center,left,center,right,right,center,center,center");
@@ -2925,19 +3120,48 @@ init: function()
     gridstyle = gridstyle + 'color:' + TabularViewer_AckTxtColor + ';'; 
     gridstyle = gridstyle + 'font-family:' + TabularViewer_Font + ';'; 
     WebSAGE.g_tbl.setStyle(';', 'height:auto;font-size:' + WebSAGE.g_fontsize + 'px;' + gridstyle,';',';');
-    WebSAGE.g_tbl.setInitWidths("0,0,70,400,180,0,0,55,0,170,200");
+    // Set initial widths for both header and data columns
+    var colWidths = "0,0,70,400,180,0,0,55,0,170,200";
+    WebSAGE.g_tbl.setInitWidths(colWidths);
+    
+    // Apply same widths to header and data columns
+    var widths = colWidths.split(',');
+    for (var i = 0; i < widths.length; i++) {
+      // Style header cells
+      if (WebSAGE.g_tblhead.rows[0] && WebSAGE.g_tblhead.rows[0].cells[i]) {
+        var cell = WebSAGE.g_tblhead.rows[0].cells[i];
+        cell.style.width = widths[i] + 'px';
+        cell.style.minWidth = widths[i] + 'px';
+        cell.style.maxWidth = widths[i] + 'px';
+        cell.style.boxSizing = 'border-box';
+        cell.style.overflow = 'hidden';
+        cell.style.textOverflow = 'ellipsis';
+        cell.style.whiteSpace = 'nowrap';
+        cell.style.display = (widths[i] == '0') ? 'none' : '';
+      }
+    }
     WebSAGE.g_tbl.setHeader(Msg.TabNomesColunas);
 
-    $('#gridbox').css('background-color', TabularViewer_TableColor);
+    // $('#gridbox').css('background-color', TabularViewer_TableColor);
     WebSAGE.g_tbl.cellSpacing = "0px";
     WebSAGE.g_tbl.cellPadding = "0px";
     WebSAGE.g_tblhead.cellSpacing = "0px";
     WebSAGE.g_tblhead.cellPadding = "0px";
-    $('#TBLHEAD').css('margin-left', '5px');
-    $('#TBLHEAD').css('table-layout', 'fixed');
-    $('#TBLHEAD').css('background-color', 'gainsboro');
-    document.body.bgColor = 'gainsboro';
-    $('#TBLHEAD').css('color', 'black');
+    // Style header table
+    // Style both tables consistently
+    var tableStyle = {
+      'margin-left': '5px',
+      'table-layout': 'fixed',
+      'background-color': 'var(--table-color)',
+      'width': '100%',
+      'border-collapse': 'collapse',
+      'box-sizing': 'border-box',
+    };
+    
+    $('#TBLHEAD').css(tableStyle);
+    $('#TBLEVE').css(tableStyle);
+    document.body.style.backgroundColor = 'var(--bg-color)';
+    $('#TBLHEAD').css('color', 'var(--text-color)');
     $('#TBLHEAD').css('font-family', TabularViewer_Font);
 
     shortcut.add( "F8", // reconhece tudo
@@ -3008,6 +3232,10 @@ init: function()
     // desabilita o botão direito 
     document.oncontextmenu = function() { return false; };
 
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
     // alarm beep sound
     if (WebSAGE.isAlarmsViewer())
       document.getElementById('btSound').style.display='';
@@ -3048,6 +3276,7 @@ Core.start(WebSAGE);
 <img id="imgFontSizeDown" alt='' src='' align='middle' width="27" height="27" onclick='WebSAGE.fontSize(0)' style='cursor:pointer;' />
 <img id='imgReconheceTudo' alt='' src='' align='middle' width="32" height="32" onclick='WebSAGE.ackAllAlarms(0);' style='cursor:pointer;display:none' />
 <img id='imgClipboard' alt='' src='' onclick='CopyClipboard("TBLEVE")' align='middle' border='0' width='32' height='32' style='cursor:pointer;' />
+<button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light">☾☀︎</button>
 <input id="btSound" title="Beep ON/OFF" style="display:none;cursor:pointer;vertical-align:middle;background:none;border:0px;font-size:20px;transform: translateY(3px);" type="button" value="🔈" />&nbsp;
 <audio id="criticalSound"><source src="sounds/critical.wav" muted type="audio/wav"></audio>
 <audio id="nonCriticalSound"><source src="sounds/nonCritical.wav" muted type="audio/wav"></audio>
@@ -3079,7 +3308,7 @@ Core.start(WebSAGE);
 </tr>
 </table>
 </div>
-<div id="divhead" style="position:fixed;width:100%;top:80px;height:18px;">
+<div id="divhead" style="position:fixed;width:100%;top:80px;height:18px;overflow:hidden;">
 <table id="TBLHEAD">
 <tr><td></td></tr>
 </table>

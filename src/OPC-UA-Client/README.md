@@ -57,6 +57,9 @@ Each instance for this driver can have many client connection defined that must 
         autoCreateTagQueueSize: 5.0,
         timeoutMs: 20000,
         useSecurity: false,
+        topics: [],
+        giInterval: 300.0,
+        hoursShift: 0.0,
         stats: {}
     });
 
@@ -77,6 +80,9 @@ Parameters for communication with OPC-UA servers.
 - _**autoCreateTagQueueSize**_ [Double] - Default queue size for subscription of auto created tags. **Mandatory parameter**.
 - _**timeoutMs**_ [Double] - Timeout for keepalive messages. **Mandatory parameter**.
 - _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
+- _**hoursShift**_ [Double] - Time shift to be applied to server timestamps (hours). **Mandatory parameter**.
+- _**giInterval**_ [Double] - Integrity interval for items not on subscription (seconds). **Mandatory parameter**.
+- _**topics**_ [Array of Strings] - List of browse paths where to create tags automatically (e.g. "/Objects/Path", "Boiler"). **Mandatory parameter**.
 - _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
 
 ## Configure JSON-SCADA tags for update (reading from an OPC-UA Server)
@@ -102,10 +108,10 @@ Select a tag for a update on a connection as below.
     });
 
 - _**protocolConnectionNumber**_ [Double] - Number code for the protocol connection. Only this protocol connection can update the tag. **Mandatory parameter**.
-- _**protocolSourceCommonAddress**_ [String] - Name of a subscription for grouping. Leave empty for not subscribing (just polling). **Mandatory parameter**.
+- _**protocolSourceCommonAddress**_ [String] -  Not used, keep as empty string. **Mandatory parameter**.
 - _**protocolSourceObjectAddress**_ [String] - OPC-UA Node Id. This address must be unique in a connection (for supervised points). **Mandatory parameter**.
-- _**protocolSourceASDU**_ [String] - Data type: Boolean | SByte | Byte | Int16 | UInt16 | Int32 | UInt32, | StatusCode | Int64 | UInt64 | DateTime | Guid | Float | Double | String | ByteString | XmlElement | ExpandedNodeId | QualifiedName | LocalizedText | Number | Integer | UInteger | Enumeration | JSON (JSON in a string) | [, Array Range]. E.g. UInt64,0:10. **Mandatory parameter**.
-- _**protocolSourcePublishingInterval**_ [Double] - Publishing interval in seconds for the subscription group (repeat the same value for all members of a subscription). If not a subscription this is the polling interval. **Mandatory parameter**.
+- _**protocolSourceASDU**_ [String] - Data type: Boolean | SByte | Byte | Int16 | UInt16 | Int32 | UInt32, | StatusCode | Int64 | UInt64 | DateTime | Guid | Float | Double | String | ByteString | XmlElement | NodeId | ExpandedNodeId | LocaleId | QualifiedName | LocalizedText | Number | Integer | UInteger | Enumeration | ExtensionObject | JSON (JSON in a string) | [, Array Range]. E.g. UInt64,0:10. **Mandatory parameter**.
+- _**protocolSourcePublishingInterval**_ [Double] - Publishing interval in seconds for the subscription group (repeat the same value for all members of a subscription). Leave at zero if not a subscription. **Mandatory parameter**.
 - _**protocolSourceSamplingInterval**_ [Double] - Sampling interval in seconds requested for the server. Only meaningful for subscriptions. Use zero for auto adjust on the server. **Mandatory parameter**.
 - _**protocolSourceQueueSize**_ [Double] - Queue size for buffering of changes in the server between reports. Only meaningful for subscriptions. Use zero to avoid buffering. **Mandatory parameter**.
 - _**protocolSourceDiscardOldest**_ [Boolean] - What to do when changes queue overflows. Use true to discard oldest changes.Only meaningful for subscriptions. **Mandatory parameter**.

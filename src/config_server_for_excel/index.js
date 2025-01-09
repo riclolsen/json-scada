@@ -1,5 +1,5 @@
 /*
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -241,6 +241,10 @@ MongoClient.connect(
       'alarmDisabled',
       'commandBlocked',
       'commissioningRemarks',
+      'protocolSourceDiscardOldest',
+      'protocolSourcePublishingInterval',
+      'protocolSourceQueueSize',
+      'protocolSourceSamplingInterval',
     ]
     let projection = {}
     fields.forEach((value) => {
@@ -309,6 +313,7 @@ MongoClient.connect(
         elem.commandOfSupervised = toMongoDouble(elem.commandOfSupervised)
         elem.supervisedOfCommand = toMongoDouble(elem.supervisedOfCommand)
         elem.alarmState = toMongoDouble(elem.alarmState)
+        elem.alertedState = toMongoDouble(elem.alertedState)
         elem.formula = toMongoDouble(elem.formula)
         elem.kconv1 = toMongoDouble(elem.kconv1, 1)
         elem.kconv2 = toMongoDouble(elem.kconv2, 0)
@@ -332,6 +337,19 @@ MongoClient.connect(
         elem.protocolSourceCommandUseSBO = toMongoBoolean(
           elem.protocolSourceCommandUseSBO,
           false
+        )
+        elem.protocolSourceDiscardOldest = toMongoBoolean(
+          elem.protocolSourceDiscardOldest,
+          false
+        )
+        elem.protocolSourcePublishingInterval = toMongoDouble(
+          elem.protocolSourcePublishingInterval
+        )
+        elem.protocolSourceQueueSize = toMongoDouble(
+          elem.protocolSourceQueueSize
+        )
+        elem.protocolSourceSamplingInterval = toMongoDouble(
+          elem.protocolSourceSamplingInterval
         )
         elem.protocolDestinations = toMongoObj(elem.protocolDestinations, [])
         elem.protocolDestinations.forEach((pd) => {
@@ -384,23 +402,28 @@ MongoClient.connect(
         delete elem._id
 
         let onInsert = {
-          value: new Double(0),
-          valueString: '',
-          valueJson: {},
-          sourceDataUpdate: null,
-          invalid: true,
-          substituted: false,
           alarmed: false,
-          overflow: false,
-          transient: false,
-          frozen: false,
+          alarmRange: new Double(0),
+          alerted: false,
+          alertState: '',
           annotation: '',
+          frozen: false,
+          historianLastValue: null,
+          invalid: true,
           notes: '',
+          overflow: false,
+          sourceDataUpdate: null,
+          substituted: false,
           timeTag: null,
           timeTagAlarm: null,
+          timeTagAlertState: null,
           timeTagAtSource: null,
           timeTagAtSourceOk: false,
+          transient: false,
           updatesCnt: new Double(0),
+          value: new Double(0),
+          valueJson: '',
+          valueString: '',
         }
 
         if (elem.tag.trim() === '') {

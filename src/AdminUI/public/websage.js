@@ -72,6 +72,7 @@ var NPTO = 0,
   CDESC,
   CST_ON,
   CST_OFF,
+  CMD_TYPE,
   LIMS,
   LIMI,
   HISTER,
@@ -263,10 +264,7 @@ var WebSAGE = {
 
   // Return flags from tag or number
   getFlags: function(tagornumber) {
-    var f = F[tagornumber] || F[NPTS[tagornumber]];
-    if (isNaN(f))
-      return 0xa0 | (WebSAGE.getValue(tagornumber) == 0 ? 0x02 : 0x01);
-    else return f;
+    return F[tagornumber] || F[NPTS[tagornumber]] || 0;
   },
 
   // Return inferior limit from tag or number
@@ -1123,6 +1121,7 @@ else
           CST_OFF = prop.stateTextFalse;
           CDESC = prop.description;
           CID = TAGS[cmdPointKey];
+          CMD_TYPE = prop.type;
           setTimeout(WebSAGE.showValsCmd1, 100);
           }
         );  
@@ -1238,27 +1237,103 @@ else
     WebSAGE.writeElemByIdWnd(WebSAGE.g_win_cmd, "CNPONTO_SUP", CNPTO + "-" + CID);
     WebSAGE.writeElemByIdWnd(WebSAGE.g_win_cmd, "CDESCR_SUP", se + CDESC);
 
-    WebSAGE.g_win_cmd.document.getElementById(
-      "CMD_OFF"
-    ).text = CST_OFF.toUpperCase();
-    WebSAGE.g_win_cmd.document.getElementById(
-      "CMD_ON"
-    ).text = CST_ON.toUpperCase();
+    WebSAGE.g_win_cmd.document.getElementById("CMD_OFF").text = CST_OFF.toUpperCase();
+    WebSAGE.g_win_cmd.document.getElementById("CMD_ON").text = CST_ON.toUpperCase();
     WebSAGE.g_win_cmd.document.getElementById("EXECUTAR").style.display = "";
     WebSAGE.g_win_cmd.document.getElementById("EXECUTAR").disabled = true;
     WebSAGE.g_win_cmd.document.getElementById("COMANDO").style.display = "none";
-    WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display =
-      "none";
+    WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display = "none";
+    WebSAGE.g_win_cmd.document.getElementById("COMANDOSTR").style.display = "none";
 
-    if (CST_OFF != "" || CST_ON != "") {
+    if (CMD_TYPE === "digital") {
       // Digital Command
       WebSAGE.g_win_cmd.document.getElementById("COMANDO").style.display = "";
-    } else {
+    } else if (CMD_TYPE === "analog") {
       // Analog Command
-      WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display =
-        "";
+      WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").style.display = "";
       WebSAGE.g_win_cmd.document.getElementById("COMANDOANA").value = V[NPTO];
+    } else { // string or json
+      WebSAGE.g_win_cmd.document.getElementById("COMANDOSTR").style.display = "";
+      WebSAGE.g_win_cmd.document.getElementById("COMANDOSTR").value = S[NPTO];
     }
+  },
+
+  directCommandExecStr: function(point, value) {
+
+    // use OPC web hmi protocol https://prototyping.opcfoundation.org/
+    var ServiceId = OpcServiceCode.WriteRequest // write data service
+    var RequestHandle = Math.floor(Math.random() * 100000000)
+    var req = {
+      ServiceId: ServiceId,
+      Body: {
+        RequestHeader: {
+          Timestamp: new Date().toISOString(),
+          RequestHandle: RequestHandle,
+          TimeoutHint: 1500,
+          ReturnDiagnostics: 2,
+          AuthenticationToken: null
+        },
+        NodesToWrite: [
+          {
+            NodeId: {
+              IdType: OpcKeyType.Numeric, // type: numeric key
+              Id: point, // numeric key for the point
+              Namespace: OpcNamespaceMongodb
+            },
+            AttributeId: OpcAttributeId.Value, // OPC attribute to write: Value
+            Value: {
+              Type: OpcValueTypes.String,
+              Body: value
+            }
+          }
+        ]
+      }
+    }
+
+    fetchTimeout("/Invoke/", 1500, {
+      method: "POST",
+      body: JSON.stringify(req),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(function (response) {
+        return response;
+      })
+      .then(response => response.json())
+      .then(data => {
+        if ( (!data.ServiceId || !data.Body || !data.Body.ResponseHeader || !data.Body.ResponseHeader.RequestHandle || !data.Body.Results) ||
+             (data.ServiceId !== OpcServiceCode.WriteResponse || data.Body.ResponseHeader.RequestHandle !== RequestHandle) ||
+             (data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good)) {
+          CNPTO = 0;
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+          return;
+        }
+        if ( data.Body.Results[0] !== OpcStatusCodes.Good ){
+          CNPTO = 0;
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+        }
+
+        // success
+        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = " ... ";
+        CHANDLE = data.Body._CommandHandles[0];
+
+        // Command log in browser's localStorage
+        if (storageAvailable("localStorage")) {
+          var lastlogcnt = 0;
+          if (localStorage.hasOwnProperty("lastlogcnt"))
+            lastlogcnt = parseInt(localStorage["lastlogcnt"]);
+          lastlogcnt++;
+          lastlogcnt = lastlogcnt % 1000; // circular buffer of 1000
+          localStorage[printf("%03d", lastlogcnt)] =
+            Date() + " Point:" + point + " Id:?" + " Value:" + value;
+          localStorage["lastlogcnt"] = lastlogcnt;
+        }
+      })
+      .catch(err => {
+        CNPTO = 0;
+        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Error!";
+      });
   },
 
   directCommandExec: function(point, value) {
@@ -1357,7 +1432,10 @@ else
     },
 
   executeCommand: function(cmd_val) {
-    WebSAGE.directCommandExec(CNPTO, cmd_val);
+    if (CMD_TYPE === "digital" || CMD_TYPE === "analog")
+      WebSAGE.directCommandExec(CNPTO, cmd_val);
+    else
+      WebSAGE.directCommandExecStr(CNPTO, cmd_val);
   },
 
   getCommandAckStatus: function() {
@@ -1412,11 +1490,11 @@ else
         // response must have same request handle and be a data change notification response or service fault 
         if (data.Body.ResponseHeader.RequestHandle !== RequestHandle ||
             (data.ServiceId !== OpcServiceCode.DataChangeNotification && data.ServiceId !== OpcServiceCode.ServiceFault ) ||
-            typeof data.Body.MonitoredItems !== "object" ){
+            typeof data.Body.MonitoredItems !== "object" ) {
           console.log("Invalid or unexpected service response!");
           return;
           }
-        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ){
+        if ( data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good ) {
           console.log("Service error!");
           return;
         }
@@ -1427,8 +1505,12 @@ else
       if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Good )
         WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Ok!";
       else   
-      if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Bad )
-        WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Rejected!";   
+      if ( data.Body.MonitoredItems[0].Value.StatusCode === OpcStatusCodes.Bad ) {
+        if ( data.Body.ResponseHeader?.StringTable && data.Body.ResponseHeader?.StringTable?.length>0 )
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Canceled: " + data.Body.ResponseHeader.StringTable[0];
+        else
+          WebSAGE.g_win_cmd.document.getElementById("ACK_CMD").textContent = "Rejected!"
+        }
       })
       .catch(function (error) {
         console.log(error);

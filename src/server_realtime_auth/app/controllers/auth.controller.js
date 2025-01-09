@@ -273,6 +273,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-UA_SERVER',
       'IEC61850',
       'PLC4X',
+      'OPC-UA',
       'OPC-DA',
       'OPC-DA_SERVER',
       'ICCP',
@@ -411,12 +412,14 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.autoCreateTagQueueSize = 0.0
     }
   }
+  if (['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('hoursShift' in req.body)) {
+      req.body.hoursShift = 0.0
+    }
+  }
   if (['OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('deadBand' in req.body)) {
       req.body.deadBand = 0.0
-    }
-    if (!('hoursShift' in req.body)) {
-      req.body.hoursShift = 0.0
     }
   }
   if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
@@ -507,6 +510,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'PLCTAG',
       'IEC61850',
       'PLC4X',
+      'OPC-UA',
       'OPC-DA',
       'ICCP',
     ].includes(req?.body?.protocolDriver)

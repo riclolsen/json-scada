@@ -15701,7 +15701,7 @@
          style="font-size:40px;line-height:1.25;font-family:sans-serif"> </tspan></text>
     <g
        id="g3798"
-       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.cursor='pointer';&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Click to show more detail&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mouseup&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gDetalhe230\&quot;,0,0);&quot;}]}"
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.cursor='pointer';&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Click to show more detail&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mouseup&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gDetalhe230\&quot;,0,0);&quot;}]}"
        transform="translate(-2,-2)">
       <text
          inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-38|&quot;,&quot;tag&quot;:&quot;99999&quot;}]}"
@@ -15740,7 +15740,7 @@
        transform="translate(-164,241)"
        style="display:inline"
        id="g3798-7"
-       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.cursor='pointer';&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Click to show more detail&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mouseup&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gDetalhe69\&quot;,0,0);&quot;}]}">
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.cursor='pointer';&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Click to show more detail&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mouseup&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gDetalhe69\&quot;,0,0);&quot;}]}">
       <text
          inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-38|&quot;,&quot;tag&quot;:&quot;99999&quot;}]}"
          id="text6774-3-9-4"
@@ -15768,7 +15768,7 @@
        transform="translate(-184.85411,697.98558)"
        style="display:inline"
        id="g3798-7-8"
-       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.cursor='pointer';&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Click to show more detail&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mouseup&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gDetalhe13\&quot;,0,0);&quot;}]}">
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;thisobj.style.cursor='pointer';&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;Click to show more detail&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mouseup&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gDetalhe13\&quot;,0,0);&quot;}]}">
       <text
          inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-999999&quot;,&quot;param&quot;:&quot;-cor-38|&quot;,&quot;tag&quot;:&quot;99999&quot;}]}"
          id="text6774-3-9-4-2"

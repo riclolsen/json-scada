@@ -48,7 +48,7 @@ namespace OPCDAClientDriver
             [BsonDefaultValue(false)]
             public BsonBoolean alerted { get; set; }
             [BsonDefaultValue("")]
-            public BsonString alertedState { get; set; }
+            public BsonString alertState { get; set; }
             [BsonDefaultValue("")]
             public BsonString annotation { get; set; }
             [BsonDefaultValue(false)]
@@ -217,7 +217,7 @@ namespace OPCDAClientDriver
                     alarmDisabled = false,
                     alerted = false,
                     alarmed = false,
-                    alertedState = "",
+                    alertState = "",
                     annotation = "",
                     commandBlocked = false,
                     commandOfSupervised = 0.0,
@@ -293,7 +293,7 @@ namespace OPCDAClientDriver
                     alarmDisabled = false,
                     alerted = false,
                     alarmed = false,
-                    alertedState = "",
+                    alertState = "",
                     annotation = "",
                     commandBlocked = false,
                     commandOfSupervised = 0.0,
@@ -369,7 +369,7 @@ namespace OPCDAClientDriver
                     alarmDisabled = false,
                     alerted = false,
                     alarmed = false,
-                    alertedState = "",
+                    alertState = "",
                     annotation = "",
                     commandBlocked = false,
                     commandOfSupervised = 0.0,
@@ -444,7 +444,7 @@ namespace OPCDAClientDriver
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
-                alertedState = "",
+                alertState = "",
                 annotation = "",
                 commandBlocked = false,
                 commandOfSupervised = 0.0,
