@@ -86,7 +86,7 @@ sudo chown postgres:postgres /etc/postgresql/17/main/pg_hba.conf
 sudo cp postgresql.conf /etc/postgresql/17/main/
 sudo chown postgres:postgres /etc/postgresql/17/main/postgresql.conf
 sudo timescaledb-tune -yes --pg-config=/etc/postgresql/17/main/postgresql.conf
-sudo systemctl enable postgresql-17
+sudo systemctl enable postgresql
 
 # Configure web server
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
