@@ -183,6 +183,8 @@ sudo systemctl start telegraf
 # Final status check
 cd /home/jsonscada
 sleep 10
+sudo supervisorctl reload
+sudo supervisorctl start all
 sudo supervisorctl status
 
 echo "Installation complete!"
