@@ -172,7 +172,7 @@ sudo systemctl start grafana-server
 
 # Build JSON-SCADA
 cd ../platform-linux
-sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh'
+sudo -u $JS_USERNAME bash -c 'source ~/.bashrc;export PATH=$PATH:/usr/local/go/bin;./build.sh'
 
 # Start remaining services
 sudo systemctl start php8.3-fpm
