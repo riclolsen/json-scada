@@ -176,7 +176,7 @@ sudo -u $JS_USERNAME bash -c 'source ~/.bashrc;export PATH=$PATH:/usr/local/go/b
 
 # Start remaining services
 sudo systemctl start php8.3-fpm
-sudo systemctl start nginx
+sudo systemctl restart nginx
 sudo systemctl start supervisor
 sudo systemctl start telegraf
 
