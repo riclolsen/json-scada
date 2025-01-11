@@ -114,6 +114,7 @@ sudo systemctl enable telegraf
 
 # Install supervisor
 sudo apt -y install supervisor
+sudo cp supervisord.conf /etc/supervisor/
 sudo cp *.ini /etc/supervisor/conf.d/
 sudo systemctl enable supervisor
 
