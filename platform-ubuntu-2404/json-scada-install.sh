@@ -17,6 +17,12 @@ JS_USERNAME=jsonscada
 # Default credentials: admin / jsonscada
 # Metabase credentials: json@scada.com / jsonscada123
 
+ARCHITECTURE="amd64"
+case $(uname -m) in
+    x86_64) ARCHITECTURE="amd64" ;;
+    arm)    ARCHITECTURE="arm64";;
+esac
+
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 
 # Update and install base packages
@@ -37,8 +43,8 @@ sudo apt -y install ninja-build libjpeg-dev libxslt-dev libgtkmm-3.0-dev libboos
 sudo apt -y install libgspell-1-dev libgspell-1-2 libpotrace-dev libpoppler-private-dev
 
 # Install Go
-wget --inet4-only https://go.dev/dl/go1.23.4.linux-$(arch).tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-$(arch).tar.gz
+wget --inet4-only https://go.dev/dl/go1.23.4.linux-$ARCHITECTURE.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-$ARCHITECTURE.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 
