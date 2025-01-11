@@ -47,7 +47,6 @@ wget --inet4-only https://go.dev/dl/go1.23.4.linux-$ARCHITECTURE.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-$ARCHITECTURE.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
-source ~/.bashrc
 
 # MongoDB configuration
 sudo sh -c 'echo "vm.max_map_count=102400" >> /etc/sysctl.conf'
@@ -131,10 +130,11 @@ sudo systemctl enable supervisor
 sudo apt -y install grafana
 sudo cp grafana.ini /etc/grafana/
 sudo systemctl enable grafana-server
+sudo systemctl daemon-reload
 
 # Install Metabase
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.52.5/metabase.jar -O ../metabase/metabase.jar'
 
 # Install Node.js
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
