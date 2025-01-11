@@ -86,13 +86,15 @@ echo "deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb_release -c
 wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/timescaledb.gpg
 sudo apt update
 sudo apt -y install timescaledb-2-postgresql-17 postgresql-client-17
+sudo timescaledb-tune -yes
+sudo systemctl enable postgresql
+sudo systemctl restart postgresql
 
 sudo cp pg_hba.conf /etc/postgresql/17/main/
 sudo chown postgres:postgres /etc/postgresql/17/main/pg_hba.conf
 sudo cp postgresql.conf /etc/postgresql/17/main/
 sudo chown postgres:postgres /etc/postgresql/17/main/postgresql.conf
-sudo timescaledb-tune -yes --pg-config=/etc/postgresql/17/main/postgresql.conf
-sudo systemctl enable postgresql
+sudo systemctl restart postgresql
 
 # Configure web server
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
