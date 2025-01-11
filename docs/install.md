@@ -81,6 +81,9 @@ Execute commands below for scripted installation:
     sudo passwd jsonscada
     sudo su - jsonscada
 
+    # if necessary, add the below line to the end of the file /etc/sudoers.
+    jsonscada ALL=(ALL) ALL   # Change the user name before you issue the commands
+
     # next, clone the json-scada repo
 
     sudo dnf -y install git
@@ -93,6 +96,34 @@ Execute commands below for scripted installation:
 
     # on ARM64 platform instead run
     # sudo sh ./json-scada-install-aarch64.sh 
+
+    # to compile and install Inkscape+SAGE, run the following command: 
+    sudo sh ./inkscape-plus-sage.sh
+
+## Ubuntu 24.04, scripted installation
+
+Execute commands below for scripted installation:
+
+    # firstly create a user named "jsonscada" that can do "sudo". Login as "jsonscada".
+
+    sudo adduser jsonscada
+    sudo usermod -aG wheel jsonscada
+    sudo usermod -aG docker jsonscada
+    sudo passwd jsonscada
+    sudo su - jsonscada
+
+    # if necessary, add the below line to the end of the file /etc/sudoers.
+    jsonscada ALL=(ALL) ALL   # Change the user name before you issue the commands
+
+    # next, clone the json-scada repo
+
+    sudo dnf -y install git
+    cd /home/jsonscada
+    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+    cd json-scada/platform-ubuntu-2404
+
+    # on x86-64 or ARM64 platform run
+    sudo sh ./json-scada-install.sh
 
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh
