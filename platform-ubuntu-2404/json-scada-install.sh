@@ -47,6 +47,7 @@ wget --inet4-only https://go.dev/dl/go1.23.4.linux-$ARCHITECTURE.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-$ARCHITECTURE.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
+source ~/.bashrc
 
 # MongoDB configuration
 sudo sh -c 'echo "vm.max_map_count=102400" >> /etc/sysctl.conf'
@@ -83,7 +84,7 @@ sudo apt -y install gnupg postgresql-common apt-transport-https lsb-release
 sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 sudo apt -y install postgresql-server-dev-17
 echo "deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb_release -c -s) main" | sudo tee /etc/apt/sources.list.d/timescaledb.list
-wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/timescaledb.gpg
+wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/timescaledb.gpg --yes
 sudo apt update
 sudo apt -y install timescaledb-2-postgresql-17 postgresql-client-17
 sudo timescaledb-tune -yes
