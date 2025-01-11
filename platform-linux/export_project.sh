@@ -8,10 +8,10 @@ MONGOBIN=/usr/bin
 JAVAPATH=/usr/bin
 TARPATH=/usr/bin
 SVGPATH=$JSPATH/svg
-mongoConnectionString=mongodb://127.0.0.1/json_scada?tls=false&directConnection=true
-database=json_scada
-
 # read JSON config file
+mongoConnectionString=$(jq -r '.mongoConnectionString' $JSPATH/conf/json-scada.json)
+database=$(jq -r '.mongoDatabaseName' $JSPATH/conf/json-scada.json)
+
 
 mkdir -c $TMPPATH
 rm -rf $TMPPATH/*.*
@@ -28,9 +28,11 @@ mongoexport.exe --uri "$mongoConnectionString" --db $database --collection roles
 # mongoexport.exe --uri "$mongoConnectionString" --db $database --collection soeData --out $TMPPATH\soeData.json
 # mongoexport.exe --uri "$mongoConnectionString" --db $database --collection userActions --out $TMPPATH\userActions.json
 
-copy %SVGPATH%\*.svg %TMPPATH%\
-copy %SVGPATH%\screen_list.js %TMPPATH%\
+copy %SVGPATH%/*.svg %TMPPATH%/
+copy %SVGPATH%/screen_list.js %TMPPATH%/
 # optional
-# copy %JSPATH%\conf\*.* %TMPPATH%\
+# copy %JSPATH%\conf/*.* %TMPPATH%/
 
 # zip files
+cd %TMPPATH%
+tar -a -c -f  %TMPPATH%/jsproject.zip -C %TMPPATH% *.json *.js *.svg
