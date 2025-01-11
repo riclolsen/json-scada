@@ -136,6 +136,8 @@ sudo systemctl daemon-reload
 sudo systemctl start postgresql
 sudo systemctl start mongod
 
+sleep 5
+
 # Initialize databases
 sudo -u postgres psql -c "CREATE DATABASE template1;"
 sudo -u postgres psql -f ../sql/create_tables.sql template1
