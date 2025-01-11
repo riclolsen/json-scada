@@ -34,7 +34,7 @@ sudo apt -y install ninja-build libjpeg-dev libxslt-dev libgtkmm-3.0-dev libboos
     libpoppler-dev libpoppler-glib-dev libgtest-dev libharfbuzz-dev libwpg-dev librevenge-dev libvisio-dev \
     libcdr-dev libreadline-dev libmagick++-dev libgraphicsmagick++1-dev libpango1.0-dev libgsl-dev \
     libsoup2.4-dev liblcms2-dev libgc-dev libdouble-conversion-dev potrace python3-scour
-sudo apt -y install libgspell-1-dev libgspell-1-2 libpotracce-dev libpoppler-private-dev
+sudo apt -y install libgspell-1-dev libgspell-1-2 libpotrace-dev libpoppler-private-dev
 
 # Install Go
 wget --inet4-only https://go.dev/dl/go1.23.4.linux-$(arch).tar.gz
