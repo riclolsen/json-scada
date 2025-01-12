@@ -1951,8 +1951,10 @@ tbl_prepare: function()
              {
              WebSAGE.g_tbl.rows[line].cells[i].width = WebSAGE.g_tbl.larguraCol[i];  
              WebSAGE.g_tbl.rows[line].cells[i].style.minWidth = WebSAGE.g_tbl.larguraCol[i] + "px";  
-             WebSAGE.g_tbl.rows[line].cells[i].style.textOverflow = "ellipsis";  
              }
+           WebSAGE.g_tbl.rows[line].cells[i].style.textOverflow = "ellipsis";  
+           WebSAGE.g_tbl.rows[line].cells[i].style.overflow = "hidden";  
+           WebSAGE.g_tbl.rows[line].cells[i].style.whiteSpace = "nowrap";  
            } 
         WebSAGE.g_tbl.rows[line].userData = vals;
         };
@@ -2105,7 +2107,7 @@ showInfo: function()
     var wid=WebSAGE.g_tbl.getColWidth(WebSAGE.g_COL_NPONTO);
     if ( wid == 0 )
       {
-      WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_NPONTO, 80 * WebSAGE.g_fontsize / 16 );
+      WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_NPONTO, 100 * WebSAGE.g_fontsize / 16 );
       WebSAGE.g_tbl.setColWidth( WebSAGE.g_COL_ID, 280 * WebSAGE.g_fontsize / 16 );    
       WebSAGE.g_tbl.witdh = '1200px';
       WebSAGE.g_tblhead.witdh = '1200px';
