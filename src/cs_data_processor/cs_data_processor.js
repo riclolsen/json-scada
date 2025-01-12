@@ -1,7 +1,7 @@
 /*
  * A process that watches for raw data updates from protocols using a MongoDB change stream.
  * Converts raw protocol values into analogs/statuses then updates realtime, soe and historical data.
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -494,9 +494,9 @@ const pipeline = [
                       "'" +
                       new Date().toISOString() +
                       "'," +
-                      "'" +
+                      "to_json('" +
                       JSON.stringify(change.fullDocument) +
-                      "'"
+                      "'::text)"
                   )
                 }
 
@@ -1078,14 +1078,14 @@ const pipeline = [
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTag.toISOString() +
                         "'," +
                         value +
-                        ',' +
+                        ',to_json(' +
                         "'{" +
                         '"v": ' +
                         JSON.stringify(valueJson).replaceAll("'", "''") +
                         ',' +
                         '"s": "' +
                         valueString.replaceAll("'", "''") +
-                        '"}\',' +
+                        '"}\'::text),' +
                         (update.timeTagAtSource !== null
                           ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +

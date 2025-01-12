@@ -1,5 +1,5 @@
 /*
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'CS_DATA_PROCESSOR',
   ENV_PREFIX: 'JS_CSDATAPROC_',
   MSG: '{json:scada} - Change Stream Data Processor',
-  VERSION: '0.1.6',
+  VERSION: '0.1.7',
 }
