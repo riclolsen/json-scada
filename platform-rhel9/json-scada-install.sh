@@ -47,10 +47,11 @@ sudo dnf -y install ./potrace-devel-1.16-7.el9.$(arch).rpm
 
 sudo update-crypto-policies --set LEGACY
 
-wget --inet4-only https://go.dev/dl/go1.22.3.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
+wget --inet4-only https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
+source ~/.bashrc
 
 # for mongodb 
 # https://www.mongodb.com/docs/manual/tutorial/transparent-huge-pages/
@@ -148,9 +149,9 @@ sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.52.5/metabase.jar -O ../metabase/metabase.jar'
 
-sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_20.x -o nodesource_setup.sh'
+sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_22.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 

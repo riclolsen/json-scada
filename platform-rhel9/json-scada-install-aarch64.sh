@@ -39,10 +39,11 @@ sudo dnf remove -y python3-circuitbreaker
 
 sudo update-crypto-policies --set LEGACY
 
-wget --inet4-only https://go.dev/dl/go1.22.3.linux-arm64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.3.linux-arm64.tar.gz
+wget --inet4-only https://go.dev/dl/go1.23.4.linux-arm64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-arm64.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
+source ~/.bashrc
 
 # for mongodb 
 # https://www.mongodb.com/docs/manual/tutorial/transparent-huge-pages/
@@ -105,18 +106,18 @@ EOL
 sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
 sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew  /etc/yum.repos.d/pgdg-redhat-all.repo
-sudo dnf -y --enablerepo=pgdg16 update
+sudo dnf -y --enablerepo=pgdg17 update
 curl -s https://packagecloud.io/install/repositories/timescale/timescaledb/script.rpm.sh | sudo bash
-sudo dnf -y install timescaledb_16 postgresql16 postgresql16-contrib
-sudo dnf -y install timescaledb-toolkit-postgresql-16
-# sudo timescaledb-tune -yes --pg-config=/usr/pgsql-16/bin/pg_config
+sudo dnf -y install timescaledb_17 postgresql17 postgresql17-contrib
+sudo dnf -y install timescaledb-toolkit-postgresql-17
+# sudo timescaledb-tune -yes --pg-config=/usr/pgsql-17/bin/pg_config
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/16/data/
-sudo chown postgres:postgres /var/lib/pgsql/16/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/16/data/
-sudo chown postgres:postgres /var/lib/pgsql/16/data/postgresql.conf
-sudo systemctl enable postgresql-16
-sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
+sudo cp pg_hba.conf /var/lib/pgsql/17/data/
+sudo chown postgres:postgres /var/lib/pgsql/17/data/pg_hba.conf
+sudo cp postgresql.conf /var/lib/pgsql/17/data/
+sudo chown postgres:postgres /var/lib/pgsql/17/data/postgresql.conf
+sudo systemctl enable postgresql-17
+sudo /usr/pgsql-17/bin/postgresql-17-setup initdb
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -143,14 +144,14 @@ sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.49.10/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.52.5/metabase.jar -O ../metabase/metabase.jar'
 
-sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_20.x -o nodesource_setup.sh'
+sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_22.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-16
+sudo systemctl start postgresql-17
 sudo systemctl start mongod
 
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1

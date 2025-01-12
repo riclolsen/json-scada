@@ -8,8 +8,9 @@ MONGOBIN=/usr/bin
 JAVAPATH=/usr/bin
 TARPATH=/usr/bin
 SVGPATH=$JSPATH/svg
-mongoConnectionString=mongodb://127.0.0.1/json_scada?tls=false&directConnection=true
-database=json_scada
+# read JSON config file
+mongoConnectionString=$(jq -r '.mongoConnectionString' $JSPATH/conf/json-scada.json)
+database=$(jq -r '.mongoDatabaseName' $JSPATH/conf/json-scada.json)
 FLAGS=--mode=upsert
 
 # read JSON config file
