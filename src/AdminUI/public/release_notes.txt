@@ -135,11 +135,14 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
-Notes for version 0.45:
+Notes for version 0.46:
 
-* OPC-UA Client: improved performance, auto tagging and data types handling.
-* Tabular Viewer: selectable dark/light theme.
-* Viewers: better table alignment, improved feedback for commands.
+* NPM packages updated.
+* PostgreSQL ingestion: fixed errors when inserting/updating JSON data.
+* Events Viewer: limit overflow of columns with ellipsis.
+* Update Metabase to version 0.52.5.
+* Chromium updated to version 131.0.6778.265.
+* Grafana updated to 11.4.0.
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
@@ -147,7 +150,32 @@ To quickly run the system after installed, open the JSON-SCADA desktop folder an
 * On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
 * Default login credentials: username=admin password=jsonscada.
 * Metabase credentials: username=json@scada.com password=jsonscada123.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 20GB of free space in the "C:" drive.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
+Notes for version 0.45:
+
+* OPC-UA Client: improved performance, auto tagging and data types handling.
+* Tabular Viewer: selectable dark/light theme.
+* Viewers: better table alignment, improved feedback for commands.
 * Updated Excel worksheet config and service. 
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+* On the JSON-SCADA desktop folder: execute "_Start_Services".
+* On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
 
 Requirements and recommendations:
 
