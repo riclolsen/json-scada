@@ -678,7 +678,7 @@ if (
 })()
 
 // test mongoDB connectivity
-let CheckMongoConnectionTimeout = 1000
+let CheckMongoConnectionTimeout = 10000
 let HintMongoIsConnected = true
 async function checkConnectedMongo(client) {
   if (!client) {
