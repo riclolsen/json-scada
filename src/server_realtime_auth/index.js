@@ -58,6 +58,8 @@ const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const { canSendCommands } = require('./app/middlewares/authJwt.js')
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 // Argument NOAUTH disables user authentication
 var args = process.argv.slice(2)
 if (args.length > 0) if (args[0] === 'NOAUTH') AUTHENTICATION = false
@@ -2374,7 +2376,7 @@ async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-  const CheckMongoConnectionTimeout = 1000
+  const CheckMongoConnectionTimeout = 10000
   let tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false

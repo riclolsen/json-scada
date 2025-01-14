@@ -24,6 +24,8 @@ const Redundancy = require('./redundancy')
 const { MongoClient } = require('mongodb')
 const CustomProcessor = require('./customized_module').CustomProcessor
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 const args = process.argv.slice(2)
 let inst = null
 if (args.length > 0) inst = parseInt(args[0])
@@ -80,7 +82,7 @@ async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-  const CheckMongoConnectionTimeout = 2000
+  const CheckMongoConnectionTimeout = 10000
   let tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     MongoStatus.HintMongoIsConnected = false

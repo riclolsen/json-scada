@@ -41,6 +41,8 @@ const serverUdpSocket = dgram.createSocket({ type: 'udp4' })
 let bindCount = 0
 const grpSep = '~'
 
+process.on('uncaughtException', err => console.log('Uncaught Exception:' + JSON.stringify(err)))
+
 let ListCreatedTags = []
 let ValuesQueue = new Queue() // queue of values to update
 
@@ -678,7 +680,7 @@ if (
 })()
 
 // test mongoDB connectivity
-let CheckMongoConnectionTimeout = 1000
+let CheckMongoConnectionTimeout = 10000
 let HintMongoIsConnected = true
 async function checkConnectedMongo(client) {
   if (!client) {

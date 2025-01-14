@@ -36,6 +36,8 @@ const AutoTag = require('./auto-tag')
 const { castSparkplugValue: castSparkplugValue } = require('./cast')
 const autoTag = require('./auto-tag')
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 const SparkplugNS = 'spBv1.0'
 const DevicesList = [] // contains either EoN nodes or devices
 const ValuesQueue = new Queue() // queue of values to update acquisition
@@ -2421,7 +2423,7 @@ async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-  const CheckMongoConnectionTimeout = 1000
+  const CheckMongoConnectionTimeout = 10000
   let tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     MongoStatus.HintMongoIsConnected = false

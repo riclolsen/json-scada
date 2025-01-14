@@ -24,6 +24,8 @@ const AppDefs = require('./app-defs')
 const LoadConfig = require('./load-config')
 const { MongoClient, Double } = require('mongodb')
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 const pipeline = [
   {
     $project: { documentKey: false },
@@ -537,7 +539,7 @@ async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-  const CheckMongoConnectionTimeout = 1000
+  const CheckMongoConnectionTimeout = 10000
   const tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false

@@ -32,6 +32,8 @@ const AppDefs = require('./app-defs')
 const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 let HintMongoIsConnected = true
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
   Log.levelCurrent = jsConfig.LogLevel
@@ -779,7 +781,7 @@ async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-  const CheckMongoConnectionTimeout = 1000
+  const CheckMongoConnectionTimeout = 10000
   let tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false

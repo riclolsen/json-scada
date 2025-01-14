@@ -27,6 +27,8 @@ const { MongoClient } = require('mongodb')
 const { setInterval } = require('timers')
 const sys = require('child_process')
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 const WavFilesWin = [
   'c:\\windows\\media\\Windows Default.wav',
   'c:\\windows\\media\\Windows Background.wav',
@@ -167,7 +169,7 @@ async function checkConnectedMongo(client) {
   if (!client) {
     return false
   }
-  const CheckMongoConnectionTimeout = 1000
+  const CheckMongoConnectionTimeout = 10000
   let tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false
