@@ -46,6 +46,8 @@ const app = express()
 app.use(express.json())
 let soeQueue = new Queue() // queue of SOE events
 
+process.on('uncaughtException', err => console.log('Uncaught Exception:' + JSON.stringify(err)))
+
 app.listen(HTTP_PORT, IP_BIND, () => {
   console.log('listening on ' + IP_BIND + ':' + HTTP_PORT)
 })

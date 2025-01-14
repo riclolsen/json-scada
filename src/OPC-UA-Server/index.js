@@ -32,6 +32,8 @@ const AppDefs = require('./app-defs')
 const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 let HintMongoIsConnected = true
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
   Log.levelCurrent = jsConfig.LogLevel

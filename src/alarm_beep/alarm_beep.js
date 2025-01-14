@@ -27,6 +27,8 @@ const { MongoClient } = require('mongodb')
 const { setInterval } = require('timers')
 const sys = require('child_process')
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 const WavFilesWin = [
   'c:\\windows\\media\\Windows Default.wav',
   'c:\\windows\\media\\Windows Background.wav',

@@ -24,6 +24,8 @@ const AppDefs = require('./app-defs')
 const LoadConfig = require('./load-config')
 const { MongoClient, Double } = require('mongodb')
 
+process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+
 const pipeline = [
   {
     $project: { documentKey: false },
