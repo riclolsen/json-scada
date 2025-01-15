@@ -59,9 +59,9 @@ var TabularViewer_Font = 'Segoe UI,Source Sans Pro,calibri,consolas,arial,helvet
 
 var TabularViewer_GridColor = '#BBBBBB'; // table grid color
 
-var TabularViewer_AlmTxtColor = 'rgb(37, 132, 211)'; // alarmed color
+var TabularViewer_AlmTxtColor = 'rgb(164, 128, 206)'; // alarmed color
 var TabularViewer_FailTxtColor = '#AAAAAA'; // failed value color
-var TabularViewer_AckTxtColor = 'rgb(17, 91, 151)'; // acknowledged alarm color
+var TabularViewer_AckTxtColor = 'rgb(40, 130, 136)'; // acknowledged alarm color
 
 var TabularViewer_RefreshTime = 3; // refresh time (seconds)
 
