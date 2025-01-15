@@ -1094,6 +1094,21 @@ const pipeline = [
                       b2 = '0', // reserved
                       b1 = '0', // reserved
                       b0 = '0' // reserved
+                    let vj =
+                      valueJson === ''
+                        ? '""'
+                        : valueJson.trim().replaceAll("'", "''")
+                    let trimS = ''
+                    if (vj.length > 0) {
+                      if (vj.charAt(0) === '{' || vj.charAt(0) === '[')
+                        trimS = '"'
+                      else if (isNaN(vj) && vj.charAt(0) !== '"')
+                        vj = '"' + vj + '"'
+                    }
+                    const vs =
+                      valueString === ''
+                        ? ''
+                        : valueString.replaceAll("'", "''")
                     sqlHistQueue.enqueue({
                       sql:
                         "'" +
@@ -1103,7 +1118,7 @@ const pipeline = [
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTag.toISOString() +
                         "'," +
                         value +
-                        `,('{"v":${JSON.stringify(valueJson).replaceAll("'", "''")}, "s":${valueString.replaceAll("'", "''")}}'::text)::jsonb,` +
+                        `,('{"v":'||trim('${trimS}' FROM to_json('${vj}'::text)::jsonb #>> '{}')||',"s":'||to_json('${vs}'::text)||'}'::text)::jsonb,` +
                         (update.timeTagAtSource !== null
                           ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
