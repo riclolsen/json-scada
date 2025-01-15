@@ -1103,14 +1103,7 @@ const pipeline = [
                         change.updateDescription.updatedFields.sourceDataUpdate.timeTag.toISOString() +
                         "'," +
                         value +
-                        ',to_json(' +
-                        "'{" +
-                        '"v": ' +
-                        JSON.stringify(valueJson).replaceAll("'", "''") +
-                        ',' +
-                        '"s": "' +
-                        valueString.replaceAll("'", "''") +
-                        '"}\'::text),' +
+                        `,('{"v":${JSON.stringify(valueJson).replaceAll("'", "''")}, "s":${valueString.replaceAll("'", "''")}}'::text)::jsonb,` +
                         (update.timeTagAtSource !== null
                           ? "'" +
                             change.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource.toISOString() +
