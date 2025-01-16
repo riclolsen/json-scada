@@ -48,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.46-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.47-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -90,7 +90,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.46-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.47-alpha)
 - [RedHat/Rocky Linux Installer Script](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Ubuntu Linux Installer Script](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#ubuntu-2404-scripted-installation)
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)

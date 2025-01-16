@@ -20,8 +20,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.46"
-!define VERSION_ "0.46.0.0"
+!define VERSION "v.0.47"
+!define VERSION_ "0.47.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -509,22 +509,23 @@ SetRegView 64
   CreateDirectory "$DESKTOP\JSON-SCADA"
 
 ; App shortcuts 
-  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"               "$INSTDIR\platform-windows\start_services.bat"  
-  CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                "$INSTDIR\platform-windows\stop_services.bat"  
-  CreateShortCut "$DESKTOP\JSON-SCADA\Windows Services.lnk"              "services.msc"  
-  CreateShortCut "$DESKTOP\JSON-SCADA\_JSON SCADA WEB.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Display.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tela.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Events.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\src\htdocs\images\chrono.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Historical.lnk"           "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\src\htdocs\images\calendar.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Tabular.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tabular.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Alarms.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\firstaid.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Grafana.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\src\htdocs\images\grafana.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Metabase.lnk"             "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVMETABA $NAVPOSOPT" "$INSTDIR\src\htdocs\images\metabase.ico" 
-  CreateShortCut "$DESKTOP\JSON-SCADA\Excel Config Spreadsheet.lnk"      "$INSTDIR\conf\json-scada-config.xlsm"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"  "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"    "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
-  CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                     "$INSTDIR\bt-uninst.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Start_Services.lnk"                "$INSTDIR\platform-windows\start_services.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                 "$INSTDIR\platform-windows\stop_services.bat"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\Windows Services.lnk"               "services.msc"  
+  CreateShortCut "$DESKTOP\JSON-SCADA\_JSON SCADA WEB.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Display.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tela.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Events.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\src\htdocs\images\chrono.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Historical.lnk"            "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISHEV $NAVPOSOPT" "$INSTDIR\src\htdocs\images\calendar.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Tabular.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTAB $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tabular.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Alarms.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISANO $NAVPOSOPT" "$INSTDIR\src\htdocs\images\firstaid.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Grafana.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVGRAFAN $NAVPOSOPT" "$INSTDIR\src\htdocs\images\grafana.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Metabase.lnk"              "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVMETABA $NAVPOSOPT" "$INSTDIR\src\htdocs\images\metabase.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\Excel Config Spreadsheet.lnk"       "$INSTDIR\conf\json-scada-config.xlsm"
+  CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"   "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\pgAdmin4 (Postgres GUI Client).lnk" "$INSTDIR\platform-windows\postgresql-runtime\pgAdmin 4\runtime\pgAdmin4.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"     "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                      "$INSTDIR\bt-uninst.exe"
 
 
   ; clear chromium cache
