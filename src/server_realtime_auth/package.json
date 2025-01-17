@@ -18,7 +18,7 @@
     "http-proxy-middleware": "^3.0.2",
     "jsonwebtoken": "^9.0.0",
     "mongodb": "^6.9.0",
-    "mongoose": "^8.6.2",
+    "mongoose": "^8.9.5",
     "pg": "^8.11.5",
     "queue-fifo": "^0.2.6"
   },
