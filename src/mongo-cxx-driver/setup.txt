@@ -1,0 +1,21 @@
+REM https://www.mongodb.com/developer/products/mongodb/getting-started-mongodb-cpp/
+REM https://www.mongodb.com/docs/languages/cpp/cpp-driver/current/get-started/download-and-install/
+
+git clone -b releases/stable https://github.com/mongodb/mongo-cxx-driver.git
+
+REM If you have msys64, remove it from the PATH environment variable!
+rem cmake .. -DBOOST_ROOT='C:\boost' -G "Visual Studio 17 2022" -A "x64" -DCMAKE_CXX_STANDARD=17 -DCMAKE_INSTALL_PREFIX=\json-scada\src\mongo-cxx-driver-lib
+cmake .. -A "x64" -DCMAKE_CXX_STANDARD=17 -DCMAKE_INSTALL_PREFIX=\json-scada\src\mongo-cxx-driver-lib -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
+cmake --build . --config RelWithDebInfo
+cmake --build . --target install --config RelWithDebInfo
+
+rem export LD_LIBRARY_PATH=/usr/local/lib64:$LD_LIBRARY_PATH
+
+REM MSYS2
+git clone -b releases/stable https://github.com/mongodb/mongo-cxx-driver.git
+cd mongo-cxx-driver
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX="../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DPython3_ROOT_DIR=/mingw64/lib/python3.12 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
+cmake --build . --config RelWithDebInfo
+cmake --build . --target install --config RelWithDebInfo
+
