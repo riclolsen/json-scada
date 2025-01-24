@@ -36,6 +36,7 @@
 #include <mongocxx/logger.hpp>
 #include <mongocxx/pool.hpp>
 #include <mongocxx/uri.hpp>
+#include <mongocxx/options/change_stream.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -119,6 +120,133 @@ private:
 };
 
 Logger Log;
+
+double getDouble(const bsoncxx::document::view& doc, const std::string& key, double defaultVal = 0)
+{
+    try
+    {
+        auto value = doc[key].get_value();
+        switch (value.type())
+        {
+        case bsoncxx::type::k_null:
+            return defaultVal;
+        case bsoncxx::type::k_int32:
+            return double(value.get_int32().value);
+        case bsoncxx::type::k_int64:
+            return double(value.get_int64().value);
+        case bsoncxx::type::k_double:
+            return value.get_double().value;
+        default:
+            return defaultVal;
+        }
+    }
+    catch (const std::exception&)
+    {
+        Log.Log("Error getting double value for key: " + key);
+    }
+    return defaultVal;
+}
+
+bool getBoolean(const bsoncxx::document::view& doc, const std::string& key, bool defaultVal = false)
+{
+    try
+    {
+        auto value = doc[key].get_value();
+        switch (value.type())
+        {
+        case bsoncxx::type::k_null:
+            return defaultVal;
+        case bsoncxx::type::k_bool:
+            return value.get_bool().value;
+        case bsoncxx::type::k_int32:
+            return bool(value.get_int32().value);
+        case bsoncxx::type::k_int64:
+            return bool(value.get_int64().value);
+        case bsoncxx::type::k_double:
+            return bool(value.get_double().value);
+        default:
+            return defaultVal;
+        }
+    }
+    catch (const std::exception&)
+    {
+        Log.Log("Error getting boolean value for key: " + key);
+    }
+    return defaultVal;
+}
+
+
+std::string getString(const bsoncxx::document::view& doc, const std::string& key, std::string defaultVal = "")
+{
+    try
+    {
+        auto value = doc[key].get_value();
+        switch (value.type())
+        {
+        case bsoncxx::type::k_null:
+            return defaultVal;
+        case bsoncxx::type::k_string:
+            return std::string(value.get_string().value);
+        case bsoncxx::type::k_bool:
+            return value.get_bool().value ? "true" : "false";
+        case bsoncxx::type::k_int32:
+            return std::to_string(value.get_int32().value);
+        case bsoncxx::type::k_int64:
+            return std::to_string(value.get_int64().value);
+        case bsoncxx::type::k_double:
+            return std::to_string(value.get_double().value);
+        default:
+            return defaultVal;
+        }
+    }
+    catch (const std::exception&)
+    {
+        Log.Log("Error getting string value for key: " + key);
+    }
+    return defaultVal;
+}
+
+typedef struct
+{
+    int protocolConnectionNumber;
+    std::string name;
+    std::string ipAddressLocalBind;
+    std::vector<std::string> ipAddresses;
+    std::vector<std::string> topics;
+    int localLinkAddress;
+    int remoteLinkAddress;
+    int timeSyncInterval;
+    int timeSyncMode;
+    double hoursShift;
+    double asyncOpenDelay;
+    bool autoCreateTags;
+    bool enableUnsolicited;
+    int serverQueueSize;
+    std::string connectionMode;
+    int baudRate;
+    std::string parity;
+    std::string stopBits;
+    std::string handshake;
+    bool useSecurity;
+    std::string localCertFilePath;
+    std::string privateKeyFilePath;
+    std::string rootCertFilePath;
+    std::vector<std::string> peerCertFilesPaths;
+    std::vector<std::string> cipherList;
+    bool chainValidation;
+    bool allowOnlySpecificCertificates;
+    bool allowTLSv10;
+    bool allowTLSv11;
+    bool allowTLSv12;
+    bool allowTLSv13;
+
+    DNP3Manager* manager;
+    std::shared_ptr<IChannel> channel;
+    std::shared_ptr<IOutstation> outstation;
+    std::shared_ptr<ICommandHandler> commandHandler;
+} DNP3Connection_t;
+
+std::vector<DNP3Connection_t> dnp3Connections;
 
 class MyCommandHandler : public opendnp3::ICommandHandler
 {
@@ -320,65 +448,177 @@ int __cdecl main(int argc, char* argv[])
         }
     }
     auto protocolDriverConnectionsCollection = db["protocolConnections"];
-    result = protocolDriverConnectionsCollection.find(
+    auto resConn = protocolDriverConnectionsCollection.find(
         make_document(kvp("protocolDriver", "DNP3_SERVER"),
                       kvp("protocolDriverInstanceNumber", ProtocolDriverInstanceNumber), kvp("enabled", true)));
-    if (!result)
+    auto cnt = 0;
+    for (auto&& doc : resConn)
     {
-        Log.Log("No protocol driver connections enabled found!");
+        cnt++;
+        std::cout << bsoncxx::to_json(doc) << std::endl;
+
+        DNP3Connection_t dnp3Connection{(int)getDouble(doc, "protocolConnectionNumber"),
+                                        getString(doc, "name"),
+                                        getString(doc, "ipAddressLocalBind"),
+                                        std::vector<std::string>{}, // ipAddresses
+                                        std::vector<std::string>{}, // topics
+                                        (int)getDouble(doc, "localLinkAddress", 1),
+                                        (int)getDouble(doc, "remoteLinkAddress", 1),
+                                        (int)getDouble(doc, "timeSyncInterval"),
+                                        (int)getDouble(doc, "timeSyncMode"),
+                                        getDouble(doc, "hoursShift"),
+                                        getDouble(doc, "asyncOpenDelay"),
+                                        getBoolean(doc, "autoCreateTags"),
+                                        getBoolean(doc, "enableUnsolicited", true), 
+                                        (int)getDouble(doc, "serverQueueSize", 1000),
+                                        getString(doc, "connectionMode", "TCP Inactive"),
+                                        (int)getDouble(doc, "baudRate", 9600),
+                                        getString(doc, "parity", "None"),
+                                        getString(doc, "stopBits", "One"),
+                                        getString(doc, "handshake", "None"),   
+                                        getBoolean(doc, "useSecurity"),
+                                        getString(doc, "localCertFilePath"),
+                                        getString(doc, "privateKeyFilePath"),
+                                        getString(doc, "rootCertFilePath"),
+                                        std::vector<std::string>{}, // peerCertFilePaths
+                                        std::vector<std::string>{}, // cipherList
+                                        getBoolean(doc, "allowOnlySpecificCertificates"),
+                                        getBoolean(doc, "allowTLSv10"), 
+                                        getBoolean(doc, "allowTLSv11"), 
+                                        getBoolean(doc, "allowTLSv12"),
+                                        getBoolean(doc, "allowTLSv13"),
+                                        nullptr,
+                                        nullptr,
+                                        nullptr,
+                                        nullptr};
+
+        if (doc["ipAddresses"].get_value().type() == bsoncxx::type::k_array)
+        {
+            auto a1 = doc["ipAddresses"].get_array().value;
+            for (const auto& el : a1)
+            {
+                dnp3Connection.ipAddresses.push_back(std::string(el.get_string().value));
+            }
+        }
+        if (doc["topics"].get_value().type() == bsoncxx::type::k_array)
+        {
+            auto a2 = doc["topics"].get_array().value;
+            for (const auto& el : a2)
+            {
+                dnp3Connection.topics.push_back(std::string(el.get_string().value));
+            }
+        }
+        if (doc["peerCertFilesPaths"].get_value().type() == bsoncxx::type::k_array)
+        {
+            auto a3 = doc["peerCertFilesPaths"].get_array().value;
+            for (const auto& el : a3)
+            {
+                dnp3Connection.peerCertFilesPaths.push_back(std::string(el.get_string().value));
+            }
+        }
+        if (doc["cipherList"].get_value().type() == bsoncxx::type::k_array)
+        {
+            auto a4 = doc["cipherList"].get_array().value;
+            for (const auto& el : a4)
+            {
+                dnp3Connection.cipherList.push_back(std::string(el.get_string().value));
+            }
+        }
+        dnp3Connections.push_back(dnp3Connection);
+    }
+    if (cnt == 0)
+    {
+        Log.Log("No protocol connections found for the protocol driver instance");
         return -1;
     }
     // std::cout << bsoncxx::to_json(*result) << std::endl;
 
-    // Specify what log levels to use. NORMAL is warning and above
-    // You can add all the comms logging by uncommenting below.
-    const auto logLevels = levels::NORMAL | levels::ALL_COMMS;
 
-    // This is the main point of interaction with the stack
-    // Allocate a single thread to the pool since this is a single outstation
-    // Log messages to the console
-    DNP3Manager manager(1, ConsoleLogger::Create());
-
-    // Create a TCP server (listener)
-    auto channel = std::shared_ptr<IChannel>(nullptr);
-    try
+    for (auto dnp3Conn : dnp3Connections)
     {
-        channel = manager.AddTCPServer("server", logLevels, ServerAcceptMode::CloseExisting,
-                                       IPEndpoint("0.0.0.0", 20000), PrintingChannelListener::Create());
+        Log.Log(std::string("Protocol Connection Number: ") + std::to_string(dnp3Conn.protocolConnectionNumber));
+
+            // Specify what log levels to use. NORMAL is warning and above
+        // You can add all the comms logging by uncommenting below.
+        const auto logLevels = levels::NORMAL | levels::ALL_COMMS;
+
+        // This is the main point of interaction with the stack
+        // Allocate a single thread to the pool since this is a single outstation
+        // Log messages to the console
+        dnp3Conn.manager = new DNP3Manager(1, ConsoleLogger::Create());
+        // Create a TCP server (listener)
+        dnp3Conn.channel = std::shared_ptr<IChannel>(nullptr);
+        
+        try
+        {
+            std::string ipAddr;
+            int port;
+            std::stringstream ss(dnp3Conn.ipAddressLocalBind);
+            std::getline(ss, ipAddr, ':');
+            std::string portStr;
+            std::getline(ss, portStr);
+            port = std::stoi(portStr);
+            dnp3Conn.channel
+                = dnp3Conn.manager->AddTCPServer(dnp3Conn.name, logLevels, ServerAcceptMode::CloseExisting,
+                                           IPEndpoint(ipAddr, port), PrintingChannelListener::Create());
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return -1;
+        }
+
+        dnp3Conn.commandHandler = std::make_shared<MyCommandHandler>();
+
+        // The main object for a outstation. The defaults are useable,
+        // but understanding the options are important.
+        OutstationStackConfig config(ConfigureDatabase());
+
+        // Specify the maximum size of the event buffers
+        config.outstation.eventBufferConfig = EventBufferConfig::AllTypes(dnp3Conn.serverQueueSize);
+
+        // you can override an default outstation parameters here
+        // in this example, we've enabled the oustation to use unsolicted reporting
+        // if the master enables it
+        config.outstation.params.allowUnsolicited = dnp3Conn.enableUnsolicited;
+
+        // You can override the default link layer settings here
+        // in this example we've changed the default link layer addressing
+        config.link.LocalAddr = dnp3Conn.localLinkAddress;
+        config.link.RemoteAddr = dnp3Conn.remoteLinkAddress;
+        config.link.KeepAliveTimeout = TimeDuration::Max();
+
+        // Create a new outstation with a log level, command handler, and
+        // config info this	returns a thread-safe interface used for
+        // updating the outstation's database.
+        dnp3Conn.outstation = dnp3Conn.channel->AddOutstation(dnp3Conn.name, dnp3Conn.commandHandler, app, config);
+
+        UpdateBuilder builder;
+        string input = "";
+        State state;
+
+        state.value += 1;
+        builder.Update(Analog(state.value), 0);
+
+        AddUpdates(builder, state, input);
+        dnp3Conn.outstation->Apply(builder.Build());
+        
+        // Enable the outstation and start communications
+        dnp3Conn.outstation->Enable();
     }
-    catch (const std::exception& e)
+
+    auto rtDataCollection = db["realtimeData"];
+    mongocxx::options::change_stream options;
+    auto changeStream = rtDataCollection.watch(options);
+
+    std::cout << "Watching for changes on collection: realtimeData..." << std::endl;
+    while (true)
     {
-        std::cerr << e.what() << '\n';
-        return -1;
+        for (const auto& event : changeStream)
+        {
+            std::cout << "Change detected: " << bsoncxx::to_json(event) << std::endl;
+        }
     }
-
-    auto CommandHandler = std::make_shared<MyCommandHandler>();
-
-    // The main object for a outstation. The defaults are useable,
-    // but understanding the options are important.
-    OutstationStackConfig config(ConfigureDatabase());
-
-    // Specify the maximum size of the event buffers
-    config.outstation.eventBufferConfig = EventBufferConfig::AllTypes(100);
-
-    // you can override an default outstation parameters here
-    // in this example, we've enabled the oustation to use unsolicted reporting
-    // if the master enables it
-    config.outstation.params.allowUnsolicited = true;
-
-    // You can override the default link layer settings here
-    // in this example we've changed the default link layer addressing
-    config.link.LocalAddr = 10;
-    config.link.RemoteAddr = 1;
-    config.link.KeepAliveTimeout = TimeDuration::Max();
-
-    // Create a new outstation with a log level, command handler, and
-    // config info this	returns a thread-safe interface used for
-    // updating the outstation's database.
-    auto outstation = channel->AddOutstation("outstation", CommandHandler, app, config);
-
-    // Enable the outstation and start communications
-    outstation->Enable();
 
     // variables used in example loop
     string input;
@@ -397,7 +637,7 @@ int __cdecl main(int argc, char* argv[])
             // update measurement values based on input string
             UpdateBuilder builder;
             AddUpdates(builder, state, input);
-            outstation->Apply(builder.Build());
+            // outstation->Apply(builder.Build());
         }
     }
 
@@ -406,6 +646,7 @@ int __cdecl main(int argc, char* argv[])
 
 void AddUpdates(UpdateBuilder& builder, State& state, const std::string& arguments)
 {
+    /*
     for (const char& c : arguments)
     {
         switch (c)
@@ -442,7 +683,7 @@ void AddUpdates(UpdateBuilder& builder, State& state, const std::string& argumen
             break;
         }
         default:
-            break;
         }
     }
+    */
 }
