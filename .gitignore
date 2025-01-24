@@ -15,9 +15,6 @@ src/plc4x-client/
 src/calculations/calculations
 src/i104m/i104m
 src/i104m/json-scada.json
-src/dnp3/opendnp3-3.0.4/
-src/dnp3/opendnp3/
-src/dnp3/Dnp3Client - Copia/
 src/carbone-reports/point_list.ods
 src/dnp3/Dnp3Client/Properties/
 src/htdocs-admin/translate.bat
