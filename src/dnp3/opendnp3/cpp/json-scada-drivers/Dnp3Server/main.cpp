@@ -313,9 +313,12 @@ static DatabaseConfig ConfigureDatabase()
 {
     DatabaseConfig config(10); // 10 of each type with default settings
 
-    config.analog_input[0].clazz = PointClass::Class2;
-    config.analog_input[0].svariation = StaticAnalogVariation::Group30Var5;
-    config.analog_input[0].evariation = EventAnalogVariation::Group32Var7;
+    for (int i=0; i < config.analog_input.size(); i++)
+    {
+        config.analog_input[i].clazz = PointClass::Class2;
+        config.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
+        config.analog_input[i].evariation = EventAnalogVariation::Group32Var7;
+    }
 
     return config;
 }
@@ -786,7 +789,57 @@ int __cdecl main(int argc, char* argv[])
     {
         for (const auto& event : changeStream)
         {
-            std::cout << "Change detected: " << bsoncxx::to_json(event) << std::endl;
+            // std::cout << "Change detected: " << bsoncxx::to_json(event) << std::endl;
+
+            auto fullDocument = event["fullDocument"].get_document().value;
+            auto protocolDestinations = fullDocument["protocolDestinations"].get_array().value;
+            for (const auto& el : protocolDestinations)
+            {
+                auto protocolDestination = el.get_document().value;
+                auto protocolDestinationConnectionNumber
+                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                auto protocolDestinationCommonAddress
+                    = (int)getDouble(protocolDestination, "protocolDestinationCommonAddress");
+                auto protocolDestinationObjectAddress
+                    = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                auto protocolDestinationASDU = (int)getDouble(protocolDestination, "protocolDestinationASDU");
+                auto protocolDestinationCommandDuration
+                    = (int)getDouble(protocolDestination, "protocolDestinationCommandDuration");
+                auto protocolDestinationCommandUseSBO
+                    = getBoolean(protocolDestination, "protocolDestinationCommandUseSBO");
+                auto protocolDestinationKConv1 = getDouble(protocolDestination, "protocolDestinationKConv1");
+                auto protocolDestinationKConv2 = getDouble(protocolDestination, "protocolDestinationKConv2");
+                auto protocolDestinationGroup = (int)getDouble(protocolDestination, "protocolDestinationGroup");
+                auto protocolDestinationHoursShift = getDouble(protocolDestination, "protocolDestinationHoursShift");
+                for (auto& dnp3Conn : dnp3Connections)
+                {
+                    if (dnp3Conn.protocolConnectionNumber == protocolDestinationConnectionNumber)
+                    {
+                        if (protocolDestinationObjectAddress > 9)
+                            continue;
+
+                        Log.Log("Updating tag: " + getString(fullDocument, "_id") + " " + getString(fullDocument, "tag")
+                                + " Dnp3Address: " + std::to_string(protocolDestinationObjectAddress));
+                        UpdateBuilder builder;
+                            if (protocolDestinationCommonAddress == 1)
+                            {
+                                builder.Update(Binary(
+                                     getBoolean(fullDocument, "value"),
+                                     Flags(static_cast<uint8_t>(BinaryQuality::ONLINE)), DNPTime()
+                                ),
+                                               protocolDestinationObjectAddress, EventMode::Force);
+                            }
+                            else if (protocolDestinationCommonAddress == 30)
+                            {
+                                builder.Update(Analog(getDouble(fullDocument, "value"),
+                                                      Flags(static_cast<uint8_t>(AnalogQuality::ONLINE)), DNPTime()),
+                                               protocolDestinationObjectAddress, EventMode::Force);
+                            }
+                            const auto updates = builder.Build();
+                            dnp3Conn.outstation->Apply(updates);
+                    }
+                }
+            }
         }
     }
 
