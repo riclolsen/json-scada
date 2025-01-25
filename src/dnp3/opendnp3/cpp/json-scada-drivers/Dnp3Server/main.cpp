@@ -34,9 +34,9 @@
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/logger.hpp>
+#include <mongocxx/options/change_stream.hpp>
 #include <mongocxx/pool.hpp>
 #include <mongocxx/uri.hpp>
-#include <mongocxx/options/change_stream.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -87,7 +87,7 @@ public:
         return logLevel;
     }
 
-    void Log(const std::string& message, LogLevel level = LogLevel::Basic)
+    void Log(const std::string& message, const LogLevel level = LogLevel::Basic) const
     {
         if (level > logLevel)
             return;
@@ -121,7 +121,7 @@ private:
 
 Logger Log;
 
-double getDouble(const bsoncxx::document::view& doc, const std::string& key, double defaultVal = 0)
+static double getDouble(const bsoncxx::document::view& doc, const std::string& key, double defaultVal = 0)
 {
     try
     {
@@ -147,7 +147,7 @@ double getDouble(const bsoncxx::document::view& doc, const std::string& key, dou
     return defaultVal;
 }
 
-bool getBoolean(const bsoncxx::document::view& doc, const std::string& key, bool defaultVal = false)
+static bool getBoolean(const bsoncxx::document::view& doc, const std::string& key, bool defaultVal = false)
 {
     try
     {
@@ -175,8 +175,7 @@ bool getBoolean(const bsoncxx::document::view& doc, const std::string& key, bool
     return defaultVal;
 }
 
-
-std::string getString(const bsoncxx::document::view& doc, const std::string& key, std::string defaultVal = "")
+static std::string getString(const bsoncxx::document::view& doc, const std::string& key, std::string defaultVal = "")
 {
     try
     {
@@ -310,7 +309,7 @@ public:
     }
 };
 
-DatabaseConfig ConfigureDatabase()
+static DatabaseConfig ConfigureDatabase()
 {
     DatabaseConfig config(10); // 10 of each type with default settings
 
@@ -469,13 +468,13 @@ int __cdecl main(int argc, char* argv[])
                                         getDouble(doc, "hoursShift"),
                                         getDouble(doc, "asyncOpenDelay"),
                                         getBoolean(doc, "autoCreateTags"),
-                                        getBoolean(doc, "enableUnsolicited", true), 
+                                        getBoolean(doc, "enableUnsolicited", true),
                                         (int)getDouble(doc, "serverQueueSize", 1000),
                                         getString(doc, "connectionMode", "TCP Inactive"),
                                         (int)getDouble(doc, "baudRate", 9600),
                                         getString(doc, "parity", "None"),
                                         getString(doc, "stopBits", "One"),
-                                        getString(doc, "handshake", "None"),   
+                                        getString(doc, "handshake", "None"),
                                         getBoolean(doc, "useSecurity"),
                                         getString(doc, "localCertFilePath"),
                                         getString(doc, "privateKeyFilePath"),
@@ -483,8 +482,8 @@ int __cdecl main(int argc, char* argv[])
                                         std::vector<std::string>{}, // peerCertFilePaths
                                         std::vector<std::string>{}, // cipherList
                                         getBoolean(doc, "allowOnlySpecificCertificates"),
-                                        getBoolean(doc, "allowTLSv10"), 
-                                        getBoolean(doc, "allowTLSv11"), 
+                                        getBoolean(doc, "allowTLSv10"),
+                                        getBoolean(doc, "allowTLSv11"),
                                         getBoolean(doc, "allowTLSv12"),
                                         getBoolean(doc, "allowTLSv13"),
                                         nullptr,
@@ -533,12 +532,96 @@ int __cdecl main(int argc, char* argv[])
     }
     // std::cout << bsoncxx::to_json(*result) << std::endl;
 
-
-    for (auto dnp3Conn : dnp3Connections)
+    for (auto& dnp3Conn : dnp3Connections)
     {
         Log.Log(std::string("Protocol Connection Number: ") + std::to_string(dnp3Conn.protocolConnectionNumber));
 
-            // Specify what log levels to use. NORMAL is warning and above
+        if (dnp3Conn.autoCreateTags)
+        {
+            Log.Log("Auto Create Tags is enabled");
+            // Create destination for tags on the DNP3 connection
+
+            // look for tags without a destination linked to this connection
+            mongocxx::options::find opts;
+            opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
+            auto resTagsDig = db["realtimeData"].find(
+                make_document(kvp("type", "digital"),
+                              kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                  make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
+                opts);
+
+            auto cnt = 0;
+            std ::vector<bsoncxx::document::value> documentsDig;
+            for (auto&& doc : resTagsDig)
+            {
+                cnt++;
+                documentsDig.push_back(bsoncxx::document::value(doc));
+                // std::cout << bsoncxx::to_json(doc) << std::endl;
+            }
+
+            if (cnt > 0)
+            {
+                auto lastG1Addr = -1;
+                // find the latest used object address
+                opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+                auto resTagsG1 = db["realtimeData"].find(
+                    make_document(kvp("type", "digital"), kvp("origin", "supervised"),
+                                  kvp("protocolDestinationCommonAddress", 1),
+                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                      make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
+                    opts);
+                auto cntG1 = 0;
+                for (auto&& docG1 : resTagsG1)
+                {
+                    cntG1++;
+                    std::cout << bsoncxx::to_json(docG1) << std::endl;
+
+                    // look in the protocolDestinations array for entry with the connection number
+                    auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
+                    for (const auto& el : protocolDestinations)
+                    {
+                        auto protocolDestination = el.get_document().value;
+                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
+                            == dnp3Conn.protocolConnectionNumber)
+                        {
+                            if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG1Addr)
+                                lastG1Addr = getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                        }
+                    }
+                }
+
+                for (auto& doc : documentsDig)
+                {
+                    // std::cout << bsoncxx::to_json(doc) << std::endl;
+                    ++lastG1Addr;
+                    Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: "
+                            + std::to_string(lastG1Addr));
+                    db["realtimeData"].update_one(
+                        make_document(kvp("_id", getDouble(doc, "_id"))),
+                        make_document(kvp(
+                            "$push",
+                            make_document(kvp(
+                                "protocolDestinations",
+                                make_document(
+                                    kvp("protocolDestinationConnectionNumber", (double)dnp3Conn.protocolConnectionNumber),
+                                    kvp("protocolDestinationCommonAddress", 1.0),
+                                    kvp("protocolDestinationObjectAddress", (double)lastG1Addr),
+                                    kvp("protocolDestinationASDU", 0.0), 
+                                    kvp("protocolDestinationCommandDuration", 0.0),
+                                    kvp("protocolDestinationCommandUseSBO", false),
+                                    kvp("protocolDestinationCommandDuration", 0.0),
+                                    kvp("protocolDestinationKConv1", 1.0), 
+                                    kvp("protocolDestinationKConv2", 0.0),
+                                    kvp("protocolDestinationGroup", 0.0),
+                                    kvp("protocolDestinationHoursShift", 0.0)))))));
+                }
+            }
+
+            // bsoncxx::builder::stream::document{} << "protocolDestinations" << dnp3Conn.protocolConnectionNumber <<
+            // "destination" << bsoncxx::types::b_null{} << bsoncxx::builder::stream::finalize);
+        }
+
+        // Specify what log levels to use. NORMAL is warning and above
         // You can add all the comms logging by uncommenting below.
         const auto logLevels = levels::NORMAL | levels::ALL_COMMS;
 
@@ -548,7 +631,7 @@ int __cdecl main(int argc, char* argv[])
         dnp3Conn.manager = new DNP3Manager(1, ConsoleLogger::Create());
         // Create a TCP server (listener)
         dnp3Conn.channel = std::shared_ptr<IChannel>(nullptr);
-        
+
         try
         {
             std::string ipAddr;
@@ -560,7 +643,7 @@ int __cdecl main(int argc, char* argv[])
             port = std::stoi(portStr);
             dnp3Conn.channel
                 = dnp3Conn.manager->AddTCPServer(dnp3Conn.name, logLevels, ServerAcceptMode::CloseExisting,
-                                           IPEndpoint(ipAddr, port), PrintingChannelListener::Create());
+                                                 IPEndpoint(ipAddr, port), PrintingChannelListener::Create());
         }
         catch (const std::exception& e)
         {
@@ -602,7 +685,7 @@ int __cdecl main(int argc, char* argv[])
 
         AddUpdates(builder, state, input);
         dnp3Conn.outstation->Apply(builder.Build());
-        
+
         // Enable the outstation and start communications
         dnp3Conn.outstation->Enable();
     }
@@ -612,7 +695,7 @@ int __cdecl main(int argc, char* argv[])
     auto changeStream = rtDataCollection.watch(options);
 
     std::cout << "Watching for changes on collection: realtimeData..." << std::endl;
-    while (true)
+    while (false)
     {
         for (const auto& event : changeStream)
         {
