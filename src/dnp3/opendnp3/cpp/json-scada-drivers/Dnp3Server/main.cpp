@@ -393,9 +393,10 @@ int __cdecl main(int argc, char* argv[])
     json jsonCfg;
     configFile >> jsonCfg;
 
-    string uristrMongo = jsonCfg["mongoConnectionString"];
-    string dbstrMongo = jsonCfg["mongoDatabaseName"];
-    string nodeName = jsonCfg["nodeName"];
+    std::string uristrMongo = jsonCfg["mongoConnectionString"];
+    std::string dbstrMongo = jsonCfg["mongoDatabaseName"];
+    std::string nodeName = jsonCfg["nodeName"];
+    std::string connectionsListStr = "";
 
     if (uristrMongo.empty() || dbstrMongo.empty())
     {
@@ -455,6 +456,7 @@ int __cdecl main(int argc, char* argv[])
     {
         cnt++;
         std::cout << bsoncxx::to_json(doc) << std::endl;
+        connectionsListStr += std::to_string((int)getDouble(doc, "protocolConnectionNumber")) + ",";
 
         DNP3Connection_t dnp3Connection{(int)getDouble(doc, "protocolConnectionNumber"),
                                         getString(doc, "name"),
@@ -538,87 +540,148 @@ int __cdecl main(int argc, char* argv[])
 
         if (dnp3Conn.autoCreateTags)
         {
+            mongocxx::options::find opts;
             Log.Log("Auto Create Tags is enabled");
             // Create destination for tags on the DNP3 connection
 
+            // DIGITAL TAGS, will distribute as Group 1 VAR 0
+            auto lastG1Addr = -1;
+
+            // find the latest used object address
+
+            // find tags with a destination linked to this connection
+            opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+            auto resTagsG1
+                = db["realtimeData"].find(make_document(kvp("type", "digital"), kvp("origin", "supervised"),
+                                                        kvp("protocolDestinations.protocolDestinationCommonAddress", 1),
+                                                        kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                                            dnp3Conn.protocolConnectionNumber)),
+                                          opts);
+            auto cntG1 = 0;
+            for (auto&& docG1 : resTagsG1)
+            {
+                cntG1++;
+                // std::cout << bsoncxx::to_json(docG1) << std::endl;
+
+                // look in the protocolDestinations array for entry with the connection number
+                auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
+                for (const auto& el : protocolDestinations)
+                {
+                    auto protocolDestination = el.get_document().value;
+                    if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
+                        == dnp3Conn.protocolConnectionNumber)
+                    {
+                        if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG1Addr)
+                            lastG1Addr = getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                    }
+                }
+            }
+
             // look for tags without a destination linked to this connection
-            mongocxx::options::find opts;
             opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
             auto resTagsDig = db["realtimeData"].find(
-                make_document(kvp("type", "digital"),
+                make_document(kvp("type", "digital"), kvp("origin", "supervised"),
                               kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                   make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
                 opts);
 
-            auto cnt = 0;
-            std ::vector<bsoncxx::document::value> documentsDig;
             for (auto&& doc : resTagsDig)
             {
-                cnt++;
-                documentsDig.push_back(bsoncxx::document::value(doc));
                 // std::cout << bsoncxx::to_json(doc) << std::endl;
+                ++lastG1Addr;
+                if (lastG1Addr > 65535)
+                {
+                    Log.Log("Object address for digitals exceeds 65535");
+                    break;
+                }
+                Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
+                        + " Dnp3Address: " + std::to_string(lastG1Addr));
+                db["realtimeData"].update_one(
+                    make_document(kvp("_id", getDouble(doc, "_id"))),
+                    make_document(kvp(
+                        "$push",
+                        make_document(kvp(
+                            "protocolDestinations",
+                            make_document(
+                                kvp("protocolDestinationConnectionNumber", (double)dnp3Conn.protocolConnectionNumber),
+                                kvp("protocolDestinationCommonAddress", 1.0),
+                                kvp("protocolDestinationObjectAddress", (double)lastG1Addr),
+                                kvp("protocolDestinationASDU", 0.0), kvp("protocolDestinationCommandDuration", 0.0),
+                                kvp("protocolDestinationCommandUseSBO", false),
+                                kvp("protocolDestinationCommandDuration", 0.0), kvp("protocolDestinationKConv1", 1.0),
+                                kvp("protocolDestinationKConv2", 0.0), kvp("protocolDestinationGroup", 0.0),
+                                kvp("protocolDestinationHoursShift", 0.0)))))));
             }
 
-            if (cnt > 0)
-            {
-                auto lastG1Addr = -1;
-                // find the latest used object address
-                opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
-                auto resTagsG1 = db["realtimeData"].find(
-                    make_document(kvp("type", "digital"), kvp("origin", "supervised"),
-                                  kvp("protocolDestinationCommonAddress", 1),
-                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
-                                      make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
-                    opts);
-                auto cntG1 = 0;
-                for (auto&& docG1 : resTagsG1)
-                {
-                    cntG1++;
-                    std::cout << bsoncxx::to_json(docG1) << std::endl;
+            // ANALOG TAGS, will distribute as Group 30 VAR 6 (double precision floating point)
+            auto lastG30Addr = -1;
 
-                    // look in the protocolDestinations array for entry with the connection number
-                    auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
-                    for (const auto& el : protocolDestinations)
+            // find the latest used object address
+
+            // find tags with a destination linked to this connection
+            opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+            auto resTagsG30 = db["realtimeData"].find(
+                make_document(
+                    kvp("type", "analog"), kvp("origin", "supervised"),
+                    kvp("protocolDestinations.protocolDestinationCommonAddress", 30),
+                    kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)),
+                opts);
+            auto cntG30 = 0;
+            for (auto&& docG30 : resTagsG1)
+            {
+                cntG1++;
+                // std::cout << bsoncxx::to_json(docG1) << std::endl;
+
+                // look in the protocolDestinations array for entry with the connection number
+                auto protocolDestinations = docG30["protocolDestinations"].get_array().value;
+                for (const auto& el : protocolDestinations)
+                {
+                    auto protocolDestination = el.get_document().value;
+                    if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
+                        == dnp3Conn.protocolConnectionNumber)
                     {
-                        auto protocolDestination = el.get_document().value;
-                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
-                            == dnp3Conn.protocolConnectionNumber)
-                        {
-                            if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG1Addr)
-                                lastG1Addr = getDouble(protocolDestination, "protocolDestinationObjectAddress");
-                        }
+                        if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG30Addr)
+                            lastG30Addr = getDouble(protocolDestination, "protocolDestinationObjectAddress");
                     }
                 }
-
-                for (auto& doc : documentsDig)
-                {
-                    // std::cout << bsoncxx::to_json(doc) << std::endl;
-                    ++lastG1Addr;
-                    Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: "
-                            + std::to_string(lastG1Addr));
-                    db["realtimeData"].update_one(
-                        make_document(kvp("_id", getDouble(doc, "_id"))),
-                        make_document(kvp(
-                            "$push",
-                            make_document(kvp(
-                                "protocolDestinations",
-                                make_document(
-                                    kvp("protocolDestinationConnectionNumber", (double)dnp3Conn.protocolConnectionNumber),
-                                    kvp("protocolDestinationCommonAddress", 1.0),
-                                    kvp("protocolDestinationObjectAddress", (double)lastG1Addr),
-                                    kvp("protocolDestinationASDU", 0.0), 
-                                    kvp("protocolDestinationCommandDuration", 0.0),
-                                    kvp("protocolDestinationCommandUseSBO", false),
-                                    kvp("protocolDestinationCommandDuration", 0.0),
-                                    kvp("protocolDestinationKConv1", 1.0), 
-                                    kvp("protocolDestinationKConv2", 0.0),
-                                    kvp("protocolDestinationGroup", 0.0),
-                                    kvp("protocolDestinationHoursShift", 0.0)))))));
-                }
             }
 
-            // bsoncxx::builder::stream::document{} << "protocolDestinations" << dnp3Conn.protocolConnectionNumber <<
-            // "destination" << bsoncxx::types::b_null{} << bsoncxx::builder::stream::finalize);
+            // look for tags without a destination linked to this connection
+            opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
+            auto resTagsAna = db["realtimeData"].find(
+                make_document(kvp("type", "analog"), kvp("origin", "supervised"),
+                              kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                  make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
+                opts);
+
+            for (auto&& doc : resTagsAna)
+            {
+                // std::cout << bsoncxx::to_json(doc) << std::endl;
+                ++lastG30Addr;
+                if (lastG30Addr > 65535)
+                {
+                    Log.Log("Object address for analogs exceeds 65535");
+                    break;
+                }
+
+                Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
+                        + " Dnp3Address: " + std::to_string(lastG30Addr));
+                db["realtimeData"].update_one(
+                    make_document(kvp("_id", getDouble(doc, "_id"))),
+                    make_document(kvp(
+                        "$push",
+                        make_document(kvp(
+                            "protocolDestinations",
+                            make_document(
+                                kvp("protocolDestinationConnectionNumber", (double)dnp3Conn.protocolConnectionNumber),
+                                kvp("protocolDestinationCommonAddress", 30.0),
+                                kvp("protocolDestinationObjectAddress", (double)lastG30Addr),
+                                kvp("protocolDestinationASDU", 6.0), kvp("protocolDestinationCommandDuration", 0.0),
+                                kvp("protocolDestinationCommandUseSBO", false),
+                                kvp("protocolDestinationCommandDuration", 0.0), kvp("protocolDestinationKConv1", 1.0),
+                                kvp("protocolDestinationKConv2", 0.0), kvp("protocolDestinationGroup", 0.0),
+                                kvp("protocolDestinationHoursShift", 0.0)))))));
+            }
         }
 
         // Specify what log levels to use. NORMAL is warning and above
@@ -692,10 +755,34 @@ int __cdecl main(int argc, char* argv[])
 
     auto rtDataCollection = db["realtimeData"];
     mongocxx::options::change_stream options;
-    auto changeStream = rtDataCollection.watch(options);
+    options.full_document("updateLookup");
+    mongocxx::pipeline pipeline;
+    std::string pipelineStr = R"(
+    {
+        "$or": 
+        [
+            {
+                "$and":
+                  [
+                    { "fullDocument.protocolDestinations": { "$ne": null } },
+                    { "fullDocument.protocolDestinations.protocolDestinationConnectionNumber": { "$in": [__CONNS__] } },
+                    { "updateDescription.updatedFields.sourceDataUpdate": { "$exists": false } },
+                    { "operationType": "update" }
+                  ]
+            },
+            { "operationType": "replace" }
+        ]
+    }
+    )";
+
+    connectionsListStr.pop_back();
+    pipelineStr.replace(pipelineStr.find("__CONNS__"), std::string("__CONNS__").length(), connectionsListStr);
+    pipeline.match((bsoncxx::from_json(pipelineStr)));
+
+    auto changeStream = rtDataCollection.watch(pipeline, options);
 
     std::cout << "Watching for changes on collection: realtimeData..." << std::endl;
-    while (false)
+    while (true)
     {
         for (const auto& event : changeStream)
         {
