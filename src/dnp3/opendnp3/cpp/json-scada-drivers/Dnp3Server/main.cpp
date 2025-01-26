@@ -142,7 +142,8 @@ static double getDouble(const bsoncxx::document::view& doc, const std::string& k
     }
     catch (const std::exception&)
     {
-        Log.Log("Error getting double value for key: " + key);
+        if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
+            Log.Log("Error getting boolean value for key: " + key, Logger::LogLevel::Detailed);
     }
     return defaultVal;
 }
@@ -170,7 +171,8 @@ static bool getBoolean(const bsoncxx::document::view& doc, const std::string& ke
     }
     catch (const std::exception&)
     {
-        Log.Log("Error getting boolean value for key: " + key);
+        if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
+            Log.Log("Error getting boolean value for key: " + key, Logger::LogLevel::Detailed);
     }
     return defaultVal;
 }
@@ -200,7 +202,8 @@ static std::string getString(const bsoncxx::document::view& doc, const std::stri
     }
     catch (const std::exception&)
     {
-        Log.Log("Error getting string value for key: " + key);
+        if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
+            Log.Log("Error getting boolean value for key: " + key, Logger::LogLevel::Detailed);
     }
     return defaultVal;
 }
@@ -313,7 +316,7 @@ static DatabaseConfig ConfigureDatabase()
 {
     DatabaseConfig config(10); // 10 of each type with default settings
 
-    for (int i=0; i < config.analog_input.size(); i++)
+    for (int i = 0; i < config.analog_input.size(); i++)
     {
         config.analog_input[i].clazz = PointClass::Class2;
         config.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
@@ -334,7 +337,131 @@ struct State
 
 auto app = DefaultOutstationApplication::Create();
 
-void AddUpdates(UpdateBuilder& builder, State& state, const std::string& arguments);
+static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
+                                      const bsoncxx::document::view& protocolDestination,
+                                      EventMode eventMode = EventMode::Detect)
+{
+    auto protocolDestinationCommonAddress = (int)getDouble(protocolDestination, "protocolDestinationCommonAddress");
+    auto protocolDestinationObjectAddress = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
+    auto protocolDestinationASDU = (int)getDouble(protocolDestination, "protocolDestinationASDU");
+    // auto protocolDestinationCommandDuration = (int)getDouble(protocolDestination,
+    // "protocolDestinationCommandDuration"); auto protocolDestinationCommandUseSBO = getBoolean(protocolDestination,
+    // "protocolDestinationCommandUseSBO");
+    auto protocolDestinationKConv1 = getDouble(protocolDestination, "protocolDestinationKConv1");
+    auto protocolDestinationKConv2 = getDouble(protocolDestination, "protocolDestinationKConv2");
+    // auto protocolDestinationGroup = (int)getDouble(protocolDestination, "protocolDestinationGroup");
+    auto protocolDestinationHoursShift = getDouble(protocolDestination, "protocolDestinationHoursShift");
+
+    if (Log.GetLogLevel() >= Logger::LogLevel::Basic)
+        Log.Log("Updating tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
+                    + " Dnp3Address: " + std::to_string(protocolDestinationObjectAddress),
+                Logger::LogLevel::Basic);
+
+    UpdateBuilder builder;
+    uint8_t flags = 0;
+    DoubleBit dbit;
+
+    switch (protocolDestinationCommonAddress)
+    {
+    case 1:
+    case 2:
+        if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
+            flags = static_cast<uint8_t>(BinaryQuality::ONLINE);
+        else
+            flags = static_cast<uint8_t>(BinaryQuality::COMM_LOST);
+        if (getBoolean(doc, "substituted"))
+            flags |= static_cast<uint8_t>(BinaryQuality::LOCAL_FORCED);
+        builder.Update(Binary(getBoolean(doc, "value"), Flags(flags), DNPTime()), protocolDestinationObjectAddress,
+                       eventMode);
+        break;
+    case 3:
+    case 4:
+        if (getBoolean(doc, "transient"))
+            dbit = getBoolean(doc, "value") ? DoubleBit::INTERMEDIATE : DoubleBit::INDETERMINATE;
+        else
+            dbit = getBoolean(doc, "value") ? DoubleBit::DETERMINED_ON : DoubleBit::DETERMINED_OFF;
+        if (!getBoolean(doc, "invalid"))
+            flags = static_cast<uint8_t>(DoubleBitBinaryQuality::ONLINE);
+        else
+            flags = static_cast<uint8_t>(DoubleBitBinaryQuality::COMM_LOST);
+        if (getBoolean(doc, "substituted"))
+            flags |= static_cast<uint8_t>(DoubleBitBinaryQuality::LOCAL_FORCED);
+        builder.Update(DoubleBitBinary(dbit, Flags(flags), DNPTime()), protocolDestinationObjectAddress, eventMode);
+        break;
+    case 21:
+    case 23:
+    //    builder.FreezeCounter(protocolDestinationObjectAddress, false, eventMode);
+    case 20:
+    case 22:
+        if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
+            flags = static_cast<uint8_t>(CounterQuality::ONLINE);
+        else
+            flags = static_cast<uint8_t>(CounterQuality::COMM_LOST);
+        if (getBoolean(doc, "substituted"))
+            flags |= static_cast<uint8_t>(CounterQuality::LOCAL_FORCED);
+        if (getBoolean(doc, "overflow"))
+            flags |= static_cast<uint8_t>(CounterQuality::ROLLOVER);
+        builder.Update(
+            Counter((uint32_t)getDouble(doc, "value"), Flags(flags), DNPTime()),
+            protocolDestinationObjectAddress, eventMode);
+        break;
+    case 10:
+    case 11:
+        if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
+            flags = static_cast<uint8_t>(BinaryOutputStatusQuality::ONLINE);
+        else
+            flags = static_cast<uint8_t>(BinaryOutputStatusQuality::COMM_LOST);
+        if (getBoolean(doc, "substituted"))
+            flags |= static_cast<uint8_t>(BinaryOutputStatusQuality::LOCAL_FORCED);
+        builder.Update(
+            BinaryOutputStatus(getBoolean(doc, "value"), Flags(flags), DNPTime()),
+            protocolDestinationObjectAddress, eventMode);
+        break;
+    case 40:
+    case 42:
+        if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
+            flags = static_cast<uint8_t>(AnalogOutputStatusQuality::ONLINE);
+        else
+            flags = static_cast<uint8_t>(AnalogOutputStatusQuality::COMM_LOST);
+        if (getBoolean(doc, "substituted"))
+            flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::LOCAL_FORCED);
+        if (getBoolean(doc, "overflow"))
+            flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::OVERRANGE);
+        builder.Update(AnalogOutputStatus(getDouble(doc, "value"),
+                                          Flags(flags), DNPTime()),
+                       protocolDestinationObjectAddress, eventMode);
+        break;
+    case 110:
+    case 111:
+        builder.Update(OctetString{"012345test"}, protocolDestinationObjectAddress, eventMode);
+        break;
+    case 50:
+    case 52:
+        builder.Update(TimeAndInterval{DNPTime(getDouble(doc, "value"), TimestampQuality::SYNCHRONIZED), 0,
+                                       IntervalUnits::Seconds},
+                       protocolDestinationObjectAddress);
+
+        break;
+    case 30:
+    case 32:
+    default:
+        if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
+            flags = static_cast<uint8_t>(AnalogQuality::ONLINE);
+        else
+            flags = static_cast<uint8_t>(AnalogQuality::COMM_LOST);
+        if (getBoolean(doc, "substituted"))
+            flags |= static_cast<uint8_t>(AnalogQuality::LOCAL_FORCED);
+        if (getBoolean(doc, "overflow"))
+            flags |= static_cast<uint8_t>(AnalogQuality::OVERRANGE);
+
+        builder.Update(Analog(getDouble(doc, "value"), Flags(flags), DNPTime()),
+                       protocolDestinationObjectAddress, eventMode);
+        break;
+    }
+    const auto updates = builder.Build();
+
+    return updates;
+}
 
 int __cdecl main(int argc, char* argv[])
 {
@@ -687,9 +814,8 @@ int __cdecl main(int argc, char* argv[])
             }
         }
 
-        // Specify what log levels to use. NORMAL is warning and above
-        // You can add all the comms logging by uncommenting below.
-        const auto logLevels = levels::NORMAL | levels::ALL_COMMS;
+        // Specify what log levels to use.
+        const auto logLevels = levels::NORMAL;
 
         // This is the main point of interaction with the stack
         // Allocate a single thread to the pool since this is a single outstation
@@ -742,15 +868,31 @@ int __cdecl main(int argc, char* argv[])
         // updating the outstation's database.
         dnp3Conn.outstation = dnp3Conn.channel->AddOutstation(dnp3Conn.name, dnp3Conn.commandHandler, app, config);
 
-        UpdateBuilder builder;
-        string input = "";
-        State state;
+        // find tags with a destination linked to this connection
+        mongocxx::options::find opts;
+        opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+        auto resTags
+            = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
+                                                    kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                                        dnp3Conn.protocolConnectionNumber)),
+                                      opts);
 
-        state.value += 1;
-        builder.Update(Analog(state.value), 0);
+        for (auto&& doc : resTags)
+        {
+            auto protocolDestinations = doc["protocolDestinations"].get_array().value;
+            for (const auto& el : protocolDestinations)
+            {
+                auto protocolDestination = el.get_document().value;
+                auto protocolDestinationConnectionNumber
+                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
 
-        AddUpdates(builder, state, input);
-        dnp3Conn.outstation->Apply(builder.Build());
+                if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
+                    continue;
+
+                auto updates = ConvertValue(doc, protocolDestination, EventMode::Suppress);
+                dnp3Conn.outstation->Apply(updates);
+            }
+        }
 
         // Enable the outstation and start communications
         dnp3Conn.outstation->Enable();
@@ -798,115 +940,18 @@ int __cdecl main(int argc, char* argv[])
                 auto protocolDestination = el.get_document().value;
                 auto protocolDestinationConnectionNumber
                     = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
-                auto protocolDestinationCommonAddress
-                    = (int)getDouble(protocolDestination, "protocolDestinationCommonAddress");
-                auto protocolDestinationObjectAddress
-                    = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
-                auto protocolDestinationASDU = (int)getDouble(protocolDestination, "protocolDestinationASDU");
-                auto protocolDestinationCommandDuration
-                    = (int)getDouble(protocolDestination, "protocolDestinationCommandDuration");
-                auto protocolDestinationCommandUseSBO
-                    = getBoolean(protocolDestination, "protocolDestinationCommandUseSBO");
-                auto protocolDestinationKConv1 = getDouble(protocolDestination, "protocolDestinationKConv1");
-                auto protocolDestinationKConv2 = getDouble(protocolDestination, "protocolDestinationKConv2");
-                auto protocolDestinationGroup = (int)getDouble(protocolDestination, "protocolDestinationGroup");
-                auto protocolDestinationHoursShift = getDouble(protocolDestination, "protocolDestinationHoursShift");
                 for (auto& dnp3Conn : dnp3Connections)
                 {
-                    if (dnp3Conn.protocolConnectionNumber == protocolDestinationConnectionNumber)
-                    {
-                        if (protocolDestinationObjectAddress > 9)
-                            continue;
+                    if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
+                        continue;
 
-                        Log.Log("Updating tag: " + getString(fullDocument, "_id") + " " + getString(fullDocument, "tag")
-                                + " Dnp3Address: " + std::to_string(protocolDestinationObjectAddress));
-                        UpdateBuilder builder;
-                            if (protocolDestinationCommonAddress == 1)
-                            {
-                                builder.Update(Binary(
-                                     getBoolean(fullDocument, "value"),
-                                     Flags(static_cast<uint8_t>(BinaryQuality::ONLINE)), DNPTime()
-                                ),
-                                               protocolDestinationObjectAddress, EventMode::Force);
-                            }
-                            else if (protocolDestinationCommonAddress == 30)
-                            {
-                                builder.Update(Analog(getDouble(fullDocument, "value"),
-                                                      Flags(static_cast<uint8_t>(AnalogQuality::ONLINE)), DNPTime()),
-                                               protocolDestinationObjectAddress, EventMode::Force);
-                            }
-                            const auto updates = builder.Build();
-                            dnp3Conn.outstation->Apply(updates);
-                    }
+                    auto updates = ConvertValue(fullDocument, protocolDestination, EventMode::Force);
+                    dnp3Conn.outstation->Apply(updates);
+                    break;
                 }
             }
         }
     }
 
-    // variables used in example loop
-    string input;
-    State state;
-
-    while (true)
-    {
-        std::cout << "Enter one or more measurement changes then press <enter>" << std::endl;
-        std::cout << "c = counter, b = binary, d = doublebit, a = analog, o = octet string, 'quit' = exit" << std::endl;
-        std::cin >> input;
-
-        if (input == "quit")
-            return 0; // DNP3Manager destructor cleanups up everything automatically
-        else
-        {
-            // update measurement values based on input string
-            UpdateBuilder builder;
-            AddUpdates(builder, state, input);
-            // outstation->Apply(builder.Build());
-        }
-    }
-
     return 0;
-}
-
-void AddUpdates(UpdateBuilder& builder, State& state, const std::string& arguments)
-{
-    /*
-    for (const char& c : arguments)
-    {
-        switch (c)
-        {
-        case ('c'): {
-            builder.Update(Counter(state.count), 0);
-            ++state.count;
-            break;
-        }
-        case ('f'): {
-            builder.FreezeCounter(0, false);
-            break;
-        }
-        case ('a'): {
-            builder.Update(Analog(state.value), 0);
-            state.value += 1;
-            break;
-        }
-        case ('b'): {
-            builder.Update(Binary(state.binary, Flags(0x01), app->Now()), 0);
-            state.binary = !state.binary;
-            break;
-        }
-        case ('d'): {
-            builder.Update(DoubleBitBinary(state.dbit), 0);
-            state.dbit
-                = (state.dbit == DoubleBit::DETERMINED_OFF) ? DoubleBit::DETERMINED_ON : DoubleBit::DETERMINED_OFF;
-            break;
-        }
-        case ('o'): {
-            OctetString value(Buffer(&state.octetStringValue, 1));
-            builder.Update(value, 0);
-            state.octetStringValue += 1;
-            break;
-        }
-        default:
-        }
-    }
-    */
 }
