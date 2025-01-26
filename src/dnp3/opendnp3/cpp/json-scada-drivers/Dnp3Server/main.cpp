@@ -312,30 +312,57 @@ public:
     }
 };
 
-static DatabaseConfig ConfigureDatabase()
+opendnp3::DatabaseConfig database_by_sizes(uint16_t num_binary,
+                                           uint16_t num_double_binary,
+                                           uint16_t num_analog,
+                                           uint16_t num_counter,
+                                           uint16_t num_frozen_counter,
+                                           uint16_t num_binary_output_status,
+                                           uint16_t num_analog_output_status,
+                                           uint16_t num_time_and_interval,
+                                           uint16_t num_octet_string)
 {
-    DatabaseConfig config(10); // 10 of each type with default settings
+    opendnp3::DatabaseConfig config;
 
-    for (int i = 0; i < config.analog_input.size(); i++)
+    for (uint16_t i = 0; i < num_binary; ++i)
     {
-        config.analog_input[i].clazz = PointClass::Class2;
-        config.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
-        config.analog_input[i].evariation = EventAnalogVariation::Group32Var7;
+        config.binary_input[i] = {};
+    }
+    for (uint16_t i = 0; i < num_double_binary; ++i)
+    {
+        config.double_binary[i] = {};
+    }
+    for (uint16_t i = 0; i < num_analog; ++i)
+    {
+        config.analog_input[i] = {};
+    }
+    for (uint16_t i = 0; i < num_counter; ++i)
+    {
+        config.counter[i] = {};
+    }
+    for (uint16_t i = 0; i < num_frozen_counter; ++i)
+    {
+        config.frozen_counter[i] = {};
+    }
+    for (uint16_t i = 0; i < num_binary_output_status; ++i)
+    {
+        config.binary_output_status[i] = {};
+    }
+    for (uint16_t i = 0; i < num_analog_output_status; ++i)
+    {
+        config.analog_output_status[i] = {};
+    }
+    for (uint16_t i = 0; i < num_time_and_interval; ++i)
+    {
+        config.time_and_interval[i] = {};
+    }
+    for (uint16_t i = 0; i < num_octet_string; ++i)
+    {
+        config.octet_string[i] = {};
     }
 
     return config;
 }
-
-struct State
-{
-    uint32_t count = 0;
-    double value = 0;
-    bool binary = false;
-    DoubleBit dbit = DoubleBit::DETERMINED_OFF;
-    uint8_t octetStringValue = 1;
-};
-
-auto app = DefaultOutstationApplication::Create();
 
 static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
                                       const bsoncxx::document::view& protocolDestination,
@@ -401,9 +428,8 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(CounterQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(CounterQuality::ROLLOVER);
-        builder.Update(
-            Counter((uint32_t)getDouble(doc, "value"), Flags(flags), DNPTime()),
-            protocolDestinationObjectAddress, eventMode);
+        builder.Update(Counter((uint32_t)getDouble(doc, "value"), Flags(flags), DNPTime()),
+                       protocolDestinationObjectAddress, eventMode);
         break;
     case 10:
     case 11:
@@ -413,9 +439,8 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags = static_cast<uint8_t>(BinaryOutputStatusQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryOutputStatusQuality::LOCAL_FORCED);
-        builder.Update(
-            BinaryOutputStatus(getBoolean(doc, "value"), Flags(flags), DNPTime()),
-            protocolDestinationObjectAddress, eventMode);
+        builder.Update(BinaryOutputStatus(getBoolean(doc, "value"), Flags(flags), DNPTime()),
+                       protocolDestinationObjectAddress, eventMode);
         break;
     case 40:
     case 42:
@@ -427,8 +452,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::OVERRANGE);
-        builder.Update(AnalogOutputStatus(getDouble(doc, "value"),
-                                          Flags(flags), DNPTime()),
+        builder.Update(AnalogOutputStatus(getDouble(doc, "value"), Flags(flags), DNPTime()),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 110:
@@ -454,8 +478,8 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogQuality::OVERRANGE);
 
-        builder.Update(Analog(getDouble(doc, "value"), Flags(flags), DNPTime()),
-                       protocolDestinationObjectAddress, eventMode);
+        builder.Update(Analog(getDouble(doc, "value"), Flags(flags), DNPTime()), protocolDestinationObjectAddress,
+                       eventMode);
         break;
     }
     const auto updates = builder.Build();
@@ -469,6 +493,8 @@ int __cdecl main(int argc, char* argv[])
     Log.Log("Driver version: " + VersionStr);
     Log.Log("Using OpenDnp3 version 3.1.2");
     Log.Log("Usage: " + std::string(argv[0]) + " [ProtocolDriverInstanceNumber] [LogLevel] [ConfigurationFile]");
+
+    auto app = DefaultOutstationApplication::Create();
 
     auto ProtocolDriverInstanceNumber = 1;
     std::string configFileName = "../conf/json-scada.json";
@@ -687,10 +713,8 @@ int __cdecl main(int argc, char* argv[])
                                                         kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                                             dnp3Conn.protocolConnectionNumber)),
                                           opts);
-            auto cntG1 = 0;
             for (auto&& docG1 : resTagsG1)
             {
-                cntG1++;
                 // std::cout << bsoncxx::to_json(docG1) << std::endl;
 
                 // look in the protocolDestinations array for entry with the connection number
@@ -756,10 +780,8 @@ int __cdecl main(int argc, char* argv[])
                     kvp("protocolDestinations.protocolDestinationCommonAddress", 30),
                     kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)),
                 opts);
-            auto cntG30 = 0;
             for (auto&& docG30 : resTagsG1)
             {
-                cntG1++;
                 // std::cout << bsoncxx::to_json(docG1) << std::endl;
 
                 // look in the protocolDestinations array for entry with the connection number
@@ -815,7 +837,25 @@ int __cdecl main(int argc, char* argv[])
         }
 
         // Specify what log levels to use.
-        const auto logLevels = levels::NORMAL;
+        auto logLevels = levels::NORMAL;
+        switch (Log.GetLogLevel())
+        {
+        case Logger::LogLevel::NoLog:
+            logLevels = levels::NOTHING;
+            break;
+        case Logger::LogLevel::Basic:
+            logLevels = levels::NORMAL;
+            break;
+        case Logger::LogLevel::Detailed:
+            logLevels = levels::ALL_APP_COMMS;
+            break;
+        case Logger::LogLevel::Debug:
+            logLevels = levels::ALL;
+            break;
+        default:
+            logLevels = levels::NORMAL;
+            break;
+        }
 
         // This is the main point of interaction with the stack
         // Allocate a single thread to the pool since this is a single outstation
@@ -847,7 +887,66 @@ int __cdecl main(int argc, char* argv[])
 
         // The main object for a outstation. The defaults are useable,
         // but understanding the options are important.
-        OutstationStackConfig config(ConfigureDatabase());
+
+        DatabaseConfig cfg = database_by_sizes(3, 10, 10, 2, 0, 0, 0, 0, 0);
+        for (int i = 0; i < cfg.binary_input.size(); i++)
+        {
+            cfg.binary_input[i].clazz = PointClass::Class2;
+            cfg.binary_input[i].svariation = StaticBinaryVariation::Group1Var2;
+            cfg.binary_input[i].evariation = EventBinaryVariation::Group2Var2;
+        }
+        for (int i = 0; i < cfg.double_binary.size(); i++)
+        {
+            cfg.double_binary[i].clazz = PointClass::Class2;
+            cfg.double_binary[i].svariation = StaticDoubleBinaryVariation::Group3Var2;
+            cfg.double_binary[i].evariation = EventDoubleBinaryVariation::Group4Var2;
+        }
+        for (int i = 0; i < cfg.analog_input.size(); i++)
+        {
+            cfg.analog_input[i].clazz = PointClass::Class2;
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var7;
+            cfg.analog_input[i].deadband = 0;
+        }
+        for (int i = 0; i < cfg.counter.size(); i++)
+        {
+            cfg.counter[i].clazz = PointClass::Class2;
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var1;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var5;
+            cfg.counter[i].deadband = 0;
+        }
+        for (int i = 0; i < cfg.frozen_counter.size(); i++)
+        {
+            cfg.frozen_counter[i].clazz = PointClass::Class2;
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            cfg.frozen_counter[i].deadband = 0; 
+        }
+        for (int i = 0; i < cfg.binary_output_status.size(); i++)
+        {
+            cfg.binary_output_status[i].clazz = PointClass::Class2;
+            cfg.binary_output_status[i].svariation = StaticBinaryOutputStatusVariation::Group10Var2;
+            cfg.binary_output_status[i].evariation = EventBinaryOutputStatusVariation::Group11Var2;
+        }
+        for (int i = 0; i < cfg.analog_output_status.size(); i++)
+        {
+            cfg.analog_output_status[i].clazz = PointClass::Class2;
+            cfg.analog_output_status[i].svariation = StaticAnalogOutputStatusVariation::Group40Var3;
+            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var7;
+            cfg.analog_output_status[i].deadband = 0;
+        }
+        for (int i = 0; i < cfg.time_and_interval.size(); i++)
+        {
+            cfg.time_and_interval[i].svariation = StaticTimeAndIntervalVariation::Group50Var4;
+        }
+        for (int i = 0; i < cfg.octet_string.size(); i++)
+        {
+            cfg.octet_string[i].clazz = PointClass::Class2;
+            cfg.octet_string[i].svariation = StaticOctetStringVariation::Group110Var0;
+            cfg.octet_string[i].evariation = EventOctetStringVariation::Group111Var0;
+        }
+
+        OutstationStackConfig config(cfg);
 
         // Specify the maximum size of the event buffers
         config.outstation.eventBufferConfig = EventBufferConfig::AllTypes(dnp3Conn.serverQueueSize);
