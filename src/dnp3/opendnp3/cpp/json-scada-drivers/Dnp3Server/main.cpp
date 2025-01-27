@@ -143,7 +143,7 @@ static double getDouble(const bsoncxx::document::view& doc, const std::string& k
     catch (const std::exception&)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
-            Log.Log("Error getting boolean value for key: " + key, Logger::LogLevel::Detailed);
+            Log.Log("Error getting bson double value for key: " + key, Logger::LogLevel::Detailed);
     }
     return defaultVal;
 }
@@ -172,7 +172,7 @@ static bool getBoolean(const bsoncxx::document::view& doc, const std::string& ke
     catch (const std::exception&)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
-            Log.Log("Error getting boolean value for key: " + key, Logger::LogLevel::Detailed);
+            Log.Log("Error getting bson boolean value for key: " + key, Logger::LogLevel::Detailed);
     }
     return defaultVal;
 }
@@ -203,7 +203,36 @@ static std::string getString(const bsoncxx::document::view& doc, const std::stri
     catch (const std::exception&)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
-            Log.Log("Error getting boolean value for key: " + key, Logger::LogLevel::Detailed);
+            Log.Log("Error getting bson string value for key: " + key, Logger::LogLevel::Detailed);
+    }
+    return defaultVal;
+}
+
+static double getDate(const bsoncxx::document::view& doc, const std::string& key, double defaultVal = 0)
+{
+    try
+    {
+        auto value = doc[key].get_value();
+        switch (value.type())
+        {
+        case bsoncxx::type::k_null:
+            return defaultVal;
+        case bsoncxx::type::k_int32:
+            return double(value.get_int32().value);
+        case bsoncxx::type::k_int64:
+            return double(value.get_int64().value);
+        case bsoncxx::type::k_double:
+            return value.get_double().value;
+        case bsoncxx::type::k_date:
+            return value.get_date().value.count();
+        default:
+            return defaultVal;
+        }
+    }
+    catch (const std::exception&)
+    {
+        if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
+            Log.Log("Error getting bson date value for key: " + key, Logger::LogLevel::Detailed);
     }
     return defaultVal;
 }
@@ -387,6 +416,24 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     UpdateBuilder builder;
     uint8_t flags = 0;
     DoubleBit dbit;
+    uint64_t utime = getDate(doc, "timeTagAtSource");
+    DNPTime dtime;
+    if (utime == 0)
+    {
+        utime = getDate(doc, "timeTag");
+        if (utime == 0)
+            utime = std::chrono::system_clock::now().time_since_epoch().count();
+        utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
+        dtime = DNPTime(utime, TimestampQuality::INVALID);
+    }
+    else
+    {
+        utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
+        if (getDate(doc, "timeTagAtSourceOk"))
+            dtime = DNPTime(utime, TimestampQuality::SYNCHRONIZED);
+        else
+            dtime = DNPTime(utime, TimestampQuality::UNSYNCHRONIZED);
+    }
 
     switch (protocolDestinationCommonAddress)
     {
@@ -398,7 +445,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags = static_cast<uint8_t>(BinaryQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryQuality::LOCAL_FORCED);
-        builder.Update(Binary(getBoolean(doc, "value"), Flags(flags), DNPTime()), protocolDestinationObjectAddress,
+        builder.Update(Binary(getBoolean(doc, "value"), Flags(flags), dtime), protocolDestinationObjectAddress,
                        eventMode);
         break;
     case 3:
@@ -413,7 +460,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags = static_cast<uint8_t>(DoubleBitBinaryQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(DoubleBitBinaryQuality::LOCAL_FORCED);
-        builder.Update(DoubleBitBinary(dbit, Flags(flags), DNPTime()), protocolDestinationObjectAddress, eventMode);
+        builder.Update(DoubleBitBinary(dbit, Flags(flags), dtime), protocolDestinationObjectAddress, eventMode);
         break;
     case 21:
     case 23:
@@ -428,7 +475,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(CounterQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(CounterQuality::ROLLOVER);
-        builder.Update(Counter((uint32_t)getDouble(doc, "value"), Flags(flags), DNPTime()),
+        builder.Update(Counter((uint32_t)getDouble(doc, "value"), Flags(flags), dtime),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 10:
@@ -439,7 +486,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags = static_cast<uint8_t>(BinaryOutputStatusQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryOutputStatusQuality::LOCAL_FORCED);
-        builder.Update(BinaryOutputStatus(getBoolean(doc, "value"), Flags(flags), DNPTime()),
+        builder.Update(BinaryOutputStatus(getBoolean(doc, "value"), Flags(flags), dtime),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 40:
@@ -452,7 +499,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::OVERRANGE);
-        builder.Update(AnalogOutputStatus(getDouble(doc, "value"), Flags(flags), DNPTime()),
+        builder.Update(AnalogOutputStatus(getDouble(doc, "value"), Flags(flags), dtime),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 110:
@@ -478,7 +525,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogQuality::OVERRANGE);
 
-        builder.Update(Analog(getDouble(doc, "value"), Flags(flags), DNPTime()), protocolDestinationObjectAddress,
+        builder.Update(Analog(getDouble(doc, "value"), Flags(flags), dtime), protocolDestinationObjectAddress,
                        eventMode);
         break;
     }
@@ -885,10 +932,84 @@ int __cdecl main(int argc, char* argv[])
 
         dnp3Conn.commandHandler = std::make_shared<MyCommandHandler>();
 
+        // find tags with a destination linked to this connection
+        mongocxx::options::find opts;
+        opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+        auto resTags
+            = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
+                                                    kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                                        dnp3Conn.protocolConnectionNumber)),
+                                      opts);
+        auto cnt_binary = 0;
+        auto cnt_double_binary = 0;
+        auto cnt_analog = 0;
+        auto cnt_counter = 0;
+        auto cnt_frozen_counter = 0;
+        auto cnt_binary_output_status = 0;
+        auto cnt_analog_output_status = 0;
+        auto cnt_time_and_interval = 0;
+        auto cnt_octet_string = 0;
+
+        for (auto&& doc : resTags)
+        {
+            auto protocolDestinations = doc["protocolDestinations"].get_array().value;
+            for (const auto& el : protocolDestinations)
+            {
+                auto protocolDestination = el.get_document().value;
+                auto protocolDestinationConnectionNumber
+                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+
+                if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
+                    continue;
+
+                switch ((int)getDouble(protocolDestination, "protocolDestinationCommonAddress"))
+                {
+                case 1:
+                case 2:
+                    cnt_binary++;
+                    break;
+                case 3:
+                case 4:
+                    cnt_double_binary++;
+                    break;
+                case 20:
+                case 22:
+                    cnt_counter++;
+                    break;
+                case 21:
+                case 23:
+                    cnt_frozen_counter++;
+                    break;
+                case 10:
+                case 11:
+                    cnt_binary_output_status++;
+                    break;
+                case 30:
+                case 32:
+                    cnt_analog++;
+                    break;
+                case 40:
+                case 42:
+                    cnt_analog_output_status++;
+                    break;
+                case 50:
+                case 52:
+                    cnt_time_and_interval++;
+                    break;
+                case 110:
+                case 111:
+                    cnt_octet_string++;
+                    break;
+                }
+            }
+        }
+
         // The main object for a outstation. The defaults are useable,
         // but understanding the options are important.
 
-        DatabaseConfig cfg = database_by_sizes(3, 10, 10, 2, 0, 0, 0, 0, 0);
+        DatabaseConfig cfg = database_by_sizes(cnt_binary, cnt_double_binary, cnt_analog, cnt_counter,
+                                               cnt_frozen_counter, cnt_binary_output_status, cnt_analog_output_status,
+                                               cnt_time_and_interval, cnt_octet_string);
         for (int i = 0; i < cfg.binary_input.size(); i++)
         {
             cfg.binary_input[i].clazz = PointClass::Class2;
@@ -920,7 +1041,7 @@ int __cdecl main(int argc, char* argv[])
             cfg.frozen_counter[i].clazz = PointClass::Class2;
             cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
             cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
-            cfg.frozen_counter[i].deadband = 0; 
+            cfg.frozen_counter[i].deadband = 0;
         }
         for (int i = 0; i < cfg.binary_output_status.size(); i++)
         {
@@ -967,16 +1088,12 @@ int __cdecl main(int argc, char* argv[])
         // updating the outstation's database.
         dnp3Conn.outstation = dnp3Conn.channel->AddOutstation(dnp3Conn.name, dnp3Conn.commandHandler, app, config);
 
-        // find tags with a destination linked to this connection
-        mongocxx::options::find opts;
-        opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
-        auto resTags
+        auto resTags2
             = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
                                                     kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                                         dnp3Conn.protocolConnectionNumber)),
                                       opts);
-
-        for (auto&& doc : resTags)
+        for (auto&& doc : resTags2)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
             for (const auto& el : protocolDestinations)
