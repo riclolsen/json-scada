@@ -282,10 +282,35 @@ std::vector<DNP3Connection_t> dnp3Connections;
 class MyCommandHandler : public opendnp3::ICommandHandler
 {
 public:
+    mongocxx::client* mongoClient;
+    DNP3Connection_t* dnp3Connection;
+    std::string dbstrMongo;
     void Begin() override {}
     void End() override {}
     CommandStatus Select(const ControlRelayOutputBlock& command, uint16_t index) override
     {
+        auto db = (*mongoClient)[dbstrMongo];
+        auto rtDataCollection = db["realtimeData"];
+        auto result = rtDataCollection.find_one(make_document(
+            kvp("origin", "command"), kvp("type", "digital"),
+            kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Connection->protocolConnectionNumber),
+            kvp("protocolDestinations.protocolDestinationCommonAddress", 12),
+            kvp("protocolDestinations.protocolDestinationObjectAddress", index),
+            kvp("protocolDestinations.protocolDestinationCommandUseSBO", true)));
+        if (!result)
+        {
+            Log.Log(dnp3Connection->name
+                    + (std::string) " - Tag not found in the database for ControlRelayOutputBlock index: "
+                    + std::to_string(index));
+            return CommandStatus::NOT_SUPPORTED;
+        }
+        if (!(*result)["enabled"].get_bool().value)
+        {
+            Log.Log(dnp3Connection->name
+                    + (std::string) " - Tag disabled in the database for ControlRelayOutputBlock index: "
+                    + std::to_string(index));
+            return CommandStatus::BLOCKED;
+        }
         return CommandStatus::SUCCESS;
     }
     CommandStatus Operate(const ControlRelayOutputBlock& command,
@@ -293,7 +318,60 @@ public:
                           IUpdateHandler& handler,
                           OperateType opType) override
     {
-        return CommandStatus::SUCCESS;
+        auto db = (*mongoClient)[dbstrMongo];
+        auto rtDataCollection = db["realtimeData"];
+        auto fullDocument = rtDataCollection.find_one(make_document(
+            kvp("origin", "command"), kvp("type", "digital"),
+            kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Connection->protocolConnectionNumber),
+            kvp("protocolDestinations.protocolDestinationCommonAddress", 12),
+            kvp("protocolDestinations.protocolDestinationObjectAddress", index),
+            kvp("protocolDestinations.protocolDestinationCommandUseSBO", true)));
+        if (!fullDocument)
+        {
+            Log.Log(dnp3Connection->name
+                    + (std::string) " - Tag not found in the database for ControlRelayOutputBlock index: "
+                    + std::to_string(index));
+            return CommandStatus::NOT_SUPPORTED;
+        }
+        if (!(*fullDocument)["enabled"].get_bool().value)
+        {
+            Log.Log(dnp3Connection->name
+                    + (std::string) " - Tag disabled in the database for ControlRelayOutputBlock index: "
+                    + std::to_string(index));
+            return CommandStatus::BLOCKED;
+        }
+        if (command.opType == OperationType::NUL)
+        {
+            Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index)
+                    + (std::string) " - OperationType: NUL");
+            return CommandStatus::NOT_SUPPORTED;
+        }
+        auto protocolDestinations = (*fullDocument)["protocolDestinations"].get_array().value;
+        for (const auto& el : protocolDestinations)
+        {
+            auto protocolDestination = el.get_document().value;
+            auto protocolDestinationConnectionNumber
+                = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+            if (dnp3Connection->protocolConnectionNumber != protocolDestinationConnectionNumber)
+                continue;
+
+            auto commandsQueueCollection = db["commandsQueue"];
+            auto res = rtDataCollection.insert_one(make_document(
+                kvp("protocolSourceConnectionNumber", dnp3Connection->protocolConnectionNumber),
+                kvp("protocolSourceCommonAddress", 12), kvp("protocolSourceObjectAddress", index),
+                kvp("protocolSourceASDU", getDouble(protocolDestination, "protocolDestinationASDU")),
+                kvp("protocolSourceCommandDuration", (double)(uint8_t)command.opType),
+                kvp("protocolSourceCommandUseSBO", getDouble(protocolDestination, "protocolDestinationCommandUseSBO")),
+                kvp("point_key", getDouble(*fullDocument, "_id")),
+                kvp("tag", getString(*fullDocument, "tag")),
+                kvp("value", command.tcc == TripCloseCode::CLOSE? 1.0: 0.0), kvp("valueString", ""),
+                kvp("originatorUserName", "DNP3 Server Driver"), kvp("originatorIpAddress", ""),
+                kvp("timeTag", std::chrono::system_clock::now().time_since_epoch().count())));
+
+            return CommandStatus::SUCCESS;
+        }
+
+        return CommandStatus::NOT_SUPPORTED;
     }
     CommandStatus Select(const AnalogOutputInt16& command, uint16_t index) override
     {
@@ -611,6 +689,7 @@ int __cdecl main(int argc, char* argv[])
     mongocxx::uri uri(uristrMongo);
     std::cout << "Connecting to MongoDB" << std::endl;
     mongocxx::client client(uri);
+
     std::cout << "Connected to MongoDB" << std::endl;
 
     auto db = client[dbstrMongo];
@@ -739,7 +818,8 @@ int __cdecl main(int argc, char* argv[])
 
     for (auto& dnp3Conn : dnp3Connections)
     {
-        Log.Log(std::string("Protocol Connection Number: ") + std::to_string(dnp3Conn.protocolConnectionNumber));
+        Log.Log(dnp3Conn.name + std::string(" - Connection Number: ")
+                + std::to_string(dnp3Conn.protocolConnectionNumber));
 
         if (dnp3Conn.autoCreateTags)
         {
@@ -931,6 +1011,9 @@ int __cdecl main(int argc, char* argv[])
         }
 
         dnp3Conn.commandHandler = std::make_shared<MyCommandHandler>();
+        static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->mongoClient = &client;
+        static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
+        static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
 
         // find tags with a destination linked to this connection
         mongocxx::options::find opts;
@@ -940,24 +1023,26 @@ int __cdecl main(int argc, char* argv[])
                                                     kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                                         dnp3Conn.protocolConnectionNumber)),
                                       opts);
-        auto cnt_binary = 0;
-        auto cnt_double_binary = 0;
-        auto cnt_analog = 0;
-        auto cnt_counter = 0;
-        auto cnt_frozen_counter = 0;
-        auto cnt_binary_output_status = 0;
-        auto cnt_analog_output_status = 0;
-        auto cnt_time_and_interval = 0;
-        auto cnt_octet_string = 0;
+        auto lastBinaryInput = -1;
+        auto lastDoubleBinaryInput = -1;
+        auto lastAnalogInput = -1;
+        auto lastCounter = -1;
+        auto lastFrozenCounter = -1;
+        auto lastBinaryOuputStatus = -1;
+        auto lastAnalogOutputStatus = -1;
+        auto lastTimeAndInterval = -1;
+        auto lastOctetString = -1;
 
         for (auto&& doc : resTags)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
             for (const auto& el : protocolDestinations)
             {
-                auto protocolDestination = el.get_document().value;
-                auto protocolDestinationConnectionNumber
+                const auto protocolDestination = el.get_document().value;
+                const auto protocolDestinationConnectionNumber
                     = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                const auto protocolDestinationObjectAddress
+                    = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
 
                 if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                     continue;
@@ -966,39 +1051,48 @@ int __cdecl main(int argc, char* argv[])
                 {
                 case 1:
                 case 2:
-                    cnt_binary++;
+                    if (protocolDestinationObjectAddress > lastBinaryInput)
+                        lastBinaryInput = protocolDestinationObjectAddress;
                     break;
                 case 3:
                 case 4:
-                    cnt_double_binary++;
+                    if (protocolDestinationObjectAddress > lastDoubleBinaryInput)
+                        lastDoubleBinaryInput = protocolDestinationObjectAddress;
                     break;
                 case 20:
                 case 22:
-                    cnt_counter++;
+                    if (protocolDestinationObjectAddress > lastCounter)
+                        lastCounter = protocolDestinationObjectAddress;
                     break;
                 case 21:
                 case 23:
-                    cnt_frozen_counter++;
+                    if (protocolDestinationObjectAddress > lastFrozenCounter)
+                        lastFrozenCounter = protocolDestinationObjectAddress;
                     break;
                 case 10:
                 case 11:
-                    cnt_binary_output_status++;
+                    if (protocolDestinationObjectAddress > lastBinaryOuputStatus)
+                        lastBinaryOuputStatus = protocolDestinationObjectAddress;
                     break;
                 case 30:
                 case 32:
-                    cnt_analog++;
+                    if (protocolDestinationObjectAddress > lastAnalogInput)
+                        lastAnalogInput = protocolDestinationObjectAddress;
                     break;
                 case 40:
                 case 42:
-                    cnt_analog_output_status++;
+                    if (protocolDestinationObjectAddress > lastAnalogOutputStatus)
+                        lastAnalogOutputStatus = protocolDestinationObjectAddress;
                     break;
                 case 50:
                 case 52:
-                    cnt_time_and_interval++;
+                    if (protocolDestinationObjectAddress > lastTimeAndInterval)
+                        lastTimeAndInterval = protocolDestinationObjectAddress;
                     break;
                 case 110:
                 case 111:
-                    cnt_octet_string++;
+                    if (protocolDestinationObjectAddress > lastOctetString)
+                        lastOctetString = protocolDestinationObjectAddress;
                     break;
                 }
             }
@@ -1007,9 +1101,17 @@ int __cdecl main(int argc, char* argv[])
         // The main object for a outstation. The defaults are useable,
         // but understanding the options are important.
 
-        DatabaseConfig cfg = database_by_sizes(cnt_binary, cnt_double_binary, cnt_analog, cnt_counter,
-                                               cnt_frozen_counter, cnt_binary_output_status, cnt_analog_output_status,
-                                               cnt_time_and_interval, cnt_octet_string);
+        DatabaseConfig cfg = database_by_sizes(
+            lastBinaryInput + 1, lastDoubleBinaryInput + 1, lastAnalogInput + 1, lastCounter + 1, lastFrozenCounter + 1,
+            lastBinaryOuputStatus + 1, lastAnalogOutputStatus + 1, lastTimeAndInterval + 1, lastOctetString + 1);
+        Log.Log(dnp3Conn.name + " - Outstation created with " + std::to_string(cfg.binary_input.size())
+                + " binary inputs, " + std::to_string(cfg.double_binary.size()) + " double binary inputs, "
+                + std::to_string(cfg.analog_input.size()) + " analog inputs, " + std::to_string(cfg.counter.size())
+                + " counters, " + std::to_string(cfg.frozen_counter.size()) + " frozen counters, "
+                + std::to_string(cfg.binary_output_status.size()) + " binary output statuses, "
+                + std::to_string(cfg.analog_output_status.size()) + " analog output statuses, "
+                + std::to_string(cfg.time_and_interval.size()) + " time and intervals, "
+                + std::to_string(cfg.octet_string.size()) + " octet strings");
         for (int i = 0; i < cfg.binary_input.size(); i++)
         {
             cfg.binary_input[i].clazz = PointClass::Class2;
