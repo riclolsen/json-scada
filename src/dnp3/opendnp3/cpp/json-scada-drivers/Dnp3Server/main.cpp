@@ -224,7 +224,7 @@ static double getDate(const bsoncxx::document::view& doc, const std::string& key
         case bsoncxx::type::k_double:
             return value.get_double().value;
         case bsoncxx::type::k_date:
-            return value.get_date().value.count();
+            return (double)value.get_date().value.count();
         default:
             return defaultVal;
         }
@@ -483,7 +483,9 @@ public:
 
             return CommandStatus::SUCCESS;
         }
+        return CommandStatus::NOT_SUPPORTED;
     };
+};
 
     opendnp3::DatabaseConfig database_by_sizes(uint16_t num_binary,
                                                uint16_t num_double_binary,
@@ -560,11 +562,11 @@ public:
         UpdateBuilder builder;
         uint8_t flags = 0;
         DoubleBit dbit;
-        uint64_t utime = getDate(doc, "timeTagAtSource");
+        uint64_t utime = (uint64_t)getDate(doc, "timeTagAtSource");
         DNPTime dtime;
         if (utime == 0)
         {
-            utime = getDate(doc, "timeTag");
+            utime = (uint64_t)getDate(doc, "timeTag");
             if (utime == 0)
                 utime = std::chrono::system_clock::now().time_since_epoch().count();
             utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
@@ -652,7 +654,7 @@ public:
             break;
         case 50:
         case 52:
-            builder.Update(TimeAndInterval{DNPTime(getDouble(doc, "value"), TimestampQuality::SYNCHRONIZED), 0,
+            builder.Update(TimeAndInterval{DNPTime((uint64_t)getDouble(doc, "value"), TimestampQuality::SYNCHRONIZED), 0,
                                            IntervalUnits::Seconds},
                            protocolDestinationObjectAddress);
 
@@ -919,7 +921,7 @@ public:
                             == dnp3Conn.protocolConnectionNumber)
                         {
                             if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG1Addr)
-                                lastG1Addr = getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                                lastG1Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
                         }
                     }
                 }
@@ -943,6 +945,11 @@ public:
                     }
                     Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
                             + " Dnp3Address: " + std::to_string(lastG1Addr));
+                    if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                    {
+                        db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
+                                                      bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
+                    }
                     db["realtimeData"].update_one(
                         make_document(kvp("_id", getDouble(doc, "_id"))),
                         make_document(kvp(
@@ -988,7 +995,7 @@ public:
                             == dnp3Conn.protocolConnectionNumber)
                         {
                             if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG30Addr)
-                                lastG30Addr = getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                                lastG30Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
                         }
                     }
                 }
@@ -1013,6 +1020,11 @@ public:
 
                     Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
                             + " Dnp3Address: " + std::to_string(lastG30Addr));
+                    if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                    {
+                        db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
+                                                      bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
+                    }
                     db["realtimeData"].update_one(
                         make_document(kvp("_id", getDouble(doc, "_id"))),
                         make_document(kvp(
@@ -1071,7 +1083,7 @@ public:
                 std::getline(ss, portStr);
                 port = std::stoi(portStr);
                 dnp3Conn.channel
-                    = dnp3Conn.manager->AddTCPServer(dnp3Conn.name, logLevels, ServerAcceptMode::CloseExisting,
+                    = dnp3Conn.manager->AddTCPServer(dnp3Conn.name, logLevels, ServerAcceptMode::CloseNew,
                                                      IPEndpoint(ipAddr, port), PrintingChannelListener::Create());
             }
             catch (const std::exception& e)
