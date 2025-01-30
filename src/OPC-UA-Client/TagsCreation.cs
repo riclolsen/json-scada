@@ -30,6 +30,23 @@ partial class MainClass
         public BsonDouble _id = 0.0;
     }
     [BsonIgnoreExtraElements]
+    public class protocolDestination
+    {
+        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
+        public BsonDouble protocolDestinationConnectionNumber = 0.0;
+        public BsonDouble protocolDestinationCommonAddress = 0.0;
+        public BsonDouble protocolDestinationObjectAddress = 0.0;
+        public BsonDouble protocolDestinationASDU = 0.0;
+        public BsonDouble protocolDestinationCommandDuration = 0.0;
+        public BsonBoolean protocolDestinationCommandUseSBO = false;
+        public BsonDouble protocolDestinationKConv1 = 1.0;
+        public BsonDouble protocolDestinationKConv2 = 0.0;
+        public BsonDouble protocolDestinationGroup = 0.0;
+        public BsonDouble protocolDestinationHoursShift = 0.0;
+
+    }
+
+    [BsonIgnoreExtraElements]
     public class rtData
     {
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
@@ -111,7 +128,7 @@ partial class MainClass
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
         public BsonDouble priority;
         [BsonDefaultValue(null)]
-        public BsonValue protocolDestinations;
+        public protocolDestination[] protocolDestinations;
         [BsonDefaultValue("")]
         public BsonString protocolSourceASDU { get; set; }
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
@@ -260,7 +277,7 @@ partial class MainClass
                 overflow = false,
                 parcels = BsonNull.Value,
                 priority = 0.0,
-                protocolDestinations = BsonNull.Value,
+                protocolDestinations = new protocolDestination[] { },
                 sourceDataUpdate = BsonNull.Value,
                 supervisedOfCommand = ov.createCommandForSupervised ? _id + 1 : 0.0,
                 substituted = false,
@@ -335,7 +352,7 @@ partial class MainClass
                 overflow = false,
                 parcels = BsonNull.Value,
                 priority = 0.0,
-                protocolDestinations = BsonNull.Value,
+                protocolDestinations = new protocolDestination[] { },
                 sourceDataUpdate = BsonNull.Value,
                 supervisedOfCommand = 0.0,
                 substituted = false,
@@ -410,7 +427,7 @@ partial class MainClass
                 overflow = false,
                 parcels = BsonNull.Value,
                 priority = 0.0,
-                protocolDestinations = BsonNull.Value,
+                protocolDestinations = new protocolDestination[] { },
                 sourceDataUpdate = BsonNull.Value,
                 supervisedOfCommand = 0.0,
                 substituted = false,
@@ -485,7 +502,7 @@ partial class MainClass
                 overflow = false,
                 parcels = BsonNull.Value,
                 priority = 0.0,
-                protocolDestinations = BsonNull.Value,
+                protocolDestinations = new protocolDestination[] { },
                 sourceDataUpdate = BsonNull.Value,
                 supervisedOfCommand = 0.0,
                 substituted = false,
@@ -559,7 +576,7 @@ partial class MainClass
             overflow = false,
             parcels = BsonNull.Value,
             priority = 0.0,
-            protocolDestinations = BsonNull.Value,
+            protocolDestinations = new protocolDestination[] { },
             sourceDataUpdate = BsonNull.Value,
             supervisedOfCommand = 0.0,
             substituted = false,
