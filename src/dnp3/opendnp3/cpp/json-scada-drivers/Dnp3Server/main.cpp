@@ -68,6 +68,20 @@ inline bool ends_with(std::string const& value, std::string const& ending)
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+bool isConnected(mongocxx::database& database)
+{
+    try
+    {
+        auto command = database.run_command(make_document(kvp("ping", 1)));
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Connection error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 // Logger class to handle logging with different levels
 class Logger
 {
@@ -297,6 +311,8 @@ public:
     void End() override {}
     CommandStatus Select(const ControlRelayOutputBlock& command, uint16_t index) override
     {
+        if (mongoClient == nullptr)
+            return CommandStatus::DOWNSTREAM_FAIL;
         auto db = (*mongoClient)[dbstrMongo];
         auto rtDataCollection = db["realtimeData"];
         auto result = rtDataCollection.find_one(make_document(
@@ -326,6 +342,8 @@ public:
                           IUpdateHandler& handler,
                           OperateType opType) override
     {
+        if (mongoClient == nullptr)
+            return CommandStatus::DOWNSTREAM_FAIL;
         auto db = (*mongoClient)[dbstrMongo];
         auto rtDataCollection = db["realtimeData"];
         auto fullDocument = rtDataCollection.find_one(make_document(
@@ -421,6 +439,8 @@ public:
     }
     CommandStatus Select(const AnalogOutputDouble64& command, uint16_t index) override
     {
+        if (mongoClient == nullptr)
+            return CommandStatus::DOWNSTREAM_FAIL;
         auto db = (*mongoClient)[dbstrMongo];
         auto rtDataCollection = db["realtimeData"];
         auto result = rtDataCollection.find_one(make_document(
@@ -448,6 +468,8 @@ public:
                           IUpdateHandler& handler,
                           OperateType opType) override
     {
+        if (mongoClient == nullptr)
+            return CommandStatus::DOWNSTREAM_FAIL;
         auto db = (*mongoClient)[dbstrMongo];
         auto rtDataCollection = db["realtimeData"];
         auto fullDocument = rtDataCollection.find_one(make_document(
@@ -1210,7 +1232,7 @@ int __cdecl main(int argc, char* argv[])
                         settings.stopBits = StopBits::One;
                         settings.parity = Parity::None;
                         settings.flowType = FlowControl::None;
-                        settings.asyncOpenDelay = TimeDuration::Milliseconds(dnp3Conn.asyncOpenDelay);
+                        settings.asyncOpenDelay = TimeDuration::Milliseconds((int64_t)dnp3Conn.asyncOpenDelay);
 
                         if (dnp3Conn.parity == "EVEN")
                             settings.parity = Parity::Even;
@@ -1304,7 +1326,7 @@ int __cdecl main(int argc, char* argv[])
             Log.Log(dnp3Conn.name + " - Error configuring connection: " + e.what());
             return -1;
         }
-        
+
         if (dnp3Conn.channel == nullptr)
         {
             Log.Log(dnp3Conn.name + " - Error allocating channel!");
@@ -1312,9 +1334,6 @@ int __cdecl main(int argc, char* argv[])
         }
 
         dnp3Conn.commandHandler = std::make_shared<MyCommandHandler>();
-        static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->mongoClient = &client;
-        static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
-        static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
 
         // find tags with a destination linked to this connection
         mongocxx::options::find opts;
@@ -1543,45 +1562,65 @@ int __cdecl main(int argc, char* argv[])
     pipelineStr.replace(pipelineStr.find("__CONNS__"), std::string("__CONNS__").length(), connectionsListStr);
     pipeline.match((bsoncxx::from_json(pipelineStr)));
 
-    auto changeStream = rtDataCollection.watch(pipeline, options);
+    Log.Log("Watching for changes on collection: realtimeData...");
 
-    std::cout << "Watching for changes on collection: realtimeData..." << std::endl;
     while (true)
     {
-        for (const auto& event : changeStream)
+        try
         {
-            // std::cout << "Change detected: " << bsoncxx::to_json(event) << std::endl;
-            try
-            {
-                auto fullDocument = event["fullDocument"].get_document().value;
-                auto protocolDestinations = fullDocument["protocolDestinations"].get_array().value;
-                for (const auto& el : protocolDestinations)
-                {
-                    auto protocolDestination = el.get_document().value;
-                    auto protocolDestinationConnectionNumber
-                        = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
-                    for (auto& dnp3Conn : dnp3Connections)
-                    {
-                        if (dnp3Conn.protocolConnectionNumber == 0)
-                            continue;
-                        if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
-                            continue;
-                        if (dnp3Conn.outstation == nullptr)
-                            continue;
+            std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
 
-                        auto updates = ConvertValue(fullDocument, protocolDestination, EventMode::Force);
-                        dnp3Conn.outstation->Apply(updates);
-                        break;
+            std::cout << "Connecting to MongoDB" << std::endl;
+            mongocxx::client client(uri);
+            std::cout << "Connected to MongoDB" << std::endl;
+            db = client[dbstrMongo];
+
+            if (!isConnected(db))
+                continue;
+
+            for (auto& dnp3Conn : dnp3Connections)
+            {
+                static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->mongoClient = &client;
+                static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
+                static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
+            }
+            rtDataCollection = db["realtimeData"];
+            auto changeStream = rtDataCollection.watch(pipeline, options);
+
+            while (true)
+            {
+                for (const auto& event : changeStream)
+                {
+                    // std::cout << "Change detected: " << bsoncxx::to_json(event) << std::endl;
+                    auto fullDocument = event["fullDocument"].get_document().value;
+                    auto protocolDestinations = fullDocument["protocolDestinations"].get_array().value;
+                    for (const auto& el : protocolDestinations)
+                    {
+                        auto protocolDestination = el.get_document().value;
+                        auto protocolDestinationConnectionNumber
+                            = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                        for (auto& dnp3Conn : dnp3Connections)
+                        {
+                            if (dnp3Conn.protocolConnectionNumber == 0)
+                                continue;
+                            if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
+                                continue;
+                            if (dnp3Conn.outstation == nullptr)
+                                continue;
+
+                            auto updates = ConvertValue(fullDocument, protocolDestination, EventMode::Force);
+                            dnp3Conn.outstation->Apply(updates);
+                            break;
+                        }
                     }
                 }
             }
-            catch (const std::exception& e)
-            {
-                Log.Log("Mongo change stream - Exceptiion: " + (std::string)e.what());
-                continue;
-            }
+        }
+        catch (const std::exception& e)
+        {
+            Log.Log("Mongo change stream - Exception: " + (std::string)e.what());
+            continue;
         }
     }
-
     return 0;
 }
