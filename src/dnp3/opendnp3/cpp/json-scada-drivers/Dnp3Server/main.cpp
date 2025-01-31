@@ -973,12 +973,16 @@ int __cdecl main(int argc, char* argv[])
     mongocxx::uri uri(uristrMongo);
     std::cout << "Connecting to MongoDB" << std::endl;
     mongocxx::client client(uri);
+    auto db = client[dbstrMongo];
+
+    while (!isConnected(db))
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
+        std::cout << "Connecting to MongoDB" << std::endl;
+    }
 
     std::cout << "Connected to MongoDB" << std::endl;
 
-    auto db = client[dbstrMongo];
-    // auto rtDataCollection = db["realtimeData"];
-    // auto result = rtDataCollection.find_one(make_document(kvp("_id", -1.0)));
     auto protocolDriverInstancesCollection = db["protocolDriverInstances"];
     auto result = protocolDriverInstancesCollection.find_one(make_document(
         kvp("protocolDriver", "DNP3_SERVER"), kvp("protocolDriverInstanceNumber", ProtocolDriverInstanceNumber)));
@@ -1755,15 +1759,17 @@ int __cdecl main(int argc, char* argv[])
     {
         try
         {
-            std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
-
             std::cout << "Connecting to MongoDB" << std::endl;
             mongocxx::client client(uri);
-            std::cout << "Connected to MongoDB" << std::endl;
             db = client[dbstrMongo];
 
-            if (!isConnected(db))
-                continue;
+            while (!isConnected(db))
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
+                std::cout << "Connecting to MongoDB" << std::endl;
+            }
+
+            std::cout << "Connected to MongoDB" << std::endl;
 
             for (auto& dnp3Conn : dnp3Connections)
             {
@@ -1806,6 +1812,7 @@ int __cdecl main(int argc, char* argv[])
         catch (const std::exception& e)
         {
             Log.Log("Mongo change stream - Exception: " + (std::string)e.what());
+            std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
             continue;
         }
     }
