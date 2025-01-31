@@ -1785,6 +1785,7 @@ int __cdecl main(int argc, char* argv[])
 
     Log.Log("Watching for changes on collection: realtimeData...");
 
+    bsoncxx::v_noabi::document::view resumeToken;
     while (true)
     {
         try
@@ -1808,6 +1809,7 @@ int __cdecl main(int argc, char* argv[])
                 static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
             }
             auto rtDataCollection = db["realtimeData"];
+            options.resume_after(resumeToken);
             auto changeStream = rtDataCollection.watch(pipeline, options);
 
             while (true)
