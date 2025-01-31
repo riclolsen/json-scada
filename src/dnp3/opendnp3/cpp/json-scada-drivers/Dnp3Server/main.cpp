@@ -710,6 +710,192 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     return updates;
 }
 
+static void DefineGroupVar(const bsoncxx::document::view& doc,
+                           const bsoncxx::document::view& protocolDestination,
+                           opendnp3::DatabaseConfig& cfg)
+{
+    auto group = (int)getDouble(protocolDestination, "protocolDestinationCommonAddress");
+    auto variation = (int)getDouble(protocolDestination, "protocolDestinationASDU");
+    auto i = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
+
+    switch (group)
+    {
+    case 1:
+    case 2:
+        cfg.binary_input[i].svariation = StaticBinaryVariation::Group1Var2;
+        cfg.binary_input[i].evariation = EventBinaryVariation::Group2Var2;
+        break;
+    case 3:
+    case 4:
+        cfg.double_binary[i].svariation = StaticDoubleBinaryVariation::Group3Var2;
+        cfg.double_binary[i].evariation = EventDoubleBinaryVariation::Group4Var2;
+        break;
+    case 21:
+    case 23:
+        switch (variation)
+        {
+        default:
+        case 1: // 32 bit flag
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            break;
+        case 2: // 16 bit flag
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var2;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var6;
+            break;
+        case 3: // 32 bit flag delta
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            break;
+        case 4: // 16 bit flag delta
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var2;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var6;
+            break;
+        case 5: // 32 bit flag time
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var5;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            break;
+        case 6: // 16 bit flag time
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var6;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var6;
+            break;
+        case 7: // 32 bit flag time delta
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var5;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            break;
+        case 8: // 16 bit flag time delta
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var6;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var6;
+            break;
+        case 9: // 32 bit w/o flag
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            break;
+        case 10: // 16 bit w/o flag
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var2;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var6;
+            break;
+        case 11: // 32 bit w/o flag delta
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
+            break;
+        case 12: // 16 bit w/o flag delta
+            cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var2;
+            cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var6;
+            break;
+        }
+        break;
+    case 20:
+    case 22:
+        switch (variation)
+        {
+        default:
+        case 1: // 32 bit flag
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var1;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var5;
+            break;
+        case 2: // 16 bit flag
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var2;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var6;
+            break;
+        case 3: // 32 bit flag delta
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var1;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var5;
+            break;
+        case 4: // 16 bit flag delta
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var2;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var6;
+            break;
+        case 5: // 32 bit w/o flag
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var5;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var5;
+            break;
+        case 6: // 16 bit w/o flag
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var6;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var6;
+            break;
+        case 7: // 32 bit w/o flag delta
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var5;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var5;
+            break;
+        case 8: // 16 bit w/o flag delta
+            cfg.counter[i].svariation = StaticCounterVariation::Group20Var6;
+            cfg.counter[i].evariation = EventCounterVariation::Group22Var6;
+            break;
+        }
+        break;
+    case 10:
+    case 11:
+        cfg.binary_output_status[i].svariation = StaticBinaryOutputStatusVariation::Group10Var2;
+        cfg.binary_output_status[i].evariation = EventBinaryOutputStatusVariation::Group11Var2;
+        break;
+    case 40:
+    case 42:
+        switch (variation)
+        {
+        case 1: // 32 bit
+            cfg.analog_output_status[i].svariation = StaticAnalogOutputStatusVariation::Group40Var1;
+            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var3;
+            break;
+        case 2: // 16 bit
+            cfg.analog_output_status[i].svariation = StaticAnalogOutputStatusVariation::Group40Var2;
+            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var3;
+            break;
+        default:
+        case 3: // single precision FP
+            cfg.analog_output_status[i].svariation = StaticAnalogOutputStatusVariation::Group40Var3;
+            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var7;
+            break;
+        case 4: // double precision FP
+            cfg.analog_output_status[i].svariation = StaticAnalogOutputStatusVariation::Group40Var4;
+            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var8;
+            break;
+        }
+        break;
+    case 110:
+    case 111:
+        cfg.octet_string[i].svariation = StaticOctetStringVariation::Group110Var0;
+        cfg.octet_string[i].evariation = EventOctetStringVariation::Group111Var0;
+        break;
+    case 50:
+    case 52:
+        cfg.time_and_interval[i].svariation = StaticTimeAndIntervalVariation::Group50Var4;
+        break;
+    case 30:
+    case 32:
+    default:
+        switch (variation)
+        {
+        case 1: // 32 bit
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var1;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var1;
+            break;
+        case 2: // 16 bit
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var2;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var2;
+            break;
+        case 3: // 32 bit w/o flag
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var3;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var3;
+            break;
+        case 4: // 16 bit w/o flag
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var4;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var4;
+            break;
+        case 5: // single precision FP
+        default:
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var7;
+            break;
+        case 6: // double precision FP
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var6;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var8;
+            break;
+        }
+        break;
+    }
+}
+
 int __cdecl main(int argc, char* argv[])
 {
     Log.Log(CopyrightMessage);
@@ -1434,7 +1620,7 @@ int __cdecl main(int argc, char* argv[])
                 + std::to_string(cfg.octet_string.size()) + " octet strings");
         for (int i = 0; i < cfg.binary_input.size(); i++)
         {
-            cfg.binary_input[i].clazz = PointClass::Class2;
+            cfg.binary_input[i].clazz = PointClass::Class1;
             cfg.binary_input[i].svariation = StaticBinaryVariation::Group1Var2;
             cfg.binary_input[i].evariation = EventBinaryVariation::Group2Var2;
         }
@@ -1460,7 +1646,7 @@ int __cdecl main(int argc, char* argv[])
         }
         for (int i = 0; i < cfg.frozen_counter.size(); i++)
         {
-            cfg.frozen_counter[i].clazz = PointClass::Class2;
+            cfg.frozen_counter[i].clazz = PointClass::Class3;
             cfg.frozen_counter[i].svariation = StaticFrozenCounterVariation::Group21Var1;
             cfg.frozen_counter[i].evariation = EventFrozenCounterVariation::Group23Var5;
             cfg.frozen_counter[i].deadband = 0;
@@ -1484,7 +1670,7 @@ int __cdecl main(int argc, char* argv[])
         }
         for (int i = 0; i < cfg.octet_string.size(); i++)
         {
-            cfg.octet_string[i].clazz = PointClass::Class2;
+            cfg.octet_string[i].clazz = PointClass::Class3;
             cfg.octet_string[i].svariation = StaticOctetStringVariation::Group110Var0;
             cfg.octet_string[i].evariation = EventOctetStringVariation::Group111Var0;
         }
@@ -1526,6 +1712,7 @@ int __cdecl main(int argc, char* argv[])
 
                 if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                     continue;
+                DefineGroupVar(doc, protocolDestination, cfg);
 
                 auto updates = ConvertValue(doc, protocolDestination, EventMode::Suppress);
                 dnp3Conn.outstation->Apply(updates);
@@ -1584,7 +1771,7 @@ int __cdecl main(int argc, char* argv[])
                 static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
                 static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
             }
-            rtDataCollection = db["realtimeData"];
+            auto rtDataCollection = db["realtimeData"];
             auto changeStream = rtDataCollection.watch(pipeline, options);
 
             while (true)
