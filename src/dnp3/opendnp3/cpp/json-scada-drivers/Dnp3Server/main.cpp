@@ -1149,6 +1149,14 @@ int __cdecl main(int argc, char* argv[])
 
             for (auto&& doc : resTagsDig)
             {
+                if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
+                {
+                    bool found = false;
+                    for (auto& topic : dnp3Conn.topics)
+                        if (getString(doc, "group1").find(topic) != std::string::npos) found = true;   
+                    if (!found) continue; // skip this group if it does not match any topic
+                }
+
                 lastG1Addr++;
                 if (lastG1Addr > 65535)
                 {
@@ -1219,6 +1227,14 @@ int __cdecl main(int argc, char* argv[])
 
             for (auto&& doc : resTagsAna)
             {
+                if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
+                {
+                    bool found = false;
+                    for (auto& topic : dnp3Conn.topics)
+                        if (getString(doc, "group1").find(topic) != std::string::npos) found = true;   
+                    if (!found) continue; // skip this group if it does not match any topic
+                }
+
                 lastG30Addr++;
                 if (lastG30Addr > 65535)
                 {
