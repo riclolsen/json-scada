@@ -262,6 +262,8 @@ typedef struct
 {
     int protocolConnectionNumber;
     std::string name;
+    bool enabled;
+    bool commandsEnabled;
     std::string ipAddressLocalBind;
     std::vector<std::string> ipAddresses;
     std::vector<std::string> topics;
@@ -1030,6 +1032,8 @@ int __cdecl main(int argc, char* argv[])
 
         DNP3Connection_t dnp3Connection{(int)getDouble(doc, "protocolConnectionNumber"),
                                         getString(doc, "name"),
+                                        getBoolean(doc, "enabled"),
+                                        getBoolean(doc, "commandsEnabled"),
                                         getString(doc, "ipAddressLocalBind"),
                                         std::vector<std::string>{}, // ipAddresses
                                         std::vector<std::string>{}, // topics
@@ -1109,10 +1113,174 @@ int __cdecl main(int argc, char* argv[])
             Log.Log("Auto Create Tags is enabled");
             // Create destination for tags on the DNP3 connection
 
-            // DIGITAL TAGS, will distribute as Group 1 VAR 0
-            auto lastG1Addr = -1;
+            if (dnp3Conn.commandsEnabled)
+            {
+                // find the latest used object address for crob commands
+                // DIGITAL COMMAND TAGS, will distribute as Group 12 VAR 1
+                auto lastG12Addr = -1;
+
+                // find tags with a destination linked to this connection
+                opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+                auto resTagsG21 = db["realtimeData"].find(
+                    make_document(kvp("type", "digital"), kvp("origin", "command"),
+                                  kvp("protocolDestinations.protocolDestinationCommonAddress", 12),
+                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                      dnp3Conn.protocolConnectionNumber)),
+                    opts);
+                for (auto&& docG1 : resTagsG21)
+                {
+                    // look in the protocolDestinations array for entry with the connection number
+                    auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
+                    for (const auto& el : protocolDestinations)
+                    {
+                        auto protocolDestination = el.get_document().value;
+                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
+                            == dnp3Conn.protocolConnectionNumber)
+                        {
+                            if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG12Addr)
+                                lastG12Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                        }
+                    }
+                }
+                Log.Log(dnp3Conn.name + " - Last Group 12 Address: " + std::to_string(lastG12Addr));
+
+                // look for tags without a destination linked to this connection
+                opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
+                auto resTagsCrob = db["realtimeData"].find(
+                    make_document(kvp("type", "digital"), kvp("origin", "command"),
+                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                      make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
+                    opts);
+
+                for (auto&& doc : resTagsCrob)
+                {
+                    if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
+                    {
+                        bool found = false;
+                        for (auto& topic : dnp3Conn.topics)
+                            if (getString(doc, "group1").find(topic) != std::string::npos)
+                                found = true;
+                        if (!found)
+                            continue; // skip this group if it does not match any topic
+                    }
+
+                    lastG12Addr++;
+                    if (lastG12Addr > 65535)
+                    {
+                        Log.Log(dnp3Conn.name + " - Object address for crob commands exceeds 65535!");
+                        break;
+                    }
+                    Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
+                            + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG12Addr));
+                    if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                    {
+                        db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
+                                                      bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
+                    }
+                    db["realtimeData"].update_one(
+                        make_document(kvp("_id", getDouble(doc, "_id"))),
+                        make_document(kvp(
+                            "$push",
+                            make_document(kvp(
+                                "protocolDestinations",
+                                make_document(
+                                    kvp("protocolDestinationConnectionNumber",
+                                        (double)dnp3Conn.protocolConnectionNumber),
+                                    kvp("protocolDestinationCommonAddress", 12.0),
+                                    kvp("protocolDestinationObjectAddress", (double)lastG12Addr),
+                                    kvp("protocolDestinationASDU", 1.0), kvp("protocolDestinationCommandDuration", 0.0),
+                                    kvp("protocolDestinationCommandUseSBO", false),
+                                    kvp("protocolDestinationCommandDuration", 11.0),
+                                    kvp("protocolDestinationKConv1", 1.0), kvp("protocolDestinationKConv2", 0.0),
+                                    kvp("protocolDestinationGroup", 0.0),
+                                    kvp("protocolDestinationHoursShift", 0.0)))))));
+                }
+
+                // find the latest used object address for analog output commands
+                // ANALOG COMMAND TAGS, will distribute as Group 41 VAR 3
+                auto lastG41Addr = -1;
+
+                // find tags with a destination linked to this connection
+                opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
+                auto resTagsG41 = db["realtimeData"].find(
+                    make_document(kvp("type", "analog"), kvp("origin", "command"),
+                                  kvp("protocolDestinations.protocolDestinationCommonAddress", 41),
+                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                      dnp3Conn.protocolConnectionNumber)),
+                    opts);
+                for (auto&& docG1 : resTagsG41)
+                {
+                    // look in the protocolDestinations array for entry with the connection number
+                    auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
+                    for (const auto& el : protocolDestinations)
+                    {
+                        auto protocolDestination = el.get_document().value;
+                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
+                            == dnp3Conn.protocolConnectionNumber)
+                        {
+                            if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG41Addr)
+                                lastG41Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                        }
+                    }
+                }
+                Log.Log(dnp3Conn.name + " - Last Group 41 Address: " + std::to_string(lastG41Addr));
+
+                // look for tags without a destination linked to this connection
+                opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
+                auto resTagsAnalogCmd = db["realtimeData"].find(
+                    make_document(kvp("type", "analog"), kvp("origin", "command"),
+                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                      make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
+                    opts);
+
+                for (auto&& doc : resTagsAnalogCmd)
+                {
+                    if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
+                    {
+                        bool found = false;
+                        for (auto& topic : dnp3Conn.topics)
+                            if (getString(doc, "group1").find(topic) != std::string::npos)
+                                found = true;
+                        if (!found)
+                            continue; // skip this group if it does not match any topic
+                    }
+
+                    lastG41Addr++;
+                    if (lastG41Addr > 65535)
+                    {
+                        Log.Log(dnp3Conn.name + " - Object address for analog outputs exceeds 65535!");
+                        break;
+                    }
+                    Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
+                            + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG41Addr));
+                    if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                    {
+                        db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
+                                                      bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
+                    }
+                    db["realtimeData"].update_one(
+                        make_document(kvp("_id", getDouble(doc, "_id"))),
+                        make_document(kvp(
+                            "$push",
+                            make_document(kvp(
+                                "protocolDestinations",
+                                make_document(
+                                    kvp("protocolDestinationConnectionNumber",
+                                        (double)dnp3Conn.protocolConnectionNumber),
+                                    kvp("protocolDestinationCommonAddress", 41.0),
+                                    kvp("protocolDestinationObjectAddress", (double)lastG41Addr),
+                                    kvp("protocolDestinationASDU", 3.0), kvp("protocolDestinationCommandDuration", 0.0),
+                                    kvp("protocolDestinationCommandUseSBO", false),
+                                    kvp("protocolDestinationCommandDuration", 0.0),
+                                    kvp("protocolDestinationKConv1", 1.0), kvp("protocolDestinationKConv2", 0.0),
+                                    kvp("protocolDestinationGroup", 0.0),
+                                    kvp("protocolDestinationHoursShift", 0.0)))))));
+                }
+            }
 
             // find the latest used object address for digitals group1
+            // DIGITAL TAGS, will distribute as Group 1 VAR 2
+            auto lastG1Addr = -1;
 
             // find tags with a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
@@ -1165,8 +1333,8 @@ int __cdecl main(int argc, char* argv[])
                     Log.Log(dnp3Conn.name + " - Object address for digitals exceeds 65535!");
                     break;
                 }
-                Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
-                        + " Dnp3Address: " + std::to_string(lastG1Addr));
+                Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
+                        + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG1Addr));
                 if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
                 {
                     db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
@@ -1182,17 +1350,16 @@ int __cdecl main(int argc, char* argv[])
                                 kvp("protocolDestinationConnectionNumber", (double)dnp3Conn.protocolConnectionNumber),
                                 kvp("protocolDestinationCommonAddress", 1.0),
                                 kvp("protocolDestinationObjectAddress", (double)lastG1Addr),
-                                kvp("protocolDestinationASDU", 0.0), kvp("protocolDestinationCommandDuration", 0.0),
+                                kvp("protocolDestinationASDU", 2.0), kvp("protocolDestinationCommandDuration", 0.0),
                                 kvp("protocolDestinationCommandUseSBO", false),
                                 kvp("protocolDestinationCommandDuration", 0.0), kvp("protocolDestinationKConv1", 1.0),
                                 kvp("protocolDestinationKConv2", 0.0), kvp("protocolDestinationGroup", 0.0),
                                 kvp("protocolDestinationHoursShift", 0.0)))))));
             }
 
+            // find the latest used object address for analogs grooup 30
             // ANALOG TAGS, will distribute as Group 30 VAR 6 (double precision floating point)
             auto lastG30Addr = -1;
-
-            // find the latest used object address for analogs grooup 30
 
             // find tags with a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
@@ -1217,7 +1384,7 @@ int __cdecl main(int argc, char* argv[])
                     }
                 }
             }
-            Log.Log(dnp3Conn.name + " - Last Group 3 Address: " + std::to_string(lastG30Addr));
+            Log.Log(dnp3Conn.name + " - Last Group 30 Address: " + std::to_string(lastG30Addr));
 
             // look for tags without a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
@@ -1246,8 +1413,8 @@ int __cdecl main(int argc, char* argv[])
                     break;
                 }
 
-                Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
-                        + " Dnp3Address: " + std::to_string(lastG30Addr));
+                Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
+                        + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG30Addr));
                 if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
                 {
                     db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
