@@ -1112,7 +1112,7 @@ int __cdecl main(int argc, char* argv[])
             // DIGITAL TAGS, will distribute as Group 1 VAR 0
             auto lastG1Addr = -1;
 
-            // find the latest used object address
+            // find the latest used object address for digitals group1
 
             // find tags with a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
@@ -1124,8 +1124,6 @@ int __cdecl main(int argc, char* argv[])
                                           opts);
             for (auto&& docG1 : resTagsG1)
             {
-                // std::cout << bsoncxx::to_json(docG1) << std::endl;
-
                 // look in the protocolDestinations array for entry with the connection number
                 auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
                 for (const auto& el : protocolDestinations)
@@ -1139,6 +1137,7 @@ int __cdecl main(int argc, char* argv[])
                     }
                 }
             }
+            Log.Log(dnp3Conn.name + " - Last Group 1 Address: " + std::to_string(lastG1Addr));
 
             // look for tags without a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
@@ -1150,11 +1149,10 @@ int __cdecl main(int argc, char* argv[])
 
             for (auto&& doc : resTagsDig)
             {
-                // std::cout << bsoncxx::to_json(doc) << std::endl;
-                ++lastG1Addr;
+                lastG1Addr++;
                 if (lastG1Addr > 65535)
                 {
-                    Log.Log("Object address for digitals exceeds 65535");
+                    Log.Log(dnp3Conn.name + " - Object address for digitals exceeds 65535!");
                     break;
                 }
                 Log.Log("Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
@@ -1184,7 +1182,7 @@ int __cdecl main(int argc, char* argv[])
             // ANALOG TAGS, will distribute as Group 30 VAR 6 (double precision floating point)
             auto lastG30Addr = -1;
 
-            // find the latest used object address
+            // find the latest used object address for analogs grooup 30
 
             // find tags with a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
@@ -1196,8 +1194,6 @@ int __cdecl main(int argc, char* argv[])
                 opts);
             for (auto&& docG30 : resTagsG1)
             {
-                // std::cout << bsoncxx::to_json(docG1) << std::endl;
-
                 // look in the protocolDestinations array for entry with the connection number
                 auto protocolDestinations = docG30["protocolDestinations"].get_array().value;
                 for (const auto& el : protocolDestinations)
@@ -1211,6 +1207,7 @@ int __cdecl main(int argc, char* argv[])
                     }
                 }
             }
+            Log.Log(dnp3Conn.name + " - Last Group 3 Address: " + std::to_string(lastG30Addr));
 
             // look for tags without a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"_id": 1})"));
@@ -1222,11 +1219,10 @@ int __cdecl main(int argc, char* argv[])
 
             for (auto&& doc : resTagsAna)
             {
-                // std::cout << bsoncxx::to_json(doc) << std::endl;
-                ++lastG30Addr;
+                lastG30Addr++;
                 if (lastG30Addr > 65535)
                 {
-                    Log.Log("Object address for analogs exceeds 65535");
+                    Log.Log(dnp3Conn.name + " - Object address for analogs exceeds 65535!");
                     break;
                 }
 
@@ -1679,6 +1675,25 @@ int __cdecl main(int argc, char* argv[])
             cfg.octet_string[i].evariation = EventOctetStringVariation::Group111Var0;
         }
 
+        auto resTags1
+            = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
+                                                    kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                                        dnp3Conn.protocolConnectionNumber)),
+                                      opts);
+        for (auto&& doc : resTags1)
+        {
+            auto protocolDestinations = doc["protocolDestinations"].get_array().value;
+            for (const auto& el : protocolDestinations)
+            {
+                auto protocolDestination = el.get_document().value;
+                auto protocolDestinationConnectionNumber
+                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+
+                if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
+                    continue;
+                DefineGroupVar(doc, protocolDestination, cfg);
+            }
+        }
         OutstationStackConfig config(cfg);
 
         // Specify the maximum size of the event buffers
@@ -1716,7 +1731,6 @@ int __cdecl main(int argc, char* argv[])
 
                 if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                     continue;
-                DefineGroupVar(doc, protocolDestination, cfg);
 
                 auto updates = ConvertValue(doc, protocolDestination, EventMode::Suppress);
                 dnp3Conn.outstation->Apply(updates);
