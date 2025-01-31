@@ -77,7 +77,7 @@ bool isConnected(mongocxx::database& database)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Connection error: " << e.what() << std::endl;
+        // std::cerr << "Connection error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -915,7 +915,7 @@ int __cdecl main(int argc, char* argv[])
         }
         catch (const std::invalid_argument&)
         {
-            std::cerr << "Conversion error: Invalid integer value for ProtocolDriverInstanceNumber" << std::endl;
+            Log.Log("Conversion error: Invalid integer value for ProtocolDriverInstanceNumber");
             return 0;
         }
     }
@@ -929,7 +929,7 @@ int __cdecl main(int argc, char* argv[])
         }
         catch (const std::invalid_argument&)
         {
-            std::cerr << "Conversion error: Invalid integer value for LogLevel" << std::endl;
+            Log.Log("Conversion error: Invalid integer value for LogLevel");
             return 0;
         }
     }
@@ -971,17 +971,17 @@ int __cdecl main(int argc, char* argv[])
 
     mongocxx::instance instance{};
     mongocxx::uri uri(uristrMongo);
-    std::cout << "Connecting to MongoDB" << std::endl;
+    Log.Log("Connecting to MongoDB");
     mongocxx::client client(uri);
     auto db = client[dbstrMongo];
 
     while (!isConnected(db))
     {
         std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
-        std::cout << "Connecting to MongoDB" << std::endl;
+        Log.Log("Connecting to MongoDB");
     }
 
-    std::cout << "Connected to MongoDB" << std::endl;
+    Log.Log("Connected to MongoDB");
 
     auto protocolDriverInstancesCollection = db["protocolDriverInstances"];
     auto result = protocolDriverInstancesCollection.find_one(make_document(
@@ -1025,7 +1025,7 @@ int __cdecl main(int argc, char* argv[])
     for (auto&& doc : resConn)
     {
         cnt++;
-        std::cout << bsoncxx::to_json(doc) << std::endl;
+        // std::cout << bsoncxx::to_json(doc) << std::endl;
         connectionsListStr += std::to_string((int)getDouble(doc, "protocolConnectionNumber")) + ",";
 
         DNP3Connection_t dnp3Connection{(int)getDouble(doc, "protocolConnectionNumber"),
@@ -1153,8 +1153,10 @@ int __cdecl main(int argc, char* argv[])
                 {
                     bool found = false;
                     for (auto& topic : dnp3Conn.topics)
-                        if (getString(doc, "group1").find(topic) != std::string::npos) found = true;   
-                    if (!found) continue; // skip this group if it does not match any topic
+                        if (getString(doc, "group1").find(topic) != std::string::npos)
+                            found = true;
+                    if (!found)
+                        continue; // skip this group if it does not match any topic
                 }
 
                 lastG1Addr++;
@@ -1231,8 +1233,10 @@ int __cdecl main(int argc, char* argv[])
                 {
                     bool found = false;
                     for (auto& topic : dnp3Conn.topics)
-                        if (getString(doc, "group1").find(topic) != std::string::npos) found = true;   
-                    if (!found) continue; // skip this group if it does not match any topic
+                        if (getString(doc, "group1").find(topic) != std::string::npos)
+                            found = true;
+                    if (!found)
+                        continue; // skip this group if it does not match any topic
                 }
 
                 lastG30Addr++;
@@ -1691,11 +1695,9 @@ int __cdecl main(int argc, char* argv[])
             cfg.octet_string[i].evariation = EventOctetStringVariation::Group111Var0;
         }
 
-        auto resTags1
-            = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
-                                                    kvp("protocolDestinations.protocolDestinationConnectionNumber",
-                                                        dnp3Conn.protocolConnectionNumber)),
-                                      opts);
+        auto resTags1 = db["realtimeData"].find(make_document(
+            kvp("origin", "supervised"),
+            kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)));
         for (auto&& doc : resTags1)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
@@ -1731,11 +1733,9 @@ int __cdecl main(int argc, char* argv[])
         // updating the outstation's database.
         dnp3Conn.outstation = dnp3Conn.channel->AddOutstation(dnp3Conn.name, dnp3Conn.commandHandler, app, config);
 
-        auto resTags2
-            = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
-                                                    kvp("protocolDestinations.protocolDestinationConnectionNumber",
-                                                        dnp3Conn.protocolConnectionNumber)),
-                                      opts);
+        auto resTags2 = db["realtimeData"].find(make_document(
+            kvp("origin", "supervised"),
+            kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)));
         for (auto&& doc : resTags2)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
@@ -1790,27 +1790,51 @@ int __cdecl main(int argc, char* argv[])
     {
         try
         {
-            std::cout << "Connecting to MongoDB" << std::endl;
+            Log.Log("Connecting to MongoDB");
             mongocxx::client client(uri);
             db = client[dbstrMongo];
 
             while (!isConnected(db))
             {
                 std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
-                std::cout << "Connecting to MongoDB" << std::endl;
+                Log.Log("Connecting to MongoDB");
             }
 
-            std::cout << "Connected to MongoDB" << std::endl;
+            Log.Log("Connected to MongoDB");
+
+            auto rtDataCollection = db["realtimeData"];
+            options.resume_after(resumeToken);
+            auto changeStream = rtDataCollection.watch(pipeline, options);
 
             for (auto& dnp3Conn : dnp3Connections)
             {
                 static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->mongoClient = &client;
                 static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
                 static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
+
+                // after a reconnection do an integrity updated
+                Log.Log(dnp3Conn.name + " - Store integrity data.");
+                auto resTags3 = db["realtimeData"].find(
+                    make_document(kvp("origin", "supervised"),
+                                  kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                      dnp3Conn.protocolConnectionNumber)));
+                for (auto&& doc : resTags3)
+                {
+                    auto protocolDestinations = doc["protocolDestinations"].get_array().value;
+                    for (const auto& el : protocolDestinations)
+                    {
+                        auto protocolDestination = el.get_document().value;
+                        auto protocolDestinationConnectionNumber
+                            = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+
+                        if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
+                            continue;
+
+                        auto updates = ConvertValue(doc, protocolDestination, EventMode::Detect);
+                        dnp3Conn.outstation->Apply(updates);
+                    }
+                }
             }
-            auto rtDataCollection = db["realtimeData"];
-            options.resume_after(resumeToken);
-            auto changeStream = rtDataCollection.watch(pipeline, options);
 
             while (true)
             {
