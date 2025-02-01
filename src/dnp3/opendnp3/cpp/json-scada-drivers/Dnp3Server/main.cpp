@@ -372,7 +372,13 @@ public:
         {
             Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index)
                     + (std::string) " - OperationType: NUL");
-            return CommandStatus::NOT_SUPPORTED;
+            return CommandStatus::FORMAT_ERROR;
+        }
+        if (command.tcc == TripCloseCode::NUL || command.tcc == TripCloseCode::RESERVED)
+        {
+            Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index)
+                    + (std::string) " - Invalid TripCloseCode!");
+            return CommandStatus::FORMAT_ERROR;
         }
         auto protocolDestinations = (*fullDocument)["protocolDestinations"].get_array().value;
         for (const auto& el : protocolDestinations)
@@ -382,6 +388,22 @@ public:
                 = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
             if (dnp3Connection->protocolConnectionNumber != protocolDestinationConnectionNumber)
                 continue;
+            double dval;
+            auto protocolDestinationKConv1 = getDouble(protocolDestination, "protocolDestinationKConv1");
+            if (protocolDestinationKConv1 == -1.0)
+            {
+                if (command.tcc == TripCloseCode::CLOSE)
+                    dval = 0.0;
+                else
+                    dval = 1.0;
+            }
+            else
+            {
+                if (command.tcc == TripCloseCode::CLOSE)
+                    dval = 1.0;
+                else
+                    dval = 0.0;
+            }
 
             auto commandsQueueCollection = db["commandsQueue"];
             auto res = rtDataCollection.insert_one(make_document(
@@ -391,8 +413,8 @@ public:
                 kvp("protocolSourceCommandDuration", (double)(uint8_t)command.opType),
                 kvp("protocolSourceCommandUseSBO", getDouble(protocolDestination, "protocolDestinationCommandUseSBO")),
                 kvp("point_key", getDouble(*fullDocument, "_id")), kvp("tag", getString(*fullDocument, "tag")),
-                kvp("value", command.tcc == TripCloseCode::CLOSE ? 1.0 : 0.0), kvp("valueString", ""),
-                kvp("originatorUserName", "DNP3 Server Driver"), kvp("originatorIpAddress", ""),
+                kvp("value", dval), kvp("valueString", ""), kvp("originatorUserName", "DNP3 Server Driver"),
+                kvp("originatorIpAddress", ""),
                 kvp("timeTag", std::chrono::system_clock::now().time_since_epoch().count())));
 
             return CommandStatus::SUCCESS;
@@ -501,6 +523,14 @@ public:
             if (dnp3Connection->protocolConnectionNumber != protocolDestinationConnectionNumber)
                 continue;
 
+            double dval = command.value;
+            auto protocolDestinationKConv1 = getDouble(protocolDestination, "protocolDestinationKConv1");
+            auto protocolDestinationKConv2 = getDouble(protocolDestination, "protocolDestinationKConv2");
+            if (protocolDestinationKConv1 != 1.0 || protocolDestinationKConv2 != 0.0)
+            {
+                dval = dval * protocolDestinationKConv1 + protocolDestinationKConv2;
+            }
+
             auto commandsQueueCollection = db["commandsQueue"];
             auto res = rtDataCollection.insert_one(make_document(
                 kvp("protocolSourceConnectionNumber", dnp3Connection->protocolConnectionNumber),
@@ -509,7 +539,7 @@ public:
                 kvp("protocolSourceCommandDuration", (double)0),
                 kvp("protocolSourceCommandUseSBO", getDouble(protocolDestination, "protocolDestinationCommandUseSBO")),
                 kvp("point_key", getDouble(*fullDocument, "_id")), kvp("tag", getString(*fullDocument, "tag")),
-                kvp("value", (double)command.value), kvp("valueString", std::to_string((double)command.value)),
+                kvp("value", dval), kvp("valueString", std::to_string(dval)),
                 kvp("originatorUserName", "DNP3 Server Driver"), kvp("originatorIpAddress", ""),
                 kvp("timeTag", std::chrono::system_clock::now().time_since_epoch().count())));
 
@@ -631,8 +661,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags = static_cast<uint8_t>(BinaryQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryQuality::LOCAL_FORCED);
-        builder.Update(Binary(bval, Flags(flags), dtime), protocolDestinationObjectAddress,
-                       eventMode);
+        builder.Update(Binary(bval, Flags(flags), dtime), protocolDestinationObjectAddress, eventMode);
         break;
     case 3:
     case 4:
@@ -669,8 +698,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(CounterQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(CounterQuality::ROLLOVER);
-        builder.Update(Counter((uint32_t)dval, Flags(flags), dtime),
-                       protocolDestinationObjectAddress, eventMode);
+        builder.Update(Counter((uint32_t)dval, Flags(flags), dtime), protocolDestinationObjectAddress, eventMode);
         break;
     case 10:
     case 11:
@@ -683,8 +711,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags = static_cast<uint8_t>(BinaryOutputStatusQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryOutputStatusQuality::LOCAL_FORCED);
-        builder.Update(BinaryOutputStatus(bval, Flags(flags), dtime),
-                       protocolDestinationObjectAddress, eventMode);
+        builder.Update(BinaryOutputStatus(bval, Flags(flags), dtime), protocolDestinationObjectAddress, eventMode);
         break;
     case 40:
     case 42:
@@ -701,8 +728,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::OVERRANGE);
-        builder.Update(AnalogOutputStatus(dval, Flags(flags), dtime),
-                       protocolDestinationObjectAddress, eventMode);
+        builder.Update(AnalogOutputStatus(dval, Flags(flags), dtime), protocolDestinationObjectAddress, eventMode);
         break;
     case 110:
     case 111:
@@ -714,8 +740,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
         utime = (uint64_t)getDate(doc, "value");
         utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
         utime += (uint64_t)(connectionHoursShift * 3600000);
-        builder.Update(TimeAndInterval{DNPTime(utime, TimestampQuality::SYNCHRONIZED), 0,
-                                       IntervalUnits::Seconds},
+        builder.Update(TimeAndInterval{DNPTime(utime, TimestampQuality::SYNCHRONIZED), 0, IntervalUnits::Seconds},
                        protocolDestinationObjectAddress);
         break;
     case 30:
@@ -734,8 +759,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(AnalogQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogQuality::OVERRANGE);
-        builder.Update(Analog(dval, Flags(flags), dtime), protocolDestinationObjectAddress,
-                       eventMode);
+        builder.Update(Analog(dval, Flags(flags), dtime), protocolDestinationObjectAddress, eventMode);
         break;
     }
     const auto updates = builder.Build();
