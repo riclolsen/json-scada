@@ -573,7 +573,8 @@ opendnp3::DatabaseConfig database_by_sizes(uint16_t num_binary,
 
 static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
                                       const bsoncxx::document::view& protocolDestination,
-                                      EventMode eventMode = EventMode::Detect)
+                                      EventMode eventMode = EventMode::Detect,
+                                      double connectionHoursShift = 0.0)
 {
     auto protocolDestinationCommonAddress = (int)getDouble(protocolDestination, "protocolDestinationCommonAddress");
     auto protocolDestinationObjectAddress = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
@@ -596,17 +597,21 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     DoubleBit dbit;
     uint64_t utime = (uint64_t)getDate(doc, "timeTagAtSource");
     DNPTime dtime;
+    bool bval;
+    double dval;
     if (utime == 0)
     {
         utime = (uint64_t)getDate(doc, "timeTag");
         if (utime == 0)
             utime = std::chrono::system_clock::now().time_since_epoch().count();
         utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
+        utime += (uint64_t)(connectionHoursShift * 3600000);
         dtime = DNPTime(utime, TimestampQuality::INVALID);
     }
     else
     {
         utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
+        utime += (uint64_t)(connectionHoursShift * 3600000);
         if (getDate(doc, "timeTagAtSourceOk"))
             dtime = DNPTime(utime, TimestampQuality::SYNCHRONIZED);
         else
@@ -617,21 +622,27 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     {
     case 1:
     case 2:
+        bval = getBoolean(doc, "value");
+        if (protocolDestinationKConv1 == -1.0)
+            bval = !bval;
         if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
             flags = static_cast<uint8_t>(BinaryQuality::ONLINE);
         else
             flags = static_cast<uint8_t>(BinaryQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryQuality::LOCAL_FORCED);
-        builder.Update(Binary(getBoolean(doc, "value"), Flags(flags), dtime), protocolDestinationObjectAddress,
+        builder.Update(Binary(bval, Flags(flags), dtime), protocolDestinationObjectAddress,
                        eventMode);
         break;
     case 3:
     case 4:
+        bval = getBoolean(doc, "value");
+        if (protocolDestinationKConv1 == -1.0)
+            bval = !bval;
         if (getBoolean(doc, "transient"))
-            dbit = getBoolean(doc, "value") ? DoubleBit::INTERMEDIATE : DoubleBit::INDETERMINATE;
+            dbit = bval ? DoubleBit::INTERMEDIATE : DoubleBit::INDETERMINATE;
         else
-            dbit = getBoolean(doc, "value") ? DoubleBit::DETERMINED_ON : DoubleBit::DETERMINED_OFF;
+            dbit = bval ? DoubleBit::DETERMINED_ON : DoubleBit::DETERMINED_OFF;
         if (!getBoolean(doc, "invalid"))
             flags = static_cast<uint8_t>(DoubleBitBinaryQuality::ONLINE);
         else
@@ -645,6 +656,11 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     //    builder.FreezeCounter(protocolDestinationObjectAddress, false, eventMode);
     case 20:
     case 22:
+        dval = getDouble(doc, "value");
+        if (protocolDestinationKConv1 != 1.0 || protocolDestinationKConv2 != 0.0)
+        {
+            dval = dval * protocolDestinationKConv1 + protocolDestinationKConv2;
+        }
         if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
             flags = static_cast<uint8_t>(CounterQuality::ONLINE);
         else
@@ -653,22 +669,30 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(CounterQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(CounterQuality::ROLLOVER);
-        builder.Update(Counter((uint32_t)getDouble(doc, "value"), Flags(flags), dtime),
+        builder.Update(Counter((uint32_t)dval, Flags(flags), dtime),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 10:
     case 11:
+        bval = getBoolean(doc, "value");
+        if (protocolDestinationKConv1 == -1.0)
+            bval = !bval;
         if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
             flags = static_cast<uint8_t>(BinaryOutputStatusQuality::ONLINE);
         else
             flags = static_cast<uint8_t>(BinaryOutputStatusQuality::COMM_LOST);
         if (getBoolean(doc, "substituted"))
             flags |= static_cast<uint8_t>(BinaryOutputStatusQuality::LOCAL_FORCED);
-        builder.Update(BinaryOutputStatus(getBoolean(doc, "value"), Flags(flags), dtime),
+        builder.Update(BinaryOutputStatus(bval, Flags(flags), dtime),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 40:
     case 42:
+        dval = getDouble(doc, "value");
+        if (protocolDestinationKConv1 != 1.0 || protocolDestinationKConv2 != 0.0)
+        {
+            dval = dval * protocolDestinationKConv1 + protocolDestinationKConv2;
+        }
         if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
             flags = static_cast<uint8_t>(AnalogOutputStatusQuality::ONLINE);
         else
@@ -677,23 +701,31 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogOutputStatusQuality::OVERRANGE);
-        builder.Update(AnalogOutputStatus(getDouble(doc, "value"), Flags(flags), dtime),
+        builder.Update(AnalogOutputStatus(dval, Flags(flags), dtime),
                        protocolDestinationObjectAddress, eventMode);
         break;
     case 110:
     case 111:
-        builder.Update(OctetString{"012345test"}, protocolDestinationObjectAddress, eventMode);
+        // convert from jsonValue if possible
+        // builder.Update(OctetString{"012345test"}, protocolDestinationObjectAddress, eventMode);
         break;
     case 50:
     case 52:
-        builder.Update(TimeAndInterval{DNPTime((uint64_t)getDouble(doc, "value"), TimestampQuality::SYNCHRONIZED), 0,
+        utime = (uint64_t)getDate(doc, "value");
+        utime += (uint64_t)(protocolDestinationHoursShift * 3600000);
+        utime += (uint64_t)(connectionHoursShift * 3600000);
+        builder.Update(TimeAndInterval{DNPTime(utime, TimestampQuality::SYNCHRONIZED), 0,
                                        IntervalUnits::Seconds},
                        protocolDestinationObjectAddress);
-
         break;
     case 30:
     case 32:
     default:
+        dval = getDouble(doc, "value");
+        if (protocolDestinationKConv1 != 1.0 || protocolDestinationKConv2 != 0.0)
+        {
+            dval = dval * protocolDestinationKConv1 + protocolDestinationKConv2;
+        }
         if (!getBoolean(doc, "invalid") && !getBoolean(doc, "transient"))
             flags = static_cast<uint8_t>(AnalogQuality::ONLINE);
         else
@@ -702,8 +734,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
             flags |= static_cast<uint8_t>(AnalogQuality::LOCAL_FORCED);
         if (getBoolean(doc, "overflow"))
             flags |= static_cast<uint8_t>(AnalogQuality::OVERRANGE);
-
-        builder.Update(Analog(getDouble(doc, "value"), Flags(flags), dtime), protocolDestinationObjectAddress,
+        builder.Update(Analog(dval, Flags(flags), dtime), protocolDestinationObjectAddress,
                        eventMode);
         break;
     }
