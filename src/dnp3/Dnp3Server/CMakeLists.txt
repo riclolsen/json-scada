@@ -1,0 +1,57 @@
+cmake_minimum_required (VERSION 3.11)
+set(DNP3_MAJOR_VERSION 0)
+set(DNP3_MINOR_VERSION 1)
+set(DNP3_MICRO_VERSION 0)
+set(DNP3_VERSION ${DNP3_MAJOR_VERSION}.${DNP3_MINOR_VERSION}.${DNP3_MICRO_VERSION})
+project(Dnp3Server VERSION ${DNP3_VERSION})
+
+add_executable(Dnp3Server ./main.cpp ./json.hpp)
+set_target_properties(Dnp3Server PROPERTIES FOLDER cpp/json-scada-drivers)
+target_compile_features(Dnp3Server PRIVATE cxx_std_17)
+target_include_directories (Dnp3Server PRIVATE 
+../../mongo-cxx-driver-lib/include
+../../mongo-cxx-driver-lib/include/mongocxx/v_noabi
+../../mongo-cxx-driver-lib/include/bsoncxx/v_noabi
+../../dnp3/opendnp3/cpp/lib/include
+)
+
+find_package(OpenSSL 1.1.1 REQUIRED)
+
+link_directories(../../dnp3/opendnp3/cpp/lib)
+
+# Use the MSVC variable to determine if this is a Windows build.
+set(WINDOWS_BUILD ${MSVC})
+if (WINDOWS_BUILD)
+target_link_libraries (Dnp3Server 
+PUBLIC
+  ../../../mongo-cxx-driver-lib/lib/bsoncxx-static-rts-x64-v143-md
+  ../../../mongo-cxx-driver-lib/lib/mongocxx-static-rts-x64-v143-md
+  ../../../mongo-cxx-driver-lib/lib/mongoc-static-1.0
+  ../../../mongo-cxx-driver-lib/lib/bson-static-1.0
+  ../../../dnp3/opendnp3/build/cpp/lib/release/opendnp3
+  OpenSSL::SSL
+  OpenSSL::Crypto
+  advapi32.lib
+  bcrypt.lib
+  comdlg32.lib
+  crypt32.lib
+  dnsapi.lib
+  gdi32.lib
+  kernel32.lib
+  ole32.lib
+  oleaut32.lib
+  secur32.lib
+  shell32.lib
+  user32.lib
+  uuid.lib
+  winspool.lib
+  ws2_32.lib
+)
+else ()
+target_link_libraries (Dnp3Server 
+PRIVATE 
+  opendnp3 
+)
+endif ()
+
+install(TARGETS Dnp3Server RUNTIME DESTINATION bin)
