@@ -282,10 +282,8 @@ typedef struct
     std::string parity;
     std::string stopBits;
     std::string handshake;
-    bool useSecurity;
     std::string localCertFilePath;
     std::string privateKeyFilePath;
-    std::string rootCertFilePath;
     std::string peerCertFilePath;
     std::string cipherList;
     bool chainValidation;
@@ -942,9 +940,17 @@ static void DefineGroupVar(const bsoncxx::document::view& doc,
         case 5: // single precision FP
         default:
             cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
-            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var7;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var5;
             break;
         case 6: // double precision FP
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var6;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var6;
+            break;
+        case 7: // single precision FP
+            cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var5;
+            cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var7;
+            break;
+        case 8: // double precision FP
             cfg.analog_input[i].svariation = StaticAnalogVariation::Group30Var6;
             cfg.analog_input[i].evariation = EventAnalogVariation::Group32Var8;
             break;
@@ -1107,10 +1113,8 @@ int __cdecl main(int argc, char* argv[])
                                         getString(doc, "parity", "None"),
                                         getString(doc, "stopBits", "One"),
                                         getString(doc, "handshake", "None"),
-                                        getBoolean(doc, "useSecurity"),
                                         getString(doc, "localCertFilePath"),
                                         getString(doc, "privateKeyFilePath"),
-                                        getString(doc, "rootCertFilePath"),
                                         getString(doc, "peerCertFilePath"),
                                         getString(doc, "cipherList"),
                                         getBoolean(doc, "allowOnlySpecificCertificates"),
