@@ -286,7 +286,6 @@ typedef struct
     std::string privateKeyFilePath;
     std::string peerCertFilePath;
     std::string cipherList;
-    bool chainValidation;
     bool allowOnlySpecificCertificates;
     bool allowTLSv10;
     bool allowTLSv11;
@@ -959,7 +958,7 @@ static void DefineGroupVar(const bsoncxx::document::view& doc,
     }
 }
 
-int __cdecl main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     Log.Log(CopyrightMessage);
     Log.Log("Driver version: " + VersionStr);
