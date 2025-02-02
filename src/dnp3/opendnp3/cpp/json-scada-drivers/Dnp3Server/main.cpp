@@ -894,7 +894,7 @@ static void DefineGroupVar(const bsoncxx::document::view& doc,
             break;
         case 2: // 16 bit
             cfg.analog_output_status[i].svariation = StaticAnalogOutputStatusVariation::Group40Var2;
-            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var3;
+            cfg.analog_output_status[i].evariation = EventAnalogOutputStatusVariation::Group42Var4;
             break;
         default:
         case 3: // single precision FP
