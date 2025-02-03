@@ -88,7 +88,7 @@ Execute commands below for scripted installation:
 
     sudo dnf -y install git
     cd /home/jsonscada
-    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+    git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
     cd json-scada/platform-rhel9
 
     # on x86-64 platform run
@@ -119,7 +119,7 @@ Execute commands below for scripted installation:
 
     sudo dnf -y install git
     cd /home/jsonscada
-    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+    git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
     cd json-scada/platform-ubuntu-2404
 
     # on x86-64 or ARM64 platform run
@@ -212,7 +212,7 @@ Download the code from the online repo
 
 Or do a git clone
 
-    git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+    git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
 
 Build the code using the adequate script for the host platform:
 

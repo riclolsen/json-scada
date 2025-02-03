@@ -50,18 +50,19 @@ cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STAN
 cmake --build . --config Release
 cmake --build . --target install --config Release
 
-cd ../dnp3/opendnp3
+cd ../../../dnp3/opendnp3
 mkdir build
 cd build
 cmake -DDNP3_EXAMPLES=ON -DDNP3_TLS=ON ..
 make
+cp cpp/lib/libopendnp3.so ../../../../bin/
 
 cd ../../Dnp3Server
 mkdir build
 cd build
 cmake ..
 make
-
+cp Dnp3Server ../../../../bin/
 cd ..
 
 export GOBIN=~/json-scada/bin

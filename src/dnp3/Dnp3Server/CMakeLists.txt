@@ -69,7 +69,6 @@ add_library(libopendnp3 STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
 set_target_properties(libopendnp3 PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/dnp3/opendnp3/build/cpp/lib/libopendnp3.so)
 
-#link_directories(../../../dnp3/opendnp3/cpp/lib ../../../mongo-cxx-driver-lib/lib)
 target_link_libraries (Dnp3Server 
 PUBLIC
   libmongocxx
