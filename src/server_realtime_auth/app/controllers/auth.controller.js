@@ -260,6 +260,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'PLC4X',
       'OPC-DA',
       'ICCP',
+      'DNP3_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('autoCreateTags' in req.body)) {
@@ -278,6 +279,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-DA_SERVER',
       'ICCP',
       'ICCP_SERVER',
+      'DNP3_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('topics' in req.body)) {
@@ -412,7 +414,7 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.autoCreateTagQueueSize = 0.0
     }
   }
-  if (['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER', 'DNP3_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('hoursShift' in req.body)) {
       req.body.hoursShift = 0.0
     }
@@ -558,6 +560,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'IEC61850_SERVER',
       'DNP3',
+      'DNP3_SERVER',
       'MQTT-SPARKPLUG-B',
       'OPC-UA_SERVER',
       'OPC-DA',
@@ -575,6 +578,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'IEC61850_SERVER',
       'DNP3',
+      'DNP3_SERVER',
       'OPC-DA',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -613,6 +617,7 @@ exports.updateProtocolConnection = async (req, res) => {
   if (
     [
       'DNP3',
+      'DNP3_SERVER',
       'MQTT-SPARKPLUG-B',
       'OPC-UA_SERVER',
       'IEC61850',
@@ -624,7 +629,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['DNP3', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
+  if (['DNP3', 'DNP3_SERVER', 'MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('allowTLSv10' in req.body)) {
       req.body.allowTLSv10 = false
     }
@@ -639,6 +644,21 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('cipherList' in req.body)) {
       req.body.cipherList = ''
+    }
+  }
+
+  if (['OPC-UA', 'OPC-DA', 'DNP3_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('serverQueueSize' in req.body)) {
+      req.body.serverQueueSize = 5000.0
+    }
+  }
+
+  if (['DNP3_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('connectionMode' in req.body)) {
+      req.body.connectionMode = 'TCP Passive'
+    }
+    if (!('enableUnsolicited' in req.body)) {
+      req.body.enableUnsolicited = true
     }
   }
 

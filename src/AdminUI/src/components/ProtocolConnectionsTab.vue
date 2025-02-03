@@ -422,6 +422,7 @@
                   'PLC4X',
                   'OPC-DA',
                   'ICCP',
+                  'DNP3_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -520,7 +521,7 @@
               v-if="
                 (['OPC-UA'].includes(editedConnection.protocolDriver) &&
                   editedConnection.autoCreateTags) ||
-                ['OPC-DA'].includes(editedConnection.protocolDriver)
+                ['OPC-DA', 'DNP3_SERVER'].includes(editedConnection.protocolDriver)
               "
             >
               <template #default="{ isActive }">
@@ -583,7 +584,8 @@
                  'OPC-DA', 
                  'OPC-DA_SERVER', 
                  'ICCP', 
-                 'ICCP_SERVER'
+                 'ICCP_SERVER',
+                 'DNP3_SERVER',
                 ].includes(
                   editedConnection.protocolDriver
                 )
