@@ -1314,7 +1314,7 @@
             </v-list-item>
 
             <v-list-item
-              v-if="['DNP3'].includes(editedConnection.protocolDriver)"
+              v-if="['DNP3', 'DNP3_SERVER'].includes(editedConnection.protocolDriver)"
             >
               <v-switch
                 v-model="editedConnection.enableUnsolicited"
@@ -1920,6 +1920,7 @@
               v-if="
                 [
                   'DNP3',
+                  'DNP3_SERVER',
                   'MQTT-SPARKPLUG-B',
                   'OPC-UA_SERVER',
                   'IEC61850',
@@ -2297,8 +2298,6 @@
                   'MQTT-SPARKPLUG-B',
                   'IEC61850',
                   'IEC61850_SERVER',
-                  'DNP3',
-                  'DNP3_SERVER',
                   'ICCP',
                   'ICCP_SERVER',
                 ].includes(editedConnection.protocolDriver)
@@ -2365,6 +2364,7 @@
               'OPC-DA_SERVER',
               'ICCP',
               'ICCP_SERVER',
+              'DNP3_SERVER',
             ].includes(editedConnection.protocolDriver)
           "
         >
@@ -2425,6 +2425,7 @@
                   'OPC-DA_SERVER',
                   'ICCP',
                   'ICCP_SERVER',
+                  'DNP3_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -3451,6 +3452,7 @@
     'IEC61850',
     'IEC61850_SERVER',
     'DNP3',
+    'DNP3_SERVER',
     'MQTT-SPARKPLUG-B',
     'OPC-UA',
     'OPC-UA_SERVER',
