@@ -66,7 +66,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 #cmake ..
 #make
 #cp Dnp3Server ../../../../bin/
-#cd ..
+#cd ../..
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto

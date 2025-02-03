@@ -63,7 +63,7 @@ cd build
 cmake ..
 make
 cp Dnp3Server ../../../../bin/
-cd ..
+cd ../..
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto

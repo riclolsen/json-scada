@@ -28,7 +28,7 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 # Update and install base packages
 sudo apt update
 sudo apt -y upgrade
-sudo apt -y install bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev
+sudo apt -y install bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev
 
 # Docker and container tools
 sudo apt -y install podman docker.io
