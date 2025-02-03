@@ -19,3 +19,5 @@ attranslate --srcFile=src/locales/en.json --srcLng=en --srcFormat=nested-json --
 attranslate --srcFile=src/locales/en.json --srcLng=en --srcFormat=nested-json --targetFile=src/locales/ja.json --targetLng=ja --targetFormat=nested-json --service=google-translate --serviceConfig=c:\temp\api-project-304807261161-4f9f43137fcf.json
 
 attranslate --srcFile=src/locales/en.json --srcLng=en --srcFormat=nested-json --targetFile=src/locales/fr.json --targetLng=fr --targetFormat=nested-json --service=google-translate --serviceConfig=c:\temp\api-project-304807261161-4f9f43137fcf.json
+
+attranslate --srcFile=src/locales/en.json --srcLng=en --srcFormat=nested-json --targetFile=src/locales/ps.json --targetLng=ps --targetFormat=nested-json --service=google-translate --serviceConfig=c:\temp\api-project-304807261161-4f9f43137fcf.json
