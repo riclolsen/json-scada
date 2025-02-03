@@ -78,6 +78,7 @@ go mod tidy
 go build
 cp i104m ../../bin/
 
+# you may need a lot of memory to build this step, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
 cd ../plc4x-client
 go mod tidy 
 go build
