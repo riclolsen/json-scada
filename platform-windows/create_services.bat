@@ -176,6 +176,12 @@ nssm set JSON_SCADA_dnp3client AppRotateOnline 1
 nssm set JSON_SCADA_dnp3client AppRotateBytes 10000000
 nssm set JSON_SCADA_dnp3client Start SERVICE_DEMAND_START
 
+nssm install JSON_SCADA_dnp3server "C:\json-scada\bin\Dnp3Server.exe" 1 1
+nssm set JSON_SCADA_dnp3server AppStdout C:\json-scada\log\dnp3server.log
+nssm set JSON_SCADA_dnp3server AppRotateOnline 1
+nssm set JSON_SCADA_dnp3server AppRotateBytes 10000000
+nssm set JSON_SCADA_dnp3server Start SERVICE_DEMAND_START
+
 nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\OPC-UA-Client.exe" 1 1
 nssm set JSON_SCADA_opcuaclient AppStdout C:\json-scada\log\opcuaclient.log
 nssm set JSON_SCADA_opcuaclient AppRotateOnline 1
