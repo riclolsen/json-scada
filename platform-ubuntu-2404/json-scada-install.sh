@@ -10,7 +10,7 @@ JS_USERNAME=jsonscada
 # cd /home/jsonscada
 # git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
 # cd json-scada/platform-ubuntu-2404
-# sudo sh ./json-scada-install-ubuntu.sh
+# sudo sh ./json-scada-install.sh
 
 # AFTER INSTALLATION
 # OPEN BROWSER AT http://localhost (must allow popups for issuing controls)
