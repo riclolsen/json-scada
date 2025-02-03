@@ -80,6 +80,7 @@ PUBLIC
   OpenSSL::Crypto
   zstd
   resolv
+  sasl2
 )
 endif ()
 
