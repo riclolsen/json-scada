@@ -61,21 +61,21 @@ using json = nlohmann::json;
 const string CopyrightMessage = "{json:scada} IEC60870-5-104 Server Driver - Copyright 2025 RLO";
 const string VersionStr = "0.0.1";
 
-inline bool ends_with(std::string const& value, std::string const& ending)
+inline bool ends_with(std::string const &value, std::string const &ending)
 {
     if (ending.size() > value.size())
         return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
-bool isConnected(mongocxx::database& database)
+bool isConnected(mongocxx::database &database)
 {
     try
     {
         auto command = database.run_command(make_document(kvp("ping", 1)));
         return true;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         // std::cerr << "Connection error: " << e.what() << std::endl;
         return false;
@@ -108,7 +108,7 @@ public:
         return logLevel;
     }
 
-    void Log(const std::string& message, const LogLevel level = LogLevel::Basic) const
+    void Log(const std::string &message, const LogLevel level = LogLevel::Basic) const
     {
         if (level > logLevel)
             return;
@@ -142,7 +142,7 @@ private:
 
 Logger Log;
 
-static double getDouble(const bsoncxx::document::view& doc, const std::string& key, double defaultVal = 0)
+static double getDouble(const bsoncxx::document::view &doc, const std::string &key, double defaultVal = 0)
 {
     try
     {
@@ -161,7 +161,7 @@ static double getDouble(const bsoncxx::document::view& doc, const std::string& k
             return defaultVal;
         }
     }
-    catch (const std::exception&)
+    catch (const std::exception &)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
             Log.Log("Error getting bson double value for key: " + key, Logger::LogLevel::Detailed);
@@ -169,7 +169,7 @@ static double getDouble(const bsoncxx::document::view& doc, const std::string& k
     return defaultVal;
 }
 
-static bool getBoolean(const bsoncxx::document::view& doc, const std::string& key, bool defaultVal = false)
+static bool getBoolean(const bsoncxx::document::view &doc, const std::string &key, bool defaultVal = false)
 {
     try
     {
@@ -190,7 +190,7 @@ static bool getBoolean(const bsoncxx::document::view& doc, const std::string& ke
             return defaultVal;
         }
     }
-    catch (const std::exception&)
+    catch (const std::exception &)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
             Log.Log("Error getting bson boolean value for key: " + key, Logger::LogLevel::Detailed);
@@ -198,7 +198,7 @@ static bool getBoolean(const bsoncxx::document::view& doc, const std::string& ke
     return defaultVal;
 }
 
-static std::string getString(const bsoncxx::document::view& doc, const std::string& key, std::string defaultVal = "")
+static std::string getString(const bsoncxx::document::view &doc, const std::string &key, std::string defaultVal = "")
 {
     try
     {
@@ -221,7 +221,7 @@ static std::string getString(const bsoncxx::document::view& doc, const std::stri
             return defaultVal;
         }
     }
-    catch (const std::exception&)
+    catch (const std::exception &)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
             Log.Log("Error getting bson string value for key: " + key, Logger::LogLevel::Detailed);
@@ -229,7 +229,7 @@ static std::string getString(const bsoncxx::document::view& doc, const std::stri
     return defaultVal;
 }
 
-static double getDate(const bsoncxx::document::view& doc, const std::string& key, double defaultVal = 0)
+static double getDate(const bsoncxx::document::view &doc, const std::string &key, double defaultVal = 0)
 {
     try
     {
@@ -250,7 +250,7 @@ static double getDate(const bsoncxx::document::view& doc, const std::string& key
             return defaultVal;
         }
     }
-    catch (const std::exception&)
+    catch (const std::exception &)
     {
         if (Log.GetLogLevel() >= Logger::LogLevel::Detailed)
             Log.Log("Error getting bson date value for key: " + key, Logger::LogLevel::Detailed);
@@ -292,7 +292,7 @@ typedef struct
     bool allowTLSv12;
     bool allowTLSv13;
 
-    DNP3Manager* manager;
+    DNP3Manager *manager;
     std::shared_ptr<IChannel> channel;
     std::shared_ptr<IOutstation> outstation;
     std::shared_ptr<ICommandHandler> commandHandler;
@@ -303,12 +303,12 @@ std::vector<DNP3Connection_t> dnp3Connections;
 class MyCommandHandler : public opendnp3::ICommandHandler
 {
 public:
-    mongocxx::client* mongoClient;
-    DNP3Connection_t* dnp3Connection;
+    mongocxx::client *mongoClient;
+    DNP3Connection_t *dnp3Connection;
     std::string dbstrMongo;
     void Begin() override {}
     void End() override {}
-    CommandStatus Select(const ControlRelayOutputBlock& command, uint16_t index) override
+    CommandStatus Select(const ControlRelayOutputBlock &command, uint16_t index) override
     {
         if (mongoClient == nullptr)
             return CommandStatus::DOWNSTREAM_FAIL;
@@ -322,23 +322,19 @@ public:
             kvp("protocolDestinations.protocolDestinationCommandUseSBO", true)));
         if (!result)
         {
-            Log.Log(dnp3Connection->name
-                    + (std::string) " - Tag not found in the database for ControlRelayOutputBlock index: "
-                    + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag not found in the database for ControlRelayOutputBlock index: " + std::to_string(index));
             return CommandStatus::NOT_SUPPORTED;
         }
         if (!(*result)["enabled"].get_bool().value)
         {
-            Log.Log(dnp3Connection->name
-                    + (std::string) " - Tag disabled in the database for ControlRelayOutputBlock index: "
-                    + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag disabled in the database for ControlRelayOutputBlock index: " + std::to_string(index));
             return CommandStatus::BLOCKED;
         }
         return CommandStatus::SUCCESS;
     }
-    CommandStatus Operate(const ControlRelayOutputBlock& command,
+    CommandStatus Operate(const ControlRelayOutputBlock &command,
                           uint16_t index,
-                          IUpdateHandler& handler,
+                          IUpdateHandler &handler,
                           OperateType opType) override
     {
         if (mongoClient == nullptr)
@@ -353,36 +349,29 @@ public:
             kvp("protocolDestinations.protocolDestinationCommandUseSBO", true)));
         if (!fullDocument)
         {
-            Log.Log(dnp3Connection->name
-                    + (std::string) " - Tag not found in the database for ControlRelayOutputBlock index: "
-                    + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag not found in the database for ControlRelayOutputBlock index: " + std::to_string(index));
             return CommandStatus::NOT_SUPPORTED;
         }
         if (!(*fullDocument)["enabled"].get_bool().value)
         {
-            Log.Log(dnp3Connection->name
-                    + (std::string) " - Tag disabled in the database for ControlRelayOutputBlock index: "
-                    + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag disabled in the database for ControlRelayOutputBlock index: " + std::to_string(index));
             return CommandStatus::BLOCKED;
         }
         if (command.opType == OperationType::NUL)
         {
-            Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index)
-                    + (std::string) " - OperationType: NUL");
+            Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index) + (std::string) " - OperationType: NUL");
             return CommandStatus::FORMAT_ERROR;
         }
         if (command.tcc == TripCloseCode::NUL || command.tcc == TripCloseCode::RESERVED)
         {
-            Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index)
-                    + (std::string) " - Invalid TripCloseCode!");
+            Log.Log(dnp3Connection->name + (std::string) " - ControlRelayOutputBlock index: " + std::to_string(index) + (std::string) " - Invalid TripCloseCode!");
             return CommandStatus::FORMAT_ERROR;
         }
         auto protocolDestinations = (*fullDocument)["protocolDestinations"].get_array().value;
-        for (const auto& el : protocolDestinations)
+        for (const auto &el : protocolDestinations)
         {
             auto protocolDestination = el.get_document().value;
-            auto protocolDestinationConnectionNumber
-                = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+            auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
             if (dnp3Connection->protocolConnectionNumber != protocolDestinationConnectionNumber)
                 continue;
             double dval;
@@ -419,46 +408,46 @@ public:
 
         return CommandStatus::NOT_SUPPORTED;
     }
-    CommandStatus Select(const AnalogOutputInt16& command, uint16_t index) override
+    CommandStatus Select(const AnalogOutputInt16 &command, uint16_t index) override
     {
         AnalogOutputDouble64 cmd(command.value);
         return Select(cmd, index);
     }
-    CommandStatus Operate(const AnalogOutputInt16& command,
+    CommandStatus Operate(const AnalogOutputInt16 &command,
                           uint16_t index,
-                          IUpdateHandler& handler,
+                          IUpdateHandler &handler,
                           OperateType opType) override
     {
         AnalogOutputDouble64 cmd(command.value);
         return Operate(cmd, index, handler, opType);
     }
-    CommandStatus Select(const AnalogOutputInt32& command, uint16_t index) override
+    CommandStatus Select(const AnalogOutputInt32 &command, uint16_t index) override
     {
         AnalogOutputDouble64 cmd(command.value);
         return Select(cmd, index);
     }
-    CommandStatus Operate(const AnalogOutputInt32& command,
+    CommandStatus Operate(const AnalogOutputInt32 &command,
                           uint16_t index,
-                          IUpdateHandler& handler,
+                          IUpdateHandler &handler,
                           OperateType opType) override
     {
         AnalogOutputDouble64 cmd(command.value);
         return Operate(cmd, index, handler, opType);
     }
-    CommandStatus Select(const AnalogOutputFloat32& command, uint16_t index) override
+    CommandStatus Select(const AnalogOutputFloat32 &command, uint16_t index) override
     {
         AnalogOutputDouble64 cmd(command.value);
         return Select(cmd, index);
     }
-    CommandStatus Operate(const AnalogOutputFloat32& command,
+    CommandStatus Operate(const AnalogOutputFloat32 &command,
                           uint16_t index,
-                          IUpdateHandler& handler,
+                          IUpdateHandler &handler,
                           OperateType opType) override
     {
         AnalogOutputDouble64 cmd(command.value);
         return Operate(cmd, index, handler, opType);
     }
-    CommandStatus Select(const AnalogOutputDouble64& command, uint16_t index) override
+    CommandStatus Select(const AnalogOutputDouble64 &command, uint16_t index) override
     {
         if (mongoClient == nullptr)
             return CommandStatus::DOWNSTREAM_FAIL;
@@ -472,21 +461,19 @@ public:
             kvp("protocolDestinations.protocolDestinationCommandUseSBO", true)));
         if (!result)
         {
-            Log.Log(dnp3Connection->name + (std::string) " - Tag not found in the database for AnalogOutput index: "
-                    + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag not found in the database for AnalogOutput index: " + std::to_string(index));
             return CommandStatus::NOT_SUPPORTED;
         }
         if (!(*result)["enabled"].get_bool().value)
         {
-            Log.Log(dnp3Connection->name
-                    + (std::string) " - Tag disabled in the database for AnalogOutput index: " + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag disabled in the database for AnalogOutput index: " + std::to_string(index));
             return CommandStatus::BLOCKED;
         }
         return CommandStatus::SUCCESS;
     }
-    CommandStatus Operate(const AnalogOutputDouble64& command,
+    CommandStatus Operate(const AnalogOutputDouble64 &command,
                           uint16_t index,
-                          IUpdateHandler& handler,
+                          IUpdateHandler &handler,
                           OperateType opType) override
     {
         if (mongoClient == nullptr)
@@ -501,22 +488,19 @@ public:
             kvp("protocolDestinations.protocolDestinationCommandUseSBO", true)));
         if (!fullDocument)
         {
-            Log.Log(dnp3Connection->name + (std::string) " - Tag not found in the database for AnalogOutput index: "
-                    + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag not found in the database for AnalogOutput index: " + std::to_string(index));
             return CommandStatus::NOT_SUPPORTED;
         }
         if (!(*fullDocument)["enabled"].get_bool().value)
         {
-            Log.Log(dnp3Connection->name
-                    + (std::string) " - Tag disabled in the database for AnalogOutput index: " + std::to_string(index));
+            Log.Log(dnp3Connection->name + (std::string) " - Tag disabled in the database for AnalogOutput index: " + std::to_string(index));
             return CommandStatus::BLOCKED;
         }
         auto protocolDestinations = (*fullDocument)["protocolDestinations"].get_array().value;
-        for (const auto& el : protocolDestinations)
+        for (const auto &el : protocolDestinations)
         {
             auto protocolDestination = el.get_document().value;
-            auto protocolDestinationConnectionNumber
-                = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+            auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
             if (dnp3Connection->protocolConnectionNumber != protocolDestinationConnectionNumber)
                 continue;
 
@@ -598,8 +582,8 @@ opendnp3::DatabaseConfig database_by_sizes(uint16_t num_binary,
     return config;
 }
 
-static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
-                                      const bsoncxx::document::view& protocolDestination,
+static opendnp3::Updates ConvertValue(const bsoncxx::document::view &doc,
+                                      const bsoncxx::document::view &protocolDestination,
                                       EventMode eventMode = EventMode::Detect,
                                       double connectionHoursShift = 0.0)
 {
@@ -615,8 +599,7 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     auto protocolDestinationHoursShift = getDouble(protocolDestination, "protocolDestinationHoursShift");
 
     if (Log.GetLogLevel() >= Logger::LogLevel::Basic)
-        Log.Log("Updating tag: " + getString(doc, "_id") + " " + getString(doc, "tag")
-                    + " Dnp3Address: " + std::to_string(protocolDestinationObjectAddress),
+        Log.Log("Updating tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: " + std::to_string(protocolDestinationObjectAddress),
                 Logger::LogLevel::Basic);
 
     UpdateBuilder builder;
@@ -764,9 +747,9 @@ static opendnp3::Updates ConvertValue(const bsoncxx::document::view& doc,
     return updates;
 }
 
-static void DefineGroupVar(const bsoncxx::document::view& doc,
-                           const bsoncxx::document::view& protocolDestination,
-                           opendnp3::DatabaseConfig& cfg)
+static void DefineGroupVar(const bsoncxx::document::view &doc,
+                           const bsoncxx::document::view &protocolDestination,
+                           opendnp3::DatabaseConfig &cfg)
 {
     auto group = (int)getDouble(protocolDestination, "protocolDestinationCommonAddress");
     auto variation = (int)getDouble(protocolDestination, "protocolDestinationASDU");
@@ -958,7 +941,7 @@ static void DefineGroupVar(const bsoncxx::document::view& doc,
     }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     Log.Log(CopyrightMessage);
     Log.Log("Driver version: " + VersionStr);
@@ -975,7 +958,7 @@ int main(int argc, char* argv[])
         {
             ProtocolDriverInstanceNumber = std::stoi(argv[1]);
         }
-        catch (const std::invalid_argument&)
+        catch (const std::invalid_argument &)
         {
             Log.Log("Conversion error: Invalid integer value for ProtocolDriverInstanceNumber");
             return 0;
@@ -989,7 +972,7 @@ int main(int argc, char* argv[])
         {
             Log.SetLogLevel(std::stoi(argv[2]));
         }
-        catch (const std::invalid_argument&)
+        catch (const std::invalid_argument &)
         {
             Log.Log("Conversion error: Invalid integer value for LogLevel");
             return 0;
@@ -1063,7 +1046,7 @@ int main(int argc, char* argv[])
         auto nodeNamesArray = (*result)["nodeNames"].get_array().value;
         auto found = false;
         auto cnt = 0;
-        for (const auto& nodeNameEl : nodeNamesArray)
+        for (const auto &nodeNameEl : nodeNamesArray)
         {
             cnt++;
             if (nodeNameEl.get_string().value == nodeName)
@@ -1084,7 +1067,7 @@ int main(int argc, char* argv[])
         make_document(kvp("protocolDriver", "DNP3_SERVER"),
                       kvp("protocolDriverInstanceNumber", ProtocolDriverInstanceNumber), kvp("enabled", true)));
     auto cnt = 0;
-    for (auto&& doc : resConn)
+    for (auto &&doc : resConn)
     {
         cnt++;
         // std::cout << bsoncxx::to_json(doc) << std::endl;
@@ -1126,19 +1109,19 @@ int main(int argc, char* argv[])
                                         nullptr,
                                         nullptr};
 
-        for (auto& c : dnp3Connection.connectionMode)
+        for (auto &c : dnp3Connection.connectionMode)
             c = toupper(c);
-        for (auto& c : dnp3Connection.parity)
+        for (auto &c : dnp3Connection.parity)
             c = toupper(c);
-        for (auto& c : dnp3Connection.stopBits)
+        for (auto &c : dnp3Connection.stopBits)
             c = toupper(c);
-        for (auto& c : dnp3Connection.handshake)
+        for (auto &c : dnp3Connection.handshake)
             c = toupper(c);
 
         if (doc["ipAddresses"].get_value().type() == bsoncxx::type::k_array)
         {
             auto a1 = doc["ipAddresses"].get_array().value;
-            for (const auto& el : a1)
+            for (const auto &el : a1)
             {
                 dnp3Connection.ipAddresses.push_back(std::string(el.get_string().value));
             }
@@ -1146,7 +1129,7 @@ int main(int argc, char* argv[])
         if (doc["topics"].get_value().type() == bsoncxx::type::k_array)
         {
             auto a2 = doc["topics"].get_array().value;
-            for (const auto& el : a2)
+            for (const auto &el : a2)
             {
                 dnp3Connection.topics.push_back(std::string(el.get_string().value));
             }
@@ -1160,10 +1143,9 @@ int main(int argc, char* argv[])
     }
     // std::cout << bsoncxx::to_json(*result) << std::endl;
 
-    for (auto& dnp3Conn : dnp3Connections)
+    for (auto &dnp3Conn : dnp3Connections)
     {
-        Log.Log(dnp3Conn.name + std::string(" - Connection Number: ")
-                + std::to_string(dnp3Conn.protocolConnectionNumber));
+        Log.Log(dnp3Conn.name + std::string(" - Connection Number: ") + std::to_string(dnp3Conn.protocolConnectionNumber));
 
         if (dnp3Conn.autoCreateTags)
         {
@@ -1185,15 +1167,14 @@ int main(int argc, char* argv[])
                                   kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                       dnp3Conn.protocolConnectionNumber)),
                     opts);
-                for (auto&& docG1 : resTagsG21)
+                for (auto &&docG1 : resTagsG21)
                 {
                     // look in the protocolDestinations array for entry with the connection number
                     auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
-                    for (const auto& el : protocolDestinations)
+                    for (const auto &el : protocolDestinations)
                     {
                         auto protocolDestination = el.get_document().value;
-                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
-                            == dnp3Conn.protocolConnectionNumber)
+                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber") == dnp3Conn.protocolConnectionNumber)
                         {
                             if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG12Addr)
                                 lastG12Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
@@ -1210,12 +1191,12 @@ int main(int argc, char* argv[])
                                       make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
                     opts);
 
-                for (auto&& doc : resTagsCrob)
+                for (auto &&doc : resTagsCrob)
                 {
                     if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
                     {
                         bool found = false;
-                        for (auto& topic : dnp3Conn.topics)
+                        for (auto &topic : dnp3Conn.topics)
                             if (getString(doc, "group1").find(topic) != std::string::npos)
                                 found = true;
                         if (!found)
@@ -1228,9 +1209,9 @@ int main(int argc, char* argv[])
                         Log.Log(dnp3Conn.name + " - Object address for crob commands exceeds 65535!");
                         break;
                     }
-                    Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
-                            + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG12Addr));
-                    if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                    Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG12Addr));
+                    if (doc.find("protocolDestinations") == doc.end() ||
+                        doc["protocolDestinations"].type() == bsoncxx::type::k_null)
                     {
                         db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
                                                       bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
@@ -1266,15 +1247,14 @@ int main(int argc, char* argv[])
                                   kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                       dnp3Conn.protocolConnectionNumber)),
                     opts);
-                for (auto&& docG1 : resTagsG41)
+                for (auto &&docG1 : resTagsG41)
                 {
                     // look in the protocolDestinations array for entry with the connection number
                     auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
-                    for (const auto& el : protocolDestinations)
+                    for (const auto &el : protocolDestinations)
                     {
                         auto protocolDestination = el.get_document().value;
-                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
-                            == dnp3Conn.protocolConnectionNumber)
+                        if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber") == dnp3Conn.protocolConnectionNumber)
                         {
                             if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG41Addr)
                                 lastG41Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
@@ -1291,12 +1271,12 @@ int main(int argc, char* argv[])
                                       make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
                     opts);
 
-                for (auto&& doc : resTagsAnalogCmd)
+                for (auto &&doc : resTagsAnalogCmd)
                 {
                     if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
                     {
                         bool found = false;
-                        for (auto& topic : dnp3Conn.topics)
+                        for (auto &topic : dnp3Conn.topics)
                             if (getString(doc, "group1").find(topic) != std::string::npos)
                                 found = true;
                         if (!found)
@@ -1309,9 +1289,9 @@ int main(int argc, char* argv[])
                         Log.Log(dnp3Conn.name + " - Object address for analog outputs exceeds 65535!");
                         break;
                     }
-                    Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
-                            + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG41Addr));
-                    if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                    Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG41Addr));
+                    if (doc.find("protocolDestinations") == doc.end() ||
+                        doc["protocolDestinations"].type() == bsoncxx::type::k_null)
                     {
                         db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
                                                       bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
@@ -1342,21 +1322,19 @@ int main(int argc, char* argv[])
 
             // find tags with a destination linked to this connection
             opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
-            auto resTagsG1
-                = db["realtimeData"].find(make_document(kvp("type", "digital"), kvp("origin", "supervised"),
-                                                        kvp("protocolDestinations.protocolDestinationCommonAddress", 1),
-                                                        kvp("protocolDestinations.protocolDestinationConnectionNumber",
-                                                            dnp3Conn.protocolConnectionNumber)),
-                                          opts);
-            for (auto&& docG1 : resTagsG1)
+            auto resTagsG1 = db["realtimeData"].find(make_document(kvp("type", "digital"), kvp("origin", "supervised"),
+                                                                   kvp("protocolDestinations.protocolDestinationCommonAddress", 1),
+                                                                   kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                                                       dnp3Conn.protocolConnectionNumber)),
+                                                     opts);
+            for (auto &&docG1 : resTagsG1)
             {
                 // look in the protocolDestinations array for entry with the connection number
                 auto protocolDestinations = docG1["protocolDestinations"].get_array().value;
-                for (const auto& el : protocolDestinations)
+                for (const auto &el : protocolDestinations)
                 {
                     auto protocolDestination = el.get_document().value;
-                    if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
-                        == dnp3Conn.protocolConnectionNumber)
+                    if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber") == dnp3Conn.protocolConnectionNumber)
                     {
                         if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG1Addr)
                             lastG1Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
@@ -1373,12 +1351,12 @@ int main(int argc, char* argv[])
                                   make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
                 opts);
 
-            for (auto&& doc : resTagsDig)
+            for (auto &&doc : resTagsDig)
             {
                 if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
                 {
                     bool found = false;
-                    for (auto& topic : dnp3Conn.topics)
+                    for (auto &topic : dnp3Conn.topics)
                         if (getString(doc, "group1").find(topic) != std::string::npos)
                             found = true;
                     if (!found)
@@ -1391,9 +1369,9 @@ int main(int argc, char* argv[])
                     Log.Log(dnp3Conn.name + " - Object address for digitals exceeds 65535!");
                     break;
                 }
-                Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
-                        + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG1Addr));
-                if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG1Addr));
+                if (doc.find("protocolDestinations") == doc.end() ||
+                    doc["protocolDestinations"].type() == bsoncxx::type::k_null)
                 {
                     db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
                                                   bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
@@ -1427,15 +1405,14 @@ int main(int argc, char* argv[])
                     kvp("protocolDestinations.protocolDestinationCommonAddress", 30),
                     kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)),
                 opts);
-            for (auto&& docG30 : resTagsG1)
+            for (auto &&docG30 : resTagsG1)
             {
                 // look in the protocolDestinations array for entry with the connection number
                 auto protocolDestinations = docG30["protocolDestinations"].get_array().value;
-                for (const auto& el : protocolDestinations)
+                for (const auto &el : protocolDestinations)
                 {
                     auto protocolDestination = el.get_document().value;
-                    if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber")
-                        == dnp3Conn.protocolConnectionNumber)
+                    if ((int)getDouble(protocolDestination, "protocolDestinationConnectionNumber") == dnp3Conn.protocolConnectionNumber)
                     {
                         if (getDouble(protocolDestination, "protocolDestinationObjectAddress") > lastG30Addr)
                             lastG30Addr = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
@@ -1452,12 +1429,12 @@ int main(int argc, char* argv[])
                                   make_document(kvp("$ne", dnp3Conn.protocolConnectionNumber)))),
                 opts);
 
-            for (auto&& doc : resTagsAna)
+            for (auto &&doc : resTagsAna)
             {
                 if (dnp3Conn.topics.size() > 0) // check if topics are defined for the connection
                 {
                     bool found = false;
-                    for (auto& topic : dnp3Conn.topics)
+                    for (auto &topic : dnp3Conn.topics)
                         if (getString(doc, "group1").find(topic) != std::string::npos)
                             found = true;
                     if (!found)
@@ -1471,9 +1448,9 @@ int main(int argc, char* argv[])
                     break;
                 }
 
-                Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " "
-                        + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG30Addr));
-                if (doc["protocolDestinations"].type() == bsoncxx::type::k_null)
+                Log.Log(dnp3Conn.name + " - Creating destination for tag: " + getString(doc, "_id") + " " + getString(doc, "tag") + " Dnp3Address: " + std::to_string(lastG30Addr));
+                if (doc.find("protocolDestinations") == doc.end() ||
+                    doc["protocolDestinations"].type() == bsoncxx::type::k_null)
                 {
                     db["realtimeData"].update_one(make_document(kvp("_id", getDouble(doc, "_id"))),
                                                   bsoncxx::from_json(R"({ "$set": {"protocolDestinations": []}})"));
@@ -1526,13 +1503,12 @@ int main(int argc, char* argv[])
 
         try
         {
-            if (dnp3Conn.connectionMode == "TCP ACTIVE" || dnp3Conn.connectionMode == "TCP PASSIVE"
-                || dnp3Conn.connectionMode == "TLS ACTIVE" || dnp3Conn.connectionMode == "TLS PASSIVE"
+            if (dnp3Conn.connectionMode == "TCP ACTIVE" || dnp3Conn.connectionMode == "TCP PASSIVE" || dnp3Conn.connectionMode == "TLS ACTIVE" || dnp3Conn.connectionMode == "TLS PASSIVE"
 
             )
             {
                 // look for the same channel config already created (multi-drop case)
-                for (auto& conn : dnp3Connections)
+                for (auto &conn : dnp3Connections)
                 {
                     if ((conn.channel != nullptr))
                     {
@@ -1541,8 +1517,7 @@ int main(int argc, char* argv[])
                             dnp3Conn.channel = conn.channel;
                             break;
                         }
-                        if (ends_with(dnp3Conn.connectionMode, "PASSIVE")
-                            && dnp3Conn.ipAddressLocalBind == conn.ipAddressLocalBind)
+                        if (ends_with(dnp3Conn.connectionMode, "PASSIVE") && dnp3Conn.ipAddressLocalBind == conn.ipAddressLocalBind)
                         {
                             dnp3Conn.channel = conn.channel;
                             break;
@@ -1569,17 +1544,14 @@ int main(int argc, char* argv[])
                             localAdapter = ipAddrBind;
                         if (dnp3Conn.connectionMode == "TCP ACTIVE")
                         {
-                            Log.Log(dnp3Conn.name + " - Creating TCP Active Client to " + ipAddrBind + ":"
-                                    + portBindStr);
-                            dnp3Conn.channel
-                                = dnp3Conn.manager->AddTCPClient(dnp3Conn.name, logLevels, ChannelRetry::Default(),
-                                                                 vector<IPEndpoint>{IPEndpoint(ipAddrBind, port)},
-                                                                 localAdapter, PrintingChannelListener::Create());
+                            Log.Log(dnp3Conn.name + " - Creating TCP Active Client to " + ipAddrBind + ":" + portBindStr);
+                            dnp3Conn.channel = dnp3Conn.manager->AddTCPClient(dnp3Conn.name, logLevels, ChannelRetry::Default(),
+                                                                              vector<IPEndpoint>{IPEndpoint(ipAddrBind, port)},
+                                                                              localAdapter, PrintingChannelListener::Create());
                         }
                         else if (dnp3Conn.connectionMode == "TCP PASSIVE")
                         {
-                            Log.Log(dnp3Conn.name + " - Creating TCP Passive Server on " + ipAddrBind + ":"
-                                    + portBindStr);
+                            Log.Log(dnp3Conn.name + " - Creating TCP Passive Server on " + ipAddrBind + ":" + portBindStr);
                             dnp3Conn.channel = dnp3Conn.manager->AddTCPServer(
                                 dnp3Conn.name, logLevels, ServerAcceptMode::CloseNew, IPEndpoint(ipAddrBind, port),
                                 PrintingChannelListener::Create());
@@ -1591,12 +1563,10 @@ int main(int argc, char* argv[])
                                 Log.Log(dnp3Conn.name + " - Missing localCertFilePath parameter, ignoring connection!");
                                 continue;
                             }
-                            Log.Log(dnp3Conn.name + " - Creating TLS Active Client to " + ipAddrBind + ":"
-                                    + portBindStr);
-                            auto tlsConfig
-                                = TLSConfig(dnp3Conn.peerCertFilePath, dnp3Conn.localCertFilePath,
-                                            dnp3Conn.privateKeyFilePath, dnp3Conn.allowTLSv10, dnp3Conn.allowTLSv11,
-                                            dnp3Conn.allowTLSv12, dnp3Conn.allowTLSv13, dnp3Conn.cipherList);
+                            Log.Log(dnp3Conn.name + " - Creating TLS Active Client to " + ipAddrBind + ":" + portBindStr);
+                            auto tlsConfig = TLSConfig(dnp3Conn.peerCertFilePath, dnp3Conn.localCertFilePath,
+                                                       dnp3Conn.privateKeyFilePath, dnp3Conn.allowTLSv10, dnp3Conn.allowTLSv11,
+                                                       dnp3Conn.allowTLSv12, dnp3Conn.allowTLSv13, dnp3Conn.cipherList);
                             dnp3Conn.channel = dnp3Conn.manager->AddTLSClient(
                                 dnp3Conn.name, logLevels, ChannelRetry::Default(),
                                 vector<IPEndpoint>{IPEndpoint(ipAddrBind, port)}, localAdapter, tlsConfig,
@@ -1609,18 +1579,16 @@ int main(int argc, char* argv[])
                                 Log.Log(dnp3Conn.name + " - Missing localCertFilePath parameter, ignoring connection!");
                                 continue;
                             }
-                            Log.Log(dnp3Conn.name + " - Creating TLS Passive Server on " + ipAddrBind + ":"
-                                    + portBindStr);
-                            auto tlsConfig
-                                = TLSConfig(dnp3Conn.peerCertFilePath, dnp3Conn.localCertFilePath,
-                                            dnp3Conn.privateKeyFilePath, dnp3Conn.allowTLSv10, dnp3Conn.allowTLSv11,
-                                            dnp3Conn.allowTLSv12, dnp3Conn.allowTLSv13, dnp3Conn.cipherList);
+                            Log.Log(dnp3Conn.name + " - Creating TLS Passive Server on " + ipAddrBind + ":" + portBindStr);
+                            auto tlsConfig = TLSConfig(dnp3Conn.peerCertFilePath, dnp3Conn.localCertFilePath,
+                                                       dnp3Conn.privateKeyFilePath, dnp3Conn.allowTLSv10, dnp3Conn.allowTLSv11,
+                                                       dnp3Conn.allowTLSv12, dnp3Conn.allowTLSv13, dnp3Conn.cipherList);
                             dnp3Conn.channel = dnp3Conn.manager->AddTLSServer(
                                 dnp3Conn.name, logLevels, ServerAcceptMode::CloseNew, IPEndpoint(ipAddrBind, port),
                                 tlsConfig, PrintingChannelListener::Create());
                         }
                     }
-                    catch (const std::exception& e)
+                    catch (const std::exception &e)
                     {
                         Log.Log(dnp3Conn.name + " - Error creating TCP or TLS channel: " + e.what());
                         continue;
@@ -1636,7 +1604,7 @@ int main(int argc, char* argv[])
                 }
                 // look for the same channel already created (multi-drop case)
                 // if found one, just reuse it
-                for (auto& conn : dnp3Connections)
+                for (auto &conn : dnp3Connections)
                 {
                     if ((conn.channel != nullptr))
                     {
@@ -1676,15 +1644,13 @@ int main(int argc, char* argv[])
                         auto handshake = FlowControl::None;
                         if (dnp3Conn.handshake == "RTS" || dnp3Conn.handshake == "HARDWARE")
                             settings.flowType = FlowControl::Hardware;
-                        else if (dnp3Conn.handshake == "XON" || dnp3Conn.handshake == "XON_XOFF"
-                                 || dnp3Conn.handshake == "XONXOFF")
+                        else if (dnp3Conn.handshake == "XON" || dnp3Conn.handshake == "XON_XOFF" || dnp3Conn.handshake == "XONXOFF")
                             settings.flowType = FlowControl::XONXOFF;
 
-                        dnp3Conn.channel
-                            = dnp3Conn.manager->AddSerial(dnp3Conn.name, logLevels, ChannelRetry::Default(), settings,
-                                                          PrintingChannelListener::Create());
+                        dnp3Conn.channel = dnp3Conn.manager->AddSerial(dnp3Conn.name, logLevels, ChannelRetry::Default(), settings,
+                                                                       PrintingChannelListener::Create());
                     }
-                    catch (const std::exception& e)
+                    catch (const std::exception &e)
                     {
                         Log.Log(dnp3Conn.name + " - Error creating serial channel: " + e.what());
                         continue;
@@ -1704,7 +1670,7 @@ int main(int argc, char* argv[])
                     continue;
                 }
                 // look for the same channel config already created (multi-drop case)
-                for (auto& conn : dnp3Connections)
+                for (auto &conn : dnp3Connections)
                 {
                     if ((conn.channel != nullptr))
                     {
@@ -1744,7 +1710,7 @@ int main(int argc, char* argv[])
                             dnp3Conn.name, logLevels, ChannelRetry::Default(), IPEndpoint(ipAddrBind, port),
                             IPEndpoint(ipAddrRemote, portRemote), PrintingChannelListener::Create());
                     }
-                    catch (const std::exception& e)
+                    catch (const std::exception &e)
                     {
                         Log.Log(dnp3Conn.name + " - Error creating UDP channel: " + e.what());
                         continue;
@@ -1752,7 +1718,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        catch (const std::exception& e)
+        catch (const std::exception &e)
         {
             Log.Log(dnp3Conn.name + " - Error configuring connection: " + e.what());
             return -1;
@@ -1769,11 +1735,10 @@ int main(int argc, char* argv[])
         // find tags with a destination linked to this connection
         mongocxx::options::find opts;
         opts.sort(bsoncxx::from_json(R"({"protocolDestinations.protocolDestinationObjectAddress": 1})"));
-        auto resTags
-            = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
-                                                    kvp("protocolDestinations.protocolDestinationConnectionNumber",
-                                                        dnp3Conn.protocolConnectionNumber)),
-                                      opts);
+        auto resTags = db["realtimeData"].find(make_document(kvp("origin", "supervised"),
+                                                             kvp("protocolDestinations.protocolDestinationConnectionNumber",
+                                                                 dnp3Conn.protocolConnectionNumber)),
+                                               opts);
         auto lastBinaryInput = -1;
         auto lastDoubleBinaryInput = -1;
         auto lastAnalogInput = -1;
@@ -1784,16 +1749,14 @@ int main(int argc, char* argv[])
         auto lastTimeAndInterval = -1;
         auto lastOctetString = -1;
 
-        for (auto&& doc : resTags)
+        for (auto &&doc : resTags)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
-            for (const auto& el : protocolDestinations)
+            for (const auto &el : protocolDestinations)
             {
                 const auto protocolDestination = el.get_document().value;
-                const auto protocolDestinationConnectionNumber
-                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
-                const auto protocolDestinationObjectAddress
-                    = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
+                const auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                const auto protocolDestinationObjectAddress = (int)getDouble(protocolDestination, "protocolDestinationObjectAddress");
 
                 if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                     continue;
@@ -1855,14 +1818,7 @@ int main(int argc, char* argv[])
         DatabaseConfig cfg = database_by_sizes(
             lastBinaryInput + 1, lastDoubleBinaryInput + 1, lastAnalogInput + 1, lastCounter + 1, lastFrozenCounter + 1,
             lastBinaryOuputStatus + 1, lastAnalogOutputStatus + 1, lastTimeAndInterval + 1, lastOctetString + 1);
-        Log.Log(dnp3Conn.name + " - Outstation created with " + std::to_string(cfg.binary_input.size())
-                + " binary inputs, " + std::to_string(cfg.double_binary.size()) + " double binary inputs, "
-                + std::to_string(cfg.analog_input.size()) + " analog inputs, " + std::to_string(cfg.counter.size())
-                + " counters, " + std::to_string(cfg.frozen_counter.size()) + " frozen counters, "
-                + std::to_string(cfg.binary_output_status.size()) + " binary output statuses, "
-                + std::to_string(cfg.analog_output_status.size()) + " analog output statuses, "
-                + std::to_string(cfg.time_and_interval.size()) + " time and intervals, "
-                + std::to_string(cfg.octet_string.size()) + " octet strings");
+        Log.Log(dnp3Conn.name + " - Outstation created with " + std::to_string(cfg.binary_input.size()) + " binary inputs, " + std::to_string(cfg.double_binary.size()) + " double binary inputs, " + std::to_string(cfg.analog_input.size()) + " analog inputs, " + std::to_string(cfg.counter.size()) + " counters, " + std::to_string(cfg.frozen_counter.size()) + " frozen counters, " + std::to_string(cfg.binary_output_status.size()) + " binary output statuses, " + std::to_string(cfg.analog_output_status.size()) + " analog output statuses, " + std::to_string(cfg.time_and_interval.size()) + " time and intervals, " + std::to_string(cfg.octet_string.size()) + " octet strings");
         for (int i = 0; i < cfg.binary_input.size(); i++)
         {
             cfg.binary_input[i].clazz = PointClass::Class1;
@@ -1923,14 +1879,13 @@ int main(int argc, char* argv[])
         auto resTags1 = db["realtimeData"].find(make_document(
             kvp("origin", "supervised"),
             kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)));
-        for (auto&& doc : resTags1)
+        for (auto &&doc : resTags1)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
-            for (const auto& el : protocolDestinations)
+            for (const auto &el : protocolDestinations)
             {
                 auto protocolDestination = el.get_document().value;
-                auto protocolDestinationConnectionNumber
-                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
 
                 if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                     continue;
@@ -1961,14 +1916,13 @@ int main(int argc, char* argv[])
         auto resTags2 = db["realtimeData"].find(make_document(
             kvp("origin", "supervised"),
             kvp("protocolDestinations.protocolDestinationConnectionNumber", dnp3Conn.protocolConnectionNumber)));
-        for (auto&& doc : resTags2)
+        for (auto &&doc : resTags2)
         {
             auto protocolDestinations = doc["protocolDestinations"].get_array().value;
-            for (const auto& el : protocolDestinations)
+            for (const auto &el : protocolDestinations)
             {
                 auto protocolDestination = el.get_document().value;
-                auto protocolDestinationConnectionNumber
-                    = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
 
                 if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                     continue;
@@ -2031,11 +1985,11 @@ int main(int argc, char* argv[])
             options.resume_after(resumeToken);
             auto changeStream = rtDataCollection.watch(pipeline, options);
 
-            for (auto& dnp3Conn : dnp3Connections)
+            for (auto &dnp3Conn : dnp3Connections)
             {
-                static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->mongoClient = &client;
-                static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
-                static_cast<MyCommandHandler*>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
+                static_cast<MyCommandHandler *>(dnp3Conn.commandHandler.get())->mongoClient = &client;
+                static_cast<MyCommandHandler *>(dnp3Conn.commandHandler.get())->dnp3Connection = &dnp3Conn;
+                static_cast<MyCommandHandler *>(dnp3Conn.commandHandler.get())->dbstrMongo = dbstrMongo;
 
                 // after a reconnection do an integrity updated
                 Log.Log(dnp3Conn.name + " - Store integrity data.");
@@ -2043,14 +1997,13 @@ int main(int argc, char* argv[])
                     make_document(kvp("origin", "supervised"),
                                   kvp("protocolDestinations.protocolDestinationConnectionNumber",
                                       dnp3Conn.protocolConnectionNumber)));
-                for (auto&& doc : resTags3)
+                for (auto &&doc : resTags3)
                 {
                     auto protocolDestinations = doc["protocolDestinations"].get_array().value;
-                    for (const auto& el : protocolDestinations)
+                    for (const auto &el : protocolDestinations)
                     {
                         auto protocolDestination = el.get_document().value;
-                        auto protocolDestinationConnectionNumber
-                            = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                        auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
 
                         if (dnp3Conn.protocolConnectionNumber != protocolDestinationConnectionNumber)
                             continue;
@@ -2063,17 +2016,16 @@ int main(int argc, char* argv[])
 
             while (true)
             {
-                for (const auto& event : changeStream)
+                for (const auto &event : changeStream)
                 {
                     // std::cout << "Change detected: " << bsoncxx::to_json(event) << std::endl;
                     auto fullDocument = event["fullDocument"].get_document().value;
                     auto protocolDestinations = fullDocument["protocolDestinations"].get_array().value;
-                    for (const auto& el : protocolDestinations)
+                    for (const auto &el : protocolDestinations)
                     {
                         auto protocolDestination = el.get_document().value;
-                        auto protocolDestinationConnectionNumber
-                            = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
-                        for (auto& dnp3Conn : dnp3Connections)
+                        auto protocolDestinationConnectionNumber = (int)getDouble(protocolDestination, "protocolDestinationConnectionNumber");
+                        for (auto &dnp3Conn : dnp3Connections)
                         {
                             if (dnp3Conn.protocolConnectionNumber == 0)
                                 continue;
@@ -2090,7 +2042,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        catch (const std::exception& e)
+        catch (const std::exception &e)
         {
             Log.Log("Mongo change stream - Exception: " + (std::string)e.what());
             std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before reconnecting
