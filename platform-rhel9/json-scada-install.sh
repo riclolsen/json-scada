@@ -7,7 +7,7 @@ JS_USERNAME=jsonscada
 # Execute commands below to prepare for this script:
 # sudo dnf -y install git
 # cd /home/jsonscada
-# git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+# git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
 # cd json-scada/platform-rhel9
 # sudo sh ./json-scada-install.sh
 
@@ -26,7 +26,7 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rp
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel
 sudo dnf -y install curl --allowerasing
 
 # docker/podman can be used to run DNP3 and OPC-DA on linux

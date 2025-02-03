@@ -8,7 +8,7 @@ JS_USERNAME=jsonscada
 # sudo apt update
 # sudo apt -y install git
 # cd /home/jsonscada
-# git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+# git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
 # cd json-scada/platform-ubuntu-2404
 # sudo sh ./json-scada-install-ubuntu.sh
 
