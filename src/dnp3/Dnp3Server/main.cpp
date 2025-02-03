@@ -286,7 +286,6 @@ typedef struct
     std::string privateKeyFilePath;
     std::string peerCertFilePath;
     std::string cipherList;
-    bool allowOnlySpecificCertificates;
     bool allowTLSv10;
     bool allowTLSv11;
     bool allowTLSv12;
@@ -1099,7 +1098,6 @@ int main(int argc, char *argv[])
                                         getString(doc, "privateKeyFilePath"),
                                         getString(doc, "peerCertFilePath"),
                                         getString(doc, "cipherList"),
-                                        getBoolean(doc, "allowOnlySpecificCertificates"),
                                         getBoolean(doc, "allowTLSv10"),
                                         getBoolean(doc, "allowTLSv11"),
                                         getBoolean(doc, "allowTLSv12"),
