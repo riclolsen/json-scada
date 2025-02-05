@@ -1,3 +1,4 @@
+#variable_watch(LSB_RELEASE_ID_SHORT)
 cmake_minimum_required (VERSION 3.11)
 set(DNP3_MAJOR_VERSION 0)
 set(DNP3_MINOR_VERSION 1)
@@ -19,11 +20,26 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 
 link_directories(../../dnp3/opendnp3/cpp/lib)
 
+
+set(LSB_RELEASE_ID_SHORT "")
+find_program(LSB_RELEASE_EXEC lsb_release)
+execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
+    OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # Use the MSVC variable to determine if this is a Windows build.
 set(WINDOWS_BUILD ${MSVC})
-if (WINDOWS_BUILD)
 
-# WINDOWS
+
+if (WINDOWS_BUILD OR LSB_RELEASE_ID_SHORT MATCHES "")
+
+
+if (WINDOWS_BUILD)
+# WINDOWS MSVC
+
+set(CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
 
 target_link_libraries (Dnp3Server 
 PUBLIC
@@ -51,38 +67,88 @@ PUBLIC
   ws2_32.lib
 )
 else ()
+# MSYS2
+
+add_library(libmongocxx STATIC IMPORTED)
+# Provide the full path to the library, so CMake knows where to find it.
+set_target_properties(libmongocxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libmongocxx-static.a)
+
+add_library(libbsoncxx STATIC IMPORTED)
+# Provide the full path to the library, so CMake knows where to find it.
+set_target_properties(libbsoncxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libbsoncxx-static.a)
+
+add_library(libmongoc STATIC IMPORTED)
+# Provide the full path to the library, so CMake knows where to find it.
+set_target_properties(libmongoc PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libmongoc-static-1.0.a)
+
+add_library(libbson STATIC IMPORTED)
+# Provide the full path to the library, so CMake knows where to find it.
+set_target_properties(libbson PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libbson-static-1.0.a)
+
+add_library(libopendnp3 STATIC IMPORTED)
+# Provide the full path to the library, so CMake knows where to find it.
+set_target_properties(libopendnp3 PROPERTIES IMPORTED_LOCATION ../../opendnp3/build/cpp/lib/libopendnp3.a)
+
+
+target_link_libraries (Dnp3Server
+PUBLIC
+  libmongocxx
+  libbsoncxx
+  libmongoc
+  libbson
+  libopendnp3
+  zstd
+  OpenSSL::SSL
+  OpenSSL::Crypto
+  advapi32.lib
+  bcrypt.lib
+  comdlg32.lib
+  crypt32.lib
+  dnsapi.lib
+  gdi32.lib
+  kernel32.lib
+  ole32.lib
+  oleaut32.lib
+  secur32.lib
+  shell32.lib
+  user32.lib
+  uuid.lib
+  winspool.lib
+  ws2_32.lib
+  wsock32.lib
+)
+
+endif ()
+
+else ()
 
 # LINUX
 
-find_program(LSB_RELEASE_EXEC lsb_release)
-execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
-    OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+# OR LSB_RELEASE_ID_SHORT MATCHES ""
 
-if (LSB_RELEASE_ID_SHORT MATCHES "ubuntu")
+if (LSB_RELEASE_ID_SHORT MATCHES "ubuntu") 
 
 # UBUNTU LINUX
 
 add_library(libmongocxx STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libmongocxx PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib/libmongocxx-static.a)
+set_target_properties(libmongocxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libmongocxx-static.a)
 
 add_library(libbsoncxx STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libbsoncxx PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib/libbsoncxx-static.a)
+set_target_properties(libbsoncxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libbsoncxx-static.a)
 
 add_library(libmongoc STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libmongoc PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib/libmongoc-static-1.0.a)
+set_target_properties(libmongoc PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libmongoc-static-1.0.a)
 
 add_library(libbson STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libbson PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib/libbson-static-1.0.a)
+set_target_properties(libbson PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libbson-static-1.0.a)
 
 add_library(libopendnp3 STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libopendnp3 PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/dnp3/opendnp3/build/cpp/lib/libopendnp3.so)
+set_target_properties(libopendnp3 PROPERTIES IMPORTED_LOCATION ../../opendnp3/build/cpp/lib/libopendnp3.so)
 
 else()
 
@@ -90,23 +156,23 @@ else()
 
 add_library(libmongocxx STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libmongocxx PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib64/libmongocxx-static.a)
+set_target_properties(libmongocxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib64/libmongocxx-static.a)
 
 add_library(libbsoncxx STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libbsoncxx PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib64/libbsoncxx-static.a)
+set_target_properties(libbsoncxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib64/libbsoncxx-static.a)
 
 add_library(libmongoc STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libmongoc PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib64/libmongoc-static-1.0.a)
+set_target_properties(libmongoc PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib64/libmongoc-static-1.0.a)
 
 add_library(libbson STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libbson PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/mongo-cxx-driver-lib/lib64/libbson-static-1.0.a)
+set_target_properties(libbson PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib64/libbson-static-1.0.a)
 
 add_library(libopendnp3 STATIC IMPORTED)
 # Provide the full path to the library, so CMake knows where to find it.
-set_target_properties(libopendnp3 PROPERTIES IMPORTED_LOCATION $ENV{HOME}/json-scada/src/dnp3/opendnp3/build/cpp/lib/libopendnp3.so)
+set_target_properties(libopendnp3 PROPERTIES IMPORTED_LOCATION ../../opendnp3/build/cpp/lib/libopendnp3.so)
 
 endif()
 
