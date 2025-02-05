@@ -84,7 +84,7 @@ dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -
 rem cd %SRCPATH%\dnp3\opendnp3
 rem mkdir build
 rem cd build
-rem cmake -DDNP3_EXAMPLES=ON -DDNP3_TLS=ON -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
+rem cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
 rem msbuild opendnp3.sln /p:Configuration=Release
 
 rem cd %SRCPATH%\dnp3\Dnp3Server

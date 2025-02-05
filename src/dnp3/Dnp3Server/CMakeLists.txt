@@ -1,4 +1,4 @@
-#variable_watch(LSB_RELEASE_ID_SHORT)
+#variable_watch(CMAKE_SYSTEM_NAME)
 cmake_minimum_required (VERSION 3.11)
 set(DNP3_MAJOR_VERSION 0)
 set(DNP3_MINOR_VERSION 1)
@@ -20,7 +20,6 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 
 link_directories(../../dnp3/opendnp3/cpp/lib)
 
-
 set(LSB_RELEASE_ID_SHORT "")
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
@@ -32,8 +31,7 @@ execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
 set(WINDOWS_BUILD ${MSVC})
 
 
-if (WINDOWS_BUILD OR LSB_RELEASE_ID_SHORT MATCHES "")
-
+if (WINDOWS_BUILD OR NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 if (WINDOWS_BUILD)
 # WINDOWS MSVC

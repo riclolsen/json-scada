@@ -56,7 +56,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 #cd ../../../dnp3/opendnp3
 #mkdir build
 #cd build
-#cmake -DDNP3_EXAMPLES=ON -DDNP3_TLS=ON ..
+#cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON ..
 #make
 #cp cpp/lib/libopendnp3.so ../../../../bin/
 #
