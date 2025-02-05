@@ -81,17 +81,18 @@ rmdir bin /S /Q
 dotnet restore -p:Platform="Any CPU"
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -p:Platform="Any CPU" -o %BINPATH% OPC-UA-Client.csproj
 
-cd %SRCPATH%\dnp3\opendnp3
-mkdir build
-cd build
-cmake -DDNP3_EXAMPLES=ON -DDNP3_TLS=ON -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
-msbuild opendnp3.sln /p:Configuration=Release
+rem cd %SRCPATH%\dnp3\opendnp3
+rem mkdir build
+rem cd build
+rem cmake -DDNP3_EXAMPLES=ON -DDNP3_TLS=ON -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
+rem msbuild opendnp3.sln /p:Configuration=Release
 
-cd %SRCPATH%\dnp3\Dnp3Server
-mkdir build
-cd build
-cmake -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
-msbuild Dnp3Server.sln /p:Configuration=Release
+rem cd %SRCPATH%\dnp3\Dnp3Server
+rem mkdir build
+rem cd build
+rem cmake -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
+rem msbuild Dnp3Server.sln /p:Configuration=Release
+rem copy /Y %SRCPATH%\dnp3\Dnp3Server\build\Release\Dnp3Server.exe %BINPATH%
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
