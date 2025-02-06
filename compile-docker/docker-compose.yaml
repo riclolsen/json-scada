@@ -6,7 +6,9 @@ services:
   dotnet_compile:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name: js_dotnet_compile
-    command: sh -c "cd /src/lib60870.netcore/lib60870.netcore/ && 
+    command: sh -c "apt-get update && 
+                    apt-get -y install build-essential cmake sasl2-bin libsasl2-dev libssl-dev libzstd-dev libsnappy-dev &&
+                    cd /src/lib60870.netcore/lib60870.netcore/ && 
                     dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec101client/ &&
                     dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
@@ -33,8 +35,6 @@ services:
                     rm -rf obj bin &&
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     rm -rf obj bin &&
-                    apt-get update &&
-                    apt-get -y install build-essential cmake sasl2-bin libsasl2-dev libssl-dev &&
                     cd /src/libiec61850 &&
                     mkdir -p build &&
                     cd build &&
@@ -59,7 +59,8 @@ services:
                     mkdir -p build && 
                     cd build && 
                     cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && 
-                    make && 
+                    make &&
+                    cp cpp/lib/libopendnp3.so ../../../../bin/
                     cd /src/dnp3/Dnp3Server/ && 
                     sed -i 's/mongo-cxx-driver-lib\/lib64\//mongo-cxx-driver-lib\/lib\//g' ./CMakeLists.txt && 
                     sed -i '/sasl2/a  snappy' ./CMakeLists.txt && 
