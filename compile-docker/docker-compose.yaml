@@ -34,7 +34,7 @@ services:
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     rm -rf obj bin &&
                     apt-get update &&
-                    apt-get -y install build-essential cmake sasl2-bin libsasl2-dev &&
+                    apt-get -y install build-essential cmake sasl2-bin libsasl2-dev libssl-dev &&
                     cd /src/libiec61850 &&
                     mkdir -p build &&
                     cd build &&
@@ -51,7 +51,7 @@ services:
                     cd /src/libiec61850 &&
                     rm -rf .install &&
                     cd /src/mongo-cxx-driver/mongo-cxx-driver/build &&
-                    sed -i '/   ${fetch_args}/d' ../cmake/FetchMongoC.cmake &&
+                    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake &&
                     cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF &&
                     cmake --build . --config Release &&
                     cmake --build . --target install --config Release &&
