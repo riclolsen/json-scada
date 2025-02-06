@@ -106,6 +106,16 @@
     },
     {
       "source": "node1",
+      "stream": "dnp3server",
+      "config": {
+        "path": "/json-scada/log/dnp3server.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "mqttsparkplugclient",
       "config": {
         "path": "/json-scada/log/mqttsparkplugclient.log",
