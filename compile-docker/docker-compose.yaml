@@ -60,7 +60,7 @@ services:
                     cd build && 
                     cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && 
                     make &&
-                    cp cpp/lib/libopendnp3.so ../../../../bin/
+                    cp cpp/lib/libopendnp3.so ../../../../bin/ &&
                     cd /src/dnp3/Dnp3Server/ && 
                     sed -i 's/mongo-cxx-driver-lib\/lib64\//mongo-cxx-driver-lib\/lib\//g' ./CMakeLists.txt && 
                     sed -i '/sasl2/a  snappy' ./CMakeLists.txt && 
