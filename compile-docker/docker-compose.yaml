@@ -1,4 +1,4 @@
-# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2024 - Ricardo L. Olsen 
+# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2025 - Ricardo L. Olsen 
 # Requires Internet connection!
 
 services:
@@ -34,7 +34,7 @@ services:
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     rm -rf obj bin &&
                     apt-get update &&
-                    apt-get -y install build-essential cmake &&
+                    apt-get -y install build-essential cmake sasl2-bin libsasl2-dev &&
                     cd /src/libiec61850 &&
                     mkdir -p build &&
                     cd build &&
@@ -49,7 +49,25 @@ services:
                     cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
                     rm -rf obj bin &&
                     cd /src/libiec61850 &&
-                    rm -rf .install "
+                    rm -rf .install &&
+                    cd /src/mongo-cxx-driver/mongo-cxx-driver/build &&
+                    sed -i '/   ${fetch_args}/d' ../cmake/FetchMongoC.cmake &&
+                    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF &&
+                    cmake --build . --config Release &&
+                    cmake --build . --target install --config Release &&
+                    cd /src/dnp3/opendnp3 &&
+                    mkdir -p build && 
+                    cd build && 
+                    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && 
+                    make && 
+                    cd /src/dnp3/Dnp3Server/ && 
+                    sed -i 's/mongo-cxx-driver-lib\/lib64\//mongo-cxx-driver-lib\/lib\//g' ./CMakeLists.txt && 
+                    sed -i '/sasl2/a  snappy' ./CMakeLists.txt && 
+                    mkdir -p build && 
+                    cd build && 
+                    cmake .. && 
+                    make && 
+                    cp Dnp3Server ../../../../bin/"
     environment:
       - DOTNET_CLI_TELEMETRY_OPTOUT=1
     volumes:
@@ -58,6 +76,8 @@ services:
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/OPC-UA-Client:/src/OPC-UA-Client
       - ../src/libplctag:/src/libplctag
+      - ../src/mongo-cxx-driver:/src/mongo-cxx-driver
+      - ../src/dnp3:/src/dnp3
       - ../demo-docker/bin:/publish_bin
 
   # NOTICE Dnp3Client and OPC-DA-Client are Windows-only, so it can only run in docker/linux using Wine.
