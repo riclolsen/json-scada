@@ -1648,8 +1648,7 @@
                 (['DNP3', 'DNP3_SERVER'].includes(
                   editedConnection.protocolDriver
                 ) &&
-                  (editedConnection.connectionMode.endsWith('Passive') ||
-                    editedConnection.connectionMode === 'UDP'))
+                  (editedConnection.connectionMode !== 'Serial'))
               "
             >
               <template v-slot:default="{ active }">
@@ -2366,8 +2365,9 @@
               'OPC-DA_SERVER',
               'ICCP',
               'ICCP_SERVER',
-              'DNP3_SERVER',
             ].includes(editedConnection.protocolDriver)
+            ||
+            ['DNP3_SERVER'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
           "
         >
           <v-card-title>
@@ -2427,8 +2427,9 @@
                   'OPC-DA_SERVER',
                   'ICCP',
                   'ICCP_SERVER',
-                  'DNP3_SERVER',
                 ].includes(editedConnection.protocolDriver)
+                ||
+                ['DNP3_SERVER'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
               "
             >
               <v-row>
@@ -3212,7 +3213,7 @@
             </v-list-item>
 
             <v-list-item
-              v-if="['DNP3'].includes(editedConnection.protocolDriver)"
+              v-if="['DNP3', 'DNP3_SERVER'].includes(editedConnection.protocolDriver)"
             >
               <template v-slot:default="{ active }">
                 <v-row>
