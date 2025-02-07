@@ -655,6 +655,7 @@ const pipeline = [
                 let valueJson =
                   change.updateDescription.updatedFields.sourceDataUpdate
                     ?.valueJsonAtSource || ''
+                if (typeof valueJson !== 'string') valueJson = ''
                 let alarmed = change.fullDocument.alarmed
 
                 // avoid undefined, null or NaN values
