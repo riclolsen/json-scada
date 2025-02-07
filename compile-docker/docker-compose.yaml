@@ -62,7 +62,7 @@ services:
                     make &&
                     cp cpp/lib/libopendnp3.so /publish_bin &&
                     cd /src/dnp3/Dnp3Server/ && 
-                    sed -i 's/mongo-cxx-driver-lib\/lib64\//mongo-cxx-driver-lib\/lib\//g' ./CMakeLists.txt && 
+                    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt && 
                     sed -i '/sasl2/a  snappy' ./CMakeLists.txt && 
                     mkdir -p build && 
                     cd build && 
