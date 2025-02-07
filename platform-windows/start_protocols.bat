@@ -20,6 +20,7 @@ net start JSON_SCADA_telegraf_listener
 net start JSON_SCADA_telegraf_runtime
 REM net start JSON_SCADA_iec104server
 REM net start JSON_SCADA_iec101server
+REM net start JSON_SCADA_dnp3server
 REM net start JSON_SCADA_iccpserver
 REM net start JSON_SCADA_iec101client
 REM net start JSON_SCADA_dnp3client

@@ -422,6 +422,7 @@
                   'PLC4X',
                   'OPC-DA',
                   'ICCP',
+                  'DNP3_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -520,7 +521,7 @@
               v-if="
                 (['OPC-UA'].includes(editedConnection.protocolDriver) &&
                   editedConnection.autoCreateTags) ||
-                ['OPC-DA'].includes(editedConnection.protocolDriver)
+                ['OPC-DA', 'DNP3_SERVER'].includes(editedConnection.protocolDriver)
               "
             >
               <template #default="{ isActive }">
@@ -583,7 +584,8 @@
                  'OPC-DA', 
                  'OPC-DA_SERVER', 
                  'ICCP', 
-                 'ICCP_SERVER'
+                 'ICCP_SERVER',
+                 'DNP3_SERVER',
                 ].includes(
                   editedConnection.protocolDriver
                 )
@@ -1314,7 +1316,7 @@
             </v-list-item>
 
             <v-list-item
-              v-if="['DNP3'].includes(editedConnection.protocolDriver)"
+              v-if="['DNP3', 'DNP3_SERVER'].includes(editedConnection.protocolDriver)"
             >
               <v-switch
                 v-model="editedConnection.enableUnsolicited"
@@ -1646,8 +1648,7 @@
                 (['DNP3', 'DNP3_SERVER'].includes(
                   editedConnection.protocolDriver
                 ) &&
-                  (editedConnection.connectionMode.endsWith('Passive') ||
-                    editedConnection.connectionMode === 'UDP'))
+                  (editedConnection.connectionMode !== 'Serial'))
               "
             >
               <template v-slot:default="{ active }">
@@ -1920,6 +1921,7 @@
               v-if="
                 [
                   'DNP3',
+                  'DNP3_SERVER',
                   'MQTT-SPARKPLUG-B',
                   'OPC-UA_SERVER',
                   'IEC61850',
@@ -2297,8 +2299,6 @@
                   'MQTT-SPARKPLUG-B',
                   'IEC61850',
                   'IEC61850_SERVER',
-                  'DNP3',
-                  'DNP3_SERVER',
                   'ICCP',
                   'ICCP_SERVER',
                 ].includes(editedConnection.protocolDriver)
@@ -2366,6 +2366,8 @@
               'ICCP',
               'ICCP_SERVER',
             ].includes(editedConnection.protocolDriver)
+            ||
+            ['DNP3_SERVER'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
           "
         >
           <v-card-title>
@@ -2426,6 +2428,8 @@
                   'ICCP',
                   'ICCP_SERVER',
                 ].includes(editedConnection.protocolDriver)
+                ||
+                ['DNP3_SERVER'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
               "
             >
               <v-row>
@@ -3209,7 +3213,7 @@
             </v-list-item>
 
             <v-list-item
-              v-if="['DNP3'].includes(editedConnection.protocolDriver)"
+              v-if="['DNP3', 'DNP3_SERVER'].includes(editedConnection.protocolDriver)"
             >
               <template v-slot:default="{ active }">
                 <v-row>
@@ -3451,6 +3455,7 @@
     'IEC61850',
     'IEC61850_SERVER',
     'DNP3',
+    'DNP3_SERVER',
     'MQTT-SPARKPLUG-B',
     'OPC-UA',
     'OPC-UA_SERVER',

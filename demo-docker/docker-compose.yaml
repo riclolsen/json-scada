@@ -172,7 +172,7 @@ services:
     networks:
       - jsdemo_net
 
-  # IEC60870-5-104 SERVER, accepts connection on 127.0.0.1:2404 (originator address 1)
+  # IEC60870-5-104 SERVER, demo config accepts connection on 127.0.0.1:2404 (originator address 1)
   iec104server:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     container_name:  jsdemo_iec104server
@@ -353,6 +353,28 @@ services:
       - ./log:/log
     links:
       - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  # DNP3 SERVER, demo config accepts connection on 127.0.0.1:20000 (local address 2, remote address 1)
+  dnp3server:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name:  jsdemo_dnp3server
+    command: sh -c "sleep 60 && /jsonscada_bin/Dnp3Server"
+    restart: unless-stopped
+    environment:
+      - LD_LIBRARY_PATH=/jsonscada_bin
+    volumes:
+      - ./conf:/conf
+      - ./bin:/jsonscada_bin
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    # exports the DNP3 server port to the host
+    ports:
+      - 20000:20000
+    expose:
+      - "20000"
     networks:
       - jsdemo_net
 

@@ -48,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.47-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.48-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -90,7 +90,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.47-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.48-alpha)
 - [RedHat/Rocky Linux Installer Script](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Ubuntu Linux Installer Script](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#ubuntu-2404-scripted-installation)
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
@@ -104,6 +104,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [IEC60870-5-101 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec101server/README.md)
 - [IEC60870-5-101 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec101client/README.md)
 - [DNP3 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/dnp3/Dnp3Client/README.md)
+- [DNP3 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/dnp3/Dnp3Server/README.md)
 - [Telegraf Listener Driver](https://github.com/riclolsen/json-scada/blob/master/src/telegraf-listener/README.md)
 - [MQTT Sparkplug-B Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/mqtt-sparkplug/README.md)
 - [OPC-UA Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-UA-Client/README.md)
@@ -132,7 +133,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] IEC 61850 MMS Server
 - [ ] IEC 61850 GOOSE/SV Client
 - [x] DNP3 Client TCP/UDP/TLS/Serial - Windows x64 only!
-- [ ] DNP3 Server TCP/UDP/TLS/Serial
+- [x] DNP3 Server TCP/UDP/TLS/Serial
 - [x] MQTT/Sparkplug-B Pub/Sub TCP/TLS
 - [x] Modbus Client via PLC4X-GO
 - [ ] ICCP Client TCP/TLS

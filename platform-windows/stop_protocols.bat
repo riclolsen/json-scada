@@ -28,6 +28,7 @@ ping -n 2
 REM STOP PROTOCOL SERVERS
 net stop JSON_SCADA_iec104server
 net stop JSON_SCADA_iec101server
+net stop JSON_SCADA_dnp3server
 net stop JSON_SCADA_opcuaserver
 net stop JSON_SCADA_iccpserver
 ping -n 2

@@ -119,7 +119,7 @@
   import { useRouter } from 'vue-router'
   import { STORAGE_KEY } from './i18n'
 
-  const version = ref('v0.47-alpha')
+  const version = ref('v0.4-alpha')
   const router = useRouter()
   const theme = ref('dark')
   const vuetifyTheme = useTheme()
@@ -146,7 +146,8 @@
     { title: 'فارسی', value: 'fa' },
     { title: '日本語', value: 'ja' },
     { title: '中文', value: 'zh' },
-  ]
+    { title: 'پښتو', value: 'ps' },
+   ]
 
   onMounted(() => {
     checkLogin()

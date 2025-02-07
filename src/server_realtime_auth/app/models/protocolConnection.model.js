@@ -26,10 +26,10 @@ const ProtocolConnection = mongoose.model(
     // IEC60870-5-104_SERVER, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850_SERVER, ICCP_SERVER, DNP3_SERVER
     ipAddressLocalBind: { type: String, default: '' },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP, ICCP_SERVER
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, DNP3_SERVER, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP, ICCP_SERVER
     ipAddresses: { type: [String], default: [] },
 
-    // MQTT-SPARKPLUG-B, OPC-UA, OPC-UA_SERVER, IEC61850, PLC4X, OPC_DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
+    // MQTT-SPARKPLUG-B, OPC-UA, OPC-UA_SERVER, IEC61850, PLC4X, OPC_DA, OPC-DA_SERVER, ICCP, ICCP_SERVER, DNP3_SERVER
     topics: { type: [String], default: [] },
 
     // ICCP, ICCP_SERVER
@@ -62,7 +62,7 @@ const ProtocolConnection = mongoose.model(
     username: { type: String, default: '' },
     password: { type: String, default: '' },
 
-    // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP
+    // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP, DNP3_SERVER
     autoCreateTags: { type: Boolean, default: true },
 
     // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
@@ -87,7 +87,7 @@ const ProtocolConnection = mongoose.model(
       default: '../conf/Opc.Ua.DefaultClient.Config.xml',
     },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, DNP3_SERVER, PLCTag, I104M
     localLinkAddress: { type: Double, min: 0, default: 1.0 },
     remoteLinkAddress: { type: Double, min: 0, default: 1.0 },
 
@@ -97,7 +97,7 @@ const ProtocolConnection = mongoose.model(
     // OPC-DA, OPC-DA_SERVER
     deadBand: { type: Double, min: 0, default: 0.0 },
 
-    // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
+    // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER, DNP3_SERVER
     hoursShift: { type: Double, min: 0, default: 0.0 },
 
     // IEC60870-5-101, IEC60870-5-101_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER
@@ -121,11 +121,14 @@ const ProtocolConnection = mongoose.model(
 
     // IEC60870-5-104_SERVER,IEC60870-5-101_SERVER, IEC61850_SERVER
     maxQueueSize: { type: Double, min: 0, default: 5000.0 },
+    
+    // OPC-UA, OPC-DA, DNP3_SERVER
+    serverQueueSize: { type: Double, min: 0, default: 5000.0 },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA, ICCP_SERVER, ICCP
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, DNP3_SERVER, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA, ICCP_SERVER, ICCP
     localCertFilePath: { type: String, default: '' },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, IEC61850, OPC-DA
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, DNP3_SERVER, IEC61850, OPC-DA
     peerCertFilePath: { type: String, default: '' },
 
     // IEC60870-5-104, IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
@@ -138,7 +141,7 @@ const ProtocolConnection = mongoose.model(
     // IEC60870-5-104, IEC60870-5-104_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
     allowOnlySpecificCertificates: { type: Boolean, default: false },
 
-    // DNP3, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
+    // DNP3, DNP3_SERVER, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP_SERVER, ICCP
     privateKeyFilePath: { type: String, default: '' },
     allowTLSv10: { type: Boolean, default: false },
     allowTLSv11: { type: Boolean, default: false },
@@ -146,18 +149,20 @@ const ProtocolConnection = mongoose.model(
     allowTLSv13: { type: Boolean, default: true },
     cipherList: { type: String, default: '' },
 
-    // DNP3
+    // DNP3, DNP3_SERVER
     connectionMode: { type: String, default: 'TCP Active' },
     asyncOpenDelay: { type: Double, min: 0.0, default: 0.0 },
+    enableUnsolicited: { type: Boolean, default: true },
+
+    // DNP3
     timeSyncMode: { type: Double, min: 0.0, max: 2.0, default: 0.0 },
     class0ScanInterval: { type: Double, min: 0.0, default: 0.0 },
     class1ScanInterval: { type: Double, min: 0.0, default: 0.0 },
     class2ScanInterval: { type: Double, min: 0.0, default: 0.0 },
     class3ScanInterval: { type: Double, min: 0.0, default: 0.0 },
-    enableUnsolicited: { type: Boolean, default: true },
     rangeScans: { type: Array, default: [] },
 
-    // IEC60870-5-101, IEC60870-5-101_SERVER, DNP3
+    // IEC60870-5-101, IEC60870-5-101_SERVER, DNP3, DNP3_SERVER
     portName: { type: String, default: '' },
     baudRate: { type: Double, min: 150, default: 9600.0 },
     parity: { type: String, default: 'Even' },

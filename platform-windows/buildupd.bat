@@ -41,7 +41,7 @@ cd %SRCPATH%\libiec61850\dotnet\core\2.0\
 dotnet publish --no-self-contained --runtime win-x64 -c Release -o %BINPATH% IEC61850.NET.core.2.0 
 
 cd %SRCPATH%\iec61850_client
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH%
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -p:Platform="Any CPU" -c Release -o %BINPATH%
 
 cd %SRCPATH%\lib60870.netcore\lib60870.netcore\
 dotnet build --no-self-contained --runtime win-x64 -c Release
@@ -67,7 +67,7 @@ cd %SRCPATH%\logrotate\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% logrotate.csproj
 
 cd %SRCPATH%\opcdaaehda-client-solution-net\
-dotnet build -f net8.0-windows DaAeHdaNetStandard.sln
+dotnet build -f net8.0-windows DaAeHdaNetStandard.sln -p:Platform="Any CPU"
 
 cd %SRCPATH%\OPC-DA-Client\  
 rmdir obj /S /Q
@@ -78,8 +78,21 @@ dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -
 cd %SRCPATH%\OPC-UA-Client\  
 rmdir obj /S /Q
 rmdir bin /S /Q
-dotnet restore
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% OPC-UA-Client.csproj
+dotnet restore -p:Platform="Any CPU"
+dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -p:Platform="Any CPU" -o %BINPATH% OPC-UA-Client.csproj
+
+rem cd %SRCPATH%\dnp3\opendnp3
+rem mkdir build
+rem cd build
+rem cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
+rem msbuild opendnp3.sln /p:Configuration=Release
+
+rem cd %SRCPATH%\dnp3\Dnp3Server
+rem mkdir build
+rem cd build
+rem cmake -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_LIBS=TRUE -DOPENSSL_MSVC_STATIC_RT=TRUE ..
+rem msbuild Dnp3Server.sln /p:Configuration=Release
+rem copy /Y %SRCPATH%\dnp3\Dnp3Server\build\Release\Dnp3Server.exe %BINPATH%
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin

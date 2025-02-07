@@ -8,9 +8,9 @@ JS_USERNAME=jsonscada
 # sudo apt update
 # sudo apt -y install git
 # cd /home/jsonscada
-# git clone https://github.com/riclolsen/json-scada --config core.autocrlf=input
+# git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
 # cd json-scada/platform-ubuntu-2404
-# sudo sh ./json-scada-install-ubuntu.sh
+# sudo sh ./json-scada-install.sh
 
 # AFTER INSTALLATION
 # OPEN BROWSER AT http://localhost (must allow popups for issuing controls)
@@ -28,7 +28,7 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 # Update and install base packages
 sudo apt update
 sudo apt -y upgrade
-sudo apt -y install bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev
+sudo apt -y install bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev
 
 # Docker and container tools
 sudo apt -y install podman docker.io
