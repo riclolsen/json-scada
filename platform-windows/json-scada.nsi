@@ -1,6 +1,6 @@
 ; json-scada.nsi
 ; {json:scada} installer script
-; Copyright 2020-2024 - Ricardo L. Olsen
+; Copyright 2020-2025 - Ricardo L. Olsen
 
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
@@ -20,8 +20,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.47"
-!define VERSION_ "0.47.0.0"
+!define VERSION "v.0.48"
+!define VERSION_ "0.48.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -128,6 +128,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iec101server'
   nsExec::Exec 'net stop JSON_SCADA_iec104client'
   nsExec::Exec 'net stop JSON_SCADA_iec104server'
+  nsExec::Exec 'net stop JSON_SCADA_dnp3server'
   nsExec::Exec 'net stop JSON_SCADA_iccpclient'
   nsExec::Exec 'net stop JSON_SCADA_iccpserver'
   nsExec::Exec 'net stop JSON_SCADA_iec61850client'
@@ -248,7 +249,7 @@ SetRegView 64
   File /a "..\platform-windows\nssm.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-8.0.11-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.12-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -267,9 +268,12 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.11-win-x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.12-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
+  Sleep 1000
+  ; WMIC required for postgresql injection batch files
+  ExecWait 'DISM /Online /Add-Capability /CapabilityName:WMIC'
   Sleep 1000
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
@@ -688,6 +692,11 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_iec104server"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_iec104server"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_dnp3server"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_dnp3server"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_iccpserver"`
