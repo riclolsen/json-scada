@@ -1,5 +1,5 @@
 /*
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'server_realtime_auth',
   ENV_PREFIX: 'JS_SERVER_REALTIME_AUTH_',
   MSG: '{json:scada} - Server Realtime Auth',
-  VERSION: '0.2.0',
+  VERSION: '0.3.0',
 }
