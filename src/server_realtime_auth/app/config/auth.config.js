@@ -6,27 +6,50 @@ module.exports = {
   
   // LDAP Configuration
   ldap: {
-    enabled: false, // Enable/disable LDAP authentication
-    url: 'ldap://ldap.forumsys.com:389',
-    bindDN: 'cn=read-only-admin,dc=example,dc=com', // Admin bind DN
-    bindCredentials: 'password', // Admin bind password
-    searchBase: 'dc=example,dc=com', // Search base for users
-    searchFilter: '(uid={{username}})', // Search filter, {{username}} will be replaced with the login username
-    // User attributes mapping
+    enabled: true, // Enable/disable LDAP authentication
+
+    // Example for MS Active Directory Server
+    url: 'ldap://192.168.0.26:389',
+    bindDN: 'cn=Administrator,cn=Users,dc=ad,dc=gpfs,dc=net', // Admin bind DN
+    bindCredentials: 'secret', // Admin bind password
+    searchBase: 'ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net', // Search base for users
+    searchFilter: '(sAMAccountName={{username}})', // Search filter, {{username}} will be replaced with the login username
     attributes: {
-      username: 'uid',
+      username: 'sAMAccountName',
       email: 'mail',
-      displayName: 'cn'
-    },
-    // Default role for LDAP users (should match a role name defined in your MongoDB)
-    defaultRole: 'user',
-    // Group mapping (optional) - maps LDAP groups to local roles
-    groupMapping: {
-      'cn=admins,dc=example,dc=com': 'admin',
-      'cn=users,dc=example,dc=com': 'user'
+      displayName: 'cn',
+      memberOf: 'memberOf',
     },
     // Group search base (optional) - if not provided, the search base will be used
-    groupSearchBase: 'ou=groups,dc=example,dc=com',
+    groupSearchBase: 'ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net',
+    // Group mapping (optional) - maps LDAP groups to local roles
+    groupMapping: {
+      'CN=captains,ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net': 'admin',
+      'cn=pilots,ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net': 'user'
+    },
+
+//    // Example for other LDAP server like Apache Directory Server
+//    url: 'ldap://ldap.forumsys.com:389',
+//    bindDN: 'cn=read-only-admin,dc=example,dc=com', // Admin bind DN
+//    bindCredentials: 'password', // Admin bind password
+//    searchBase: 'dc=example,dc=com', // Search base for users
+//    searchFilter: '(uid={{username}})', // Search filter, {{username}} will be replaced with the login username
+//    // User attributes mapping
+//    attributes: {
+//      username: 'uid',
+//      email: 'mail',
+//      displayName: 'cn'
+//    },
+//    // Group search base (optional) - if not provided, the search base will be used
+//    groupSearchBase: 'ou=groups,dc=example,dc=com',
+//    // Group mapping (optional) - maps LDAP groups to local roles
+//    groupMapping: {
+//      'cn=admins,dc=example,dc=com': 'admin',
+//      'cn=users,dc=example,dc=com': 'user'
+//    },
+
+    // Default role for LDAP users (should match a role name defined in your MongoDB)
+    defaultRole: 'user',
     tlsOptions: {
       rejectUnauthorized: true, // Set to true if you want to reject unauthorized certificates
       minVersion: 'TLSv1.2', // Minimum TLS version to accept

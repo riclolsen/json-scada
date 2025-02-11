@@ -1641,20 +1641,31 @@ async function authenticateWithLDAP(username, password) {
       attributes: Object.values(config.ldap.attributes),
     })
 
-    if (searchEntries.length !== 1) {
+    if (searchEntries.length === 0) {
       Log.log('LDAP authentication - User not found: ' + username)
       await client.unbind()
       return null
     }
 
     const userEntry = searchEntries[0]
-    // Log.log('LDAP authentication - User found: ' + JSON.stringify(userEntry))
+    Log.log('LDAP authentication - User found: ' + JSON.stringify(userEntry))
     Log.log('LDAP authentication - User found: ' + username)
 
     // Try to bind with user credentials to verify password
     await client.bind(userEntry.dn, password)
     await client.unbind()
     Log.log('LDAP authentication - Ok for User: ' + username)
+    
+    if (userEntry?.memberOf?.constructor === String) {
+      userEntry.memberOf = [userEntry.memberOf]
+    }
+    
+    if (userEntry[config.ldap.attributes.email].constructor === Array) {
+      if (userEntry[config.ldap.attributes.email].length > 0)
+        userEntry[config.ldap.attributes.email] =
+          userEntry[config.ldap.attributes.email][0]
+      else userEntry[config.ldap.attributes.email] = ''
+    }
 
     // Map LDAP attributes to user object
     const userData = {
@@ -1669,20 +1680,21 @@ async function authenticateWithLDAP(username, password) {
     let user = await User.findOne({ username: userData.username })
     // Log.log('LDAP authentication - User in local database: ' + user)
 
+    const defaultRole = await Role.findOne({ name: config.ldap.defaultRole })
+
     if (!user) {
       // Create new user
       user = new User(userData)
-
       // Assign default role
-      const defaultRole = await Role.findOne({ name: config.ldap.defaultRole })
       if (defaultRole) {
         user.roles = [defaultRole._id]
       }
 
       // Check LDAP groups and assign additional roles if configured
       if (userEntry.memberOf) {
+        Log.log('LDAP authentication - User groups: ' + userEntry.memberOf)
         for (const group of userEntry.memberOf) {
-          const roleName = config.ldap.groupMapping[group]
+          const roleName = config.ldap.groupMapping[group.toLocaleLowerCase()]
           if (roleName) {
             const role = await Role.findOne({ name: roleName })
             if (role && !user.roles.includes(role._id)) {
@@ -1697,6 +1709,24 @@ async function authenticateWithLDAP(username, password) {
       // Update existing user's LDAP info
       user.lastLDAPSync = userData.lastLDAPSync
       user.email = userData.email
+      if (defaultRole) {
+        user.roles = [defaultRole._id]
+      }
+
+      // Check LDAP groups and assign additional roles if configured
+      if (userEntry.memberOf) {
+        Log.log('LDAP authentication - User groups: ' + userEntry.memberOf)
+        for (const group of userEntry.memberOf) {
+          const roleName = config.ldap.groupMapping[group.toLowerCase()]
+          if (roleName) {
+            const role = await Role.findOne({ name: roleName })
+            if (role && !user.roles.includes(role._id)) {
+              user.roles.push(role._id)
+            }
+          }
+        }
+      }
+
       await user.save()
     }
 
