@@ -1615,10 +1615,15 @@ async function authenticateWithLDAP(username, password) {
 
   Log.log('LDAP authentication - Server: ' + config.ldap.url)
 
+  const tlsOptions = null
+  if (config.ldap.url.startsWith('ldaps')) {
+    tlsOptions = config.ldap.tlsOptions
+  }
   const client = new Client({
     url: config.ldap.url,
     timeout: 5000,
     connectTimeout: 5000,
+    tlsOptions: tlsOptions,
   })
 
   try {

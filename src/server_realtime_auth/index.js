@@ -53,6 +53,32 @@ const initGQLServer = require('./graphql-server.js')
 
 const config = require('./app/config/auth.config.js')
 if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
+if (process.env.JS_LDAP_ENABLED) config.ldap.enabled = process.env.JS_LDAP_ENABLED.toLowerCase() == 'true'
+if (process.env.JS_LDAP_URL) config.ldap.url = process.env.JS_LDAP_URL
+if (process.env.JS_LDAP_BIND_DN) config.ldap.bindDN = process.env.JS_LDAP_BIND_DN
+if (process.env.JS_LDAP_BIND_CREDENTIALS) config.ldap.bindCredentials = process.env.JS_LDAP_BIND_CREDENTIALS
+if (process.env.JS_LDAP_SEARCH_BASE) config.ldap.searchBase = process.env.JS_LDAP_SEARCH_BASE
+if (process.env.JS_LDAP_SEARCH_FILTER) config.ldap.searchFilter = process.env.JS_LDAP_SEARCH_FILTER
+if (process.env.JS_LDAP_ATTRIBUTES_USERNAME) config.ldap.attributes.username = process.env.JS_LDAP_ATTRIBUTES_USERNAME
+if (process.env.JS_LDAP_ATTRIBUTES_EMAIL) config.ldap.attributes.email = process.env.JS_LDAP_ATTRIBUTES_EMAIL
+if (process.env.JS_LDAP_ATTRIBUTES_DISPLAYNAME) config.ldap.attributes.displayName = process.env.JS_LDAP_ATTRIBUTES_DISPLAYNAME
+if (process.env.JS_LDAP_GROUP_SEARCH_BASE) config.ldap.groupSearchBase = process.env.JS_LDAP_GROUP_SEARCH_BASE
+if (process.env.JS_LDAP_TLS_REJECT_UNAUTHORIZED) config.ldap.tlsOptions.rejectUnauthorized = process.env.JS_LDAP_TLS_REJECT_UNAUTHORIZED.toLowerCase() == 'true'
+if (process.env.JS_LDAP_TLS_CA) config.ldap.tlsOptions.ca = [process.env.JS_LDAP_TLS_CA]
+if (process.env.JS_LDAP_TLS_CERT) config.ldap.tlsOptions.cert = process.env.JS_LDAP_TLS_CERT
+if (process.env.JS_LDAP_TLS_KEY) config.ldap.tlsOptions.key = process.env.JS_LDAP_TLS_KEY
+if (process.env.JS_LDAP_TLS_PASSPHRASE) config.ldap.tlsOptions.passphrase  = process.env.JS_LDAP_TLS_PASSPHRASE
+if (process.env.JS_LDAP_TLS_PFX) config.ldap.tlsOptions.pfx  = process.env.JS_LDAP_TLS_PFX
+if (process.env.JS_LDAP_TLS_CRL) config.ldap.tlsOptions.crl  = process.env.JS_LDAP_TLS_CRL
+if (process.env.JS_LDAP_TLS_CIPHERS) config.ldap.tlsOptions.ciphers  = process.env.JS_LDAP_TLS_CIPHERS
+if (process.env.JS_LDAP_TLS_SECURE_PROTOCOL) config.ldap.tlsOptions.secureProtocol  = process.env.JS_LDAP_TLS_SECURE_PROTOCOL
+if (process.env.JS_LDAP_TLS_MIN_VERSION) config.ldap.tlsOptions.minVersion  = process.env.JS_LDAP_TLS_MIN_VERSION
+if (process.env.JS_LDAP_TLS_MAX_VERSION) config.ldap.tlsOptions.maxVersion  = process.env.JS_LDAP_TLS_MAX_VERSION
+
+Log.log('LDAP enabled: ' + config.ldap.enabled)
+if (config.ldap.enabled && !config.ldap.url.startsWith('ldaps')) {
+  Log.log('LDAP authentication - Not Encrypted!')  
+}
 
 const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
