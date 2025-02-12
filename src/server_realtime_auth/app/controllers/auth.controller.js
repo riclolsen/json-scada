@@ -1613,7 +1613,7 @@ function registerUserAction(req, actionName) {
 async function authenticateWithLDAP(username, password) {
   if (!config.ldap.enabled) return null
 
-  Log.log('LDAP authentication - Server: ' + config.ldap.url)
+  Log.log('LDAP - Server: ' + config.ldap.url)
 
   const tlsOptions = null
   if (config.ldap.url.startsWith('ldaps')) {
@@ -1626,40 +1626,95 @@ async function authenticateWithLDAP(username, password) {
     tlsOptions: tlsOptions,
   })
 
+  let userDN = ''
   try {
-    // Bind with admin credentials to search for user
-    await client.bind(config.ldap.bindDN, config.ldap.bindCredentials)
-    Log.log('LDAP authentication - Ok for BindDN: ' + config.ldap.bindDN)
+    let userEntry = null
+    try {
+      // Bind with admin credentials to search for user
+      await client.bind(config.ldap.bindDN, config.ldap.bindCredentials)
+      Log.log('LDAP - Ok for BindDN: ' + config.ldap.bindDN)
 
-    // Search for user
-    const searchFilter = config.ldap.searchFilter.replace(
-      '{{username}}',
-      username
-    )
-    const { searchEntries } = await client.search(config.ldap.searchBase, {
-      filter: searchFilter,
-      attributes: Object.values(config.ldap.attributes),
-    })
+      // Search for user
+      const searchFilter = config.ldap.searchFilter.replace(
+        '{{username}}',
+        username
+      )
+      const { searchEntries } = await client.search(config.ldap.searchBase, {
+        filter: searchFilter,
+        attributes: Object.values(config.ldap.attributes),
+      })
 
-    if (searchEntries.length === 0) {
-      Log.log('LDAP authentication - User not found: ' + username)
-      await client.unbind()
-      return null
+      if (searchEntries.length === 0) {
+        Log.log('LDAP - User not found: ' + username)
+        await client.unbind()
+        return null
+      }
+
+      userEntry = searchEntries[0]
+      // Log.log('LDAP - User found: ' + JSON.stringify(userEntry))
+      Log.log('LDAP - User found: ' + username)
+      userDN = userEntry.dn
+    } catch (err) {
+      Log.log('LDAP - Error for BindDN: ' + config.ldap.bindDN)
     }
 
-    const userEntry = searchEntries[0]
-    Log.log('LDAP authentication - User found: ' + JSON.stringify(userEntry))
-    Log.log('LDAP authentication - User found: ' + username)
+    if (userDN === '') {
+      userDN =
+        config.ldap.attributes.username +
+        '=' +
+        username +
+        ',' +
+        config.ldap.searchBase
+    }
 
-    // Try to bind with user credentials to verify password
-    await client.bind(userEntry.dn, password)
-    await client.unbind()
-    Log.log('LDAP authentication - Ok for User: ' + username)
-    
+    try {
+      // Try to bind with user credentials to verify password
+      await client.bind(userDN, password)
+      Log.log('LDAP - Ok for userDN: ' + userDN)
+    } catch (err) {
+      Log.log('LDAP - Auth error for userDN: ' + userDN)
+
+      userDN =
+        config.ldap.attributes.displayName +
+        '=' +
+        username +
+        ',' +
+        config.ldap.searchBase
+
+      await client.bind(userDN, password)
+      Log.log('LDAP - Ok for userDN: ' + userDN)
+    }
+
+    if (!userEntry) {
+      // Search for user
+      const searchFilter = config.ldap.searchFilter.replaceAll(
+        '{{username}}',
+        username
+      )
+      const { searchEntries } = await client.search(config.ldap.searchBase, {
+        filter: searchFilter,
+        attributes: Object.values(config.ldap.attributes),
+      })
+
+      if (searchEntries.length === 0) {
+        Log.log('LDAP - User not found: ' + searchFilter)
+        await client.unbind()
+        return null
+      }
+
+      userEntry = searchEntries[0]
+      // Log.log('LDAP - User entry found: ' + JSON.stringify(userEntry))
+      Log.log('LDAP - User found: ' + username)
+      userDN = userEntry.dn
+    }
+
     if (userEntry?.memberOf?.constructor === String) {
       userEntry.memberOf = [userEntry.memberOf]
     }
-    
+
+    if (!(config.ldap.attributes.email in userEntry)) {
+      userEntry[config.ldap.attributes.email] = ''
+    }
     if (userEntry[config.ldap.attributes.email].constructor === Array) {
       if (userEntry[config.ldap.attributes.email].length > 0)
         userEntry[config.ldap.attributes.email] =
@@ -1672,67 +1727,94 @@ async function authenticateWithLDAP(username, password) {
       username: userEntry[config.ldap.attributes.username],
       email: userEntry[config.ldap.attributes.email],
       isLDAPUser: true,
-      ldapDN: userEntry.dn,
+      ldapDN: userDN,
       lastLDAPSync: new Date(),
     }
 
     // Find or create user in local database
     let user = await User.findOne({ username: userData.username })
-    // Log.log('LDAP authentication - User in local database: ' + user)
 
     const defaultRole = await Role.findOne({ name: config.ldap.defaultRole })
 
     if (!user) {
       // Create new user
       user = new User(userData)
-      // Assign default role
-      if (defaultRole) {
-        user.roles = [defaultRole._id]
-      }
-
-      // Check LDAP groups and assign additional roles if configured
-      if (userEntry.memberOf) {
-        Log.log('LDAP authentication - User groups: ' + userEntry.memberOf)
-        for (const group of userEntry.memberOf) {
-          const roleName = config.ldap.groupMapping[group.toLocaleLowerCase()]
-          if (roleName) {
-            const role = await Role.findOne({ name: roleName })
-            if (role && !user.roles.includes(role._id)) {
-              user.roles.push(role._id)
-            }
-          }
-        }
-      }
-
-      await user.save()
     } else {
       // Update existing user's LDAP info
       user.lastLDAPSync = userData.lastLDAPSync
       user.email = userData.email
-      if (defaultRole) {
-        user.roles = [defaultRole._id]
-      }
+    }
 
-      // Check LDAP groups and assign additional roles if configured
-      if (userEntry.memberOf) {
-        Log.log('LDAP authentication - User groups: ' + userEntry.memberOf)
-        for (const group of userEntry.memberOf) {
-          const roleName = config.ldap.groupMapping[group.toLowerCase()]
-          if (roleName) {
-            const role = await Role.findOne({ name: roleName })
-            if (role && !user.roles.includes(role._id)) {
-              user.roles.push(role._id)
-            }
+    if (defaultRole) {
+      user.roles = [defaultRole._id]
+    }
+
+    // Check LDAP groups and assign additional roles, if any
+    if (userEntry.memberOf) {
+      Log.log('LDAP - User groups: ' + userEntry.memberOf)
+      for (const group of userEntry.memberOf) {
+        const roleName = config.ldap.groupMapping[group.toLowerCase()]
+        if (roleName) {
+          const role = await Role.findOne({ name: roleName })
+          if (role && !user.roles.includes(role._id)) {
+            user.roles.push(role._id)
+            Log.log('LDAP - User role: ' + roleName)
           }
+          if (!role) {
+            Log.log('LDAP - Role not found: ' + roleName)
+          }
+        } else {
+          Log.log('LDAP - Group/role not mapped: ' + group)
         }
       }
+    } else {
+      try {
+        const filter =
+          '(&(|(objectClass=groupOfUniqueNames)(objectClass=groupOfNames)(objectClass=group))(|(uniqueMember=' +
+          userDN +
+          ')(member=' +
+          userDN +
+          ')))'
+        Log.log('LDAP - Search for user groups: ' + filter)
+        const { searchEntries, searchReferences } = await client.search(
+          config.ldap.groupSearchBase,
+          {
+            scope: 'sub',
+            filter: filter,
+          }
+        )
 
-      await user.save()
+        if (searchEntries.length > 0) {
+          // Log.log('LDAP - User groups: ' + JSON.stringify(searchEntries))
+          for (const group of searchEntries) {
+            const roleName = config.ldap.groupMapping[group.dn.toLowerCase()]
+            if (roleName) {
+              const role = await Role.findOne({ name: roleName })
+              if (role && !user.roles.includes(role._id)) {
+                user.roles.push(role._id)
+                Log.log('LDAP - User role: ' + roleName)
+              }
+              if (!role) {
+                Log.log('LDAP - Role not found: ' + roleName)
+              }
+            } else {
+              Log.log('LDAP - Group/role not mapped: ' + group.dn)
+            }
+          }
+        } else {
+          Log.log('LDAP - User groups not found: ' + filter)
+        }
+      } catch (err) {
+        Log.log('LDAP - Error searching for user groups: ' + err)
+      }
     }
+
+    await user.save()
+    await client.unbind()
 
     return user
   } catch (error) {
-    Log.log('LDAP Authentication error:' + error)
+    Log.log('LDAP - error for userDN ' + userDN + ': ' + error)
     return null
   }
 }

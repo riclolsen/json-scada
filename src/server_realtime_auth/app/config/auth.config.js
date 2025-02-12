@@ -3,50 +3,50 @@
 module.exports = {
   // JWT secret key
   secret: 'json-scada-secret-key',
-  
+
   // LDAP Configuration
   ldap: {
-    enabled: true, // Enable/disable LDAP authentication
+    enabled: false, // Enable/disable LDAP authentication
 
-    // Example for MS Active Directory Server
-    url: 'ldap://192.168.0.26:389',
-    bindDN: 'cn=Administrator,cn=Users,dc=ad,dc=gpfs,dc=net', // Admin bind DN
-    bindCredentials: 'secret', // Admin bind password
-    searchBase: 'ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net', // Search base for users
-    searchFilter: '(sAMAccountName={{username}})', // Search filter, {{username}} will be replaced with the login username
+    //    // Example for MS Active Directory Server
+    //    url: 'ldap://192.168.0.26:389',
+    //    bindDN: 'cn=Administrator,cn=Users,dc=ad,dc=gpfs,dc=net', // Admin bind DN
+    //    bindCredentials: 'secret', // Admin bind password
+    //    searchBase: 'OU=JSON-SCADA,DC=ad,DC=gpfs,DC=net', // Search base for users
+    //    searchFilter: '(|(sAMAccountName={{username}})(cn={{username}}))', // Search filter, {{username}} will be replaced with the login username
+    //    attributes: {
+    //      username: 'sAMAccountName',
+    //      email: 'mail',
+    //      displayName: 'CN',
+    //      memberOf: 'memberOf',
+    //    },
+    //    // Group search base (optional) - if not provided, the search base will be used
+    //    groupSearchBase: 'ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net',
+    //    // Group mapping (optional) - maps LDAP groups to local roles
+    //    groupMapping: {
+    //      'CN=captains,ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net': 'admin',
+    //      'cn=pilots,ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net': 'user'
+    //    },
+
+    // Example for other LDAP server like Apache Directory Server
+    url: 'ldap://ldap.forumsys.com:389',
+    bindDN: 'cn=read-only-admin,dc=example,dc=com', // Admin bind DN
+    bindCredentials: 'password', // Admin bind password
+    searchBase: 'dc=example,dc=com', // Search base for users
+    searchFilter: '(uid={{username}})', // Search filter, {{username}} will be replaced with the login username
+    // User attributes mapping
     attributes: {
-      username: 'sAMAccountName',
+      username: 'uid',
       email: 'mail',
       displayName: 'cn',
-      memberOf: 'memberOf',
     },
     // Group search base (optional) - if not provided, the search base will be used
-    groupSearchBase: 'ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net',
+    groupSearchBase: 'dc=example,dc=com',
     // Group mapping (optional) - maps LDAP groups to local roles
     groupMapping: {
-      'CN=captains,ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net': 'admin',
-      'cn=pilots,ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net': 'user'
+      'ou=mathematicians,dc=example,dc=com': 'admin',
+      'ou=scientists,dc=example,dc=com': 'user',
     },
-
-//    // Example for other LDAP server like Apache Directory Server
-//    url: 'ldap://ldap.forumsys.com:389',
-//    bindDN: 'cn=read-only-admin,dc=example,dc=com', // Admin bind DN
-//    bindCredentials: 'password', // Admin bind password
-//    searchBase: 'dc=example,dc=com', // Search base for users
-//    searchFilter: '(uid={{username}})', // Search filter, {{username}} will be replaced with the login username
-//    // User attributes mapping
-//    attributes: {
-//      username: 'uid',
-//      email: 'mail',
-//      displayName: 'cn'
-//    },
-//    // Group search base (optional) - if not provided, the search base will be used
-//    groupSearchBase: 'ou=groups,dc=example,dc=com',
-//    // Group mapping (optional) - maps LDAP groups to local roles
-//    groupMapping: {
-//      'cn=admins,dc=example,dc=com': 'admin',
-//      'cn=users,dc=example,dc=com': 'user'
-//    },
 
     // Default role for LDAP users (should match a role name defined in your MongoDB)
     defaultRole: 'user',
@@ -64,6 +64,6 @@ module.exports = {
       //crl: fs.readFileSync('/path/to/crl.pem'),
       //ciphers: 'DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2:!MD5', // Cipher suite to use
       //secureProtocol: 'TLSv1_2_method', // TLS version to use
-    }
-  }
+    },
+  },
 }
