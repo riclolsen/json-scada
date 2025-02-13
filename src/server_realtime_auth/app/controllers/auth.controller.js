@@ -1049,7 +1049,7 @@ exports.updateRole = async (req, res) => {
 }
 
 exports.updateUser = async (req, res) => {
-  Log.log('Update user')
+  Log.log('Update user: ' + req?.body?.username)
   try {
     registerUserAction(req, 'updateUser')
     if (

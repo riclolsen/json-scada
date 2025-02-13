@@ -18,6 +18,10 @@
       :load-children="fetchUsers"
       :items-per-page-text="$t('common.itemsPerPageText')"
     >
+      <template #[`item.isLDAPUser`]="{ item }">
+        <v-icon v-if="item.isLDAPUser" color="green">mdi-check</v-icon>
+        <v-icon v-else color="red">mdi-close</v-icon>
+      </template>
       <template #[`item.actions`]="{ item }">
         <v-icon size="small" class="me-2" @click="openEditUserDialog(item)">
           mdi-pencil
@@ -241,6 +245,7 @@
     },
     { title: t('admin.userManagement.headers.email'), key: 'email' },
     { title: t('admin.userManagement.headers.roles'), key: 'rolesText' },
+    { title: "LDAP", key: 'isLDAPUser' },
     {
       title: t('admin.userManagement.headers.actions'),
       key: 'actions',
@@ -252,6 +257,9 @@
     username: '',
     email: '',
     password: '',
+    isLDAPUser: false,
+    ldapDN: '',
+    lastLDAPSync: null,
     roles: [],
   })
 
@@ -261,6 +269,9 @@
     username: '',
     email: '',
     password: '',
+    isLDAPUser: false,
+    ldapDN: '',
+    lastLDAPSync: null,
     roles: [],
   })
 
@@ -362,7 +373,6 @@
     if ('id' in userDup) delete userDup.id
     if ('rolesText' in userDup) delete userDup.rolesText
     if ('roles' in userDup) delete userDup.roles
-    if ('isLDAPUser' in userDup) delete userDup.isLDAPUser
     if ('ldapDN' in userDup) delete userDup.ldapDN
     if ('lastLDAPSync' in userDup) delete userDup.lastLDAPSync
     if ('__v' in userDup) delete userDup.__v
