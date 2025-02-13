@@ -129,6 +129,32 @@
           :label="$t('admin.userManagement.roles')"
           multiple
         ></v-select>
+        <v-switch
+          v-if="editedUser.username!='admin'"
+          v-model="editedUser.isLDAPUser"
+          inset
+          color="primary"
+          :label="`${$t('admin.userManagement.isLDAPUser')}${
+            editedUser.isLDAPUser ? $t('common.true') : $t('common.false')
+          }`"
+          class="mt-n3"
+        ></v-switch>
+        <v-text-field
+          v-if="editedUser.isLDAPUser"
+          v-model="editedUser.ldapDN"
+          :label="$t('admin.userManagement.ldapDN')"
+          variant="outlined"
+          readonly
+          disabled
+        ></v-text-field>
+        <v-text-field
+          v-if="editedUser.isLDAPUser"
+          v-model="editedUser.lastLDAPSync"
+          :label="$t('admin.userManagement.lastLDAPSync')"
+          variant="outlined"
+          readonly
+          disabled
+        ></v-text-field>
       </v-card-text>
       <v-card-actions>
         <v-spacer> </v-spacer>
@@ -336,6 +362,9 @@
     if ('id' in userDup) delete userDup.id
     if ('rolesText' in userDup) delete userDup.rolesText
     if ('roles' in userDup) delete userDup.roles
+    if ('isLDAPUser' in userDup) delete userDup.isLDAPUser
+    if ('ldapDN' in userDup) delete userDup.ldapDN
+    if ('lastLDAPSync' in userDup) delete userDup.lastLDAPSync
     if ('__v' in userDup) delete userDup.__v
     if ('password' in userDup)
       if (userDup.password === '' || userDup.password === null)

@@ -12,10 +12,9 @@ const User = mongoose.model(
         ref: 'Role',
       },
     ],
-    // New fields for LDAP integration
     isLDAPUser: { type: Boolean, default: false },
-    ldapDN: { type: String }, // Distinguished Name from LDAP
-    lastLDAPSync: { type: Date }, // Last time user was synced with LDAP
+    ldapDN: { type: String, default: '' }, // Distinguished Name from LDAP
+    lastLDAPSync: { type: Date, default: null }, // Last time user was synced with LDAP
   }),
   'users'
 )
