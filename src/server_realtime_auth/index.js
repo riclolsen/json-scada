@@ -98,6 +98,13 @@ if (process.env.JS_LDAP_TLS_MIN_VERSION)
   config.ldap.tlsOptions.minVersion = process.env.JS_LDAP_TLS_MIN_VERSION
 if (process.env.JS_LDAP_TLS_MAX_VERSION)
   config.ldap.tlsOptions.maxVersion = process.env.JS_LDAP_TLS_MAX_VERSION
+if (process.env.JS_LDAP_GROUP_MAPPING) {
+  try {
+    config.ldap.groupMapping = JSON.parse(process.env.JS_LDAP_GROUP_MAPPING)
+  } catch (e) {
+    Log.log('Error parsing JS_LDAP_GROUP_MAPPING: ' + e.message)
+  }
+}
 
 Log.log('LDAP enabled: ' + config.ldap.enabled)
 if (config.ldap.enabled && !config.ldap.url.startsWith('ldaps')) {

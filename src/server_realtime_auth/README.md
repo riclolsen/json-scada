@@ -2,11 +2,13 @@
 
 This NodeJS/Express module can serve JSON-SCADA realtime data for the web-based interface.
 
-It can also server the HTML files from the src/AdminUI/dist folder.
+It can also serve the HTML files from the src/AdminUI/dist folder.
 
-It is possible to access Grafana on "/grafana" path adjusting the _JS_GRAFANA_SERVER_ environment variable.
+It is possible to route access Grafana on "/grafana" path by adjusting the _JS_GRAFANA_SERVER_ environment variable.
 
-It is recommended to apply a reverse proxy (Nginx) on top of this service to serve securely to client on external networks. For best scalability static files should be served directly via Nginx or Apache, redirecting _/grafana_ to the Grafana server and _/Invoke_ to this Node.js service.
+It is recommended to apply a reverse proxy (Nginx) on top of this service to serve securely (https) to clients on external networks. For best scalability static files should be served directly via Nginx or Apache, and redirecting _/Invoke_ (API calls) to this service.
+
+This module also provides user authentication and role-based access control (RBAC) using JWT tokens and optional LDAP authentication.
 
 ### Example Nginx config as a reverse proxy
 
@@ -304,16 +306,19 @@ To each user can be attributed a set of roles. Each right in each user role are 
 
 #### LDAP Authentication Configuration
 
-- _**JS_LDAP_ENABLED**_ [Boolean] - Use "TRUE" to enable LDAP authentication. **Default="false"**.
+LDAP can be configured by editing the file ./app/config/auth.config.js or by setting the following environment variables. The environment variables have precedence over the configuration file.
+
+- _**JS_LDAP_ENABLED**_ [Boolean] - Use "true" to enable LDAP authentication. **Default="false"**.
 - _**JS_LDAP_URL**_ [String] - LDAP server URL. **E.g."ldap://localhost:389"**.
 - _**JS_LDAP_BIND_DN**_ [String] - LDAP bind DN. **E.g."cn=read-only-admin,dc=example,dc=com"**.
 - _**JS_LDAP_BIND_CREDENTIALS**_ [String] - LDAP bind password. **E.g."secret"**.
-- _**JS_LDAP_SEARCH_BASE**_ [String] - LDAP search base. **E.g."dc=example,dc=com"**.
-- _**JS_LDAP_SEARCH_FILTER**_ [String] - LDAP search filter. **E.g."(uid={{username}})"**.
-- _**JS_LDAP_ATTRIBUTES_USERNAME**_ [String] - LDAP attribute for username. **E.g."uid"**.
+- _**JS_LDAP_SEARCH_BASE**_ [String] - LDAP search base for users. **E.g."dc=example,dc=com"**.
+- _**JS_LDAP_SEARCH_FILTER**_ [String] - LDAP search filter. **E.g."(uid={{username}})" or "(|(sAMAccountName={{username}})(cn={{username}}))"**.
+- _**JS_LDAP_ATTRIBUTES_USERNAME**_ [String] - LDAP attribute for username. **E.g."uid" or "sAMAccountName"**.
 - _**JS_LDAP_ATTRIBUTES_EMAIL**_ [String] - LDAP attribute for email. **E.g."mail"**.
 - _**JS_LDAP_ATTRIBUTES_DISPLAYNAME**_ [String] - LDAP attribute for display name. **E.g."cn"**.
 - _**JS_LDAP_GROUP_SEARCH_BASE**_ [String] - LDAP group search base. **E.g."ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net"**.
+- _**JS_LDAP_GROUP_MAPPING**_ [String] - LDAP group mapping as a JSON object. **E.g.'{"ou=mathematicians,dc=example,dc=com":"admin","ou=scientists,dc=example,dc=com":"user"}'**.
 - _**JS_LDAP_TLS_REJECT_UNAUTHORIZED**_ [Boolean] - LDAP TLS reject unauthorized. **Default="true"**.
 - _**JS_LDAP_TLS_CA**_ [String] - LDAP TLS CA file location. **E.g."/etc/ssl/certs/ca-certificates.crt"**.
 - _**JS_LDAP_TLS_CERT**_ [String] - LDAP TLS cert  file location. **E.g."/etc/ssl/certs/client-cert.pem"**.
