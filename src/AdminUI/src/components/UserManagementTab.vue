@@ -18,6 +18,10 @@
       :load-children="fetchUsers"
       :items-per-page-text="$t('common.itemsPerPageText')"
     >
+      <template #[`item.isLDAPUser`]="{ item }">
+        <v-icon v-if="item.isLDAPUser" color="green">mdi-check</v-icon>
+        <v-icon v-else color="red">mdi-close</v-icon>
+      </template>
       <template #[`item.actions`]="{ item }">
         <v-icon size="small" class="me-2" @click="openEditUserDialog(item)">
           mdi-pencil
@@ -129,6 +133,32 @@
           :label="$t('admin.userManagement.roles')"
           multiple
         ></v-select>
+        <v-switch
+          v-if="editedUser.username!='admin'"
+          v-model="editedUser.isLDAPUser"
+          inset
+          color="primary"
+          :label="`${$t('admin.userManagement.isLDAPUser')}${
+            editedUser.isLDAPUser ? $t('common.true') : $t('common.false')
+          }`"
+          class="mt-n3"
+        ></v-switch>
+        <v-text-field
+          v-if="editedUser.isLDAPUser"
+          v-model="editedUser.ldapDN"
+          :label="$t('admin.userManagement.ldapDN')"
+          variant="outlined"
+          readonly
+          disabled
+        ></v-text-field>
+        <v-text-field
+          v-if="editedUser.isLDAPUser"
+          v-model="editedUser.lastLDAPSync"
+          :label="$t('admin.userManagement.lastLDAPSync')"
+          variant="outlined"
+          readonly
+          disabled
+        ></v-text-field>
       </v-card-text>
       <v-card-actions>
         <v-spacer> </v-spacer>
@@ -215,6 +245,7 @@
     },
     { title: t('admin.userManagement.headers.email'), key: 'email' },
     { title: t('admin.userManagement.headers.roles'), key: 'rolesText' },
+    { title: "LDAP", key: 'isLDAPUser' },
     {
       title: t('admin.userManagement.headers.actions'),
       key: 'actions',
@@ -226,6 +257,9 @@
     username: '',
     email: '',
     password: '',
+    isLDAPUser: false,
+    ldapDN: '',
+    lastLDAPSync: null,
     roles: [],
   })
 
@@ -235,6 +269,9 @@
     username: '',
     email: '',
     password: '',
+    isLDAPUser: false,
+    ldapDN: '',
+    lastLDAPSync: null,
     roles: [],
   })
 
@@ -336,6 +373,8 @@
     if ('id' in userDup) delete userDup.id
     if ('rolesText' in userDup) delete userDup.rolesText
     if ('roles' in userDup) delete userDup.roles
+    if ('ldapDN' in userDup) delete userDup.ldapDN
+    if ('lastLDAPSync' in userDup) delete userDup.lastLDAPSync
     if ('__v' in userDup) delete userDup.__v
     if ('password' in userDup)
       if (userDup.password === '' || userDup.password === null)

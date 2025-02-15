@@ -97,16 +97,19 @@ rem copy /Y %SRCPATH%\dnp3\Dnp3Server\build\Release\Dnp3Server.exe %BINPATH%
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
 cd %SRCPATH%\calculations
+go get -u ./...
 go mod tidy 
 go build 
 copy /Y calculations.exe %BINPATH%
 
 cd %SRCPATH%\i104m
+go get -u ./...
 go mod tidy 
 go build 
 copy /Y i104m.exe %BINPATH%
 
 cd %SRCPATH%\plc4x-client
+go get -u ./...
 go mod tidy 
 go build 
 copy /Y plc4x-client.exe %BINPATH%

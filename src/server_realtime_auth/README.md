@@ -2,11 +2,13 @@
 
 This NodeJS/Express module can serve JSON-SCADA realtime data for the web-based interface.
 
-It can also server the HTML files from the src/AdminUI/dist folder.
+It can also serve the HTML files from the src/AdminUI/dist folder.
 
-It is possible to access Grafana on "/grafana" path adjusting the _JS_GRAFANA_SERVER_ environment variable.
+It is possible to route access Grafana on "/grafana" path by adjusting the _JS_GRAFANA_SERVER_ environment variable.
 
-It is recommended to apply a reverse proxy (Nginx) on top of this service to serve securely to client on external networks. For best scalability static files should be served directly via Nginx or Apache, redirecting _/grafana_ to the Grafana server and _/Invoke_ to this Node.js service.
+It is recommended to apply a reverse proxy (Nginx) on top of this service to serve securely (https) to clients on external networks. For best scalability static files should be served directly via Nginx or Apache, and redirecting _/Invoke_ (API calls) to this service.
+
+This module also provides user authentication and role-based access control (RBAC) using JWT tokens and optional LDAP authentication.
 
 ### Example Nginx config as a reverse proxy
 
@@ -301,6 +303,35 @@ To each user can be attributed a set of roles. Each right in each user role are 
 - _**JS_AUTHENTICATION**_ [String] - Control of user Authentication/Authorization. Leave empty or do not define to enable user authentication. Define as "NOAUTH" to disable user authentication. **Default=(will use authentication)**.
 - _**JS_JWT_SECRET**_ [String] - Encryption key for the JWT token. **Default=value defined in ./app/config/auth.config.js**.
 - _**JS_READ_FROM_SECONDARY**_ [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
+
+#### LDAP Authentication Configuration
+
+LDAP can be configured by editing the file ./app/config/auth.config.js or by setting the following environment variables. The environment variables have precedence over the configuration file.
+
+- _**JS_LDAP_ENABLED**_ [Boolean] - Use "true" to enable LDAP authentication. **Default="false"**.
+- _**JS_LDAP_URL**_ [String] - LDAP server URL. **E.g."ldap://localhost:389"**.
+- _**JS_LDAP_BIND_DN**_ [String] - LDAP bind DN. **E.g."cn=read-only-admin,dc=example,dc=com"**.
+- _**JS_LDAP_BIND_CREDENTIALS**_ [String] - LDAP bind password. **E.g."secret"**.
+- _**JS_LDAP_SEARCH_BASE**_ [String] - LDAP search base for users. **E.g."dc=example,dc=com"**.
+- _**JS_LDAP_SEARCH_FILTER**_ [String] - LDAP search filter. **E.g."(uid={{username}})" or "(|(sAMAccountName={{username}})(cn={{username}}))"**.
+- _**JS_LDAP_ATTRIBUTES_USERNAME**_ [String] - LDAP attribute for username. **E.g."uid" or "sAMAccountName"**.
+- _**JS_LDAP_ATTRIBUTES_EMAIL**_ [String] - LDAP attribute for email. **E.g."mail"**.
+- _**JS_LDAP_ATTRIBUTES_DISPLAYNAME**_ [String] - LDAP attribute for display name. **E.g."cn"**.
+- _**JS_LDAP_GROUP_SEARCH_BASE**_ [String] - LDAP group search base. **E.g."ou=JSON-SCADA,dc=ad,dc=gpfs,dc=net"**.
+- _**JS_LDAP_GROUP_MAPPING**_ [String] - LDAP group mapping as a JSON object. **E.g.'{"ou=mathematicians,dc=example,dc=com":"admin","ou=scientists,dc=example,dc=com":"user"}'**.
+- _**JS_LDAP_TLS_REJECT_UNAUTHORIZED**_ [Boolean] - LDAP TLS reject unauthorized. **Default="true"**.
+- _**JS_LDAP_TLS_CA**_ [String] - LDAP TLS CA file location. **E.g."/etc/ssl/certs/ca-certificates.crt"**.
+- _**JS_LDAP_TLS_CERT**_ [String] - LDAP TLS cert  file location. **E.g."/etc/ssl/certs/client-cert.pem"**.
+- _**JS_LDAP_TLS_KEY**_ [String] - LDAP TLS key file location. **E.g."/etc/ssl/private/client-key.pem"**.
+- _**JS_LDAP_TLS_PASSPHRASE**_ [String] - LDAP TLS passphrase. **E.g."secret"**.
+- _**JS_LDAP_TLS_PFX**_ [String] - LDAP TLS PFX file location. **E.g."/etc/ssl/certs/client.pfx"**.
+- _**JS_LDAP_TLS_CRL**_ [String] - LDAP TLS CRL file location. **E.g."/etc/ssl/certs/crl.pem"**.
+- _**JS_LDAP_TLS_CIPHERS**_ [String] - LDAP TLS ciphers. **E.g."TLS_AES_128_GCM_SHA256"**.
+- _**JS_LDAP_TLS_SECURE_PROTOCOL**_ [String] - LDAP TLS secure protocol. **E.g."TLSv1_2_method"**.
+- _**JS_LDAP_TLS_MIN_VERSION**_ [String] - LDAP TLS min version. **E.g."TLSv1.2"**.
+- _**JS_LDAP_TLS_MAX_VERSION**_ [String] - LDAP TLS max version. **E.g."TLSv1.3"**.
+
+#### PostgreSQL Historian Environment Variables
 
 For connection to the PostgreSQL historian, it is possible to use the standard _Libpq_ environment variables.
 

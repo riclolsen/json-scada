@@ -1,4 +1,4 @@
-const { authJwt, verifySignUp } = require('../middlewares')
+const { authJwt } = require('../middlewares')
 const controller = require('../controllers/auth.controller')
 
 module.exports = function (app, accessPoint) {
@@ -9,15 +9,6 @@ module.exports = function (app, accessPoint) {
     )
     next()
   })
-
-  app.post(
-    accessPoint + 'auth/signup',
-    [
-      verifySignUp.checkDuplicateUsernameOrEmail,
-      verifySignUp.checkRolesExisted,
-    ],
-    controller.signup
-  )
 
   app.post(accessPoint + 'auth/signin', controller.signin)
   app.post(accessPoint + 'auth/signout', controller.signout)
