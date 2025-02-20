@@ -2084,9 +2084,16 @@ function queueMetric(metric, deviceLocator, isBirth, templateName, msgType) {
       } else {
         // metric does have a value
         value = castSparkplugValue(metric.type, metric.value)
-        value = value.toNumber() // warning number may be truncated
-        valueString = value.toString()
-        valueJson = JSON.stringify(metric)
+        if (('toNumber' in value)){
+          value = value.toNumber() // warning number may be truncated
+          valueString = value.toString()
+          valueJson = JSON.stringify(metric)  
+        }
+        else {
+          valueString = value.toString()
+          valueJson = JSON.stringify(metric)  
+          value = new Date(value).getTime()
+        }
       }
       break
   }
