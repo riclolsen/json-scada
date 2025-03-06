@@ -1,4 +1,4 @@
-# {json:scada} Docker Compilation for Linux x64 - (c) 2020-2025 - Ricardo L. Olsen 
+# {json:scada} Docker Compilation for Linux x64 or Aarch64(ARM64) - (c) 2020-2025 - Ricardo L. Olsen 
 # Requires Internet connection!
 
 services:
@@ -9,29 +9,29 @@ services:
     command: sh -c "apt-get update && 
                     apt-get -y install build-essential cmake sasl2-bin libsasl2-dev libssl-dev libzstd-dev libsnappy-dev &&
                     cd /src/lib60870.netcore/lib60870.netcore/ && 
-                    dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
+                    dotnet build --self-contained -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec101client/ &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/lib60870.netcore/iec101server/ &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/lib60870.netcore/iec104client/ &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/lib60870.netcore/iec104server/ &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/lib60870.netcore/lib60870.netcore/ &&
                     rm -rf obj bin &&
                     cd /src/OPC-UA-Client/ &&
                     rm -rf obj bin && dotnet clean &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
-                    dotnet build --self-contained --runtime linux-x64 -c Release -o /publish_bin/ &&
+                    dotnet build --self-contained -c Release -o /publish_bin/ &&
                     cd /src/libplctag/PLCTagsClient &&
-                    dotnet publish --self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/libplctag/libplctag.NET/src/libplctag &&
                     rm -rf obj bin &&
@@ -42,9 +42,9 @@ services:
                     make &&
                     cp src/libiec61850.so src/libiec61850.so.1.6.0 /publish_bin/ &&
                     cd ../dotnet/core/2.0/IEC61850.NET.core.2.0 &&
-                    dotnet publish --no-self-contained --runtime linux-x64 -c Release &&
+                    dotnet publish --no-self-contained -c Release &&
                     cd /src/iec61850_client &&
-                    dotnet publish --no-self-contained --runtime linux-x64 -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
+                    dotnet publish --no-self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
                     rm -rf obj bin &&
