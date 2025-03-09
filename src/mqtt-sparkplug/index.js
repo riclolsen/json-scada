@@ -34,7 +34,6 @@ const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
 const { castSparkplugValue: castSparkplugValue } = require('./cast')
-const autoTag = require('./auto-tag')
 
 process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
 
@@ -1420,7 +1419,7 @@ async function sparkplugProcess(
                 }
 
                 if (
-                  autoTag &&
+                  jscadaConnection.autoCreateTags &&
                   elem.endsWith('#') &&
                   topic.startsWith(elem.substring(0, elem.length - 1))
                 ) {
