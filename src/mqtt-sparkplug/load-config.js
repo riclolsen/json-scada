@@ -26,7 +26,7 @@ const { ReadPreference } = require('mongodb')
 function LoadConfig() {
   const args = process.argv.slice(2)
 
-  var confFileArg = null
+  let confFileArg = null
   if (args.length > 2) confFileArg = args[2]
 
   let configFile =
@@ -54,7 +54,7 @@ function LoadConfig() {
   if (args.length > 1) Log.levelCurrent = parseInt(args[1])
   configObj.LogLevel = Log.levelCurrent
 
-  var instArg = null
+  let instArg = null
   if (args.length > 0) instArg = parseInt(args[0])
   configObj.Instance =
     instArg || parseInt(process.env[AppDefs.ENV_PREFIX + 'INSTANCE']) || 1
