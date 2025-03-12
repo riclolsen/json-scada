@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "mongodb": "^6.14.2",
+    "node-fetch": "^2.7.0",
     "node-rtsp-stream": "^0.0.9",
     "onvif": "^0.8.0",
     "socket.io": "^4.8.1"

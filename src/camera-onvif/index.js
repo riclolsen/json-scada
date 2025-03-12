@@ -1,3 +1,20 @@
+/*
+ * {json:scada} - Copyright (c) 2020-2025 - Ricardo L. Olsen
+ * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 'use strict'
 
 const AppDefs = require('./app-defs')
@@ -6,12 +23,15 @@ const { Cam } = require('onvif/promises')
 const Stream = require('node-rtsp-stream')
 const LoadConfig = require('./load-config')
 const { MongoClient, GridFSBucket } = require('mongodb')
+const fs = require('fs')
+const path = require('path')
+const fetch = require('node-fetch')
+
 const MongoStatus = { HintMongoIsConnected: false }
 
 process.on('uncaughtException', (err) =>
   console.log('Uncaught Exception:' + JSON.stringify(err))
 )
-
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
   Log.levelCurrent = jsConfig.LogLevel
@@ -83,6 +103,7 @@ process.on('uncaughtException', (err) =>
         conn.cam = null
         conn.input = null
         conn.stream = null
+        conn.snapshots = null
 
         if (conn.endpointURLs.length === 0) {
           Log.log(`MongoDB - Connection ${conn.name} has no endpoint URLs!`)
@@ -152,16 +173,21 @@ process.on('uncaughtException', (err) =>
             Log.levelDetailed
           )
         })
+        // conn.cam.on('eventsError', console.error);
 
         try {
           Log.log(`${conn.name} - Connecting to camera: ${conn.cam.hostname}`)
           await conn.cam.connect()
           Log.log(`${conn.name} - Connected to camera: ${conn.cam.hostname}`)
-          const input = (
+          conn.input = (
             await conn.cam.getStreamUri({ protocol: 'RTSP' })
           ).uri.replace('://', `://${conn.cam.username}:${conn.cam.password}@`)
-          conn.input = input
-          Log.log(`${conn.name} - Connected to stream: ${input}`)
+          Log.log(`${conn.name} - Connected to stream: ${conn.input}`)
+
+          conn.snapshots = await conn.cam.getSnapshotUri()
+          Log.log(`${conn.name} - Snapshots: ${conn.snapshots.uri}`)
+
+          await saveSnapshot(conn)
 
           // split the url into parts to get the port number
           if (conn.ipAddressLocalBind.indexOf(':') === -1) {
@@ -177,20 +203,47 @@ process.on('uncaughtException', (err) =>
             try {
               ffmpegOptions = JSON.parse(conn.options)
             } catch (e) {
-              Log.log(`${conn.name} - Invalid ffmpeg options! Must be valid JSON string.`)
+              Log.log(
+                `${conn.name} - Invalid ffmpeg options! Must be valid JSON string.`
+              )
             }
           }
-          Log.log(`${conn.name} - Streaming to: ${input} on port ${port} with options: ${JSON.stringify(ffmpegOptions)}`)
+          Log.log(
+            `${conn.name} - Streaming to: ${
+              conn.input
+            } on port ${port} with options: ${JSON.stringify(ffmpegOptions)}`
+          )
           const stream = new Stream({
             name: conn.name,
-            streamUrl: input,
+            streamUrl: conn.input,
             wsPort: port,
             ffmpegOptions: ffmpegOptions,
           })
-          conn.stream = stream  
+          conn.stream = stream
         } catch (e) {
           Log.log(`${conn.name} - ${e}`)
         }
       }
     })
 })().catch(console.error)
+
+async function saveSnapshot(conn) {
+  Log.log(`${conn.name} - Snapshot stream: ${conn.snapshots.uri}`)
+  try {
+    const response = await fetch(conn.snapshots.uri)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const buffer = await response.buffer()
+    const filePath = path.join(__dirname, 'snapshot.jpg')
+    fs.writeFile(filePath, buffer, (err) => {
+      if (err) {
+        Log.log(`${conn.name} - Error saving snapshot: ${err}`)
+      } else {
+        Log.log(`${conn.name} - Snapshot saved to ${filePath}`)
+      }
+    })
+  } catch (error) {
+    Log.log(`${conn.name} - Error fetching snapshot: ${error}`)
+  }
+}
