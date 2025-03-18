@@ -888,20 +888,69 @@ let pool = null
 
                     // look for the command info in the database
 
-                    let cmd_id = node.NodeId.Id
-                    let cmd_val =
+                    const cmd_id = node.NodeId.Id
+                    const cmd_val =
                       node.Value.Type === opc.DataType.Double
                         ? node.Value.Body
                         : 0.0
-                    let cmd_val_str =
+                    const cmd_val_str =
                       node.Value.Type === opc.DataType.String
                         ? node.Value.Body
                         : parseFloat(cmd_val).toString()
                     let query = { _id: parseInt(cmd_id) }
-                    if (isNaN(parseInt(cmd_id))) query = { tag: cmd_id }
+                    if (isNaN(parseInt(cmd_id))) {
+                      query = { tag: cmd_id }
+
+                      // special command tags that starts with $$ do not need to be found in the database
+                      // put it directly in the command queue
+                      if (cmd_id.startsWith('$$')) {
+                        let result = await db
+                          .collection(COLL_COMMANDS)
+                          .insertOne({
+                            protocolSourceConnectionNumber: new Double(-1),
+                            protocolSourceCommonAddress: new Double(-1),
+                            protocolSourceObjectAddress: new Double(-1),
+                            protocolSourceASDU: new Double(-1),
+                            protocolSourceCommandDuration: new Double(0),
+                            protocolSourceCommandUseSBO: false,
+                            pointKey: 0,
+                            tag: cmd_id,
+                            timeTag: new Date(),
+                            value: new Double(cmd_val),
+                            valueString: cmd_val_str,
+                            originatorUserName: username,
+                            originatorIpAddress:
+                              req.headers['x-real-ip'] ||
+                              req.headers['x-forwarded-for'] ||
+                              req.socket.remoteAddress,
+                          })
+
+                        if (!result.acknowledged) {
+                          OpcResp.Body.ResponseHeader.ServiceResult =
+                            opc.StatusCode.BadUnexpectedError
+                          OpcResp.Body.ResponseHeader.StringTable = [
+                            opc.getStatusCodeName(
+                              opc.StatusCode.BadUnexpectedError
+                            ),
+                            opc.getStatusCodeText(
+                              opc.StatusCode.BadUnexpectedError
+                            ),
+                            'Could not queue command!',
+                          ]
+                          res.send(OpcResp)
+                          return
+                        }
+                        OpcResp.Body.ResponseHeader.ServiceResult =
+                          opc.StatusCode.Good
+                        res.send(OpcResp)
+                        return
+                      }
+                    }
 
                     // search command in database (wait for results)
-                    let data = await db.collection(COLL_REALTIME).findOne(query)
+                    const data = await db
+                      .collection(COLL_REALTIME)
+                      .findOne(query)
 
                     if (data === null || typeof data._id !== 'number') {
                       // command not found, abort

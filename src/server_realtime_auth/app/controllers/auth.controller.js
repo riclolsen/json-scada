@@ -220,6 +220,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'TELEGRAF-LISTENER',
       'OPC-UA_SERVER',
       'ICCP_SERVER',
+      'ONVIF',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (
@@ -246,6 +247,8 @@ exports.updateProtocolConnection = async (req, res) => {
         case 'ICCP_SERVER':
           req.body.ipAddressLocalBind = '0.0.0.0:102'
           break
+        case 'ONVIF':
+          req.body.ipAddressLocalBind = '127.0.0.1:9001'
       }
     }
   }
@@ -329,7 +332,9 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  if (['MQTT-SPARKPLUG-B', 'OPC-DA'].includes(req?.body?.protocolDriver)) {
+  if (
+    ['MQTT-SPARKPLUG-B', 'OPC-DA', 'ONVIF'].includes(req?.body?.protocolDriver)
+  ) {
     if (!('username' in req.body)) {
       req.body.username = ''
     }
@@ -381,9 +386,14 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (
-    ['OPC-UA', 'OPC-UA_SERVER', 'OPC-DA', 'ICCP', 'ICCP_SERVER'].includes(
-      req?.body?.protocolDriver
-    )
+    [
+      'OPC-UA',
+      'OPC-UA_SERVER',
+      'OPC-DA',
+      'ICCP',
+      'ICCP_SERVER',
+      'ONVIF',
+    ].includes(req?.body?.protocolDriver)
   ) {
     if (!('timeoutMs' in req.body)) {
       req.body.timeoutMs = 10000.0
@@ -408,6 +418,18 @@ exports.updateProtocolConnection = async (req, res) => {
     }
     if (!('remoteSelectors' in req.body)) {
       req.body.remoteSelectors = '0 0 0 1 0 1 0 1'
+    }
+  }
+
+  if (['ONVIF'].includes(req?.body?.protocolDriver)) {
+    if (!('endpointURLs' in req.body)) {
+      req.body.endpointURLs = []
+    }
+  }
+
+  if (['ONVIF'].includes(req?.body?.protocolDriver)) {
+    if (!('options' in req.body)) {
+      req.body.options = ''
     }
   }
 
@@ -539,10 +561,14 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-UA',
       'OPC-DA',
       'ICCP',
+      'ONVIF',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('giInterval' in req.body)) {
       req.body.giInterval = 300
+      if (req.body.protocolDriver === 'ONVIF') {
+        req.body.giInterval = 0
+      }
     }
   }
 
