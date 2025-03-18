@@ -9,7 +9,7 @@ To configure the driver it is necessary to create one or more driver instances a
 To create a new DNP3 client instance, insert a new document in the _protocolDriverInstances_ collection using a command like this:
 
     use json_scada_db_name
-    db.protocolDriverInstances.insert({
+    db.protocolDriverInstances.insertOne({
             protocolDriver: "ONVIF",
             protocolDriverInstanceNumber: 1,
             enabled: true,
@@ -37,7 +37,7 @@ Each instance for this driver can have many client connection defined that must 
 Create a new connection in Admin UI or directly on MongoDB as below.
 
     use json_scada_db_name
-    db.protocolConnections.insert({
+    db.protocolConnections.insertOne({
         protocolDriver: "ONVIF",
         protocolDriverInstanceNumber: 1,
         protocolConnectionNumber: 9001,
@@ -73,18 +73,36 @@ Create a new connection in Admin UI or directly on MongoDB as below.
 
 To send commands to the camera, you can use the following tags.
 
-
-$$Name$$Command$$Variable
+    $$Name$$Command$$Variable
 
 Commands: relativeMove, absoluteMove, continuousMove, stop, setHomePosition, gotoHomePosition, setPreset, removePreset, gotoPreset
 
 Examples:
 
-To move the camera relative to its current position in x direction - Tag: $$CAM001$$relativeMove$$x, Command Value: 0.1
-To move the camera relative to its current position in y direction - Tag: $$CAM001$$relativeMove$$y, Command Value: -0.1
-To zoom the camera in - Tag: $$CAM001$$relativeMove$$zoom, Command Value: 0.1
-To move the camera to the preset 1 - Tag: $$CAM001$$gotoPreset, Command Value: 1
-To set the current position as preset 1 - Tag: $$CAM001$$setPreset, Command Value: 1
-To move the camera to the home position - Tag: $$CAM001$$gotoHomePosition, Command Value: 0
-To set the current position as home position - Tag: $$CAM001$$setHomePosition, Command Value: 0
-To stop the camera movement - Tag: $$CAM001$$stop, Command Value: 0
+* To move the camera relative to its current position in x direction - Tag: $$CAM001$$relativeMove$$x, Command Value: 0.1
+* To move the camera relative to its current position in y direction - Tag: $$CAM001$$relativeMove$$y, Command Value: -0.1
+* To zoom the camera in - Tag: $$CAM001$$relativeMove$$zoom, Command Value: 0.1
+* To move the camera to the preset 1 - Tag: $$CAM001$$gotoPreset, Command Value: 1
+* To set the current position as preset 1 - Tag: $$CAM001$$setPreset, Command Value: 1
+* To move the camera to the home position - Tag: $$CAM001$$gotoHomePosition, Command Value: 0
+* To set the current position as home position - Tag: $$CAM001$$setHomePosition, Command Value: 0
+* To stop the camera movement - Tag: $$CAM001$$stop, Command Value: 0
+
+### Example of command in MongoDB
+
+    use json_scada_db_name
+    db.commandsQueue.insertOne({
+        protocolSourceConnectionNumber: -1.0,
+        protocolSourceCommonAddress: -1.0,
+        protocolSourceObjectAddress: -1.0,
+        protocolSourceASDU: -1.0,
+        protocolSourceCommandDuration: 0.0,
+        protocolSourceCommandUseSBO: false,
+        pointKey: 0.0,
+        tag: '$$CAM001$$relativeMove$$x',
+        timeTag: new Date(),
+        value: 1.0,
+        valueString: "1.0",
+        originatorUserName: 'username',
+        originatorIpAddress: '127.0.0.1'
+    })

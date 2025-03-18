@@ -29,6 +29,17 @@ const fetch = require('node-fetch')
 
 const MongoStatus = { HintMongoIsConnected: false }
 
+const csCmdPipeline = [
+  {
+    $project: { documentKey: false },
+  },
+  {
+    $match: {
+      operationType: 'insert',
+    },
+  },
+]
+
 process.on('uncaughtException', (err) =>
   console.log('Uncaught Exception:' + JSON.stringify(err))
 )
@@ -97,6 +108,113 @@ process.on('uncaughtException', (err) =>
       if (connectionsDocs.length === 0) {
         Log.log('MongoDB - No connections found in database')
         process.exit(3)
+      }
+
+      const changeStreamCmd = cmdCollection.watch(csCmdPipeline, {
+        fullDocument: 'updateLookup',
+      })
+      try {
+        changeStreamCmd.on('error', (change) => {
+          if (clientMongo) clientMongo.close()
+          clientMongo = null
+          Log.log('MongoDB - Error on ChangeStream Cmd!')
+        })
+        changeStreamCmd.on('close', (change) => {
+          Log.log('MongoDB - Closed ChangeStream Cmd!')
+        })
+        changeStreamCmd.on('end', (change) => {
+          clientMongo = null
+          Log.log('MongoDB - Ended ChangeStream Cmd!')
+        })
+
+        // start listen to changes
+        changeStreamCmd.on('change', (change) => {
+          if (!change.fullDocument.tag.startsWith('$$')) return // not onvif command
+
+          // extracts connection name between $$ and $$ from tag
+          const connName = change.fullDocument.tag.match(/^\$\$(.*?)\$\$/)[1]
+          const conn = connectionsDocs.find((c) => c.name === connName)
+          if (!conn || !conn.commandsEnabled) return
+
+          Log.log(`${conn.name} - ChangeStream Cmd: ${change.fullDocument.tag}`)
+
+          // count how many $$ are in the tag
+          const count = (change.fullDocument.tag.match(/\$\$/g) || []).length
+          if (count < 2) return // not onvif command
+
+          // extract command from tag after $$connName$$ and before $$
+          const command =
+            change.fullDocument.tag.match(/^\$\$.*?\$\$(.*)\$\$/)[1]
+          Log.log(`${conn.name} - Command: ${command}`)
+
+          // extracts variable after the third $$ from tag
+          let variable = ''
+          if (count > 2)
+            variable = change.fullDocument.tag.match(
+              /^\$\$.*?\$\$.*?\$\$(.*)/
+            )[1]
+
+          Log.log(`${conn.name} - Variable: ${variable}`)
+
+          let obj = null
+          try {
+            obj = JSON.parse(change.fullDocument.valueString)
+          } catch {}
+          switch (command) {
+            case 'relativeMove':
+              switch (variable) {
+                case 'x':
+                  conn.cam.relativeMove({
+                    x: change.fullDocument.value,
+                  })
+                  break
+                case 'y':
+                  conn.cam.relativeMove({
+                    y: change.fullDocument.value,
+                  })
+                  break
+                case 'zoom':
+                  conn.cam.relativeMove({
+                    zoom: change.fullDocument.value,
+                  })
+                  break
+                default:
+                  conn.cam.relativeMove(obj)
+              }
+              break
+            case 'absoluteMove':
+              conn.cam.absoluteMove(obj)
+              break
+            case 'continuousMove':
+              conn.cam.continuousMove(obj)
+              break
+            case 'setHomePosition':
+              conn.cam.setHomePosition(obj)
+              break
+            case 'gotoHomePosition':
+              conn.cam.gotoHomePosition(obj)
+              break
+            case 'removePreset':
+              conn.cam.removePreset(obj)
+              break
+            case 'gotoPreset':
+              conn.cam.gotoPreset(obj)
+              break
+            case 'setPreset':
+              conn.cam.setPreset(obj)
+              break
+            case 'stop':
+              conn.cam.stop(obj)
+              break
+            default:
+              Log.log(`${conn.name} - Unknown command: ${command}`)
+              break
+          }
+        })
+      } catch (err) {
+        Log.log('MongoDB - Error on ChangeStream Cmd!')
+        Log.log(JSON.stringify(err, null, 2))
+        process.exit(4)
       }
 
       for (const conn of connectionsDocs) {
