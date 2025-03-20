@@ -226,6 +226,14 @@ nssm set JSON_SCADA_opcuaserver AppRotateOnline 1
 nssm set JSON_SCADA_opcuaserver AppRotateBytes 10000000
 nssm set JSON_SCADA_opcuaserver Start SERVICE_AUTO_START
 
+REM service for ONVIF Camera
+nssm install JSON_SCADA_onvif "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\camera-onvif\index.js" 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_onvif AppDirectory "C:\json-scada\src\camera-onvif"
+nssm set JSON_SCADA_onvif AppStdout C:\json-scada\log\onvif.log
+nssm set JSON_SCADA_onvif AppRotateOnline 1
+nssm set JSON_SCADA_onvif AppRotateBytes 10000000
+nssm set JSON_SCADA_onvif Start SERVICE_DEMAND_START
+
 REM service for telegraf listener
 nssm install JSON_SCADA_telegraf_listener "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\telegraf-listener\index.js" 
 nssm set JSON_SCADA_telegraf_listener AppDirectory "C:\json-scada\src\telegraf-listener"

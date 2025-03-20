@@ -23,6 +23,7 @@ net stop JSON_SCADA_mqttsparkplugclient
 net stop JSON_SCADA_plc4xclient
 net stop JSON_SCADA_telegraf_runtime
 net stop JSON_SCADA_telegraf_listener
+net stop JSON_SCADA_onvif
 ping -n 2
 
 REM STOP PROTOCOL SERVERS

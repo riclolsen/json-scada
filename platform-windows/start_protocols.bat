@@ -29,4 +29,5 @@ rem net start JSON_SCADA_opcdaclient
 REM net start JSON_SCADA_iec61850client
 REM net start JSON_SCADA_i104m
 REM net start JSON_SCADA_plctags
+REM net start JSON_SCADA_onvif
 net start JSON_SCADA_opcuaserver
