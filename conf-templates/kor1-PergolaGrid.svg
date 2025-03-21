@@ -26,15 +26,15 @@
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7071068"
-     inkscape:cx="521.70848"
-     inkscape:cy="1149.4014"
+     inkscape:cx="892.93953"
+     inkscape:cy="1488.8126"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="2560"
-     inkscape:window-height="1057"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-width="1920"
+     inkscape:window-height="1051"
+     inkscape:window-x="370"
+     inkscape:window-y="1341"
      inkscape:window-maximized="1"
      inkscape:snap-global="true"
      showguides="true"
@@ -629,8 +629,8 @@
       </cc:Work>
     </rdf:RDF>
   </metadata>
-
-	<script><![CDATA[
+  <script
+     id="script107"><![CDATA[
 /*
  *			 PERGOLA CONFIGURATION FILE
  *
@@ -691,10 +691,12 @@ decimals=3,
 debug=false;
 		
 ]]></script>
-
-	<script xlink:href="../lib/pergola/pergola/pergola.js" type="text/javascript" />
-	
-	<script><![CDATA[
+  <script
+     xlink:href="../lib/pergola/pergola/pergola.js"
+     id="script109"
+     type="text/javascript" />
+  <script
+     id="script111"><![CDATA[
 
 var object = {
 	columns : [
@@ -1020,7 +1022,6 @@ new pergola.Selector()
 pergola.doc.style.display='none';
 
 ]]></script>
-
   <g
      transform="translate(0,447.63782)"
      id="layer1"
@@ -1100,9 +1101,9 @@ pergola.doc.style.display='none';
        inkscape:label="{&quot;attr&quot;:&quot;bar&quot;,&quot;max&quot;:50,&quot;min&quot;:0,&quot;tag&quot;:&quot;6272&quot;},{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-99999&quot;,&quot;param&quot;:&quot;-cor-59&quot;,&quot;tag&quot;:&quot;99999&quot;}]},{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100}" />
     <a
        xlink:href="kin1.svg"
-       id="a12200"
+       transform="translate(-86,-2.6171874e-6)"
        inkscape:label=""
-       transform="translate(-86,-2.6171874e-6)">
+       id="a12200">
       <text
          onload="evt.currentTarget.style.cursor='pointer';"
          xml:space="preserve"
@@ -5958,7 +5959,7 @@ pergola.doc.style.display='none';
          sodipodi:role="line"
          style="font-size:24px;line-height:1.25">230kV Sector</tspan></text>
     <text
-       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;linename_model&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;linename_model&quot;,&quot;tag&quot;:&quot;#copy_xsac_from&quot;,&quot;type&quot;:&quot;Data&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
        id="pal9-4"
        y="-107.63782"
        x="672"
@@ -10458,7 +10459,7 @@ pergola.doc.style.display='none';
        transform="matrix(0.90679532,0,0,0.90679532,-1087.9868,63.977275)"
        dragx="1"
        dragy="1"
-       inkscape:label="{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;window.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);WebSAGE.makeDraggable(thisobj);&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;}">
+       inkscape:label="{&quot;attr&quot;:&quot;popup&quot;,&quot;height&quot;:400,&quot;src&quot;:&quot;block&quot;,&quot;width&quot;:500,&quot;x&quot;:100,&quot;y&quot;:100},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;top.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);WebSAGE.makeDraggable(thisobj);&quot;,&quot;tag&quot;:&quot;#exec&quot;,&quot;type&quot;:&quot;Data&quot;}">
       <rect
          y="-407.63782"
          x="1710"
@@ -10467,7 +10468,7 @@ pergola.doc.style.display='none';
          id="rect7654"
          style="opacity:1;fill:#f2f2f2;fill-opacity:1;stroke:#808080;stroke-width:3.51675415;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
       <g
-         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;UP&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64165, \&quot;ON\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;UP&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64165, \&quot;ON\&quot;);&quot;}]}"
          transform="translate(-35,-196.76658)"
          id="g9174">
         <rect
@@ -10491,7 +10492,7 @@ pergola.doc.style.display='none';
       </g>
       <g
          cursor="pointer"
-         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;DOWN&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64165, \&quot;OFF\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;tooltips&quot;,&quot;param&quot;:[&quot;DOWN&quot;],&quot;size&quot;:12,&quot;style&quot;:&quot;&quot;},{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64165, \&quot;OFF\&quot;);&quot;}]}"
          transform="matrix(1,0,0,-1,-35,-262.34421)"
          id="g9174-7">
         <rect
@@ -10514,7 +10515,7 @@ pergola.doc.style.display='none';
       </g>
       <g
          cursor="pointer"
-         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64162, \&quot;OFF\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64162, \&quot;OFF\&quot;);&quot;}]}"
          transform="translate(-71,-114.98824)"
          id="g9274">
         <rect
@@ -10541,7 +10542,7 @@ pergola.doc.style.display='none';
       </g>
       <g
          cursor="pointer"
-         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.WebSAGE.directCommandExec(64162, \&quot;ON\&quot;);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.WebSAGE.directCommandExec(64162, \&quot;ON\&quot;);&quot;}]}"
          transform="translate(-86.897285,-114.29628)"
          id="g9279">
         <rect
@@ -11017,7 +11018,7 @@ pergola.doc.style.display='none';
            style="font-size:14.08393955px;line-height:1.25">XCBR</tspan></text>
       <g
          id="g9938"
-         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;window.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
+         inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;mousedown&quot;,&quot;param&quot;:&quot;top.ShowHideTranslate(\&quot;gTR1\&quot;,0,0);&quot;}]}"
          cursor="pointer"
          transform="matrix(0.93895795,0,0,0.93895795,120.5063,-28.341996)">
         <ellipse
@@ -11039,9 +11040,25 @@ pergola.doc.style.display='none';
        id="rect815"
        width="193.70732"
        height="189.99998"
-       x="46.292679"
-       y="-367.63782"
+       x="26.292679"
+       y="-397.63782"
        ry="0"
        inkscape:label="{&quot;attr&quot;:&quot;script&quot;,&quot;list&quot;:[{&quot;evt&quot;:&quot;vega&quot;,&quot;param&quot;:&quot;38000,38003,38006,38037,38013,38016,38042\n{\n  \&quot;width\&quot;: 200,\n  \&quot;height\&quot;: 200,\n  \&quot;data\&quot;: [\n    {\n      \&quot;name\&quot;: \&quot;correntes\&quot;,\n      \&quot;values\&quot;: [\n        {\&quot;x\&quot;: 1,  \&quot;y\&quot;: \&quot;PNT#1\&quot;, \&quot;bay\&quot; : \&quot;BAY#1\&quot;},\n        {\&quot;x\&quot;: 2,  \&quot;y\&quot;: \&quot;PNT#2\&quot;, \&quot;bay\&quot; : \&quot;BAY#2\&quot;},\n        {\&quot;x\&quot;: 3,  \&quot;y\&quot;: \&quot;PNT#3\&quot;, \&quot;bay\&quot; : \&quot;BAY#3\&quot;},\n        {\&quot;x\&quot;: 4,  \&quot;y\&quot;: \&quot;PNT#4\&quot;, \&quot;bay\&quot; : \&quot;BAY#4\&quot;},\n        {\&quot;x\&quot;: 5,  \&quot;y\&quot;: \&quot;PNT#5\&quot;, \&quot;bay\&quot; : \&quot;BAY#5\&quot;},\n        {\&quot;x\&quot;: 6,  \&quot;y\&quot;: \&quot;PNT#6\&quot;, \&quot;bay\&quot; : \&quot;BAY#6\&quot;},\n        {\&quot;x\&quot;: 7,  \&quot;y\&quot;: \&quot;PNT#7\&quot;, \&quot;bay\&quot; : \&quot;BAY#7\&quot;},\n        {\&quot;x\&quot;: 8,  \&quot;y\&quot;: \&quot;PNT#8\&quot;, \&quot;bay\&quot; : \&quot;BAY#8\&quot;}\n      ],\n      \&quot;transform\&quot;: [{\&quot;type\&quot;: \&quot;pie\&quot;, \&quot;field\&quot;: \&quot;y\&quot;, \&quot;sort\&quot;: \&quot;true\&quot;}]\n    } ],\n  \&quot;scales\&quot;: [\n    {\n      \&quot;name\&quot;: \&quot;r\&quot;,\n      \&quot;type\&quot;: \&quot;linear\&quot;,\n      \&quot;domain\&quot;: {\&quot;data\&quot;: \&quot;correntes\&quot;, \&quot;field\&quot;: \&quot;y\&quot;},\n      \&quot;range\&quot;: [20, 100]\n    },\n    {\n      \&quot;name\&quot;: \&quot;c\&quot;,\n      \&quot;type\&quot;: \&quot;ordinal\&quot;,\n      \&quot;range\&quot;: [\&quot;#74add1\&quot;, \&quot;#4575b4\&quot;, \&quot;#dcfab9\&quot;, \&quot;#d9a6ff\&quot;, \&quot;#e0f3f8\&quot;, \&quot;#ffffbf\&quot;, \&quot;#ffc794\&quot;, \&quot;#fee090\&quot;]\n    }\n  ],  \n  \&quot;marks\&quot;: [\n     {\n      \&quot;type\&quot;: \&quot;arc\&quot;,\n      \&quot;from\&quot;: {\&quot;data\&quot;: \&quot;correntes\&quot;},\n      \&quot;properties\&quot;: {\n        \&quot;enter\&quot;: {\n          \&quot;x\&quot;: {\&quot;field\&quot;: {\&quot;group\&quot;: \&quot;width\&quot;}, \&quot;mult\&quot;: 0.5},\n          \&quot;y\&quot;: {\&quot;field\&quot;: {\&quot;group\&quot;: \&quot;height\&quot;}, \&quot;mult\&quot;: 0.5},\n          \&quot;startAngle\&quot;: {\&quot;field\&quot;: \&quot;layout_start\&quot;},\n          \&quot;endAngle\&quot;: {\&quot;field\&quot;: \&quot;layout_end\&quot;},\n          \&quot;innerRadius\&quot;: {\&quot;value\&quot;: 20},\n          \&quot;outerRadius\&quot;: {\&quot;value\&quot;: 60},\n          \&quot;fill\&quot;: {\&quot;scale\&quot;: \&quot;c\&quot;, \&quot;field\&quot;: \&quot;x\&quot;}\n        },\n        \&quot;update\&quot;: {\n          \n        },\n        \&quot;hover\&quot;: {\n          \&quot;fill\&quot;: {\&quot;value\&quot;: \&quot;pink\&quot;}\n        }\n      }\n    },\n    {\n      \&quot;type\&quot;: \&quot;text\&quot;,\n      \&quot;from\&quot;: {\&quot;data\&quot;: \&quot;correntes\&quot;},\n      \&quot;properties\&quot;: {\n        \&quot;enter\&quot;: {\n          \&quot;x\&quot;: {\&quot;field\&quot;: {\&quot;group\&quot;: \&quot;width\&quot;}, \&quot;mult\&quot;: 0.5},\n          \&quot;y\&quot;: {\&quot;field\&quot;: {\&quot;group\&quot;: \&quot;height\&quot;}, \&quot;mult\&quot;: 0.5},\n          \&quot;radius\&quot;: {\&quot;value\&quot;: \&quot;45\&quot;},\n          \&quot;theta\&quot;: {\&quot;field\&quot;: \&quot;layout_mid\&quot;},\n          \&quot;align\&quot;: {\&quot;value\&quot;: \&quot;center\&quot;},\n          \&quot;baseline\&quot;: {\&quot;value\&quot;: \&quot;middle\&quot;},\n          \&quot;fill\&quot;: {\&quot;value\&quot;: \&quot;#002d75\&quot;},\n          \&quot;font\&quot;: {\&quot;value\&quot;: \&quot;open sans\&quot;},\n          \&quot;fontSize\&quot;: {\&quot;value\&quot;: 14},\n          \&quot;fontStyle\&quot;: {\&quot;value\&quot;: \&quot;oblique\&quot;},\n          \&quot;text\&quot;: { \&quot;template\&quot;: \&quot;{{datum.y|number:'.0f'}}\&quot; }\n        }\n      }\n    },\n    {\n      \&quot;type\&quot;: \&quot;text\&quot;,\n      \&quot;from\&quot;: {\&quot;data\&quot;: \&quot;correntes\&quot;},\n      \&quot;properties\&quot;: {\n        \&quot;enter\&quot;: {\n          \&quot;x\&quot;: {\&quot;field\&quot;: {\&quot;group\&quot;: \&quot;width\&quot;}, \&quot;mult\&quot;: 0.5},\n          \&quot;y\&quot;: {\&quot;field\&quot;: {\&quot;group\&quot;: \&quot;height\&quot;}, \&quot;mult\&quot;: 0.5},\n          \&quot;radius\&quot;: {\&quot;value\&quot;: \&quot;65\&quot;},\n          \&quot;theta\&quot;: {\&quot;field\&quot;: \&quot;layout_mid\&quot;},\n          \&quot;align\&quot;: {\&quot;value\&quot;: \&quot;center\&quot;},\n          \&quot;baseline\&quot;: {\&quot;value\&quot;: \&quot;middle\&quot;},\n          \&quot;fill\&quot;: {\&quot;value\&quot;: \&quot;#0088ee\&quot;},\n          \&quot;font\&quot;: {\&quot;value\&quot;: \&quot;open sans\&quot;},\n          \&quot;fontSize\&quot;: {\&quot;value\&quot;: 12},\n          \&quot;fontWeight\&quot;: {\&quot;value\&quot;: 300},\n          \&quot;text\&quot;: { \&quot;template\&quot;: \&quot;{{datum.bay|left:4}}\&quot; }\n        }\n      }\n    }\n  ]\n}&quot;}]}" />
+    <rect
+       style="opacity:0.81999972;fill:#ff0000;fill-opacity:0.0917146;stroke:#ff0000;stroke-width:1.53362322;stroke-linecap:square;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect2662"
+       width="280"
+       height="280"
+       x="1060"
+       y="-327.63782"
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;width=500 height=500 style=\&quot;transform: scale(0.5);transform-origin: 0 0;\&quot; frameborder=\&quot;0\&quot; scrolling=\&quot;no\&quot;&quot;,&quot;src&quot;:&quot;CAM001&quot;,&quot;tag&quot;:&quot;#camera&quot;,&quot;type&quot;:&quot;Data&quot;}" />
+    <rect
+       style="opacity:0.81999972;fill:#ff0000;fill-opacity:0.0917146;stroke:#ff0000;stroke-width:3.36401987;stroke-linecap:square;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect2662-3"
+       width="1679.7574"
+       height="224.56871"
+       x="60.242554"
+       y="532.60474"
+       inkscape:label="{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;set&quot;,&quot;prompt&quot;:&quot;&quot;,&quot;src&quot;:&quot;events.html&quot;,&quot;tag&quot;:&quot;#foreign_object&quot;,&quot;type&quot;:&quot;Data&quot;}" />
   </g>
 </svg>
