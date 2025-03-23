@@ -20,8 +20,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.49"
-!define VERSION_ "0.49.0.0"
+!define VERSION "v.0.50"
+!define VERSION_ "0.50.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -164,9 +164,11 @@ SetRegView 64
   var /GLOBAL NAVGRAFAN
   var /GLOBAL NAVMETABA
   var /GLOBAL HTTPSRV
+  var /GLOBAL HTTPSSRV
     
   # PROTOCOL://IP:PORT  
   StrCpy $HTTPSRV   "http://127.0.0.1" 
+  StrCpy $HTTPSSRV  "https://127.0.0.1" 
   StrCpy $NAVWINCMD "platform-windows\browser-runtime\chrome.exe"
   StrCpy $NAVDATDIR "--user-data-dir=$INSTDIR\platform-windows\browser-data"
   StrCpy $NAVPREOPT ""
@@ -247,6 +249,7 @@ SetRegView 64
   File /a "..\platform-windows\*.bat"
   File /a "..\platform-windows\*.ps1"
   File /a "..\platform-windows\nssm.exe"
+  File /a "..\platform-windows\ffmpeg.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
   File /a "..\platform-windows\dotnet-runtime-8.0.12-win-x64.exe"
@@ -369,6 +372,10 @@ SetRegView 64
   #File /a /r "..\src\htdocs-admin\*.*"
   #SetOutPath $INSTDIR\src\htdocs-login
   #File /a /r "..\src\htdocs-login\*.*"
+
+  SetOutPath $INSTDIR\src\camera-onvif
+  File /a /r "..\src\camera-onvif\*.*"
+  File /a "..\platform-windows\ffmpeg.exe"
 
   SetOutPath $INSTDIR\src\demo_simul
   File /a /r "..\src\demo_simul\*.*"
@@ -507,6 +514,8 @@ SetRegView 64
   File /a "..\conf-templates\telegraf.conf"
   File /a "..\conf-templates\json-scada-config.xlsm"
   File /a "..\conf-templates\log.io-file.json"
+  File /a "..\conf-templates\nginx.crt"
+  File /a "..\conf-templates\nginx.key"
 
 ; Desktop shortcuts
   Delete "$DESKTOP\JSON-SCADA\*.*"
@@ -517,6 +526,7 @@ SetRegView 64
   CreateShortCut "$DESKTOP\JSON-SCADA\_Stop_Services.lnk"                 "$INSTDIR\platform-windows\stop_services.bat"  
   CreateShortCut "$DESKTOP\JSON-SCADA\Windows Services.lnk"               "services.msc"  
   CreateShortCut "$DESKTOP\JSON-SCADA\_JSON SCADA WEB.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
+  CreateShortCut "$DESKTOP\JSON-SCADA\_JSON SCADA WEB HTTPS.lnk"          "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSSRV$NAVINDEX $NAVPOSOPT" "$INSTDIR\src\htdocs\images\j-s-256.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Chromium Browser.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT $NAVPOSOPT"
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Display.lnk"               "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISTEL $NAVPOSOPT" "$INSTDIR\src\htdocs\images\tela.ico" 
   CreateShortCut "$DESKTOP\JSON-SCADA\Viewer - Events.lnk"                "$INSTDIR\$NAVWINCMD" " $NAVDATDIR $NAVPREOPT --app=$HTTPSRV$NAVVISEVE $NAVPOSOPT" "$INSTDIR\src\htdocs\images\chrono.ico" 

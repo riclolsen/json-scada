@@ -26,6 +26,7 @@ net stop JSON_SCADA_iec104server
 net stop JSON_SCADA_iec101server
 net stop JSON_SCADA_opcuaserver
 net stop JSON_SCADA_iccpserver
+net stop JSON_SCADA_dnp3server
 
 REM ADJUST HERE THE SERVICES YOU WANT TO START
 
@@ -49,5 +50,6 @@ rem net start JSON_SCADA_opcdaclient
 REM net start JSON_SCADA_iec61850client
 REM net start JSON_SCADA_i104m
 REM net start JSON_SCADA_plctags
+REM net start JSON_SCADA_onvif
 net start JSON_SCADA_opcuaserver
 

@@ -44,6 +44,10 @@ sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel re
 sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
 wget --inet4-only https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.$(arch).rpm
 sudo dnf -y install ./potrace-devel-1.16-7.el9.$(arch).rpm
+sudo dnf install --nogpgcheck https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm
+sudo dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+sudo dnf install -y ffmpeg ffmpeg-devel
+sudo dnf remove -y python3-circuitbreaker
 
 sudo update-crypto-policies --set LEGACY
 

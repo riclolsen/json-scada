@@ -365,6 +365,7 @@
     'I104M',
     'PI_DATA_ARCHIVE_INJECTOR',
     'PI_DATA_ARCHIVE_CLIENT',
+    'ONVIF',
   ]
   const driverInstances = ref([])
   const error = ref(false)

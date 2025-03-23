@@ -23,7 +23,7 @@ const ProtocolConnection = mongoose.model(
     commandsEnabled: { type: Boolean, required: true, default: true },
     stats: { type: Object, default: null },
 
-    // IEC60870-5-104_SERVER, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850_SERVER, ICCP_SERVER, DNP3_SERVER
+    // IEC60870-5-104_SERVER, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850_SERVER, ICCP_SERVER, DNP3_SERVER, ONVIF
     ipAddressLocalBind: { type: String, default: '' },
 
     // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, DNP3_SERVER, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP, ICCP_SERVER
@@ -58,7 +58,7 @@ const ProtocolConnection = mongoose.model(
     publishTopicRoot: { type: String, default: '' },
     pfxFilePath: { type: String, default: '' },
 
-    // MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, OPC-DA
+    // MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, OPC-DA, ONVIF
     username: { type: String, default: '' },
     password: { type: String, default: '' },
 
@@ -75,10 +75,10 @@ const ProtocolConnection = mongoose.model(
     // OPC-UA, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA
     useSecurity: { type: Boolean, default: false },
 
-    // OPC-UA, MQTT-SPARKPLUG-B, PLC4X, OPC-DA
+    // OPC-UA, MQTT-SPARKPLUG-B, PLC4X, OPC-DA, ONVIF
     endpointURLs: { type: [String], default: [] },
 
-    // OPC-UA, OPC-UA_SERVER, OPC-DA, ICCP, ICCP_SERVER
+    // OPC-UA, OPC-UA_SERVER, OPC-DA, ICCP, ICCP_SERVER, ONVIF
     timeoutMs: { type: Double, min: 0, default: 10000 },
 
     // OPC-UA
@@ -91,7 +91,7 @@ const ProtocolConnection = mongoose.model(
     localLinkAddress: { type: Double, min: 0, default: 1.0 },
     remoteLinkAddress: { type: Double, min: 0, default: 1.0 },
 
-    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, IEC61850, PLC4X, OPC-UA, OPC-DA, ICCP
+    // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, PLCTag, I104M, IEC61850, PLC4X, OPC-UA, OPC-DA, ICCP, ONVIF
     giInterval: { type: Double, min: 0, default: 300.0 },
 
     // OPC-DA, OPC-DA_SERVER
@@ -161,6 +161,9 @@ const ProtocolConnection = mongoose.model(
     class2ScanInterval: { type: Double, min: 0.0, default: 0.0 },
     class3ScanInterval: { type: Double, min: 0.0, default: 0.0 },
     rangeScans: { type: Array, default: [] },
+
+    // ONVIF
+    options: { type: String, default: '' },    
 
     // IEC60870-5-101, IEC60870-5-101_SERVER, DNP3, DNP3_SERVER
     portName: { type: String, default: '' },

@@ -2375,6 +2375,7 @@ else
     var arr = [];
     var auxobj;
     var pospfx, aft;
+    var srcUrl, ifrDecor, nn, camName;
 
     if (inksage_labeltxt === null) {
       return;
@@ -2437,6 +2438,44 @@ else
         switch (inksage_labelvec[lbv].attr) {
           case "set":
             switch (inksage_labelvec[lbv].tag) {
+              case "#camera": // camera view, defined under a rectangle
+                if (item.tagName !== "rect") break;
+                camName = inksage_labelvec[lbv].src || "CAM001";
+                ifrDecor = inksage_labelvec[lbv].prompt || 'width="100%" height="100%" frameborder="0" scrolling="no"';
+                // replace the rect tag by foreignObject in SVG DOM
+                nn = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+                nn.setAttributeNS(null, "x", item.getAttributeNS(null, "x"));
+                nn.setAttributeNS(null, "y", item.getAttributeNS(null, "y"));
+                nn.setAttributeNS(null, "width", item.getAttributeNS(null, "width"));
+                nn.setAttributeNS(null, "height", item.getAttributeNS(null, "height"));
+                if (item.getAttributeNS(null, "transform"))
+                nn.setAttributeNS(null, "transform", item.getAttributeNS(null, "transform"));
+                nn.setAttributeNS(null, "id", item.getAttributeNS(null, "id"));
+                nn.setAttributeNS(null, "style", item.getAttributeNS(null, "style"));
+                nn.setAttributeNS(null, "class", item.getAttributeNS(null, "class"));
+                // source will be the html code for camera view 
+                nn.innerHTML = `<iframe ${ifrDecor} src="camera.html?CameraName=${camName}"></iframe>`;
+                item.parentNode.replaceChild(nn, item);
+                break;
+             case "#foreign_object": // foreign object, defined under a rectangle
+                if (item.tagName !== "rect") break;
+                srcUrl = inksage_labelvec[lbv].src;
+                ifrDecor = inksage_labelvec[lbv].prompt || 'width="100%" height="100%" frameborder="0" scrolling="no"';
+                // replace the rect tag by foreignObject in SVG DOM
+                nn = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+                nn.setAttributeNS(null, "x", item.getAttributeNS(null, "x"));
+                nn.setAttributeNS(null, "y", item.getAttributeNS(null, "y"));
+                nn.setAttributeNS(null, "width", item.getAttributeNS(null, "width"));
+                nn.setAttributeNS(null, "height", item.getAttributeNS(null, "height"));
+                if (item.getAttributeNS(null, "transform"))
+                nn.setAttributeNS(null, "transform", item.getAttributeNS(null, "transform"));
+                nn.setAttributeNS(null, "id", item.getAttributeNS(null, "id"));
+                nn.setAttributeNS(null, "style", item.getAttributeNS(null, "style"));
+                nn.setAttributeNS(null, "class", item.getAttributeNS(null, "class"));
+                // source will be the html code for camera view 
+                nn.innerHTML = `<iframe ${ifrDecor} src="${srcUrl}"></iframe>`;
+                item.parentNode.replaceChild(nn, item);
+                break;
               case "#radar": // radar chart, defined under a rectangle
                 // Lib: https://github.com/alangrafu/radar-chart-d3
                 if (item.tagName !== "rect") break;

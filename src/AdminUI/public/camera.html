@@ -1,0 +1,554 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+      }
+      .container {
+        position: relative;
+        width: 100%;
+      }
+      #canvas {
+        display: block;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        border: 1px solid #ddd;
+      }
+      .camera-controls {
+        position: relative;
+        max-width: 800px;
+        margin: 10px auto;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .control-section {
+        text-align: center;
+      }
+      .control-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+      }
+      
+      /* Pan/Tilt Control */
+      .pan-control {
+        position: relative;
+        width: 150px;
+        height: 150px;
+      }
+      .pan-circle {
+        fill: none;
+        stroke: #ddd;
+        stroke-width: 2;
+      }
+      .pan-button {
+        fill: white;
+        stroke: #ccc;
+        stroke-width: 1;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .pan-button:hover {
+        fill: #f0f0f0;
+        stroke: #999;
+      }
+      .pan-button:active {
+        fill: #e0e0e0;
+      }
+      .pan-arrow {
+        fill: #666;
+        pointer-events: none;
+      }
+      
+      /* Zoom Control */
+      .zoom-control {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .zoom-button {
+        width: 40px;
+        height: 40px;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .zoom-button:hover {
+        background: #f0f0f0;
+        border-color: #999;
+      }
+      .zoom-button:active {
+        background: #e0e0e0;
+      }
+      .zoom-icon {
+        font-size: 20px;
+        color: #666;
+        pointer-events: none;
+      }
+      
+      /* Reset Button */
+      .reset-button {
+        margin-top: 20px;
+        padding: 8px 12px;
+        background-color: white;
+        color: #666;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s;
+      }
+      .reset-button:hover {
+        background-color: #f0f0f0;
+        border-color: #999;
+      }
+      .reset-button:active {
+        background-color: #e0e0e0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <canvas id="canvas"></canvas>
+      <div class="camera-controls">
+        <!-- Pan/Tilt/Zoom Control Section -->
+        <div class="control-section">
+          <div class="control-label" id="camera-name">CAM???</div>
+          <div class="control-label">Camera Controls</div>
+          <div class="pan-control">
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <!-- Circle background -->
+              <circle class="pan-circle" cx="75" cy="75" r="70"></circle>
+              
+              <!-- Up button -->
+              <g id="pan-up">
+                <circle class="pan-button" cx="75" cy="20" r="15"></circle>
+                <path class="pan-arrow" d="M75 15 L70 25 L80 25 Z"></path>
+              </g>
+              
+              <!-- Right button -->
+              <g id="pan-right">
+                <circle class="pan-button" cx="130" cy="75" r="15"></circle>
+                <path class="pan-arrow" d="M135 75 L125 70 L125 80 Z"></path>
+              </g>
+              
+              <!-- Down button -->
+              <g id="pan-down">
+                <circle class="pan-button" cx="75" cy="130" r="15"></circle>
+                <path class="pan-arrow" d="M75 135 L70 125 L80 125 Z"></path>
+              </g>
+              
+              <!-- Left button -->
+              <g id="pan-left">
+                <circle class="pan-button" cx="20" cy="75" r="15"></circle>
+                <path class="pan-arrow" d="M15 75 L25 70 L25 80 Z"></path>
+              </g>
+              
+              <!-- Center reset button -->
+              <g id="reset-position">
+                <circle class="pan-button" cx="75" cy="75" r="15"></circle>
+                <text x="75" y="79" text-anchor="middle" font-size="14" fill="#666" pointer-events="none">🗘</text>
+              </g>
+              
+              <!-- Zoom in button (top-right inside wheel) -->
+              <g id="zoom-in">
+                <circle class="pan-button" cx="105" cy="45" r="15"></circle>
+                <text x="105" y="50" text-anchor="middle" font-size="16" fill="#666" pointer-events="none">+</text>
+              </g>
+              
+              <!-- Zoom out button (bottom-right inside wheel) -->
+              <g id="zoom-out">
+                <circle class="pan-button" cx="105" cy="105" r="15"></circle>
+                <text x="105" y="110" text-anchor="middle" font-size="16" fill="#666" pointer-events="none">−</text>
+              </g>
+              
+              <!-- Cross lines -->
+              <line x1="75" y1="35" x2="75" y2="115" stroke="#ddd" stroke-width="1"></line>
+              <line x1="35" y1="75" x2="115" y2="75" stroke="#ddd" stroke-width="1"></line>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="lib/jsmpeg.min.js"></script>
+    <script type="text/javascript">
+      player = new JSMpeg.Player('ws://localhost:9001', {
+        canvas: document.getElementById('canvas') // Canvas should be a canvas DOM element
+      });
+
+      // Get camera name from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      let CameraName = urlParams.get('CameraName') || 'CAM001';
+
+      // Camera control constants
+      const CAMERA_ID = CameraName;
+      const PAN_STEP = 0.1;  // Pan movement step size
+      const ZOOM_STEP = 0.1; // Zoom step size
+      
+      // Update camera name display
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('camera-name').textContent = CameraName;
+      });
+      
+      // Camera control functions
+      function panCamera(xDirection, yDirection) {
+        if (xDirection !== 0) {
+          directCommandExec(`$$${CAMERA_ID}$$relativeMove$$x`, xDirection);
+        }
+        if (yDirection !== 0) {
+          directCommandExec(`$$${CAMERA_ID}$$relativeMove$$y`, yDirection);
+        }
+      }
+      
+      function zoomCamera(zoomDirection) {
+        directCommandExec(`$$${CAMERA_ID}$$relativeMove$$zoom`, zoomDirection);
+      }
+      
+      function resetCameraPosition() {
+        // Reset to default position
+        directCommandExec(`$$${CAMERA_ID}$$gotoHomePosition`);
+      }
+      
+      // Add event listeners to control buttons
+      document.addEventListener('DOMContentLoaded', function() {
+        // Zoom controls
+        document.getElementById('zoom-in').addEventListener('click', function() {
+          zoomCamera(ZOOM_STEP);
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', function() {
+          zoomCamera(-ZOOM_STEP);
+        });
+        
+        // Pan controls
+        document.getElementById('pan-left').addEventListener('click', function() {
+          panCamera(-PAN_STEP, 0);
+        });
+        
+        document.getElementById('pan-right').addEventListener('click', function() {
+          panCamera(PAN_STEP, 0);
+        });
+        
+        document.getElementById('pan-up').addEventListener('click', function() {
+          panCamera(0, -PAN_STEP);
+        });
+        
+        document.getElementById('pan-down').addEventListener('click', function() {
+          panCamera(0, PAN_STEP);
+        });
+        
+        // Reset position
+        document.getElementById('reset-position').addEventListener('click', function() {
+          resetCameraPosition();
+        });
+        
+        // Add keyboard controls
+        document.addEventListener('keydown', function(event) {
+          switch(event.key) {
+            case 'ArrowUp':
+              panCamera(0, -PAN_STEP);
+              break;
+            case 'ArrowDown':
+              panCamera(0, PAN_STEP);
+              break;
+            case 'ArrowLeft':
+              panCamera(-PAN_STEP, 0);
+              break;
+            case 'ArrowRight':
+              panCamera(PAN_STEP, 0);
+              break;
+            case '+':
+            case '=':
+              zoomCamera(ZOOM_STEP);
+              break;
+            case '-':
+            case '_':
+              zoomCamera(-ZOOM_STEP);
+              break;
+            case 'r':
+            case 'R':
+              resetCameraPosition();
+              break;
+          }
+        });
+      });
+
+      // Helper function for string formatting (used in localStorage)
+      function printf(format) {
+        let args = Array.prototype.slice.call(arguments, 1);
+        return format.replace(/%(\d+)/g, function(match, number) {
+          return typeof args[number - 1] != 'undefined' ? args[number - 1] : match;
+        });
+      }
+      
+      // Check if localStorage is available
+      function storageAvailable(type) {
+        try {
+          var storage = window[type],
+            x = '__storage_test__';
+          storage.setItem(x, x);
+          storage.removeItem(x);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function fetchTimeout (url, tout = 1000, { signal, ...options } = {}) {
+        if (options === undefined)
+          options = {
+            method: 'GET',
+            body: JSON.stringify({}),
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+          }
+        const controller = new AbortController()
+        const promise = fetch(url, { signal: controller.signal, ...options })
+        if (signal) signal.addEventListener('abort', () => controller.abort())
+        const timeout = setTimeout(() => controller.abort(), tout)
+        return promise.finally(() => clearTimeout(timeout))
+      }
+
+      function directCommandExec(point, value) {
+        const OpcNamespaceMongodb = 2 // first user namespace
+        const OpcNamespacePostgresql = 3 // second user namespace
+
+        const OpcKeyType = {
+          Numeric: 0,
+          String: 1
+        }
+
+        const OpcServiceCode = {
+          ServiceFault: 395,
+          RequestHeader: 389,
+          ResponseHeader: 392,
+          ReadValueId: 626,
+          ReadRequest: 629,
+          ReadResponse: 632,
+          ReadRawModifiedDetails: 647,
+          HistoryReadRequest: 662,
+          HistoryReadResponse: 665,
+          WriteValue: 668,
+          WriteRequest: 671,
+          WriteResponse: 674,
+          DataChangeNotification: 809,
+          StatusChangeNotification: 818,
+          Extended_RequestUniqueAttributeValues: 100000001,
+          Extended_ResponseUniqueAttributeValues: 100000002
+        }
+        const OpcAttributeId = {
+          NodeID: 1,
+          NodeClass: 2,
+          BrowseName: 3,
+          DisplayName: 4,
+          Description: 5,
+          WriteMask: 6,
+          UserWriteMask: 7,
+          IsAbstract: 8,
+          Symmetric: 9,
+          InverseName: 10,
+          ContainsNoLoops: 11,
+          EventNotifier: 12,
+          Value: 13,
+          DataType: 14,
+          ValueRank: 15,
+          ArrayDimensions: 16,
+          AccessLevel: 17,
+          UserAccessLevel: 18,
+          MinimumSamplingInterval: 19,
+          Historizing: 20,
+          Executable: 21,
+          UserExecutable: 22,
+          ExtendedGroup1: 100000001,
+          ExtendedGroup2: 100000002,
+          ExtendedGroup3: 100000003,
+          ExtendedAlarmEventsAck: 100000004,
+          ExtendedBlockingAnnotation: 100000005,
+          ExtendedDocumentalAnnotation: 100000006
+        }
+
+        const OpcStatusCodes = {
+          Good: 0,
+          GoodNoData: 0x00a50000,
+          GoodMoreData: 0x00a60000,
+          Uncertain: 0x40000000,
+          Bad: 0x80000000,
+          BadTimeout: 0x800a0000,
+          BadNodeAttributesInvalid: 0x80620000,
+          BadNodeIdInvalid: 0x80330000,
+          BadNodeIdUnknown: 0x80340000,
+          BadRequestHeaderInvalid: 0x802a0000,
+          BadRequestNotAllowed: 0x80e40000,
+          BadServiceUnsupported: 0x800b0000,
+          BadShutdown: 0x800c0000,
+          BadServerNotConnected: 0x800d0000,
+          BadServerHalted: 0x800e0000,
+          BadNothingToDo: 0x800f0000,
+          BadUserAccessDenied: 0x801f0000,
+          BadIdentityTokenInvalid: 0x80200000,
+          BadIdentityTokenRejected: 0x80210000,
+          BadUnexpectedError: 0x80010000,
+          BadInternalError: 0x80020000,
+          BadOutOfMemory: 0x80030000,
+          BadResourceUnavailable: 0x80040000,
+          BadCommunicationError: 0x80050000,
+          BadInvalidArgument: 0x80ab0000,
+          BadDisconnect: 0x80ad0000,
+          BadConnectionClosed: 0x80ae0000,
+          BadInvalidState: 0x80af0000,
+          BadNoDataAvailable: 0x80b10000,
+          BadWaitingForResponse: 0x80b20000
+        }
+
+        const OpcValueTypes = {
+          Null: 0,
+          Boolean: 1,
+          SByte: 2,
+          Byte: 3,
+          Int16: 4,
+          UInt16: 5,
+          Int32: 6,
+          UInt32: 7,
+          Int64: 8,
+          UInt64: 9,
+          Float: 10,
+          Double: 11,
+          String: 12,
+          DateTime: 13,
+          Guid: 14,
+          ByteString: 15,
+          XmlElement: 16,
+          NodeId: 17,
+          ExpandedNodeId: 18,
+          StatusCode: 19,
+          QualifiedName: 20,
+          LocalizedText: 21,
+          ExtensionObject: 22,
+          DataValue: 23,
+          Variant: 24,
+          DiagnosticInfo: 25,
+          Number: 26,
+          Integer: 27,
+          UInteger: 28,
+          Enumeration: 29
+        }
+
+        if (isNaN(parseFloat(value))) {
+          if (
+            value === 'ON' ||
+            value === 'on' ||
+            value === true ||
+            value === 'TRUE' ||
+            value == 'true'
+          )
+            value = 1
+          else if (
+            value === 'OFF' ||
+            value === 'off' ||
+            value === false ||
+            value === 'FALSE' ||
+            value == 'false'
+          )
+            value = 0
+          else {
+            value = 0
+          }
+        } else {
+          value = parseFloat(value)
+        }
+
+        // use OPC web hmi protocol https://prototyping.opcfoundation.org/
+        let ServiceId = OpcServiceCode.WriteRequest // write data service
+        let RequestHandle = Math.floor(Math.random() * 100000000)
+        let req = {
+          ServiceId: ServiceId,
+          Body: {
+            RequestHeader: {
+              Timestamp: new Date().toISOString(),
+              RequestHandle: RequestHandle,
+              TimeoutHint: 1500,
+              ReturnDiagnostics: 2,
+              AuthenticationToken: null
+            },
+            NodesToWrite: [
+              {
+                NodeId: {
+                  IdType: OpcKeyType.Numeric, // type: numeric key
+                  Id: point, // numeric key for the point
+                  Namespace: OpcNamespaceMongodb
+                },
+                AttributeId: OpcAttributeId.Value, // OPC attribute to write: Value
+                Value: {
+                  Type: OpcValueTypes.Double,
+                  Body: value
+                }
+              }
+            ]
+          }
+        }
+
+        fetchTimeout('/Invoke/', 1500, {
+          method: 'POST',
+          body: JSON.stringify(req),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+          .then(function (response) {
+            return response
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (
+              !data.ServiceId ||
+              !data.Body ||
+              !data.Body.ResponseHeader ||
+              !data.Body.ResponseHeader.RequestHandle ||
+              !data.Body.Results ||
+              data.ServiceId !== OpcServiceCode.WriteResponse ||
+              data.Body.ResponseHeader.RequestHandle !== RequestHandle ||
+              data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good
+            ) {
+              CNPTO = 0
+              return
+            }
+            if (data.Body.Results[0] !== OpcStatusCodes.Good) {
+              CNPTO = 0
+            }
+
+            // success
+            CHANDLE = data.Body._CommandHandles[0]
+
+            // Command log in browser's localStorage
+            if (storageAvailable('localStorage')) {
+              var lastlogcnt = 0
+              if (localStorage.hasOwnProperty('lastlogcnt'))
+                lastlogcnt = parseInt(localStorage['lastlogcnt'])
+              lastlogcnt++
+              lastlogcnt = lastlogcnt % 1000 // circular buffer of 1000
+              localStorage[printf('%03d', lastlogcnt)] =
+                Date() + ' Point:' + point + ' Id:?' + ' Value:' + value
+              localStorage['lastlogcnt'] = lastlogcnt
+            }
+          })
+          .catch(err => {
+            CNPTO = 0
+          })
+      }
+    </script>
+  </body>
+</html>

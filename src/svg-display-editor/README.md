@@ -72,7 +72,8 @@ Follow below a list of attributes (“Object Properties\|Tab”) that can be uti
 | Associate mouse/keyboard events          | [Script](#script-tab)                                                                        |
 | Bar graph                                | [Bar](#bar-tab)                                                                              |
 | Arc, Donut                               | [Set (#arc)](#set-tab)                                                                       |
-| Radar chart                              | [Set (#radar)](#set-tab)                                                                     |
+| Camera UI (ONVIF) View                   | [Set (#camera)](#set-tab)                                                                       |
+| Generic URL View                         | [Set (#foreign_object)](#set-tab)                                                                       |
 | Generic charts                           | [Script](#script-tab) \| [Set (#vega4 #vega4-json #vega-lite)](#set-tab)                     |
 | Control transparency                     | [Opacity](#opacity-tab), [Color](#color-tab)                                                 |
 | Rotate objects                           | [Rotate](#rotate-tab)                                                                        |
@@ -444,7 +445,8 @@ Functions available:
 - **#copy_xsac_from** in the field “Tag” - copy the XSAC attributes from another model object(s) to the current object. Use the field “Source” to indicate the ID of the model object. Multiple ID's of model objects can be entered in the field “Source” separating them with commas. The other fields are ignored. This can be used to create models of actions that control the behavior of many other derived objects changing just the model object. This can be combined with the Faceplate attribute to replicate modeled objects.
 - **#set_filter** in the field “Tag” – define a filter (by the point ID) for the data presented in the Alarm Box. Use the field "Source" to enter the text of the filter. The other fields are ignored.
 - **#arc** in the field Tag – draw a doughnut chart. The tag must be in the “Source” field. In the “Prompt” field there must be set three parameters separated by commas: the minimum value (normally zero), the maximum value (for a 360-degree arc) and the inner circle radius.
-- **#radar** in the field “Tag” – (for a rectangle object) define a radar (spider web) graphic. List the points in the “Source” field separated by commas. The field “Prompt” can be used to change the configuration of the chart, by applying conventions from https://github.com/alangrafu/radar-chart-d3. Write the attribute names using double quotes. E.g: { "levels":5, "maxValue":200, "axisText": false }
+- **#camera** in the field Tag – open a camera view (inside a foreignObject/iframe). The field “Source” must contain the camera name (e.g. "CAM001"). The field “Prompt” can be used to define the iframe properties (e.g. '"width=500 height=500 style="transform: scale(0.5);transform-origin: 0 0;" frameborder="0" scrolling="no"').
+- **#foreign_object** in the field Tag – open a generic URL inside a foreignObject/iframe. The field “Source” must contain the URL (e.g. "events.html"). The field “Prompt” can be used to define the iframe properties (e.g. "width=100% height=100%").
 
 - **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038\|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
 

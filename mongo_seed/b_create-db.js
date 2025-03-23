@@ -32,6 +32,7 @@ var protocolDriverNames = [
   'PI_DATA_ARCHIVE_CLIENT',
   'INFLUXDB_INJECTOR',
   'INFLUXDB_CLIENT',
+  'ONVIF',
   'UNDEFINED',
 ]
 
@@ -85,26 +86,26 @@ var protocolDriverInstancesValidator = {
         },
       },
       activeNodeName: {
-        bsonType: 'string',
+        bsonType: ['string', 'null'],
         description:
           'Name of the currently (or last) active node for the driver instance. Should be on of the listed in nodeNames property.',
       },
       activeNodeKeepAliveTimeTag: {
-        bsonType: 'date',
+        bsonType: ['date', 'null'], 
         description:
           'Date/time of the last keep alive update for the driver instance.',
       },
       keepProtocolRunningWhileInactive: {
-        bsonType: 'bool',
+        bsonType: ['bool', 'null'],
         enum: [true, false],
         description: 'Keep protocol connection open while not the active node.',
       },
       softwareVersion: {
-        bsonType: 'string',
+        bsonType: ['string', 'null'],
         description: 'Software version.',
       },
       stats: {
-        bsonType: ['object', 'null'],
+        bsonType: ['object', 'string', 'null'],
         description: 'Driver specific statistics.',
       },
     },
@@ -171,21 +172,21 @@ var processInstancesValidator = {
         },
       },
       activeNodeName: {
-        bsonType: 'string',
+        bsonType: ['string', 'null'],
         description:
           'Name of the currently (or last) active node for the process instance. Should be on of the listed in nodeNames property.',
       },
       activeNodeKeepAliveTimeTag: {
-        bsonType: 'date',
+        bsonType: ['date', 'null'],
         description:
           'Date/time of the last keep alive update for the process instance.',
       },
       softwareVersion: {
-        bsonType: 'string',
+        bsonType: ['string', 'null'],
         description: 'Software version.',
       },
       periodOfCalculation: {
-        bsonType: ['double', 'long', 'int'],
+        bsonType: ['double', 'long', 'int', 'null'],
         description: 'Period of cycle of calculations in seconds.',
       },
       stats: {
@@ -267,13 +268,13 @@ var protocolConnectionsValidator = {
           'Must be true to allow commands to be forwarded in the connection. Required.',
       },
       logLevel: {
-        bsonType: ['double', 'long', 'int'],
+        bsonType: ['double', 'long', 'int', 'null'],
         minimum: 0,
         maximum: 3,
         description: 'Log level. 0=min,1=basic,2=detailed,3=debug. Required.',
       },
       ipAddressLocalBind: {
-        bsonType: 'string',
+        bsonType: ['string', 'null'],
         description:
           'IP address and port (like in 0.0.0.0:2404) for network listening.',
       },
@@ -374,7 +375,7 @@ var protocolConnectionsValidator = {
         description: 'Protocol parameter in seconds.',
       },
       serverModeMultiActive: {
-        bsonType: 'bool',
+        bsonType: ['bool', 'null'],
         enum: [true, false],
         description: 'Protocol parameter.',
       },
@@ -387,6 +388,10 @@ var protocolConnectionsValidator = {
         bsonType: ['double', 'long', 'int', 'null'],
         minimum: 0,
         description: 'Protocol parameter.',
+      },
+      options: {
+        bsonType: ['string', 'null'],
+        description: 'Additional options',
       },
       portName: {
         bsonType: ['string', 'null'],
@@ -418,7 +423,7 @@ var protocolConnectionsValidator = {
         description: 'Protocol parameter.',
       },
       useSingleCharACK: {
-        bsonType: 'bool',
+        bsonType:['bool', 'null'],
         enum: [true, false],
         description: 'Protocol parameter.',
       },
