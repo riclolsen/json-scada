@@ -118,6 +118,8 @@ cd ../mongofw
 npm install
 cd ../mongowr
 npm install
+cd ../camera-onvif
+npm install
 
 cd ../AdminUI
 npm install

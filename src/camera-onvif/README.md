@@ -2,11 +2,13 @@
 
 This driver implements a client for the ONVIF Camera protocol. It can have multiple connections to ONVIF camera servers on the network for monitoring and control. The image stream can be accessed via a WebSocket on the browser.
 
+The ONVIF/RTSP camera streaming is not supported by browsers, so this driver uses the ONVIF PTZ Streaming API to get the image stream and convert it to a mpeg stream and send it to the browser where it is accessible via WebSocket.
+
 To configure the driver it is necessary to create one or more driver instances and at least one connection per instance.
 
 ## Configure a driver instance
 
-To create a new DNP3 client instance, insert a new document in the _protocolDriverInstances_ collection using a command like this:
+To create a new ONVIF driver instance, insert a new document in the _protocolDriverInstances_ collection using a command like below or use the Admin UI.
 
     use json_scada_db_name
     db.protocolDriverInstances.insertOne({
@@ -106,3 +108,9 @@ Examples:
         originatorUserName: 'username',
         originatorIpAddress: '127.0.0.1'
     })
+
+## Camera UI
+
+To embed the camera UI inside an SVG display see the SVG editor [documentation](https://github.com/riclolsen/json-scada/tree/master/src/svg-display-editor#set-tab).
+
+The camera web interface is coded in the file [camera.html](https://github.com/riclolsen/json-scada/blob/master/src/AdminUI/dist/camera.html).

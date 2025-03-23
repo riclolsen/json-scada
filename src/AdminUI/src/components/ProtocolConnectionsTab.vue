@@ -243,7 +243,13 @@
 
             <v-list-item
               v-if="
-                ['OPC-UA', 'MQTT-SPARKPLUG-B', 'PLC4X', 'OPC-DA'].includes(
+                [
+                  'OPC-UA', 
+                  'MQTT-SPARKPLUG-B', 
+                  'PLC4X', 
+                  'OPC-DA',
+                  'ONVIF',
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -321,7 +327,44 @@
 
             <v-list-item
               v-if="
-                ['MQTT-SPARKPLUG-B', 'IEC61850', 'OPC-DA'].includes(
+                [
+                  'ONVIF',
+                ].includes(editedConnection.protocolDriver)
+              "
+            >
+              <template v-slot:default="{ active }">
+                <v-row>
+                  <v-col>
+                    <v-list-item-action>
+                      <v-text-field
+                        type="text"
+                        :input-value="active"
+                        :label="$t('admin.protocolConnections.options')"
+                        hide-details="auto"
+                        v-model="editedConnection.options"
+                      ></v-text-field>
+                    </v-list-item-action>
+                  </v-col>
+                  <v-col>
+                    <v-list-item-title>
+                      {{ $t('admin.protocolConnections.optionsTitle') }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ $t('admin.protocolConnections.optionsHint') }}
+                    </v-list-item-subtitle>
+                  </v-col>
+                </v-row>
+              </template>
+            </v-list-item>
+
+            <v-list-item
+              v-if="
+                [
+                  'MQTT-SPARKPLUG-B', 
+                  'IEC61850', 
+                  'OPC-DA',
+                  'ONVIF',
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -353,7 +396,12 @@
 
             <v-list-item
               v-if="
-                ['MQTT-SPARKPLUG-B', 'IEC61850', 'OPC-DA'].includes(
+                [
+                  'MQTT-SPARKPLUG-B', 
+                  'IEC61850',
+                  'OPC-DA',
+                  'ONVIF',
+                ].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -624,6 +672,7 @@
                   'OPC-DA',
                   'ICCP',
                   'ICCP_SERVER',
+                  'ONVIF',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -666,6 +715,7 @@
                   'OPC-UA',
                   'OPC-DA',
                   'ICCP',
+                  'ONVIF',	
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -1644,6 +1694,7 @@
                   'TELEGRAF-LISTENER',
                   'OPC-UA_SERVER',
                   'ICCP_SERVER',
+                  'ONVIF',
                 ].includes(editedConnection.protocolDriver) ||
                 (['DNP3', 'DNP3_SERVER'].includes(
                   editedConnection.protocolDriver
@@ -3469,6 +3520,7 @@
     'ICCP_SERVER',
     'PI_DATA_ARCHIVE_INJECTOR',
     'PI_DATA_ARCHIVE_CLIENT',
+    'ONVIF',
   ]
 
   const parityItems = ['None', 'Even', 'Odd', 'Mark', 'Space']

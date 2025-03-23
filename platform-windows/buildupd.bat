@@ -99,19 +99,19 @@ set GOBIN=c:\json-scada\bin
 cd %SRCPATH%\calculations
 go get -u ./...
 go mod tidy 
-go build 
+go build -ldflags="-s -w"
 copy /Y calculations.exe %BINPATH%
 
 cd %SRCPATH%\i104m
 go get -u ./...
 go mod tidy 
-go build 
+go build -ldflags="-s -w"
 copy /Y i104m.exe %BINPATH%
 
 cd %SRCPATH%\plc4x-client
 go get -u ./...
 go mod tidy 
-go build 
+go build -ldflags="-s -w"
 copy /Y plc4x-client.exe %BINPATH%
 
 cd %SRCPATH%\cs_data_processor

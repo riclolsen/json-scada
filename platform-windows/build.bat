@@ -98,17 +98,17 @@ go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
 cd %SRCPATH%\calculations
 go mod tidy 
-go build 
+go build -ldflags="-s -w"
 copy /Y calculations.exe %BINPATH%
 
 cd %SRCPATH%\i104m
 go mod tidy
-go build 
+go build -ldflags="-s -w"
 copy /Y i104m.exe %BINPATH%
 
 cd %SRCPATH%\plc4x-client
 go mod tidy 
-go build 
+go build -ldflags="-s -w"
 copy /Y plc4x-client.exe %BINPATH%
 
 cd %SRCPATH%\cs_data_processor
@@ -163,10 +163,13 @@ call %NPM% install
 cd %SRCPATH%\backup-mongo
 call %NPM% install
 
-cd %SRCPATH\mongofw
+cd %SRCPATH%\mongofw
 call %NPM% install
 
-cd %SRCPATH\mongowr
+cd %SRCPATH%\mongowr
+call %NPM% install
+
+cd %SRCPATH%\camera-onvif
 call %NPM% install
 
 cd %SRCPATH%\log-io\ui

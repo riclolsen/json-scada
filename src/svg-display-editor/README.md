@@ -72,7 +72,8 @@ Follow below a list of attributes (“Object Properties\|Tab”) that can be uti
 | Associate mouse/keyboard events          | [Script](#script-tab)                                                                        |
 | Bar graph                                | [Bar](#bar-tab)                                                                              |
 | Arc, Donut                               | [Set (#arc)](#set-tab)                                                                       |
-| Radar chart                              | [Set (#radar)](#set-tab)                                                                     |
+| Camera UI (ONVIF) View                   | [Set (#camera)](#set-tab)                                                                       |
+| Generic URL View                         | [Set (#foreign_object)](#set-tab)                                                                       |
 | Generic charts                           | [Script](#script-tab) \| [Set (#vega4 #vega4-json #vega-lite)](#set-tab)                     |
 | Control transparency                     | [Opacity](#opacity-tab), [Color](#color-tab)                                                 |
 | Rotate objects                           | [Rotate](#rotate-tab)                                                                        |

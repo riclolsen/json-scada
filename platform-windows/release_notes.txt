@@ -135,6 +135,36 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.50:
+
+* ONVIF/RTSP Camera support.
+* Enabled HTTPS server (self-signed) on Nginx demo config.
+* Fix mongodb document validation issue.
+* MongoDB Compass updated to 1.45.4.
+* MongoDB Community Server updated to 8.0.5.
+* Grafana updated to 11.5.2.
+* Chromium updated to 134.0.6998.89.
+* Nodejs runtime updated to 22.14.0.
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+* On the JSON-SCADA desktop folder: execute "_Start_Services".
+* On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 25GB of free space in the "C:" drive.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 443, 8080, 3000, 3001, 9000, 20000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+* MongoDB requires AVX instructions on x86 CPU.
+
+-------------------------------------------------------------------
+
 Notes for version 0.49:
 
 * LDAP/AD user authentication.
