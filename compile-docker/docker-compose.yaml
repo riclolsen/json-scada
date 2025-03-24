@@ -106,6 +106,7 @@ services:
     image: golang:alpine
     container_name: js_calculations_compile
     command: sh -c "apk update &&
+                    apk add --no-cache libpcap-dev &&
                     apk add --no-cache git && 
                     go env -w GO111MODULE=auto &&
                     cd /go/src/calculations/ && 
@@ -120,6 +121,7 @@ services:
     image: golang:alpine
     container_name: js_i104m_compile
     command: sh -c "apk update &&
+                    apk add --no-cache libpcap-dev &&
                     apk add --no-cache git && 
                     go env -w GO111MODULE=auto &&
                     cd /go/src/i104m/ &&
