@@ -16,7 +16,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.22
+        go-version: ^1.24
       id: go
 
     - name: Check out code into the Go module directory
@@ -25,8 +25,10 @@ jobs:
     - name: Get dependencies
       working-directory: src/i104m
       run: |
+        apt-get install libpcap-dev
         go env -w GO111MODULE=auto
         go get -v -t -d ./...
+        go mod tidy
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
