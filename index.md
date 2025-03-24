@@ -150,6 +150,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] Siemens S7
 - [ ] BACNET
 - [x] I104M (legacy adapter for some OSHMI drivers)
+- [x] ONVIF Camera control and streaming
 
 ## Features Roadmap
 

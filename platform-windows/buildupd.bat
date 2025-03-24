@@ -172,6 +172,9 @@ call %NPM% update
 cd %SRCPATH%\mongowr
 call %NPM% i --package-lock-only
 call %NPM% update
+cd %SRCPATH%\camera-onvif
+call %NPM% i --package-lock-only
+call %NPM% update
 
 cd %SRCPATH%\log-io\ui
 call %NPM% i --package-lock-only
