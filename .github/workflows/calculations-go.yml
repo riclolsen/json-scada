@@ -25,6 +25,7 @@ jobs:
     - name: Get dependencies
       working-directory: src/calculations
       run: |
+        apt-get install libpcap-dev
         go env -w GO111MODULE=auto
         go get -v -t -d ./...
         go mod tidy
