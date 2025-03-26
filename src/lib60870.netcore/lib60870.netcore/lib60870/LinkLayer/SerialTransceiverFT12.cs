@@ -1,7 +1,7 @@
 ﻿/*
  *  SerialTransceiverFT12.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -22,9 +22,8 @@
  */
 
 using System;
-using System.IO.Ports;
 using System.IO;
-using System.Threading;
+using System.IO.Ports;
 
 namespace lib60870.linklayer
 {
@@ -53,16 +52,16 @@ namespace lib60870.linklayer
         public SerialTransceiverFT12(SerialPort port, LinkLayerParameters linkLayerParameters, Action<string> debugLog)
         {
             this.port = port;
-            this.serialStream = port.BaseStream;
-            this.DebugLog = debugLog;
+            serialStream = port.BaseStream;
+            DebugLog = debugLog;
             this.linkLayerParameters = linkLayerParameters;
         }
 
         public SerialTransceiverFT12(Stream serialStream, LinkLayerParameters linkLayerParameters, Action<string> debugLog)
         {
-            this.port = null;
+            port = null;
             this.serialStream = serialStream;
-            this.DebugLog = debugLog;
+            DebugLog = debugLog;
             this.linkLayerParameters = linkLayerParameters;
         }
 
@@ -103,11 +102,11 @@ namespace lib60870.linklayer
                 serialStream.Write(msg, 0, msgSize);
                 serialStream.Flush();
             }
-            catch(UnauthorizedAccessException)
+            catch (UnauthorizedAccessException)
             {
 
             }
-            
+
         }
 
         // read the next block of the message
@@ -133,9 +132,9 @@ namespace lib60870.linklayer
             catch (TimeoutException)
             {
             }
-            catch(IOException ex)
+            catch (IOException ex)
             {
-                DebugLog("READ: IOException - " + ex.Message);	
+                DebugLog("READ: IOException - " + ex.Message);
             }
             catch (UnauthorizedAccessException)
             {
@@ -153,7 +152,7 @@ namespace lib60870.linklayer
 
         private event EventHandler accessDenied = null;
 
-        public void AddPortDeniedHandler (EventHandler eventHandler)
+        public void AddPortDeniedHandler(EventHandler eventHandler)
         {
             accessDenied += eventHandler;
         }

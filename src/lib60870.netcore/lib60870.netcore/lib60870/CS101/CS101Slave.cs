@@ -1,7 +1,7 @@
 ﻿/*
  *  CS101Slave.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2016-2024 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -21,12 +21,11 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-using System.IO.Ports;
-using System.Collections.Generic;
-using lib60870;
 using lib60870.linklayer;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Ports;
 
 namespace lib60870
 {
@@ -47,10 +46,10 @@ namespace lib60870
                     Console.WriteLine(msg);
                 }
             }
-				
+
             /********************************************
-			 * IASDUSender
-			 ********************************************/
+             * IASDUSender
+             ********************************************/
 
             void IMasterConnection.SendASDU(ASDU asdu)
             {
@@ -79,8 +78,8 @@ namespace lib60870
             }
 
             /********************************************
-			 * ISecondaryApplicationLayer
-			 ********************************************/
+             * ISecondaryApplicationLayer
+             ********************************************/
 
             bool ISecondaryApplicationLayer.IsClass1DataAvailable()
             {
@@ -109,7 +108,6 @@ namespace lib60870
 
             void ISecondaryApplicationLayer.ResetCUReceived(bool onlyFcb)
             {
-                //TODO delete data queues
                 lock (userDataClass1Queue)
                 {
                     userDataClass1Queue.Clear();
@@ -121,10 +119,8 @@ namespace lib60870
             }
 
             /********************************************
-			 * END ISecondaryApplicationLayer
-			 ********************************************/
-
-            //			private bool sendLinkLayerTestFunction = false;
+             * END ISecondaryApplicationLayer
+             ********************************************/
 
             private LinkLayer linkLayer = null;
 
@@ -138,7 +134,7 @@ namespace lib60870
 
             private int linkLayerAddress = 0;
             private int linkLayerAddressOtherStation;
-            // link layer address of other station in balanced mode
+            /* link layer address of other station in balanced mode */
 
             private Queue<BufferFrame> userDataClass1Queue = new Queue<BufferFrame>();
             private int userDataClass1QueueMaxSize = 100;
@@ -163,7 +159,7 @@ namespace lib60870
             {
                 get
                 {
-                    return this.parameters;
+                    return parameters;
                 }
                 set
                 {
@@ -195,7 +191,7 @@ namespace lib60870
             {
                 get
                 {
-                    return this.linkLayerMode;
+                    return linkLayerMode;
                 }
                 set
                 {
@@ -336,7 +332,7 @@ namespace lib60870
             {
                 get
                 {
-                    return this.linkLayerAddress;
+                    return linkLayerAddress;
                 }
                 set
                 {
@@ -352,7 +348,7 @@ namespace lib60870
             {
                 get
                 {
-                    return this.linkLayerAddressOtherStation;
+                    return linkLayerAddressOtherStation;
                 }
                 set
                 {
@@ -407,10 +403,8 @@ namespace lib60870
                 EnqueueUserDataClass1(asdu);
             }
 
-
             private bool HandleApplicationLayer(int address, byte[] msg, int userDataStart, int userDataLength)
             {
-
                 ASDU asdu;
 
                 try
@@ -427,19 +421,18 @@ namespace lib60870
 
                 switch (asdu.TypeId)
                 {
-
                     case TypeID.C_IC_NA_1: /* 100 - interrogation command */
 
                         DebugLog("Rcvd interrogation command C_IC_NA_1");
 
                         if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.DEACTIVATION))
                         {
-                            if (this.interrogationHandler != null)
+                            if (interrogationHandler != null)
                             {
 
                                 InterrogationCommand irc = (InterrogationCommand)asdu.GetElement(0);
 
-                                if (this.interrogationHandler(this.InterrogationHandlerParameter, this, asdu, irc.QOI))
+                                if (interrogationHandler(InterrogationHandlerParameter, this, asdu, irc.QOI))
                                     messageHandled = true;
                             }
                         }
@@ -447,7 +440,7 @@ namespace lib60870
                         {
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
-                            this.SendASDU(asdu);
+                            SendASDU(asdu);
                         }
 
                         break;
@@ -458,12 +451,12 @@ namespace lib60870
 
                         if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.DEACTIVATION))
                         {
-                            if (this.counterInterrogationHandler != null)
+                            if (counterInterrogationHandler != null)
                             {
 
                                 CounterInterrogationCommand cic = (CounterInterrogationCommand)asdu.GetElement(0);
 
-                                if (this.counterInterrogationHandler(this.counterInterrogationHandlerParameter, this, asdu, cic.QCC))
+                                if (counterInterrogationHandler(counterInterrogationHandlerParameter, this, asdu, cic.QCC))
                                     messageHandled = true;
                             }
                         }
@@ -471,7 +464,7 @@ namespace lib60870
                         {
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
-                            this.SendASDU(asdu);
+                            SendASDU(asdu);
                         }
 
                         break;
@@ -485,11 +478,11 @@ namespace lib60870
 
                             DebugLog("Read request for object: " + asdu.Ca);
 
-                            if (this.readHandler != null)
+                            if (readHandler != null)
                             {
                                 ReadCommand rc = (ReadCommand)asdu.GetElement(0);
 
-                                if (this.readHandler(this.readHandlerParameter, this, asdu, rc.ObjectAddress))
+                                if (readHandler(readHandlerParameter, this, asdu, rc.ObjectAddress))
                                     messageHandled = true;
 
                             }
@@ -499,7 +492,7 @@ namespace lib60870
                         {
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
-                            this.SendASDU(asdu);
+                            SendASDU(asdu);
                         }
 
                         break;
@@ -511,12 +504,12 @@ namespace lib60870
                         if (asdu.Cot == CauseOfTransmission.ACTIVATION)
                         {
 
-                            if (this.clockSynchronizationHandler != null)
+                            if (clockSynchronizationHandler != null)
                             {
 
                                 ClockSynchronizationCommand csc = (ClockSynchronizationCommand)asdu.GetElement(0);
 
-                                if (this.clockSynchronizationHandler(this.clockSynchronizationHandlerParameter,
+                                if (clockSynchronizationHandler(clockSynchronizationHandlerParameter,
                                     this, asdu, csc.NewTime))
                                     messageHandled = true;
                             }
@@ -526,7 +519,7 @@ namespace lib60870
                         {
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
-                            this.SendASDU(asdu);
+                            SendASDU(asdu);
                         }
 
                         break;
@@ -543,7 +536,7 @@ namespace lib60870
                         else
                             asdu.Cot = CauseOfTransmission.ACTIVATION_CON;
 
-                        this.SendASDU(asdu);
+                        SendASDU(asdu);
 
                         messageHandled = true;
 
@@ -556,12 +549,12 @@ namespace lib60870
                         if (asdu.Cot == CauseOfTransmission.ACTIVATION)
                         {
 
-                            if (this.resetProcessHandler != null)
+                            if (resetProcessHandler != null)
                             {
 
                                 ResetProcessCommand rpc = (ResetProcessCommand)asdu.GetElement(0);
 
-                                if (this.resetProcessHandler(this.resetProcessHandlerParameter,
+                                if (resetProcessHandler(resetProcessHandlerParameter,
                                     this, asdu, rpc.QRP))
                                     messageHandled = true;
                             }
@@ -571,7 +564,7 @@ namespace lib60870
                         {
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
-                            this.SendASDU(asdu);
+                            SendASDU(asdu);
                         }
 
 
@@ -583,12 +576,12 @@ namespace lib60870
 
                         if ((asdu.Cot == CauseOfTransmission.ACTIVATION) || (asdu.Cot == CauseOfTransmission.SPONTANEOUS))
                         {
-                            if (this.delayAcquisitionHandler != null)
+                            if (delayAcquisitionHandler != null)
                             {
 
                                 DelayAcquisitionCommand dac = (DelayAcquisitionCommand)asdu.GetElement(0);
 
-                                if (this.delayAcquisitionHandler(this.delayAcquisitionHandlerParameter,
+                                if (delayAcquisitionHandler(delayAcquisitionHandlerParameter,
                                     this, asdu, dac.Delay))
                                     messageHandled = true;
                             }
@@ -597,7 +590,7 @@ namespace lib60870
                         {
                             asdu.Cot = CauseOfTransmission.UNKNOWN_CAUSE_OF_TRANSMISSION;
                             asdu.IsNegative = true;
-                            this.SendASDU(asdu);
+                            SendASDU(asdu);
                         }
 
                         break;
@@ -607,15 +600,15 @@ namespace lib60870
                 if (messageHandled == false)
                     messageHandled = fileServer.HandleFileAsdu(asdu);
 
-                if ((messageHandled == false) && (this.asduHandler != null))
-                if (this.asduHandler(this.asduHandlerParameter, this, asdu))
-                    messageHandled = true;
+                if ((messageHandled == false) && (asduHandler != null))
+                    if (asduHandler(asduHandlerParameter, this, asdu))
+                        messageHandled = true;
 
                 if (messageHandled == false)
                 {
                     asdu.Cot = CauseOfTransmission.UNKNOWN_TYPE_ID;
                     asdu.IsNegative = true;
-                    this.SendASDU(asdu);
+                    SendASDU(asdu);
                 }
 
                 return true;
@@ -647,7 +640,7 @@ namespace lib60870
             {
                 if (initialized == false)
                 {
-				
+
                     linkLayer = new LinkLayer(buffer, linkLayerParameters, transceiver, DebugLog);
                     linkLayer.LinkLayerMode = linkLayerMode;
 
@@ -702,22 +695,42 @@ namespace lib60870
                     port.Close();
             }
 
-            public override int FileTimeout 
+            public override int FileTimeout
             {
-                get {
+                get
+                {
                     if (fileServer != null)
                         return (int)fileServer.Timeout;
                     else
                         return 0;
                 }
 
-                set {
+                set
+                {
                     if (fileServer != null)
                         fileServer.Timeout = value;
                 }
             }
 
-        }
+            /// <summary>
+            /// Sets the raw message handler for received messages
+            /// </summary>
+            /// <param name="handler">Handler/delegate that will be invoked when a message is received</param>
+            /// <param name="parameter">will be passed to the delegate</param>
+            public void SetReceivedRawMessageHandler(RawMessageHandler handler, object parameter)
+            {
+                linkLayer.SetReceivedRawMessageHandler(handler, parameter);
+            }
 
+            /// <summary>
+            /// Sets the sent message handler for sent messages.
+            /// </summary>
+            /// <param name="handler">Handler/delegate that will be invoked when a message is sent<</param>
+            /// <param name="parameter">will be passed to the delegate</param>
+            public void SetSentRawMessageHandler(RawMessageHandler handler, object parameter)
+            {
+                linkLayer.SetSentRawMessageHandler(handler, parameter);
+            }
+        }
     }
 }

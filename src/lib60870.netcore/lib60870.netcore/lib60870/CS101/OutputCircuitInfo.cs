@@ -1,7 +1,7 @@
 /*
  *  OutputCircuitInfo.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -21,7 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
 using System.Text;
 
 namespace lib60870.CS101
@@ -40,7 +39,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.encodedValue;
+                return encodedValue;
             }
             set
             {
@@ -50,7 +49,28 @@ namespace lib60870.CS101
 
         public OutputCircuitInfo()
         {
-            this.encodedValue = 0;
+            encodedValue = 0;
+        }
+
+        public OutputCircuitInfo(OutputCircuitInfo original)
+        {
+            encodedValue = original.encodedValue;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is OutputCircuitInfo))
+                return false;
+
+            return (encodedValue == ((OutputCircuitInfo)obj).encodedValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return encodedValue.GetHashCode();
         }
 
         public OutputCircuitInfo(byte encodedValue)

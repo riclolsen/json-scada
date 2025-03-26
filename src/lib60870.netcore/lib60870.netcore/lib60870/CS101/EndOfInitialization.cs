@@ -1,7 +1,7 @@
 ﻿/*
  *  EndOfInitialization.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -20,8 +20,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
 
 namespace lib60870.CS101
 {
@@ -74,6 +72,11 @@ namespace lib60870.CS101
             this.coi = coi;
         }
 
+        public EndOfInitialization(EndOfInitialization original)
+            : base(original.ObjectAddress)
+        {
+            coi = original.coi;
+        }
 
         internal EndOfInitialization(ApplicationLayerParameters parameters, byte[] msg, int startIndex)
             : base(parameters, msg, startIndex, false)

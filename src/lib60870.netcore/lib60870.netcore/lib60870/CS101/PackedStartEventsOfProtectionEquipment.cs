@@ -1,7 +1,7 @@
 /*
  *  PackedStartEventsOfProtectionEquipment.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -20,9 +20,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
-using System.Collections.Generic;
 
 namespace lib60870.CS101
 {
@@ -76,7 +73,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.elapsedTime;
+                return elapsedTime;
             }
         }
 
@@ -86,7 +83,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -97,6 +94,15 @@ namespace lib60870.CS101
             this.qdp = qdp;
             this.elapsedTime = elapsedTime;
             this.timestamp = timestamp;
+        }
+
+        public PackedStartEventsOfProtectionEquipment(PackedStartEventsOfProtectionEquipment original)
+            : base(original.ObjectAddress)
+        {
+            spe = new StartEvent(original.spe);
+            qdp = new QualityDescriptorP(original.qdp);
+            elapsedTime = new CP16Time2a(original.elapsedTime);
+            timestamp = new CP24Time2a(original.timestamp);
         }
 
         internal PackedStartEventsOfProtectionEquipment(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -181,7 +187,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.elapsedTime;
+                return elapsedTime;
             }
         }
 
@@ -191,7 +197,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -202,6 +208,15 @@ namespace lib60870.CS101
             this.qdp = qdp;
             this.elapsedTime = elapsedTime;
             this.timestamp = timestamp;
+        }
+
+        public PackedStartEventsOfProtectionEquipmentWithCP56Time2a(PackedStartEventsOfProtectionEquipmentWithCP56Time2a original)
+            : base(original.ObjectAddress)
+        {
+            spe = new StartEvent(original.spe);
+            qdp = new QualityDescriptorP(original.qdp);
+            elapsedTime = new CP16Time2a(original.elapsedTime);
+            timestamp = new CP56Time2a(original.timestamp);
         }
 
         internal PackedStartEventsOfProtectionEquipmentWithCP56Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)

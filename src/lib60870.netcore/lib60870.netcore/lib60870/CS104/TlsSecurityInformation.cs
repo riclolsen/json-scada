@@ -1,5 +1,5 @@
 ﻿/*
- *  Copyright 2016-2019 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -19,11 +19,10 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
-using System.Security.Authentication;
 using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace lib60870.CS104
 {
@@ -55,7 +54,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.chainValidation;
+                return chainValidation;
             }
             set
             {
@@ -71,7 +70,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.allowOnlySpecificCertificates;
+                return allowOnlySpecificCertificates;
             }
             set
             {
@@ -102,7 +101,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.ownCertificate;
+                return ownCertificate;
             }
             set
             {
@@ -114,7 +113,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.otherCertificates;
+                return otherCertificates;
             }
             set
             {
@@ -126,7 +125,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.caCertificates;
+                return caCertificates;
             }
         }
 
@@ -134,7 +133,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.targetHostName;
+                return targetHostName;
             }
         }
 
@@ -164,13 +163,13 @@ namespace lib60870.CS104
         /// Gets or sets the certificate validation callback.
         /// </summary>
         /// <value>The certificate validation callback, or null to use the library internal certificate validation callbacks</value>
-        public RemoteCertificateValidationCallback CertificateValidationCallback 
+        public RemoteCertificateValidationCallback CertificateValidationCallback
         {
-            get 
+            get
             {
                 return certificateValidationCallback;
             }
-            set 
+            set
             {
                 certificateValidationCallback = value;
             }

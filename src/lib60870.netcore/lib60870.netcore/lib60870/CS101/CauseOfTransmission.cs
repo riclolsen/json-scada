@@ -1,7 +1,7 @@
 /*
  *  CauseOfTransmission.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -20,13 +20,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
-
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 
 namespace lib60870.CS101
 {
@@ -47,7 +40,7 @@ namespace lib60870.CS101
         ACTIVATION_TERMINATION = 10,
         RETURN_INFO_REMOTE = 11,
         RETURN_INFO_LOCAL = 12,
-        FILE_TRANSFER =	13,
+        FILE_TRANSFER = 13,
         AUTHENTICATION = 14,
         MAINTENANCE_OF_AUTH_SESSION_KEY = 15,
         MAINTENANCE_OF_USER_ROLE_AND_UPDATE_KEY = 16,
@@ -74,9 +67,9 @@ namespace lib60870.CS101
         REQUESTED_BY_GROUP_3_COUNTER = 40,
         REQUESTED_BY_GROUP_4_COUNTER = 41,
         UNKNOWN_TYPE_ID = 44,
-        UNKNOWN_CAUSE_OF_TRANSMISSION =	45,
+        UNKNOWN_CAUSE_OF_TRANSMISSION = 45,
         UNKNOWN_COMMON_ADDRESS_OF_ASDU = 46,
         UNKNOWN_INFORMATION_OBJECT_ADDRESS = 47
     }
-	
+
 }

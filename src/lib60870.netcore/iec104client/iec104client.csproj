@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\lib60870.netcore\lib60870.netcore.csproj" />
+    <PackageReference Include="MongoDB.Driver" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Driver" Version="3.0.0" />
+    <ProjectReference Include="..\lib60870.netcore\lib60870\lib60870.csproj" />
   </ItemGroup>
 
 

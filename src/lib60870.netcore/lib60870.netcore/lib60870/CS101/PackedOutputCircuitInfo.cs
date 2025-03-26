@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -18,8 +18,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
 
 namespace lib60870.CS101
 {
@@ -53,7 +51,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.oci;
+                return oci;
             }
         }
 
@@ -63,7 +61,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.qdp;
+                return qdp;
             }
         }
 
@@ -73,7 +71,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.operatingTime;
+                return operatingTime;
             }
         }
 
@@ -83,7 +81,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -94,6 +92,15 @@ namespace lib60870.CS101
             this.qdp = qdp;
             this.operatingTime = operatingTime;
             this.timestamp = timestamp;
+        }
+
+        public PackedOutputCircuitInfo(PackedOutputCircuitInfo original)
+            : base(original.ObjectAddress)
+        {
+            oci = new OutputCircuitInfo(original.oci);
+            qdp = new QualityDescriptorP(original.qdp);
+            operatingTime = new CP16Time2a(operatingTime);
+            timestamp = new CP24Time2a(timestamp);
         }
 
         internal PackedOutputCircuitInfo(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -159,7 +166,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.oci;
+                return oci;
             }
         }
 
@@ -169,7 +176,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.qdp;
+                return qdp;
             }
         }
 
@@ -179,7 +186,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.operatingTime;
+                return operatingTime;
             }
         }
 
@@ -189,7 +196,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -201,6 +208,15 @@ namespace lib60870.CS101
             this.qdp = qdp;
             this.operatingTime = operatingTime;
             this.timestamp = timestamp;
+        }
+
+        public PackedOutputCircuitInfoWithCP56Time2a(PackedOutputCircuitInfoWithCP56Time2a original)
+            : base(original.ObjectAddress)
+        {
+            oci = new OutputCircuitInfo(original.oci);
+            qdp = new QualityDescriptorP(original.qdp);
+            operatingTime = new CP16Time2a(operatingTime);
+            timestamp = new CP56Time2a(timestamp);
         }
 
         internal PackedOutputCircuitInfoWithCP56Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)

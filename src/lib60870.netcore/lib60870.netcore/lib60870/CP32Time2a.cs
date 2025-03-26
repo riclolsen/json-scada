@@ -1,7 +1,7 @@
 ﻿/*
  *  CP32Time2a.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -21,12 +21,10 @@
  *  See COPYING file for the complete license text.
  */
 
-
 using System;
 
 namespace lib60870
 {
-
     public class CP32Time2a
     {
         private byte[] encodedValue = new byte[4];
@@ -62,6 +60,28 @@ namespace lib60870
         {
             for (int i = 0; i < 4; i++)
                 encodedValue[i] = 0;
+        }
+
+        public CP32Time2a(CP32Time2a original)
+        {
+            for (int i = 0; i < 4; i++)
+                encodedValue[i] = original.encodedValue[i];
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is CP32Time2a))
+                return false;
+
+            return (GetHashCode() == obj.GetHashCode());
+        }
+
+        public override int GetHashCode()
+        {
+            return new System.Numerics.BigInteger(encodedValue).GetHashCode();
         }
 
         /// <summary>
@@ -110,7 +130,7 @@ namespace lib60870
         {
             get
             {
-                return  (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
+                return (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
             }
 
             set

@@ -1,5 +1,5 @@
 ﻿/*
- *  Copyright 2018 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -21,13 +21,12 @@
 
 using System;
 using System.IO;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace lib60870.linklayer
 {
-
     /// <summary>
     /// Connection event handler. Can be used to track connections and accept/deny specific clients.
     /// </summary>
@@ -35,7 +34,7 @@ namespace lib60870.linklayer
     /// <param name="ipAddress">IP address of the client</param>
     /// <param name="connect">true when client is connecting, false when disconnected</param>
     /// <returns>true when connection is accepted, false otherwise</returns>
-    public delegate bool TcpConnectionEventHandler(object parameter,IPAddress ipAddress,bool connect);
+    public delegate bool TcpConnectionEventHandler(object parameter, IPAddress ipAddress, bool connect);
 
     public class TcpServerVirtualSerialPort : Stream
     {
@@ -69,7 +68,7 @@ namespace lib60870.linklayer
         {
             get
             {
-                return this.debugOutput;
+                return debugOutput;
             }
             set
             {
@@ -83,8 +82,8 @@ namespace lib60870.linklayer
 
         public void SetConnectionRequestHandler(TcpConnectionEventHandler handler, object parameter)
         {
-            this.connectionEventHandler = handler;
-            this.connectionEventHandlerParameter = parameter;
+            connectionEventHandler = handler;
+            connectionEventHandlerParameter = parameter;
         }
 
         /// <summary>
@@ -177,7 +176,7 @@ namespace lib60870.linklayer
                 IPEndPoint localEP = new IPEndPoint(ipAddress, localPort);
 
                 // Create a TCP/IP  socket.
-                listeningSocket = new Socket(AddressFamily.InterNetwork, 
+                listeningSocket = new Socket(AddressFamily.InterNetwork,
                     SocketType.Stream, ProtocolType.Tcp);
 
                 listeningSocket.Bind(localEP);
@@ -204,8 +203,8 @@ namespace lib60870.linklayer
 
 
         /*************************
-		 * Stream implementation 
-		 */
+         * Stream implementation 
+         */
 
         public override int Read(byte[] buffer, int offset, int count)
         {

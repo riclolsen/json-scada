@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -65,17 +65,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return (float)(scaledValue.Value + 0.5) / (float)32767.5;
+                return scaledValue.GetNormalizedValue();
             }
             set
             {
-                /* Check value range */
-                if (value > 1.0f)
-                    value = 1.0f;
-                else if (value < -1.0f)
-                    value = -1.0f;
-
-                this.scaledValue.Value = (int)((value * 32767.5) - 0.5);
+                scaledValue.SetScaledFromNormalizedValue(value);
             }
         }
 
@@ -92,14 +86,14 @@ namespace lib60870.CS101
         public SetpointCommandNormalized(int objectAddress, float value, SetpointCommandQualifier qos)
             : base(objectAddress)
         {
-            this.scaledValue = new ScaledValue((int)((value * 32767.5) - 0.5));
+            scaledValue = new ScaledValue((int)((value * 32767.5) - 0.5));
             this.qos = qos;
         }
 
         public SetpointCommandNormalized(int ObjectAddress, short value, SetpointCommandQualifier qos)
             : base(ObjectAddress)
         {
-            this.scaledValue = new ScaledValue(value);
+            scaledValue = new ScaledValue(value);
             this.qos = qos;
         }
 
@@ -114,7 +108,7 @@ namespace lib60870.CS101
             scaledValue = new ScaledValue(msg, startIndex);
             startIndex += 2;
 
-            this.qos = new SetpointCommandQualifier(msg[startIndex++]);
+            qos = new SetpointCommandQualifier(msg[startIndex++]);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
@@ -123,7 +117,7 @@ namespace lib60870.CS101
 
             frame.AppendBytes(scaledValue.GetEncodedValue());
 
-            frame.SetNextByte(this.qos.GetEncodedValue());
+            frame.SetNextByte(qos.GetEncodedValue());
         }
     }
 
@@ -182,14 +176,14 @@ namespace lib60870.CS101
 
             startIndex += 3; /* normalized value + qualifier */
 
-            this.timestamp = new CP56Time2a(msg, startIndex);
+            timestamp = new CP56Time2a(msg, startIndex);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
         {
             base.Encode(frame, parameters, isSequence);
 
-            frame.AppendBytes(this.timestamp.GetEncodedValue());
+            frame.AppendBytes(timestamp.GetEncodedValue());
         }
     }
 
@@ -239,7 +233,7 @@ namespace lib60870.CS101
         public SetpointCommandScaled(int objectAddress, ScaledValue value, SetpointCommandQualifier qos)
             : base(objectAddress)
         {
-            this.scaledValue = value;
+            scaledValue = value;
             this.qos = qos;
         }
 
@@ -254,16 +248,16 @@ namespace lib60870.CS101
             scaledValue = new ScaledValue(msg, startIndex);
             startIndex += 2;
 
-            this.qos = new SetpointCommandQualifier(msg[startIndex++]);
+            qos = new SetpointCommandQualifier(msg[startIndex++]);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
         {
             base.Encode(frame, parameters, isSequence);
 
-            frame.AppendBytes(this.scaledValue.GetEncodedValue());
+            frame.AppendBytes(scaledValue.GetEncodedValue());
 
-            frame.SetNextByte(this.qos.GetEncodedValue());
+            frame.SetNextByte(qos.GetEncodedValue());
         }
     }
 
@@ -316,14 +310,14 @@ namespace lib60870.CS101
 
             startIndex += 3; /* scaled value + qualifier */
 
-            this.timestamp = new CP56Time2a(msg, startIndex);
+            timestamp = new CP56Time2a(msg, startIndex);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
         {
             base.Encode(frame, parameters, isSequence);
 
-            frame.AppendBytes(this.timestamp.GetEncodedValue());
+            frame.AppendBytes(timestamp.GetEncodedValue());
         }
     }
 
@@ -389,7 +383,7 @@ namespace lib60870.CS101
             value = System.BitConverter.ToSingle(msg, startIndex);
             startIndex += 4;
 
-            this.qos = new SetpointCommandQualifier(msg[startIndex++]);
+            qos = new SetpointCommandQualifier(msg[startIndex++]);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
@@ -398,7 +392,7 @@ namespace lib60870.CS101
 
             frame.AppendBytes(System.BitConverter.GetBytes(value));
 
-            frame.SetNextByte(this.qos.GetEncodedValue());
+            frame.SetNextByte(qos.GetEncodedValue());
         }
     }
 
@@ -451,14 +445,14 @@ namespace lib60870.CS101
 
             startIndex += 5; /* skip IOA + float + QOS*/
 
-            this.timestamp = new CP56Time2a(msg, startIndex);
+            timestamp = new CP56Time2a(msg, startIndex);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
         {
             base.Encode(frame, parameters, isSequence);
 
-            frame.AppendBytes(this.timestamp.GetEncodedValue());
+            frame.AppendBytes(timestamp.GetEncodedValue());
         }
     }
 
@@ -492,14 +486,14 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.value;
+                return value;
             }
         }
 
         public Bitstring32Command(int objectAddress, UInt32 bitstring)
             : base(objectAddress)
         {
-            this.value = bitstring;
+            value = bitstring;
         }
 
         internal Bitstring32Command(ApplicationLayerParameters parameters, byte[] msg, int startIndex)
@@ -576,14 +570,14 @@ namespace lib60870.CS101
 
             startIndex += 4; /* bitstring */
 
-            this.timestamp = new CP56Time2a(msg, startIndex);
+            timestamp = new CP56Time2a(msg, startIndex);
         }
 
         public override void Encode(Frame frame, ApplicationLayerParameters parameters, bool isSequence)
         {
             base.Encode(frame, parameters, isSequence);
 
-            frame.AppendBytes(this.timestamp.GetEncodedValue());
+            frame.AppendBytes(timestamp.GetEncodedValue());
         }
     }
 }

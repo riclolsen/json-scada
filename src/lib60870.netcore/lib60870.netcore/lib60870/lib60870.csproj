@@ -1,0 +1,96 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+	<Authors>Michael Zillgith</Authors>
+	<Company>MZ Automation</Company>
+	<PackageId>lib60870</PackageId>
+	<Version>2.3.0</Version>
+    <RootNamespace>lib60870</RootNamespace>
+    <AssemblyName>lib60870</AssemblyName>
+    <ReleaseVersion>2.3.0</ReleaseVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+	<PackageIcon>icon.png</PackageIcon>
+	<Description>
+		lib60870.NET library for IEC 60870-5 based protocols in C#
+		The current implementation contains code for the IEC 60870-5-101/104 protocols only.
+	</Description>
+	<PackageReadmeFile>readme.md</PackageReadmeFile>
+	<PackageOutputPath>nupkg</PackageOutputPath>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ASDUQueue.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CP56Time2a.cs" />
+    <Compile Include="SystemUtils.cs" />
+    <Compile Include="CP24Time2a.cs" />
+    <Compile Include="CP16Time2a.cs" />
+    <Compile Include="Frame.cs" />
+    <Compile Include="LibraryCommon.cs" />
+    <Compile Include="CP32Time2a.cs" />
+    <Compile Include="ASDUParsingException.cs" />
+    <Compile Include="CS101\ApplicationLayerParameters.cs" />
+    <Compile Include="CS101\Bitstring32.cs" />
+    <Compile Include="CS101\ASDU.cs" />
+    <Compile Include="CS101\BinaryCounterReading.cs" />
+    <Compile Include="CS101\CauseOfTransmission.cs" />
+    <Compile Include="CS101\DoublePointInformation.cs" />
+    <Compile Include="CS101\EndOfInitialization.cs" />
+    <Compile Include="CS101\EventOfProtectionEquipment.cs" />
+    <Compile Include="CS101\InformationObject.cs" />
+    <Compile Include="CS101\IntegratedTotals.cs" />
+    <Compile Include="CS101\MeasuredValueNormalized.cs" />
+    <Compile Include="CS101\MeasuredValueScaled.cs" />
+    <Compile Include="CS101\MeasuredValueShort.cs" />
+    <Compile Include="CS101\OutputCircuitInfo.cs" />
+    <Compile Include="CS101\PackedOutputCircuitInfo.cs" />
+    <Compile Include="CS101\PackedStartEventsOfProtectionEquipment.cs" />
+    <Compile Include="CS101\ParameterMeasuredValues.cs" />
+    <Compile Include="CS101\QualityDescriptor.cs" />
+    <Compile Include="CS101\QualityDescriptorP.cs" />
+    <Compile Include="CS101\ScaledValue.cs" />
+    <Compile Include="CS101\SetpointCommandQualifier.cs" />
+    <Compile Include="CS101\SetpointCommands.cs" />
+    <Compile Include="CS101\SingleCommand.cs" />
+    <Compile Include="CS101\SingleCommandQualifier.cs" />
+    <Compile Include="CS101\SingleEvent.cs" />
+    <Compile Include="CS101\SinglePointInformation.cs" />
+    <Compile Include="CS101\StartEvent.cs" />
+    <Compile Include="CS101\StatusAndStatusChangeDetection.cs" />
+    <Compile Include="CS101\StepPositionInformation.cs" />
+    <Compile Include="CS101\SystemInformationCommands.cs" />
+    <Compile Include="CS101\TypeID.cs" />
+    <Compile Include="CS104\APCIParameters.cs" />
+    <Compile Include="CS104\Connection.cs" />
+    <Compile Include="CS104\Server.cs" />
+    <Compile Include="CS104\TlsSecurityInformation.cs" />
+    <Compile Include="CS101\Slave.cs" />
+    <Compile Include="LinkLayer\LinkLayer.cs" />
+    <Compile Include="LinkLayer\PrimaryLinkLayer.cs" />
+    <Compile Include="LinkLayer\SecondaryLinkLayer.cs" />
+    <Compile Include="LinkLayer\SerialTransceiverFT12.cs" />
+    <Compile Include="ConnectionException.cs" />
+    <Compile Include="BufferFrame.cs" />
+    <Compile Include="CS101\CS101Slave.cs" />
+    <Compile Include="CS101\Master.cs" />
+    <Compile Include="LinkLayer\PrimaryLinkLayerBalanced.cs" />
+    <Compile Include="LinkLayer\PrimaryLinkLayerUnbalanced.cs" />
+    <Compile Include="LinkLayer\SecondaryLinkLayerBalanced.cs" />
+    <Compile Include="LinkLayer\SecondaryLinkLayerUnbalanced.cs" />
+    <Compile Include="CS101\FileObjects.cs" />
+    <Compile Include="CS101\FileServices.cs" />
+    <Compile Include="CS101\CS101Master.cs" />
+    <Compile Include="LinkLayer\TcpServerVirtualSerialPort.cs" />
+    <Compile Include="LinkLayer\TcpClientVirtualSerialPort.cs" />
+    <Compile Include="CS104\ClientConnection.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+	<None Include="images\icon.png" Pack="true" PackagePath="\" />
+	<None Include="readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

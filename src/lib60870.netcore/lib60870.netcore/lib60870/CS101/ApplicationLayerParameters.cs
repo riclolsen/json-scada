@@ -1,7 +1,7 @@
 ﻿/*
  *  ApplicationLayerParameters.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2017-2022 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -20,8 +20,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
 
 namespace lib60870.CS101
 {
@@ -71,7 +69,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.sizeOfCOT;
+                return sizeOfCOT;
             }
             set
             {
@@ -83,7 +81,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.originatorAddress;
+                return originatorAddress;
             }
             set
             {
@@ -95,7 +93,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.sizeOfCA;
+                return sizeOfCA;
             }
             set
             {
@@ -107,7 +105,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.sizeOfIOA;
+                return sizeOfIOA;
             }
             set
             {
@@ -120,7 +118,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.sizeOfTypeId;
+                return sizeOfTypeId;
             }
         }
 
@@ -128,7 +126,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.sizeOfVSQ;
+                return sizeOfVSQ;
             }
         }
 
@@ -136,7 +134,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.maxAsduLength;
+                return maxAsduLength;
             }
             set
             {
