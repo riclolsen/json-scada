@@ -43,7 +43,7 @@ dotnet publish --no-self-contained --runtime win-x64 -c Release -o %BINPATH% IEC
 cd %SRCPATH%\iec61850_client
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -p:Platform="Any CPU" -c Release -o %BINPATH%
 
-cd %SRCPATH%\lib60870.netcore\lib60870.netcore\
+cd %SRCPATH%\lib60870.netcore\lib60870.netcore\lib60870\
 dotnet build --no-self-contained --runtime win-x64 -c Release
 dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
 cd %SRCPATH%\lib60870.netcore\iec101client\
