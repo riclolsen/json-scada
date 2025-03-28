@@ -13,6 +13,7 @@ Unicode True
 ; RequestExecutionLevel user
 RequestExecutionLevel admin
 
+;!include "MUI2.nsh"
 !include "TextFunc.nsh"
 !include "WordFunc.nsh"
 !include "x64.nsh"
@@ -20,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.50"
-!define VERSION_ "0.50.0.0"
+!define VERSION "v.0.51"
+!define VERSION_ "0.51.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -55,7 +56,7 @@ VIProductVersion ${VERSION_}
 VIAddVersionKey ProductName "JSON SCADA"
 VIAddVersionKey Comments "SCADA IIoT Software"
 VIAddVersionKey CompanyName "Ricardo Olsen"
-VIAddVersionKey LegalCopyright "Copyright 2020-2024 Ricardo L. Olsen"
+VIAddVersionKey LegalCopyright "Copyright 2020-2025 Ricardo L. Olsen"
 VIAddVersionKey FileDescription "JSON SCADA Installer"
 VIAddVersionKey FileVersion ${VERSION}
 VIAddVersionKey ProductVersion ${VERSION}
@@ -67,7 +68,8 @@ SetDateSave on
 SetDatablockOptimize on
 CRCCheck on
 SilentInstall normal
-BGGradient 000000 000080 FFFFFF
+;BGGradient 000000 000080 FFFFFF
+BGGradient off
 InstallColors FF8080 000030
 XPStyle on
 
@@ -252,7 +254,7 @@ SetRegView 64
   File /a "..\platform-windows\ffmpeg.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-8.0.12-win-x64.exe"
+  File /a "..\platform-windows\dotnet-runtime-8.0.14-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -271,7 +273,7 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.12-win-x64.exe" /install /passive /quiet'
+  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.14-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
@@ -463,11 +465,11 @@ SetRegView 64
   SetOutPath $INSTDIR\src\custom-developments
   File /a    "..\src\custom-developments\README.md"
   SetOutPath $INSTDIR\src\custom-developments\basic_bargraph
-  File /a /r /x "..\src\custom-developments\basic_bargraph\node_modules" "..\src\custom-developments\basic_bargraph\*.*"
+  File /a /r /x node_modules "..\src\custom-developments\basic_bargraph\*.*"
   SetOutPath $INSTDIR\src\custom-developments\advanced_dashboard
-  File /a /r /x "..\src\custom-developments\advanced_dashboard\node_modules" "..\src\custom-developments\advanced_dashboard\*.*"
+  File /a /r /x node_modules "..\src\custom-developments\advanced_dashboard\*.*"
   SetOutPath $INSTDIR\src\custom-developments\transformer_with_command
-  File /a /r /x "..\src\custom-developments\transformer_with_command\node_modules" "..\src\custom-developments\transformer_with_command\*.*"
+  File /a /r /x node_modules "..\src\custom-developments\transformer_with_command\*.*"
 
   SetOutPath $INSTDIR\platform-windows\browser-runtime
   File /a /r "..\platform-windows\browser-runtime\*.*"
