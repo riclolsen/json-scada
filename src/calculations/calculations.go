@@ -33,6 +33,7 @@ import (
 	"time"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
+	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	"github.com/xuri/excelize/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -292,8 +293,8 @@ func __() {
 	f := excelize.NewFile()
 	_ = f
 	driverManager := plc4go.NewPlcDriverManager()
+	drivers.RegisterAdsDriver(driverManager)
 	_ = driverManager
-
 }
 
 func main() {
