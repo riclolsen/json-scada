@@ -1,24 +1,23 @@
 ﻿/*
-  *  Copyright 2016, 2017 MZ Automation GmbH
-  *
-  *  This file is part of lib60870.NET
-  *
-  *  lib60870.NET is free software: you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-  *  the Free Software Foundation, either version 3 of the License, or
-  *  (at your option) any later version.
-  *
-  *  lib60870.NET is distributed in the hope that it will be useful,
-  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  *  GNU General Public License for more details.
-  *
-  *  You should have received a copy of the GNU General Public License
-  *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
-  *
-  *  See COPYING file for the complete license text.
-  */
-
+ *  Copyright 2016-2025 Michael Zillgith
+ *
+ *  This file is part of lib60870.NET
+ *
+ *  lib60870.NET is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  lib60870.NET is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  See COPYING file for the complete license text.
+ */
 
 using System;
 using System.Collections.Generic;
@@ -36,13 +35,9 @@ namespace lib60870.linklayer
         /// <param name="slaveAddress">link layer address of the slave</param>
         bool IsChannelAvailable(int slaveAddress);
 
-
         void RequestClass1Data(int slaveAddress);
 
-
-
         void RequestClass2Data(int slaveAddress);
-
 
         void SendConfirmed(int slaveAddress, BufferFrame message);
 
@@ -54,8 +49,6 @@ namespace lib60870.linklayer
     {
         private LinkLayer linkLayer;
         private Action<string> DebugLog;
-
-        //	private bool waitingForResponse = false;
 
         private List<SlaveConnection> slaveConnections;
 
@@ -120,7 +113,7 @@ namespace lib60870.linklayer
             {
                 this.address = address;
                 this.linkLayer = linkLayer;
-                this.DebugLog = debugLog;
+                DebugLog = debugLog;
                 this.linkLayerUnbalanced = linkLayerUnbalanced;
             }
 
@@ -132,7 +125,7 @@ namespace lib60870.linklayer
                     return false;
             }
 
-            internal void HandleMessage(FunctionCodeSecondary fcs, bool acd, bool dfc, 
+            internal void HandleMessage(FunctionCodeSecondary fcs, bool acd, bool dfc,
                                int addr, byte[] msg, int userDataStart, int userDataLength)
             {
                 PrimaryLinkLayerState newState = primaryState;
@@ -150,7 +143,7 @@ namespace lib60870.linklayer
                             newState = PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK;
                             break;
                         case PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM:
-						//TODO message must be handled and switched to BUSY state later!
+                        //TODO message must be handled and switched to BUSY state later!
                         case PrimaryLinkLayerState.SECONDARY_LINK_LAYER_BUSY:
                             newState = PrimaryLinkLayerState.SECONDARY_LINK_LAYER_BUSY;
                             break;
@@ -178,7 +171,7 @@ namespace lib60870.linklayer
                         if (primaryState == PrimaryLinkLayerState.EXECUTE_RESET_REMOTE_LINK)
                         {
                             newState = PrimaryLinkLayerState.LINK_LAYERS_AVAILABLE;
-					
+
                             SetState(LinkLayerState.AVAILABLE);
                         }
                         else if (primaryState == PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM)
@@ -187,7 +180,7 @@ namespace lib60870.linklayer
                             if (sendLinkLayerTestFunction)
                                 sendLinkLayerTestFunction = false;
 
-                            SetState(LinkLayerState.AVAILABLE);	  
+                            SetState(LinkLayerState.AVAILABLE);
 
                             newState = PrimaryLinkLayerState.LINK_LAYERS_AVAILABLE;
                         }
@@ -207,14 +200,14 @@ namespace lib60870.linklayer
                         break;
 
                     case FunctionCodeSecondary.NACK:
-					
+
                         DebugLog("[SLAVE " + address + "] PLL - received NACK");
-				
+
                         if (primaryState == PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM)
                         {
-					
+
                             SetState(LinkLayerState.BUSY);
-					
+
                             newState = PrimaryLinkLayerState.SECONDARY_LINK_LAYER_BUSY;
                         }
 
@@ -222,12 +215,12 @@ namespace lib60870.linklayer
                         break;
 
                     case FunctionCodeSecondary.STATUS_OF_LINK_OR_ACCESS_DEMAND:
-					
+
                         DebugLog("[SLAVE " + address + "] PLL - received STATUS OF LINK");
 
                         if (primaryState == PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK)
                         {
-						
+
                             DebugLog("[SLAVE " + address + "] PLL - SEND RESET REMOTE LINK");
 
                             linkLayer.SendFixedFramePrimary(FunctionCodePrimary.RESET_REMOTE_LINK, address, false, false);
@@ -242,7 +235,7 @@ namespace lib60870.linklayer
                         else
                         { /* illegal message */
                             newState = PrimaryLinkLayerState.IDLE;
-					
+
                             SetState(LinkLayerState.ERROR);
 
                             waitingForResponse = false;
@@ -251,7 +244,7 @@ namespace lib60870.linklayer
                         break;
 
                     case FunctionCodeSecondary.RESP_USER_DATA:
-					
+
                         DebugLog("[SLAVE " + address + "] PLL - received USER DATA");
 
                         if (primaryState == PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND)
@@ -277,7 +270,7 @@ namespace lib60870.linklayer
                         break;
 
                     case FunctionCodeSecondary.RESP_NACK_NO_DATA:
-					
+
                         DebugLog("[SLAVE " + address + "] PLL - received RESP NO DATA");
 
                         if (primaryState == PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND)
@@ -292,7 +285,7 @@ namespace lib60870.linklayer
                         else
                         { /* illegal message */
                             newState = PrimaryLinkLayerState.IDLE;
-					
+
                             SetState(LinkLayerState.ERROR);
                         }
 
@@ -302,7 +295,7 @@ namespace lib60870.linklayer
 
                     case FunctionCodeSecondary.LINK_SERVICE_NOT_FUNCTIONING:
                     case FunctionCodeSecondary.LINK_SERVICE_NOT_IMPLEMENTED:
-					
+
                         DebugLog("[SLAVE " + address + "] PLL - link layer service not functioning/not implemented in secondary station ");
 
                         if (primaryState == PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM)
@@ -340,13 +333,31 @@ namespace lib60870.linklayer
 
                 switch (primaryState)
                 {
+                    case PrimaryLinkLayerState.TIMEOUT:
+
+                        if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
+                            lastSendTime = currentTime;
+
+                        if (currentTime > (lastSendTime + linkLayer.linkLayerParameters.TimeoutLinkState))
+                        {
+                            newState = PrimaryLinkLayerState.IDLE;
+                        }
+
+                        break;
 
                     case PrimaryLinkLayerState.IDLE:
 
-                        waitingForResponse = false;
                         originalSendTime = 0;
-                        lastSendTime = 0;
                         sendLinkLayerTestFunction = false;
+
+                        DebugLog("[SLAVE " + address + "] PLL - SEND FC 09 - REQUEST LINK STATUS\n");
+
+                        linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);
+
+                        lastSendTime = currentTime;
+                        waitingForResponse = true;
                         newState = PrimaryLinkLayerState.EXECUTE_REQUEST_STATUS_OF_LINK;
 
                         break;
@@ -355,29 +366,30 @@ namespace lib60870.linklayer
 
                         if (waitingForResponse)
                         {
-						
+                            if (lastSendTime > currentTime)
+
+                                /* last sent time not plausible! */
+                                lastSendTime = currentTime;
+
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
-                                linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_LINK_STATUS, address, false, false);
-
-                                lastSendTime = SystemUtils.currentTimeMillis();
+                                waitingForResponse = false;
+                                lastSendTime = currentTime;
+                                newState = PrimaryLinkLayerState.TIMEOUT;
                             }
 
                         }
                         else
                         {
-						
+
                             DebugLog("[SLAVE " + address + "] PLL - SEND RESET REMOTE LINK");
 
                             linkLayer.SendFixedFramePrimary(FunctionCodePrimary.RESET_REMOTE_LINK, address, false, false);
 
                             lastSendTime = currentTime;
-                            originalSendTime = lastSendTime;
                             waitingForResponse = true;
-
                             nextFcb = true;
-
-                            newState = PrimaryLinkLayerState.EXECUTE_RESET_REMOTE_LINK; 
+                            newState = PrimaryLinkLayerState.EXECUTE_RESET_REMOTE_LINK;
                         }
 
                         break;
@@ -386,10 +398,16 @@ namespace lib60870.linklayer
 
                         if (waitingForResponse)
                         {
+                            if (lastSendTime > currentTime)
+
+                                /* last sent time not plausible! */
+                                lastSendTime = currentTime;
+
                             if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                             {
                                 waitingForResponse = false;
-                                newState = PrimaryLinkLayerState.IDLE;
+                                lastSendTime = currentTime;
+                                newState = PrimaryLinkLayerState.TIMEOUT;
 
                                 SetState(LinkLayerState.ERROR);
                             }
@@ -413,7 +431,7 @@ namespace lib60870.linklayer
 
                             nextFcb = !nextFcb;
                             lastSendTime = currentTime;
-                            originalSendTime = lastSendTime;
+                            originalSendTime = currentTime;
                             waitingForResponse = true;
 
                             newState = PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM;
@@ -426,18 +444,21 @@ namespace lib60870.linklayer
                                 DebugLog("[SLAVE " + address + "] PLL - SEND FC 10 - REQ UD 1");
 
                                 linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_USER_DATA_CLASS_1, address, nextFcb, true);
+
+                                requestClass1Data = false;
                             }
                             else
                             {
                                 DebugLog("[SLAVE " + address + "] PLL - SEND FC 11 - REQ UD 2");
 
                                 linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_USER_DATA_CLASS_2, address, nextFcb, true);
+
+                                requestClass2Data = false;
                             }
 
                             nextFcb = !nextFcb;
-
                             lastSendTime = currentTime;
-                            originalSendTime = lastSendTime;
+                            originalSendTime = currentTime;
                             waitingForResponse = true;
                             newState = PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND;
                         }
@@ -456,14 +477,12 @@ namespace lib60870.linklayer
 
                                     linkLayer.SendVariableLengthFramePrimary(FunctionCodePrimary.USER_DATA_CONFIRMED, address, nextFcb, true, asdu);
 
-                                    lastSentASDU = nextMessage;
-                                    nextMessage = null;
-
+                                    //lastSentASDU = nextMessage;
+                                    //nextMessage = null;
 
                                     nextFcb = !nextFcb;
-
                                     lastSendTime = currentTime;
-                                    originalSendTime = lastSendTime;
+                                    originalSendTime = currentTime;
                                     waitingForResponse = true;
 
                                     newState = PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM;
@@ -475,13 +494,21 @@ namespace lib60870.linklayer
 
                     case PrimaryLinkLayerState.EXECUTE_SERVICE_SEND_CONFIRM:
 
+                        if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
+                            lastSendTime = currentTime;
+
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                         {
 
                             if (currentTime > (originalSendTime + linkLayer.TimeoutRepeat))
                             {
                                 DebugLog("[SLAVE " + address + "] TIMEOUT SC: ASDU not confirmed after repeated transmission");
-                                newState = PrimaryLinkLayerState.IDLE;
+
+                                waitingForResponse = false;
+                                lastSendTime = currentTime;
+                                newState = PrimaryLinkLayerState.TIMEOUT;
 
                                 SetState(LinkLayerState.ERROR);
                             }
@@ -495,7 +522,7 @@ namespace lib60870.linklayer
                                     DebugLog("[SLAVE " + address + "] PLL - SEND FC 02 - RESET REMOTE LINK [REPEAT]");
 
                                     linkLayer.SendFixedFramePrimary(FunctionCodePrimary.TEST_FUNCTION_FOR_LINK, address, !nextFcb, true);
-							
+
                                 }
                                 else
                                 {
@@ -503,7 +530,7 @@ namespace lib60870.linklayer
                                     DebugLog("[SLAVE " + address + "] PLL - SEND FC 03 - USER DATA CONFIRMED [REPEAT]");
 
                                     linkLayer.SendVariableLengthFramePrimary(FunctionCodePrimary.USER_DATA_CONFIRMED, address, !nextFcb, true, lastSentASDU);
-							
+
                                 }
 
                                 lastSendTime = currentTime;
@@ -513,6 +540,11 @@ namespace lib60870.linklayer
                         break;
 
                     case PrimaryLinkLayerState.EXECUTE_SERVICE_REQUEST_RESPOND:
+
+                        if (lastSendTime > currentTime)
+
+                            /* last sent time not plausible! */
+                            lastSendTime = currentTime;
 
                         if (currentTime > (lastSendTime + linkLayer.TimeoutForACK))
                         {
@@ -543,7 +575,7 @@ namespace lib60870.linklayer
 
                                     linkLayer.SendFixedFramePrimary(FunctionCodePrimary.REQUEST_USER_DATA_CLASS_2, address, !nextFcb, true);
                                 }
-								
+
                                 lastSendTime = currentTime;
                             }
                         }
@@ -551,7 +583,7 @@ namespace lib60870.linklayer
                         break;
 
                     case PrimaryLinkLayerState.SECONDARY_LINK_LAYER_BUSY:
-					//TODO - reject new requests from application layer?
+                        //TODO - reject new requests from application layer?
                         break;
 
                 }
@@ -565,12 +597,12 @@ namespace lib60870.linklayer
         }
 
         /********************************
-		 * IPrimaryLinkLayerUnbalanced
-		 ********************************/
+         * IPrimaryLinkLayerUnbalanced
+         ********************************/
 
 
         public void ResetCU(int slaveAddress)
-        {				
+        {
             SlaveConnection slave = GetSlaveConnection(slaveAddress);
 
             if (slave != null)
@@ -663,8 +695,8 @@ namespace lib60870.linklayer
         {
             this.linkLayer = linkLayer;
             this.callbacks = callbacks;
-            this.DebugLog = debugLog;
-            this.slaveConnections = new List<SlaveConnection>();
+            DebugLog = debugLog;
+            slaveConnections = new List<SlaveConnection>();
         }
 
         private SlaveConnection GetSlaveConnection(int slaveAddres)
@@ -687,7 +719,7 @@ namespace lib60870.linklayer
         }
 
         public LinkLayerState GetStateOfSlave(int slaveAddress)
-        {	
+        {
             SlaveConnection connection = GetSlaveConnection(slaveAddress);
 
             if (connection != null)
@@ -696,7 +728,7 @@ namespace lib60870.linklayer
                 throw new ArgumentException("No slave with this address found");
         }
 
-        public override void HandleMessage(FunctionCodeSecondary fcs, bool acd, bool dfc, 
+        public override void HandleMessage(FunctionCodeSecondary fcs, bool acd, bool dfc,
                                      int address, byte[] msg, int userDataStart, int userDataLength)
         {
             SlaveConnection slave = null;

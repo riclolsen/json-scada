@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -27,7 +27,6 @@ namespace lib60870.CS101
 
     public class StatusAndStatusChangeDetection
     {
-
         public UInt16 STn
         {
             get
@@ -59,7 +58,7 @@ namespace lib60870.CS101
         public bool ST(int i)
         {
             if ((i >= 0) && (i < 16))
-                return ((int)(STn & (1 << i)) != 0);
+                return ((STn & (1 << i)) != 0);
             else
                 return false;
         }
@@ -78,7 +77,7 @@ namespace lib60870.CS101
         public bool CD(int i)
         {
             if ((i >= 0) && (i < 16))
-                return ((int)(CDn & (1 << i)) != 0);
+                return ((CDn & (1 << i)) != 0);
             else
                 return false;
         }
@@ -96,6 +95,12 @@ namespace lib60870.CS101
 
         public StatusAndStatusChangeDetection()
         {
+        }
+
+        public StatusAndStatusChangeDetection(StatusAndStatusChangeDetection original)
+        {
+            STn = original.STn;
+            CDn = original.CDn;
         }
 
         public StatusAndStatusChangeDetection(byte[] msg, int startIndex)

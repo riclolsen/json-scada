@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -65,17 +65,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return (float)(scaledValue.Value + 0.5) / (float)32767.5;
+                return scaledValue.GetNormalizedValue();
             }
             set
             {
-                /* Check value range */
-                if (value > 1.0f)
-                    value = 1.0f;
-                else if (value < -1.0f)
-                    value = -1.0f;
-
-                this.scaledValue.Value = (int)((value * 32767.5) - 0.5);
+                scaledValue.SetScaledFromNormalizedValue(value);
             }
         }
 
@@ -94,7 +88,7 @@ namespace lib60870.CS101
         {
             scaledValue = new ScaledValue();
 
-            this.NormalizedValue = normalizedValue;
+            NormalizedValue = normalizedValue;
 
             this.qpm = qpm;
         }
@@ -240,7 +234,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.value;
+                return value;
             }
         }
 

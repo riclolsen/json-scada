@@ -1,7 +1,7 @@
 /*
  *  CP24Time2a.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -21,8 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-
 namespace lib60870
 {
     public class CP24Time2a
@@ -38,17 +36,39 @@ namespace lib60870
                 encodedValue[i] = msg[startIndex + i];
         }
 
+        public CP24Time2a(int minute, int second, int millisecond)
+        {
+            Millisecond = millisecond;
+            Second = second;
+            Minute = minute;
+        }
+
         public CP24Time2a()
         {
             for (int i = 0; i < 3; i++)
                 encodedValue[i] = 0;
         }
 
-        public CP24Time2a(int minute, int second, int millisecond)
+        public CP24Time2a(CP24Time2a original)
         {
-            Millisecond = millisecond;
-            Second = second;
-            Minute = minute;
+            for (int i = 0; i < 3; i++)
+                encodedValue[i] = original.encodedValue[i];
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is CP24Time2a))
+                return false;
+
+            return (GetHashCode() == obj.GetHashCode());
+        }
+
+        public override int GetHashCode()
+        {
+            return new System.Numerics.BigInteger(encodedValue).GetHashCode();
         }
 
         /// <summary>
@@ -91,7 +111,7 @@ namespace lib60870
         {
             get
             {
-                return  (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
+                return (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
             }
 
             set
@@ -174,7 +194,7 @@ namespace lib60870
         {
             return string.Format("[CP24Time2a: Millisecond={0}, Second={1}, Minute={2}, Invalid={3}, Substitued={4}]", Millisecond, Second, Minute, Invalid, Substitued);
         }
-		
+
     }
 }
 

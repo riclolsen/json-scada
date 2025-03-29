@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -59,7 +59,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.value;
+                return value;
             }
             set
             {
@@ -82,11 +82,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.isTransient;
+                return isTransient;
             }
             set
             {
-                this.isTransient = value;
+                isTransient = value;
             }
         }
 
@@ -96,7 +96,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.quality;
+                return quality;
             }
         }
 
@@ -109,6 +109,14 @@ namespace lib60870.CS101
             Value = value;
             Transient = isTransient;
             this.quality = quality;
+        }
+
+        public StepPositionInformation(StepPositionInformation original)
+            : base(original.ObjectAddress)
+        {
+            Value = original.Value;
+            Transient = original.Transient;
+            quality = new QualityDescriptor(original.quality);
         }
 
         internal StepPositionInformation(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -148,7 +156,7 @@ namespace lib60870.CS101
                 vti += 0x80;
 
             frame.SetNextByte(vti);
-				
+
             frame.SetNextByte(quality.EncodedValue);
         }
 
@@ -186,11 +194,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
             set
             {
-                this.timestamp = value;
+                timestamp = value;
             }
         }
 
@@ -198,6 +206,12 @@ namespace lib60870.CS101
             : base(ioa, value, isTransient, quality)
         {
             Timestamp = timestamp;
+        }
+
+        public StepPositionWithCP24Time2a(StepPositionWithCP24Time2a original)
+            : base(original)
+        {
+            timestamp = new CP24Time2a(original.timestamp);
         }
 
         internal StepPositionWithCP24Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -256,11 +270,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
             set
             {
-                this.timestamp = value;
+                timestamp = value;
             }
         }
 
@@ -270,6 +284,11 @@ namespace lib60870.CS101
             Timestamp = timestamp;
         }
 
+        public StepPositionWithCP56Time2a(StepPositionWithCP56Time2a original)
+            : base(original)
+        {
+            timestamp = new CP56Time2a(original.timestamp);
+        }
 
         internal StepPositionWithCP56Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
             : base(parameters, msg, startIndex, isSequence)
@@ -293,6 +312,6 @@ namespace lib60870.CS101
             frame.AppendBytes(timestamp.GetEncodedValue());
         }
     }
-	
+
 }
 

@@ -1,7 +1,7 @@
 ﻿/*
  *  PrimaryLinkLayer.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -22,7 +22,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 
 namespace lib60870.linklayer
 {
@@ -67,7 +66,7 @@ namespace lib60870.linklayer
 
     internal abstract class PrimaryLinkLayer
     {
-        public abstract void HandleMessage(FunctionCodeSecondary fcs, bool dir, bool dfc, 
+        public abstract void HandleMessage(FunctionCodeSecondary fcs, bool dir, bool dfc,
                                      int address, byte[] msg, int userDataStart, int userDataLength);
 
         public abstract void RunStateMachine();

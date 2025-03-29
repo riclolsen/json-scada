@@ -1,7 +1,7 @@
 /*
  *  BitString32.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -25,7 +25,7 @@ using System;
 
 namespace lib60870.CS101
 {
-	
+
     public class Bitstring32 : InformationObject
     {
         override public int GetEncodedSize()
@@ -55,7 +55,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.value;
+                return value;
             }
         }
 
@@ -65,7 +65,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.quality;
+                return quality;
             }
         }
 
@@ -74,6 +74,13 @@ namespace lib60870.CS101
         {
             this.value = value;
             this.quality = quality;
+        }
+
+        public Bitstring32(Bitstring32 original)
+            : base(original.ObjectAddress)
+        {
+            value = original.value;
+            quality = new QualityDescriptor(original.quality);
         }
 
         internal Bitstring32(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -136,7 +143,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -144,6 +151,12 @@ namespace lib60870.CS101
             : base(ioa, value, quality)
         {
             this.timestamp = timestamp;
+        }
+
+        public Bitstring32WithCP24Time2a(Bitstring32WithCP24Time2a original)
+            : base(original)
+        {
+            timestamp = new CP24Time2a(original.timestamp);
         }
 
         internal Bitstring32WithCP24Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)
@@ -198,7 +211,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.timestamp;
+                return timestamp;
             }
         }
 
@@ -206,6 +219,12 @@ namespace lib60870.CS101
             : base(ioa, value, quality)
         {
             this.timestamp = timestamp;
+        }
+
+        public Bitstring32WithCP56Time2a(Bitstring32WithCP56Time2a original)
+            : base(original)
+        {
+            timestamp = new CP56Time2a(original.timestamp);
         }
 
         internal Bitstring32WithCP56Time2a(ApplicationLayerParameters parameters, byte[] msg, int startIndex, bool isSequence)

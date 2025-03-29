@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -19,8 +19,6 @@
  *  See COPYING file for the complete license text.
  */
 
-using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace lib60870.CS101
@@ -35,12 +33,33 @@ namespace lib60870.CS101
 
         public StartEvent()
         {
-            this.encodedValue = 0;
+            encodedValue = 0;
         }
 
         public StartEvent(byte encodedValue)
         {
             this.encodedValue = encodedValue;
+        }
+
+        public StartEvent(StartEvent orignal)
+        {
+            encodedValue = orignal.encodedValue;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is StartEvent))
+                return false;
+
+            return (EncodedValue == ((StartEvent)obj).EncodedValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return EncodedValue.GetHashCode();
         }
 
         /// <summary>
@@ -223,7 +242,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.encodedValue;
+                return encodedValue;
             }
             set
             {
@@ -255,5 +274,5 @@ namespace lib60870.CS101
             return sb.ToString();
         }
     }
-	
+
 }

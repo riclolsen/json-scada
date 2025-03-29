@@ -1,7 +1,7 @@
 ﻿/*
  *  ApplicationLayerParameters.cs
  *
- *  Copyright 2017 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -20,8 +20,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
 
 namespace lib60870.CS104
 {
@@ -69,7 +67,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.k;
+                return k;
             }
             set
             {
@@ -86,7 +84,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.w;
+                return w;
             }
             set
             {
@@ -102,7 +100,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.t0;
+                return t0;
             }
             set
             {
@@ -120,7 +118,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.t1;
+                return t1;
             }
             set
             {
@@ -136,7 +134,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.t2;
+                return t2;
             }
             set
             {
@@ -152,7 +150,7 @@ namespace lib60870.CS104
         {
             get
             {
-                return this.t3;
+                return t3;
             }
             set
             {

@@ -1,7 +1,7 @@
 /*
  *  CP56Time2a.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -55,6 +55,28 @@ namespace lib60870
                 encodedValue[i] = 0;
         }
 
+        public CP56Time2a(CP56Time2a original)
+        {
+            for (int i = 0; i < 7; i++)
+                encodedValue[i] = original.encodedValue[i];
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is CP56Time2a))
+                return false;
+
+            return (GetHashCode() == obj.GetHashCode());
+        }
+
+        public override int GetHashCode()
+        {
+            return new System.Numerics.BigInteger(encodedValue).GetHashCode();
+        }
+
         /// <summary>
         /// Gets the date time.
         /// </summary>
@@ -64,15 +86,15 @@ namespace lib60870
         {
             int baseYear = (startYear / 100) * 100;
 
-            if (this.Year < (startYear % 100))
+            if (Year < (startYear % 100))
                 baseYear += 100;
 
-            int month = this.Month;
+            int month = Month;
 
             if (month == 0)
                 month = 1;
 
-            int dayOfMonth = this.DayOfMonth;
+            int dayOfMonth = DayOfMonth;
 
             if (dayOfMonth == 0)
                 dayOfMonth = 1;
@@ -81,7 +103,7 @@ namespace lib60870
 
             try
             {
-                value = new DateTime(baseYear + this.Year, month, dayOfMonth, this.Hour, this.Minute, this.Second, this.Millisecond);
+                value = new DateTime(baseYear + Year, month, dayOfMonth, Hour, Minute, Second, Millisecond);
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -125,7 +147,7 @@ namespace lib60870
         {
             get
             {
-                return  (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
+                return (encodedValue[0] + (encodedValue[1] * 0x100)) / 1000;
             }
 
             set

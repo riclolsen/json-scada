@@ -1,5 +1,5 @@
 ﻿/*
- *  Copyright 2018 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -22,8 +22,8 @@
 
 using System;
 using System.IO;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace lib60870.linklayer
@@ -68,7 +68,7 @@ namespace lib60870.linklayer
         {
             get
             {
-                return this.connected;
+                return connected;
             }
         }
 
@@ -76,7 +76,7 @@ namespace lib60870.linklayer
         {
             get
             {
-                return this.debugOutput;
+                return debugOutput;
             }
             set
             {
@@ -107,7 +107,7 @@ namespace lib60870.linklayer
             }
             catch (Exception)
             {
-                throw new SocketException(87); // wrong argument
+                throw new SocketException(87); /* wrong argument */
             }
 
             if (!running)
@@ -181,7 +181,7 @@ namespace lib60870.linklayer
 
                     connected = false;
 
-                    if (!this.running)
+                    if (!running)
                         return;
 
                     if (socketStream != null)
@@ -208,7 +208,7 @@ namespace lib60870.linklayer
                     socketStream = null;
                     conSocket = null;
                 }
-					
+
                 if (running)
                     Thread.Sleep(waitRetryConnect);
             }
@@ -235,7 +235,7 @@ namespace lib60870.linklayer
             if (running == true)
             {
                 running = false;
-                this.connected = false;
+                connected = false;
 
                 if (socketStream != null)
                 {
@@ -246,10 +246,10 @@ namespace lib60870.linklayer
 
                 if (conSocket != null)
                 {
-				
+
                     try
                     {
-                        conSocket.Shutdown(SocketShutdown.Both);	
+                        conSocket.Shutdown(SocketShutdown.Both);
                     }
                     catch (SocketException)
                     {
@@ -266,8 +266,8 @@ namespace lib60870.linklayer
 
 
         /*************************
-		 * Stream implementation 
-		 */
+         * Stream implementation 
+         */
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -289,7 +289,7 @@ namespace lib60870.linklayer
                 catch (Exception e)
                 {
                     DebugLog("Socket error: " + e.ToString());
-                    this.connected = false;
+                    connected = false;
                     return 0;
                 }
 

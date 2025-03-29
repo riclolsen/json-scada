@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29806.167
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "lib60870.netcore", "lib60870.netcore\lib60870.netcore.csproj", "{5158CD6F-8404-43A1-8612-496B4BB52214}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "iec104client", "iec104client\iec104client.csproj", "{E97B6D4A-E75A-4B18-B7C3-C87331C74B91}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "iec104server", "iec104server\iec104server.csproj", "{D97B6D4A-E75A-4B18-B7C3-C87331C74B92}"
@@ -13,16 +11,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "iec101client", "iec101clien
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "iec101server", "iec101server\iec101server.csproj", "{612FB171-FBC7-40F5-A299-F1FFD726B538}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib60870", "lib60870.netcore\lib60870\lib60870.csproj", "{213F2C8F-187B-AD9D-9836-BDA9191C3944}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5158CD6F-8404-43A1-8612-496B4BB52214}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5158CD6F-8404-43A1-8612-496B4BB52214}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5158CD6F-8404-43A1-8612-496B4BB52214}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5158CD6F-8404-43A1-8612-496B4BB52214}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E97B6D4A-E75A-4B18-B7C3-C87331C74B91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E97B6D4A-E75A-4B18-B7C3-C87331C74B91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E97B6D4A-E75A-4B18-B7C3-C87331C74B91}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -39,6 +35,10 @@ Global
 		{612FB171-FBC7-40F5-A299-F1FFD726B538}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{612FB171-FBC7-40F5-A299-F1FFD726B538}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{612FB171-FBC7-40F5-A299-F1FFD726B538}.Release|Any CPU.Build.0 = Release|Any CPU
+		{213F2C8F-187B-AD9D-9836-BDA9191C3944}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{213F2C8F-187B-AD9D-9836-BDA9191C3944}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{213F2C8F-187B-AD9D-9836-BDA9191C3944}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{213F2C8F-187B-AD9D-9836-BDA9191C3944}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

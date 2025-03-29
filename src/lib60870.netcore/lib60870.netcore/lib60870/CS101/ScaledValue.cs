@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -26,6 +26,10 @@ namespace lib60870.CS101
     public class ScaledValue
     {
         private byte[] encodedValue = new byte[2];
+        const int SCALED_VALUE_MAX = 32767;
+        const int SCALED_VALUE_MIN = -32768;
+        const float NORMALIZED_VALUE_MAX = 32767f / 32768f;
+        const float NORMALIZED_VALUE_MIN = -1.0f;
 
         public ScaledValue(byte[] msg, int startIndex)
         {
@@ -42,12 +46,17 @@ namespace lib60870.CS101
 
         public ScaledValue(int value)
         {
-            this.Value = value;
+            Value = value;
         }
 
         public ScaledValue(short value)
         {
-            this.ShortValue = value;
+            ShortValue = value;
+        }
+
+        public ScaledValue(ScaledValue original)
+        {
+            ShortValue = original.ShortValue;
         }
 
         public byte[] GetEncodedValue()
@@ -61,25 +70,29 @@ namespace lib60870.CS101
             {
                 int value;
 
-                value = encodedValue[0];
-                value += (encodedValue[1] * 0x100);
+                value = encodedValue[0] | (encodedValue[1] << 8);
 
+                /* Sign-extend for negative values*/
                 if (value > 32767)
-                    value = value - 65536;
+                    value -= 65536;
 
+                /* Clamp within valid range*/
+                if (value > SCALED_VALUE_MAX)
+                    value = SCALED_VALUE_MAX;
+                else if (value < SCALED_VALUE_MIN)
+                    value = SCALED_VALUE_MIN;
+
+               
                 return value;
             }
             set
-            {
-                if (value > 32767)
-                    value = 32767;
-                else if (value < -32768)
-                    value = -32768;
+            {                if (value > SCALED_VALUE_MAX)
+                    value = SCALED_VALUE_MAX;
+                else if (value < SCALED_VALUE_MIN)
+                    value = SCALED_VALUE_MIN;
 
-                short valueToEncode = (short)value;
-
-                encodedValue[0] = (byte)(valueToEncode & 255);
-                encodedValue[1] = (byte)(valueToEncode >> 8);
+                encodedValue[0] = (byte)(value & 0xFF);   /* Lower byte*/
+                encodedValue[1] = (byte)((value >> 8) & 0xFF); /* Upper byte*/
             }
         }
 
@@ -108,6 +121,54 @@ namespace lib60870.CS101
         {
             return "" + Value;
         }
+
+        public float GetNormalizedValue()
+        {
+            /* Ensure correct floating-point division*/
+            double result = Value / 32767.0;
+
+            /* Ensure proper clamping*/
+            if (result > NORMALIZED_VALUE_MAX)
+                result = NORMALIZED_VALUE_MAX;
+            if (result < -1.0)
+                result = -1.0;
+
+            return (float)result;
+        }
+
+        public int ConvertNormalizedValueToScaled(float value)
+        {
+
+            if (value > NORMALIZED_VALUE_MAX)
+
+                value = NORMALIZED_VALUE_MAX;
+
+            else if (value < NORMALIZED_VALUE_MIN)
+
+                value = NORMALIZED_VALUE_MIN;
+
+            float scaledValue = value * 32768f;
+
+            return (int)(scaledValue < 0 ? scaledValue - 0.5f : scaledValue + 0.5f);
+
+        }
+
+        public void SetScaledFromNormalizedValue(float value)
+        {
+
+            if (value > NORMALIZED_VALUE_MAX)
+
+                value = NORMALIZED_VALUE_MAX;
+
+            else if (value < NORMALIZED_VALUE_MIN)
+
+                value = NORMALIZED_VALUE_MIN;
+
+            float scaledValue = value * 32768f;
+
+            Value = (int)(scaledValue < 0 ? scaledValue - 0.5f : scaledValue + 0.5f);
+
+        }
     }
-	
+
 }

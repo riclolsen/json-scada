@@ -1,7 +1,7 @@
 /*
  *  ASDU.cs
  *
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -73,7 +73,7 @@ namespace lib60870.CS101
         public ASDU(ApplicationLayerParameters parameters, CauseOfTransmission cot, bool isTest, bool isNegative, byte oa, int ca, bool isSequence)
             : this(parameters, TypeID.M_SP_NA_1, cot, isTest, isNegative, oa, ca, isSequence)
         {
-            this.hasTypeId = false;
+            hasTypeId = false;
         }
 
         internal ASDU(ApplicationLayerParameters parameters, TypeID typeId, CauseOfTransmission cot, bool isTest, bool isNegative, byte oa, int ca, bool isSequence)
@@ -85,15 +85,15 @@ namespace lib60870.CS101
             this.isNegative = isNegative;
             this.oa = oa;
             this.ca = ca;
-            this.spaceLeft = parameters.MaxAsduLength -
+            spaceLeft = parameters.MaxAsduLength -
             parameters.SizeOfTypeId - parameters.SizeOfVSQ - parameters.SizeOfCA - parameters.SizeOfCOT;
 
             if (isSequence)
-                this.vsq = 0x80;
+                vsq = 0x80;
             else
-                this.vsq = 0;
+                vsq = 0;
 
-            this.hasTypeId = true;
+            hasTypeId = true;
         }
 
         /// <summary>
@@ -132,14 +132,14 @@ namespace lib60870.CS101
             else
             {
                 if (informationObjects.Count == 0) // is first object?
-					objectSize += parameters.SizeOfIOA;
+                    objectSize += parameters.SizeOfIOA;
                 else
                 {
                     if (io.ObjectAddress != (informationObjects[0].ObjectAddress + informationObjects.Count))
                         return false;
                 }
             }
-				
+
             if (objectSize <= spaceLeft)
             {
 
@@ -166,7 +166,7 @@ namespace lib60870.CS101
             typeId = (TypeID)msg[bufPos++];
             vsq = msg[bufPos++];
 
-            this.hasTypeId = true;
+            hasTypeId = true;
 
             byte cotByte = msg[bufPos++];
 
@@ -216,7 +216,7 @@ namespace lib60870.CS101
             frame.SetNextByte(cotByte);
 
             if (parameters.SizeOfCOT == 2)
-                frame.SetNextByte((byte)oa);
+                frame.SetNextByte(oa);
 
             frame.SetNextByte((byte)(ca % 256));
 
@@ -227,12 +227,10 @@ namespace lib60870.CS101
                 frame.AppendBytes(payload);
             else
             {
-
                 bool isFirst = true;
 
                 foreach (InformationObject io in informationObjects)
                 {
-
                     if (isFirst)
                     {
                         io.Encode(frame, parameters, false);
@@ -245,7 +243,6 @@ namespace lib60870.CS101
                         else
                             io.Encode(frame, parameters, false);
                     }
-
                 }
             }
         }
@@ -272,7 +269,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.typeId;
+                return typeId;
             }
         }
 
@@ -284,11 +281,11 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.cot;
+                return cot;
             }
             set
             {
-                this.cot = value;
+                cot = value;
             }
         }
 
@@ -300,7 +297,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.oa;
+                return oa;
             }
         }
 
@@ -312,7 +309,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.isTest;
+                return isTest;
             }
         }
 
@@ -324,7 +321,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.isNegative;
+                return isNegative;
             }
             set
             {
@@ -340,7 +337,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.ca;
+                return ca;
             }
         }
 
@@ -400,7 +397,7 @@ namespace lib60870.CS101
         public InformationObject GetElement(int index, IPrivateIOFactory ioFactory)
         {
             InformationObject retVal = null;
-            
+
             if (ioFactory != null)
             {
 
@@ -456,11 +453,11 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new SinglePointInformation(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-					
+
                     break;
 
                 case TypeID.M_SP_TA_1: /* 2 */
-				
+
                     elementSize = 4;
 
                     if (IsSequence)
@@ -599,7 +596,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new MeasuredValueNormalized(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-					
+
                     break;
 
                 case TypeID.M_ME_TA_1: /* 10 */
@@ -672,7 +669,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new MeasuredValueShort(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-				
+
                     break;
 
                 case TypeID.M_ME_TC_1: /* 14 */
@@ -708,7 +705,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new IntegratedTotals(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-				
+
                     break;
 
                 case TypeID.M_IT_TA_1: /* 16 */
@@ -798,7 +795,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new PackedSinglePointWithSCD(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-				
+
 
                     break;
 
@@ -820,7 +817,7 @@ namespace lib60870.CS101
 
                     break;
 
-            /* 22 - 29 reserved */
+                /* 22 - 29 reserved */
 
                 case TypeID.M_SP_TB_1: /* 30 */
 
@@ -927,7 +924,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new MeasuredValueScaledWithCP56Time2a(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-				
+
                     break;
 
                 case TypeID.M_ME_TF_1: /* 36 */
@@ -981,7 +978,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new EventOfProtectionEquipmentWithCP56Time2a(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-				
+
                     break;
 
                 case TypeID.M_EP_TE_1: /* 39 */
@@ -999,7 +996,7 @@ namespace lib60870.CS101
                     }
                     else
                         retVal = new PackedStartEventsOfProtectionEquipmentWithCP56Time2a(parameters, payload, index * (parameters.SizeOfIOA + elementSize), false);
-				
+
                     break;
 
                 case TypeID.M_EP_TF_1: /* 40 */
@@ -1020,7 +1017,7 @@ namespace lib60870.CS101
 
                     break;
 
-            /* 41 - 44 reserved */
+                /* 41 - 44 reserved */
 
                 case TypeID.C_SC_NA_1: /* 45 */
 
@@ -1078,7 +1075,7 @@ namespace lib60870.CS101
 
                     break;
 
-            /* 52 - 57 reserved */
+                /* 52 - 57 reserved */
 
                 case TypeID.C_SC_TA_1: /* 58 - Single command with CP56Time2a */
 
@@ -1136,7 +1133,7 @@ namespace lib60870.CS101
 
                     break;
 
-            /* 65 - 69 reserved */
+                /* 65 - 69 reserved */
 
                 case TypeID.M_EI_NA_1: /* 70 - End of initialization */
                     elementSize = parameters.SizeOfCA + 1;
@@ -1209,7 +1206,7 @@ namespace lib60870.CS101
 
                     break;
 
-            /* C_TS_TA_1 (107) is handled by the stack automatically */
+                /* C_TS_TA_1 (107) is handled by the stack automatically */
 
                 case TypeID.P_ME_NA_1: /* 110 - Parameter of measured values, normalized value */
 
@@ -1298,22 +1295,22 @@ namespace lib60870.CS101
                     break;
 
 
-            /* 114 - 119 reserved */
+                /* 114 - 119 reserved */
 
                 default:
                     if (privateObjectTypes != null)
                     {
-				
+
                         IPrivateIOFactory ioFactory = privateObjectTypes.GetFactory(typeId);
 
                         if (ioFactory != null)
                         {
-					
+
                             elementSize = parameters.SizeOfIOA + ioFactory.GetEncodedSize();
 
                             if (IsSequence)
                             {
-							
+
                                 int ioa = InformationObject.ParseInformationObjectAddress(parameters, payload, 0);
 
                                 retVal = ioFactory.Decode(parameters, payload, index * elementSize, true);
@@ -1333,7 +1330,6 @@ namespace lib60870.CS101
 
             return retVal;
         }
-
 
         public override string ToString()
         {

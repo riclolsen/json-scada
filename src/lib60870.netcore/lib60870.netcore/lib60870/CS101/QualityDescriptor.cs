@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 MZ Automation GmbH
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of lib60870.NET
  *
@@ -18,8 +18,6 @@
  *
  *  See COPYING file for the complete license text.
  */
-
-using System;
 
 namespace lib60870.CS101
 {
@@ -41,12 +39,33 @@ namespace lib60870.CS101
 
         public QualityDescriptor()
         {
-            this.encodedValue = 0;
+            encodedValue = 0;
+        }
+
+        public QualityDescriptor(QualityDescriptor original)
+        {
+            encodedValue = original.encodedValue;
         }
 
         public QualityDescriptor(byte encodedValue)
         {
             this.encodedValue = encodedValue;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is QualityDescriptor))
+                return false;
+
+            return (encodedValue == ((QualityDescriptor)obj).encodedValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return encodedValue.GetHashCode();
         }
 
         public bool Overflow
@@ -150,7 +169,7 @@ namespace lib60870.CS101
         {
             get
             {
-                return this.encodedValue;
+                return encodedValue;
             }
             set
             {
@@ -163,6 +182,6 @@ namespace lib60870.CS101
             return string.Format("[QualityDescriptor: Overflow={0}, Blocked={1}, Substituted={2}, NonTopical={3}, Invalid={4}]", Overflow, Blocked, Substituted, NonTopical, Invalid);
         }
     }
-		
+
 }
 

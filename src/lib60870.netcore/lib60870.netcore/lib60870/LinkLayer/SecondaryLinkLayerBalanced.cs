@@ -1,24 +1,23 @@
 ﻿/*
-  *  Copyright 2016, 2017 MZ Automation GmbH
-  *
-  *  This file is part of lib60870.NET
-  *
-  *  lib60870.NET is free software: you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-  *  the Free Software Foundation, either version 3 of the License, or
-  *  (at your option) any later version.
-  *
-  *  lib60870.NET is distributed in the hope that it will be useful,
-  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  *  GNU General Public License for more details.
-  *
-  *  You should have received a copy of the GNU General Public License
-  *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
-  *
-  *  See COPYING file for the complete license text.
-  */
-
+ *  Copyright 2016-2025 Michael Zillgith
+ *
+ *  This file is part of lib60870.NET
+ *
+ *  lib60870.NET is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  lib60870.NET is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with lib60870.NET.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  See COPYING file for the complete license text.
+ */
 
 using System;
 
@@ -39,9 +38,9 @@ namespace lib60870.linklayer
                                     Func<int, byte[], int, int, bool> handleApplicationLayer, Action<string> debugLog)
         {
             this.linkLayer = linkLayer;
-            this.linkLayerAddress = address;
-            this.DebugLog = debugLog;
-            this.HandleApplicationLayer = handleApplicationLayer;
+            linkLayerAddress = address;
+            DebugLog = debugLog;
+            HandleApplicationLayer = handleApplicationLayer;
         }
 
 
@@ -91,12 +90,12 @@ namespace lib60870.linklayer
                         linkLayer.SendSingleCharACK();
                     else
                         linkLayer.SendFixedFrameSecondary(FunctionCodeSecondary.ACK, linkLayerAddress, false, false);
-				
+
                     break;
 
                 case FunctionCodePrimary.TEST_FUNCTION_FOR_LINK:
                     DebugLog("SLL -TEST FUNCTION FOR LINK");
-				// TODO check if DCF has to be sent
+                    // TODO check if DCF has to be sent
                     if (linkLayer.linkLayerParameters.UseSingleCharACK)
                         linkLayer.SendSingleCharACK();
                     else

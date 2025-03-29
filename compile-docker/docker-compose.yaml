@@ -8,7 +8,7 @@ services:
     container_name: js_dotnet_compile
     command: sh -c "apt-get update && 
                     apt-get -y install build-essential cmake sasl2-bin libsasl2-dev libssl-dev libzstd-dev libsnappy-dev &&
-                    cd /src/lib60870.netcore/lib60870.netcore/ && 
+                    cd /src/lib60870.netcore/lib60870.netcore/lib60870/ && 
                     dotnet build --self-contained -c Release -o /publish_bin/ &&
                     cd /src/lib60870.netcore/iec101client/ &&
                     dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
