@@ -193,9 +193,9 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [ ] Managed Cloud Service
 - [ ] Supported LTS versions
 
-## Spin up a free private instance on Google's Project IDX
+## Spin up a free private instance on Google's Firebase Studio
 
-With just a Google account, you can spin up a free private instance for test/dev on Google's Project IDX. This is a great way to get started with the project. This will build the code from the Github repo and deploy it to a private Linux VM on the cloud running protocols and providing a web UI for you to interact with. There will be a web-based code editor available for you to develop new apps and view/change the code on the VM. You can also get help from Google's Gemini AI for coding and other tasks. This is free and there no need to install any software on your local machine.
+With just a Google account, you can spin up a free private instance for test/dev on Google's Firebase Studio. This is a great way to get started with the project. This will build the code from the Github repo and deploy it to a private Linux VM on the cloud running protocols and providing a web UI for you to interact with. There will be a web-based code editor available for you to develop new apps and view/change the code on the VM. You can also get help from Google's Gemini AI for coding and other tasks. This is free and there no need to install any software on your local machine.
 
 See details [here](platform-nix-idx/README.md). 
 
