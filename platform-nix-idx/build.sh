@@ -73,21 +73,23 @@ go env -w GO111MODULE=auto
 export CGO_CPPFLAGS="-I /usr/include"
 export CGO_LDFLAGS="-L /usr/lib"
 
-cd ../calculations
-go mod tidy 
-go build
-cp calculations ../../bin/
+# avoid compiling go modules as Firebase Studio only currently provides 8GB RAM, not enough for the build
+
+# you may need a lot of memory to build go drivers, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
+#cd ../calculations
+#go mod tidy 
+#go build
+#cp calculations ../../bin/
 
 #cd ../i104m
 #go mod tidy 
 #go build
 #cp i104m ../../bin/
 
-# you may need a lot of memory to build this step, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
-cd ../plc4x-client
-go mod tidy 
-go build
-cp plc4x-client ../../bin/
+#cd ../plc4x-client
+#go mod tidy 
+#go build
+#cp plc4x-client ../../bin/
 
 # release some disk space
 rm -rf ~/.cache
