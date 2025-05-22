@@ -2,14 +2,14 @@
 # see: https://developers.google.com/idx/guides/customize-idx-env
 { pkgs, ... }: {
   # Which nixpkgs channel to use.
-  channel = "stable-24.11"; # or "unstable"
+  channel = "stable-23.11"; # or "unstable"
 
   # Use https://search.nixos.org/packages to find packages
   packages = [   
     pkgs.sudo
     pkgs.postgresql_17
     pkgs.postgresql17Packages.timescaledb
-    #pkgs.postgresql17Packages.timescaledb_toolkit
+    pkgs.postgresql17Packages.timescaledb_toolkit
     pkgs.util-linux.bin
     pkgs.dotnet-sdk_8
     pkgs.vscode-extensions.ms-dotnettools.csharp
