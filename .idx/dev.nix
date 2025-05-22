@@ -7,9 +7,9 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [   
     pkgs.sudo
-    pkgs.postgresql_15_jit
-    pkgs.postgresql15Packages.timescaledb
-    pkgs.postgresql15Packages.timescaledb_toolkit
+    pkgs.postgresql_17_jit
+    pkgs.postgresql17JitPackages.timescaledb
+    #pkgs.postgresql17JitPackages.timescaledb_toolkit
     pkgs.util-linux.bin
     pkgs.dotnet-sdk_8
     pkgs.vscode-extensions.ms-dotnettools.csharp
