@@ -197,6 +197,7 @@ call %NPM% run build
 call %NPM% prune --omit=dev
 
 set NODE_OPTIONS=--max-old-space-size=8000
+set ASTRO_TELEMETRY_DISABLED=1
 
 cd %SRCPATH%\custom-developments\basic_bargraph
 call %NPM% i --package-lock-only

@@ -329,19 +329,19 @@ var protocolConnectionsValidator = {
       sizeOfCOT: {
         bsonType: ['double', 'long', 'int', 'null'],
         minimum: 1,
-        minimum: 2,
+        maximum: 2,
         description: 'Size of cause of transmission field.',
       },
       sizeOfCA: {
         bsonType: ['double', 'long', 'int', 'null'],
         minimum: 1,
-        minimum: 2,
+        maximum: 2,
         description: 'Size of cause of common address field.',
       },
       sizeOfIOA: {
         bsonType: ['double', 'long', 'int', 'null'],
         minimum: 1,
-        minimum: 3,
+        maximum: 3,
         description: 'Size of cause of information object address field.',
       },
       k: {

@@ -2,14 +2,15 @@
 # see: https://developers.google.com/idx/guides/customize-idx-env
 { pkgs, ... }: {
   # Which nixpkgs channel to use.
-  channel = "stable-23.11"; # or "unstable"
+  channel = "stable-24.11"; # or "unstable"
 
   # Use https://search.nixos.org/packages to find packages
   packages = [   
     pkgs.sudo
-    pkgs.postgresql_15_jit
-    pkgs.postgresql15Packages.timescaledb
-    pkgs.postgresql15Packages.timescaledb_toolkit
+    pkgs.postgresql_16_jit
+    pkgs.postgresql16JitPackages.timescaledb
+    #pkgs.postgresql16JitPackages.timescaledb_toolkit
+    pkgs.postgresql16JitPackages.pgvector
     pkgs.util-linux.bin
     pkgs.dotnet-sdk_8
     pkgs.vscode-extensions.ms-dotnettools.csharp
@@ -32,7 +33,7 @@
     pkgs.mongodb
     pkgs.mongodb-tools
     pkgs.mongosh
-    # pkgs.nodePackages.nodemon
+    pkgs.nodePackages.nodemon
   ];
 
   #services.postgres = {

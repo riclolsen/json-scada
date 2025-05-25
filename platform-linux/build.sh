@@ -136,6 +136,7 @@ npm install
 npm run build
 
 export NODE_OPTIONS=--max-old-space-size=10000
+export ASTRO_TELEMETRY_DISABLED=1
 
 cd ../../../custom-developments/basic_bargraph
 npm install
