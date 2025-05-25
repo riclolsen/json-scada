@@ -39,9 +39,9 @@ This MongoDB collection defines runnable instances of protocol drivers. Each doc
 Key fields for a new driver:
 
 *   `protocolDriver` (String): The unique name of your protocol driver (e.g., "MY_CUSTOM_PROTOCOL"). This name is used to find the relevant instance configuration.
-*   `protocolDriverInstanceNumber` (Double/Int): A numerical identifier for the instance (e.g., 1, 2). Allows running multiple instances of the same driver, possibly with different configurations.
+*   `protocolDriverInstanceNumber` (Double): A numerical identifier for the instance (e.g., 1, 2). Allows running multiple instances of the same driver, possibly with different configurations.
 *   `enabled` (Boolean): If `true`, this driver instance is active and should run.
-*   `logLevel` (Double/Int): Defines the verbosity of logging for the driver instance (e.g., 0 for minimal, 1 for basic, 2 for detailed, 3 for debug).
+*   `logLevel` (Double): Defines the verbosity of logging for the driver instance (e.g., 0 for minimal, 1 for basic, 2 for detailed, 3 for debug).
 *   `nodeNames` (Array of Strings): A list of node names (matching the `nodeName` from `json-scada.json`) that are permitted to run this driver instance. This is key for redundancy.
 *   `activeNodeName` (String): Automatically managed by active driver instances to indicate which node is currently responsible for this instance's tasks.
 *   `activeNodeKeepAliveTimeTag` (Date): Timestamp updated by the active driver instance to signal it's alive. Inactive instances monitor this to detect failures of the active node.
@@ -54,12 +54,12 @@ This collection stores the specific connection parameters for each driver instan
 Key fields:
 
 *   `protocolDriver` (String): The name of the protocol driver (must match the one in `protocolDriverInstances`).
-*   `protocolDriverInstanceNumber` (Double/Int): Links this connection configuration to a specific driver instance.
-*   `protocolConnectionNumber` (Double/Int): **A system-wide unique number** identifying this specific connection. Tags in the `realtimeData` collection use this number to associate themselves with a data source or command target.
+*   `protocolDriverInstanceNumber` (Double): Links this connection configuration to a specific driver instance.
+*   `protocolConnectionNumber` (Double): **A system-wide unique number** identifying this specific connection. Tags in the `realtimeData` collection use this number to associate themselves with a data source or command target.
 *   `name` (String): A user-friendly name for the connection (e.g., "PLC_AREA_51").
 *   `enabled` (Boolean): If `true`, this connection should be actively managed by the driver.
 *   `commandsEnabled` (Boolean): If `true`, the driver should process commands for tags associated with this connection.
-*   **Protocol-Specific Fields:** Additional fields required by your specific protocol (e.g., `endpointURL`, `ipAddress`, `port`, `serialPortSettings`, `mqttBrokerUrl`, `securityToken`, etc.). These are defined and used by your driver.
+*   **Protocol-Specific Fields:** Additional fields required by your specific protocol (e.g., `endpointURL`, `ipAddress`, `port`, etc.). These are defined and used by your driver. See if existing fields can be used by your driver, it may be necessary to create new fields.
 
 ### `realtimeData` Collection (Tags)
 
@@ -67,20 +67,26 @@ This is the central repository for all data points (tags) in JSON SCADA. Drivers
 
 To link a tag to your driver for **data acquisition**:
 
-*   `protocolSourceConnectionNumber` (Double/Int): Must match the `protocolConnectionNumber` of one of the connections your driver instance is configured to handle.
-*   `protocolSourceObjectAddress` (String): A string that your driver understands as the unique address or identifier of the data point within the external device/protocol (e.g., an OPC-UA NodeId, a Modbus register address, an MQTT topic, a DNP3 point index).
-*   `protocolSourceASDU` (String): Application Service Data Unit. A string indicating the data type or format as understood by your protocol (e.g., "UINT16", "FLOAT32", "DIGITAL_INPUT", "JSON"). This helps your driver interpret the data correctly.
+*   `protocolSourceConnectionNumber` (Double): Must match the `protocolConnectionNumber` of one of the connections your driver instance is configured to handle.
+*   `protocolSourceObjectAddress` (String/Double): A string that your driver understands as the unique address or identifier of the data point within the external device/protocol (e.g., an OPC-UA NodeId, a Modbus register address, an MQTT topic, a DNP3 point index).
+*   `protocolSourceASDU` (String): Type of Application Service Data Unit. A string indicating the data type or format as understood by your protocol (e.g., "UINT16", "FLOAT32", "DIGITAL_INPUT", "JSON"). This helps your driver interpret the data correctly.
+*   `protocolSourceCommonAddress` (String/Double): Used to identify groups of objects that can have the same `protocolSourceObjectAddress` (e.g., DNP3 can have repeated addresses for binary inputs (group 1) and analog inputs (group 30).
+*   `protocolSourceCommandUseSBO` (Boolean): Used to flag commands that require the Select-Before-Operate procedure.
+*   `protocolSourceCommandDuration` (Double): Used to specify additional command options like duration of pulse.
 *   Other fields like `kconv1`, `kconv2` (for scaling), and protocol-specific polling/subscription parameters might also be used by the driver if relevant.
 
 When your driver reads a new value for a tag, it should update the `sourceDataUpdate` sub-document within the tag's document in `realtimeData`. This sub-document typically includes:
     *   `valueAtSource` (appropriate BSON type for the value)
     *   `valueStringAtSource` (String representation)
+    *   `valueJsonAtSource` (JSON representation)
     *   `timeTagAtSource` (Date, timestamp from the source, if available)
     *   `timeTagAtSourceOk` (Boolean, true if `timeTagAtSource` is reliable)
     *   `invalidAtSource` (Boolean, true if the value is considered invalid by the source)
-    *   Other quality flags like `notTopicalAtSource`, `substitutedAtSource`, `blockedAtSource` as relevant.
-    *   `timeTag` (Date, timestamp when JSON SCADA processed the update)
+    *   `timeTag` (Date, timestamp when the driver processed the update)
     *   `originator` (String, identifies the source, e.g., "MY_DRIVER|conn_123")
+    *   `causeOfTransmissionAtSource` (String, specify the cause of transmission, e.g. "3"=Spontaneous in IEC60870-5-101/104.
+    *   `asduAtSource` (String, type representation of the data as detected by the protocol driver, e.g. "M_ME_NC_1".
+    *   Other quality flags like `notTopicalAtSource`, `substitutedAtSource`, `blockedAtSource` as relevant.
 
 To link a tag for **command execution**:
 
@@ -88,7 +94,7 @@ To link a tag for **command execution**:
 
 ### `commandsQueue` Collection
 
-When a user or another process in JSON SCADA wants to send a command to a device, it creates a new document in the `commandsQueue` collection. Your driver needs to monitor this collection for relevant commands.
+When a user or another process in JSON SCADA wants to send a command to a device, it creates a new document in the `commandsQueue` collection. Your driver needs to monitor this collection for relevant commands, this is usually done via the changestream mechanism of mongodb.
 
 Key fields in a `commandsQueue` document that your driver will use:
 
