@@ -741,8 +741,8 @@ The build process depends on the language used:
 **Deployment:**
 
 *   **Location:**
-    *   Compiled executables (C#, Go) are often placed in a dedicated directory within the JSON SCADA structure, for example, under a main `bin/` folder, or a language-specific subfolder like `bin/csharp_drivers/` or `bin/go_drivers/`.
-    *   Node.js drivers can be run directly from their source directories (e.g., `src/MyNodeDriver/`) or also placed in a common `bin/node_drivers/` location.
+    *   Compiled executables (C#, Go) are often placed in a dedicated directory within the JSON SCADA structure, for example, under a main `bin/` folder.
+    *   Node.js drivers can be run directly from their source directories (e.g., `src/MyNodeDriver/`).
 *   **Configuration:** Ensure the `json-scada.json` file is accessible to the driver (usually in a `../conf` directory relative to where the driver expects it or specified via command line). Also, ensure the MongoDB collections (`protocolDriverInstances`, `protocolConnections`) are correctly populated for your new driver.
 
 **Running the Driver:**
