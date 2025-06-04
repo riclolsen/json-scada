@@ -226,6 +226,7 @@ var WebSAGE = {
   g_timeOutPreview: 1500, // tempo para mostrar preview de tela linkada
   g_timerPreviewID: 0, // timer para mostrar preview de tela linkada
   g_retnok: "????", // return value when value can not be obtained
+  g_wheelDirBackOut: true, // zoom in/out direction for mouse wheel
 
   // tamanhos para zoom/pan
   g_zpX: 0,
@@ -5037,10 +5038,47 @@ getHistoricalData: function (i, pnt, timeBegin) {
     if (SVGDoc === null) {
       return;
     }
-
+    var ptScr, ptSvg, w, h;
+    
     if (mul === undefined) mul = 1;
 
     switch (opc) {
+      case 12: // zoom in centered on mouse pointer
+        ptScr = SVGDoc.createSVGPoint()
+        ptScr.x = event.clientX
+        ptScr.y = event.clientY
+        ptSvg = ptScr.matrixTransform(SVGDoc.getScreenCTM().inverse())
+        WebSAGE.g_zpW = WebSAGE.g_zpW * 0.95
+        WebSAGE.g_zpH = WebSAGE.g_zpH * 0.95
+        w = WebSAGE.g_zpW / 0.95
+        h = WebSAGE.g_zpH / 0.95
+        WebSAGE.g_zpX =
+          WebSAGE.g_zpX +
+          (w - WebSAGE.g_zpW) * ((ptSvg.x - WebSAGE.g_zpX) / WebSAGE.g_zpW) -
+          2.5
+        WebSAGE.g_zpY =
+          WebSAGE.g_zpY +
+          (h - WebSAGE.g_zpH) * ((ptSvg.y - WebSAGE.g_zpY) / WebSAGE.g_zpH) -
+          1.5
+        break
+      case 18: // zoom out centered on mouse pointer
+        ptScr = SVGDoc.createSVGPoint()
+        ptScr.x = event.clientX
+        ptScr.y = event.clientY
+        ptSvg = ptScr.matrixTransform(SVGDoc.getScreenCTM().inverse())
+        WebSAGE.g_zpW = WebSAGE.g_zpW * 1.05
+        WebSAGE.g_zpH = WebSAGE.g_zpH * 1.05
+        w = WebSAGE.g_zpW / 1.05
+        h = WebSAGE.g_zpH / 1.05
+        WebSAGE.g_zpX =
+          WebSAGE.g_zpX +
+          (w - WebSAGE.g_zpW) * ((ptSvg.x - WebSAGE.g_zpX) / WebSAGE.g_zpW) -
+          2.5
+        WebSAGE.g_zpY =
+          WebSAGE.g_zpY +
+          (h - WebSAGE.g_zpH) * ((ptSvg.y - WebSAGE.g_zpY) / WebSAGE.g_zpH) -
+          1.5
+        break
       case 0:
       case 2: // aumenta
         WebSAGE.g_zpW = WebSAGE.g_zpW * 0.9;
@@ -6347,10 +6385,10 @@ getHistoricalData: function (i, pnt, timeBegin) {
       function(event) {
         if (event.wheelDelta > 0 || event.detail < 0 || event.deltaY < 0) {
           // zoom out
-          WebSAGE.zoomPan(8);
+          WebSAGE.zoomPan(WebSAGE.g_wheelDirBackOut === true ? 12 : 18);
         } else {
           // zoom in
-          WebSAGE.zoomPan(2);
+          WebSAGE.zoomPan(WebSAGE.g_wheelDirBackOut === true ? 18 : 12);
         }
       },
       { passive: true }
