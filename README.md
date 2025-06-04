@@ -98,7 +98,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
 - [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
 - [SVG Synoptic Display Editor](https://github.com/riclolsen/json-scada/blob/master/src/svg-display-editor/README.md)
-- [IEC61850 Client Driver](https://github.com/riclolsen/json-scada/tree/master/src/libiec61850/dotnet/core/2.0/iec61850_client/README.md)
+- [IEC61850 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/iec61850_client/README.md)
 - [IEC60870-5-104 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104server/README.md)
 - [IEC60870-5-104 Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec104client/README.md)
 - [IEC60870-5-101 Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/lib60870.netcore/iec101server/README.md)
