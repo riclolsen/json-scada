@@ -1,19 +1,15 @@
-# SVG Synoptic Display Editor
+# SVG Synoptic Display Editor - Inkscape + SCADA Extension
 
-This is a separate project. This editor is based on the popular open-source Inkscape editor, it was modified to allow markup SCADA-like animations in the SVG file with links to data that can be later provided at runtime.
+The official SVG editor for JSON-SCADA is now the regular Inkscape with the SCADA extension.
+
 Any graphics properties can be animated with live data, such as fill/stroke colors, size, position, rotation, etc.
 
-## Source Code
+It comes ready to use when you install JSON-SCADA in Windows.
 
-- [Display Editor Source Code](https://gitlab.com/ricardolo/inkscape-rebased)
-
-## Installers
-
-Windows binaries are include in the {json:scada} installer for Windows 64 bits.
-
-It can also be acquired here the standalone Microsoft Store version for Windows 10 (Certified Binary).
-
-- [Microsoft Store Binary](https://www.microsoft.com/store/apps/9P9905HMKZ7X?ocid=periscope)
+* Access the SCADA extension from the "Extensions" menu.
+* After each SCADA modification for SVG object exit with ESC.
+* To access the SCADA extension subsequently, use ALT+Q.
+* The old "Object Properties" menu is not available anymore.
 
 ## Creating Displays
 
@@ -21,7 +17,7 @@ To create a new display
 
 1. Create the SVG graphics using the Synoptic Editor. It is possible to use other editors (Illustrator, Corel, etc.) to create graphics that can be imported in the Synoptic Editor to later markup. The editor can import graphics from a great number of formats. There are on the web many sources of vector graphics clipart (free and paid) that can be useful. It is recommended to configure each new display file with a size of 2400 x 1500 pixels (File \| Document Properties \| Page \| Page Size \| Custom Size). This is a reference size, the actual drawing can be larger.
 
-2. Markup the animations you want in the graphics using the Synoptic Editor. For this, select the object you want to animate and click the mouse right button and select “Object Properties”. Then choose from the menu the properties you want to animate. Follow the documentation below to understand the parameters of animations. Always use JSON-SCADA TAGs as identifiers of values to animate the graphics at runtime in the web browser. Finally, save the file always using the default native Inkscape SVG format.
+2. Markup the animations you want in the graphics using the Synoptic Editor. For this, select the SVG object you want to animate and access the SCADA extension from the "Extensions" menu. Then choose from the SCADA dialog the properties you want to animate. Use the key ESC to exit the SCADA dialog after the modification is done. Follow the documentation below to understand the parameters of animations. Always use JSON-SCADA TAGs as identifiers of values to animate the graphics at runtime in the web browser. Finally, save the file always using the default native Inkscape SVG format. To access the SCADA extension subsequently, use ALT+Q. 
 
 3. If you are editing on the JSON-SCADA server, save the file to "C:\json-scada\src\htdocs\svg" or equivalent folder. Add the file to display lists in the "C:\json-scada\src\htdocs\svg\screen_list.js" file. Open the Display Viewer web browser. The viewer can be also directly opened with a URL like this "http://127.0.0.1:8080/display?SVGFILE=filename.svg".
 
@@ -53,12 +49,12 @@ Other useful related resources.
 
 ## SCADA Animations
 
-To edit SCADA animation properties of an SVG object, right-click the mouse and choose Object Properties (please notice that albeit the Inkscape software interface is localized in many languages, the Object Properties menu is only available in English).
+To edit SCADA animation properties of an SVG object, right-click the mouse and access the SCADA extension from the "Extensions" menu (please notice that albeit the Inkscape software interface is localized in many languages, the SCADA extension is only available in English).
 
 ![SVG Editor](https://scadavis.io/images/image2.png 'SVG Editor')
-Editor interface showing the “Object Properties” dialog.
+Editor interface showing the “SCADA” extension dialog.
 
-Follow below a list of attributes (“Object Properties\|Tab”) that can be utilized to animate graphics.
+Follow below a list of attributes (“SCADA\|Tab”) that can be utilized to animate graphics.
 
 | Desired Action                           | Tab                                                                                          |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -489,3 +485,20 @@ To debug scripts in a SVG display file, do the following:
 - open the display in the Display Viewer.
 - press F12 to open the browser Developer Tools and then F5 to reload.
 - The Chromium browser will stop execution when found the introduced breakpoint. Use the execution control keys F10, F11, F9, F8 to forward execution.
+
+# SVG Synoptic Display Editor - Customized Inkscape Editor **DEPRECATED**
+
+This is a separate project. This editor is based on the popular open-source Inkscape editor, it was modified to allow markup SCADA-like animations in the SVG file with links to data that can be later provided at runtime. The "Object Properties" dialog was modified to allow the entry of SCADA markup. 
+
+This editor is deprecated and will not be updated anymore.
+
+## Source Code
+
+- [Display Editor Source Code](https://gitlab.com/ricardolo/inkscape-rebased)
+
+## Installer
+
+This old editor can also be acquired here in the standalone Microsoft Store, version for Windows 10/11 (Certified Binary).
+
+- [Microsoft Store Binary](https://www.microsoft.com/store/apps/9P9905HMKZ7X?ocid=periscope)
+
