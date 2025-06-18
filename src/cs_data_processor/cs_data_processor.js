@@ -298,6 +298,7 @@ const pipeline = [
   let invalidDetectIntervalHandle = null
   let latencyIntervalHandle = null
   let resumeToken = null
+  let prevResumeToken = null
   while (true) {
     if (clientMongo === null)
       await MongoClient.connect(
@@ -465,11 +466,23 @@ const pipeline = [
 
           try {
             changeStream.on('error', (change) => {
+              if (resumeToken !== null && resumeToken === prevResumeToken) {
+                // if resumeToken is the same, it means the error is not recoverable, so cancel the resumeToken
+                prevResumeToken = null
+                resumeToken = null
+              }
+              prevResumeToken = resumeToken
               if (clientMongo) clientMongo.close()
               clientMongo = null
               Log.log('Error on ChangeStream!')
             })
             changeStream.on('close', (change) => {
+              if (resumeToken !== null && resumeToken === prevResumeToken) {
+                // if resumeToken is the same, it means the error is not recoverable, so cancel the resumeToken
+                prevResumeToken = null
+                resumeToken = null
+              }
+              prevResumeToken = resumeToken
               clientMongo = null
               Log.log('Closed ChangeStream!')
             })
@@ -1258,6 +1271,15 @@ const pipeline = [
               }
             })
           } catch (e) {
+            if (resumeToken !== null && resumeToken === prevResumeToken) {
+              // if resumeToken is the same, it means the error is not recoverable, so cancel the resumeToken
+              prevResumeToken = null
+              resumeToken = null
+            }
+            prevResumeToken = resumeToken
+            if (clientMongo) clientMongo.close()
+            clientMongo = null
+            Log.log('Error on ChangeStream!!')
             Log.log(e)
           }
         })
