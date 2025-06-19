@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+    <_name>SCADA</_name>
+    <id>org.inkscape.gui.scada20250615</id>
+  <effect needs-live-preview="true" implements-custom-gui="true">
+    <object-type>all</object-type>
+  </effect>
+  
+  <script>
+        <command reldir="extensions" interpreter="python">scada.py</command>
+  </script>
+
+</inkscape-extension>

@@ -264,10 +264,17 @@ partial class MainClass
                         filt.protocolSourceObjectAddress = ov.address;
                         Log("MongoDB - ADD " + ov.address + " " + ov.value, LogLevelDebug);
 
-                        listWrites
-                            .Add(new UpdateOneModel<rtData>(
-                                filt.ToBsonDocument(),
-                                update));
+                        var tooBig = false;
+                        if (ov.valueJson.Length + ov.valueString.Length > 1000000 && update.ToBson().Length > 16000000)
+                        {
+                            Log("MongoDB - Too big update for " + ov.address + " - " + update.ToBson().Length + " bytes, will not be written to MongoDB", LogLevelDetailed);
+                            tooBig = true;
+                        }
+                        if (!tooBig)
+                            listWrites
+                                .Add(new UpdateOneModel<rtData>(
+                                    filt.ToBsonDocument(),
+                                    update));
 
                         if (listWrites.Count >= BulkWriteLimit)
                             break;
