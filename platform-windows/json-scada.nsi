@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.52"
-!define VERSION_ "0.52.0.0"
+!define VERSION "v.0.53"
+!define VERSION_ "0.53.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -477,9 +477,12 @@ SetRegView 64
   SetOutPath $INSTDIR\platform-windows\browser-data
   File /a /r "..\platform-windows\browser-data\*.*"
 
-  ; Inkscape custom built
+  ; Inkscape + SCADA extension
   SetOutPath $INSTDIR\platform-windows\inkscape-runtime
   File /a /r "..\platform-windows\inkscape-runtime\*.*"
+  SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\inkscape\extensions
+  File /a /r "..\platform-windows\inkscape-extension\scada.inx"
+  File /a /r "..\platform-windows\inkscape-extension\scada.py"
 
   ; Inkscape additional symbols
   ; SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\symbols

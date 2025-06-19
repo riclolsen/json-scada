@@ -6,7 +6,7 @@
 //
 // DEPENDENCIES : opc-codes.js, util.js, jquery.js, jquery.ui, core.js, shortcut.js, messages.js, config_viewers.js  (must be include before this script)
 
-// {json:scada} - Copyright 2020-2024 - Ricardo L. Olsen
+// {json:scada} - Copyright 2020-2025 - Ricardo L. Olsen
 // Derived from OSHMI/Open Substation HMI - Copyright 2008-2020 - Ricardo L. Olsen
 
 /*jslint browser: true, bitwise: true, devel: true */
@@ -5039,7 +5039,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
       return;
     }
     var ptScr, ptSvg, w, h;
-    
+
     if (mul === undefined) mul = 1;
 
     switch (opc) {
