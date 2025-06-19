@@ -451,7 +451,7 @@ aboutframe.grid(row =0, columnspan = 2,  sticky ='NSWE')
 aboutframe.option_add("*Font", default_font)
 abouttext = tk.Text(aboutframe, wrap=tk.WORD, borderwidth=2)
 
-abouttext.insert(tk.END,"\nSCADA Animation GUI Editor eXtension. Based on ECAVA/IntegraXor SCADA system.")
+abouttext.insert(tk.END,"\nSCADA Animation Editor extension for JSON-SCADA. Based on ECAVA/IntegraXor extension.")
 #endregion
 
 animations = [  'ttr":"bar"','ttr":"clone"','ttr":"color"','ttr":"opac"',\
@@ -463,16 +463,22 @@ animalist = []
 
 class SAGEX(inkex.EffectExtension):
     def effect(self):
+        if len(self.options.ids) > 1:
+            # messagebox.showinfo("Error","Select just one element then open the SCADA extension. Hit ESC when done.")
+            on_closing()
+            return
+
         if len(self.options.ids) == 0:
             # object_id_label.configure(state=tk.DISABLED)
             # object_id_entry.configure(state=tk.DISABLED)
-            message = ' "Usage: Please select the desired element(s) then open SAGEX for SCADA animation".'
+            message = 'Select just one element then open the SCADA extension. Hit ESC when done."'
             object_id_entry.delete(0,'end')
             object_id_entry.insert(0,message)
             object_id_entry.configure(fg='red')
 
             for t in range(len(tabControl.tabs())):
                 tabControl.tab(t,state=tk.DISABLED)
+            return
 
         for node in self.svg.selected:
             attr_id = node.attrib['id']
