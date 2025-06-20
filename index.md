@@ -142,7 +142,6 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] OPC UA Client TCP/Secure
 - [x] OPC UA Server TCP/Secure
 - [ ] OPC UA Historical Data Server
-- [ ] OPC UA Server
 - [x] OPC DA Client (Windows)
 - [ ] OPC AE Client (Windows)
 - [ ] OPC DA Server (Windows)

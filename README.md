@@ -138,7 +138,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] Modbus Client via PLC4X-GO
 - [ ] ICCP Client TCP/TLS
 - [ ] ICCP Server TCP/TLS
-- [x] Telegraf Client (OPC-UA, MQTT, MODBUS, SNMP, ...)
+- [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
 - [x] OPC UA Client TCP/Secure
 - [x] OPC UA Server TCP/Secure
 - [ ] OPC UA Historical Data Server
