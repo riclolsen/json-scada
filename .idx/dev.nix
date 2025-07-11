@@ -120,7 +120,7 @@
         # watch-backend = "npm run watch-backend";
         start-mongodb = "/usr/bin/mongod -f ~/json-scada/platform-nix-idx/mongod.conf";
         start-postgresql = "/usr/bin/pg_ctl -D ~/postgres start >/dev/null 2>&1";
-        start-grafana = "grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/454jp6ww3nr2k7jxfp4il4a3l9kq0l3h-grafana-10.2.8/share/grafana/ >/dev/null 2>&1 &";
+        start-grafana = "grafana server target --config ~/json-scada/platform-nix-idx/grafana.ini --homepath /nix/store/xjpn5vrinfbsbqpvf8ckvygndja52i1y-grafana-11.3.6/share/grafana/ >/dev/null 2>&1 &";
         start-supervisor = "supervisord -c ~/json-scada/platform-nix-idx/supervisord.conf";
       };
     };

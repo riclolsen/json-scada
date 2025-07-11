@@ -10,6 +10,7 @@ Start a free instance for dev/test on Google's Firebase Studio platform with jus
 
     * Repo URL: https://github.com/riclolsen/json-scada
     * Name: json-scada
+    * Select the "Mobile development with Flutter / Android Studio" option, this way you will get a 32 GB/8 vCPU instance.
 
     Alternatively, you can fork the repo on Github and import it from there.
 
@@ -31,6 +32,6 @@ Start a free instance for dev/test on Google's Firebase Studio platform with jus
 
 Open the Gemini chat with Ctrl+Shift+Space.
 
-Notice that the provided free VM is a constrained environment with limited resources: 8GB RAM, 1-core CPUs, 10GB Disk.
+Notice that the provided free VM is a constrained environment with limited resources: 32 GB RAM, 8-core CPUs, and 15GB storage space.
 
 More info for Firebase Studio [here](https://firebase.google.com/docs).
