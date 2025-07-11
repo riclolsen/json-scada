@@ -1,4 +1,4 @@
-# Project IDX Setup
+# Firebase Studio Setup
 
 Start a free instance for dev/test on Google's Firebase Studio platform with just a Google account.
 
@@ -10,7 +10,7 @@ Start a free instance for dev/test on Google's Firebase Studio platform with jus
 
     * Repo URL: https://github.com/riclolsen/json-scada
     * Name: json-scada
-    * Select the "Mobile development with Flutter / Android Studio" option, this way you will get a 32 GB/8 vCPU instance.
+    * Check the "Mobile SDK Support (Flutter + Android Emulator)" option, this way you will get a 32 GB RAM/8 vCPU instance.
 
     Alternatively, you can fork the repo on Github and import it from there.
 
