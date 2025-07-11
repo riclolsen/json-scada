@@ -34,6 +34,7 @@
     pkgs.mongodb-tools
     pkgs.mongosh
     pkgs.nodePackages.nodemon
+    pkgs.openssl
   ];
 
   #services.postgres = {

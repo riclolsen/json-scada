@@ -9,8 +9,8 @@
 
 ARG1=${1:-linux-x64}
 
-# extract submodules for mongodb C++ driver and opendnp3
-# git submodule update --init --recursive
+# extract submodules for mongodb C++ driver and opendnp3 (may take too much storage space)
+#git submodule update --init --recursive
 
 cd ..
 mkdir bin
@@ -49,7 +49,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 #dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
 
 #cd ../mongo-cxx-driver/mongo-cxx-driver/build
-#cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
+#cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF  -DOPENSSL_INCLUDE_DIR=/nix/store/jv45xs1p8v9mcychfgkv6vxridcn532h-openssl-3.4.1-dev/include/
 #cmake --build . --config Release
 #cmake --build . --target install --config Release
 #
@@ -73,23 +73,21 @@ go env -w GO111MODULE=auto
 export CGO_CPPFLAGS="-I /usr/include"
 export CGO_LDFLAGS="-L /usr/lib"
 
-# avoid compiling go modules as Firebase Studio only currently provides 8GB RAM, not enough for the build
-
 # you may need a lot of memory to build go drivers, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
-#cd ../calculations
-#go mod tidy 
-#go build
-#cp calculations ../../bin/
+cd ../calculations
+go mod tidy 
+go build
+cp calculations ../../bin/
 
-#cd ../i104m
-#go mod tidy 
-#go build
-#cp i104m ../../bin/
+cd ../i104m
+go mod tidy 
+go build
+cp i104m ../../bin/
 
-#cd ../plc4x-client
-#go mod tidy 
-#go build
-#cp plc4x-client ../../bin/
+cd ../plc4x-client
+go mod tidy 
+go build
+cp plc4x-client ../../bin/
 
 # release some disk space
 rm -rf ~/.cache
