@@ -35,6 +35,9 @@
     pkgs.mongosh
     pkgs.nodePackages.nodemon
     pkgs.openssl
+    pkgs.zstd
+    pkgs.snappy
+    pkgs.pkgconf
   ];
 
   #services.postgres = {

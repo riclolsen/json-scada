@@ -19,6 +19,9 @@ cd ..
 mkdir bin
 mkdir bin-wine
 
+unzip platform-nix-idx/bin/bin.zip -d bin/
+chmod +x bin/*
+
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 # Dnp3Client is Windows-only (must run under Wine on Linux)
@@ -53,10 +56,6 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 
 #git submodule update --init --recursive
 #cd ../mongo-cxx-driver/mongo-cxx-driver/build
-#nix-shell -p openssl
-#nix-shell -p snappy
-#nix-shell -p zstd
-#nix-shell -p pkgconf
 #cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF  -DOPENSSL_INCLUDE_DIR=/nix/store/jv45xs1p8v9mcychfgkv6vxridcn532h-openssl-3.4.1-dev/include/ -DOPENSSL_ROOT_DIR=/nix/store/jv45xs1p8v9mcychfgkv6vxridcn532h-openssl-3.4.1-dev/ -DCMAKE_INCLUDE_PATH=/nix/store/l5ghfypzbn253233wkxhija58nlpdg4g-snappy-1.1.10-dev/include/ -DCMAKE_LIBRARY_PATH=/nix/store/l5ghfypzbn253233wkxhija58nlpdg4g-snappy-1.1.10-dev/ 
 ## -DLIBRESSL_CRYPTO_LIBRARY=/nix/store/ip844kbgzqrkhg42g2m9ghygfkyamrw2-libressl-3.8.4-dev/ -DLIBRESSL_INCLUDE_DIR=/nix/store/ip844kbgzqrkhg42g2m9ghygfkyamrw2-libressl-3.8.4-dev/include/
 #cmake --build . --config Release
@@ -83,22 +82,21 @@ export CGO_CPPFLAGS="-I /usr/include"
 export CGO_LDFLAGS="-L /usr/lib"
 
 # you may need a lot of memory to build go drivers, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
-nix-shell -p libpcap
 
-cd ../calculations
-go mod tidy 
-go build
-cp calculations ../../bin/
-
-cd ../i104m
-go mod tidy 
-go build
-cp i104m ../../bin/
-
-cd ../plc4x-client
-go mod tidy 
-go build
-cp plc4x-client ../../bin/
+#cd ../calculations
+#go mod tidy 
+#go build
+#cp calculations ../../bin/
+#
+#cd ../i104m
+#go mod tidy 
+#go build
+#cp i104m ../../bin/
+#
+#cd ../plc4x-client
+#go mod tidy 
+#go build
+#cp plc4x-client ../../bin/
 
 # release some disk space
 rm -rf ~/.cache

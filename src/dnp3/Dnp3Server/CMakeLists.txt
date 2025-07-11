@@ -122,9 +122,15 @@ else ()
 
 # LINUX
 
-# OR LSB_RELEASE_ID_SHORT MATCHES ""
+if(EXISTS "/etc/os-release")
+  file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+  string(REGEX MATCH "ID=ubuntu" IS_UBUNTU "${OS_RELEASE_CONTENT}")
+  if(IS_UBUNTU)
+    message(STATUS "Ubuntu detected")
+  endif()
+endif()
 
-if (LSB_RELEASE_ID_SHORT MATCHES "ubuntu") 
+if (IS_UBUNTU) 
 
 # UBUNTU LINUX
 
