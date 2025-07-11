@@ -56,6 +56,7 @@ cd build
 cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON ..
 make
 cp cpp/lib/libopendnp3.so ../../../../bin/
+cp cpp/lib/libopendnp3.so ../../../../platform-nix-idx/bin/
 
 cd ../../Dnp3Server
 mkdir build
@@ -63,6 +64,7 @@ cd build
 cmake ..
 make
 cp Dnp3Server ../../../../bin/
+cp Dnp3Server ../../../../platform-nix-idx/bin/
 cd ../..
 
 export GOBIN=~/json-scada/bin
@@ -72,17 +74,24 @@ cd ../calculations
 go mod tidy 
 go build
 cp calculations ../../bin/
+cp calculations ../../platform-nix-idx/bin/
+
 
 cd ../i104m
 go mod tidy 
 go build
 cp i104m ../../bin/
+cp i104m ../../platform-nix-idx/bin/
 
 # you may need a lot of memory to build this step, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
 cd ../plc4x-client
 go mod tidy 
 go build
 cp plc4x-client ../../bin/
+cp plc4x-client ../../platform-nix-idx/bin/
+
+# release some disk space
+rm -rf ~/.cache
 
 cd ../cs_data_processor
 npm install
