@@ -13,10 +13,7 @@ mongoConnectionString=$(jq -r '.mongoConnectionString' $JSPATH/conf/json-scada.j
 database=$(jq -r '.mongoDatabaseName' $JSPATH/conf/json-scada.json)
 FLAGS=--mode=upsert
 
-# read JSON config file
-
-mkdir -c $TMPPATH
-rm -rf $TMPPATH/*.*
+cd $TMPPATH
 
 mongosh --quiet --eval "db.realtimeData.deleteMany({})" "$mongoConnectionString"
 mongosh --quiet --eval "db.processInstances.deleteMany({})" "$mongoConnectionString"
@@ -37,7 +34,5 @@ mongoimport --uri "$mongoConnectionString" --db $database --collection realtimeD
 # mongoimport --uri "$mongoConnectionString" --db $database --collection soeData --file soeData.json $FLAGS
 # mongoimport --uri "$mongoConnectionString" --db $database --collection userActions --file userActions.json $FLAGS
 
-cp $TMPPATH%\*.svg %SVGPATH%\*.svg /Y
-cp %TMPPATH%\screen_list.js %SVGPATH%\ /Y
-# optional
-# copy %TMPPATH%\ %JSPATH%\conf\*.* 
+cp $TMPPATH/*.svg $SVGPATH/
+cp $TMPPATH/screen_list.js $SVGPATH/
