@@ -34,4 +34,4 @@ cp $SVGPATH/screen_list.js $TMPPATH/
 
 # zip files
 cd $TMPPATH
-zip $TMPPATH/${project_name}.zip $TMPPATH/*.json $TMPPATH/*.js $TMPPATH/*.svg
+zip -j $TMPPATH/${project_name}.zip $TMPPATH/*.json $TMPPATH/*.js $TMPPATH/*.svg
