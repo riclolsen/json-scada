@@ -38,6 +38,7 @@
     pkgs.zstd
     pkgs.snappy
     pkgs.pkgconf
+    pkgs.zip
   ];
 
   #services.postgres = {
