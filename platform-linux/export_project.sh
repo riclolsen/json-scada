@@ -10,9 +10,10 @@ SVGPATH=$JSPATH/svg
 mongoConnectionString=$(jq -r '.mongoConnectionString' $JSPATH/conf/json-scada.json)
 database=$(jq -r '.mongoDatabaseName' $JSPATH/conf/json-scada.json)
 
-
-mkdir -c $TMPPATH
+mkdir $TMPPATH
 rm -rf $TMPPATH/*.*
+
+project_name=${1:-jsproject.zip}
 
 mongoexport --uri "$mongoConnectionString" --db $database --collection realtimeData --out $TMPPATH/realtimeData.json
 mongoexport --uri "$mongoConnectionString" --db $database --collection processInstances --out $TMPPATH/processInstances.json
@@ -29,8 +30,8 @@ mongoexport --uri "$mongoConnectionString" --db $database --collection roles --o
 cp $SVGPATH/*.svg $TMPPATH/
 cp $SVGPATH/screen_list.js $TMPPATH/
 # optional
-# copy $JSPATH\conf/*.* $TMPPATH/
+# copy $JSPATH/conf/*.* $TMPPATH/
 
 # zip files
 cd $TMPPATH
-tar -a -c -f  $TMPPATH/jsproject.zip -C $TMPPATH *.json *.js *.svg
+zip $TMPPATH/${project_name}.zip $TMPPATH/*.json $TMPPATH/*.js $TMPPATH/*.svg
