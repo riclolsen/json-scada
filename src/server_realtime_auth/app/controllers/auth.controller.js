@@ -17,6 +17,7 @@
 
 'use strict'
 
+const os = require('node:os')
 const Log = require('../../simple-logger')
 const LoadConfig = require('../../load-config')
 const config = require('../config/auth.config')
@@ -1476,15 +1477,15 @@ exports.exportProject = async (req, res) => {
         ['~/json-scada/platform-linux/export_project.sh', project.fileName],
         { shell: true }
       )
-      dir = '~/json-scada/tmp/'
+      dir = os.homedir() + '/json-scada/tmp/'
     }
     cmd.stdout.on('data', (data) => Log.log(`stdout: ${data}`))
     cmd.stderr.on('data', (data) => Log.log(`stderr: ${data}`))
     cmd.on('close', (code) => {
       Log.log(`child process exited with code ${code}`)
       if (!fs.existsSync(dir + project.fileName) || code != 0) {
-        Log.log('Project file not found!')
-        res.status(200).send({ error: err })
+        Log.log('Project file not found! ' + dir + project.fileName)
+        res.status(200).send({ error: 'Project file not found! ' + dir + project.fileName })
         return
       }
       registerUserAction(req, 'exportProject')
