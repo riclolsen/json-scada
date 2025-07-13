@@ -19,7 +19,7 @@ cd ..
 mkdir bin
 mkdir bin-wine
 
-unzip platform-nix-idx/bin/bin.zip -d bin/
+unzip -o platform-nix-idx/bin/bin.zip -d bin/
 chmod +x bin/*
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -41,7 +41,12 @@ cd ../../../../../iec61850_client
 dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ 
 
 cd ../lib60870.netcore
-dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet restore
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ lib60870.netcore/lib60870/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ iec101client/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ iec101server/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ iec104client/
+dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/ iec104server/
 
 cd ../OPC-UA-Client
 dotnet restore
