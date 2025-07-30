@@ -78,14 +78,7 @@ Parameters for communication with OPC-UA servers.
 
 ## Commands Routing
 
-Commands received on this driver (OPC tag writes) can be routed to protocol clients. A command tag that is associated to a client via protocolSource* parameters can be used to route commands to the client by configuring a protocolDestination for the command tag.
-
-Use the AdminUI to add a new destination for a command tag. Configure the following parameters:
-
-- Protocol Connection - Select the protocol OPC-UA_SERVER connection to use for the destination.
-- Object Address - Use the command tag name as the object address.
-- ASDU TI Type - Use "boolean" for digital commands or "double" for analog commands.
-- Leave the rest of the parameters as default.
+Commands received on this driver (OPC UA tag writes) can be routed to protocol clients. When commands are enabled for the connection, command tags will be automatically made available on the OPC-UA server. When a write is performed on an OPC object (associated with a command tag) on the OPC-UA server, the command is routed to the protocol source of the command tag.
 
 ## Command Line Arguments
 

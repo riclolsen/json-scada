@@ -479,7 +479,8 @@ process.on('uncaughtException', (err) =>
                       ? {}
                       : { nodeId: 'i=' + element._id }),
                     // let it be auto created by NodeOPCUA
-                    browseName: element.tag,
+                    browseName: element.ungroupedDescription || element.tag,
+                    displayName: element.description,
                     dataType: v.type,
                     description: element?.description,
                     minimumSamplingInterval: 1000,
