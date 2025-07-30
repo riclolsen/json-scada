@@ -294,15 +294,15 @@ partial class MainClass
                         {
                             var bulkWriteResult =
                               collection
-                                .WithWriteConcern(WriteConcern.W1)
+                                .WithWriteConcern(WriteConcern.Unacknowledged)
                                 .BulkWrite(listWrites, new BulkWriteOptions
                                 {
-                                    IsOrdered = true,
+                                    IsOrdered = false,
                                     BypassDocumentValidation = true,
                                 });
-                            Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
+                            // Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
                             var ups = (uint)((float)listWrites.Count / ((float)stopWatch.ElapsedMilliseconds / 1000));
-                            Log($"MongoDB - Bulk written in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
+                            Log($"MongoDB - Bulk written {listWrites.Count} documents in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
                             listWrites.Clear();
                         }
                         catch (Exception e)
@@ -313,7 +313,7 @@ partial class MainClass
 
                     if (OPCDataQueue.Count == 0)
                     {
-                        await Task.Delay(200);
+                        Thread.Sleep(200);
                     }
                 }
                 while (true);

@@ -130,6 +130,8 @@ partial class MainClass
         [BsonDefaultValue(null)]
         public protocolDestination[] protocolDestinations;
         [BsonDefaultValue("")]
+        public BsonString protocolSourceBrowsePath { get; set; }
+        [BsonDefaultValue("")]
         public BsonString protocolSourceASDU { get; set; }
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
         public BsonDouble protocolSourceCommandDuration;
@@ -222,6 +224,7 @@ partial class MainClass
             return new rtData()
             {
                 _id = _id,
+                protocolSourceBrowsePath = ov.path,
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -297,6 +300,7 @@ partial class MainClass
             return new rtData()
             {
                 _id = _id,
+                protocolSourceBrowsePath = ov.path,
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -371,6 +375,7 @@ partial class MainClass
             return new rtData()
             {
                 _id = _id,
+                protocolSourceBrowsePath = ov.path,
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -446,6 +451,7 @@ partial class MainClass
             return new rtData()
             {
                 _id = _id,
+                protocolSourceBrowsePath = ov.path,
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -520,6 +526,7 @@ partial class MainClass
         return new rtData()
         {
             _id = _id,
+            protocolSourceBrowsePath = ov.path,
             protocolSourceASDU = ov.asdu,
             protocolSourceCommonAddress = ov.common_address,
             protocolSourceConnectionNumber = ov.conn_number,

@@ -10,8 +10,8 @@
     <PackageReference Include="MongoDB.Bson" Version="3.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="3.0.0" />
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.376.213" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.5.376.213" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.376.235" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.5.376.235" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
   </ItemGroup>
 

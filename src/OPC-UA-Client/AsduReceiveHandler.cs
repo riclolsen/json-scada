@@ -218,39 +218,43 @@ partial class MainClass
                 };
             }
 
-            try
+            do
             {
-                Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
-                exitCode = ExitCode.ErrorDiscoverEndpoints;
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
-                Log(conn_name + " - " + "Selected endpoint uses: " +
-                    selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
+                try
+                {
+                    Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
+                    exitCode = ExitCode.ErrorDiscoverEndpoints;
+                    var selectedEndpoint = CoreClientUtils.SelectEndpoint(config, OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
+                    Log(conn_name + " - " + "Selected endpoint uses: " +
+                        selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
 
-                Log(conn_name + " - " + "Create a session with OPC UA server.");
-                exitCode = ExitCode.ErrorCreateSession;
-                var endpointConfiguration = EndpointConfiguration.Create(config);
-                var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
-                await Task.Delay(50);
-                session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
+                    Log(conn_name + " - " + "Create a session with OPC UA server.");
+                    exitCode = ExitCode.ErrorCreateSession;
+                    var endpointConfiguration = EndpointConfiguration.Create(config);
+                    var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
+                    Thread.Sleep(50);
+                    session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
 
-                // Log("" + session.KeepAliveInterval); // default is 5000
-                session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
+                    // Log("" + session.KeepAliveInterval); // default is 5000
+                    session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
 
-                // register keep alive handler
-                session.KeepAlive += Client_KeepAlive;
+                    // register keep alive handler
+                    session.KeepAlive += Client_KeepAlive;
+                }
+                catch (Exception e)
+                {
+                    Log(conn_name + " - WARN: " + e.Message);
+                }
+
+                if (session == null)
+                {
+                    Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
+                    failed = true;
+                    exitCode = ExitCode.ErrorCreateSession;
+                    Thread.Sleep(1000);
+                }
             }
-            catch (Exception e)
-            {
-                Log(conn_name + " - WARN: " + e.Message);
-            }
-
-            if (session == null)
-            {
-                Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
-                failed = true;
-                exitCode = ExitCode.ErrorCreateSession;
-                return;
-            }
+            while (session == null || !session.Connected);
 
             if (OPCUA_conn.autoCreateTags)
             {
@@ -259,8 +263,33 @@ partial class MainClass
 
                 var uac = new UAClient(session);
                 var refDescr = await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
-                Regex regexp = new Regex("/Objects/");
+                var regexp = new Regex("/Objects/");
                 IList<NodeId> nodesList = [];
+
+                // filter out the nodes in refDescr without any topic (OPCUA_conn.topics) in the path
+                if (OPCUA_conn.topics.Length > 0)
+                {
+                    Log(conn_name + " - " + "Filtering nodes by topics: " + string.Join(", ", OPCUA_conn.topics));
+                    foreach (var (reference, path) in refDescr.Values)
+                    {
+                        if (reference.NodeClass == NodeClass.Object) continue;
+                        if (reference.NodeClass == NodeClass.Method && !OPCUA_conn.commandsEnabled) continue;
+                        var keep = false;
+                        foreach (var topic in OPCUA_conn.topics)
+                        {
+                            if ((path+"/").Contains("/"+topic+"/"))
+                            {
+                                keep = true;
+                                break;
+                            }
+                        }
+                        if (!keep)
+                        {
+                            refDescr.Remove(reference.NodeId);
+                        }
+                    }
+                }
+                Log(conn_name + " - " + refDescr.Count + " nodes found in the namespace.");
 
                 foreach (var (reference, path) in refDescr.Values)
                 {
