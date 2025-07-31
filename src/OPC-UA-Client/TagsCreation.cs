@@ -132,6 +132,8 @@ partial class MainClass
         [BsonDefaultValue("")]
         public BsonString protocolSourceBrowsePath { get; set; }
         [BsonDefaultValue("")]
+        public BsonString protocolSourceAccessLevel { get; set; }
+        [BsonDefaultValue("")]
         public BsonString protocolSourceASDU { get; set; }
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
         public BsonDouble protocolSourceCommandDuration;
@@ -225,6 +227,7 @@ partial class MainClass
             {
                 _id = _id,
                 protocolSourceBrowsePath = ov.path,
+                protocolSourceAccessLevel = Convert.ToString(ov.accessLevels),
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -301,6 +304,7 @@ partial class MainClass
             {
                 _id = _id,
                 protocolSourceBrowsePath = ov.path,
+                protocolSourceAccessLevel = Convert.ToString(ov.accessLevels),
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -376,6 +380,7 @@ partial class MainClass
             {
                 _id = _id,
                 protocolSourceBrowsePath = ov.path,
+                protocolSourceAccessLevel = Convert.ToString(ov.accessLevels),
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -452,6 +457,7 @@ partial class MainClass
             {
                 _id = _id,
                 protocolSourceBrowsePath = ov.path,
+                protocolSourceAccessLevel = Convert.ToString(ov.accessLevels),
                 protocolSourceASDU = ov.asdu,
                 protocolSourceCommonAddress = ov.common_address,
                 protocolSourceConnectionNumber = ov.conn_number,
@@ -527,6 +533,7 @@ partial class MainClass
         {
             _id = _id,
             protocolSourceBrowsePath = ov.path,
+            protocolSourceAccessLevel = Convert.ToString(ov.accessLevels),
             protocolSourceASDU = ov.asdu,
             protocolSourceCommonAddress = ov.common_address,
             protocolSourceConnectionNumber = ov.conn_number,

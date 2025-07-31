@@ -25,6 +25,7 @@ const {
   DataType,
   StatusCodes,
   VariantArrayType,
+  AccessLevelFlag,
 } = require('node-opcua')
 const { MongoClient, Double } = require('mongodb')
 const Log = require('./simple-logger')
@@ -262,7 +263,7 @@ process.on('uncaughtException', (err) =>
               ns + '_' + connection.name
             )
             // we create a new folder under RootFolder
-            const folderLevel1 = namespace.addFolder('ObjectsFolder', {
+            const folderJsonScada = namespace.addFolder('ObjectsFolder', {
               browseName: 'JsonScadaServer',
             })
 
@@ -372,9 +373,14 @@ process.on('uncaughtException', (err) =>
                     group3: 1,
                     origin: 1,
                     protocolSourceConnectionNumber: 1,
+                    protocolSourceBrowsePath: 1,
+                    protocolSourceASDU: 1,
+                    protocolSourceObjectAddress: 1,
+                    protocolSourceAccessLevel: 1,
                   },
                 }
               )
+              .sort({ protocolSourceConnectionNumber: 1, origin: -1 })
               .toArray()
 
             let group1List = {},
@@ -384,14 +390,14 @@ process.on('uncaughtException', (err) =>
             // folder tree based on group1/group2/group3 properties of tags
             for (let i = 0; i < res.length; i++) {
               if (res[i].group1 == '') {
-                if (!res[i].folder) res[i].folder = folderLevel1
+                if (!res[i].folder) res[i].folder = folderJsonScada
                 continue
               }
               if (res[i].group1 in group1List) {
                 res[i].folder = group1List[res[i].group1]
                 continue
               }
-              let folder = namespace.addFolder(folderLevel1, {
+              let folder = namespace.addFolder(folderJsonScada, {
                 browseName: res[i].group1,
               })
               group1List[res[i].group1] = folder
@@ -430,6 +436,32 @@ process.on('uncaughtException', (err) =>
               })
               group3List[res[i].group3] = folder
               res[i].folder = folder
+            }
+
+            // when protocolSourceBrowsePath is defined the origin of data comes from an OPC server, so we try to recreate the folder structure in this OPC-UA server
+            // Avoid creating folders that already exist
+            const browsePathFolders = {}
+            for (let i = 0; i < res.length; i++) {
+              if (
+                res[i].protocolSourceBrowsePath &&
+                typeof res[i].protocolSourceBrowsePath === 'string'
+              ) {
+                const browsePath = res[i].protocolSourceBrowsePath.split('/')
+                let folder = 'ObjectsFolder'
+                let pathKey = ''
+                for (let j = 0; j < browsePath.length; j++) {
+                  if (browsePath[j] === '') continue
+                  pathKey += '/' + browsePath[j]
+                  if (!browsePathFolders[pathKey]) {
+                    let folderNew = namespace.addFolder(folder, {
+                      browseName: browsePath[j],
+                    })
+                    browsePathFolders[pathKey] = folderNew
+                  }
+                  folder = browsePathFolders[pathKey]
+                }
+                res[i].folder = folder
+              }
             }
 
             Log.log(`Creating ${res.length} OPC UA Variables...`)
@@ -471,28 +503,79 @@ process.on('uncaughtException', (err) =>
 
                 const v = convertValueVariant(element)
                 if (v.type) {
-                  Log.log('Creating node: ' + element.tag, 2)
+                  let nodeId = null
+                  // tries to keep original id
+                  if (
+                    element.protocolSourceObjectAddress &&
+                    typeof element.protocolSourceObjectAddress === 'string' &&
+                    element.protocolSourceObjectAddress.startsWith('ns=')
+                  ) {
+                    nodeId = element.protocolSourceObjectAddress
+                    // remove namespace from nodeId
+                    nodeId = nodeId.substring(nodeId.indexOf(';') + 1)
+                  } else {
+                    // numeric nodeId can't exceed 4294967295
+                    if (element._id <= 4294967295) {
+                      nodeId = 'i=' + element._id
+                    }
+                  }
+
+                  // let browseName = element.ungroupedDescription || element.tag
+                  // do not create new objects for commands
+                  if (
+                    element.origin === 'command' &&
+                    nodeId &&
+                    element.protocolSourceObjectAddress &&
+                    typeof element.protocolSourceObjectAddress === 'string' &&
+                    element.protocolSourceObjectAddress.startsWith('ns=')
+                  ) {
+                    const v = namespace.findNode(nodeId)
+                    if (v) {
+                      continue
+                    }
+                  }
+
+                  // check if namespace already have this nodeId
+                  if (nodeId && namespace.findNode(nodeId)) {
+                    // if already exists then let a new one be auto created by NodeOPCUA
+                    nodeId = null
+                  }
+
+                  Log.log(
+                    'Creating node: ' +
+                      element.tag +
+                      ' ' +
+                      element.ungroupedDescription +
+                      ' ' +
+                      (nodeId || ''),
+                    2
+                  )
+
+                  let writeFlag = 0
+                  if (
+                    element.protocolSourceAccessLevel &&
+                    typeof element.protocolSourceAccessLevel === 'string'
+                  ) {
+                    if (!isNaN(parseInt(element.protocolSourceAccessLevel)))
+                      writeFlag =
+                        parseInt(element.protocolSourceAccessLevel) &&
+                        AccessLevelFlag.CurrentWrite
+                  }
+
                   server._metrics[element.tag] = namespace.addVariable({
                     componentOf: element.folder,
-                    // numeric nodeId can't exceed 4294967295
-                    ...(element._id > 4294967295
-                      ? {}
-                      : { nodeId: 'i=' + element._id }),
-                    // let it be auto created by NodeOPCUA
+                    ...(nodeId === null ? {} : { nodeId: nodeId }),
                     browseName: element.ungroupedDescription || element.tag,
                     displayName: element.description,
                     dataType: v.type,
                     description: element?.description,
-                    minimumSamplingInterval: 1000,
+                    minimumSamplingInterval: -1,
+                    accessLevel:
+                      AccessLevelFlag.CurrentRead |
+                      (element.origin === 'command'
+                        ? AccessLevelFlag.CurrentWrite
+                        : writeFlag),
                     ...cmdWriteProp,
-                    //value: {
-                    //  get: () => new Variant({}),
-                    //  set: variant => {
-                    //    console.log(variant)
-                    //    console.log(element.tag)
-                    //    return StatusCodes.Good
-                    //  }
-                    //}
                   })
                   server._metrics[element.tag].setValueFromSource(
                     {
@@ -801,7 +884,7 @@ function convertValueVariant(rtData) {
     case 'json':
       let obj = null
       try {
-        obj = JSON.parse(rtData?.valueJson)
+        if (rtData?.valueJson) obj = JSON.parse(rtData?.valueJson)
       } catch (e) {
         Log.log(e)
       }

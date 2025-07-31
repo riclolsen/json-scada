@@ -345,6 +345,7 @@ partial class MainClass
                                         {
                                             createCommandForMethod = true,
                                             createCommandForSupervised = false,
+                                            accessLevels = AccessLevels.CurrentWrite,
                                             valueJson = "",
                                             selfPublish = true,
                                             address = sourceNodes[i].NodeId.ToString(),
@@ -417,6 +418,7 @@ partial class MainClass
                                     {
                                         createCommandForMethod = false,
                                         createCommandForSupervised = createCommandForSupervised,
+                                        accessLevels = (sourceNodes[i] as VariableNode).UserAccessLevel,
                                         valueJson = jsonValue,
                                         selfPublish = true,
                                         address = sourceNodes[i].NodeId.ToString(),
