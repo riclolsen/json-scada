@@ -8,8 +8,8 @@
   <ItemGroup>
     <PackageReference Include="libplctag" Version="1.5.2" />
     <PackageReference Include="libplctag.NativeImport" Version="1.0.41" />
-    <PackageReference Include="MongoDB.Bson" Version="3.0.0" />
-    <PackageReference Include="MongoDB.Driver" Version="3.0.0" />
+    <PackageReference Include="MongoDB.Bson" Version="3.4.2" />
+    <PackageReference Include="MongoDB.Driver" Version="3.4.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
   </ItemGroup>
 
