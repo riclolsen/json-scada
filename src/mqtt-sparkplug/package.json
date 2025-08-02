@@ -11,7 +11,7 @@
   "dependencies": {
     "fs": "*",
     "jsonpath-plus": "^10.0.0",
-    "mongodb": "^6.7.0",
+    "mongodb": "^6.18.0",
     "mqtt": "^5.7.0",
     "queue-fifo": "^0.2.6",
     "relaxed-json": "^1.0.3",

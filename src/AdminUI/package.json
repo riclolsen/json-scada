@@ -18,7 +18,7 @@
     "vuetify": "^3.6.11"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.5",
+    "@vitejs/plugin-vue": "^6.0.1",
     "eslint": "^8.57.1",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.29.1",
@@ -30,7 +30,7 @@
     "unplugin-fonts": "^1.1.1",
     "unplugin-vue-components": "^0.27.2",
     "unplugin-vue-router": "^0.10.0",
-    "vite": "^6.2.2",
+    "vite": "^7.0.6",
     "vite-plugin-vuetify": "^2.0.3",
     "vue-router": "^4.4.0"
   }
