@@ -5,7 +5,7 @@
  */
 
 #include "iec61850_client.h"
-
+#include "hal_thread.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -64,6 +64,7 @@ int main(int argc, char **argv)
                 goto control_error;
             if (!ControlObjectClient_operate(controlLED1, ctlValOn, 0))
                 goto control_error;
+
             Thread_sleep(1000);
 
             if (!ControlObjectClient_operate(controlLED1, ctlValOff, 0))
@@ -81,6 +82,7 @@ int main(int argc, char **argv)
 
             if (!ControlObjectClient_operate(controlLED3, ctlValOn, 0))
                 goto control_error;
+
             Thread_sleep(1000);
 
             if (led4State == false)

@@ -92,6 +92,15 @@ set (lib_common_SRCS
 ./logging/log_storage.c
 )
 
+if(FOUND_SQLITE3_SOURCE)
+message("sqlite3 source -> adding to lib source")
+set (lib_common_SRCS
+    ${lib_common_SRCS}
+    ./logging/drivers/sqlite/log_storage_sqlite.c
+    ./../third_party/sqlite/sqlite3.c
+)
+endif(FOUND_SQLITE3_SOURCE)
+
 set (lib_asn1c_SRCS
 ./mms/iso_mms/asn1c/DataAccessError.c
 ./mms/iso_mms/asn1c/DeleteNamedVariableListRequest.c
@@ -234,17 +243,6 @@ endif()
 set_source_files_properties(${lib_asn1c_SRCS}
                                        PROPERTIES LANGUAGE C)
 
-IF(MSVC)
-set_source_files_properties(${lib_common_SRCS} ${lib_windows_SRCS}
-                                       PROPERTIES LANGUAGE CXX)
-set_source_files_properties(${lib_rsession_SRCS}
-                                       PROPERTIES LANGUAGE CXX)
-set_source_files_properties(${lib_goose_SRCS}
-                                       PROPERTIES LANGUAGE CXX)
-set_source_files_properties(${lib_sv_SRCS}
-                                       PROPERTIES LANGUAGE CXX)
-ENDIF()
-
 IF(WITH_WPCAP)
 ELSE()
 add_definitions(-DEXCLUDE_ETHERNET_WINDOWS)
@@ -252,6 +250,10 @@ ENDIF()
 
 include_directories(
   ../third_party/winpcap/include
+)
+
+include_directories(
+  ../third_party/sqlite
 )
 
 IF(WITH_WPCAP OR CONFIG_IEC61850_R_GOOSE OR CONFIG_IEC61850_R_SMV)
@@ -371,7 +373,7 @@ IF(UNIX)
   ENDIF (CONFIG_SYSTEM_HAS_CLOCK_GETTIME)
 ENDIF(UNIX)
 IF(MINGW)
-  target_link_libraries(iec61850-shared ws2_32 iphlpapi)
+  target_link_libraries(iec61850-shared ws2_32 iphlpapi bcrypt)
   target_link_libraries(iec61850 ws2_32 iphlpapi)
 ENDIF(MINGW)
 

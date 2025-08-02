@@ -364,7 +364,7 @@ Ethernet_setMode(EthernetSocket ethSocket, EthernetSocketMode mode)
 }
 
 void
-Ethernet_addMulticastAddress(EthernetSocket ethSocket, uint8_t* multicastAddress)
+Ethernet_addMulticastAddress(EthernetSocket ethSocket, const uint8_t* multicastAddress)
 {
     /* not implemented */
 }

@@ -1,52 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C35D624E-5506-4560-8074-1728F1FA1A4D}</ProjectGuid>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>iec61850dotnet</RootNamespace>
     <AssemblyName>iec61850dotnet</AssemblyName>
+    <AssemblyTitle>IEC61850 API for C#</AssemblyTitle>
+    <Company>MZ Automation GmbH</Company>
+    <Copyright>Michael Zillgith</Copyright>
+    <AssemblyVersion>1.0.%2a</AssemblyVersion>
+	  <Deterministic>false</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
     <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <PackageReference Include="NUnit" Version="4.3.2" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="MmsValue.cs" />
-    <Compile Include="DataSet.cs" />
-    <Compile Include="ReportControlBlock.cs" />
-    <Compile Include="IEC61850ClientAPI.cs" />
-    <Compile Include="Reporting.cs" />
-    <Compile Include="Control.cs" />
-    <Compile Include="IsoConnectionParameters.cs" />
-    <Compile Include="MmsVariableSpecification.cs" />
-    <Compile Include="IEC61850ServerAPI.cs" />
-    <Compile Include="IEC61850CommonAPI.cs" />
-    <Compile Include="TLS.cs" />
-    <Compile Include="SampledValuesControlBlock.cs" />
-    <Compile Include="GooseControlBlock.cs" />
-    <Compile Include="GooseSubscriber.cs" />
-    <Compile Include="SampledValuesSubscriber.cs" />
-    <Compile Include="IedServerConfig.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

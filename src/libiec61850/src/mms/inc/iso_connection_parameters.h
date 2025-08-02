@@ -91,11 +91,31 @@ AcseAuthenticationParameter_destroy(AcseAuthenticationParameter self);
 LIB61850_API void
 AcseAuthenticationParameter_setAuthMechanism(AcseAuthenticationParameter self, AcseAuthenticationMechanism mechanism);
 
+LIB61850_API AcseAuthenticationMechanism
+AcseAuthenticationParameter_getAuthMechanism(AcseAuthenticationParameter self);
+
 LIB61850_API void
 AcseAuthenticationParameter_setPassword(AcseAuthenticationParameter self, char* password);
 
+LIB61850_API const char*
+AcseAuthenticationParameter_getPassword(AcseAuthenticationParameter self);
 
-/**
+LIB61850_API int
+AcseAuthenticationParameter_getPasswordLength(AcseAuthenticationParameter self);
+
+LIB61850_API int
+IsoApplicationReference_getAeQualifier(IsoApplicationReference self);
+
+LIB61850_API const ItuObjectIdentifier*
+IsoApplicationReference_getApTitle(const IsoApplicationReference* self);
+
+LIB61850_API int
+ItuObjectIdentifier_getArcCount(ItuObjectIdentifier* self);
+
+LIB61850_API const uint16_t*
+ItuObjectIdentifier_getArc(ItuObjectIdentifier* self);
+
+ /**
  * \brief Callback function to authenticate a client
  *
  * \param parameter user provided parameter - set when user registers the authenticator

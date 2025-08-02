@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36327.8 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IEC61850.NET.core.2.0", "IEC61850.NET.core.2.0\IEC61850.NET.core.2.0.csproj", "{16C58017-94CC-4C92-AFDC-84AC24C393AD}"
 EndProject

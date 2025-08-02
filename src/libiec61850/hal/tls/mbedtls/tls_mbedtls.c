@@ -65,6 +65,7 @@ struct sTLSConfiguration {
 
     bool chainValidation;
     bool allowOnlyKnownCertificates;
+    bool timeValidation;
 
     /* TLS session renegotiation interval in milliseconds */
     int renegotiationTimeInMs;
@@ -179,13 +180,47 @@ verifyCertificate (void* parameter, mbedtls_x509_crt *crt, int certificate_depth
             }
 
             if (certMatches)
-                *flags = 0;
+            {
+                if (self->tlsConfig->chainValidation == false)
+                    *flags = 0;
+            }
             else
             {
                 raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED, "Alarm: certificate validation: trusted individual certificate not available", self);
 
                 *flags |= MBEDTLS_X509_BADCERT_OTHER;
                 return 1;
+            }
+        }
+
+        if (self->tlsConfig->timeValidation == false)
+        {
+            if (*flags & MBEDTLS_X509_BADCERT_EXPIRED)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCERT_EXPIRED;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CERT_EXPIRED, "Warning: certificate validation: using expired certificate", self);
+            }
+
+            if (*flags & MBEDTLS_X509_BADCRL_EXPIRED)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCRL_EXPIRED;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CRL_EXPIRED, "Warning: certificate validation: using expired CRL", self);
+            }
+
+            if (*flags & MBEDTLS_X509_BADCERT_FUTURE)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCERT_FUTURE;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CERT_NOT_YET_VALID, "Warning: certificate validation: using certificate with validity in future", self);
+            }
+
+            if (*flags & MBEDTLS_X509_BADCRL_FUTURE)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCRL_FUTURE;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CRL_NOT_YET_VALID, "Warning: certificate validation: using CRL with validity in future", self);
             }
         }
 
@@ -204,6 +239,8 @@ verifyCertificate (void* parameter, mbedtls_x509_crt *crt, int certificate_depth
             }
         }
     }
+
+    printf(" flags: %u\n", *flags);
 
     return 0;
 }
@@ -341,6 +378,9 @@ TLSConfiguration_create()
         /* default behavior is to allow all certificates that are signed by the CA */
         self->chainValidation = true;
         self->allowOnlyKnownCertificates = false;
+
+        /* default behaviour is to check for valid-from and expiration times */
+        self->timeValidation = true;
         self->setupComplete = false;
 
         self->eventHandler = NULL;
@@ -421,6 +461,12 @@ void
 TLSConfiguration_setChainValidation(TLSConfiguration self, bool value)
 {
     self->chainValidation = value;
+}
+
+void
+TLSConfiguration_setTimeValidation(TLSConfiguration self, bool value)
+{
+    self->timeValidation = value;
 }
 
 void

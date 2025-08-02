@@ -2379,7 +2379,6 @@ Control_writeAccessControlObject(MmsMapping* self, MmsDomain* domain, const char
 
                         checkResult = controlObject->checkHandler((ControlAction) controlObject,
                             controlObject->checkHandlerParameter, ctlVal, testCondition, interlockCheck);
-
                     }
 
                     if (checkResult == CONTROL_ACCEPTED)
@@ -2453,12 +2452,9 @@ Control_writeAccessControlObject(MmsMapping* self, MmsDomain* domain, const char
 
                     abortControlOperation(controlObject, false, SELECT_STATE_REASON_OPERATE_FAILED, self);
 
-                    if ((controlObject->ctlModel == 3) || (controlObject->ctlModel == 4))
-                    {
-                        ControlObject_sendLastApplError(controlObject, connection, "Oper",
-                                controlObject->errorValue, controlObject->addCauseValue,
-                                    ctlNum, origin, true);
-                    }
+                    ControlObject_sendLastApplError(controlObject, connection, "Oper",
+                            controlObject->errorValue, controlObject->addCauseValue,
+                                ctlNum, origin, true);
                 }
             }
 

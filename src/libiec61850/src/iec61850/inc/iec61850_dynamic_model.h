@@ -468,6 +468,9 @@ LIB61850_API SVControlBlock*
 SVControlBlock_create(const char* name, LogicalNode* parent, const char* svID, const char* dataSet, uint32_t confRev, uint8_t smpMod,
         uint16_t smpRate, uint8_t optFlds, bool isUnicast);
 
+LIB61850_API const char*
+SVControlBlock_getName(SVControlBlock* self);
+
 LIB61850_API void
 SVControlBlock_addPhyComAddress(SVControlBlock* self, PhyComAddress* phyComAddress);
 

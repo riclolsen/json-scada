@@ -3,7 +3,7 @@
  *
  *  Implementation of the ClientReportControlBlock class
  *
- *  Copyright 2014-2024 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -914,6 +914,14 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
 
         struct sWriteGoCBVariablesParameter* param = (struct sWriteGoCBVariablesParameter*) call->specificParameter2.pointer;
 
+        if (param == NULL)
+        {
+            if (DEBUG_IED_CLIENT)
+                printf("IED_CLIENT: internal error - no parameter for GoCB call!\n");
+
+            return;
+        }
+
         if ((mmsError != MMS_ERROR_NONE) || (accessError != DATA_ACCESS_ERROR_SUCCESS))
         {
             IedClientError err;
@@ -926,6 +934,8 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
             handler(param->originalInvokeId, call->callbackParameter, err);
 
             releaseWriteCall(self, call, param);
+
+            return;
         }
 
         param->currentItemId = LinkedList_getNext(param->currentItemId);
@@ -975,7 +985,8 @@ IedConnection_setGoCBValuesAsync(IedConnection self, IedClientError* error, Clie
 
     if (MmsMapping_getMmsDomainFromObjectReference(goCB->objectReference, domainId) == NULL)
     {
-        *error = IED_ERROR_OBJECT_REFERENCE_INVALID;;
+        *error = IED_ERROR_OBJECT_REFERENCE_INVALID;
+        return 0;
     }
 
     char* itemIdStart = goCB->objectReference + strlen(domainId) + 1;
@@ -985,7 +996,7 @@ IedConnection_setGoCBValuesAsync(IedConnection self, IedClientError* error, Clie
     if (separator == NULL)
     {
         *error = IED_ERROR_OBJECT_REFERENCE_INVALID;
-        goto exit_function;
+        return 0;
     }
 
     int separatorOffset = separator - itemIdStart;
@@ -1134,6 +1145,12 @@ IedConnection_setGoCBValuesAsync(IedConnection self, IedClientError* error, Clie
     else
     {
         struct sWriteGoCBVariablesParameter* param = (struct sWriteGoCBVariablesParameter*) GLOBAL_MALLOC(sizeof(struct sWriteGoCBVariablesParameter));
+
+        if (param == NULL)
+        {
+            *error = IED_ERROR_UNKNOWN;
+            goto exit_function;
+        }
 
         call->specificParameter2.pointer = param;
 

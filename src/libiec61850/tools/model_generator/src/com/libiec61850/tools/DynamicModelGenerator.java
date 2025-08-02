@@ -607,13 +607,24 @@ public class DynamicModelGenerator {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        System.out.println("Dynamic model generator");
+        
+        args = new String[6];
+
+    	System.out.println("Dynamic model generator");
 
         if (args.length < 1) {
             System.out.println("Usage: genconfig <ICD file> [-ied  <ied-name>] [-ap <access-point-name>] [<output filename>]");
             System.exit(1);
         }
 
+
+        args[0] = "array.icd";
+        args[1] = "-ied";
+        args[2] = "TEMPLATE";
+        args[3] = "-ap";
+        args[4] = "NewAccessPoint";
+        args[5] = "model_rr";
+        
         String icdFile = args[0];
 
         PrintStream outputStream = System.out;

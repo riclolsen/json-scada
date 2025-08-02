@@ -17,9 +17,6 @@
 
 #include "logging_api.h"
 
-LogStorage
-SqliteLogStorage_createInstance(const char* filename);
-
 static int running = 0;
 static IedServer iedServer = NULL;
 

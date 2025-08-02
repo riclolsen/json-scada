@@ -1,7 +1,7 @@
 /*
  *  client_sv_control.c
  *
- *  Copyright 2015-2022 Michael Zillgith
+ *  Copyright 2015-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -29,7 +29,8 @@
 
 #include "libiec61850_platform_includes.h"
 
-struct sClientSVControlBlock {
+struct sClientSVControlBlock
+{
     IedConnection connection;
     bool isMulticast;
     char* reference;
@@ -45,26 +46,30 @@ ClientSVControlBlock_create(IedConnection connection, const char* reference)
     IedClientError error;
     MmsValue* value = IedConnection_readObject(connection, &error, reference, IEC61850_FC_MS);
 
-    if ((error == IED_ERROR_OK) && (MmsValue_getType(value) != MMS_DATA_ACCESS_ERROR)) {
+    if ((error == IED_ERROR_OK) && (MmsValue_getType(value) != MMS_DATA_ACCESS_ERROR))
+    {
         isMulticast = true;
         MmsValue_delete(value);
     }
-    else {
+    else
+    {
         MmsValue_delete(value);
 
         value = IedConnection_readObject(connection, &error, reference, IEC61850_FC_US);
 
         if ((error == IED_ERROR_OK) && (MmsValue_getType(value) != MMS_DATA_ACCESS_ERROR))
             MmsValue_delete(value);
-        else {
+        else
+        {
             MmsValue_delete(value);
             return NULL;
         }
     }
 
-    ClientSVControlBlock self = (ClientSVControlBlock) GLOBAL_CALLOC(1, sizeof(struct sClientSVControlBlock));
+    ClientSVControlBlock self = (ClientSVControlBlock)GLOBAL_CALLOC(1, sizeof(struct sClientSVControlBlock));
 
-    if (self) {
+    if (self)
+    {
         self->connection = connection;
         self->reference = StringUtils_copyString(reference);
         self->isMulticast = isMulticast;
@@ -76,7 +81,8 @@ ClientSVControlBlock_create(IedConnection connection, const char* reference)
 void
 ClientSVControlBlock_destroy(ClientSVControlBlock self)
 {
-    if (self) {
+    if (self)
+    {
         GLOBAL_FREEMEM(self->reference);
         GLOBAL_FREEMEM(self);
     }
@@ -109,7 +115,6 @@ setBooleanVariable(ClientSVControlBlock self, const char* varName, bool value)
         IedConnection_writeBooleanValue(self->connection, &(self->lastError), refBuf, IEC61850_FC_MS, value);
     else
         IedConnection_writeBooleanValue(self->connection, &(self->lastError), refBuf, IEC61850_FC_US, value);
-
 
     if (self->lastError == IED_ERROR_OK)
         return true;
@@ -288,27 +293,36 @@ ClientSVControlBlock_getDstAddress(ClientSVControlBlock self)
     PhyComAddress retVal;
     memset(&retVal, 0, sizeof(retVal));
 
-    if (dstAddrValue == NULL) goto exit_error;
+    if (dstAddrValue == NULL)
+        goto exit_error;
 
-    if (MmsValue_getType(dstAddrValue) != MMS_STRUCTURE) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - addr has wrong type\n");
+    if (MmsValue_getType(dstAddrValue) != MMS_STRUCTURE)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - addr has wrong type\n");
         goto exit_cleanup;
     }
 
-    if (MmsValue_getArraySize(dstAddrValue) != 4) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - addr has wrong type\n");
+    if (MmsValue_getArraySize(dstAddrValue) != 4)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - addr has wrong type\n");
         goto exit_cleanup;
     }
 
     MmsValue* addr = MmsValue_getElement(dstAddrValue, 0);
 
-    if (MmsValue_getType(addr) != MMS_OCTET_STRING) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - addr has wrong type\n");
+    if (MmsValue_getType(addr) != MMS_OCTET_STRING)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - addr has wrong type\n");
         goto exit_cleanup;
     }
 
-    if (MmsValue_getOctetStringSize(addr) != 6) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - addr has wrong size\n");
+    if (MmsValue_getOctetStringSize(addr) != 6)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - addr has wrong size\n");
         goto exit_cleanup;
     }
 
@@ -318,8 +332,10 @@ ClientSVControlBlock_getDstAddress(ClientSVControlBlock self)
 
     MmsValue* prio = MmsValue_getElement(dstAddrValue, 1);
 
-    if (MmsValue_getType(prio) != MMS_UNSIGNED) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - prio has wrong type\n");
+    if (MmsValue_getType(prio) != MMS_UNSIGNED)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - prio has wrong type\n");
         goto exit_cleanup;
     }
 
@@ -327,8 +343,10 @@ ClientSVControlBlock_getDstAddress(ClientSVControlBlock self)
 
     MmsValue* vid = MmsValue_getElement(dstAddrValue, 2);
 
-    if (MmsValue_getType(vid) != MMS_UNSIGNED) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - vid has wrong type\n");
+    if (MmsValue_getType(vid) != MMS_UNSIGNED)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - vid has wrong type\n");
         goto exit_cleanup;
     }
 
@@ -336,13 +354,14 @@ ClientSVControlBlock_getDstAddress(ClientSVControlBlock self)
 
     MmsValue* appID = MmsValue_getElement(dstAddrValue, 3);
 
-    if (MmsValue_getType(appID) != MMS_UNSIGNED) {
-        if (DEBUG_IED_CLIENT) printf("IED_CLIENT: SVCB - appID has wrong type\n");
+    if (MmsValue_getType(appID) != MMS_UNSIGNED)
+    {
+        if (DEBUG_IED_CLIENT)
+            printf("IED_CLIENT: SVCB - appID has wrong type\n");
         goto exit_cleanup;
     }
 
     retVal.appId = MmsValue_toUint32(appID);
-
 
 exit_cleanup:
     MmsValue_delete(dstAddrValue);
@@ -350,4 +369,3 @@ exit_cleanup:
 exit_error:
     return retVal;
 }
-

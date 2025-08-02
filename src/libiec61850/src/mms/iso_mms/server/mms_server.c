@@ -1,7 +1,7 @@
 /*
  *  mms_server.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -925,4 +925,27 @@ void
 MmsServer_ignoreClientRequests(MmsServer self, bool enable)
 {
     self->blockRequests = enable;
+}
+
+bool
+MmsServer_abortConnection(MmsServer self, MmsServerConnection con)
+{
+    if (self->isoServerList)
+    {
+        LinkedList elem = LinkedList_getNext(self->isoServerList);
+
+        while (elem)
+        {
+            IsoServer isoServer = (IsoServer) LinkedList_getData(elem);
+
+            if (IsoServer_closeConnection(isoServer, con->isoConnection))
+            {
+                return true;
+            }
+
+            elem = LinkedList_getNext(elem);
+        }
+    }
+
+    return false;
 }

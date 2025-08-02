@@ -411,7 +411,10 @@ LIB61850_INTERNAL void*
 MmsServerConnection_getSecurityToken(MmsServerConnection self);
 
 LIB61850_INTERNAL void
-MmsServer_ignoreClientRequests(MmsServer self, bool enable);;
+MmsServer_ignoreClientRequests(MmsServer self, bool enable);
+
+LIB61850_INTERNAL bool
+MmsServer_abortConnection(MmsServer self, MmsServerConnection con);
 
 /**@}*/
 

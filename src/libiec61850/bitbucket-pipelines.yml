@@ -1,0 +1,39 @@
+image:  atlassian/default-image:4
+
+clone:
+  depth: full              # SonarCloud scanner needs the full history to assign issues properly
+
+definitions:
+  caches:
+    sonar: ~/.sonar/cache  # Caching SonarCloud artifacts will speed up your build
+  steps:
+    - step: &build-test-sonarcloud
+        name: Build, test and analyze on SonarCloud
+        caches:
+          - sonar
+        script:
+          - export SONAR_SCANNER_VERSION=5.0.1.3006
+          - export SONAR_SCANNER_OPTS="-Dsonar.javaHome=/usr/lib/jvm/java-17-openjdk-amd64"
+          - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
+          - export BW_OUTPUT=$HOME/.sonar/bw-output
+          - mkdir -p $BW_OUTPUT
+          - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+          - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+          - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+          - curl --create-dirs -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
+          - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
+          - apt-get update -qq
+          - apt-get install cmake -y --force-yes
+          - mkdir build
+          - cmake . -Bbuild
+          - build-wrapper-linux-x86-64 --out-dir $BW_OUTPUT cmake --build build
+          - sonar-scanner -Dsonar.cfamily.build-wrapper-output=$BW_OUTPUT
+
+pipelines:                 # More info here: https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html
+  branches:
+    master:
+      - step: *build-test-sonarcloud
+  pull-requests:
+    '**':
+      - step: *build-test-sonarcloud

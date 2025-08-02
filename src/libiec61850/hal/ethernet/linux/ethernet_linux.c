@@ -270,7 +270,7 @@ Ethernet_setMode(EthernetSocket self, EthernetSocketMode mode)
 }
 
 void
-Ethernet_addMulticastAddress(EthernetSocket self, uint8_t* multicastAddress)
+Ethernet_addMulticastAddress(EthernetSocket self, const uint8_t* multicastAddress)
 {
     struct packet_mreq mreq;
     memset(&mreq, 0, sizeof(struct packet_mreq));

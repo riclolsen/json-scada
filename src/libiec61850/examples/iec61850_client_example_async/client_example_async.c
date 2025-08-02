@@ -308,6 +308,7 @@ int main(int argc, char** argv)
                     printf("Failed to send operate %i\n", error);
                 }
 
+                MmsValue_delete(ctlVal);
             }
             else
             {

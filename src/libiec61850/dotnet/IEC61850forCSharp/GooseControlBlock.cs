@@ -1,7 +1,7 @@
 ﻿/*
  *  GooseControlBlock.cs
  *
- *  Copyright 2017 Michael Zillgith
+ *  Copyright 2017-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -20,270 +20,270 @@
  *
  *  See COPYING file for the complete license text.
  */
+using IEC61850.Common;
 using System;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-
-using IEC61850.Common;
 
 namespace IEC61850
 {
-	namespace Client
-	{
+    namespace Client
+    {
 
-		public class GooseControlBlock : IDisposable {
-		
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern IntPtr ClientGooseControlBlock_create (string dataAttributeReference);
+        public class GooseControlBlock : IDisposable
+        {
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void ClientGooseControlBlock_destroy(IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientGooseControlBlock_create(string dataAttributeReference);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern IntPtr IedConnection_getGoCBValues (IntPtr connection, out int error, string rcbReference, IntPtr updateRcb);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ClientGooseControlBlock_destroy(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void IedConnection_setGoCBValues (IntPtr connection, out int error, IntPtr rcb, UInt32 parametersMask, [MarshalAs(UnmanagedType.I1)] bool singleRequest);
-		
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			[return: MarshalAs(UnmanagedType.I1)]
-			static extern bool ClientGooseControlBlock_getGoEna (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr IedConnection_getGoCBValues(IntPtr connection, out int error, string rcbReference, IntPtr updateRcb);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void ClientGooseControlBlock_setGoEna(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool rptEna);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedConnection_setGoCBValues(IntPtr connection, out int error, IntPtr rcb, UInt32 parametersMask, [MarshalAs(UnmanagedType.I1)] bool singleRequest);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern IntPtr ClientGooseControlBlock_getGoID (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ClientGooseControlBlock_getGoEna(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void ClientGooseControlBlock_setGoID (IntPtr self, string goId);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ClientGooseControlBlock_setGoEna(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool rptEna);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern IntPtr ClientGooseControlBlock_getDatSet (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientGooseControlBlock_getGoID(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void ClientGooseControlBlock_setDatSet (IntPtr self, string datSet);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ClientGooseControlBlock_setGoID(IntPtr self, string goId);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern UInt32 ClientGooseControlBlock_getConfRev (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientGooseControlBlock_getDatSet(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			[return: MarshalAs(UnmanagedType.I1)]
-			static extern bool ClientGooseControlBlock_getNdsComm (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ClientGooseControlBlock_setDatSet(IntPtr self, string datSet);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern UInt32 ClientGooseControlBlock_getMinTime (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern UInt32 ClientGooseControlBlock_getConfRev(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern UInt32 ClientGooseControlBlock_getMaxTime (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ClientGooseControlBlock_getNdsComm(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			[return: MarshalAs(UnmanagedType.I1)]
-			static extern bool ClientGooseControlBlock_getFixedOffs (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern UInt32 ClientGooseControlBlock_getMinTime(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern PhyComAddress ClientGooseControlBlock_getDstAddress (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern UInt32 ClientGooseControlBlock_getMaxTime(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern IntPtr ClientGooseControlBlock_getDstAddress_addr(IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ClientGooseControlBlock_getFixedOffs(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern byte ClientGooseControlBlock_getDstAddress_priority(IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern PhyComAddress ClientGooseControlBlock_getDstAddress(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern UInt16 ClientGooseControlBlock_getDstAddress_vid(IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientGooseControlBlock_getDstAddress_addr(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern UInt16 ClientGooseControlBlock_getDstAddress_appid(IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern byte ClientGooseControlBlock_getDstAddress_priority(IntPtr self);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void ClientGooseControlBlock_setDstAddress (IntPtr self, PhyComAddress value);
-			
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern UInt16 ClientGooseControlBlock_getDstAddress_vid(IntPtr self);
 
-			private IntPtr self;
-			private IntPtr connection;
-			private string objectReference;
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern UInt16 ClientGooseControlBlock_getDstAddress_appid(IntPtr self);
 
-			private bool isDisposed = false;
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ClientGooseControlBlock_setDstAddress(IntPtr self, PhyComAddress value);
 
-			private bool flagGoEna = false;
-			private bool flagGoID = false;
-			private bool flagDatSet = false;
-			private bool flagDstAddress = false;
 
-			internal GooseControlBlock(string objectReference, IntPtr connection)
-			{
-				self = ClientGooseControlBlock_create (objectReference);
-				this.connection = connection;
-				this.objectReference = objectReference;
-			}
+            private IntPtr self;
+            private IntPtr connection;
+            private string objectReference;
 
-			public string GetObjectReference ()
-			{
-				return this.objectReference;
-			}
+            private bool isDisposed = false;
 
-			/// <summary>
-			/// Read all GoCB values from the server
-			/// </summary>
-			/// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
-			public void GetCBValues ()
-			{
-				int error;
+            private bool flagGoEna = false;
+            private bool flagGoID = false;
+            private bool flagDatSet = false;
+            private bool flagDstAddress = false;
 
-				IedConnection_getGoCBValues (connection, out error, objectReference, self);
+            internal GooseControlBlock(string objectReference, IntPtr connection)
+            {
+                self = ClientGooseControlBlock_create(objectReference);
+                this.connection = connection;
+                this.objectReference = objectReference;
+            }
 
-				if (error != 0)
-					throw new IedConnectionException ("getGoCBValues service failed", error);
-			}
+            public string GetObjectReference()
+            {
+                return objectReference;
+            }
 
-			private void
-			resetSendFlags()
-			{
-				flagGoEna = false;
-				flagGoID = false;
-				flagDatSet = false;
-				flagDstAddress = false;
-			}
+            /// <summary>
+            /// Read all GoCB values from the server
+            /// </summary>
+            /// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
+            public void GetCBValues()
+            {
+                int error;
 
-			public void SetCBValues (bool singleRequest)
-			{
-				UInt32 parametersMask = 0;
+                IedConnection_getGoCBValues(connection, out error, objectReference, self);
 
-				if (flagGoEna)
-					parametersMask += 1;
+                if (error != 0)
+                    throw new IedConnectionException("getGoCBValues service failed", error);
+            }
 
-				if (flagGoID)
-					parametersMask += 2;
+            private void
+            resetSendFlags()
+            {
+                flagGoEna = false;
+                flagGoID = false;
+                flagDatSet = false;
+                flagDstAddress = false;
+            }
 
-				if (flagDatSet)
-					parametersMask += 4;
+            public void SetCBValues(bool singleRequest)
+            {
+                UInt32 parametersMask = 0;
 
-				if (flagDstAddress)
-					parametersMask += 32;
+                if (flagGoEna)
+                    parametersMask += 1;
 
-				int error;
+                if (flagGoID)
+                    parametersMask += 2;
 
-				IedConnection_setGoCBValues (connection, out error, self, parametersMask, singleRequest);
+                if (flagDatSet)
+                    parametersMask += 4;
 
-				resetSendFlags ();
+                if (flagDstAddress)
+                    parametersMask += 32;
 
-				if (error != 0)
-					throw new IedConnectionException ("setGoCBValues service failed", error);
-			}
+                int error;
 
-			public void SetCBValues ()
-			{
-				SetCBValues (true);
-			}
+                IedConnection_setGoCBValues(connection, out error, self, parametersMask, singleRequest);
 
-			public bool GetGoEna()
-			{
-				return ClientGooseControlBlock_getGoEna (self);
-			}
+                resetSendFlags();
 
-			public void SetGoEna(bool value) 
-			{
-				ClientGooseControlBlock_setGoEna (self, value);
+                if (error != 0)
+                    throw new IedConnectionException("setGoCBValues service failed", error);
+            }
 
-				flagGoEna = true;
-			}
+            public void SetCBValues()
+            {
+                SetCBValues(true);
+            }
 
-			public string GetGoID()
-			{
-				IntPtr goIdRef = ClientGooseControlBlock_getGoID (self);
+            public bool GetGoEna()
+            {
+                return ClientGooseControlBlock_getGoEna(self);
+            }
 
-				return Marshal.PtrToStringAnsi (goIdRef);
-			}
+            public void SetGoEna(bool value)
+            {
+                ClientGooseControlBlock_setGoEna(self, value);
 
-			public void SetGoID (string goID)
-			{
-				ClientGooseControlBlock_setGoID (self, goID);
+                flagGoEna = true;
+            }
 
-				flagGoID = true;
-			}
+            public string GetGoID()
+            {
+                IntPtr goIdRef = ClientGooseControlBlock_getGoID(self);
 
-			public string GetDatSet() 
-			{
-				IntPtr datSetRef = ClientGooseControlBlock_getDatSet (self);
+                return Marshal.PtrToStringAnsi(goIdRef);
+            }
 
-				return Marshal.PtrToStringAnsi (datSetRef);
-			}
+            public void SetGoID(string goID)
+            {
+                ClientGooseControlBlock_setGoID(self, goID);
 
-			public void SetDataSet(string datSet)
-			{
-				ClientGooseControlBlock_setDatSet (self, datSet);
+                flagGoID = true;
+            }
 
-				flagDatSet = true;
-			}
+            public string GetDatSet()
+            {
+                IntPtr datSetRef = ClientGooseControlBlock_getDatSet(self);
 
-			public UInt32 GetConfRev()
-			{
-				return ClientGooseControlBlock_getConfRev (self);
-			}
+                return Marshal.PtrToStringAnsi(datSetRef);
+            }
 
-			public bool GetNdsComm()
-			{
-				return ClientGooseControlBlock_getNdsComm (self);
-			}
+            public void SetDataSet(string datSet)
+            {
+                ClientGooseControlBlock_setDatSet(self, datSet);
 
-			public UInt32 GetMinTime()
-			{
-				return ClientGooseControlBlock_getMinTime (self);
-			}
+                flagDatSet = true;
+            }
 
-			public UInt32 GetMaxTime()
-			{
-				return ClientGooseControlBlock_getMaxTime (self);
-			}
+            public UInt32 GetConfRev()
+            {
+                return ClientGooseControlBlock_getConfRev(self);
+            }
 
-			public bool GetFixedOffs()
-			{
-				return ClientGooseControlBlock_getFixedOffs (self);
-			}
+            public bool GetNdsComm()
+            {
+                return ClientGooseControlBlock_getNdsComm(self);
+            }
 
-			public PhyComAddress GetDstAddress()
-			{
-				PhyComAddress addr = new PhyComAddress();
+            public UInt32 GetMinTime()
+            {
+                return ClientGooseControlBlock_getMinTime(self);
+            }
 
-				IntPtr value = ClientGooseControlBlock_getDstAddress_addr(self);
+            public UInt32 GetMaxTime()
+            {
+                return ClientGooseControlBlock_getMaxTime(self);
+            }
 
-				MmsValue mmsValue = new MmsValue(value);
+            public bool GetFixedOffs()
+            {
+                return ClientGooseControlBlock_getFixedOffs(self);
+            }
 
-				byte[] dstMacAddr = mmsValue.getOctetString();
+            public PhyComAddress GetDstAddress()
+            {
+                PhyComAddress addr = new PhyComAddress();
 
-				dstMacAddr.CopyTo(addr.dstAddress, 0);
+                IntPtr value = ClientGooseControlBlock_getDstAddress_addr(self);
 
-				addr.dstAddress = dstMacAddr;
+                MmsValue mmsValue = new MmsValue(value);
 
-				addr.appId = ClientGooseControlBlock_getDstAddress_appid(self);
-				addr.vlanId = ClientGooseControlBlock_getDstAddress_vid(self);
-				addr.vlanPriority = ClientGooseControlBlock_getDstAddress_priority(self);
+                byte[] dstMacAddr = mmsValue.getOctetString();
 
-				return addr;
-			}
+                dstMacAddr.CopyTo(addr.dstAddress, 0);
 
-			public void SetDstAddress(PhyComAddress value)
-			{
-				ClientGooseControlBlock_setDstAddress (self, value);
+                addr.dstAddress = dstMacAddr;
 
-				flagDstAddress = true;
-			}
+                addr.appId = ClientGooseControlBlock_getDstAddress_appid(self);
+                addr.vlanId = ClientGooseControlBlock_getDstAddress_vid(self);
+                addr.vlanPriority = ClientGooseControlBlock_getDstAddress_priority(self);
 
-			public void Dispose()
-			{
-				if (isDisposed == false) {
-					isDisposed = true;
-					ClientGooseControlBlock_destroy (self);
-					self = IntPtr.Zero;
-				}
-			}
+                return addr;
+            }
 
-			~GooseControlBlock()
-			{
-				Dispose ();
-			}
+            public void SetDstAddress(PhyComAddress value)
+            {
+                ClientGooseControlBlock_setDstAddress(self, value);
 
-		}
-	}
+                flagDstAddress = true;
+            }
+
+            public void Dispose()
+            {
+                if (isDisposed == false)
+                {
+                    isDisposed = true;
+                    ClientGooseControlBlock_destroy(self);
+                    self = IntPtr.Zero;
+                }
+            }
+
+            ~GooseControlBlock()
+            {
+                Dispose();
+            }
+
+        }
+    }
 }

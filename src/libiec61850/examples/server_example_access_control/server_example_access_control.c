@@ -114,6 +114,7 @@ controlBlockAccessHandler(void* parameter, ClientConnection connection, ACSIClas
 {
     printf("%s %s access %s/%s.%s.%s\n", ACSIClassToStr(acsiClass), accessType == IEC61850_CB_ACCESS_TYPE_WRITE ? "write" : "read", ld->name, ln->name, objectName, subObjectName);
 
+    return false;
     /* allow only read access to LCBs */
     if (acsiClass == ACSI_CLASS_LCB) {
         if (accessType == IEC61850_CB_ACCESS_TYPE_READ)

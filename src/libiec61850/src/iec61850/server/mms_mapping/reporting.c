@@ -1,7 +1,7 @@
 /*
  *  reporting.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -21,22 +21,22 @@
  *  See COPYING file for the complete license text.
  */
 
-#include "libiec61850_platform_includes.h"
-#include "mms_mapping.h"
-#include "linked_list.h"
-#include "stack_config.h"
 #include "hal_thread.h"
+#include "libiec61850_platform_includes.h"
+#include "linked_list.h"
+#include "mms_mapping.h"
+#include "stack_config.h"
 
-#include "simple_allocator.h"
-#include "mem_alloc_linked_list.h"
 #include "ber_encoder.h"
+#include "mem_alloc_linked_list.h"
+#include "simple_allocator.h"
 
-#include "mms_mapping_internal.h"
-#include "mms_value_internal.h"
-#include "mms_server_internal.h"
 #include "conversions.h"
-#include "reporting.h"
 #include "ied_server_private.h"
+#include "mms_mapping_internal.h"
+#include "mms_server_internal.h"
+#include "mms_value_internal.h"
+#include "reporting.h"
 #include <string.h>
 
 /* if not explicitly set by client "ResvTms" will be set to this value */
@@ -55,9 +55,10 @@
 static ReportBuffer*
 ReportBuffer_create(int bufferSize)
 {
-    ReportBuffer* self = (ReportBuffer*) GLOBAL_MALLOC(sizeof(ReportBuffer));
+    ReportBuffer* self = (ReportBuffer*)GLOBAL_MALLOC(sizeof(ReportBuffer));
 
-    if (self) {
+    if (self)
+    {
         self->lastEnqueuedReport = NULL;
         self->oldestReport = NULL;
         self->nextToTransmit = NULL;
@@ -65,13 +66,15 @@ ReportBuffer_create(int bufferSize)
         self->isOverflow = true;
 
         self->memoryBlockSize = bufferSize;
-        self->memoryBlock = (uint8_t*) GLOBAL_MALLOC(self->memoryBlockSize);
+        self->memoryBlock = (uint8_t*)GLOBAL_MALLOC(self->memoryBlockSize);
 
-        if (self->memoryBlock == NULL) {
+        if (self->memoryBlock == NULL)
+        {
             GLOBAL_FREEMEM(self);
             self = NULL;
         }
-        else {
+        else
+        {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
             self->lock = Semaphore_create(1);
 #endif
@@ -84,7 +87,8 @@ ReportBuffer_create(int bufferSize)
 static void
 ReportBuffer_destroy(ReportBuffer* self)
 {
-    if (self) {
+    if (self)
+    {
         GLOBAL_FREEMEM(self->memoryBlock);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -98,9 +102,10 @@ ReportBuffer_destroy(ReportBuffer* self)
 ReportControl*
 ReportControl_create(bool buffered, LogicalNode* parentLN, int reportBufferSize, IedServer iedServer)
 {
-    ReportControl* self = (ReportControl*) GLOBAL_MALLOC(sizeof(ReportControl));
+    ReportControl* self = (ReportControl*)GLOBAL_MALLOC(sizeof(ReportControl));
 
-    if (self) {
+    if (self)
+    {
         self->name = NULL;
         self->domain = NULL;
         self->parentLN = parentLN;
@@ -169,7 +174,8 @@ ReportControl_unlockNotify(ReportControl* self)
 static void
 purgeBuf(ReportControl* rc)
 {
-    if (DEBUG_IED_SERVER) printf("IED_SERVER: RCB %s purgeBuf\n", rc->name);
+    if (DEBUG_IED_SERVER)
+        printf("IED_SERVER: RCB %s purgeBuf\n", rc->name);
 
     /* reset trigger */
     rc->triggered = false;
@@ -193,7 +199,8 @@ deleteDataSetValuesShadowBuffer(ReportControl* self)
 
         int i;
 
-        for (i = 0; i < dataSetSize; i++) {
+        for (i = 0; i < dataSetSize; i++)
+        {
             if (self->bufferedDataSetValues[i] != NULL)
                 MmsValue_delete(self->bufferedDataSetValues[i]);
         }
@@ -210,8 +217,9 @@ deleteDataSetValuesShadowBuffer(ReportControl* self)
 void
 ReportControl_destroy(ReportControl* self)
 {
-    if (self) {
-        if (self->rcbValues != NULL )
+    if (self)
+    {
+        if (self->rcbValues != NULL)
             MmsValue_delete(self->rcbValues);
 
         if (self->inclusionFlags != NULL)
@@ -227,8 +235,10 @@ ReportControl_destroy(ReportControl* self)
 
         deleteDataSetValuesShadowBuffer(self);
 
-        if (self->isDynamicDataSet) {
-            if (self->dataSet != NULL) {
+        if (self->isDynamicDataSet)
+        {
+            if (self->dataSet != NULL)
+            {
                 MmsMapping_freeDynamicallyCreatedDataSet(self->dataSet);
                 self->isDynamicDataSet = false;
                 self->dataSet = NULL;
@@ -255,7 +265,8 @@ ReportControl_destroy(ReportControl* self)
 MmsValue*
 ReportControl_getRCBValue(ReportControl* rc, const char* elementName)
 {
-    if (rc->buffered) {
+    if (rc->buffered)
+    {
         if (strcmp(elementName, "RptID") == 0)
             return MmsValue_getElement(rc->rcbValues, 0);
         else if (strcmp(elementName, "RptEna") == 0)
@@ -283,15 +294,18 @@ ReportControl_getRCBValue(ReportControl* rc, const char* elementName)
         else if (strcmp(elementName, "TimeofEntry") == 0)
             return MmsValue_getElement(rc->rcbValues, 12);
 
-        if (rc->server->edition >= IEC_61850_EDITION_2) {
+        if (rc->server->edition >= IEC_61850_EDITION_2)
+        {
 #if (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1)
-            if (rc->server->enableBRCBResvTms) {
+            if (rc->server->enableBRCBResvTms)
+            {
                 if (strcmp(elementName, "ResvTms") == 0)
                     return MmsValue_getElement(rc->rcbValues, 13);
                 if (strcmp(elementName, "Owner") == 0)
                     return MmsValue_getElement(rc->rcbValues, 14);
             }
-            else {
+            else
+            {
                 if (strcmp(elementName, "Owner") == 0)
                     return MmsValue_getElement(rc->rcbValues, 13);
             }
@@ -300,8 +314,9 @@ ReportControl_getRCBValue(ReportControl* rc, const char* elementName)
                 return MmsValue_getElement(rc->rcbValues, 13);
 #endif
         }
-
-    } else {
+    }
+    else
+    {
         if (strcmp(elementName, "RptID") == 0)
             return MmsValue_getElement(rc->rcbValues, 0);
         else if (strcmp(elementName, "RptEna") == 0)
@@ -328,7 +343,7 @@ ReportControl_getRCBValue(ReportControl* rc, const char* elementName)
             return MmsValue_getElement(rc->rcbValues, 11);
     }
 
-    return NULL ;
+    return NULL;
 }
 
 #if (CONFIG_IEC61850_SERVICE_TRACKING == 1)
@@ -340,8 +355,10 @@ copyRCBValuesToTrackingObject(MmsMapping* self, ReportControl* rc)
     Semaphore_wait(rc->rcbValuesLock);
 #endif
 
-    if (rc->buffered) {
-        if (self->brcbTrk) {
+    if (rc->buffered)
+    {
+        if (self->brcbTrk)
+        {
             BrcbTrkInstance trkInst = self->brcbTrk;
 
             if (trkInst->rptID)
@@ -350,11 +367,13 @@ copyRCBValuesToTrackingObject(MmsMapping* self, ReportControl* rc)
             if (trkInst->rptEna)
                 MmsValue_update(trkInst->rptEna->mmsValue, ReportControl_getRCBValue(rc, "RptEna"));
 
-            if (trkInst->datSet) {
+            if (trkInst->datSet)
+            {
                 char datSet[130];
                 const char* datSetStr = MmsValue_toString(ReportControl_getRCBValue(rc, "DatSet"));
 
-                if (datSetStr) {
+                if (datSetStr)
+                {
                     StringUtils_copyStringMax(datSet, 130, datSetStr);
 
                     StringUtils_replace(datSet, '$', '.');
@@ -390,15 +409,16 @@ copyRCBValuesToTrackingObject(MmsMapping* self, ReportControl* rc)
             if (trkInst->entryID)
                 MmsValue_update(trkInst->entryID->mmsValue, ReportControl_getRCBValue(rc, "EntryID"));
 
-            if (trkInst->timeOfEntry) {
+            if (trkInst->timeOfEntry)
+            {
                 MmsValue* timeofEntryValue = ReportControl_getRCBValue(rc, "TimeofEntry");
 
                 if (timeofEntryValue)
                     MmsValue_update(trkInst->timeOfEntry->mmsValue, timeofEntryValue);
             }
 
-
-            if (trkInst->resvTms) {
+            if (trkInst->resvTms)
+            {
                 MmsValue* resvTmsValue = ReportControl_getRCBValue(rc, "ResvTms");
 
                 if (resvTmsValue)
@@ -406,8 +426,10 @@ copyRCBValuesToTrackingObject(MmsMapping* self, ReportControl* rc)
             }
         }
     }
-    else {
-        if (self->urcbTrk) {
+    else
+    {
+        if (self->urcbTrk)
+        {
             UrcbTrkInstance trkInst = self->urcbTrk;
 
             if (trkInst->rptID)
@@ -419,11 +441,13 @@ copyRCBValuesToTrackingObject(MmsMapping* self, ReportControl* rc)
             if (trkInst->resv)
                 MmsValue_update(trkInst->rptEna->mmsValue, ReportControl_getRCBValue(rc, "Resv"));
 
-            if (trkInst->datSet) {
+            if (trkInst->datSet)
+            {
                 char datSet[130];
                 const char* datSetStr = MmsValue_toString(ReportControl_getRCBValue(rc, "DatSet"));
 
-                if (datSetStr) {
+                if (datSetStr)
+                {
                     StringUtils_copyStringMax(datSet, 130, datSetStr);
 
                     StringUtils_replace(datSet, '$', '.');
@@ -463,8 +487,10 @@ copyRCBValuesToTrackingObject(MmsMapping* self, ReportControl* rc)
 static void
 updateSingleTrackingValue(MmsMapping* self, ReportControl* rc, const char* name, MmsValue* newValue)
 {
-    if (rc->buffered) {
-        if (self->brcbTrk) {
+    if (rc->buffered)
+    {
+        if (self->brcbTrk)
+        {
             BrcbTrkInstance trkInst = self->brcbTrk;
 
             DataAttribute* attributeToUpdate = NULL;
@@ -473,12 +499,14 @@ updateSingleTrackingValue(MmsMapping* self, ReportControl* rc, const char* name,
                 attributeToUpdate = trkInst->rptID;
             else if (!strcmp(name, "RptEna"))
                 attributeToUpdate = trkInst->rptEna;
-            else if (!strcmp(name, "DatSet")) {
+            else if (!strcmp(name, "DatSet"))
+            {
 
                 char datSet[130];
                 const char* datSetStr = MmsValue_toString(newValue);
 
-                if (datSetStr) {
+                if (datSetStr)
+                {
                     StringUtils_copyStringMax(datSet, 130, datSetStr);
 
                     StringUtils_replace(datSet, '$', '.');
@@ -513,8 +541,10 @@ updateSingleTrackingValue(MmsMapping* self, ReportControl* rc, const char* name,
                 MmsValue_update(attributeToUpdate->mmsValue, newValue);
         }
     }
-    else {
-        if (self->urcbTrk) {
+    else
+    {
+        if (self->urcbTrk)
+        {
             UrcbTrkInstance trkInst = self->urcbTrk;
 
             DataAttribute* attributeToUpdate = NULL;
@@ -525,12 +555,14 @@ updateSingleTrackingValue(MmsMapping* self, ReportControl* rc, const char* name,
                 attributeToUpdate = trkInst->rptEna;
             else if (!strcmp(name, "Resv"))
                 attributeToUpdate = trkInst->resv;
-            else if (!strcmp(name, "DatSet")) {
+            else if (!strcmp(name, "DatSet"))
+            {
 
                 char datSet[130];
                 const char* datSetStr = MmsValue_toString(newValue);
 
-                if (datSetStr) {
+                if (datSetStr)
+                {
                     StringUtils_copyStringMax(datSet, 130, datSetStr);
 
                     StringUtils_replace(datSet, '$', '.');
@@ -560,37 +592,43 @@ updateSingleTrackingValue(MmsMapping* self, ReportControl* rc, const char* name,
 }
 
 static void
-updateGenericTrackingObjectValues(MmsMapping* self, ReportControl* rc, IEC61850_ServiceType serviceType, MmsDataAccessError errVal)
+updateGenericTrackingObjectValues(MmsMapping* self, ReportControl* rc, IEC61850_ServiceType serviceType,
+                                  MmsDataAccessError errVal)
 {
     ServiceTrkInstance trkInst = NULL;
 
-    if (rc->buffered) {
-        if (self->brcbTrk) {
-            trkInst = (ServiceTrkInstance) self->brcbTrk;
+    if (rc->buffered)
+    {
+        if (self->brcbTrk)
+        {
+            trkInst = (ServiceTrkInstance)self->brcbTrk;
         }
     }
-    else {
-        if (self->urcbTrk) {
-            trkInst = (ServiceTrkInstance) self->urcbTrk;
+    else
+    {
+        if (self->urcbTrk)
+        {
+            trkInst = (ServiceTrkInstance)self->urcbTrk;
         }
     }
 
-    if (trkInst) {
+    if (trkInst)
+    {
         if (trkInst->serviceType)
-            MmsValue_setInt32(trkInst->serviceType->mmsValue, (int) serviceType);
+            MmsValue_setInt32(trkInst->serviceType->mmsValue, (int)serviceType);
 
         if (trkInst->t)
             MmsValue_setUtcTimeMsEx(trkInst->t->mmsValue, Hal_getTimeInMs(), self->iedServer->timeQuality);
 
         if (trkInst->errorCode)
             MmsValue_setInt32(trkInst->errorCode->mmsValue,
-                    private_IedServer_convertMmsDataAccessErrorToServiceError(errVal));
+                              private_IedServer_convertMmsDataAccessErrorToServiceError(errVal));
 
         char objRef[130];
 
         /* create object reference */
-        LogicalNode* ln = (LogicalNode*) rc->parentLN;
-        LogicalDevice* ld = (LogicalDevice*) ln->parent;
+        LogicalNode* ln = (LogicalNode*)rc->parentLN;
+        LogicalDevice* ld = (LogicalDevice*)ln->parent;
 
         char* iedName = self->iedServer->mmsDevice->deviceName;
 
@@ -599,19 +637,24 @@ updateGenericTrackingObjectValues(MmsMapping* self, ReportControl* rc, IEC61850_
         /* convert MMS name to ACSI object reference */
         int pos = 0;
         bool replace = false;
-        do {
-            if (replace) {
+        do
+        {
+            if (replace)
+            {
                 objRef[pos] = objRef[pos + 3];
             }
-            else {
-                if (objRef[pos] == '$') {
+            else
+            {
+                if (objRef[pos] == '$')
+                {
                     objRef[pos] = '.';
                     replace = true;
                 }
             }
         } while (objRef[pos++]);
 
-        if (trkInst->objRef) {
+        if (trkInst->objRef)
+        {
             IedServer_updateVisibleStringAttributeValue(self->iedServer, trkInst->objRef, objRef);
         }
     }
@@ -639,7 +682,8 @@ getDataSetEntryWithIndex(DataSetEntry* dataSet, int index)
 {
     int i = 0;
 
-    while (dataSet) {
+    while (dataSet)
+    {
         if (i == index)
             return dataSet;
 
@@ -656,16 +700,17 @@ createDataSetValuesShadowBuffer(ReportControl* rc)
 {
     int dataSetSize = DataSet_getSize(rc->dataSet);
 
-    MmsValue** dataSetValues = (MmsValue**) GLOBAL_CALLOC(dataSetSize, sizeof(MmsValue*));
+    MmsValue** dataSetValues = (MmsValue**)GLOBAL_CALLOC(dataSetSize, sizeof(MmsValue*));
 
     rc->bufferedDataSetValues = dataSetValues;
 
-    rc->valueReferences = (MmsValue**) GLOBAL_MALLOC(dataSetSize * sizeof(MmsValue*));
+    rc->valueReferences = (MmsValue**)GLOBAL_MALLOC(dataSetSize * sizeof(MmsValue*));
 
     DataSetEntry* dataSetEntry = rc->dataSet->fcdas;
 
     int i;
-    for (i = 0; i < dataSetSize; i++) {
+    for (i = 0; i < dataSetSize; i++)
+    {
         assert(dataSetEntry != NULL);
 
         rc->valueReferences[i] = dataSetEntry->value;
@@ -675,28 +720,36 @@ createDataSetValuesShadowBuffer(ReportControl* rc)
 }
 
 static bool
-checkIfClientHasAccessToDataSetEntries(MmsMapping* mapping, MmsServerConnection connection, MmsNamedVariableList mmsVariableList)
+checkIfClientHasAccessToDataSetEntries(MmsMapping* mapping, MmsServerConnection connection,
+                                       MmsNamedVariableList mmsVariableList)
 {
     bool accessAllowed = true;
 
-    if (connection) {
-
+    if (connection)
+    {
         LinkedList entryElem = LinkedList_getNext(mmsVariableList->listOfVariables);
 
-        while (entryElem) {
+        while (entryElem)
+        {
             MmsNamedVariableListEntry entry = (MmsNamedVariableListEntry)LinkedList_getData(entryElem);
 
-            MmsValue* entryValue = mmsServer_getValue(mapping->mmsServer, entry->domain, entry->variableName, connection, true);
+            MmsValue* entryValue =
+                mmsServer_getValue(mapping->mmsServer, entry->domain, entry->variableName, connection, true);
 
-            if (entryValue) {
-
-                if (MmsValue_getType(entryValue) == MMS_DATA_ACCESS_ERROR) {
+            if (entryValue)
+            {
+                if (MmsValue_getType(entryValue) == MMS_DATA_ACCESS_ERROR)
+                {
                     accessAllowed = false;
                 }
 
                 MmsValue_deleteConditional(entryValue);
             }
-            else {
+            else
+            {
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: data set entry %s/%s does not exist\n",  entry->domain ? MmsDomain_getName(entry->domain) : "-", entry->variableName);
+
                 accessAllowed = false;
             }
 
@@ -705,7 +758,6 @@ checkIfClientHasAccessToDataSetEntries(MmsMapping* mapping, MmsServerConnection 
 
             entryElem = LinkedList_getNext(entryElem);
         }
-
     }
 
     return accessAllowed;
@@ -720,13 +772,17 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
 
     bool isUsedDataSetDynamic = rc->isDynamicDataSet;
 
-    if (newDatSet != NULL) {
-        if (strcmp(MmsValue_toString(newDatSet), "") == 0) {
+    if (newDatSet != NULL)
+    {
+        if (strcmp(MmsValue_toString(newDatSet), "") == 0)
+        {
             success = true;
             dataSetValue = NULL;
 
-            if (rc->dataSet) {
-                if (rc->buffered) {
+            if (rc->dataSet)
+            {
+                if (rc->buffered)
+                {
                     rc->isBuffering = false;
                     purgeBuf(rc);
                 }
@@ -734,8 +790,10 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
                 /* delete pending events */
                 deleteDataSetValuesShadowBuffer(rc);
 
-                if (isUsedDataSetDynamic) {
-                    if (rc->dataSet) {
+                if (isUsedDataSetDynamic)
+                {
+                    if (rc->dataSet)
+                    {
                         MmsMapping_freeDynamicallyCreatedDataSet(rc->dataSet);
                     }
                 }
@@ -753,52 +811,63 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
     bool dataSetChanged = true;
 
     /* check if old and new data sets are the same */
-    if (rc->dataSet && dataSetValue) {
+    if (rc->dataSet && dataSetValue)
+    {
         const char* dataSetLdName = rc->dataSet->logicalDeviceName;
         const char* dataSetName = rc->dataSet->name;
         const char* newDataSetName = MmsValue_toString(dataSetValue);
 
-        if (newDataSetName[0] == '@') {
-            if ((dataSetLdName == NULL) && (!strcmp(dataSetName, newDataSetName + 1))) {
+        if (newDataSetName[0] == '@')
+        {
+            if ((dataSetLdName == NULL) && (!strcmp(dataSetName, newDataSetName + 1)))
+            {
                 dataSetChanged = false;
             }
         }
-        else if (newDataSetName[0] == '/') {
-            if ((dataSetLdName == NULL) && (!strcmp(dataSetName, newDataSetName + 1))) {
+        else if (newDataSetName[0] == '/')
+        {
+            if ((dataSetLdName == NULL) && (!strcmp(dataSetName, newDataSetName + 1)))
+            {
                 dataSetChanged = false;
             }
         }
-        else {
-            if (dataSetLdName && dataSetName) {
-
+        else
+        {
+            if (dataSetLdName && dataSetName)
+            {
                 char externalVisibleName[256];
 
                 /* Construct external visible name */
 
                 LogicalDevice* ld = IedModel_getDeviceByInst(mapping->model, dataSetLdName);
 
-                if (ld == NULL) {
+                if (ld == NULL)
+                {
                     success = false;
                     goto exit_function;
                 }
 
-                if (ld->ldName) {
+                if (ld->ldName)
+                {
                     StringUtils_copyStringMax(externalVisibleName, 256, ld->ldName);
                 }
-                else {
+                else
+                {
                     StringUtils_concatString(externalVisibleName, 256, mapping->model->name, dataSetLdName);
                 }
 
                 StringUtils_appendString(externalVisibleName, 256, "/");
                 StringUtils_appendString(externalVisibleName, 256, dataSetName);
 
-                if (!(strcmp(externalVisibleName, newDataSetName))) {
+                if (!(strcmp(externalVisibleName, newDataSetName)))
+                {
                     dataSetChanged = false;
                 }
             }
         }
 
-        if (rc->buffered) {
+        if (rc->buffered)
+        {
             if (dataSetChanged)
                 purgeBuf(rc);
         }
@@ -810,43 +879,50 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
 
         DataSet* dataSet = IedModel_lookupDataSet(mapping->model, dataSetName);
 
-        if (dataSet) {
-
+        if (dataSet)
+        {
             char domainNameBuf[130];
 
             MmsMapping_getMmsDomainFromObjectReference(dataSetName, domainNameBuf);
 
             MmsDomain* dsDomain = MmsDevice_getDomain(mapping->mmsDevice, domainNameBuf);
 
-            if (dsDomain) {
+            if (dsDomain)
+            {
                 MmsNamedVariableList namedVariableList = MmsDomain_getNamedVariableList(dsDomain, dataSet->name);
 
-                if (namedVariableList) {
-                    if (checkIfClientHasAccessToDataSetEntries(mapping, connection, namedVariableList) == false) {
+                if (namedVariableList)
+                {
+                    if (checkIfClientHasAccessToDataSetEntries(mapping, connection, namedVariableList) == false)
+                    {
                         goto exit_function;
                     }
                 }
-               
             }
-
         }
 
 #if (MMS_DYNAMIC_DATA_SETS == 1)
-        if (dataSet == NULL) {
+        if (dataSet == NULL)
+        {
             dataSet = MmsMapping_getDomainSpecificDataSet(mapping, dataSetName);
 
-            if (dataSet == NULL) {
-
+            if (dataSet == NULL)
+            {
                 /* check if association specific data set is requested */
-                if (dataSetName[0] == '@') {
+                if (dataSetName[0] == '@')
+                {
+                    if (rc->buffered == false)
+                    { /* for buffered report non-permanent datasets are not allowed */
+                        if (connection != NULL)
+                        {
+                            MmsNamedVariableList mmsVariableList =
+                                MmsServerConnection_getNamedVariableList(connection, dataSetName + 1);
 
-                    if (rc->buffered == false) { /* for buffered report non-permanent datasets are not allowed */
-                        if (connection != NULL) {
-                            MmsNamedVariableList mmsVariableList
-                                = MmsServerConnection_getNamedVariableList(connection, dataSetName + 1);
-
-                            if (mmsVariableList) {
-                                if (checkIfClientHasAccessToDataSetEntries(mapping, connection, mmsVariableList) == false) {
+                            if (mmsVariableList)
+                            {
+                                if (checkIfClientHasAccessToDataSetEntries(mapping, connection, mmsVariableList) ==
+                                    false)
+                                {
                                     goto exit_function;
                                 }
 
@@ -857,11 +933,15 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
                 }
 
                 /* check for VMD specific data set */
-                else if (dataSetName[0] == '/') {
-                    MmsNamedVariableList mmsVariableList = MmsDevice_getNamedVariableListWithName(mapping->mmsDevice, dataSetName + 1);
+                else if (dataSetName[0] == '/')
+                {
+                    MmsNamedVariableList mmsVariableList =
+                        MmsDevice_getNamedVariableListWithName(mapping->mmsDevice, dataSetName + 1);
 
-                    if (mmsVariableList) {
-                        if (checkIfClientHasAccessToDataSetEntries(mapping, connection, mmsVariableList) == false) {
+                    if (mmsVariableList)
+                    {
+                        if (checkIfClientHasAccessToDataSetEntries(mapping, connection, mmsVariableList) == false)
+                        {
                             goto exit_function;
                         }
 
@@ -874,7 +954,6 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
                 goto exit_function;
 
             rc->isDynamicDataSet = true;
-
         }
         else
             rc->isDynamicDataSet = false;
@@ -888,13 +967,15 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
         if (rc->dataSet && rc->dataSet != dataSet)
             dataSetChanged = true;
 
-        if (dataSetChanged) {
-
+        if (dataSetChanged)
+        {
             /* delete pending event and create buffer for new data set */
             deleteDataSetValuesShadowBuffer(rc);
 
-            if (isUsedDataSetDynamic) {
-                if (rc->dataSet) {
+            if (isUsedDataSetDynamic)
+            {
+                if (rc->dataSet)
+                {
                     MmsMapping_freeDynamicallyCreatedDataSet(rc->dataSet);
                 }
             }
@@ -913,7 +994,7 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
             if (rc->inclusionFlags != NULL)
                 GLOBAL_FREEMEM(rc->inclusionFlags);
 
-            rc->inclusionFlags = (uint8_t*) GLOBAL_CALLOC(dataSet->elementCount, sizeof(uint8_t));
+            rc->inclusionFlags = (uint8_t*)GLOBAL_CALLOC(dataSet->elementCount, sizeof(uint8_t));
         }
 
         success = true;
@@ -923,7 +1004,8 @@ updateReportDataset(MmsMapping* mapping, ReportControl* rc, MmsValue* newDatSet,
 
         goto exit_function;
     }
-    else {
+    else
+    {
         success = true;
     }
 
@@ -972,7 +1054,8 @@ createOptFlds(ReportControlBlock* reportControlBlock)
 }
 
 static MmsValue*
-createTrgOps(ReportControlBlock* reportControlBlock) {
+createTrgOps(ReportControlBlock* reportControlBlock)
+{
     MmsValue* trgOps = MmsValue_newBitString(-6);
 
     uint8_t triggerOps = reportControlBlock->trgOps;
@@ -1026,7 +1109,8 @@ getNextRoundedStartTime(uint64_t currentTime, uint64_t intgPd)
     uint64_t modTime = currentTime % intgPd;
     uint64_t delta = intgPd;
 
-    if (modTime != 0) {
+    if (modTime != 0)
+    {
         delta = intgPd - modTime;
     }
 
@@ -1049,16 +1133,18 @@ refreshIntegrityPeriod(ReportControl* rc)
     Semaphore_post(rc->rcbValuesLock);
 #endif
 
-    if (rc->buffered == false) {
-
-        if (rc->triggerOps & TRG_OPT_INTEGRITY) {
-
-            if (rc->intgPd > 0) {
-
-                if (rc->server->syncIntegrityReportTimes) {
+    if (rc->buffered == false)
+    {
+        if (rc->triggerOps & TRG_OPT_INTEGRITY)
+        {
+            if (rc->intgPd > 0)
+            {
+                if (rc->server->syncIntegrityReportTimes)
+                {
                     rc->nextIntgReportTime = getNextRoundedStartTime(Hal_getTimeInMs(), rc->intgPd);
                 }
-                else {
+                else
+                {
                     rc->nextIntgReportTime = Hal_getTimeInMs() + rc->intgPd;
                 }
             }
@@ -1085,13 +1171,15 @@ static void
 composeDefaultRptIdString(char* rptIdString, ReportControl* reportControl)
 {
     int bufPos = 0;
-    while (reportControl->domain->domainName[bufPos] != 0) {
+    while (reportControl->domain->domainName[bufPos] != 0)
+    {
         rptIdString[bufPos] = reportControl->domain->domainName[bufPos];
         bufPos++;
     }
     rptIdString[bufPos++] = '/';
     int i = 0;
-    while (reportControl->name[i] != 0) {
+    while (reportControl->name[i] != 0)
+    {
         rptIdString[bufPos] = reportControl->name[i];
         bufPos++;
         i++;
@@ -1120,146 +1208,146 @@ updateWithDefaultRptId(ReportControl* reportControl, MmsValue* rptId)
 }
 
 static MmsVariableSpecification*
-createUnbufferedReportControlBlock(ReportControlBlock* reportControlBlock,
-        ReportControl* reportControl)
+createUnbufferedReportControlBlock(ReportControlBlock* reportControlBlock, ReportControl* reportControl)
 {
-    MmsVariableSpecification* rcb = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    MmsVariableSpecification* rcb = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     rcb->name = StringUtils_copyString(reportControlBlock->name);
     rcb->type = MMS_STRUCTURE;
 
-    MmsValue* mmsValue = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
+    MmsValue* mmsValue = (MmsValue*)GLOBAL_CALLOC(1, sizeof(MmsValue));
     mmsValue->deleteValue = false;
     mmsValue->type = MMS_STRUCTURE;
 
     int structSize = 11;
 
-    if (reportControl->server->edition >= IEC_61850_EDITION_2) {
+    if (reportControl->server->edition >= IEC_61850_EDITION_2)
+    {
         if (reportControl->hasOwner)
             structSize = 12;
     }
 
     mmsValue->value.structure.size = structSize;
-    mmsValue->value.structure.components = (MmsValue**) GLOBAL_CALLOC(structSize, sizeof(MmsValue*));
+    mmsValue->value.structure.components = (MmsValue**)GLOBAL_CALLOC(structSize, sizeof(MmsValue*));
 
     rcb->typeSpec.structure.elementCount = structSize;
 
-    rcb->typeSpec.structure.elements = (MmsVariableSpecification**) GLOBAL_CALLOC(structSize,
-            sizeof(MmsVariableSpecification*));
+    rcb->typeSpec.structure.elements =
+        (MmsVariableSpecification**)GLOBAL_CALLOC(structSize, sizeof(MmsVariableSpecification*));
 
-    MmsVariableSpecification* namedVariable = 
-			(MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    MmsVariableSpecification* namedVariable =
+        (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("RptID");
     namedVariable->typeSpec.visibleString = -129;
     namedVariable->type = MMS_VISIBLE_STRING;
     rcb->typeSpec.structure.elements[0] = namedVariable;
     if ((reportControlBlock->rptId != NULL) && (strlen(reportControlBlock->rptId) > 0))
-        mmsValue->value.structure.components[0] = MmsValue_newVisibleString(
-                reportControlBlock->rptId);
+        mmsValue->value.structure.components[0] = MmsValue_newVisibleString(reportControlBlock->rptId);
     else
         mmsValue->value.structure.components[0] = createDefaultRptId(reportControl);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("RptEna");
     namedVariable->type = MMS_BOOLEAN;
     rcb->typeSpec.structure.elements[1] = namedVariable;
     mmsValue->value.structure.components[1] = MmsValue_newBoolean(false);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("Resv");
     namedVariable->type = MMS_BOOLEAN;
     rcb->typeSpec.structure.elements[2] = namedVariable;
     mmsValue->value.structure.components[2] = MmsValue_newBoolean(false);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("DatSet");
     namedVariable->typeSpec.visibleString = -129;
     namedVariable->type = MMS_VISIBLE_STRING;
     rcb->typeSpec.structure.elements[3] = namedVariable;
 
-    if (reportControlBlock->dataSetName != NULL) {
-    	char* dataSetReference = createDataSetReferenceForDefaultDataSet(reportControlBlock,
-    	            reportControl);
-    	mmsValue->value.structure.components[3] = MmsValue_newVisibleString(dataSetReference);
-    	GLOBAL_FREEMEM(dataSetReference);
+    if (reportControlBlock->dataSetName != NULL)
+    {
+        char* dataSetReference = createDataSetReferenceForDefaultDataSet(reportControlBlock, reportControl);
+        mmsValue->value.structure.components[3] = MmsValue_newVisibleString(dataSetReference);
+        GLOBAL_FREEMEM(dataSetReference);
     }
     else
-    	mmsValue->value.structure.components[3] = MmsValue_newVisibleString("");
+        mmsValue->value.structure.components[3] = MmsValue_newVisibleString("");
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("ConfRev");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 32;
     rcb->typeSpec.structure.elements[4] = namedVariable;
-    mmsValue->value.structure.components[4] =
-            MmsValue_newUnsignedFromUint32(reportControlBlock->confRef);
+    mmsValue->value.structure.components[4] = MmsValue_newUnsignedFromUint32(reportControlBlock->confRef);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("OptFlds");
     namedVariable->type = MMS_BIT_STRING;
     namedVariable->typeSpec.bitString = -10;
     rcb->typeSpec.structure.elements[5] = namedVariable;
     mmsValue->value.structure.components[5] = createOptFlds(reportControlBlock);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("BufTm");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 32;
     rcb->typeSpec.structure.elements[6] = namedVariable;
-    mmsValue->value.structure.components[6] =
-            MmsValue_newUnsignedFromUint32(reportControlBlock->bufferTime);
+    mmsValue->value.structure.components[6] = MmsValue_newUnsignedFromUint32(reportControlBlock->bufferTime);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("SqNum");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 8;
     rcb->typeSpec.structure.elements[7] = namedVariable;
     mmsValue->value.structure.components[7] = MmsValue_newUnsigned(8);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("TrgOps");
     namedVariable->type = MMS_BIT_STRING;
     namedVariable->typeSpec.bitString = -6;
     rcb->typeSpec.structure.elements[8] = namedVariable;
     mmsValue->value.structure.components[8] = createTrgOps(reportControlBlock);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("IntgPd");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 32;
     rcb->typeSpec.structure.elements[9] = namedVariable;
-    mmsValue->value.structure.components[9] =
-            MmsValue_newUnsignedFromUint32(reportControlBlock->intPeriod);
+    mmsValue->value.structure.components[9] = MmsValue_newUnsignedFromUint32(reportControlBlock->intPeriod);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("GI");
     namedVariable->type = MMS_BOOLEAN;
     rcb->typeSpec.structure.elements[10] = namedVariable;
     mmsValue->value.structure.components[10] = MmsValue_newBoolean(false);
 
-    if (reportControl->server->edition >= IEC_61850_EDITION_2) {
+    if ((reportControl->server->edition >= IEC_61850_EDITION_2) && (reportControl->hasOwner))
+    {
+        namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+        namedVariable->name = StringUtils_copyString("Owner");
+        namedVariable->type = MMS_OCTET_STRING;
+        namedVariable->typeSpec.octetString = -64;
+        rcb->typeSpec.structure.elements[11] = namedVariable;
+        mmsValue->value.structure.components[11] =
+            MmsValue_newOctetString(0, 16); /* size 16 is enough to store client IPv6 address */
 
-        if (reportControl->hasOwner) {
-            namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
-            namedVariable->name = StringUtils_copyString("Owner");
-            namedVariable->type = MMS_OCTET_STRING;
-            namedVariable->typeSpec.octetString = -64;
-            rcb->typeSpec.structure.elements[11] = namedVariable;
-            mmsValue->value.structure.components[11] = MmsValue_newOctetString(0, 16); /* size 16 is enough to store client IPv6 address */
-
-            /* initialize pre configured owner */
-            if (reportControlBlock->clientReservation[0] == 4) {
-                reportControl->resvTms = -1;
-                MmsValue_setOctetString(mmsValue->value.structure.components[11], reportControlBlock->clientReservation + 1, 4);
-            }
-            else if (reportControlBlock->clientReservation[0] == 6) {
-                reportControl->resvTms = -1;
-                MmsValue_setOctetString(mmsValue->value.structure.components[11], reportControlBlock->clientReservation + 1, 16);
-            }
+        /* initialize pre configured owner */
+        if (reportControlBlock->clientReservation[0] == 4)
+        {
+            reportControl->resvTms = -1;
+            MmsValue_setOctetString(mmsValue->value.structure.components[11],
+                                    reportControlBlock->clientReservation + 1, 4);
+        }
+        else if (reportControlBlock->clientReservation[0] == 6)
+        {
+            reportControl->resvTms = -1;
+            MmsValue_setOctetString(mmsValue->value.structure.components[11],
+                                    reportControlBlock->clientReservation + 1, 16);
         }
     }
 
     /* check if there is a pre configured owner */
-    if (reportControlBlock->clientReservation[0] > 0) {
+    if (reportControlBlock->clientReservation[0] > 0)
+    {
         MmsValue_setBoolean(mmsValue->value.structure.components[2], true);
     }
 
@@ -1275,16 +1363,16 @@ createUnbufferedReportControlBlock(ReportControlBlock* reportControlBlock,
 }
 
 static MmsVariableSpecification*
-createBufferedReportControlBlock(ReportControlBlock* reportControlBlock,
-        ReportControl* reportControl)
+createBufferedReportControlBlock(ReportControlBlock* reportControlBlock, ReportControl* reportControl)
 {
-    MmsVariableSpecification* rcb = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    MmsVariableSpecification* rcb = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     rcb->name = StringUtils_copyString(reportControlBlock->name);
     rcb->type = MMS_STRUCTURE;
 
     int brcbElementCount = 13;
 
-    if (reportControl->server->edition >= IEC_61850_EDITION_2) {
+    if (reportControl->server->edition >= IEC_61850_EDITION_2)
+    {
 
 #if (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1)
         if (reportControl->server->enableBRCBResvTms)
@@ -1295,116 +1383,112 @@ createBufferedReportControlBlock(ReportControlBlock* reportControlBlock,
             brcbElementCount++;
     }
 
-    MmsValue* mmsValue = (MmsValue*) GLOBAL_CALLOC(1, sizeof(MmsValue));
+    MmsValue* mmsValue = (MmsValue*)GLOBAL_CALLOC(1, sizeof(MmsValue));
     mmsValue->deleteValue = false;
     mmsValue->type = MMS_STRUCTURE;
     mmsValue->value.structure.size = brcbElementCount;
-    mmsValue->value.structure.components = (MmsValue**) GLOBAL_CALLOC(brcbElementCount, sizeof(MmsValue*));
+    mmsValue->value.structure.components = (MmsValue**)GLOBAL_CALLOC(brcbElementCount, sizeof(MmsValue*));
 
     rcb->typeSpec.structure.elementCount = brcbElementCount;
-    rcb->typeSpec.structure.elements = (MmsVariableSpecification**) GLOBAL_CALLOC(brcbElementCount,
-            sizeof(MmsVariableSpecification*));
+    rcb->typeSpec.structure.elements =
+        (MmsVariableSpecification**)GLOBAL_CALLOC(brcbElementCount, sizeof(MmsVariableSpecification*));
 
-    MmsVariableSpecification* namedVariable = 
-			(MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    MmsVariableSpecification* namedVariable =
+        (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("RptID");
     namedVariable->typeSpec.visibleString = -129;
     namedVariable->type = MMS_VISIBLE_STRING;
     rcb->typeSpec.structure.elements[0] = namedVariable;
 
     if ((reportControlBlock->rptId != NULL) && (strlen(reportControlBlock->rptId) > 0))
-        mmsValue->value.structure.components[0] = MmsValue_newVisibleString(
-                reportControlBlock->rptId);
+        mmsValue->value.structure.components[0] = MmsValue_newVisibleString(reportControlBlock->rptId);
     else
         mmsValue->value.structure.components[0] = createDefaultRptId(reportControl);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("RptEna");
     namedVariable->type = MMS_BOOLEAN;
     rcb->typeSpec.structure.elements[1] = namedVariable;
     mmsValue->value.structure.components[1] = MmsValue_newBoolean(false);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("DatSet");
     namedVariable->typeSpec.visibleString = -129;
     namedVariable->type = MMS_VISIBLE_STRING;
     rcb->typeSpec.structure.elements[2] = namedVariable;
 
-    if (reportControlBlock->dataSetName != NULL) {
-    	char* dataSetReference = createDataSetReferenceForDefaultDataSet(reportControlBlock,
-    	            reportControl);
+    if (reportControlBlock->dataSetName != NULL)
+    {
+        char* dataSetReference = createDataSetReferenceForDefaultDataSet(reportControlBlock, reportControl);
 
-    	mmsValue->value.structure.components[2] = MmsValue_newVisibleString(dataSetReference);
-    	GLOBAL_FREEMEM(dataSetReference);
+        mmsValue->value.structure.components[2] = MmsValue_newVisibleString(dataSetReference);
+        GLOBAL_FREEMEM(dataSetReference);
     }
     else
-    	mmsValue->value.structure.components[2] = MmsValue_newVisibleString("");
+        mmsValue->value.structure.components[2] = MmsValue_newVisibleString("");
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("ConfRev");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 32;
     rcb->typeSpec.structure.elements[3] = namedVariable;
-    mmsValue->value.structure.components[3] =
-            MmsValue_newUnsignedFromUint32(reportControlBlock->confRef);
+    mmsValue->value.structure.components[3] = MmsValue_newUnsignedFromUint32(reportControlBlock->confRef);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("OptFlds");
     namedVariable->type = MMS_BIT_STRING;
     namedVariable->typeSpec.bitString = -10;
     rcb->typeSpec.structure.elements[4] = namedVariable;
     mmsValue->value.structure.components[4] = createOptFlds(reportControlBlock);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("BufTm");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 32;
     rcb->typeSpec.structure.elements[5] = namedVariable;
-    mmsValue->value.structure.components[5] =
-            MmsValue_newUnsignedFromUint32(reportControlBlock->bufferTime);
+    mmsValue->value.structure.components[5] = MmsValue_newUnsignedFromUint32(reportControlBlock->bufferTime);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("SqNum");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 16;
     rcb->typeSpec.structure.elements[6] = namedVariable;
     mmsValue->value.structure.components[6] = MmsValue_newUnsigned(16);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("TrgOps");
     namedVariable->type = MMS_BIT_STRING;
     namedVariable->typeSpec.bitString = -6;
     rcb->typeSpec.structure.elements[7] = namedVariable;
     mmsValue->value.structure.components[7] = createTrgOps(reportControlBlock);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("IntgPd");
     namedVariable->type = MMS_UNSIGNED;
     namedVariable->typeSpec.unsignedInteger = 32;
     rcb->typeSpec.structure.elements[8] = namedVariable;
-    mmsValue->value.structure.components[8] =
-            MmsValue_newUnsignedFromUint32(reportControlBlock->intPeriod);
+    mmsValue->value.structure.components[8] = MmsValue_newUnsignedFromUint32(reportControlBlock->intPeriod);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("GI");
     namedVariable->type = MMS_BOOLEAN;
     rcb->typeSpec.structure.elements[9] = namedVariable;
     mmsValue->value.structure.components[9] = MmsValue_newBoolean(false);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("PurgeBuf");
     namedVariable->type = MMS_BOOLEAN;
     rcb->typeSpec.structure.elements[10] = namedVariable;
     mmsValue->value.structure.components[10] = MmsValue_newBoolean(false);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("EntryID");
     namedVariable->type = MMS_OCTET_STRING;
     namedVariable->typeSpec.octetString = 8;
     rcb->typeSpec.structure.elements[11] = namedVariable;
     mmsValue->value.structure.components[11] = MmsValue_newOctetString(8, 8);
 
-    namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+    namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("TimeofEntry");
     namedVariable->type = MMS_BINARY_TIME;
     namedVariable->typeSpec.binaryTime = 6;
@@ -1413,14 +1497,16 @@ createBufferedReportControlBlock(ReportControlBlock* reportControlBlock,
 
     reportControl->timeOfEntry = mmsValue->value.structure.components[12];
 
-    if (reportControl->server->edition >= IEC_61850_EDITION_2) {
+    if (reportControl->server->edition >= IEC_61850_EDITION_2)
+    {
         int currentIndex = 13;
 
 #if (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1)
         int resvTmsIndex = currentIndex;
 
-        if (reportControl->server->enableBRCBResvTms) {
-            namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+        if (reportControl->server->enableBRCBResvTms)
+        {
+            namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
             namedVariable->name = StringUtils_copyString("ResvTms");
             namedVariable->type = MMS_INTEGER;
             namedVariable->typeSpec.integer = 16;
@@ -1430,27 +1516,34 @@ createBufferedReportControlBlock(ReportControlBlock* reportControlBlock,
         }
 #endif /* (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1) */
 
-        if (reportControl->hasOwner) {
-            namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
+        if (reportControl->hasOwner)
+        {
+            namedVariable = (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
             namedVariable->name = StringUtils_copyString("Owner");
             namedVariable->type = MMS_OCTET_STRING;
             namedVariable->typeSpec.octetString = -64;
             rcb->typeSpec.structure.elements[currentIndex] = namedVariable;
-            mmsValue->value.structure.components[currentIndex] = MmsValue_newOctetString(0, 16); /* size 16 is enough to store client IPv6 address */
+            mmsValue->value.structure.components[currentIndex] =
+                MmsValue_newOctetString(0, 16); /* size 16 is enough to store client IPv6 address */
 
             /* initialize pre configured owner */
-            if (reportControlBlock->clientReservation[0] == 4) {
+            if (reportControlBlock->clientReservation[0] == 4)
+            {
                 reportControl->resvTms = -1;
-                MmsValue_setOctetString(mmsValue->value.structure.components[currentIndex], reportControlBlock->clientReservation + 1, 4);
+                MmsValue_setOctetString(mmsValue->value.structure.components[currentIndex],
+                                        reportControlBlock->clientReservation + 1, 4);
             }
-            else if (reportControlBlock->clientReservation[0] == 6) {
+            else if (reportControlBlock->clientReservation[0] == 6)
+            {
                 reportControl->resvTms = -1;
-                MmsValue_setOctetString(mmsValue->value.structure.components[currentIndex], reportControlBlock->clientReservation + 1, 16);
+                MmsValue_setOctetString(mmsValue->value.structure.components[currentIndex],
+                                        reportControlBlock->clientReservation + 1, 16);
             }
         }
 
 #if (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1)
-        if (reportControl->server->enableBRCBResvTms) {
+        if (reportControl->server->enableBRCBResvTms)
+        {
             MmsValue_setInt16(mmsValue->value.structure.components[resvTmsIndex], reportControl->resvTms);
         }
 #endif
@@ -1467,63 +1560,62 @@ createBufferedReportControlBlock(ReportControlBlock* reportControlBlock,
 } /* createBufferedReportControlBlock() */
 
 static ReportControlBlock*
-getRCBForLogicalNodeWithIndex(MmsMapping* self, LogicalNode* logicalNode,
-        int index, bool buffered)
+getRCBForLogicalNodeWithIndex(MmsMapping* self, LogicalNode* logicalNode, int index, bool buffered)
 {
     int rcbCount = 0;
 
     ReportControlBlock* nextRcb = self->model->rcbs;
 
-    while (nextRcb != NULL ) {
-        if (nextRcb->parent == logicalNode) {
-
-            if (nextRcb->buffered == buffered) {
+    while (nextRcb != NULL)
+    {
+        if (nextRcb->parent == logicalNode)
+        {
+            if (nextRcb->buffered == buffered)
+            {
                 if (rcbCount == index)
                     return nextRcb;
 
                 rcbCount++;
             }
-
         }
 
         nextRcb = nextRcb->sibling;
     }
 
-    return NULL ;
+    return NULL;
 }
 
 MmsVariableSpecification*
-Reporting_createMmsBufferedRCBs(MmsMapping* self, MmsDomain* domain,
-        LogicalNode* logicalNode, int reportsCount)
+Reporting_createMmsBufferedRCBs(MmsMapping* self, MmsDomain* domain, LogicalNode* logicalNode, int reportsCount)
 {
-    MmsVariableSpecification* namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1,
-            sizeof(MmsVariableSpecification));
+    MmsVariableSpecification* namedVariable =
+        (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("BR");
     namedVariable->type = MMS_STRUCTURE;
 
     namedVariable->typeSpec.structure.elementCount = reportsCount;
-    namedVariable->typeSpec.structure.elements = (MmsVariableSpecification**) GLOBAL_CALLOC(reportsCount,
-            sizeof(MmsVariableSpecification*));
+    namedVariable->typeSpec.structure.elements =
+        (MmsVariableSpecification**)GLOBAL_CALLOC(reportsCount, sizeof(MmsVariableSpecification*));
 
     int currentReport = 0;
 
-    while (currentReport < reportsCount) {
-        ReportControl* rc = ReportControl_create(true, logicalNode, self->iedServer->reportBufferSizeBRCBs, self->iedServer);
+    while (currentReport < reportsCount)
+    {
+        ReportControl* rc =
+            ReportControl_create(true, logicalNode, self->iedServer->reportBufferSizeBRCBs, self->iedServer);
 
         rc->domain = domain;
 
-        ReportControlBlock* reportControlBlock = getRCBForLogicalNodeWithIndex(
-                self, logicalNode, currentReport, true);
+        ReportControlBlock* reportControlBlock = getRCBForLogicalNodeWithIndex(self, logicalNode, currentReport, true);
 
         rc->hasOwner = self->iedServer->enableOwnerForRCB;
 
-        rc->name = StringUtils_createString(3, logicalNode->name, "$BR$",
-                reportControlBlock->name);
+        rc->name = StringUtils_createString(3, logicalNode->name, "$BR$", reportControlBlock->name);
 
         rc->rcb = reportControlBlock;
 
         namedVariable->typeSpec.structure.elements[currentReport] =
-                createBufferedReportControlBlock(reportControlBlock, rc);
+            createBufferedReportControlBlock(reportControlBlock, rc);
 
         LinkedList_add(self->reportControls, rc);
 
@@ -1534,37 +1626,36 @@ Reporting_createMmsBufferedRCBs(MmsMapping* self, MmsDomain* domain,
 }
 
 MmsVariableSpecification*
-Reporting_createMmsUnbufferedRCBs(MmsMapping* self, MmsDomain* domain,
-        LogicalNode* logicalNode, int reportsCount)
+Reporting_createMmsUnbufferedRCBs(MmsMapping* self, MmsDomain* domain, LogicalNode* logicalNode, int reportsCount)
 {
-    MmsVariableSpecification* namedVariable = (MmsVariableSpecification*) GLOBAL_CALLOC(1,
-            sizeof(MmsVariableSpecification));
+    MmsVariableSpecification* namedVariable =
+        (MmsVariableSpecification*)GLOBAL_CALLOC(1, sizeof(MmsVariableSpecification));
     namedVariable->name = StringUtils_copyString("RP");
     namedVariable->type = MMS_STRUCTURE;
 
     namedVariable->typeSpec.structure.elementCount = reportsCount;
-    namedVariable->typeSpec.structure.elements = (MmsVariableSpecification**) GLOBAL_CALLOC(reportsCount,
-            sizeof(MmsVariableSpecification*));
+    namedVariable->typeSpec.structure.elements =
+        (MmsVariableSpecification**)GLOBAL_CALLOC(reportsCount, sizeof(MmsVariableSpecification*));
 
     int currentReport = 0;
 
-    while (currentReport < reportsCount) {
-        ReportControl* rc = ReportControl_create(false, logicalNode, self->iedServer->reportBufferSizeURCBs, self->iedServer);
+    while (currentReport < reportsCount)
+    {
+        ReportControl* rc =
+            ReportControl_create(false, logicalNode, self->iedServer->reportBufferSizeURCBs, self->iedServer);
 
         rc->domain = domain;
 
-        ReportControlBlock* reportControlBlock = getRCBForLogicalNodeWithIndex(
-                self, logicalNode, currentReport, false);
+        ReportControlBlock* reportControlBlock = getRCBForLogicalNodeWithIndex(self, logicalNode, currentReport, false);
 
         rc->hasOwner = self->iedServer->enableOwnerForRCB;
 
-        rc->name = StringUtils_createString(3, logicalNode->name, "$RP$",
-                reportControlBlock->name);
+        rc->name = StringUtils_createString(3, logicalNode->name, "$RP$", reportControlBlock->name);
 
         rc->rcb = reportControlBlock;
 
         namedVariable->typeSpec.structure.elements[currentReport] =
-                createUnbufferedReportControlBlock(reportControlBlock, rc);
+            createUnbufferedReportControlBlock(reportControlBlock, rc);
 
         LinkedList_add(self->reportControls, rc);
 
@@ -1581,7 +1672,8 @@ convertIPv4AddressStringToByteArray(const char* clientAddressString, uint8_t ipV
 
     const char* separator = clientAddressString;
 
-    while (separator != NULL && addrElementCount < 4) {
+    while (separator != NULL && addrElementCount < 4)
+    {
         int intVal = atoi(separator);
 
         ipV4Addr[addrElementCount] = intVal;
@@ -1591,7 +1683,7 @@ convertIPv4AddressStringToByteArray(const char* clientAddressString, uint8_t ipV
         if (separator != NULL)
             separator++; /* skip '.' character */
 
-        addrElementCount ++;
+        addrElementCount++;
     }
 
     if (addrElementCount == 4)
@@ -1609,18 +1701,21 @@ updateOwner(ReportControl* rc, MmsServerConnection connection)
     Semaphore_wait(rc->rcbValuesLock);
 #endif
 
-    if (rc->server->edition >= IEC_61850_EDITION_2 && rc->hasOwner) {
-
+    if (rc->server->edition >= IEC_61850_EDITION_2 && rc->hasOwner)
+    {
         MmsValue* owner = ReportControl_getRCBValue(rc, "Owner");
 
-        if (owner != NULL) {
-
-            if (connection != NULL) {
+        if (owner != NULL)
+        {
+            if (connection != NULL)
+            {
                 char* clientAddressString = MmsServerConnection_getClientAddress(connection);
 
-                if (DEBUG_IED_SERVER) printf("IED_SERVER: reporting.c: set owner to %s\n", clientAddressString);
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: reporting.c: set owner to %s\n", clientAddressString);
 
-                if (strchr(clientAddressString, '.') != NULL) {
+                if (strchr(clientAddressString, '.') != NULL)
+                {
                     if (DEBUG_IED_SERVER)
                         printf("IED_SERVER: reporting.c: client address is IPv4 address\n");
 
@@ -1632,20 +1727,22 @@ updateOwner(ReportControl* rc, MmsServerConnection connection)
                         MmsValue_setOctetString(owner, ipV4Addr, 4);
                     else
                         MmsValue_setOctetString(owner, ipV4Addr, 0);
-
                 }
-                else {
+                else
+                {
                     uint8_t ipV6Addr[16];
 
                     bool valid = StringUtils_convertIPv6AdddressStringToByteArray(clientAddressString, ipV6Addr);
 
-                    if (valid) {
+                    if (valid)
+                    {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: reporting.c: client address is IPv6 address\n");
 
                         MmsValue_setOctetString(owner, ipV6Addr, 16);
                     }
-                    else {
+                    else
+                    {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: reporting.c: not a valid IPv6 address\n");
 
@@ -1653,17 +1750,22 @@ updateOwner(ReportControl* rc, MmsServerConnection connection)
                     }
                 }
             }
-            else {
-                if (rc->resvTms != -1) {
+            else
+            {
+                if (rc->resvTms != -1)
+                {
                     uint8_t emptyAddr[1];
                     MmsValue_setOctetString(owner, emptyAddr, 0);
                 }
-                else {
+                else
+                {
                     /* Set to pre-configured owner */
-                    if (rc->rcb->clientReservation[0] == 4) {
+                    if (rc->rcb->clientReservation[0] == 4)
+                    {
                         MmsValue_setOctetString(owner, rc->rcb->clientReservation + 1, 4);
                     }
-                    else if (rc->rcb->clientReservation[0] == 6) {
+                    else if (rc->rcb->clientReservation[0] == 6)
+                    {
                         MmsValue_setOctetString(owner, rc->rcb->clientReservation + 1, 16);
                     }
                 }
@@ -1683,7 +1785,8 @@ checkForZeroEntryID(MmsValue* value)
 
     int i = 0;
 
-    while (i < 8) {
+    while (i < 8)
+    {
         if (buffer[i] != 0)
             return false;
 
@@ -1700,8 +1803,10 @@ checkReportBufferForEntryID(ReportControl* rc, MmsValue* value)
 
     ReportBufferEntry* entry = rc->reportBuffer->oldestReport;
 
-    while (entry != NULL) {
-        if (memcmp(entry->entryId, value->value.octetString.buf, 8) == 0) {
+    while (entry != NULL)
+    {
+        if (memcmp(entry->entryId, value->value.octetString.buf, 8) == 0)
+        {
             ReportBufferEntry* nextEntryForResync = entry->next;
 
             rc->reportBuffer->nextToTransmit = nextEntryForResync;
@@ -1735,10 +1840,12 @@ increaseConfRev(ReportControl* self)
 static void
 checkReservationTimeout(MmsMapping* self, ReportControl* rc)
 {
-    if (rc->enabled == false && (rc->clientConnection == NULL)) {
-        if (rc->reservationTimeout > 0) {
-            if (Hal_getTimeInMs() > rc->reservationTimeout) {
-
+    if (rc->enabled == false && (rc->clientConnection == NULL))
+    {
+        if (rc->reservationTimeout > 0)
+        {
+            if (Hal_getTimeInMs() > rc->reservationTimeout)
+            {
                 if (rc->resvTms != -1)
                     rc->resvTms = 0;
 
@@ -1746,7 +1853,8 @@ checkReservationTimeout(MmsMapping* self, ReportControl* rc)
                     printf("IED_SERVER: reservation timeout expired for %s.%s\n", rc->parentLN->name, rc->name);
 
 #if (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1)
-                if (self->iedServer->enableBRCBResvTms) {
+                if (self->iedServer->enableBRCBResvTms)
+                {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                     Semaphore_wait(rc->rcbValuesLock);
 #endif
@@ -1766,13 +1874,17 @@ checkReservationTimeout(MmsMapping* self, ReportControl* rc)
 
 #if (CONFIG_IEC61850_SERVICE_TRACKING == 1)
                 copyRCBValuesToTrackingObject(self, rc);
-                updateGenericTrackingObjectValues(self, rc, IEC61850_SERVICE_TYPE_INTERNAL_CHANGE, DATA_ACCESS_ERROR_SUCCESS);
+                updateGenericTrackingObjectValues(self, rc, IEC61850_SERVICE_TYPE_INTERNAL_CHANGE,
+                                                  DATA_ACCESS_ERROR_SUCCESS);
 #endif /* (CONFIG_IEC61850_SERVICE_TRACKING == 1) */
 
-                if (self->rcbEventHandler) {
-                    ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, rc->clientConnection);
+                if (self->rcbEventHandler)
+                {
+                    ClientConnection clientConnection =
+                        private_IedServer_getClientConnectionByHandle(self->iedServer, rc->clientConnection);
 
-                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                          RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                 }
             }
         }
@@ -1786,13 +1898,15 @@ ReportControl_readAccess(ReportControl* rc, MmsMapping* mmsMapping, MmsServerCon
     MmsDataAccessError accessError = DATA_ACCESS_ERROR_SUCCESS;
 
     /* check reservation timeout */
-    if (rc->buffered) {
+    if (rc->buffered)
+    {
         checkReservationTimeout(mmsMapping, rc);
     }
 
     ClientConnection clientConnection = NULL;
 
-    if (mmsMapping->controlBlockAccessHandler || mmsMapping->rcbEventHandler) {
+    if (mmsMapping->controlBlockAccessHandler || mmsMapping->rcbEventHandler)
+    {
         clientConnection = private_IedServer_getClientConnectionByHandle(mmsMapping->iedServer, connection);
     }
 
@@ -1809,14 +1923,19 @@ ReportControl_readAccess(ReportControl* rc, MmsMapping* mmsMapping, MmsServerCon
 
         LogicalDevice* ld = (LogicalDevice*)ln->parent;
 
-        if (mmsMapping->controlBlockAccessHandler(mmsMapping->controlBlockAccessHandlerParameter, clientConnection, acsiClass, ld, ln, rc->rcb->name, elementName, IEC61850_CB_ACCESS_TYPE_READ) == false) {
+        if (mmsMapping->controlBlockAccessHandler(mmsMapping->controlBlockAccessHandlerParameter, clientConnection,
+                                                  acsiClass, ld, ln, rc->rcb->name, elementName,
+                                                  IEC61850_CB_ACCESS_TYPE_READ) == false)
+        {
             accessError = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
             accessAllowed = false;
         }
     }
 
-    if (mmsMapping->rcbEventHandler) {
-        mmsMapping->rcbEventHandler(mmsMapping->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_GET_PARAMETER, elementName, accessError);
+    if (mmsMapping->rcbEventHandler)
+    {
+        mmsMapping->rcbEventHandler(mmsMapping->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                    RCB_EVENT_GET_PARAMETER, elementName, accessError);
     }
 
     return accessAllowed;
@@ -1833,33 +1952,41 @@ isIpAddressMatchingWithOwner(ReportControl* rc, const char* ipAddress)
 
     MmsValue* owner = ReportControl_getRCBValue(rc, "Owner");
 
-    if (owner != NULL) {
-
-        if (MmsValue_getOctetStringSize(owner) == 0) {
+    if (owner != NULL)
+    {
+        if (MmsValue_getOctetStringSize(owner) == 0)
+        {
             retVal = true;
             goto exit_function;
         }
 
-        if (strchr(ipAddress, '.') != NULL) {
+        if (strchr(ipAddress, '.') != NULL)
+        {
             uint8_t ipV4Addr[4];
 
-            if (convertIPv4AddressStringToByteArray(ipAddress, ipV4Addr)) {
-                if (memcmp(ipV4Addr, MmsValue_getOctetStringBuffer(owner), 4) == 0) {
+            if (convertIPv4AddressStringToByteArray(ipAddress, ipV4Addr))
+            {
+                if (memcmp(ipV4Addr, MmsValue_getOctetStringBuffer(owner), 4) == 0)
+                {
                     retVal = true;
                     goto exit_function;
                 }
             }
         }
-        else {
+        else
+        {
             uint8_t ipV6Addr[16];
 
-            if (StringUtils_convertIPv6AdddressStringToByteArray(ipAddress, ipV6Addr)) {
-                if (memcmp(ipV6Addr, MmsValue_getOctetStringBuffer(owner), 16) == 0) {
+            if (StringUtils_convertIPv6AdddressStringToByteArray(ipAddress, ipV6Addr))
+            {
+                if (memcmp(ipV6Addr, MmsValue_getOctetStringBuffer(owner), 16) == 0)
+                {
                     retVal = true;
                     goto exit_function;
                 }
             }
-            else {
+            else
+            {
                 goto exit_function;
             }
         }
@@ -1875,7 +2002,7 @@ exit_function:
 }
 
 static void
-reserveRcb(ReportControl* rc,  MmsServerConnection connection)
+reserveRcb(ReportControl* rc, MmsServerConnection connection)
 {
     rc->reserved = true;
     rc->clientConnection = connection;
@@ -1884,16 +2011,19 @@ reserveRcb(ReportControl* rc,  MmsServerConnection connection)
     Semaphore_wait(rc->rcbValuesLock);
 #endif
 
-    if (rc->buffered) {
+    if (rc->buffered)
+    {
 #if (CONFIG_IEC61850_BRCB_WITH_RESVTMS == 1)
-        if (rc->server->enableBRCBResvTms) {
+        if (rc->server->enableBRCBResvTms)
+        {
             MmsValue* resvTmsVal = ReportControl_getRCBValue(rc, "ResvTms");
             if (resvTmsVal)
                 MmsValue_setInt16(resvTmsVal, rc->resvTms);
         }
 #endif
     }
-    else {
+    else
+    {
         MmsValue* resvVal = ReportControl_getRCBValue(rc, "Resv");
         if (resvVal)
             MmsValue_setBoolean(resvVal, true);
@@ -1908,7 +2038,7 @@ reserveRcb(ReportControl* rc,  MmsServerConnection connection)
 
 MmsDataAccessError
 Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char* elementName, MmsValue* value,
-        MmsServerConnection connection)
+                                MmsServerConnection connection)
 {
     MmsDataAccessError retVal = DATA_ACCESS_ERROR_SUCCESS;
 
@@ -1931,7 +2061,9 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
         LogicalDevice* ld = (LogicalDevice*)ln->parent;
 
-        if (self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, acsiClass, ld, ln, rc->rcb->name, elementName, IEC61850_CB_ACCESS_TYPE_WRITE) == false) {
+        if (self->controlBlockAccessHandler(self->controlBlockAccessHandlerParameter, clientConnection, acsiClass, ld,
+                                            ln, rc->rcb->name, elementName, IEC61850_CB_ACCESS_TYPE_WRITE) == false)
+        {
             retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
             goto exit_function_only_tracking;
@@ -1939,29 +2071,34 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
     }
 
     /* check reservation timeout for buffered RCBs */
-    if (rc->buffered) {
-
+    if (rc->buffered)
+    {
         checkReservationTimeout(self, rc);
 
-        if (rc->resvTms == 0) {
+        if (rc->resvTms == 0)
+        {
             /* nothing to to */
         }
-        else if (rc->resvTms == -1) {
-
-            if (rc->reserved == false) {
-
-                if (self->iedServer->edition < IEC_61850_EDITION_2_1) {
-
+        else if (rc->resvTms == -1)
+        {
+            if (rc->reserved == false)
+            {
+                if (self->iedServer->edition < IEC_61850_EDITION_2_1)
+                {
 #if (CONFIG_IEC61850_RCB_ALLOW_ONLY_PRECONFIGURED_CLIENT == 1)
-                    if (isIpAddressMatchingWithOwner(rc, MmsServerConnection_getClientAddress(connection))) {
+                    if (isIpAddressMatchingWithOwner(rc, MmsServerConnection_getClientAddress(connection)))
+                    {
                         rc->reserved = true;
                         rc->clientConnection = connection;
 
-                        if (self->rcbEventHandler) {
-                             self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                        if (self->rcbEventHandler)
+                        {
+                            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                                  RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                         }
                     }
-                    else {
+                    else
+                    {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: client IP not matching with pre-assigned owner\n");
                     }
@@ -1969,34 +2106,41 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
                     rc->reserved = true;
                     rc->clientConnection = connection;
 
-                    if (self->rcbEventHandler) {
-                         self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
 #endif
-
                 }
             }
         }
-        else if (rc->resvTms > 0) {
-            if (rc->reserved == false) {
-
-                if (isIpAddressMatchingWithOwner(rc, MmsServerConnection_getClientAddress(connection))) {
+        else if (rc->resvTms > 0)
+        {
+            if (rc->reserved == false)
+            {
+                if (isIpAddressMatchingWithOwner(rc, MmsServerConnection_getClientAddress(connection)))
+                {
                     rc->reserved = true;
                     rc->clientConnection = connection;
                     rc->reservationTimeout = Hal_getTimeInMs() + (rc->resvTms * 1000);
 
-                    if (self->rcbEventHandler) {
-                         self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
-                else {
+                else
+                {
                     if (DEBUG_IED_SERVER)
                         printf("IED_SERVER: client IP not matching with owner\n");
                 }
-
             }
-            else {
-                if (rc->clientConnection == connection) {
+            else
+            {
+                if (rc->clientConnection == connection)
+                {
                     rc->reservationTimeout = Hal_getTimeInMs() + (rc->resvTms * 1000);
                 }
             }
@@ -2006,9 +2150,12 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
     ReportControl_lockNotify(rc);
 
     /* for edition 2.1 don't allow implicit RCB reservation */
-    if (self->iedServer->edition == IEC_61850_EDITION_2_1) {
-        if (rc->reserved == false) {
-            if ((strcmp(elementName, "Resv")) && (strcmp(elementName, "ResvTms"))) {
+    if (self->iedServer->edition == IEC_61850_EDITION_2_1)
+    {
+        if (rc->reserved == false)
+        {
+            if ((strcmp(elementName, "Resv")) && (strcmp(elementName, "ResvTms")))
+            {
                 retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
                 goto exit_function;
@@ -2016,15 +2163,18 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
         }
     }
 
-    if ((rc->reserved) && (rc->clientConnection != connection)) {
+    if ((rc->reserved) && (rc->clientConnection != connection))
+    {
         retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
 
         goto exit_function;
     }
 
 #if (CONFIG_IEC61850_RCB_ALLOW_ONLY_PRECONFIGURED_CLIENT == 1)
-    if (rc->resvTms == -1) {
-        if (isIpAddressMatchingWithOwner(rc, MmsServerConnection_getClientAddress(connection)) == false) {
+    if (rc->resvTms == -1)
+    {
+        if (isIpAddressMatchingWithOwner(rc, MmsServerConnection_getClientAddress(connection)) == false)
+        {
             retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
             if (DEBUG_IED_SERVER)
@@ -2035,30 +2185,32 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
     }
 #endif
 
-    if (strcmp(elementName, "RptEna") == 0) {
-
-        if (value->value.boolean == true) {
-
-            if (rc->enabled == true) {
+    if (strcmp(elementName, "RptEna") == 0)
+    {
+        if (value->value.boolean == true)
+        {
+            if (rc->enabled == true)
+            {
                 retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
 
                 goto exit_function;
             }
 
             if (DEBUG_IED_SERVER)
-                printf("IED_SERVER: Activate report for client %s\n",
-                        MmsServerConnection_getClientAddress(connection));
+                printf("IED_SERVER: Activate report for client %s\n", MmsServerConnection_getClientAddress(connection));
 
-            if (updateReportDataset(self, rc, NULL, connection)) {
-
-                if (rc->reserved == false) {
-
+            if (updateReportDataset(self, rc, NULL, connection))
+            {
+                if (rc->reserved == false)
+                {
                     rc->resvTms = RESV_TMS_IMPLICIT_VALUE;
 
                     reserveRcb(rc, connection);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
 
@@ -2075,9 +2227,10 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
                 Semaphore_post(rc->rcbValuesLock);
 #endif
 
-                if (rc->buffered) {
-
-                    if (rc->isResync == false) {
+                if (rc->buffered)
+                {
+                    if (rc->isResync == false)
+                    {
                         rc->reportBuffer->nextToTransmit = rc->reportBuffer->oldestReport;
                         rc->reportBuffer->isOverflow = true;
                     }
@@ -2108,22 +2261,27 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
                 retVal = DATA_ACCESS_ERROR_SUCCESS;
 
-                if (self->rcbEventHandler) {
-                     self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_ENABLE, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                if (self->rcbEventHandler)
+                {
+                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_ENABLE,
+                                          NULL, DATA_ACCESS_ERROR_SUCCESS);
                 }
 
                 goto exit_function;
             }
-            else {
+            else
+            {
                 retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
                 goto exit_function;
             }
         }
-        else {
+        else
+        {
             if (rc->enabled == false)
                 goto exit_function;
 
-            if (((rc->enabled) || (rc->reserved)) && (rc->clientConnection != connection)) {
+            if (((rc->enabled) || (rc->reserved)) && (rc->clientConnection != connection))
+            {
                 retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
 
                 goto exit_function;
@@ -2131,109 +2289,128 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             if (DEBUG_IED_SERVER)
                 printf("IED_SERVER: Deactivate report for client %s\n",
-                        MmsServerConnection_getClientAddress(connection));
+                       MmsServerConnection_getClientAddress(connection));
 
-            if (rc->buffered) {
+            if (rc->buffered)
+            {
                 rc->reportBuffer->isOverflow = true;
                 rc->isResync = false;
             }
-            else {
+            else
+            {
                 if (rc->dataSet)
                     clearInclusionFlags(rc);
 
                 /* clear report buffer */
                 purgeBuf(rc);
 
-                if (self->rcbEventHandler) {
-                     self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                if (self->rcbEventHandler)
+                {
+                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF,
+                                          NULL, DATA_ACCESS_ERROR_SUCCESS);
                 }
             }
 
-            if (self->rcbEventHandler) {
-                 self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_DISABLE, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            if (self->rcbEventHandler)
+            {
+                self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_DISABLE,
+                                      NULL, DATA_ACCESS_ERROR_SUCCESS);
             }
 
             rc->enabled = false;
         }
-
     }
 
-    if (strcmp(elementName, "GI") == 0) {
-        if ((rc->enabled) && (rc->clientConnection == connection)) {
-
-            if (MmsValue_getBoolean(value)) {
+    if (strcmp(elementName, "GI") == 0)
+    {
+        if ((rc->enabled) && (rc->clientConnection == connection))
+        {
+            if (MmsValue_getBoolean(value))
+            {
                 if (rc->triggerOps & TRG_OPT_GI)
                     rc->gi = true;
             }
 
             retVal = DATA_ACCESS_ERROR_SUCCESS;
 
-            if (self->rcbEventHandler) {
-                 self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_GI, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            if (self->rcbEventHandler)
+            {
+                self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_GI, NULL,
+                                      DATA_ACCESS_ERROR_SUCCESS);
             }
 
             goto exit_function;
         }
-        else {
+        else
+        {
             retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
 
             goto exit_function;
         }
     }
 
-    if (rc->enabled == false) {
-
-        if ((rc->reserved) && (rc->clientConnection != connection)) {
+    if (rc->enabled == false)
+    {
+        if ((rc->reserved) && (rc->clientConnection != connection))
+        {
             retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
 
             goto exit_function;
         }
 
-        if (strcmp(elementName, "Resv") == 0) {
+        if (strcmp(elementName, "Resv") == 0)
+        {
             resvTmsAccess = true;
 
             rc->reserved = value->value.boolean;
 
-            if (rc->reserved == true) {
-
-                if (self->rcbEventHandler) {
-                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            if (rc->reserved == true)
+            {
+                if (self->rcbEventHandler)
+                {
+                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED,
+                                          NULL, DATA_ACCESS_ERROR_SUCCESS);
                 }
 
                 updateOwner(rc, connection);
                 rc->clientConnection = connection;
             }
-            else {
+            else
+            {
                 updateOwner(rc, NULL);
                 rc->clientConnection = NULL;
 
                 if (rc->resvTms == -1)
                     dontUpdate = true;
 
-                if (self->rcbEventHandler) {
-                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                if (self->rcbEventHandler)
+                {
+                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                          RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                 }
             }
-
         }
-        else if (strcmp(elementName, "PurgeBuf") == 0) {
-            if (MmsValue_getType(value) == MMS_BOOLEAN) {
-
-                if (MmsValue_getBoolean(value) == true) {
+        else if (strcmp(elementName, "PurgeBuf") == 0)
+        {
+            if (MmsValue_getType(value) == MMS_BOOLEAN)
+            {
+                if (MmsValue_getBoolean(value) == true)
+                {
                     purgeBuf(rc);
                     retVal = DATA_ACCESS_ERROR_SUCCESS;
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
 
                     goto exit_function;
                 }
             }
-
         }
-        else if (strcmp(elementName, "DatSet") == 0) {
-
+        else if (strcmp(elementName, "DatSet") == 0)
+        {
             if (!(self->iedServer->rcbSettingsWritable & IEC61850_REPORTSETTINGS_DATSET))
             {
                 retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
@@ -2246,10 +2423,10 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             MmsValue* datSet = ReportControl_getRCBValue(rc, "DatSet");
 
-            if (!MmsValue_equals(datSet, value)) {
-
-                if (updateReportDataset(self, rc, value, connection)) {
-
+            if (!MmsValue_equals(datSet, value))
+            {
+                if (updateReportDataset(self, rc, value, connection))
+                {
                     MmsValue_update(datSet, value);
 
                     increaseConfRev(rc);
@@ -2258,15 +2435,19 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
                     Semaphore_post(rc->rcbValuesLock);
 #endif
 
-                    if (rc->buffered) {
+                    if (rc->buffered)
+                    {
                         purgeBuf(rc);
 
-                        if (self->rcbEventHandler) {
-                            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                        if (self->rcbEventHandler)
+                        {
+                            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                                  RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
                         }
                     }
                 }
-                else {
+                else
+                {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                     Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2276,7 +2457,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
                     goto exit_function;
                 }
             }
-            else {
+            else
+            {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2285,8 +2467,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
             retVal = DATA_ACCESS_ERROR_SUCCESS;
             goto exit_function;
         }
-        else if (strcmp(elementName, "IntgPd") == 0) {
-
+        else if (strcmp(elementName, "IntgPd") == 0)
+        {
             if (!(self->iedServer->rcbSettingsWritable & IEC61850_REPORTSETTINGS_INTG_PD))
             {
                 retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
@@ -2299,7 +2481,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             MmsValue* intgPd = ReportControl_getRCBValue(rc, elementName);
 
-            if (!MmsValue_equals(intgPd, value)) {
+            if (!MmsValue_equals(intgPd, value))
+            {
                 MmsValue_update(intgPd, value);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -2308,16 +2491,18 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
                 refreshIntegrityPeriod(rc);
 
-                if (rc->buffered) {
-
-                    if (rc->triggerOps & TRG_OPT_INTEGRITY) {
-
-                        if (rc->intgPd > 0) {
-
-                            if (rc->server->syncIntegrityReportTimes) {
+                if (rc->buffered)
+                {
+                    if (rc->triggerOps & TRG_OPT_INTEGRITY)
+                    {
+                        if (rc->intgPd > 0)
+                        {
+                            if (rc->server->syncIntegrityReportTimes)
+                            {
                                 rc->nextIntgReportTime = getNextRoundedStartTime(Hal_getTimeInMs(), rc->intgPd);
                             }
-                            else {
+                            else
+                            {
                                 rc->nextIntgReportTime = 0;
                             }
                         }
@@ -2325,12 +2510,15 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
                     purgeBuf(rc);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
             }
-            else {
+            else
+            {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2338,8 +2526,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "TrgOps") == 0) {
-
+        else if (strcmp(elementName, "TrgOps") == 0)
+        {
             if (!(self->iedServer->rcbSettingsWritable & IEC61850_REPORTSETTINGS_TRG_OPS))
             {
                 retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
@@ -2352,24 +2540,29 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             MmsValue* trgOps = ReportControl_getRCBValue(rc, elementName);
 
-            if (!MmsValue_equals(trgOps, value)) {
+            if (!MmsValue_equals(trgOps, value))
+            {
                 MmsValue_update(trgOps, value);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
 
-                if (rc->buffered) {
+                if (rc->buffered)
+                {
                     purgeBuf(rc);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
 
                 refreshTriggerOptions(rc);
             }
-            else {
+            else
+            {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2377,18 +2570,19 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "EntryID") == 0) {
-
-            if (MmsValue_getOctetStringSize(value) != 8) {
-
+        else if (strcmp(elementName, "EntryID") == 0)
+        {
+            if (MmsValue_getOctetStringSize(value) != 8)
+            {
                 retVal = DATA_ACCESS_ERROR_OBJECT_VALUE_INVALID;
 
                 goto exit_function;
             }
 
-            if (checkForZeroEntryID(value) == false) {
-
-                if (!checkReportBufferForEntryID(rc, value)) {
+            if (checkForZeroEntryID(value) == false)
+            {
+                if (!checkReportBufferForEntryID(rc, value))
+                {
                     rc->reportBuffer->isOverflow = true;
 
                     retVal = DATA_ACCESS_ERROR_OBJECT_VALUE_INVALID;
@@ -2398,7 +2592,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
                 rc->reportBuffer->isOverflow = false;
             }
-            else {
+            else
+            {
                 rc->reportBuffer->nextToTransmit = rc->reportBuffer->oldestReport;
                 rc->reportBuffer->isOverflow = true;
                 rc->isResync = false;
@@ -2417,8 +2612,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
             goto exit_function;
         }
 
-        else if (strcmp(elementName, "BufTm") == 0) {
-
+        else if (strcmp(elementName, "BufTm") == 0)
+        {
             if (!(self->iedServer->rcbSettingsWritable & IEC61850_REPORTSETTINGS_BUF_TIME))
             {
                 retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
@@ -2431,24 +2626,29 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             MmsValue* bufTm = ReportControl_getRCBValue(rc, elementName);
 
-            if (!MmsValue_equals(bufTm, value)) {
+            if (!MmsValue_equals(bufTm, value))
+            {
                 MmsValue_update(bufTm, value);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
 
-                if (rc->buffered) {
+                if (rc->buffered)
+                {
                     purgeBuf(rc);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
 
                 refreshBufferTime(rc);
             }
-            else {
+            else
+            {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2456,8 +2656,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "RptID") == 0) {
-
+        else if (strcmp(elementName, "RptID") == 0)
+        {
             if (!(self->iedServer->rcbSettingsWritable & IEC61850_REPORTSETTINGS_RPT_ID))
             {
                 retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
@@ -2470,22 +2670,27 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             MmsValue* rptId = ReportControl_getRCBValue(rc, elementName);
 
-            if (!MmsValue_equals(rptId, value)) {
+            if (!MmsValue_equals(rptId, value))
+            {
                 MmsValue_update(rptId, value);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
 
-                if (rc->buffered) {
+                if (rc->buffered)
+                {
                     purgeBuf(rc);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_PURGEBUF, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
             }
-            else {
+            else
+            {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
                 Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2493,34 +2698,42 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "ResvTms") == 0) {
-            if (rc->buffered) {
-
+        else if (strcmp(elementName, "ResvTms") == 0)
+        {
+            if (rc->buffered)
+            {
                 resvTmsAccess = true;
 
-                if (rc->resvTms != -1) {
-
+                if (rc->resvTms != -1)
+                {
                     int resvTms = MmsValue_toInt32(value);
 
-                    if (resvTms >= 0) {
+                    if (resvTms >= 0)
+                    {
                         rc->resvTms = resvTms;
 
-                        if (rc->resvTms == 0) {
+                        if (rc->resvTms == 0)
+                        {
                             rc->reservationTimeout = 0;
                             rc->reserved = false;
                             updateOwner(rc, NULL);
 
-                            if (self->rcbEventHandler) {
-                                self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                            if (self->rcbEventHandler)
+                            {
+                                self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                                      RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                             }
                         }
-                        else {
+                        else
+                        {
                             rc->reservationTimeout = Hal_getTimeInMs() + (rc->resvTms * 1000);
 
                             reserveRcb(rc, connection);
 
-                            if (self->rcbEventHandler) {
-                                self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                            if (self->rcbEventHandler)
+                            {
+                                self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                                      RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                             }
                         }
 
@@ -2529,21 +2742,27 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
                         if (resvTmsVal != NULL)
                             MmsValue_update(resvTmsVal, value);
                     }
-                    else {
+                    else
+                    {
                         retVal = DATA_ACCESS_ERROR_OBJECT_VALUE_INVALID;
                     }
                 }
-                else {
-                    if (self->iedServer->edition < IEC_61850_EDITION_2_1) {
+                else
+                {
+                    if (self->iedServer->edition < IEC_61850_EDITION_2_1)
+                    {
                         retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
                     }
-                    else {
+                    else
+                    {
                         rc->reservationTimeout = Hal_getTimeInMs() + (RESV_TMS_IMPLICIT_VALUE * 1000);
 
                         reserveRcb(rc, connection);
 
-                        if (self->rcbEventHandler) {
-                            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                        if (self->rcbEventHandler)
+                        {
+                            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                                  RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                         }
                     }
                 }
@@ -2551,27 +2770,32 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
                 goto exit_function;
             }
         }
-        else if (strcmp(elementName, "ConfRev") == 0) {
+        else if (strcmp(elementName, "ConfRev") == 0)
+        {
             retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "SqNum") == 0) {
+        else if (strcmp(elementName, "SqNum") == 0)
+        {
             retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "Owner") == 0) {
+        else if (strcmp(elementName, "Owner") == 0)
+        {
             retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "TimeofEntry") == 0) {
+        else if (strcmp(elementName, "TimeofEntry") == 0)
+        {
             retVal = DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED;
 
             goto exit_function;
         }
-        else if (strcmp(elementName, "OptFlds") == 0) {
+        else if (strcmp(elementName, "OptFlds") == 0)
+        {
 
             if (!(self->iedServer->rcbSettingsWritable & IEC61850_REPORTSETTINGS_OPT_FIELDS))
             {
@@ -2586,8 +2810,10 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
         MmsValue* rcbValue = ReportControl_getRCBValue(rc, elementName);
 
-        if (rcbValue) {
-            if (dontUpdate == false) {
+        if (rcbValue)
+        {
+            if (dontUpdate == false)
+            {
                 MmsValue_update(rcbValue, value);
             }
 
@@ -2595,7 +2821,8 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
             Semaphore_post(rc->rcbValuesLock);
 #endif
         }
-        else {
+        else
+        {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
             Semaphore_post(rc->rcbValuesLock);
 #endif
@@ -2604,48 +2831,61 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, const char*
 
             goto exit_function;
         }
-
     }
-    else {
+    else
+    {
         retVal = DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
     }
 
 exit_function:
 
-    /* every successful write access reserves the RCB (or for edition 2.1 it means that there is already a reservation) */
-    if ((retVal == DATA_ACCESS_ERROR_SUCCESS) && (resvTmsAccess == false)) {
-        if (rc->buffered) {
+    /* every successful write access reserves the RCB (or for edition 2.1 it means that there is already a reservation)
+     */
+    if ((retVal == DATA_ACCESS_ERROR_SUCCESS) && (resvTmsAccess == false))
+    {
+        if (rc->buffered)
+        {
             rc->reservationTimeout = Hal_getTimeInMs() + (RESV_TMS_IMPLICIT_VALUE * 1000);
 
-            if (rc->resvTms == 0) {
-
-                if (rc->reserved == false) {
+            if (rc->resvTms == 0)
+            {
+                if (rc->reserved == false)
+                {
                     rc->resvTms = RESV_TMS_IMPLICIT_VALUE;
 
                     reserveRcb(rc, connection);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
-
             }
-            else if (rc->resvTms == -1) {
-                if (rc->reserved == false) {
+            else if (rc->resvTms == -1)
+            {
+                if (rc->reserved == false)
+                {
                     reserveRcb(rc, connection);
 
-                    if (self->rcbEventHandler) {
-                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                    if (self->rcbEventHandler)
+                    {
+                        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection,
+                                              RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
                     }
                 }
             }
         }
-        else {
-            if (rc->reserved == false) {
+        else
+        {
+            if (rc->reserved == false)
+            {
                 reserveRcb(rc, connection);
 
-                if (self->rcbEventHandler) {
-                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+                if (self->rcbEventHandler)
+                {
+                    self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_RESERVED,
+                                          NULL, DATA_ACCESS_ERROR_SUCCESS);
                 }
             }
         }
@@ -2669,8 +2909,10 @@ exit_function_only_tracking:
         updateGenericTrackingObjectValues(self, rc, IEC61850_SERVICE_TYPE_SET_URCB_VALUES, retVal);
 #endif /* (CONFIG_IEC61850_SERVICE_TRACKING == 1) */
 
-    if (self->rcbEventHandler) {
-        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_SET_PARAMETER, elementName, retVal);
+    if (self->rcbEventHandler)
+    {
+        self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_SET_PARAMETER,
+                              elementName, retVal);
     }
 
     return retVal;
@@ -2679,11 +2921,15 @@ exit_function_only_tracking:
 static void
 Reporting_disableReportControlInstance(MmsMapping* self, ReportControl* rc)
 {
-    if (rc->enabled) {
-        if (self->rcbEventHandler) {
-            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, rc->clientConnection);
+    if (rc->enabled)
+    {
+        if (self->rcbEventHandler)
+        {
+            ClientConnection clientConnection =
+                private_IedServer_getClientConnectionByHandle(self->iedServer, rc->clientConnection);
 
-            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_DISABLE, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_DISABLE, NULL,
+                                  DATA_ACCESS_ERROR_SUCCESS);
         }
     }
 
@@ -2701,19 +2947,24 @@ Reporting_disableReportControlInstance(MmsMapping* self, ReportControl* rc)
     Semaphore_post(rc->rcbValuesLock);
 #endif
 
-    if (rc->reserved) {
+    if (rc->reserved)
+    {
         rc->reserved = false;
 
-        if (self->rcbEventHandler) {
-            ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer, rc->clientConnection);
+        if (self->rcbEventHandler)
+        {
+            ClientConnection clientConnection =
+                private_IedServer_getClientConnectionByHandle(self->iedServer, rc->clientConnection);
 
-            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_UNRESERVED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            self->rcbEventHandler(self->rcbEventHandlerParameter, rc->rcb, clientConnection, RCB_EVENT_UNRESERVED, NULL,
+                                  DATA_ACCESS_ERROR_SUCCESS);
         }
     }
 
-    if (rc->buffered == false) {
-
-        if (rc->resvTms != -1) {
+    if (rc->buffered == false)
+    {
+        if (rc->resvTms != -1)
+        {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
             Semaphore_wait(rc->rcbValuesLock);
 #endif
@@ -2732,10 +2983,12 @@ Reporting_disableReportControlInstance(MmsMapping* self, ReportControl* rc)
         /* delete buffer content */
         purgeBuf(rc);
     }
-    else {
+    else
+    {
         if (rc->resvTms == 0)
             updateOwner(rc, NULL);
-        else if (rc->resvTms > 0) {
+        else if (rc->resvTms > 0)
+        {
             rc->reservationTimeout = Hal_getTimeInMs() + (rc->resvTms * 1000);
         }
     }
@@ -2751,7 +3004,8 @@ Reporting_deactivateAllReports(MmsMapping* self)
 {
     LinkedList rcElem = LinkedList_getNext(self->reportControls);
 
-    while (rcElem) {
+    while (rcElem)
+    {
         ReportControl* rc = (ReportControl*)LinkedList_getData(rcElem);
 
         Reporting_disableReportControlInstance(self, rc);
@@ -2765,10 +3019,12 @@ Reporting_deactivateReportsForConnection(MmsMapping* self, MmsServerConnection c
 {
     LinkedList rcElem = LinkedList_getNext(self->reportControls);
 
-    while (rcElem) {
+    while (rcElem)
+    {
         ReportControl* rc = (ReportControl*)LinkedList_getData(rcElem);
 
-        if (rc->clientConnection == connection) {
+        if (rc->clientConnection == connection)
+        {
             Reporting_disableReportControlInstance(self, rc);
         }
 
@@ -2822,12 +3078,12 @@ static void
 printReportId(ReportBufferEntry* report)
 {
     int i = 0;
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++)
+    {
         printf("%02x ", report->entryId[i]);
     }
 }
 #endif
-
 
 static void
 removeAllGIReportsFromReportBuffer(ReportBuffer* reportBuffer)
@@ -2835,13 +3091,16 @@ removeAllGIReportsFromReportBuffer(ReportBuffer* reportBuffer)
     ReportBufferEntry* currentReport = reportBuffer->oldestReport;
     ReportBufferEntry* lastReport = NULL;
 
-    while (currentReport != NULL) {
-        if (currentReport->flags & 2) {
-
-            if (currentReport == reportBuffer->oldestReport) {
+    while (currentReport != NULL)
+    {
+        if (currentReport->flags & 2)
+        {
+            if (currentReport == reportBuffer->oldestReport)
+            {
                 reportBuffer->oldestReport = currentReport->next;
             }
-            else {
+            else
+            {
                 if (lastReport != NULL)
                     lastReport->next = currentReport->next;
                 else
@@ -2849,9 +3108,9 @@ removeAllGIReportsFromReportBuffer(ReportBuffer* reportBuffer)
             }
 
 #if (DEBUG_IED_SERVER == 1)
-                printf("IED_SERVER:   REMOVE old GI report with ID ");
-                printReportId(currentReport);
-                printf("\n");
+            printf("IED_SERVER:   REMOVE old GI report with ID ");
+            printReportId(currentReport);
+            printf("\n");
 #endif
 
             reportBuffer->reportsCount--;
@@ -2859,14 +3118,16 @@ removeAllGIReportsFromReportBuffer(ReportBuffer* reportBuffer)
             if (reportBuffer->nextToTransmit == currentReport)
                 reportBuffer->nextToTransmit = currentReport->next;
 
-            if (reportBuffer->lastEnqueuedReport == currentReport) {
+            if (reportBuffer->lastEnqueuedReport == currentReport)
+            {
                 if (lastReport != NULL)
                     reportBuffer->lastEnqueuedReport = lastReport;
                 else
                     reportBuffer->lastEnqueuedReport = reportBuffer->oldestReport;
             }
         }
-        else {
+        else
+        {
             lastReport = currentReport;
         }
 
@@ -2882,8 +3143,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 {
     if (DEBUG_IED_SERVER)
         printf("IED_SERVER: enqueueReport: RCB name: %s (SQN:%u) enabled:%i buffered:%i buffering:%i intg:%i GI:%i\n",
-            reportControl->name, (unsigned) reportControl->sqNum, reportControl->enabled,
-            reportControl->isBuffering, reportControl->buffered, isIntegrity, isGI);
+               reportControl->name, (unsigned)reportControl->sqNum, reportControl->enabled, reportControl->isBuffering,
+               reportControl->buffered, isIntegrity, isGI);
 
     ReportBuffer* buffer = reportControl->reportBuffer;
 
@@ -2901,7 +3162,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
     /* calculate size of complete buffer entry */
     int bufferEntrySize = MemoryAllocator_getAlignedSize(sizeof(ReportBufferEntry));
 
-    int inclusionFieldSize = MemoryAllocator_getAlignedSize(MmsValue_getBitStringByteSize(reportControl->inclusionField));
+    int inclusionFieldSize =
+        MemoryAllocator_getAlignedSize(MmsValue_getBitStringByteSize(reportControl->inclusionField));
 
     MmsValue inclusionFieldStatic;
 
@@ -2924,7 +3186,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 
             int encodedSize;
 
-            if (dataSetEntry->value) {
+            if (dataSetEntry->value)
+            {
                 encodedSize = MmsValue_encodeMmsData(dataSetEntry->value, NULL, 0, false);
             }
             else
@@ -2941,7 +3204,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
             dataSetEntry = dataSetEntry->sibling;
         }
 
-        bufferEntrySize += MemoryAllocator_getAlignedSize(sizeof(int) + dataBlockSize); /* add aligned_size(LEN + DATA) */
+        bufferEntrySize +=
+            MemoryAllocator_getAlignedSize(sizeof(int) + dataBlockSize); /* add aligned_size(LEN + DATA) */
     }
     else
     {
@@ -2966,22 +3230,26 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
             }
         }
 
-        bufferEntrySize += MemoryAllocator_getAlignedSize(sizeof(int) + dataBlockSize + reasonForInclusionSize); /* add aligned_size (LEN + DATA + REASON) */
+        bufferEntrySize += MemoryAllocator_getAlignedSize(
+            sizeof(int) + dataBlockSize + reasonForInclusionSize); /* add aligned_size (LEN + DATA + REASON) */
     }
 
     if (DEBUG_IED_SERVER)
         printf("IED_SERVER: enqueueReport: bufferEntrySize: %i\n", bufferEntrySize);
 
-    if (bufferEntrySize > buffer->memoryBlockSize) {
+    if (bufferEntrySize > buffer->memoryBlockSize)
+    {
         if (DEBUG_IED_SERVER)
             printf("IED_SERVER: enqueueReport: report buffer too small for report entry! Skip event!\n");
 
         goto exit_function;
     }
 
-    if (isBuffered) {
+    if (isBuffered)
+    {
         /* remove old buffered GI reports */
-        if (isGI) removeAllGIReportsFromReportBuffer(buffer);
+        if (isGI)
+            removeAllGIReportsFromReportBuffer(buffer);
     }
 
     uint8_t* entryBufPos = NULL;
@@ -2994,28 +3262,31 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
     {
         /* buffer is empty - we start at the beginning of the memory block */
         entryBufPos = buffer->memoryBlock;
-        buffer->oldestReport = (ReportBufferEntry*) entryBufPos;
-        buffer->nextToTransmit = (ReportBufferEntry*) entryBufPos;
+        buffer->oldestReport = (ReportBufferEntry*)entryBufPos;
+        buffer->nextToTransmit = (ReportBufferEntry*)entryBufPos;
     }
     else
     {
         assert(buffer->lastEnqueuedReport != NULL);
         assert(buffer->oldestReport != NULL);
 
-        if (DEBUG_IED_SERVER) {
+        if (DEBUG_IED_SERVER)
+        {
             printf("IED_SERVER:   buffer->lastEnqueuedReport: %p\n", buffer->lastEnqueuedReport);
             printf("IED_SERVER:   buffer->oldestReport: %p\n", buffer->oldestReport);
             printf("IED_SERVER:   buffer->nextToTransmit: %p\n", buffer->nextToTransmit);
         }
 
-        if (DEBUG_IED_SERVER) printf ("IED_SERVER: Last buffer offset: %i\n", (int) ((uint8_t*) buffer->lastEnqueuedReport - buffer->memoryBlock));
+        if (DEBUG_IED_SERVER)
+            printf("IED_SERVER: Last buffer offset: %i\n",
+                   (int)((uint8_t*)buffer->lastEnqueuedReport - buffer->memoryBlock));
 
         if (buffer->lastEnqueuedReport == buffer->oldestReport)
         {
             /* --> buffer->reportsCount == 1 */
             assert(buffer->reportsCount == 1);
 
-            entryBufPos = (uint8_t*) ((uint8_t*) buffer->lastEnqueuedReport + buffer->lastEnqueuedReport->entryLength);
+            entryBufPos = (uint8_t*)((uint8_t*)buffer->lastEnqueuedReport + buffer->lastEnqueuedReport->entryLength);
 
             if ((entryBufPos + bufferEntrySize) > (buffer->memoryBlock + buffer->memoryBlockSize))
             {
@@ -3029,7 +3300,7 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 #endif
 
                 buffer->reportsCount = 0;
-                buffer->oldestReport = (ReportBufferEntry*) entryBufPos;
+                buffer->oldestReport = (ReportBufferEntry*)entryBufPos;
                 buffer->oldestReport->next = NULL;
                 buffer->nextToTransmit = NULL;
             }
@@ -3039,13 +3310,12 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
                     buffer->nextToTransmit = buffer->lastEnqueuedReport;
 
                 buffer->oldestReport = buffer->lastEnqueuedReport;
-                buffer->oldestReport->next = (ReportBufferEntry*) entryBufPos;
+                buffer->oldestReport->next = (ReportBufferEntry*)entryBufPos;
             }
-
         }
         else if (buffer->lastEnqueuedReport > buffer->oldestReport)
         {
-            entryBufPos = (uint8_t*) ((uint8_t*) buffer->lastEnqueuedReport + buffer->lastEnqueuedReport->entryLength);
+            entryBufPos = (uint8_t*)((uint8_t*)buffer->lastEnqueuedReport + buffer->lastEnqueuedReport->entryLength);
 
             if ((entryBufPos + bufferEntrySize) > (buffer->memoryBlock + buffer->memoryBlockSize))
             {
@@ -3053,7 +3323,7 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
                 entryBufPos = buffer->memoryBlock;
 
                 /* remove old reports until enough space for new entry is available */
-                while ((entryBufPos + bufferEntrySize) > (uint8_t*) buffer->oldestReport)
+                while ((entryBufPos + bufferEntrySize) > (uint8_t*)buffer->oldestReport)
                 {
                     assert(buffer->oldestReport != NULL);
 
@@ -3067,7 +3337,9 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 #if (DEBUG_IED_SERVER == 1)
                     printf("IED_SERVER: REMOVE report with ID ");
                     printReportId(buffer->oldestReport);
-                    printf(" (index: %i, size: %i)\n", (int)((uint8_t*)(buffer->oldestReport) - (uint8_t*)(buffer->memoryBlock)), buffer->oldestReport->entryLength);
+                    printf(" (index: %i, size: %i)\n",
+                           (int)((uint8_t*)(buffer->oldestReport) - (uint8_t*)(buffer->memoryBlock)),
+                           buffer->oldestReport->entryLength);
 #endif
                     buffer->oldestReport = buffer->oldestReport->next;
 
@@ -3075,30 +3347,31 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 
                     if (buffer->oldestReport == NULL)
                     {
-                        buffer->oldestReport = (ReportBufferEntry*) entryBufPos;
+                        buffer->oldestReport = (ReportBufferEntry*)entryBufPos;
                         buffer->oldestReport->next = NULL;
                         break;
                     }
                 }
             }
 
-            buffer->lastEnqueuedReport->next = (ReportBufferEntry*) entryBufPos;
+            buffer->lastEnqueuedReport->next = (ReportBufferEntry*)entryBufPos;
         }
         else if (buffer->lastEnqueuedReport < buffer->oldestReport)
         {
-            entryBufPos = (uint8_t*) ((uint8_t*) buffer->lastEnqueuedReport + buffer->lastEnqueuedReport->entryLength);
+            entryBufPos = (uint8_t*)((uint8_t*)buffer->lastEnqueuedReport + buffer->lastEnqueuedReport->entryLength);
 
-            if ((entryBufPos + bufferEntrySize) > (buffer->memoryBlock + buffer->memoryBlockSize)) 
+            if ((entryBufPos + bufferEntrySize) > (buffer->memoryBlock + buffer->memoryBlockSize))
             {
                 /* buffer overflow */
                 entryBufPos = buffer->memoryBlock;
 
                 /* remove older reports in upper buffer part */
-                while ((uint8_t*) buffer->oldestReport > buffer->memoryBlock)
+                while ((uint8_t*)buffer->oldestReport > buffer->memoryBlock)
                 {
                     assert(buffer->oldestReport != NULL);
 
-                    if (buffer->nextToTransmit == buffer->oldestReport) {
+                    if (buffer->nextToTransmit == buffer->oldestReport)
+                    {
                         buffer->nextToTransmit = buffer->oldestReport->next;
                         buffer->isOverflow = true;
                         overflow = true;
@@ -3115,7 +3388,7 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
                 }
 
                 /* remove older reports in lower buffer part that will be overwritten by new report */
-                while ((entryBufPos + bufferEntrySize) > (uint8_t*) buffer->oldestReport)
+                while ((entryBufPos + bufferEntrySize) > (uint8_t*)buffer->oldestReport)
                 {
                     if (buffer->oldestReport == NULL)
                         break;
@@ -3141,7 +3414,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
             }
             else
             {
-                while (((entryBufPos + bufferEntrySize) > (uint8_t*) buffer->oldestReport) && ((uint8_t*) buffer->oldestReport != buffer->memoryBlock))
+                while (((entryBufPos + bufferEntrySize) > (uint8_t*)buffer->oldestReport) &&
+                       ((uint8_t*)buffer->oldestReport != buffer->memoryBlock))
                 {
                     if (buffer->oldestReport == NULL)
                         break;
@@ -3166,17 +3440,16 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
                 }
             }
 
-            buffer->lastEnqueuedReport->next = (ReportBufferEntry*) entryBufPos;
+            buffer->lastEnqueuedReport->next = (ReportBufferEntry*)entryBufPos;
         }
-
     }
 
     entryStartPos = entryBufPos;
-    buffer->lastEnqueuedReport = (ReportBufferEntry*) entryBufPos;
+    buffer->lastEnqueuedReport = (ReportBufferEntry*)entryBufPos;
     buffer->lastEnqueuedReport->next = NULL;
     buffer->reportsCount++;
 
-    ReportBufferEntry* entry = (ReportBufferEntry*) entryBufPos;
+    ReportBufferEntry* entry = (ReportBufferEntry*)entryBufPos;
 
     entry->timeOfEntry = timeOfEntry;
 
@@ -3188,17 +3461,17 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
         if (entryId <= reportControl->lastEntryId)
             entryId = reportControl->lastEntryId + 1;
 
-    #if (ORDER_LITTLE_ENDIAN == 1)
-        memcpyReverseByteOrder(entry->entryId, (uint8_t*) &entryId, 8);
-    #else
-        memcpy (entry->entryId, (uint8_t*) &entryId, 8);
-    #endif
+#if (ORDER_LITTLE_ENDIAN == 1)
+        memcpyReverseByteOrder(entry->entryId, (uint8_t*)&entryId, 8);
+#else
+        memcpy(entry->entryId, (uint8_t*)&entryId, 8);
+#endif
 
-    #if (DEBUG_IED_SERVER == 1)
+#if (DEBUG_IED_SERVER == 1)
         printf("IED_SERVER: ENCODE REPORT WITH ID: ");
         printReportId(entry);
         printf(" at pos %p\n", entryStartPos);
-    #endif
+#endif
 
         if (reportControl->enabled == false)
         {
@@ -3207,7 +3480,7 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 #endif
 
             MmsValue* entryIdValue = MmsValue_getElement(reportControl->rcbValues, 11);
-            MmsValue_setOctetString(entryIdValue, (uint8_t*) entry->entryId, 8);
+            MmsValue_setOctetString(entryIdValue, (uint8_t*)entry->entryId, 8);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
             Semaphore_post(reportControl->rcbValuesLock);
@@ -3241,7 +3514,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 
         for (i = 0; i < inclusionBitStringSize; i++)
         {
-            if (dataSetEntry->value) {
+            if (dataSetEntry->value)
+            {
                 entryBufPos += MmsValue_encodeMmsData(dataSetEntry->value, entryBufPos, 0, true);
             }
             else
@@ -3289,8 +3563,8 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 
             if (reportControl->inclusionFlags[i] != REPORT_CONTROL_NONE)
             {
-                *entryBufPos = (uint8_t) reportControl->inclusionFlags[i];
-                entryBufPos ++;
+                *entryBufPos = (uint8_t)reportControl->inclusionFlags[i];
+                entryBufPos++;
             }
         }
     }
@@ -3299,7 +3573,7 @@ enqueueReport(ReportControl* reportControl, bool isIntegrity, bool isGI, uint64_
 
     if (DEBUG_IED_SERVER)
         printf("IED_SERVER: enqueueReport: encoded %i bytes for report (estimated %i) at buffer offset %i\n",
-            (int) (entryBufPos - entryStartPos), bufferEntrySize, (int) (entryStartPos - buffer->memoryBlock));
+               (int)(entryBufPos - entryStartPos), bufferEntrySize, (int)(entryStartPos - buffer->memoryBlock));
 
 #if (DEBUG_IED_SERVER == 1)
     printEnqueuedReports(reportControl);
@@ -3323,11 +3597,14 @@ exit_function:
 
         if (mmsMapping->rcbEventHandler)
         {
-            if (overflow) {
-                mmsMapping->rcbEventHandler(mmsMapping->rcbEventHandlerParameter, reportControl->rcb, NULL, RCB_EVENT_OVERFLOW, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            if (overflow)
+            {
+                mmsMapping->rcbEventHandler(mmsMapping->rcbEventHandlerParameter, reportControl->rcb, NULL,
+                                            RCB_EVENT_OVERFLOW, NULL, DATA_ACCESS_ERROR_SUCCESS);
             }
 
-            mmsMapping->rcbEventHandler(mmsMapping->rcbEventHandlerParameter, reportControl->rcb, NULL, RCB_EVENT_REPORT_CREATED, NULL, DATA_ACCESS_ERROR_SUCCESS);
+            mmsMapping->rcbEventHandler(mmsMapping->rcbEventHandlerParameter, reportControl->rcb, NULL,
+                                        RCB_EVENT_REPORT_CREATED, NULL, DATA_ACCESS_ERROR_SUCCESS);
         }
     }
 
@@ -3354,7 +3631,7 @@ sendNextReportEntrySegment(ReportControl* self)
     int maxMmsPduSize = MmsServerConnection_getMaxMmsPduSize(self->clientConnection);
 
     int estimatedSegmentSize = 19; /* maximum size of header information (header can have 13-19 byte) */
-    estimatedSegmentSize += 8; /* reserve space for more-segments-follow (3 byte) and sub-seq-num (3-5 byte) */
+    estimatedSegmentSize += 8;     /* reserve space for more-segments-follow (3 byte) and sub-seq-num (3-5 byte) */
 
     bool segmented = self->segmented;
     bool moreFollows = false;
@@ -3383,9 +3660,10 @@ sendNextReportEntrySegment(ReportControl* self)
 
     MmsValue* confRev = ReportControl_getRCBValue(self, "ConfRev");
 
-    if (isBuffered) {
+    if (isBuffered)
+    {
         MmsValue* entryIdValue = MmsValue_getElement(self->rcbValues, 11);
-        MmsValue_setOctetString(entryIdValue, (uint8_t*) report->entryId, 8);
+        MmsValue_setOctetString(entryIdValue, (uint8_t*)report->entryId, 8);
     }
 
     char rptIdBuf[130];
@@ -3399,17 +3677,20 @@ sendNextReportEntrySegment(ReportControl* self)
 
     const char* rptIdStr = MmsValue_toString(rptIdFromRcb);
 
-    if (rptIdStr[0] == 0) {
+    if (rptIdStr[0] == 0)
+    {
         /* use default rptId when RptID is empty in RCB */
         updateWithDefaultRptId(self, &rptId);
     }
-    else {
+    else
+    {
         MmsValue_setVisibleString(&rptId, rptIdStr);
     }
 
     MmsValue* optFlds = ReportControl_getRCBValue(self, "OptFlds");
 
-    if (isBuffered == false) {
+    if (isBuffered == false)
+    {
         /* delete option fields for unrelated options (not present in unbuffered report) */
         MmsValue_setBitStringBit(optFlds, 6, false); /* bufOvfl */
         MmsValue_setBitStringBit(optFlds, 7, false); /* entryID */
@@ -3420,12 +3701,12 @@ sendNextReportEntrySegment(ReportControl* self)
 
     MmsValue _inclusionField;
 
-    uint8_t* currentReportBufferPos = (uint8_t*) report + sizeof(ReportBufferEntry);
+    uint8_t* currentReportBufferPos = (uint8_t*)report + sizeof(ReportBufferEntry);
 
     MmsValue* inclusionField = NULL;
 
-    if (report->flags == 0) {
-
+    if (report->flags == 0)
+    {
         inclusionField = &_inclusionField;
 
         _inclusionField.type = MMS_BIT_STRING;
@@ -3449,7 +3730,8 @@ sendNextReportEntrySegment(ReportControl* self)
 
     MmsValue* sqNum = ReportControl_getRCBValue(self, "SqNum");
 
-    if (MmsValue_getBitStringBit(optFlds, 1)) { /* sequence number */
+    if (MmsValue_getBitStringBit(optFlds, 1))
+    { /* sequence number */
         hasSeqNum = true;
         accessResultSize += MmsValue_encodeMmsData(sqNum, NULL, 0, false);
     }
@@ -3457,20 +3739,22 @@ sendNextReportEntrySegment(ReportControl* self)
     MmsValue _timeOfEntry;
     MmsValue* timeOfEntry = NULL;
 
-    if (MmsValue_getBitStringBit(optFlds, 2)) { /* report time stamp */
+    if (MmsValue_getBitStringBit(optFlds, 2)) /* report time stamp */
+    {
         hasReportTimestamp = true;
-    	_timeOfEntry.type = MMS_BINARY_TIME;
-    	_timeOfEntry.value.binaryTime.size = 6;
+        _timeOfEntry.type = MMS_BINARY_TIME;
+        _timeOfEntry.value.binaryTime.size = 6;
         timeOfEntry = &_timeOfEntry;
 
-    	MmsValue_setBinaryTime(timeOfEntry, report->timeOfEntry);
+        MmsValue_setBinaryTime(timeOfEntry, report->timeOfEntry);
 
-    	accessResultSize += MmsValue_encodeMmsData(timeOfEntry, NULL, 0, false);
+        accessResultSize += MmsValue_encodeMmsData(timeOfEntry, NULL, 0, false);
     }
 
     MmsValue* datSet = ReportControl_getRCBValue(self, "DatSet");
 
-    if (MmsValue_getBitStringBit(optFlds, 4)) {/* data set reference */
+    if (MmsValue_getBitStringBit(optFlds, 4)) /* data set reference */
+    {
         hasDataSetReference = true;
         accessResultSize += MmsValue_encodeMmsData(datSet, NULL, 0, false);
     }
@@ -3478,8 +3762,10 @@ sendNextReportEntrySegment(ReportControl* self)
     MmsValue _bufOvfl;
     MmsValue* bufOvfl = NULL;
 
-    if (isBuffered) {
-        if (MmsValue_getBitStringBit(optFlds, 6)) { /* bufOvfl */
+    if (isBuffered)
+    {
+        if (MmsValue_getBitStringBit(optFlds, 6)) /* bufOvfl */
+        {
             hasBufOvfl = true;
 
             bufOvfl = &_bufOvfl;
@@ -3494,8 +3780,10 @@ sendNextReportEntrySegment(ReportControl* self)
     MmsValue _entryId;
     MmsValue* entryId = NULL;
 
-    if (isBuffered) {
-        if (MmsValue_getBitStringBit(optFlds, 7)) { /* entryID */
+    if (isBuffered)
+    {
+        if (MmsValue_getBitStringBit(optFlds, 7)) /* entryID */
+        {
             hasEntryId = true;
             entryId = &_entryId;
 
@@ -3508,7 +3796,8 @@ sendNextReportEntrySegment(ReportControl* self)
         }
     }
 
-    if (MmsValue_getBitStringBit(optFlds, 8)) {
+    if (MmsValue_getBitStringBit(optFlds, 8))
+    {
         hasConfRev = true;
         accessResultSize += MmsValue_encodeMmsData(confRev, NULL, 0, false);
     }
@@ -3525,14 +3814,14 @@ sendNextReportEntrySegment(ReportControl* self)
     bool withDataReference = MmsValue_getBitStringBit(optFlds, 5);
     bool withReasonCode = MmsValue_getBitStringBit(optFlds, 3);
 
-    LogicalDevice* ld = (LogicalDevice*) self->parentLN->parent;
+    LogicalDevice* ld = (LogicalDevice*)self->parentLN->parent;
 
-    IedModel* iedModel = (IedModel*) ld->parent;
+    IedModel* iedModel = (IedModel*)ld->parent;
 
     int maxIndex = 0;
 
     char* iedName = iedModel->name;
-    int iedNameLength = (int) strlen(iedName);
+    int iedNameLength = (int)strlen(iedName);
 
     int i;
 
@@ -3544,36 +3833,53 @@ sendNextReportEntrySegment(ReportControl* self)
 
     int numberOfAddedElements = 0;
 
-    for (i = 0; i < self->dataSet->elementCount; i++) {
-
-        if ((report->flags > 0) || MmsValue_getBitStringBit(inclusionField, i)) {
-
-            if (i >= startElementIndex) {
-
+    for (i = 0; i < self->dataSet->elementCount; i++)
+    {
+        if ((report->flags > 0) || MmsValue_getBitStringBit(inclusionField, i))
+        {
+            if (i >= startElementIndex)
+            {
                 int elementSize = 0;
 
-                if (withDataReference) {
-
+                if (withDataReference)
+                {
                     DataSetEntry* dataSetEntry = getDataSetEntryWithIndex(self->dataSet->fcdas, i);
 
                     char dataReference[130];
                     int currentPos = 0;
 
+                    LogicalDevice* entryLd = (LogicalDevice*)IedModel_getModelNodeByShortObjectReference(iedModel, dataSetEntry->logicalDeviceName);
+
                     int j;
 
-                    for (j = 0; j < iedNameLength; j++) {
-                        dataReference[currentPos++] = iedName[j];
-                    }
+                    if (entryLd->ldName)
+                    {
+                        int ldNameLength = (int)strlen(entryLd->ldName);
 
-                    int ldNameLength = (int) strlen(dataSetEntry->logicalDeviceName);
-                    for (j = 0; j < ldNameLength; j++) {
-                        dataReference[currentPos] = dataSetEntry->logicalDeviceName[j];
-                        currentPos++;
+                        for (j = 0; j < ldNameLength; j++)
+                        {
+                            dataReference[currentPos++] = entryLd->ldName[j];
+                        }
+                    }
+                    else
+                    {
+                        for (j = 0; j < iedNameLength; j++)
+                        {
+                            dataReference[currentPos++] = iedName[j];
+                        }
+
+                        int ldNameLength = (int)strlen(dataSetEntry->logicalDeviceName);
+                        for (j = 0; j < ldNameLength; j++)
+                        {
+                            dataReference[currentPos] = dataSetEntry->logicalDeviceName[j];
+                            currentPos++;
+                        }
                     }
 
                     dataReference[currentPos++] = '/';
 
-                    for (j = 0; j < (int) strlen(dataSetEntry->variableName); j++) {
+                    for (j = 0; j < (int)strlen(dataSetEntry->variableName); j++)
+                    {
                         dataReference[currentPos++] = dataSetEntry->variableName[j];
                     }
 
@@ -3593,26 +3899,27 @@ sendNextReportEntrySegment(ReportControl* self)
 
                     int lenSize = BerDecoder_decodeLength(currentReportBufferPos + 1, &length, 0, report->entryLength);
 
-                    if (lenSize < 0) {
+                    if (lenSize < 0)
+                    {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: internal error in report buffer\n");
 
                         return false;
                     }
 
-                    int dataElementSize =  1 + lenSize + length;
+                    int dataElementSize = 1 + lenSize + length;
 
                     elementSize += dataElementSize;
                     currentReportBufferPos += dataElementSize;
                 }
 
-
-                if (withReasonCode) {
+                if (withReasonCode)
+                {
                     elementSize += 4; /* reason code size is always 4 byte */
                 }
 
-                if ((estimatedSegmentSize + elementSize) > maxMmsPduSize) {
-
+                if ((estimatedSegmentSize + elementSize) > maxMmsPduSize)
+                {
                     segmented = true;
                     moreFollows = true;
                     _moreFollows.value.boolean = true;
@@ -3630,20 +3937,22 @@ sendNextReportEntrySegment(ReportControl* self)
                 accessResultSize += elementSize;
                 estimatedSegmentSize += elementSize;
             }
-            else {
+            else
+            {
                 /* move element pointer in report buffer to skip elements that were already sent in former segments */
                 int length;
 
                 int lenSize = BerDecoder_decodeLength(currentReportBufferPos + 1, &length, 0, report->entryLength);
 
-                if (lenSize < 0) {
+                if (lenSize < 0)
+                {
                     if (DEBUG_IED_SERVER)
                         printf("IED_SERVER: internal error in report buffer\n");
 
                     return false;
                 }
 
-                int dataElementSize =  1 + lenSize + length;
+                int dataElementSize = 1 + lenSize + length;
 
                 currentReportBufferPos += dataElementSize;
             }
@@ -3656,20 +3965,25 @@ sendNextReportEntrySegment(ReportControl* self)
 
     /* now calculate the exact information report segment size */
 
-    if (segmented) {
-        int segmentedSize = MmsValue_encodeMmsData(&_moreFollows, NULL, 0, false) + MmsValue_encodeMmsData(subSeqNum, NULL, 0, false);
+    if (segmented)
+    {
+        int segmentedSize =
+            MmsValue_encodeMmsData(&_moreFollows, NULL, 0, false) + MmsValue_encodeMmsData(subSeqNum, NULL, 0, false);
         accessResultSize += segmentedSize;
     }
 
     uint32_t variableAccessSpecSize = 7; /* T L "RPT" */
     uint32_t listOfAccessResultSize = accessResultSize + BerEncoder_determineLengthSize(accessResultSize) + 1;
     uint32_t informationReportContentSize = variableAccessSpecSize + listOfAccessResultSize;
-    uint32_t informationReportSize = 1 + informationReportContentSize + BerEncoder_determineLengthSize(informationReportContentSize);
+    uint32_t informationReportSize =
+        1 + informationReportContentSize + BerEncoder_determineLengthSize(informationReportContentSize);
     uint32_t completeMessageSize = 1 + informationReportSize + BerEncoder_determineLengthSize(informationReportSize);
 
-    if (((int) completeMessageSize > maxMmsPduSize) || (numberOfAddedElements == 0)) {
+    if (((int)completeMessageSize > maxMmsPduSize) || (numberOfAddedElements == 0))
+    {
         if (DEBUG_IED_SERVER)
-            printf("IED_SERVER: MMS PDU size too small to encode report data (max PDU size = %i) -> skip message!\n", maxMmsPduSize);
+            printf("IED_SERVER: MMS PDU size too small to encode report data (max PDU size = %i) -> skip message!\n",
+                   maxMmsPduSize);
 
         self->startIndexForNextSegment = 0;
         segmented = false;
@@ -3722,7 +4036,8 @@ sendNextReportEntrySegment(ReportControl* self)
     if (hasConfRev)
         bufPos = MmsValue_encodeMmsData(confRev, buffer, bufPos, true);
 
-    if (segmented) {
+    if (segmented)
+    {
         bufPos = MmsValue_encodeMmsData(subSeqNum, buffer, bufPos, true);
         bufPos = MmsValue_encodeMmsData(&_moreFollows, buffer, bufPos, true);
     }
@@ -3730,37 +4045,56 @@ sendNextReportEntrySegment(ReportControl* self)
     bufPos = MmsValue_encodeMmsData(self->inclusionField, buffer, bufPos, true);
 
     /* encode data references if selected */
-    if (MmsValue_getBitStringBit(optFlds, 5)) { /* data-reference */
+    if (MmsValue_getBitStringBit(optFlds, 5)) /* data-reference */
+    {
         DataSetEntry* dataSetEntry = getDataSetEntryWithIndex(self->dataSet->fcdas, startElementIndex);
 
-        for (i = startElementIndex; i < maxIndex; i++) {
+        for (i = startElementIndex; i < maxIndex; i++)
+        {
             bool addReferenceForEntry = false;
 
             if (report->flags > 0)
-               addReferenceForEntry = true;
+                addReferenceForEntry = true;
             else if (MmsValue_getBitStringBit(self->inclusionField, i))
                 addReferenceForEntry = true;
 
-            if (addReferenceForEntry) {
-
+            if (addReferenceForEntry)
+            {
                 char dataReference[130];
                 int currentPos = 0;
 
+                LogicalDevice* entryLd = (LogicalDevice*)IedModel_getModelNodeByShortObjectReference(iedModel, dataSetEntry->logicalDeviceName);
+
                 int j;
 
-                for (j = 0; j < iedNameLength; j++) {
-                    dataReference[currentPos++] = iedName[j];
-                }
+                if (entryLd->ldName)
+                {
+                    int ldNameLength = (int)strlen(entryLd->ldName);
 
-                int ldNameLength =  (int) strlen(dataSetEntry->logicalDeviceName);
-                for (j = 0; j <  ldNameLength; j++) {
-                    dataReference[currentPos] = dataSetEntry->logicalDeviceName[j];
-                    currentPos++;
+                    for (j = 0; j < ldNameLength; j++)
+                    {
+                        dataReference[currentPos++] = entryLd->ldName[j];
+                    }
+                }
+                else
+                {
+                    for (j = 0; j < iedNameLength; j++)
+                    {
+                        dataReference[currentPos++] = iedName[j];
+                    }
+
+                    int ldNameLength = (int)strlen(dataSetEntry->logicalDeviceName);
+                    for (j = 0; j < ldNameLength; j++)
+                    {
+                        dataReference[currentPos] = dataSetEntry->logicalDeviceName[j];
+                        currentPos++;
+                    }
                 }
 
                 dataReference[currentPos++] = '/';
 
-                for (j = 0; j < (int) strlen(dataSetEntry->variableName); j++) {
+                for (j = 0; j < (int)strlen(dataSetEntry->variableName); j++)
+                {
                     dataReference[currentPos++] = dataSetEntry->variableName[j];
                 }
 
@@ -3782,13 +4116,14 @@ sendNextReportEntrySegment(ReportControl* self)
     currentReportBufferPos = valuesInReportBuffer;
 
     /* encode data set value elements */
-    for (i = 0; i < maxIndex; i++) {
-
+    for (i = 0; i < maxIndex; i++)
+    {
         bool isInBuffer = false;
 
         if (report->flags > 0)
             isInBuffer = true;
-        else {
+        else
+        {
             if (MmsValue_getBitStringBit(inclusionField, i))
                 isInBuffer = true;
         }
@@ -3799,16 +4134,18 @@ sendNextReportEntrySegment(ReportControl* self)
 
             int lenSize = BerDecoder_decodeLength(currentReportBufferPos + 1, &length, 0, report->entryLength);
 
-            if (lenSize < 0) {
+            if (lenSize < 0)
+            {
                 if (DEBUG_IED_SERVER)
                     printf("IED_SERVER: internal error in report buffer\n");
 
                 return SENT_REPORT_ENTRY_FAILED;
             }
 
-            int dataElementSize =  1 + lenSize + length;
+            int dataElementSize = 1 + lenSize + length;
 
-            if (i >= startElementIndex) {
+            if (i >= startElementIndex)
+            {
                 /* copy value from report entry to message buffer */
                 memcpy(buffer + bufPos, currentReportBufferPos, dataElementSize);
                 bufPos += dataElementSize;
@@ -3819,8 +4156,8 @@ sendNextReportEntrySegment(ReportControl* self)
     }
 
     /* add reason code to report if requested */
-    if (withReasonCode) {
-
+    if (withReasonCode)
+    {
         /* move to start position in report buffer */
         currentReportBufferPos = valuesInReportBuffer + dataLen;
 
@@ -3831,11 +4168,12 @@ sendNextReportEntrySegment(ReportControl* self)
         _reason.value.bitString.size = 6;
         _reason.value.bitString.buf = bsBuf;
 
-        for (i = 0; i < maxIndex; i++) {
-
+        for (i = 0; i < maxIndex; i++)
+        {
             bool isIncluded = false;
 
-            if (report->flags > 0) {
+            if (report->flags > 0)
+            {
                 bsBuf[0] = 0; /* clear all bits */
 
                 if (report->flags & 0x02) /* GI */
@@ -3846,7 +4184,8 @@ sendNextReportEntrySegment(ReportControl* self)
 
                 isIncluded = true;
             }
-            else if (MmsValue_getBitStringBit(self->inclusionField, i)) {
+            else if (MmsValue_getBitStringBit(self->inclusionField, i))
+            {
                 bsBuf[0] = 0; /* clear all bits */
 
                 uint8_t reasonForInclusion = *currentReportBufferPos;
@@ -3863,10 +4202,10 @@ sendNextReportEntrySegment(ReportControl* self)
                 isIncluded = true;
             }
 
-            if (isIncluded) {
-
+            if (isIncluded)
+            {
                 if (i >= startElementIndex)
-                    bufPos =  MmsValue_encodeMmsData(&_reason, buffer, bufPos, true);
+                    bufPos = MmsValue_encodeMmsData(&_reason, buffer, bufPos, true);
 
                 currentReportBufferPos++;
             }
@@ -3881,17 +4220,20 @@ sendNextReportEntrySegment(ReportControl* self)
 
     IsoConnection_unlock(self->clientConnection->isoConnection);
 
-    if (sentSuccess == false) {
+    if (sentSuccess == false)
+    {
         moreFollows = false;
         goto exit_function;
     }
 
-    if (moreFollows == false) {
+    if (moreFollows == false)
+    {
         /* reset sub sequence number */
         segmented = false;
         self->startIndexForNextSegment = 0;
     }
-    else {
+    else
+    {
         /* increase sub sequence number */
         uint32_t subSeqNumVal = MmsValue_toUint32(subSeqNum);
         subSeqNumVal++;
@@ -3902,21 +4244,22 @@ sendNextReportEntrySegment(ReportControl* self)
 
 exit_remove_report:
 
-    if (segmented == false) {
-
+    if (segmented == false)
+    {
         assert(self->reportBuffer->nextToTransmit != self->reportBuffer->nextToTransmit->next);
 
         self->reportBuffer->nextToTransmit = self->reportBuffer->nextToTransmit->next;
 
-    #if (DEBUG_IED_SERVER == 1)
+#if (DEBUG_IED_SERVER == 1)
         printf("IED_SERVER: reporting.c nextToTransmit: %p\n", self->reportBuffer->nextToTransmit);
         printEnqueuedReports(self);
-    #endif
+#endif
 
         /* Increase sequence number */
         self->sqNum++;
 
-        if (isBuffered == false) {
+        if (isBuffered == false)
+        {
             /* Unbuffered reporting --> sqNum is 8 bit only!!! */
             if (self->sqNum == 256)
                 self->sqNum = 0;
@@ -3954,17 +4297,20 @@ sendNextReportEntry(ReportControl* self)
 
     int messageCount = 0;
 
-    while (self->reportBuffer->nextToTransmit) {
+    while (self->reportBuffer->nextToTransmit)
+    {
         messageCount++;
 
         bool sendNextEntrySegment = true;
 
         int sendResult = SENT_REPORT_ENTRY_FAILED;
 
-        while (sendNextEntrySegment) {
+        while (sendNextEntrySegment)
+        {
             sendResult = sendNextReportEntrySegment(self);
 
-            if (sendResult != SENT_REPORT_ENTRY_FAILED) {
+            if (sendResult != SENT_REPORT_ENTRY_FAILED)
+            {
                 messageCount++;
             }
 
@@ -3972,7 +4318,8 @@ sendNextReportEntry(ReportControl* self)
                 sendNextEntrySegment = false;
         }
 
-        if (sendResult == SENT_REPORT_ENTRY_FAILED) {
+        if (sendResult == SENT_REPORT_ENTRY_FAILED)
+        {
             break;
         }
 
@@ -3990,10 +4337,12 @@ Reporting_activateBufferedReports(MmsMapping* self)
 {
     LinkedList element = self->reportControls;
 
-    while ((element = LinkedList_getNext(element)) != NULL ) {
-        ReportControl* rc = (ReportControl*) element->data;
+    while ((element = LinkedList_getNext(element)) != NULL)
+    {
+        ReportControl* rc = (ReportControl*)element->data;
 
-        if (rc->buffered) {
+        if (rc->buffered)
+        {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
             Semaphore_wait(rc->rcbValuesLock);
 #endif
@@ -4020,7 +4369,8 @@ processEventsForReport(ReportControl* rc, uint64_t currentTimeInMs)
             if (rc->gi)
             {
                 /* send current events in event buffer before GI report */
-                if (rc->triggered) {
+                if (rc->triggered)
+                {
                     rc->triggered = false;
                     enqueueReport(rc, false, false, currentTimeInMs);
                 }
@@ -4040,25 +4390,31 @@ processEventsForReport(ReportControl* rc, uint64_t currentTimeInMs)
                 if (currentTimeInMs >= rc->nextIntgReportTime)
                 {
                     /* send current events in event buffer before integrity report */
-                    if (rc->triggered) {
+                    if (rc->triggered)
+                    {
                         enqueueReport(rc, false, false, currentTimeInMs);
                         rc->triggered = false;
                     }
 
-                    if (rc->server->syncIntegrityReportTimes) {
+                    if (rc->server->syncIntegrityReportTimes)
+                    {
                         rc->nextIntgReportTime = getNextRoundedStartTime(currentTimeInMs, rc->intgPd);
                     }
-                    else {
+                    else
+                    {
                         rc->nextIntgReportTime = rc->nextIntgReportTime + rc->intgPd;
                     }
 
                     /* check for system time change effects */
-                    if ((rc->nextIntgReportTime < currentTimeInMs) || (rc->nextIntgReportTime > currentTimeInMs + rc->intgPd))
+                    if ((rc->nextIntgReportTime < currentTimeInMs) ||
+                        (rc->nextIntgReportTime > currentTimeInMs + rc->intgPd))
                     {
-                        if (rc->server->syncIntegrityReportTimes) {
+                        if (rc->server->syncIntegrityReportTimes)
+                        {
                             rc->nextIntgReportTime = getNextRoundedStartTime(currentTimeInMs, rc->intgPd);
                         }
-                        else {
+                        else
+                        {
                             rc->nextIntgReportTime = currentTimeInMs + rc->intgPd;
                         }
                     }
@@ -4070,12 +4426,15 @@ processEventsForReport(ReportControl* rc, uint64_t currentTimeInMs)
                 else
                 {
                     /* check for system time change effects */
-                    if ((rc->nextIntgReportTime < currentTimeInMs) || (rc->nextIntgReportTime > currentTimeInMs + rc->intgPd))
+                    if ((rc->nextIntgReportTime < currentTimeInMs) ||
+                        (rc->nextIntgReportTime > currentTimeInMs + rc->intgPd))
                     {
-                        if (rc->server->syncIntegrityReportTimes) {
+                        if (rc->server->syncIntegrityReportTimes)
+                        {
                             rc->nextIntgReportTime = getNextRoundedStartTime(currentTimeInMs, rc->intgPd);
                         }
-                        else {
+                        else
+                        {
                             rc->nextIntgReportTime = currentTimeInMs + rc->intgPd;
                         }
                     }
@@ -4106,9 +4465,9 @@ Reporting_processReportEvents(MmsMapping* self, uint64_t currentTimeInMs)
     {
         LinkedList element = self->reportControls;
 
-        while ((element = LinkedList_getNext(element)) != NULL )
+        while ((element = LinkedList_getNext(element)) != NULL)
         {
-            ReportControl* rc = (ReportControl*) element->data;
+            ReportControl* rc = (ReportControl*)element->data;
 
             ReportControl_lockNotify(rc);
 
@@ -4133,13 +4492,14 @@ Reporting_sendReports(MmsMapping* self, MmsServerConnection connection)
 
     while (element)
     {
-        ReportControl* rc = (ReportControl*) LinkedList_getData(element);
+        ReportControl* rc = (ReportControl*)LinkedList_getData(element);
 
         if (rc->clientConnection == connection)
         {
             ReportControl_lockNotify(rc);
 
-            if (rc->enabled) {
+            if (rc->enabled)
+            {
                 sendNextReportEntry(rc);
             }
 
@@ -4183,20 +4543,20 @@ Reporting_processReportEventsAfterUnlock(MmsMapping* self)
 
     uint64_t currentTime = Hal_getTimeInMs();
 
-    while ((element = LinkedList_getNext(element)) != NULL )
+    while ((element = LinkedList_getNext(element)) != NULL)
     {
-        ReportControl* rc = (ReportControl*) element->data;
+        ReportControl* rc = (ReportControl*)element->data;
 
         ReportControl_lockNotify(rc);
 
         if ((rc->enabled) || (rc->isBuffering))
         {
-            if (rc->triggered) {
+            if (rc->triggered)
+            {
                 copyValuesToReportBuffer(rc);
 
                 processEventsForReport(rc, currentTime);
             }
-
         }
 
         ReportControl_unlockNotify(rc);
@@ -4225,7 +4585,8 @@ ReportControl_valueUpdated(ReportControl* self, int dataSetEntryIndex, int flag,
     if (modelLocked)
     {
         /* set flag to update values when report is to be sent or data model unlocked */
-        self->inclusionFlags[dataSetEntryIndex] = self->inclusionFlags[dataSetEntryIndex] | flag | REPORT_CONTROL_NOT_UPDATED;
+        self->inclusionFlags[dataSetEntryIndex] =
+            self->inclusionFlags[dataSetEntryIndex] | flag | REPORT_CONTROL_NOT_UPDATED;
     }
     else
     {
@@ -4252,12 +4613,14 @@ ReportControl_valueUpdated(ReportControl* self, int dataSetEntryIndex, int flag,
 bool
 ReportControlBlock_getRptEna(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
         return rc->enabled;
     }
-    else {
+    else
+    {
         return false;
     }
 }
@@ -4283,7 +4646,8 @@ ReportControlBlock_getRptID(ReportControlBlock* self)
 
         return rptIdStr;
     }
-    else {
+    else
+    {
         return strdup(self->rptId);
     }
 }
@@ -4291,7 +4655,8 @@ ReportControlBlock_getRptID(ReportControlBlock* self)
 char*
 ReportControlBlock_getDataSet(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4308,7 +4673,8 @@ ReportControlBlock_getDataSet(ReportControlBlock* self)
 
         return dataSetStr;
     }
-    else {
+    else
+    {
         return strdup(self->dataSetName);
     }
 }
@@ -4316,7 +4682,8 @@ ReportControlBlock_getDataSet(ReportControlBlock* self)
 uint32_t
 ReportControlBlock_getConfRev(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4333,7 +4700,8 @@ ReportControlBlock_getConfRev(ReportControlBlock* self)
 
         return confRev;
     }
-    else {
+    else
+    {
         return self->confRef;
     }
 }
@@ -4341,7 +4709,8 @@ ReportControlBlock_getConfRev(ReportControlBlock* self)
 uint32_t
 ReportControlBlock_getOptFlds(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4358,7 +4727,8 @@ ReportControlBlock_getOptFlds(ReportControlBlock* self)
 
         return optFlds;
     }
-    else {
+    else
+    {
         return self->options;
     }
 }
@@ -4366,7 +4736,8 @@ ReportControlBlock_getOptFlds(ReportControlBlock* self)
 uint32_t
 ReportControlBlock_getBufTm(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4383,7 +4754,8 @@ ReportControlBlock_getBufTm(ReportControlBlock* self)
 
         return bufTm;
     }
-    else {
+    else
+    {
         return self->bufferTime;
     }
 }
@@ -4391,7 +4763,8 @@ ReportControlBlock_getBufTm(ReportControlBlock* self)
 uint16_t
 ReportControlBlock_getSqNum(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4408,7 +4781,8 @@ ReportControlBlock_getSqNum(ReportControlBlock* self)
 
         return sqNum;
     }
-    else {
+    else
+    {
         return 0;
     }
 }
@@ -4416,12 +4790,14 @@ ReportControlBlock_getSqNum(ReportControlBlock* self)
 uint32_t
 ReportControlBlock_getTrgOps(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
         return rc->triggerOps;
     }
-    else {
+    else
+    {
         return (int)(self->trgOps);
     }
 }
@@ -4429,12 +4805,14 @@ ReportControlBlock_getTrgOps(ReportControlBlock* self)
 uint32_t
 ReportControlBlock_getIntgPd(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
         return rc->intgPd;
     }
-    else {
+    else
+    {
         return self->intPeriod;
     }
 }
@@ -4442,7 +4820,8 @@ ReportControlBlock_getIntgPd(ReportControlBlock* self)
 bool
 ReportControlBlock_getGI(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4459,7 +4838,8 @@ ReportControlBlock_getGI(ReportControlBlock* self)
 
         return gi;
     }
-    else {
+    else
+    {
         return false;
     }
 }
@@ -4469,7 +4849,8 @@ ReportControlBlock_getPurgeBuf(ReportControlBlock* self)
 {
     bool purgeBuf = false;
 
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4478,7 +4859,8 @@ ReportControlBlock_getPurgeBuf(ReportControlBlock* self)
 
         MmsValue* purgeBufValue = ReportControl_getRCBValue(rc, "PurgeBuf");
 
-        if (purgeBufValue) {
+        if (purgeBufValue)
+        {
             purgeBuf = MmsValue_getBoolean(purgeBufValue);
         }
 
@@ -4495,7 +4877,8 @@ ReportControlBlock_getEntryId(ReportControlBlock* self)
 {
     MmsValue* entryId = NULL;
 
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4519,7 +4902,8 @@ ReportControlBlock_getTimeofEntry(ReportControlBlock* self)
 {
     uint64_t timeofEntry = 0;
 
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4528,7 +4912,8 @@ ReportControlBlock_getTimeofEntry(ReportControlBlock* self)
 
         MmsValue* timeofEntryValue = ReportControl_getRCBValue(rc, "TimeofEntry");
 
-        if (timeofEntryValue) {
+        if (timeofEntryValue)
+        {
             timeofEntry = MmsValue_getBinaryTimeAsUtcMs(timeofEntryValue);
         }
 
@@ -4545,7 +4930,8 @@ ReportControlBlock_getResvTms(ReportControlBlock* self)
 {
     int16_t resvTms = 0;
 
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4554,7 +4940,8 @@ ReportControlBlock_getResvTms(ReportControlBlock* self)
 
         MmsValue* resvTmsValue = ReportControl_getRCBValue(rc, "ResvTms");
 
-        if (resvTmsValue) {
+        if (resvTmsValue)
+        {
             resvTms = (int16_t)MmsValue_toInt32(resvTmsValue);
         }
 
@@ -4571,7 +4958,8 @@ ReportControlBlock_getResv(ReportControlBlock* self)
 {
     bool resv = false;
 
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -4580,7 +4968,8 @@ ReportControlBlock_getResv(ReportControlBlock* self)
 
         MmsValue* resvValue = ReportControl_getRCBValue(rc, "Resv");
 
-        if (resvValue) {
+        if (resvValue)
+        {
             resv = MmsValue_getBoolean(resvValue);
         }
 
@@ -4595,10 +4984,12 @@ ReportControlBlock_getResv(ReportControlBlock* self)
 MmsValue*
 ReportControlBlock_getOwner(ReportControlBlock* self)
 {
-    if (self->trgOps & 64) {
+    if (self->trgOps & 64)
+    {
         ReportControl* rc = (ReportControl*)(self->sibling);
 
-        if (rc->hasOwner) {
+        if (rc->hasOwner)
+        {
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
             Semaphore_wait(rc->rcbValuesLock);
@@ -4617,7 +5008,8 @@ ReportControlBlock_getOwner(ReportControlBlock* self)
         else
             return NULL;
     }
-    else {
+    else
+    {
         return NULL;
     }
 }

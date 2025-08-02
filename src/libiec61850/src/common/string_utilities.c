@@ -1,7 +1,7 @@
 /*
  *  string_utilities.c
  *
- *  Copyright 2013-2023 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *	This file is part of libIEC61850.
  *
@@ -28,9 +28,10 @@ StringUtils_copySubString(char* startPos, char* endPos)
 {
     int newStringLength = endPos - startPos;
 
-    char* newString = (char*) GLOBAL_MALLOC(newStringLength + 1);
+    char* newString = (char*)GLOBAL_MALLOC(newStringLength + 1);
 
-    if (newString) {
+    if (newString)
+    {
         memcpy(newString, startPos, newStringLength);
 
         newString[newStringLength] = 0;
@@ -47,7 +48,7 @@ StringUtils_copyString(const char* str)
 
     int newStringLength = strlen(str) + 1;
 
-    char* newString = (char*) GLOBAL_MALLOC(newStringLength);
+    char* newString = (char*)GLOBAL_MALLOC(newStringLength);
 
     if (newString)
         memcpy(newString, str, newStringLength);
@@ -86,13 +87,13 @@ StringUtils_copyStringToBufferAndReplace(const char* str, char* buffer, char old
     return buffer;
 }
 
-
 char*
 StringUtils_createStringFromBuffer(const uint8_t* buf, int size)
 {
-    char* newStr = (char*) GLOBAL_MALLOC(size + 1);
+    char* newStr = (char*)GLOBAL_MALLOC(size + 1);
 
-    if (newStr) {
+    if (newStr)
+    {
         memcpy(newStr, buf, size);
         newStr[size] = 0;
     }
@@ -126,12 +127,14 @@ StringUtils_createStringInBuffer(char* newStr, int bufSize, int count, ...)
 {
     va_list ap;
 
-    if (bufSize > 0) {
+    if (bufSize > 0)
+    {
         newStr[0] = 0;
         int i;
 
         va_start(ap, count);
-        for (i = 0; i < count; i++) {
+        for (i = 0; i < count; i++)
+        {
             char* str = va_arg(ap, char*);
             StringUtils_appendString(newStr, bufSize, str);
         }
@@ -144,35 +147,38 @@ StringUtils_createStringInBuffer(char* newStr, int bufSize, int count, ...)
 char*
 StringUtils_createString(int count, ...)
 {
-	va_list ap;
-	char* newStr;
-	int newStringLength = 0;
-	int i;
+    va_list ap;
+    char* newStr;
+    int newStringLength = 0;
+    int i;
 
-	/* Calculate new string length */
-	va_start(ap, count);
-	for (i = 0; i < count; i++) {
-		char* str = va_arg(ap, char*);
+    /* Calculate new string length */
+    va_start(ap, count);
+    for (i = 0; i < count; i++)
+    {
+        char* str = va_arg(ap, char*);
 
-		newStringLength += strlen(str);
-	}
-	va_end(ap);
+        newStringLength += strlen(str);
+    }
+    va_end(ap);
 
-	newStr = (char*) GLOBAL_MALLOC(newStringLength + 1);
+    newStr = (char*)GLOBAL_MALLOC(newStringLength + 1);
 
-	if (newStr) {
-	    char* currentPos = newStr;
+    if (newStr)
+    {
+        char* currentPos = newStr;
 
-	    va_start(ap, count);
-	    for (i = 0; i < count; i++) {
-	        char* str = va_arg(ap, char*);
-	        strcpy(currentPos, str);
-	        currentPos += strlen(str);
-	    }
-	    va_end(ap);
-	}
+        va_start(ap, count);
+        for (i = 0; i < count; i++)
+        {
+            char* str = va_arg(ap, char*);
+            strcpy(currentPos, str);
+            currentPos += strlen(str);
+        }
+        va_end(ap);
+    }
 
-	return newStr;
+    return newStr;
 }
 
 char*
@@ -185,18 +191,20 @@ StringUtils_concatString(char* dest, int maxBufferSize, const char* str1, const 
 
     if (res)
     {
-        int maxStringSize = maxBufferSize -1;
+        int maxStringSize = maxBufferSize - 1;
 
         int destPos = 0;
 
         int i = 0;
-        while (str1[i] != 0) {
-
-            if (destPos < maxStringSize) {
+        while (str1[i] != 0)
+        {
+            if (destPos < maxStringSize)
+            {
                 res[destPos] = str1[i];
                 destPos++;
             }
-            else {
+            else
+            {
                 res[destPos] = 0;
                 return res;
             }
@@ -205,13 +213,15 @@ StringUtils_concatString(char* dest, int maxBufferSize, const char* str1, const 
         }
 
         i = 0;
-        while (str2[i] != 0) {
-
-            if (destPos < maxStringSize) {
+        while (str2[i] != 0)
+        {
+            if (destPos < maxStringSize)
+            {
                 res[destPos] = str2[i];
                 destPos++;
             }
-            else {
+            else
+            {
                 res[destPos] = 0;
                 return res;
             }
@@ -238,18 +248,20 @@ StringUtils_copyStringMax(char* dest, int maxBufferSize, const char* str1)
 
     if (res)
     {
-        int maxStringSize = maxBufferSize -1;
+        int maxStringSize = maxBufferSize - 1;
 
         int destPos = 0;
 
         int i = 0;
-        while (str1[i] != 0) {
-
-            if (destPos < maxStringSize) {
+        while (str1[i] != 0)
+        {
+            if (destPos < maxStringSize)
+            {
                 res[destPos] = str1[i];
                 destPos++;
             }
-            else {
+            else
+            {
                 res[destPos] = 0;
                 return res;
             }
@@ -269,17 +281,21 @@ StringUtils_appendString(char* dest, int maxBufferSize, const char* str)
     /* find end of existing string */
     int i = 0;
 
-    while (i < maxBufferSize) {
-        if (dest[i] == 0) {
+    while (i < maxBufferSize)
+    {
+        if (dest[i] == 0)
+        {
             break;
         }
 
         i++;
     }
 
-    if (i == maxBufferSize) {
+    if (i == maxBufferSize)
+    {
         /* append string terminator and return */
-        if (maxBufferSize > 0) {
+        if (maxBufferSize > 0)
+        {
             dest[maxBufferSize - 1] = 0;
         }
 
@@ -288,9 +304,10 @@ StringUtils_appendString(char* dest, int maxBufferSize, const char* str)
 
     int srcPos = 0;
 
-    while (i < maxBufferSize) {
-
-        if (str[srcPos] == 0) {
+    while (i < maxBufferSize)
+    {
+        if (str[srcPos] == 0)
+        {
             break;
         }
 
@@ -300,13 +317,16 @@ StringUtils_appendString(char* dest, int maxBufferSize, const char* str)
         srcPos++;
     }
 
-    if (i == maxBufferSize) {
+    if (i == maxBufferSize)
+    {
         /* append string terminator and return */
-        if (maxBufferSize > 0) {
+        if (maxBufferSize > 0)
+        {
             dest[maxBufferSize - 1] = 0;
         }
     }
-    else {
+    else
+    {
         dest[i] = 0;
     }
 
@@ -319,7 +339,8 @@ StringUtils_replace(char* string, char oldChar, char newChar)
     int len = strlen(string);
     int i;
 
-    for (i = 0; i < len; i++){
+    for (i = 0; i < len; i++)
+    {
         if (string[i] == oldChar)
             string[i] = newChar;
     }
@@ -328,51 +349,56 @@ StringUtils_replace(char* string, char oldChar, char newChar)
 bool
 StringUtils_isDigit(char character)
 {
-	if ((character > 47) && (character < 58))
-		return true;
-	else
-		return false;
+    if ((character > 47) && (character < 58))
+        return true;
+    else
+        return false;
 }
 
 int
 StringUtils_digitToInt(char digit)
 {
-	if (StringUtils_isDigit(digit)) {
-		return (digit - 48);
-	}
-	else
-		return -1;
+    if (StringUtils_isDigit(digit))
+    {
+        return (digit - 48);
+    }
+    else
+        return -1;
 }
 
 int
 StringUtils_digitsToInt(const char* digits, int count)
 {
-	int i = 0;
-	int value = 0;
+    int i = 0;
+    int value = 0;
 
-	while (i < count) {
-		value = value * 10;
+    while (i < count)
+    {
+        value = value * 10;
 
-		int digitValue = StringUtils_digitToInt(*(digits + i));
+        int digitValue = StringUtils_digitToInt(*(digits + i));
 
-		if (digitValue == -1)
-			return -1;
+        if (digitValue == -1)
+            return -1;
 
-		value += digitValue;
+        value += digitValue;
 
-		i++;
-	}
+        i++;
+    }
 
-	return value;
+    return value;
 }
 
 static int
 toInt(char c)
 {
-  if (c >= '0' && c <= '9') return      c - '0';
-  if (c >= 'A' && c <= 'F') return 10 + c - 'A';
-  if (c >= 'a' && c <= 'f') return 10 + c - 'a';
-  return -1;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'A' && c <= 'F')
+        return 10 + c - 'A';
+    if (c >= 'a' && c <= 'f')
+        return 10 + c - 'a';
+    return -1;
 }
 
 int
@@ -385,14 +411,17 @@ StringUtils_createBufferFromHexString(char* hexString, uint8_t* buffer)
     if (hexStringLen % 2 != 0)
         return -1;
 
-    for (i = 0; i < (hexStringLen/2); i++) {
+    for (i = 0; i < (hexStringLen / 2); i++)
+    {
         int high = toInt(hexString[i * 2]);
-        if (high == -1) return -1;
+        if (high == -1)
+            return -1;
 
         int low = toInt(hexString[(i * 2) + 1]);
-        if (low == -1) return -1;
+        if (low == -1)
+            return -1;
 
-        buffer[i] = (uint8_t) (high * 16 + low);
+        buffer[i] = (uint8_t)(high * 16 + low);
         bytesCount += 1;
     }
 
@@ -404,7 +433,8 @@ StringUtils_startsWith(const char* string, const char* prefix)
 {
     int index = 0;
 
-    while ((string[index] != 0) && (prefix[index] != 0)) {
+    while ((string[index] != 0) && (prefix[index] != 0))
+    {
         if (string[index] != prefix[index])
             return false;
 
@@ -423,12 +453,10 @@ StringUtils_endsWith(const char* str, const char* suffix)
     int stringLength = strlen(str);
     int suffixLength = strlen(suffix);
 
-
-    if (stringLength >= suffixLength) {
-
+    if (stringLength >= suffixLength)
+    {
         if (!strcmp(str + (stringLength - suffixLength), suffix))
             return true;
-
     }
 
     return false;
@@ -439,120 +467,129 @@ StringUtils_endsWith(const char* str, const char* suffix)
 static int
 getCharWeight(int c)
 {
-	static bool initialized = false;
-	static char lookupTable[LT_MAX_CHARS + 1];
-	static const char* charOrder = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz$_0123456789";
+    static bool initialized = false;
+    static char lookupTable[LT_MAX_CHARS + 1];
+    static const char* charOrder = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz$_0123456789";
 
-	if (!initialized) {
-		int ltIndex;
-		int weight = 1;
+    if (!initialized)
+    {
+        int ltIndex;
+        int weight = 1;
 
-		for (ltIndex = 1;  ltIndex < LT_MAX_CHARS; ltIndex++) {
-			if (strchr(charOrder, ltIndex)) continue;
-			lookupTable[ltIndex] = weight;
-			weight++;
-		}
+        for (ltIndex = 1; ltIndex < LT_MAX_CHARS; ltIndex++)
+        {
+            if (strchr(charOrder, ltIndex))
+                continue;
+            lookupTable[ltIndex] = weight;
+            weight++;
+        }
 
-		int charIndex;
+        int charIndex;
 
-		for (charIndex = 0; charOrder[charIndex]; charIndex++) {
-			lookupTable[(int)charOrder[charIndex]] = weight;
-			weight++;
-		}
+        for (charIndex = 0; charOrder[charIndex]; charIndex++)
+        {
+            lookupTable[(int)charOrder[charIndex]] = weight;
+            weight++;
+        }
 
-		initialized = true;
-	}
+        initialized = true;
+    }
 
-	if ((c < 1) || (c > LT_MAX_CHARS))
-		return c;
-	else
-		return lookupTable[c];
+    if ((c < 1) || (c > LT_MAX_CHARS))
+        return c;
+    else
+        return lookupTable[c];
 }
 
 int
 StringUtils_compareChars(char a, char b)
 {
-	return (getCharWeight(a) - getCharWeight(b));
+    return (getCharWeight(a) - getCharWeight(b));
 }
 
 int
 StringUtils_compareStrings(const char* a, const char* b)
 {
-	int diff = StringUtils_compareChars(*a, *b);
+    int diff = StringUtils_compareChars(*a, *b);
 
-	while (diff == 0) {
-		if ((*a == 0) || (*b == 0)) {
-			return b - a;
-		}
+    while (diff == 0)
+    {
+        if ((*a == 0) || (*b == 0))
+        {
+            return b - a;
+        }
 
-		diff = StringUtils_compareChars(*++a, *++b);
-	}
+        diff = StringUtils_compareChars(*++a, *++b);
+    }
 
-	return diff;
+    return diff;
 }
 
 void
 StringUtils_sortList(LinkedList list)
 {
-	LinkedList selectedElement = list->next;
+    LinkedList selectedElement = list->next;
 
-	if (selectedElement == NULL) /* list is empty */
-		return;
+    if (selectedElement == NULL) /* list is empty */
+        return;
 
-	list->next = selectedElement->next;
-	selectedElement->next = NULL;
+    list->next = selectedElement->next;
+    selectedElement->next = NULL;
 
-	struct sLinkedList sortedListData;
+    struct sLinkedList sortedListData;
 
-	LinkedList sortedList = &sortedListData;
+    LinkedList sortedList = &sortedListData;
 
-	sortedList->next = selectedElement;
+    sortedList->next = selectedElement;
 
-	selectedElement = list->next;
+    selectedElement = list->next;
 
-	while (selectedElement != NULL) {
+    while (selectedElement != NULL)
+    {
+        list->next = selectedElement->next;
+        selectedElement->next = NULL;
 
-		list->next = selectedElement->next;
-		selectedElement->next = NULL;
+        char* str1 = (char*)LinkedList_getData(selectedElement);
 
-		char* str1 = (char*) LinkedList_getData(selectedElement);
+        LinkedList prevElement = sortedList;
 
-		LinkedList prevElement = sortedList;
+        while (true)
+        {
+            if (prevElement->next == NULL)
+            {
+                prevElement->next = selectedElement;
+                break;
+            }
 
-		while (true) {
+            char* str2 = (char*)LinkedList_getData(prevElement->next);
 
-			if (prevElement->next == NULL) {
-				prevElement->next = selectedElement;
-				break;
-			}
+            if (StringUtils_compareStrings(str1, str2) < 0)
+            {
+                /* insert "nextElement" before */
+                if (sortedList == prevElement)
+                {
+                    selectedElement->next = sortedList->next;
+                    sortedList->next = selectedElement;
+                }
+                else
+                {
+                    selectedElement->next = prevElement->next;
+                    prevElement->next = selectedElement;
+                }
 
-			char* str2 = (char*) LinkedList_getData(prevElement->next);
+                break;
+            }
 
-			if (StringUtils_compareStrings(str1, str2) < 0) {
+            prevElement = prevElement->next;
+        }
 
-				/* insert "nextElement" before */
-				if (sortedList == prevElement) {
-					selectedElement->next = sortedList->next;
-					sortedList->next = selectedElement;
-				}
-				else {
-					selectedElement->next = prevElement->next;
-					prevElement->next = selectedElement;
-				}
+        selectedElement = list->next;
 
-				break;
-			}
+        if (selectedElement == NULL)
+            break;
+    }
 
-			prevElement = prevElement->next;
-		}
-
-		selectedElement = list->next;
-
-		if (selectedElement == NULL)
-			break;
-	}
-
-	list->next = sortedList->next;
+    list->next = sortedList->next;
 }
 
 static bool
@@ -567,19 +604,24 @@ convertHexStrToUint16(char* hexStr, uint16_t* result)
     int i;
     int nibble;
 
-    for (i = 0; i < strSize; i++) {
+    for (i = 0; i < strSize; i++)
+    {
         char nibbleChar = hexStr[i];
 
-        if ((nibbleChar > 47) && (nibbleChar < 58)) {
+        if ((nibbleChar > 47) && (nibbleChar < 58))
+        {
             nibble = nibbleChar - 48;
         }
-        else if ((nibbleChar > 96) && (nibbleChar < 103)) {
+        else if ((nibbleChar > 96) && (nibbleChar < 103))
+        {
             nibble = nibbleChar - 87;
         }
-        else if ((nibbleChar > 64) && (nibbleChar < 71)) {
+        else if ((nibbleChar > 64) && (nibbleChar < 71))
+        {
             nibble = nibbleChar - 55;
         }
-        else {
+        else
+        {
             return false;
         }
 
@@ -604,25 +646,27 @@ StringUtils_convertIPv6AdddressStringToByteArray(const char* addressString, uint
     bool hasEmptyBlock = false;
     bool end = false;
 
-    char* savePtr = (char*) addressString;
+    char* savePtr = (char*)addressString;
     char* sepPos = strchr(savePtr, ':');
 
-    while (sepPos) {
-
+    while (sepPos)
+    {
         memcpy(tokenBuf, savePtr, sepPos - savePtr);
         tokenBuf[sepPos - savePtr] = 0;
         savePtr = sepPos + 1;
 
-        if (strlen(tokenBuf) == 0) {
-
-            if (hasEmptyBlock) {
+        if (strlen(tokenBuf) == 0)
+        {
+            if (hasEmptyBlock)
+            {
                 return false;
             }
 
             hasEmptyBlock = true;
             emptyBlockIndex = blockCount;
         }
-        else {
+        else
+        {
             uint16_t blockVal;
 
             if (convertHexStrToUint16(tokenBuf, &blockVal) == false)
@@ -630,7 +674,7 @@ StringUtils_convertIPv6AdddressStringToByteArray(const char* addressString, uint
 
             addrBlocks[blockCount] = blockVal;
 
-            blockCount ++;
+            blockCount++;
         }
 
         if (blockCount == 8)
@@ -641,14 +685,16 @@ StringUtils_convertIPv6AdddressStringToByteArray(const char* addressString, uint
 
         sepPos = strchr(savePtr, ':');
 
-        if (sepPos == NULL) {
+        if (sepPos == NULL)
+        {
             if (*savePtr != 0)
                 sepPos = strchr(savePtr, 0);
             end = true;
         }
     }
 
-    if (hasEmptyBlock) {
+    if (hasEmptyBlock)
+    {
         /* shift blocks */
         int shiftBlocks = blockCount - emptyBlockIndex;
         int shift = 8 - blockCount;
@@ -656,13 +702,15 @@ StringUtils_convertIPv6AdddressStringToByteArray(const char* addressString, uint
         int s;
 
         /* fill empty blocks with zero */
-        for (s = blockCount; s < 8; s++) {
+        for (s = blockCount; s < 8; s++)
+        {
             addrBlocks[s] = 0;
             blockCount++;
         }
 
-        for (s = 0; s < shiftBlocks; s++) {
-            addrBlocks[s + emptyBlockIndex + shift] =  addrBlocks[s + emptyBlockIndex];
+        for (s = 0; s < shiftBlocks; s++)
+        {
+            addrBlocks[s + emptyBlockIndex + shift] = addrBlocks[s + emptyBlockIndex];
             addrBlocks[s + emptyBlockIndex] = 0;
         }
     }
@@ -672,7 +720,8 @@ StringUtils_convertIPv6AdddressStringToByteArray(const char* addressString, uint
 
     int i = 0;
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++)
+    {
         ipV6Addr[(i * 2)] = addrBlocks[i] / 0x100;
         ipV6Addr[(i * 2) + 1] = addrBlocks[i] & 0xff;
     }

@@ -1,7 +1,7 @@
 /*
  *  Reporting.cs
  *
- *  Copyright 2014-2018 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -20,11 +20,10 @@
  *
  *  See COPYING file for the complete license text.
  */
-using System;
-using System.Runtime.InteropServices;
-
 using IEC61850.Common;
+using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace IEC61850
 {

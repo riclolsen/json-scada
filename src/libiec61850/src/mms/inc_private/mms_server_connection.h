@@ -112,6 +112,9 @@ MmsServerConnection_getNextRequestInvokeId(MmsServerConnection self);
 LIB61850_INTERNAL const char*
 MmsServerConnection_getFilesystemBasepath(MmsServerConnection self);
 
+LIB61850_INTERNAL MmsServer
+MmsServerConnection_getServer(MmsServerConnection self);
+
 #ifdef __cplusplus
 }
 #endif

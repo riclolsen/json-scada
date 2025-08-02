@@ -1,7 +1,7 @@
 /*
  *  IEC61850ClientAPI.cs
  *
- *  Copyright 2014-2023 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -20,14 +20,11 @@
  *
  *  See COPYING file for the complete license text.
  */
-using System;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Collections;
-
 using IEC61850.Common;
 using IEC61850.TLS;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 // IEC 61850 API for the libiec61850 .NET wrapper library
 namespace IEC61850
@@ -62,11 +59,11 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             private static extern void MmsServerIdentity_destroy(IntPtr self);
 
-            [DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
-            private static extern void MmsConnection_setLocalDetail (IntPtr self, Int32 localDetail);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            private static extern void MmsConnection_setLocalDetail(IntPtr self, Int32 localDetail);
 
-            [DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
-            private static extern Int32 MmsConnection_getLocalDetail (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            private static extern Int32 MmsConnection_getLocalDetail(IntPtr self);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             private static extern Int32 MmsConnection_setRequestTimeout(IntPtr self, UInt32 timeoutInMs);
@@ -106,11 +103,11 @@ namespace IEC61850
                 self = mmsConnection;
             }
 
-            ~MmsConnection ()
+            ~MmsConnection()
             {
                 if (selfDestroy)
-                if (self != IntPtr.Zero)
-                    MmsConnection_destroy(self);
+                    if (self != IntPtr.Zero)
+                        MmsConnection_destroy(self);
             }
 
             private void FreeHGlobaleDeleteFunction(IntPtr pointer)
@@ -140,7 +137,7 @@ namespace IEC61850
                     throw new IedConnectionException("Failed to read server identity");
 
                 MmsServerIdentity serverIdentity = (MmsServerIdentity)
-					Marshal.PtrToStructure(identity, typeof(MmsServerIdentity));
+                    Marshal.PtrToStructure(identity, typeof(MmsServerIdentity));
 
                 MmsServerIdentity_destroy(identity);
 
@@ -194,7 +191,7 @@ namespace IEC61850
                 int error;
 
                 IntPtr mmsValue = MmsConnection_readMultipleVariables(self, out error, domainName, linkedList);
-               
+
                 LinkedList_destroyDeep(linkedList, new LinkedListValueDeleteFunction(FreeHGlobaleDeleteFunction));
 
                 if (error != 0)
@@ -343,7 +340,7 @@ namespace IEC61850
                 }
             }
 
-            ~MmsJournalEntry ()
+            ~MmsJournalEntry()
             {
                 Dispose();
             }
@@ -356,7 +353,7 @@ namespace IEC61850
         /// <param name="parameter">user provided callback parameter</param>
         /// <param name="err">Error code of response or timeout error in case of a response timeout</param>
         /// <param name="rcb">the report control block instance</param>
-        public delegate void GetRCBValuesHandler(UInt32 invokeId,object parameter,IedClientError err,ReportControlBlock rcb);
+        public delegate void GetRCBValuesHandler(UInt32 invokeId, object parameter, IedClientError err, ReportControlBlock rcb);
 
         /// <summary>
         /// Asynchonous service handler for the set RCB values service
@@ -365,7 +362,7 @@ namespace IEC61850
         /// <param name="parameter">user provided callback parameter</param>
         /// <param name="err">Error code of response or timeout error in case of a response timeout</param>
         /// <param name="rcb">the report control block instance</param>
-        public delegate void SetRCBValuesHandler(UInt32 invokeId,object parameter,IedClientError err,ReportControlBlock rcb);
+        public delegate void SetRCBValuesHandler(UInt32 invokeId, object parameter, IedClientError err, ReportControlBlock rcb);
 
         /// <summary>
         /// Generic asynchonous service handler - used by simple services that have only success or error result
@@ -373,7 +370,7 @@ namespace IEC61850
         /// <param name="invokeId">The invoke ID of the request triggering this callback</param>
         /// <param name="parameter">user provided callback parameter</param>
         /// <param name="err">Error code of response or timeout error in case of a response timeout</param>
-        public delegate void GenericServiceHandler(UInt32 invokeId,object parameter,IedClientError err);
+        public delegate void GenericServiceHandler(UInt32 invokeId, object parameter, IedClientError err);
 
         /// <summary>
         /// This class acts as the entry point for the IEC 61850 client API. It represents a single
@@ -483,7 +480,7 @@ namespace IEC61850
             static extern IntPtr IedConnection_getVariableSpecification(IntPtr self, out int error, string objectReference, int fc);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-			private delegate void InternalConnectionClosedHandler(IntPtr parameter,IntPtr Iedconnection);
+            private delegate void InternalConnectionClosedHandler(IntPtr parameter, IntPtr Iedconnection);
 
             /// <summary>
             /// Called when the connection is closed
@@ -552,7 +549,7 @@ namespace IEC61850
             static extern int IedConnection_getState(IntPtr connection);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void InternalStateChangedHandler(IntPtr parameter,IntPtr iedConnection,int newState);
+            private delegate void InternalStateChangedHandler(IntPtr parameter, IntPtr iedConnection, int newState);
 
             /// <summary>
             /// Called when there is a change in the connection state
@@ -582,56 +579,56 @@ namespace IEC61850
             private static extern void IedConnection_releaseAsync(IntPtr self, out int error);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_ReadObjectHandler(UInt32 invokeId,IntPtr parameter,int err,IntPtr value);
+            private delegate void IedConnection_ReadObjectHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr value);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_readObjectAsync(IntPtr self, out int error, string objRef, int fc,
                                           IedConnection_ReadObjectHandler handler, IntPtr parameter);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_WriteObjectHandler(UInt32 invokeId,IntPtr parameter,int err);
+            private delegate void IedConnection_WriteObjectHandler(UInt32 invokeId, IntPtr parameter, int err);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_writeObjectAsync(IntPtr self, out int error, string objRef, int fc,
                                            IntPtr value, IedConnection_WriteObjectHandler handler, IntPtr parameter);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_GetNameListHandler(UInt32 invokeId,IntPtr parameter,int err,IntPtr nameList,[MarshalAs(UnmanagedType.I1)] bool  moreFollows);
+            private delegate void IedConnection_GetNameListHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr nameList, [MarshalAs(UnmanagedType.I1)] bool moreFollows);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_getServerDirectoryAsync(IntPtr self, out int error, string continueAfter, IntPtr result,
                                                   IedConnection_GetNameListHandler handler, IntPtr parameter);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_getLogicalDeviceVariablesAsync(IntPtr self, out int error, string ldName, string continueAfter, IntPtr result,
                                                          IedConnection_GetNameListHandler handler, IntPtr parameter);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_getLogicalDeviceDataSetsAsync(IntPtr self, out int error, string ldName, string continueAfter, IntPtr result,
                                                         IedConnection_GetNameListHandler handler, IntPtr parameter);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_QueryLogHandler(UInt32 invokeId,IntPtr parameter,int err,IntPtr journalEntries,[MarshalAs(UnmanagedType.I1)] bool moreFollows);
+            private delegate void IedConnection_QueryLogHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr journalEntries, [MarshalAs(UnmanagedType.I1)] bool moreFollows);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_queryLogByTimeAsync(IntPtr self, out int error, string logReference,
                                               UInt64 startTime, UInt64 endTime, IedConnection_QueryLogHandler handler, IntPtr parameter);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_queryLogAfterAsync(IntPtr self, out int error, string logReference,
                                              IntPtr entryID, UInt64 timeStamp, IedConnection_QueryLogHandler handler, IntPtr parameter);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_GetVariableSpecificationHandler(UInt32 invokeId,IntPtr parameter,int err,IntPtr spec);
+            private delegate void IedConnection_GetVariableSpecificationHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr spec);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_getVariableSpecificationAsync(IntPtr self, out int error, string dataAttributeReference,
                                                         int fc, IedConnection_GetVariableSpecificationHandler handler, IntPtr parameter);
@@ -639,7 +636,7 @@ namespace IEC61850
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             private delegate void IedConnection_ReadDataSetHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr dataSet);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_readDataSetValuesAsync(IntPtr self, out int error, string dataSetReference, IntPtr dataSet,
                                                  IedConnection_ReadDataSetHandler handler, IntPtr parameter);
@@ -663,26 +660,26 @@ namespace IEC61850
                 IedConnection_GetDataSetDirectoryHandler handler, IntPtr parameter);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_GetRCBValuesHandler(UInt32 invokeId,IntPtr parameter,int err,IntPtr rcb);
+            private delegate void IedConnection_GetRCBValuesHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr rcb);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_getRCBValuesAsync(IntPtr self, out int error, string rcbReference, IntPtr updateRcb,
                                             IedConnection_GetRCBValuesHandler handler, IntPtr parameter);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void IedConnection_GenericServiceHandler(UInt32 invokeId,IntPtr parameter,int err);
+            private delegate void IedConnection_GenericServiceHandler(UInt32 invokeId, IntPtr parameter, int err);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_setRCBValuesAsync(IntPtr self, out int error, IntPtr rcb,
                                             UInt32 parametersMask, [MarshalAs(UnmanagedType.I1)] bool singleRequest, IedConnection_GenericServiceHandler handler, IntPtr parameter);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
-            IedConnection_deleteFileAsync(IntPtr self, out int  error, string fileName,
+            IedConnection_deleteFileAsync(IntPtr self, out int error, string fileName,
                                           IedConnection_GenericServiceHandler handler, IntPtr parameter);
-            
+
 
             /********************
             * FileDirectoryEntry
@@ -706,7 +703,7 @@ namespace IEC61850
             static extern void LinkedList_destroyStatic(IntPtr self);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-			private delegate void LinkedListValueDeleteFunction(IntPtr pointer);
+            private delegate void LinkedListValueDeleteFunction(IntPtr pointer);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void LinkedList_destroyDeep(IntPtr list, LinkedListValueDeleteFunction valueDeleteFunction);
@@ -759,7 +756,7 @@ namespace IEC61850
                 }
             }
 
-            ~IedConnection ()
+            ~IedConnection()
             {
                 Dispose();
             }
@@ -897,7 +894,7 @@ namespace IEC61850
 
                 if (error != 0)
                     throw new IedConnectionException("Connect to " + hostname + ":" + tcpPort + " failed", error);
-                
+
             }
 
             /// <summary>
@@ -1264,7 +1261,6 @@ namespace IEC61850
                 moreFollows = moreFollowsVal;
 
                 return WrapNativeLogQueryResult(linkedList);
-
             }
 
             /// <summary>
@@ -1304,7 +1300,7 @@ namespace IEC61850
             {
                 int error;
 
-                IntPtr mmsValue = IedConnection_readObject(connection, out error, objectReference, (int)fc); 
+                IntPtr mmsValue = IedConnection_readObject(connection, out error, objectReference, (int)fc);
 
                 if (error != 0)
                     throw new IedConnectionException("Reading value failed", error);
@@ -1531,7 +1527,7 @@ namespace IEC61850
                 handle.Free();
 
                 IedClientError clientError = (IedClientError)err;
-                         
+
                 handler(invokeId, handlerParameter, clientError);
             }
 
@@ -1633,7 +1629,7 @@ namespace IEC61850
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             [return: MarshalAs(UnmanagedType.I1)]
-            private delegate bool InternalIedClientGetFileHandler(IntPtr parameter,IntPtr buffer,UInt32 bytesRead);
+            private delegate bool InternalIedClientGetFileHandler(IntPtr parameter, IntPtr buffer, UInt32 bytesRead);
 
             private bool iedClientGetFileHandler(IntPtr parameter, IntPtr buffer, UInt32 bytesRead)
             {
@@ -1650,16 +1646,16 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32 IedConnection_getFile(IntPtr self, out int error, string fileName, InternalIedClientGetFileHandler handler,
-                                                       IntPtr handlerParameter); 
+                                                       IntPtr handlerParameter);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern void IedConnection_setFile(IntPtr self, out int error, string sourceFilename, string destinationFilename); 
-            
+            static extern void IedConnection_setFile(IntPtr self, out int error, string sourceFilename, string destinationFilename);
+
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedConnection_setFilestoreBasepath(IntPtr self, string fileName);
 
 
-            public delegate bool GetFileHandler(object parameter,byte[] data);
+            public delegate bool GetFileHandler(object parameter, byte[] data);
 
             private class GetFileCallback
             {
@@ -1694,7 +1690,7 @@ namespace IEC61850
 
                 GCHandle handle = GCHandle.Alloc(getFileCallback);
 
-                IedConnection_getFile(connection, out error, fileName, new InternalIedClientGetFileHandler(iedClientGetFileHandler), 
+                IedConnection_getFile(connection, out error, fileName, new InternalIedClientGetFileHandler(iedClientGetFileHandler),
                     GCHandle.ToIntPtr(handle));
 
                 if (error != 0)
@@ -1721,11 +1717,10 @@ namespace IEC61850
             {
                 int error;
 
-                IedConnection_setFile(connection, out error, sourceFilename,  destinationFilename);
+                IedConnection_setFile(connection, out error, sourceFilename, destinationFilename);
 
                 if (error != 0)
                     throw new IedConnectionException("Error uploading file", error);
-
             }
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1745,7 +1740,7 @@ namespace IEC61850
             /// <returns>true, continue the file download when moreFollows is true, false, stop file download</returns>
             public delegate bool GetFileAsyncHandler(UInt32 invokeId, object parameter, IedClientError err, UInt32 originalInvokeId, byte[] buffer, bool moreFollows);
 
-            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)] 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern UInt32
             IedConnection_getFileAsync(IntPtr self, out int error, string fileName, IedConnection_GetFileAsyncHandler handler,
                                        IntPtr parameter);
@@ -1765,15 +1760,15 @@ namespace IEC61850
                 IedClientError clientError = (IedClientError)err;
 
                 byte[] bytes = null;
-               
+
                 if (clientError == IedClientError.IED_ERROR_OK)
                 {
                     bytes = new byte[bytesRead];
 
                     Marshal.Copy(buffer, bytes, 0, (int)bytesRead);
-                }               
-                    
-                bool retVal =  handler(invokeId, handlerParameter, clientError, originalInvokeId, bytes, moreFollows);
+                }
+
+                bool retVal = handler(invokeId, handlerParameter, clientError, originalInvokeId, bytes, moreFollows);
 
                 if (clientError != IedClientError.IED_ERROR_OK)
                 {
@@ -1931,7 +1926,7 @@ namespace IEC61850
                     IedConnection_installConnectionClosedHandler(connection, connectionClosedHandler, connection);
                 }
 
-                userProvidedConnectionClosedHandler = handler;	
+                userProvidedConnectionClosedHandler = handler;
             }
 
             private void MyStateChangedHandler(IntPtr parameter, IntPtr IedConnection, int newState)
@@ -2013,11 +2008,11 @@ namespace IEC61850
 
                 if (dataSet != null)
                     nativeClientDataSet = dataSet.getNativeInstance();
-     
+
                 int error;
 
                 nativeClientDataSet = IedConnection_readDataSetValues(connection, out error, dataSetReference, nativeClientDataSet);
-                    
+
                 if (error != 0)
                     throw new IedConnectionException("Reading data set failed", error);
 
@@ -2109,7 +2104,6 @@ namespace IEC61850
 
                 if (error != 0)
                     throw new IedConnectionException("Failed to create data set", error);
-
             }
 
             /// <summary>
@@ -2341,7 +2335,7 @@ namespace IEC61850
             /// <param name="parameter">user provided callback parameter</param>
             /// <param name="err">Error code of response or timeout error in case of a response timeout</param>
             /// <param name="value">The read result value or null in case of an error</param>
-            public delegate void ReadValueHandler(UInt32 invokeId,object parameter,IedClientError err,MmsValue value);
+            public delegate void ReadValueHandler(UInt32 invokeId, object parameter, IedClientError err, MmsValue value);
 
             private IedConnection_ReadObjectHandler internalReadObjectHandler = null;
 
@@ -2420,7 +2414,7 @@ namespace IEC61850
                 handler(invokeId, handlerParameter, clientError, varSpec);
             }
 
-            public delegate void GetVariableSpecifcationHandler(UInt32 invokeId,object parameter,IedClientError err,MmsVariableSpecification spec);
+            public delegate void GetVariableSpecifcationHandler(UInt32 invokeId, object parameter, IedClientError err, MmsVariableSpecification spec);
 
             /// <summary>Read the variable specification (type description of a DA or FCDO</summary>
             /// <param name="objectReference">The object reference of a DA or FCDO.</param>
@@ -2440,7 +2434,7 @@ namespace IEC61850
                 if (internalGetVariableSpecificationHandler == null)
                     internalGetVariableSpecificationHandler = new IedConnection_GetVariableSpecificationHandler(nativeGetVariableSpecifcationHandler);
 
-                UInt32 invokeId = IedConnection_getVariableSpecificationAsync(connection, out error, objectReference, (int)fc, internalGetVariableSpecificationHandler, GCHandle.ToIntPtr(handle)); 
+                UInt32 invokeId = IedConnection_getVariableSpecificationAsync(connection, out error, objectReference, (int)fc, internalGetVariableSpecificationHandler, GCHandle.ToIntPtr(handle));
 
                 if (error != 0)
                 {
@@ -2472,11 +2466,11 @@ namespace IEC61850
                     if (dataSet == null)
                         dataSet = new DataSet(nativeDataSet);
                 }
-                
+
                 handler(invokeId, handlerParameter, clientError, dataSet);
             }
 
-            public delegate void ReadDataSetHandler(UInt32 invokeId,object parameter,IedClientError err,DataSet dataSet);
+            public delegate void ReadDataSetHandler(UInt32 invokeId, object parameter, IedClientError err, DataSet dataSet);
 
             /// <summary>
             /// Read the values of a data set (GetDataSetValues service) - asynchronous version
@@ -2507,7 +2501,7 @@ namespace IEC61850
                 if (internalReadDataSetHandler == null)
                     internalReadDataSetHandler = new IedConnection_ReadDataSetHandler(nativeReadDataSetHandler);
 
-                UInt32 invokeId = IedConnection_readDataSetValuesAsync(connection, out error, dataSetReference, dataSetPtr, internalReadDataSetHandler, GCHandle.ToIntPtr(handle)); 
+                UInt32 invokeId = IedConnection_readDataSetValuesAsync(connection, out error, dataSetReference, dataSetPtr, internalReadDataSetHandler, GCHandle.ToIntPtr(handle));
 
                 if (error != 0)
                 {
@@ -2524,7 +2518,7 @@ namespace IEC61850
             /// <param name="invokeId">The invoke ID of the reqeust triggering this callback</param>
             /// <param name="parameter">user provided callback parameter</param>
             /// <param name="err">Error code of response or timeout error in case of a response timeout</param>
-            public delegate void WriteValueHandler(UInt32 invokeId,object parameter,IedClientError err);
+            public delegate void WriteValueHandler(UInt32 invokeId, object parameter, IedClientError err);
 
             private IedConnection_WriteObjectHandler internalWriteObjectHandler = null;
 
@@ -2543,7 +2537,6 @@ namespace IEC61850
 
                 handler(invokeId, handlerParameter, clientError);
             }
-
 
             public UInt32 WriteValueAsync(string objectReference, FunctionalConstraint fc, MmsValue value, WriteValueHandler handler, object parameter)
             {
@@ -2567,11 +2560,11 @@ namespace IEC61850
                 return invokeId;
             }
 
-            public delegate void GetNameListHandler(UInt32 invokeId,object parameter,IedClientError err,List<string> nameList,bool moreFollows);
+            public delegate void GetNameListHandler(UInt32 invokeId, object parameter, IedClientError err, List<string> nameList, bool moreFollows);
 
             private IedConnection_GetNameListHandler internalGetNameListHandler = null;
 
-            private void nativeGetNameListHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr nameList, [MarshalAs(UnmanagedType.I1)] bool  moreFollows)
+            private void nativeGetNameListHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr nameList, [MarshalAs(UnmanagedType.I1)] bool moreFollows)
             {
                 GCHandle handle = GCHandle.FromIntPtr(parameter);
 
@@ -2696,11 +2689,11 @@ namespace IEC61850
                 return invokeId;
             }
 
-            public delegate void QueryLogHandler(UInt32 invokeId,object parameter,IedClientError err,List<MmsJournalEntry> journalEntries,bool moreFollows);
+            public delegate void QueryLogHandler(UInt32 invokeId, object parameter, IedClientError err, List<MmsJournalEntry> journalEntries, bool moreFollows);
 
             private IedConnection_QueryLogHandler internalQueryLogHandler = null;
 
-            private void nativeQueryLogHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr journalEntries, 
+            private void nativeQueryLogHandler(UInt32 invokeId, IntPtr parameter, int err, IntPtr journalEntries,
                                                 [MarshalAs(UnmanagedType.I1)] bool moreFollows)
             {
                 GCHandle handle = GCHandle.FromIntPtr(parameter);
@@ -2940,17 +2933,17 @@ namespace IEC61850
             public IedConnectionException(string message)
                 : base(message)
             {
-                this.errorCode = 0;
+                errorCode = 0;
             }
 
             public int GetErrorCode()
             {
-                return this.errorCode;
+                return errorCode;
             }
 
             public IedClientError GetIedClientError()
             {
-                return (IedClientError)this.errorCode;
+                return (IedClientError)errorCode;
             }
         }
 

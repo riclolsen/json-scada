@@ -1,7 +1,7 @@
 /*
  *  ber_integer.c
  *
- *  Copyright 2013-2022 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -25,7 +25,7 @@
 #include "ber_integer.h"
 #include "ber_encoder.h"
 
-static int
+static bool
 setIntegerValue(Asn1PrimitiveValue* self, uint8_t* valueBuffer, int bufferSize)
 {
 #if (ORDER_LITTLE_ENDIAN == 1)
@@ -34,13 +34,15 @@ setIntegerValue(Asn1PrimitiveValue* self, uint8_t* valueBuffer, int bufferSize)
 
     int size = BerEncoder_compressInteger(valueBuffer, bufferSize);
 
-    if (size <= self->maxSize) {
+    if (size <= self->maxSize)
+    {
         self->size = size;
         memcpy(self->octets, valueBuffer, size);
-        return 1;
+
+        return true;
     }
     else
-        return 0;
+        return false;
 }
 
 Asn1PrimitiveValue*
@@ -61,7 +63,8 @@ BerInteger_createFromBuffer(uint8_t* buf, int size)
 
     Asn1PrimitiveValue* self = Asn1PrimitiveValue_create(maxSize);
 
-    if (self) {
+    if (self)
+    {
         memcpy(self->octets, buf, size);
 
         self->size = size;
@@ -70,21 +73,22 @@ BerInteger_createFromBuffer(uint8_t* buf, int size)
     return self;
 }
 
-int
+bool
 BerInteger_setFromBerInteger(Asn1PrimitiveValue* self, Asn1PrimitiveValue* value)
 {
-    if (self->maxSize >= value->size) {
+    if (self->maxSize >= value->size)
+    {
         self->size = value->size;
 
         memcpy(self->octets, value->octets, value->size);
 
-        return 1;
+        return true;
     }
     else
-        return 0;
+        return false;
 }
 
-int
+bool
 BerInteger_setInt32(Asn1PrimitiveValue* self, int32_t value)
 {
     int32_t valueCopy = value;
@@ -98,14 +102,15 @@ BerInteger_createFromInt32(int32_t value)
 {
     Asn1PrimitiveValue* asn1Value = BerInteger_createInt32();
 
-    if (asn1Value) {
+    if (asn1Value)
+    {
         BerInteger_setInt32(asn1Value, value);
     }
 
     return asn1Value;
 }
 
-int
+bool
 BerInteger_setUint16(Asn1PrimitiveValue* self, uint16_t value)
 {
     uint16_t valueCopy = value;
@@ -130,7 +135,7 @@ BerInteger_setUint16(Asn1PrimitiveValue* self, uint16_t value)
     return setIntegerValue(self, byteBuffer, sizeof(byteBuffer));
 }
 
-int
+bool
 BerInteger_setUint8(Asn1PrimitiveValue* self, uint8_t value)
 {
     uint8_t valueCopy = value;
@@ -139,7 +144,7 @@ BerInteger_setUint8(Asn1PrimitiveValue* self, uint8_t value)
     return setIntegerValue(self, valueBuffer, sizeof(value));
 }
 
-int
+bool
 BerInteger_setUint32(Asn1PrimitiveValue* self, uint32_t value)
 {
     uint32_t valueCopy = value;
@@ -169,7 +174,8 @@ BerInteger_createFromUint32(uint32_t value)
 {
     Asn1PrimitiveValue* asn1Value = BerInteger_createInt32();
 
-    if (asn1Value) {
+    if (asn1Value)
+    {
         BerInteger_setUint32(asn1Value, value);
     }
 
@@ -182,7 +188,7 @@ BerInteger_createInt64()
     return Asn1PrimitiveValue_create(9);
 }
 
-int
+bool
 BerInteger_setInt64(Asn1PrimitiveValue* self, int64_t value)
 {
     int64_t valueCopy = value;
@@ -196,7 +202,8 @@ BerInteger_createFromInt64(int64_t value)
 {
     Asn1PrimitiveValue* asn1Value = BerInteger_createInt64();
 
-    if (asn1Value) {
+    if (asn1Value)
+    {
         BerInteger_setInt64(asn1Value, value);
     }
 
@@ -244,4 +251,3 @@ BerInteger_toInt64(Asn1PrimitiveValue* self, int64_t* nativeValue)
     for (i = 0; i < self->size; i++)
         *nativeValue = (*nativeValue << 8) | buf[i];
 }
-

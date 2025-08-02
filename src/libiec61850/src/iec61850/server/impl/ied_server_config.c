@@ -1,7 +1,7 @@
 /*
  *  ied_server_config.c
  *
- *  Copyright 2018-2023 Michael Zillgith
+ *  Copyright 2018-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -39,9 +39,10 @@
 IedServerConfig
 IedServerConfig_create()
 {
-    IedServerConfig self = (IedServerConfig) GLOBAL_MALLOC(sizeof(struct sIedServerConfig));
+    IedServerConfig self = (IedServerConfig)GLOBAL_MALLOC(sizeof(struct sIedServerConfig));
 
-    if (self) {
+    if (self)
+    {
         self->reportBufferSize = CONFIG_REPORTING_DEFAULT_REPORT_BUFFER_SIZE;
         self->reportBufferSizeURCBs = CONFIG_REPORTING_DEFAULT_REPORT_BUFFER_SIZE;
         self->fileServiceBasepath = StringUtils_copyString(CONFIG_VIRTUAL_FILESTORE_BASEPATH);
@@ -59,12 +60,9 @@ IedServerConfig_create()
         self->enableResvTmsForBRCB = true;
         self->enableOwnerForRCB = false;
         self->syncIntegrityReportTimes = false;
-        self->reportSettingsWritable = IEC61850_REPORTSETTINGS_RPT_ID +
-                                       IEC61850_REPORTSETTINGS_BUF_TIME +
-                                       IEC61850_REPORTSETTINGS_DATSET +
-                                       IEC61850_REPORTSETTINGS_TRG_OPS +
-                                       IEC61850_REPORTSETTINGS_OPT_FIELDS +
-                                       IEC61850_REPORTSETTINGS_INTG_PD;
+        self->reportSettingsWritable = IEC61850_REPORTSETTINGS_RPT_ID + IEC61850_REPORTSETTINGS_BUF_TIME +
+                                       IEC61850_REPORTSETTINGS_DATSET + IEC61850_REPORTSETTINGS_TRG_OPS +
+                                       IEC61850_REPORTSETTINGS_OPT_FIELDS + IEC61850_REPORTSETTINGS_INTG_PD;
     }
 
     return self;
@@ -73,7 +71,8 @@ IedServerConfig_create()
 void
 IedServerConfig_destroy(IedServerConfig self)
 {
-    if (self) {
+    if (self)
+    {
         GLOBAL_FREEMEM(self->fileServiceBasepath);
         GLOBAL_FREEMEM(self);
     }
@@ -123,7 +122,8 @@ IedServerConfig_setFileServiceBasePath(IedServerConfig self, const char* basepat
     self->fileServiceBasepath = StringUtils_copyString(basepath);
 #else
     if (DEBUG_IED_SERVER)
-        printf("IED_SERVER_CONFIG: Cannot set file service basepath (enable CONFIG_SET_FILESTORE_BASEPATH_AT_RUNTIME)!\n");
+        printf(
+            "IED_SERVER_CONFIG: Cannot set file service basepath (enable CONFIG_SET_FILESTORE_BASEPATH_AT_RUNTIME)!\n");
 #endif
 }
 
@@ -276,10 +276,12 @@ configureSetting(IedServerConfig self, uint8_t flags, uint8_t setting, bool valu
 {
     if (flags & setting)
     {
-        if (value) {
+        if (value)
+        {
             self->reportSettingsWritable |= setting;
         }
-        else {
+        else
+        {
             self->reportSettingsWritable &= ~setting;
         }
     }

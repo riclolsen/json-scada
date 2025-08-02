@@ -1,7 +1,7 @@
 /*
  *  mms_server_common.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -44,21 +44,23 @@ mmsServer_write_out(const void *buffer, size_t size, void *app_key)
 MmsPdu_t*
 mmsServer_createConfirmedResponse(uint32_t invokeId)
 {
-	MmsPdu_t* mmsPdu = (MmsPdu_t*) GLOBAL_CALLOC(1, sizeof(MmsPdu_t));
+    MmsPdu_t* mmsPdu = (MmsPdu_t*)GLOBAL_CALLOC(1, sizeof(MmsPdu_t));
 
-	mmsPdu->present = MmsPdu_PR_confirmedResponsePdu;
+    if (mmsPdu)
+    {
+        mmsPdu->present = MmsPdu_PR_confirmedResponsePdu;
 
-	asn_long2INTEGER(&(mmsPdu->choice.confirmedResponsePdu.invokeID),
-		invokeId);
+        asn_long2INTEGER(&(mmsPdu->choice.confirmedResponsePdu.invokeID), invokeId);
+    }
 
-	return mmsPdu;
+    return mmsPdu;
 }
 
 static void
 mapErrorTypeToErrorClass(MmsError errorType, uint8_t* tag, uint8_t* value)
 {
-    switch (errorType) {
-
+    switch (errorType)
+    {
     case MMS_ERROR_ACCESS_OBJECT_ACCESS_UNSUPPORTED:
         *tag = 0x87; /* access */
         *value = 1;
@@ -327,8 +329,8 @@ mmsServer_getComponentOfArrayElement(AlternateAccess_t* alternateAccess, MmsVari
                         {
                             if (componentId)
                             {
-                                strcat(componentId, structSpec->typeSpec.structure.elements[i]->name);
-                                strcat(componentId, "$");
+                                StringUtils_appendString(componentId, 65, structSpec->typeSpec.structure.elements[i]->name);
+                                StringUtils_appendString(componentId, 65, "$");
                             }
 
                             retValue =
@@ -341,7 +343,7 @@ mmsServer_getComponentOfArrayElement(AlternateAccess_t* alternateAccess, MmsVari
                         {
                             if (componentId)
                             {
-                                strcat(componentId, structSpec->typeSpec.structure.elements[i]->name);
+                                StringUtils_appendString(componentId, 65, structSpec->typeSpec.structure.elements[i]->name);
                             }
 
                             retValue = value;
@@ -361,47 +363,44 @@ exit_function:
 int
 mmsServer_getLowIndex(AlternateAccess_t* alternateAccess)
 {
-	if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present
-				== AlternateAccessSelection__selectAccess_PR_index)
-	{
-		long index;
-		asn_INTEGER2long(
-				&alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.choice.index,
-				&index);
+    if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present ==
+        AlternateAccessSelection__selectAccess_PR_index)
+    {
+        long index;
+        asn_INTEGER2long(&alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.choice.index, &index);
 
-		return (int) index;
-	}
+        return (int)index;
+    }
 
-	if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present
-				== AlternateAccessSelection__selectAccess_PR_indexRange)
-	{
-		long index;
-		asn_INTEGER2long(
-				&alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.choice.indexRange.lowIndex,
-				&index);
+    if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present ==
+        AlternateAccessSelection__selectAccess_PR_indexRange)
+    {
+        long index;
+        asn_INTEGER2long(
+            &alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.choice.indexRange.lowIndex, &index);
 
-		return (int) index;
-	}
+        return (int)index;
+    }
 
-	return -1;
+    return -1;
 }
 
 int
 mmsServer_getNumberOfElements(AlternateAccess_t* alternateAccess)
 {
-	if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present
-				== AlternateAccessSelection__selectAccess_PR_indexRange)
-	{
-		long number;
+    if (alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.present ==
+        AlternateAccessSelection__selectAccess_PR_indexRange)
+    {
+        long number;
 
-		asn_INTEGER2long(
-				&alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.choice.indexRange.numberOfElements,
-				&number);
+        asn_INTEGER2long(
+            &alternateAccess->list.array[0]->choice.unnamed->choice.selectAccess.choice.indexRange.numberOfElements,
+            &number);
 
-		return (int) number;
-	}
+        return (int)number;
+    }
 
-	return 0;
+    return 0;
 }
 
 MmsNamedVariableList
@@ -430,23 +429,23 @@ mmsServer_getNamedVariableListWithName(LinkedList namedVariableLists, const char
 void
 mmsServer_deleteVariableList(LinkedList namedVariableLists, char* variableListName)
 {
-	LinkedList previousElement = namedVariableLists;
-	LinkedList element = LinkedList_getNext(namedVariableLists);
+    LinkedList previousElement = namedVariableLists;
+    LinkedList element = LinkedList_getNext(namedVariableLists);
 
-	while (element)
+    while (element)
     {
-		MmsNamedVariableList varList = (MmsNamedVariableList) element->data;
+        MmsNamedVariableList varList = (MmsNamedVariableList)element->data;
 
-		if (strcmp(MmsNamedVariableList_getName(varList), variableListName)	== 0)
+        if (strcmp(MmsNamedVariableList_getName(varList), variableListName) == 0)
         {
-			previousElement->next = element->next;
-			GLOBAL_FREEMEM(element);
-			MmsNamedVariableList_destroy(varList);
+            previousElement->next = element->next;
+            GLOBAL_FREEMEM(element);
+            MmsNamedVariableList_destroy(varList);
 
-			break;
-		}
+            break;
+        }
 
-		previousElement = element;
-		element = LinkedList_getNext(element);
-	}
+        previousElement = element;
+        element = LinkedList_getNext(element);
+    }
 }

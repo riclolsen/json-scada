@@ -1,7 +1,7 @@
 /*
  *  mms_value.c
  *
- *  Copyright 2013-2022 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -2143,7 +2143,7 @@ MmsValue_getSubElement(MmsValue* self, MmsVariableSpecification* varSpec, char* 
     return MmsVariableSpecification_getChildValue(varSpec, self, mmsPath);
 }
 
-char*
+const char*
 MmsValue_getTypeString(MmsValue* self)
 {
     switch (MmsValue_getType(self))
@@ -2338,4 +2338,158 @@ MmsValue_printToBuffer(const MmsValue* self, char* buffer, int bufferSize)
     }
 
     return buffer;
+}
+
+const char*
+MmsError_toString(MmsError err)
+{
+    switch (err)
+    {
+    case MMS_ERROR_NONE:
+        return "none";
+
+    case MMS_ERROR_CONNECTION_REJECTED:
+        return "connection-rejected";
+
+    case MMS_ERROR_CONNECTION_LOST:
+        return "connection-lost";
+
+    case MMS_ERROR_SERVICE_TIMEOUT:
+        return "service-timeout";
+
+    case MMS_ERROR_PARSING_RESPONSE:
+        return "parsing-error";
+
+    case MMS_ERROR_HARDWARE_FAULT:
+        return "hardware-fault";
+
+    case MMS_ERROR_CONCLUDE_REJECTED:
+        return "conclude-rejected";
+
+    case MMS_ERROR_INVALID_ARGUMENTS:
+        return "invalid-arguments";
+
+    case MMS_ERROR_OUTSTANDING_CALL_LIMIT:
+        return "outstanding-call-limit";
+
+    case MMS_ERROR_OTHER:
+        return "other";
+
+    case MMS_ERROR_VMDSTATE_OTHER:
+        return "vmd-state-other";
+
+    case MMS_ERROR_APPLICATION_REFERENCE_OTHER:
+        return "app-reference-other";
+
+    case MMS_ERROR_DEFINITION_OTHER:
+        return "definition-other";
+
+    case MMS_ERROR_DEFINITION_INVALID_ADDRESS:
+        return "invalid-address";
+
+    case MMS_ERROR_DEFINITION_TYPE_UNSUPPORTED:
+        return "type-unsupported";
+
+    case MMS_ERROR_DEFINITION_TYPE_INCONSISTENT:
+        return "type-inconsistent";
+
+    case MMS_ERROR_DEFINITION_OBJECT_UNDEFINED:
+        return "object-undefined";
+
+    case MMS_ERROR_DEFINITION_OBJECT_EXISTS:
+        return "object-exists";
+
+    case MMS_ERROR_DEFINITION_OBJECT_ATTRIBUTE_INCONSISTENT:
+        return "object-attribute-inconsistent";
+
+    case MMS_ERROR_RESOURCE_OTHER:
+        return "resource-other";
+
+    case MMS_ERROR_RESOURCE_CAPABILITY_UNAVAILABLE:
+        return "capability-unavailable";
+
+    case MMS_ERROR_SERVICE_OTHER:
+        return "service-other";
+
+    case MMS_ERROR_SERVICE_OBJECT_CONSTRAINT_CONFLICT:
+        return "object-constraint-conflict";
+
+    case MMS_ERROR_SERVICE_PREEMPT_OTHER:
+        return "preempt-other";
+
+    case MMS_ERROR_TIME_RESOLUTION_OTHER:
+        return "time-resolution-other";
+
+    case MMS_ERROR_ACCESS_OTHER:
+        return "access-other";
+
+    case MMS_ERROR_ACCESS_OBJECT_NON_EXISTENT:
+        return "object-non-existent";
+
+    case MMS_ERROR_ACCESS_OBJECT_ACCESS_UNSUPPORTED:
+        return "object-access-unsupported";
+
+    case MMS_ERROR_ACCESS_OBJECT_ACCESS_DENIED:
+        return "object-access-denied";
+
+    case MMS_ERROR_ACCESS_OBJECT_INVALIDATED:
+        return "object-invalidated";
+
+    case MMS_ERROR_ACCESS_OBJECT_VALUE_INVALID:
+        return "object-value-invalid";
+
+    case MMS_ERROR_ACCESS_TEMPORARILY_UNAVAILABLE:
+        return "temporarily-unavailable";
+
+    case MMS_ERROR_FILE_OTHER:
+        return "file-other";
+
+    case MMS_ERROR_FILE_FILENAME_AMBIGUOUS:
+        return "filename-ambiguous";
+
+    case MMS_ERROR_FILE_FILE_BUSY:
+        return "file-busy";
+
+    case MMS_ERROR_FILE_FILENAME_SYNTAX_ERROR:
+        return "filename-syntax-error";
+
+    case MMS_ERROR_FILE_CONTENT_TYPE_INVALID:
+        return "file-content-type-invalid";
+
+    case MMS_ERROR_FILE_POSITION_INVALID:
+        return "file-position-invalid";
+
+    case MMS_ERROR_FILE_FILE_ACCESS_DENIED:
+        return "file-access-denied";
+
+    case MMS_ERROR_FILE_FILE_NON_EXISTENT:
+        return "file-non-existent";
+
+    case MMS_ERROR_FILE_DUPLICATE_FILENAME:
+        return "duplicate-filename";
+
+    case MMS_ERROR_FILE_INSUFFICIENT_SPACE_IN_FILESTORE:
+        return "insufficient-space-in-filestore";
+
+    case MMS_ERROR_REJECT_OTHER:
+        return "reject-other";
+
+    case MMS_ERROR_REJECT_UNKNOWN_PDU_TYPE:
+        return "reject-unknown-pdu-type";
+
+    case MMS_ERROR_REJECT_INVALID_PDU:
+        return "reject-invalid-pdu";
+
+    case MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE:
+        return "reject-unrecognized-service";
+
+    case MMS_ERROR_REJECT_UNRECOGNIZED_MODIFIER:
+        return "reject-unrecognized-modifier";
+
+    case MMS_ERROR_REJECT_REQUEST_INVALID_ARGUMENT:
+        return "reject-request-invalid-argument";
+
+    default:
+        return "unknown";
+    }
 }

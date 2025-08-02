@@ -1,7 +1,7 @@
 /*
  *  ber_integer.h
  *
- *  Copyright 2013-2018 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -36,22 +36,22 @@ BerInteger_createFromBuffer(uint8_t* buf, int size);
 LIB61850_INTERNAL Asn1PrimitiveValue*
 BerInteger_createInt32(void);
 
-LIB61850_INTERNAL int
+LIB61850_INTERNAL bool
 BerInteger_setFromBerInteger(Asn1PrimitiveValue* self, Asn1PrimitiveValue* value);
 
-LIB61850_INTERNAL int
+LIB61850_INTERNAL bool
 BerInteger_setInt32(Asn1PrimitiveValue* self, int32_t value);
 
 LIB61850_INTERNAL Asn1PrimitiveValue*
 BerInteger_createFromInt32(int32_t value);
 
-LIB61850_INTERNAL int
+LIB61850_INTERNAL bool
 BerInteger_setUint8(Asn1PrimitiveValue* self, uint8_t value);
 
-LIB61850_INTERNAL int
+LIB61850_INTERNAL bool
 BerInteger_setUint16(Asn1PrimitiveValue* self, uint16_t value);
 
-LIB61850_INTERNAL int
+LIB61850_INTERNAL bool
 BerInteger_setUint32(Asn1PrimitiveValue* self, uint32_t value);
 
 LIB61850_INTERNAL Asn1PrimitiveValue*
@@ -63,7 +63,7 @@ BerInteger_createFromInt64(int64_t value);
 LIB61850_INTERNAL Asn1PrimitiveValue*
 BerInteger_createInt64(void);
 
-LIB61850_INTERNAL int
+LIB61850_INTERNAL bool
 BerInteger_setInt64(Asn1PrimitiveValue* self, int64_t value);
 
 LIB61850_INTERNAL void

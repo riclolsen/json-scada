@@ -206,7 +206,8 @@ IF(CONFIG_USE_EXTERNAL_MBEDTLS_DYNLIB)
 ENDIF(CONFIG_USE_EXTERNAL_MBEDTLS_DYNLIB)
 
 IF(MINGW)
-  target_link_libraries(hal ws2_32 iphlpapi)
+  target_link_libraries(hal ws2_32 iphlpapi bcrypt)
+  message("Building with MinGW")
 ENDIF(MINGW)
 
 IF (MSVC)

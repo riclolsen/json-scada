@@ -27,7 +27,8 @@
 LinkedList
 LinkedList_getLastElement(LinkedList self)
 {
-    while (self->next != NULL) {
+    while (self->next)
+    {
         self = self->next;
     }
 
@@ -66,12 +67,12 @@ LinkedList_destroyDeep(LinkedList self, LinkedListValueDeleteFunction valueDelet
             currentElement = nextElement;
             nextElement = currentElement->next;
 
-            if (currentElement->data != NULL)
+            if (currentElement->data)
                 valueDeleteFunction(currentElement->data);
 
             GLOBAL_FREEMEM(currentElement);
         }
-        while (nextElement != NULL);
+        while (nextElement);
     }
 }
 
@@ -87,16 +88,19 @@ LinkedList_destroy(LinkedList self)
 void
 LinkedList_destroyStatic(LinkedList self)
 {
-    LinkedList nextElement = self;
-    LinkedList currentElement;
-
-    do
+    if (self)
     {
-        currentElement = nextElement;
-        nextElement = currentElement->next;
-        GLOBAL_FREEMEM(currentElement);
+        LinkedList nextElement = self;
+        LinkedList currentElement;
+
+        do
+        {
+            currentElement = nextElement;
+            nextElement = currentElement->next;
+            GLOBAL_FREEMEM(currentElement);
+        }
+        while (nextElement);
     }
-    while (nextElement != NULL);
 }
 
 int
@@ -105,7 +109,7 @@ LinkedList_size(LinkedList self)
     LinkedList nextElement = self;
     int size = 0;
 
-    while (nextElement->next != NULL)
+    while (nextElement->next)
     {
         nextElement = nextElement->next;
         size++;
@@ -119,11 +123,14 @@ LinkedList_add(LinkedList self, void* data)
 {
     LinkedList newElement = LinkedList_create();
 
-    newElement->data = data;
+    if (newElement)
+    {
+        newElement->data = data;
 
-    LinkedList listEnd = LinkedList_getLastElement(self);
+        LinkedList listEnd = LinkedList_getLastElement(self);
 
-    listEnd->next = newElement;
+        listEnd->next = newElement;
+    }
 }
 
 bool
@@ -131,7 +138,7 @@ LinkedList_contains(LinkedList self, void* data)
 {
     LinkedList currentElement = self->next;
 
-    while (currentElement != NULL)
+    while (currentElement)
     {
         if (currentElement->data == data)
             return true;
@@ -149,7 +156,7 @@ LinkedList_remove(LinkedList self, void* data)
 
     LinkedList currentElement = self->next;
 
-    while (currentElement != NULL)
+    while (currentElement)
     {
         if (currentElement->data == data)
         {

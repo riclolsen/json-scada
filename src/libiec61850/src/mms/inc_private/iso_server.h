@@ -157,7 +157,11 @@ LIB61850_INTERNAL void
 IsoServer_stopListeningThreadless(IsoServer self);
 
 LIB61850_INTERNAL void
-IsoServer_closeConnection(IsoServer self, IsoConnection isoConnection);
+IsoServer_closeConnectionIndication(IsoServer self, IsoConnection isoConnection);
+
+/* Used by MmsServer instance to actively close a connection */
+LIB61850_INTERNAL bool
+IsoServer_closeConnection(IsoServer self, IsoConnection con);
 
 LIB61850_INTERNAL void
 IsoServer_destroy(IsoServer self);

@@ -291,7 +291,8 @@ CHOICE_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
 		/*
 		 * Read in the "end of data chunks"'s.
 		 */
-		while(ctx->left < 0) {
+		while(ctx->left < 0)
+		{
 			ssize_t tl;
 
 			tl = ber_fetch_tag(ptr, LEFT, &tlv_tag);
@@ -304,25 +305,36 @@ CHOICE_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
 			/*
 			 * Expected <0><0>...
 			 */
-			if(((const uint8_t *)ptr)[0] == 0) {
-				if(LEFT < 2) {
-					if(SIZE_VIOLATION)
-						RETURN(RC_FAIL);
-					else
-						RETURN(RC_WMORE);
-				} else if(((const uint8_t *)ptr)[1] == 0) {
-					/*
-					 * Correctly finished with <0><0>.
-					 */
-					ADVANCE(2);
-					ctx->left++;
-					continue;
-				}
-			} else {
-				RETURN(RC_FAIL);
-			}
+            if (((const uint8_t*)ptr)[0] == 0)
+            {
+                if (LEFT < 2)
+                {
+                    if (SIZE_VIOLATION)
+                        RETURN(RC_FAIL);
+                    else
+                        RETURN(RC_WMORE);
+                }
+                else if (((const uint8_t*)ptr)[1] == 0)
+                {
+                    /*
+                     * Correctly finished with <0><0>.
+                     */
+                    ADVANCE(2);
+                    ctx->left++;
+                    continue;
+                }
+                else
+                {
+                    /* this case should not happen when the message is correctly encoded */
+                    RETURN(RC_FAIL);
+                }
+            }
+            else
+            {
+                RETURN(RC_FAIL);
+            }
 
-			/* UNREACHABLE */
+            /* UNREACHABLE */
 		}
 
 		NEXT_PHASE(ctx);

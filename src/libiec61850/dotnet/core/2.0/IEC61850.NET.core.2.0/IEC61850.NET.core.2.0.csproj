@@ -12,6 +12,8 @@
     <Compile Include="..\..\..\IEC61850forCSharp\IEC61850ClientAPI.cs" Link="IEC61850ClientAPI.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\IEC61850CommonAPI.cs" Link="IEC61850CommonAPI.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\IEC61850ServerAPI.cs" Link="IEC61850ServerAPI.cs" />
+    <Compile Include="..\..\..\IEC61850forCSharp\IEC61850Model\SVControlBlock.cs" Link="SVControlBlock.cs" />
+    <Compile Include="..\..\..\IEC61850forCSharp\AcseAuthenticationParameter.cs" Link="AcseAuthenticationParameter.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\IedServerConfig.cs" Link="IedServerConfig.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\IsoConnectionParameters.cs" Link="IsoConnectionParameters.cs" />
     <Compile Include="..\..\..\IEC61850forCSharp\MmsValue.cs" Link="MmsValue.cs" />

@@ -1,3 +1,42 @@
+
+Changes to version 1.6.1
+------------------------
+
+New features and improvements:
+
+- Added new function ClientConnection_abort to close a client connection from the server application code
+- Added new functions ClientConnection_claimOwnerShip and ClientConnection_release to use a ClientConnection outside of callbacks (LIB61850-488)
+- .NET API: SVControlBlock added
+- .NET API: Added additional callbacks to control external access to the data model (required to implement RBAC)
+- .NET API: IEC61850ServerAPI -> LogStorage function wrapper added.
+- .NET API: MmsValue -> MmsValue_encodeMmsData and MmsValue_decodeMmsData added.
+- .NET API: Fixed issue of not printing log entries in log_client and log_server examples.
+- .NET Tools: in the Tools folder you can find the .net project to generate Static and Dynamic Models
+- .NET API: added missing TLS related functions (LIB61850-486)
+- .NET API: added support for server side log service (LIB61850-461)
+- .NET API: Added properties to MmsVariableSpecification class (LIB61850-460)
+- Added .NET versions of tools to create the static server model and configuration files (to replace the Java versions that are still included)
+- SCLParser: also available on tools, you can load your SCL model and use it with our library
+- added function MmsError_toString (LIB61850-423)
+- SV Publisher: added support for optional gmIdentity field
+
+Bug and Vulnerability fixes:
+
+- fixed BER decoder infinite length handling to avoid inifite loop while decoding (LIB61850-516)
+- added some additional checks in IedServer_updateVisibleStringAttributeValue and similar functions (LIB61850-504)
+- added checks to avoid buffer underflow in IedServer_getFunctionalConstrainedData (LIB61850-505)
+- fixed double free in IedConnection_destroy when control object clients have not been deleted before (LIB61850-503)
+- disable asn1c code stack overflow check when ASAN enabled (#539)
+- fixed - GoCB client access - use after free (#537)
+- TLS: fixed - certificate not validated when allow only allowed certificate is selected and certificate is matching (LIB61850-473)
+- TLS: Added option to ignore validity times in certificates and CRLs (LIB61850-474)
+- handle functional naming (ldName) correctly in data-entry references in reports (LIB61850-467)
+- config file parser: handle case when there is no phyAddr for SVCB or GoCB (#518)
+- .NET API: fixed wrong function name SqliteLogStorage_createInstanceEx to SqliteLogStorage_createInstance
+- HAL (Linux): fixed problem with Hal_getTimeInNs on 32 bit systems
+
+
+
 Changes to version 1.6.0
 ------------------------
 
