@@ -492,7 +492,7 @@ process.on('uncaughtException', (err) =>
                 let pathKey = ''
 
                 // when there is more than one topic, create a base folder for each topic
-                if (connection.topics.length > 1) {
+                if (connection.topics.length != 1) {
                   // avoid duplicating existing folder for same topic
                   if (!browsePathFolders[res[i].group1]) {
                     browsePathFolders[res[i].group1] = namespace.addFolder(
