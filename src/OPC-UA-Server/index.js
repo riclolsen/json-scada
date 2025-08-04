@@ -522,8 +522,8 @@ process.on('uncaughtException', (err) =>
             }
 
             Log.log(`Creating ${res.length} OPC UA Variables...`)
-            try {
-              for (let i = 0; i < res.length; i++) {
+            for (let i = 0; i < res.length; i++) {
+              try {
                 const element = res[i]
                 if (element._id <= 0) {
                   // exclude internal system data
@@ -559,7 +559,7 @@ process.on('uncaughtException', (err) =>
                 }
 
                 const v = convertValueVariant(element)
-                if (v.type) {
+                if (v.dataType) {
                   let nodeId = null
                   // tries to keep original id
                   if (
@@ -636,7 +636,7 @@ process.on('uncaughtException', (err) =>
                     ...(nodeId === null ? {} : { nodeId: nodeId }),
                     browseName: element.ungroupedDescription || element.tag,
                     displayName: element.description,
-                    dataType: v.type,
+                    dataType: v.dataType,
                     description: element?.description,
                     minimumSamplingInterval: -1,
                     accessLevel:
@@ -659,9 +659,14 @@ process.on('uncaughtException', (err) =>
                       : element.timeTagAtSource
                   )
                 }
+              } catch (e) {
+                Log.log(
+                  `Error creating OPC UA Variable for tag ${res[i].tag}`,
+                  Log.levelMin
+                )
+                Log.log(e, Log.levelMin)
+                Log.log(JSON.stringify(res[i]))
               }
-            } catch (e) {
-              Log.log(e)
             }
 
             Log.log(`Finished creating OPC UA Variables.`)
@@ -724,137 +729,42 @@ process.on('uncaughtException', (err) =>
               // start to listen for changes
               changeStream.on('change', (change) => {
                 for (let i = 0; i < servers.length; i++) {
-                  let srv = servers[i]
+                  try {
+                    let srv = servers[i]
 
-                  let m = srv._metrics[change.fullDocument?.tag]
-                  if (m !== undefined) {
-                    const v = convertValueVariant(change.fullDocument)
-                    srv._metrics[change.fullDocument.tag].setValueFromSource(
-                      {
-                        dataType: v.dataType,
-                        ...(v.arrayType ? { arrayType: v.arrayType } : {}),
-                        value: v.value,
-                      },
-                      change.fullDocument.invalid
-                        ? StatusCodes.Bad
-                        : StatusCodes.Good,
-                      !('timeTagAtSource' in change.fullDocument) ||
-                        change.fullDocument.timeTagAtSource === null
-                        ? new Date(1970, 0, 1)
-                        : change.fullDocument.timeTagAtSource
-                    )
-
-                    if (Log.levelCurrent >= Log.levelDebug) {
-                      Log.log(
-                        change.fullDocument?.tag +
-                          ' ' +
-                          change.fullDocument?.value +
-                          (change.fullDocument?.invalid ? ' bad' : ' good'),
-                        Log.levelDebug
+                    let m = srv._metrics[change.fullDocument?.tag]
+                    if (m !== undefined) {
+                      const v = convertValueVariant(change.fullDocument)
+                      srv._metrics[change.fullDocument.tag].setValueFromSource(
+                        {
+                          dataType: v.dataType,
+                          ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                          value: v.value,
+                        },
+                        change.fullDocument.invalid
+                          ? StatusCodes.Bad
+                          : StatusCodes.Good,
+                        !('timeTagAtSource' in change.fullDocument) ||
+                          change.fullDocument.timeTagAtSource === null
+                          ? new Date(1970, 0, 1)
+                          : change.fullDocument.timeTagAtSource
                       )
-                    }
 
-                    /*
-                                  switch (change.fullDocument?.type) {
-                                    case 'analog':
-                                      m.setValueFromSource(
-                                        {
-                                          dataType: DataType.Double,
-                                          value: parseFloat(change.fullDocument?.value),
-                                        },
-                                        change.fullDocument?.invalid
-                                          ? StatusCodes.Bad
-                                          : StatusCodes.Good,
-                                        !('timeTagAtSource' in change.fullDocument) ||
-                                          change.fullDocument.timeTagAtSource === null
-                                          ? new Date(1970, 0, 1)
-                                          : change.fullDocument.timeTagAtSource
-                                      )
-                                      Log.log(
-                                        change.fullDocument?.tag +
-                                          ' ' +
-                                          change.fullDocument?.value +
-                                          (change.fullDocument?.invalid ? ' bad' : ' good'),
-                                        Log.levelDetailed
-                                      )
-                                      break
-                                    case 'digital':
-                                      m.setValueFromSource(
-                                        {
-                                          dataType: DataType.Boolean,
-                                          value: change.fullDocument?.value === 0 ? false : true,
-                                        },
-                                        change.fullDocument?.invalid
-                                          ? StatusCodes.Bad
-                                          : StatusCodes.Good,
-                                        !('timeTagAtSource' in change.fullDocument) ||
-                                          change.fullDocument.timeTagAtSource === null
-                                          ? new Date(1970, 0, 1)
-                                          : change.fullDocument.timeTagAtSource
-                                      )
-                                      Log.log(
-                                        change.fullDocument?.tag +
-                                          ' ' +
-                                          change.fullDocument?.value +
-                                          (change.fullDocument?.invalid ? ' bad' : ' good'),
-                                        Log.levelDetailed
-                                      )
-                                      break
-                                    case 'string':
-                                      m.setValueFromSource(
-                                        {
-                                          dataType: DataType.String,
-                                          value: change.fullDocument?.valueString,
-                                        },
-                                        change.fullDocument?.invalid
-                                          ? StatusCodes.Bad
-                                          : StatusCodes.Good,
-                                        !('timeTagAtSource' in change.fullDocument) ||
-                                          change.fullDocument.timeTagAtSource === null
-                                          ? new Date(1970, 0, 1)
-                                          : change.fullDocument.timeTagAtSource
-                                      )
-                                      Log.log(
-                                        change.fullDocument?.tag +
-                                          ' ' +
-                                          change.fullDocument?.valueString +
-                                          (change.fullDocument?.invalid ? ' bad' : ' good'),
-                                        Log.levelDetailed
-                                      )
-                                      break
-                                    case 'json':
-                                      let obj = null
-                                      try {
-                                        obj = JSON.parse(change.fullDocument?.valueJson)
-                                      } catch (e) {
-                                        Log.log(e)
-                                      }
-                                      m.setValueFromSource(
-                                        {
-                                          dataType: Array.isArray(obj)
-                                            ? DataType.Array
-                                            : DataType.ExtensionObject,
-                                          value: obj,
-                                        },
-                                        change.fullDocument?.invalid
-                                          ? StatusCodes.Bad
-                                          : StatusCodes.Good,
-                                        !('timeTagAtSource' in change.fullDocument) ||
-                                          change.fullDocument.timeTagAtSource === null
-                                          ? new Date(1970, 0, 1)
-                                          : change.fullDocument.timeTagAtSource
-                                      )
-                                          
-                                      Log.log(
-                                        change.fullDocument?.tag +
-                                          ' ' +
-                                          change.fullDocument?.valueJson +
-                                          (change.fullDocument?.invalid ? ' bad' : ' good'),
-                                        Log.levelDetailed
-                                      )
-                                      break
-                                  }
-                                      */
+                      if (Log.levelCurrent >= Log.levelDebug) {
+                        Log.log(
+                          change.fullDocument?.tag +
+                            ' ' +
+                            change.fullDocument?.value +
+                            (change.fullDocument?.invalid ? ' bad' : ' good'),
+                          Log.levelDebug
+                        )
+                      }
+                    }
+                  } catch (e) {
+                    Log.log(
+                      'MongoDB - CS Variable Convert Error: ' + e,
+                      Log.levelMin
+                    )
                   }
                 }
               })
@@ -940,13 +850,11 @@ async function checkConnectedMongo(client) {
 }
 
 function convertValueVariant(rtData) {
-  let type = '',
-    value = null,
+  let value = null,
     dataType = '',
     arrayType = null
   switch (rtData?.type) {
     case 'digital':
-      type = 'Boolean'
       dataType = DataType.Boolean
       value = rtData.value === 0 ? false : true
       break
@@ -956,59 +864,237 @@ function convertValueVariant(rtData) {
         if (rtData?.valueJson) obj = JSON.parse(rtData?.valueJson)
       } catch (e) {
         Log.log(e)
+        break
       }
+      switch (rtData.protocolSourceASDU) {
+        case 'boolean[]':
+          dataType = DataType.Boolean
+          break
+        case 'double[]':
+          dataType = DataType.Double
+          break
+        case 'float[]':
+          dataType = DataType.Float
+          break
+        case 'int16[]':
+          dataType = DataType.Int16
+          break
+        case 'uint16[]':
+          dataType = DataType.UInt16
+          break
+        case 'int32[]':
+          dataType = DataType.Int32
+          break
+        case 'uint32[]':
+          dataType = DataType.UInt32
+          break
+        case 'int64[]':
+          dataType = DataType.Int64
+          break
+        case 'uint64[]':
+          dataType = DataType.UInt64
+          break
+        case 'byte[]':
+          dataType = DataType.Byte
+          break
+        case 'sbyte[]':
+          dataType = DataType.SByte
+          break
+        case 'datetime[]':
+          dataType = DataType.DateTime
+          break
+        case 'string[]':
+          dataType = DataType.String
+          break
+        case 'guid[]':
+          dataType = DataType.Guid
+          break
+        case 'datetime[]':
+          dataType = DataType.DateTime
+          value = []
+          obj.forEach((v) => value.push(new Date(v)))
+          break
+        case 'bytestring[]':
+          dataType = DataType.ByteString
+          break
+        case 'xmlelement[]':
+          dataType = DataType.XmlElement
+          break
+        case 'nodeid[]':
+          dataType = DataType.NodeId
+          break
+        case 'expandednodeid[]':
+          dataType = DataType.ExpandedNodeId
+          break
+        case 'qualifiedname[]':
+          dataType = DataType.QualifiedName
+          break
+        case 'localizedtext[]':
+          dataType = DataType.LocalizedText
+          break
+        default:
+          dataType = DataType.Double
+      }
+
       if (Array.isArray(obj)) {
-        arrayType = VariantArrayType.Array
-        dataType = DataType.Double
+        if (rtData.protocolSourceASDU?.endsWith('[][]')) {
+          arrayType = VariantArrayType.Matrix
+          value = obj
+        } else {
+          arrayType = VariantArrayType.Array
+          value = obj
+          if (obj.length > 0)
+            switch (typeof obj[0]) {
+              case 'boolean':
+                dataType = DataType.Boolean
+                break
+              case 'number':
+              case 'bigint':
+                if (!dataType) dataType = DataType.Double
+                break
+              case 'string':
+                if (!dataType) dataType = DataType.String
+                break
+              case 'object':
+                if (!dataType) dataType = DataType.Variant
+                break
+              default:
+                if (!dataType) dataType = DataType.String
+                break
+            }
+        }
+        /*
         if (obj.length > 0)
           switch (typeof obj[0]) {
             case 'boolean':
-              type = 'Boolean'
               dataType = DataType.Boolean
               value = obj
               break
             case 'number':
             case 'bigint':
-              type = 'Double'
               value = obj
               break
             case 'string':
               if (obj[0].length >= 19) {
                 const tm = Date.parse(obj[0])
                 if (!isNaN(tm)) {
-                  type = 'DateTime'
                   dataType = DataType.DateTime
                   value = []
                   obj.forEach((v) => value.push(new Date(v)))
                 } else {
-                  type = 'String'
                   dataType = DataType.String
                   value = obj
                 }
               } else {
-                type = 'String'
                 dataType = DataType.String
                 value = obj
               }
               break
             default:
-              type = 'String'
               dataType = DataType.String
               value = JSON.stringify(obj)
           }
+        */
       } else {
         dataType = DataType.String
-        type = 'String'
-        value = JSON.stringify(obj)
+        value = rtData?.valueJson
       }
       break
     case 'string':
-      type = 'String'
-      dataType = DataType.String
+      switch (rtData.protocolSourceASDU) {
+        default:
+        case 'string':
+          dataType = DataType.String
+          break
+        case 'guid':
+          dataType = DataType.Guid
+          break
+        case 'bytestring':
+          dataType = DataType.ByteString
+          break
+        case 'xmlelement':
+          dataType = DataType.XmlElement
+          break
+        case 'nodeid':
+          dataType = DataType.NodeId
+          break
+        case 'expandednodeid':
+          dataType = DataType.ExpandedNodeId
+          break
+        case 'qualifiedname':
+          dataType = DataType.QualifiedName
+          break
+        case 'localizedtext':
+          dataType = DataType.LocalizedText
+          break
+        case 'nodeid':
+          dataType = DataType.NodeId
+          break
+      }
       if ('valueString' in rtData) value = rtData.valueString
       else value = '' + rtData?.value
       break
     case 'analog':
+      switch (rtData.protocolSourceASDU) {
+        default:
+        case 'double':
+          dataType = DataType.Double
+          value = parseFloat(rtData.value)
+          break
+        case 'datavalue':
+          dataType = DataType.DataValue
+          value = parseFloat(rtData.value)
+          break
+        case 'statuscode':
+          dataType = DataType.StatusCode
+          value = parseInt(rtData.value) & 0xffffffff
+          break
+        case 'float':
+          dataType = DataType.Float
+          value = parseFloat(rtData.value)
+          break
+        case 'int16':
+          dataType = DataType.Int16
+          value = parseInt(rtData.value) & 0xffff
+          break
+        case 'uint16':
+          dataType = DataType.UInt16
+          value = parseInt(rtData.value) & 0xffff
+          break
+        case 'int32':
+          dataType = DataType.Int32
+          value = parseInt(rtData.value) & 0xffffffff
+          break
+        case 'uint32':
+          dataType = DataType.UInt32
+          value = parseInt(rtData.value) & 0xffffffff
+          break
+        case 'int64':
+          dataType = DataType.Int64
+          value = parseInt(rtData.value)
+          break
+        case 'uint64':
+          dataType = DataType.UInt64
+          value = parseInt(rtData.value)
+          break
+        case 'byte':
+          dataType = DataType.Byte
+          value = parseInt(rtData.value) & 0xff
+          break
+        case 'sbyte':
+          dataType = DataType.SByte
+          value = parseInt(rtData.value) & 0xff
+          break
+        case 'boolean':
+          dataType = DataType.Boolean
+          value = rtData.value === 0 ? false : true
+          break
+        case 'datetime':
+          dataType = DataType.DateTime
+          value = new Date(rtData.value)
+          break
+      }
+      /*
       if (
         rtData.value > 1000000000000 &&
         typeof rtData.valueJson === 'string'
@@ -1017,24 +1103,21 @@ function convertValueVariant(rtData) {
         const tm = Date.parse(rtData.valueJson.replace(/^"(.+(?="$))"$/, '$1'))
         if (!isNaN(tm)) {
           value = new Date(tm)
-          type = 'DateTime'
           dataType = DataType.DateTime
         } else {
-          type = 'Double'
           dataType = DataType.Double
           value = parseFloat(rtData.value)
         }
       } else {
-        type = 'Double'
         dataType = DataType.Double
         value = parseFloat(rtData.value)
       }
+    */
       break
     default:
   }
 
   return {
-    type: type,
     value: value,
     dataType: dataType,
     arrayType: arrayType,
