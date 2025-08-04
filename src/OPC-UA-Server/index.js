@@ -389,37 +389,55 @@ process.on('uncaughtException', (err) =>
 
             // folder tree based on group1/group2/group3 properties of tags
             for (let i = 0; i < res.length; i++) {
+              if (
+                res[i].protocolSourceBrowsePath &&
+                typeof res[i].protocolSourceBrowsePath === 'string'
+              ) {
+                continue
+              }
               if (res[i].group1 == '') {
-                if (!res[i].folder) res[i].folder = folderJsonScada
+                if (!res[i]._componentOf) res[i]._componentOf = folderJsonScada
                 continue
               }
               if (res[i].group1 in group1List) {
-                res[i].folder = group1List[res[i].group1]
+                res[i]._componentOf = group1List[res[i].group1]
                 continue
               }
               let folder = namespace.addFolder(folderJsonScada, {
                 browseName: res[i].group1,
               })
               group1List[res[i].group1] = folder
-              res[i].folder = folder
+              res[i]._componentOf = folder
             }
 
             for (let i = 0; i < res.length; i++) {
+              if (
+                res[i].protocolSourceBrowsePath &&
+                typeof res[i].protocolSourceBrowsePath === 'string'
+              ) {
+                continue
+              }
               if (res[i].group1 == '' || res[i].group2 == '') {
                 continue
               }
               if (res[i].group2 in group2List) {
-                res[i].folder = group2List[res[i].group2]
+                res[i]._componentOf = group2List[res[i].group2]
                 continue
               }
-              let folder = namespace.addFolder(res[i].folder, {
+              let folder = namespace.addFolder(res[i]._componentOf, {
                 browseName: res[i].group2,
               })
               group2List[res[i].group2] = folder
-              res[i].folder = folder
+              res[i]._componentOf = folder
             }
 
             for (let i = 0; i < res.length; i++) {
+              if (
+                res[i].protocolSourceBrowsePath &&
+                typeof res[i].protocolSourceBrowsePath === 'string'
+              ) {
+                continue
+              }
               if (
                 res[i].group1 == '' ||
                 res[i].group2 == '' ||
@@ -428,14 +446,14 @@ process.on('uncaughtException', (err) =>
                 continue
               }
               if (res[i].group3 in group3List) {
-                res[i].folder = group3List[res[i].group3]
+                res[i]._componentOf = group3List[res[i].group3]
                 continue
               }
-              let folder = namespace.addFolder(res[i].folder, {
+              let folder = namespace.addFolder(res[i]._componentOf, {
                 browseName: res[i].group3,
               })
               group3List[res[i].group3] = folder
-              res[i].folder = folder
+              res[i]._componentOf = folder
             }
 
             // when protocolSourceBrowsePath is defined the origin of data comes from an OPC server, so we try to recreate the folder structure in this OPC-UA server
@@ -449,6 +467,30 @@ process.on('uncaughtException', (err) =>
                 const browsePath = res[i].protocolSourceBrowsePath.split('/')
                 let folder = 'ObjectsFolder'
                 let pathKey = ''
+
+                // try to find a variable with same browse name and path and use its parent as folder
+                let found = false
+                for (let k = 0; k < res.length; k++) {
+                  if (
+                    i !== k &&
+                    res[k].protocolSourceBrowsePath &&
+                    typeof res[k].protocolSourceBrowsePath === 'string' &&
+                    res[k].protocolSourceObjectAddress.startsWith('ns=')
+                  ) {
+                    if (
+                      res[k].protocolSourceBrowsePath +
+                        '/' +
+                        res[k].ungroupedDescription ===
+                      res[i].protocolSourceBrowsePath
+                    ) {
+                      res[i]._componentOf = res[k].protocolSourceObjectAddress
+                      found = true
+                      break
+                    }
+                  }
+                }
+                if (found) continue
+
                 for (let j = 0; j < browsePath.length; j++) {
                   if (browsePath[j] === '') continue
                   pathKey += '/' + browsePath[j]
@@ -460,7 +502,7 @@ process.on('uncaughtException', (err) =>
                   }
                   folder = browsePathFolders[pathKey]
                 }
-                res[i].folder = folder
+                res[i]._componentOf = folder
               }
             }
 
@@ -562,8 +604,18 @@ process.on('uncaughtException', (err) =>
                         AccessLevelFlag.CurrentWrite
                   }
 
+                  if (typeof element._componentOf === 'string') {
+                    let pnId = element._componentOf.substring(element._componentOf.indexOf(';') + 1)
+                    let el = namespace.findNode(pnId)
+                    if (el) {
+                      element._componentOf = el
+                    }
+                  } else if (element._componentOf === null) {
+                    element._componentOf = folderJsonScada
+                  }
+
                   server._metrics[element.tag] = namespace.addVariable({
-                    componentOf: element.folder,
+                    componentOf: element._componentOf,
                     ...(nodeId === null ? {} : { nodeId: nodeId }),
                     browseName: element.ungroupedDescription || element.tag,
                     displayName: element.description,
