@@ -188,6 +188,8 @@ partial class MainClass
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
         public BsonDouble valueDefault;
         [BsonDefaultValue("")]
+        public BsonString valueJson { get; set; }
+        [BsonDefaultValue("")]
         public BsonString valueString { get; set; }
         [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
         public BsonDouble value;
@@ -207,13 +209,13 @@ partial class MainClass
             case "bytestring":
             case "localeid":
             case "localizedtext":
-            case "nodeid":
-            case "expandednodeid":
             case "xmlelement":
             case "qualifiedname":
             case "guid":
                 type = "string";
                 break;
+            case "nodeid":
+            case "expandednodeid":
             case "extensionobject":
                 type = "json";
                 break;
@@ -483,6 +485,7 @@ partial class MainClass
                 type = type,
                 value = 0.0,
                 valueString = ov.valueString,
+                valueJson = ov.valueJson,
 
                 alarmDisabled = false,
                 alerted = false,

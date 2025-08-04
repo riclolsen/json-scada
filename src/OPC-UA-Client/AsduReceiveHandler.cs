@@ -678,6 +678,18 @@ partial class MainClass
                                 }
                             }
                             else
+                            if (base_type == "nodeid" && !isArray)
+                            {
+                                dblValue = 0;
+                                strValue = value.WrappedValue.ToString();
+                            }
+                            else
+                            if (base_type == "expandednodeid" && !isArray)
+                            {
+                                dblValue = 0;
+                                strValue = value.WrappedValue.ToString();
+                            }
+                            else
                             if (base_type == "xmlelement" && !isArray)
                             {
                                 dblValue = 0;
@@ -695,8 +707,6 @@ partial class MainClass
                                 (base_type == "string" ||
                                 base_type == "localeid" ||
                                 base_type == "localizedtext" ||
-                                base_type == "nodeid" ||
-                                base_type == "expandediodeid" ||
                                 base_type == "xmlelement" ||
                                 base_type == "qualifiedname" ||
                                 base_type == "guid")
@@ -710,8 +720,6 @@ partial class MainClass
                             if (base_type == "string" ||
                                 base_type == "localeid" ||
                                 base_type == "localizedtext" ||
-                                base_type == "nodeid" ||
-                                base_type == "expandednodeid" ||
                                 base_type == "xmlelement" ||
                                 base_type == "gualifiedname" ||
                                 base_type == "guid")
