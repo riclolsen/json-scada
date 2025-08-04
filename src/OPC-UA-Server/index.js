@@ -464,10 +464,6 @@ process.on('uncaughtException', (err) =>
                 res[i].protocolSourceBrowsePath &&
                 typeof res[i].protocolSourceBrowsePath === 'string'
               ) {
-                const browsePath = res[i].protocolSourceBrowsePath.split('/')
-                let folder = 'ObjectsFolder'
-                let pathKey = ''
-
                 // try to find a variable with same browse name and path and use its parent as folder
                 let found = false
                 for (let k = 0; k < res.length; k++) {
@@ -490,6 +486,25 @@ process.on('uncaughtException', (err) =>
                   }
                 }
                 if (found) continue
+
+                const browsePath = res[i].protocolSourceBrowsePath.split('/')
+                let folder = 'ObjectsFolder'
+                let pathKey = ''
+
+                // when there is more than one topic, create a base folder for each topic
+                if (connection.topics.length > 1) {
+                  // avoid duplicating existing folder for same topic
+                  if (!browsePathFolders[res[i].group1]) {
+                    browsePathFolders[res[i].group1] = namespace.addFolder(
+                      folder,
+                      {
+                        browseName: res[i].group1,
+                      }
+                    )
+                  }
+                  folder = browsePathFolders[res[i].group1]
+                  pathKey = res[i].group1
+                }
 
                 for (let j = 0; j < browsePath.length; j++) {
                   if (browsePath[j] === '') continue
@@ -605,7 +620,9 @@ process.on('uncaughtException', (err) =>
                   }
 
                   if (typeof element._componentOf === 'string') {
-                    let pnId = element._componentOf.substring(element._componentOf.indexOf(';') + 1)
+                    let pnId = element._componentOf.substring(
+                      element._componentOf.indexOf(';') + 1
+                    )
                     let el = namespace.findNode(pnId)
                     if (el) {
                       element._componentOf = el
