@@ -255,6 +255,7 @@ partial class MainClass
                 type = type,
                 value = 0.0,
                 valueString = "????",
+                valueJson = "",
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
@@ -332,6 +333,7 @@ partial class MainClass
                 type = type,
                 value = ov.value,
                 valueString = "????",
+                valueJson = "",
                 alarmDisabled = false,
                 alerted = false,
                 alarmed = false,
@@ -408,6 +410,7 @@ partial class MainClass
                 type = type,
                 value = 0.0,
                 valueString = ov.valueString,
+                valueJson = "",
 
                 alarmDisabled = false,
                 alerted = false,
@@ -485,7 +488,7 @@ partial class MainClass
                 type = type,
                 value = 0.0,
                 valueString = ov.valueString,
-                valueJson = ov.valueJson,
+                valueJson = ov.valueJson == null ? "" : ov.valueJson,
 
                 alarmDisabled = false,
                 alerted = false,
