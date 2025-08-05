@@ -469,6 +469,7 @@ process.on('uncaughtException', (err) =>
                 for (let k = 0; k < res.length; k++) {
                   if (
                     i !== k &&
+                    res[k].group1 === res[i].group1 &&
                     res[k].protocolSourceBrowsePath &&
                     typeof res[k].protocolSourceBrowsePath === 'string' &&
                     res[k].protocolSourceObjectAddress.startsWith('ns=')
@@ -480,6 +481,7 @@ process.on('uncaughtException', (err) =>
                       res[i].protocolSourceBrowsePath
                     ) {
                       res[i]._componentOf = res[k].protocolSourceObjectAddress
+                      res[i]._componentOfTag = res[k].tag
                       found = true
                       break
                     }
@@ -632,6 +634,14 @@ process.on('uncaughtException', (err) =>
                   }
 
                   // Log.log(JSON.stringify(v))
+                  
+                  if (
+                    element._componentOfTag &&
+                    server._metrics[element._componentOfTag]?.nodeId
+                  )
+                    element._componentOf =
+                      server._metrics[element._componentOfTag].nodeId
+
                   server._metrics[element.tag] = namespace.addVariable({
                     componentOf: element._componentOf,
                     ...(nodeId === null ? {} : { nodeId: nodeId }),
