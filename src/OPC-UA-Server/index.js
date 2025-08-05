@@ -631,6 +631,7 @@ process.on('uncaughtException', (err) =>
                     element._componentOf = folderJsonScada
                   }
 
+                  // Log.log(JSON.stringify(v))
                   server._metrics[element.tag] = namespace.addVariable({
                     componentOf: element._componentOf,
                     ...(nodeId === null ? {} : { nodeId: nodeId }),
@@ -646,18 +647,20 @@ process.on('uncaughtException', (err) =>
                         : writeFlag),
                     ...cmdWriteProp,
                   })
-                  server._metrics[element.tag].setValueFromSource(
-                    {
-                      dataType: v.dataType,
-                      ...(v.arrayType ? { arrayType: v.arrayType } : {}),
-                      value: v.value,
-                    },
-                    element.invalid ? StatusCodes.Bad : StatusCodes.Good,
-                    !('timeTagAtSource' in element) ||
-                      element.timeTagAtSource === null
-                      ? new Date(1970, 0, 1)
-                      : element.timeTagAtSource
-                  )
+                  if (element.origin !== 'command') {
+                    server._metrics[element.tag].setValueFromSource(
+                      {
+                        dataType: v.dataType,
+                        ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                        value: v.value,
+                      },
+                      element.invalid ? StatusCodes.Bad : StatusCodes.Good,
+                      !('timeTagAtSource' in element) ||
+                        element.timeTagAtSource === null
+                        ? new Date(1970, 0, 1)
+                        : element.timeTagAtSource
+                    )
+                  }
                 }
               } catch (e) {
                 Log.log(
@@ -665,7 +668,7 @@ process.on('uncaughtException', (err) =>
                   Log.levelMin
                 )
                 Log.log(e, Log.levelMin)
-                Log.log(JSON.stringify(res[i]))
+                // Log.log(JSON.stringify(res[i]))
               }
             }
 
@@ -900,9 +903,6 @@ function convertValueVariant(rtData) {
         case 'sbyte[]':
           dataType = DataType.SByte
           break
-        case 'datetime[]':
-          dataType = DataType.DateTime
-          break
         case 'string[]':
           dataType = DataType.String
           break
@@ -911,8 +911,12 @@ function convertValueVariant(rtData) {
           break
         case 'datetime[]':
           dataType = DataType.DateTime
-          value = []
-          obj.forEach((v) => value.push(new Date(v)))
+          let vArr = []
+          if (obj?.length)
+            for (let i = 0; i < obj.length; i++) {
+              vArr.push(new Date(obj[i]))
+            }
+          obj = vArr
           break
         case 'bytestring[]':
           dataType = DataType.ByteString
@@ -963,38 +967,6 @@ function convertValueVariant(rtData) {
                 break
             }
         }
-        /*
-        if (obj.length > 0)
-          switch (typeof obj[0]) {
-            case 'boolean':
-              dataType = DataType.Boolean
-              value = obj
-              break
-            case 'number':
-            case 'bigint':
-              value = obj
-              break
-            case 'string':
-              if (obj[0].length >= 19) {
-                const tm = Date.parse(obj[0])
-                if (!isNaN(tm)) {
-                  dataType = DataType.DateTime
-                  value = []
-                  obj.forEach((v) => value.push(new Date(v)))
-                } else {
-                  dataType = DataType.String
-                  value = obj
-                }
-              } else {
-                dataType = DataType.String
-                value = obj
-              }
-              break
-            default:
-              dataType = DataType.String
-              value = JSON.stringify(obj)
-          }
-        */
       } else {
         dataType = DataType.String
         value = rtData?.valueJson
@@ -1094,25 +1066,6 @@ function convertValueVariant(rtData) {
           value = new Date(rtData.value)
           break
       }
-      /*
-      if (
-        rtData.value > 1000000000000 &&
-        typeof rtData.valueJson === 'string'
-      ) {
-        // try to detect date type as json (number of milliseconds)
-        const tm = Date.parse(rtData.valueJson.replace(/^"(.+(?="$))"$/, '$1'))
-        if (!isNaN(tm)) {
-          value = new Date(tm)
-          dataType = DataType.DateTime
-        } else {
-          dataType = DataType.Double
-          value = parseFloat(rtData.value)
-        }
-      } else {
-        dataType = DataType.Double
-        value = parseFloat(rtData.value)
-      }
-    */
       break
     default:
   }
