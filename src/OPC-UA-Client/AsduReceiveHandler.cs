@@ -16,26 +16,26 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-using System;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
+using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 partial class MainClass
 {
     public static JsonSerializerOptions jsonSerOpts = new JsonSerializerOptions
     {
-        NumberHandling = JsonNumberHandling.AllowReadingFromString
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
     public enum ExitCode : int
     {
@@ -594,7 +594,14 @@ partial class MainClass
 
                         try
                         {
-                            jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                            if (value.Value is System.Collections.IEnumerable enumerable && value.Value is not string)
+                            {
+                                jsonValue = JsonSerializer.Serialize(enumerable.Cast<object>().ToArray(), jsonSerOpts);
+                            }
+                            else
+                            {
+                                jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                            }
                         }
                         catch (Exception)
                         { }
@@ -607,7 +614,7 @@ partial class MainClass
                         }
                         else
                         {
-                            // Log(conn_name + " - " + item.ResolvedNodeId + " TYPE: ?????", LogLevelDetailed);
+                             // Log(conn_name + " - " + value + " TYPE: ?????", LogLevelDetailed);
                         }
 
                         try
