@@ -26,6 +26,8 @@ const {
   StatusCodes,
   VariantArrayType,
   AccessLevelFlag,
+  NodeId,
+  NodeIdType,
 } = require('node-opcua')
 const { MongoClient, Double } = require('mongodb')
 const Log = require('./simple-logger')
@@ -634,7 +636,7 @@ process.on('uncaughtException', (err) =>
                   }
 
                   // Log.log(JSON.stringify(v))
-                  
+
                   if (
                     element._componentOfTag &&
                     server._metrics[element._componentOfTag]?.nodeId
@@ -918,21 +920,47 @@ function convertValueVariant(rtData) {
           break
         case 'guid[]':
           dataType = DataType.Guid
+          let gArr = []
+          if (obj?.length)
+            for (let i = 0; i < obj.length; i++) {
+              if (typeof obj[i] === 'string') gArr.push(obj[i])
+              else {
+                if (obj[i]?.GuidString) gArr.push(obj[i].GuidString)
+              }
+            }
+          obj = gArr
           break
         case 'datetime[]':
           dataType = DataType.DateTime
-          let vArr = []
+          let dtArr = []
           if (obj?.length)
             for (let i = 0; i < obj.length; i++) {
-              vArr.push(new Date(obj[i]))
+              dtArr.push(new Date(obj[i]))
             }
-          obj = vArr
+          obj = dtArr
           break
         case 'bytestring[]':
           dataType = DataType.ByteString
           break
         case 'xmlelement[]':
           dataType = DataType.XmlElement
+          break
+        case 'nodeid':
+          dataType = DataType.NodeId
+          if (!('Identifier' in obj) || !('NamespaceIndex' in obj)) {
+            obj = NodeId(NodeIdType.NUMERIC, 0, 0)
+            break
+          }
+          try {
+            if (!obj.IdType) obj.IdType = NodeIdType.NUMERIC
+            if (typeof obj.Identifier === 'number')
+              obj.IdType = NodeIdType.NUMERIC
+            if (typeof obj.Identifier === 'string')
+              obj.IdType = NodeIdType.STRING
+            obj = new NodeId(obj.IdType, obj.Identifier, obj.NamespaceIndex)
+          } catch (e) {
+            obj = NodeId(NodeIdType.NUMERIC, 0, 0)
+          }
           break
         case 'nodeid[]':
           dataType = DataType.NodeId
@@ -978,8 +1006,11 @@ function convertValueVariant(rtData) {
             }
         }
       } else {
-        dataType = DataType.String
-        value = rtData?.valueJson
+        value = obj
+        if (!dataType) {
+          dataType = DataType.String
+          value = rtData?.valueJson
+        }
       }
       break
     case 'string':
