@@ -194,18 +194,18 @@ partial class MainClass
             {
                 if (results[i].origin == "supervised")
                 {
-                    if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval.AsDouble))
+                    if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval))
                     {
-                        Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval.AsDouble + " seconds.");
-                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble] = new List<rtMonitTag>();
+                        Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval + " seconds.");
+                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval] = new List<rtMonitTag>();
                     }
-                    isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble].Add(new rtMonitTag
+                    isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval].Add(new rtMonitTag
                     {
                         tag = results[i].tag.ToString(),
-                        protocolSourceObjectAddress = results[i].protocolSourceObjectAddress.AsString,
-                        protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval.AsDouble,
-                        protocolSourceQueueSize = results[i].protocolSourceQueueSize.AsDouble,
-                        ungroupedDescription = results[i].ungroupedDescription.AsString,
+                        protocolSourceObjectAddress = results[i].protocolSourceObjectAddress,
+                        protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval,
+                        protocolSourceQueueSize = results[i].protocolSourceQueueSize,
+                        ungroupedDescription = results[i].ungroupedDescription,
                     });
                     try
                     {
@@ -213,8 +213,8 @@ partial class MainClass
                         {
                             DisplayName = results[i].ungroupedDescription.ToString(),
                             StartNodeId = results[i].protocolSourceObjectAddress.ToString(),
-                            SamplingInterval = System.Convert.ToInt32(results[i].protocolSourceSamplingInterval.AsDouble) * 1000,
-                            QueueSize = System.Convert.ToUInt32(results[i].protocolSourceQueueSize.AsDouble),
+                            SamplingInterval = System.Convert.ToInt32(results[i].protocolSourceSamplingInterval) * 1000,
+                            QueueSize = System.Convert.ToUInt32(results[i].protocolSourceQueueSize),
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value

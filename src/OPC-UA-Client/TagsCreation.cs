@@ -49,153 +49,220 @@ partial class MainClass
     [BsonIgnoreExtraElements]
     public class rtData
     {
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble _id;
+        [BsonDefaultValue(0.0)]
+        public double _id { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean alarmDisabled { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble alarmState;
+        public bool alarmDisabled { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double alarmState { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean alarmed { get; set; }
+        public bool alarmed { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean alerted { get; set; }
+        public bool alerted { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString alertState { get; set; }
+        public string alertState { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString annotation { get; set; }
+        public string annotation { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean commandBlocked { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble commandOfSupervised;
+        public bool commandBlocked { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double commandOfSupervised { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString commissioningRemarks { get; set; }
+        public string commissioningRemarks { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString description { get; set; }
+        public string description { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString eventTextFalse { get; set; }
+        public string eventTextFalse { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString eventTextTrue { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble formula;
+        public string eventTextTrue { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double formula { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean frozen { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble frozenDetectTimeout;
+        public bool frozen { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double frozenDetectTimeout { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString group1 { get; set; }
+        public string group1 { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString group2 { get; set; }
+        public string group2 { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString group3 { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(Double.MaxValue)]
-        public BsonDouble hiLimit;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(Double.MaxValue)]
-        public BsonDouble hihiLimit;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(Double.MaxValue)]
-        public BsonDouble hihihiLimit;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble historianDeadBand;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble historianPeriod;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble hysteresis;
+        public string group3 { get; set; }
+
+        [BsonDefaultValue(double.MaxValue)]
+        public double hiLimit { get; set; }
+
+        [BsonDefaultValue(double.MaxValue)]
+        public double hihiLimit { get; set; }
+
+        [BsonDefaultValue(double.MaxValue)]
+        public double hihihiLimit { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double historianDeadBand { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double historianPeriod { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double hysteresis { get; set; }
+
         [BsonDefaultValue(true)]
-        public BsonBoolean invalid { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(60000.0)]
-        public BsonDouble invalidDetectTimeout;
+        public bool invalid { get; set; }
+
+        [BsonDefaultValue(60000.0)]
+        public double invalidDetectTimeout { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean isEvent { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(1.0)]
-        public BsonDouble kconv1;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble kconv2;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(-Double.MaxValue)]
-        public BsonDouble loLimit;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(-Double.MaxValue)]
-        public BsonDouble loloLimit;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(-Double.MaxValue)]
-        public BsonDouble lololoLimit;
+        public bool isEvent { get; set; }
+
+        [BsonDefaultValue(1.0)]
+        public double kconv1 { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double kconv2 { get; set; }
+
+        [BsonDefaultValue(-double.MaxValue)]
+        public double loLimit { get; set; }
+
+        [BsonDefaultValue(-double.MaxValue)]
+        public double loloLimit { get; set; }
+
+        [BsonDefaultValue(-double.MaxValue)]
+        public double lololoLimit { get; set; }
+
         [BsonDefaultValue(null)]
         public BsonValue location;
+
         [BsonDefaultValue("")]
-        public BsonString notes { get; set; }
+        public string notes { get; set; }
+
         [BsonDefaultValue("supervised")]
-        public BsonString origin { get; set; }
+        public string origin { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean overflow { get; set; }
+        public bool overflow { get; set; }
+
         [BsonDefaultValue(null)]
         public BsonValue parcels;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble priority;
-        [BsonDefaultValue(null)]
-        public protocolDestination[] protocolDestinations;
-        [BsonDefaultValue("")]
-        public BsonString protocolSourceBrowsePath { get; set; }
-        [BsonDefaultValue("")]
-        public BsonString protocolSourceAccessLevel { get; set; }
-        [BsonDefaultValue("")]
-        public BsonString protocolSourceASDU { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble protocolSourceCommandDuration;
-        [BsonDefaultValue(false)]
-        public BsonBoolean protocolSourceCommandUseSBO { get; set; }
-        [BsonDefaultValue("")]
-        public BsonString protocolSourceCommonAddress { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble protocolSourceConnectionNumber;
-        [BsonDefaultValue("")]
-        public BsonString protocolSourceObjectAddress { get; set; }
 
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(5.0)]
-        public BsonDouble protocolSourcePublishingInterval { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(2.0)]
-        public BsonDouble protocolSourceSamplingInterval { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(10.0)]
-        public BsonDouble protocolSourceQueueSize { get; set; }
+        [BsonDefaultValue(0.0)]
+        public double priority { get; set; }
+
+        [BsonDefaultValue(null)]
+        public protocolDestination[] protocolDestinations { get; set; }
+
+        [BsonDefaultValue("")]
+        public string protocolSourceBrowsePath { get; set; }
+
+        [BsonDefaultValue("")]
+        public string protocolSourceAccessLevel { get; set; }
+
+        [BsonDefaultValue("")]
+        public string protocolSourceASDU { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double protocolSourceCommandDuration { get; set; }
+
+        [BsonDefaultValue(false)]
+        public bool protocolSourceCommandUseSBO { get; set; }
+
+        [BsonDefaultValue("")]
+        public string protocolSourceCommonAddress { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double protocolSourceConnectionNumber { get; set; }
+
+        [BsonDefaultValue("")]
+        public string protocolSourceObjectAddress { get; set; }
+
+        [BsonDefaultValue(5.0)]
+        public double protocolSourcePublishingInterval { get; set; }
+
+        [BsonDefaultValue(2.0)]
+        public double protocolSourceSamplingInterval { get; set; }
+
+        [BsonDefaultValue(10.0)]
+        public double protocolSourceQueueSize { get; set; }
+
         [BsonDefaultValue(true)]
-        public BsonBoolean protocolSourceDiscardOldest { get; set; }
+        public bool protocolSourceDiscardOldest { get; set; }
+
 
         [BsonDefaultValue(null)]
         public BsonValue sourceDataUpdate { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString stateTextFalse { get; set; }
+        public string stateTextFalse { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString stateTextTrue { get; set; }
+        public string stateTextTrue { get; set; }
+
         [BsonDefaultValue(false)]
-        public BsonBoolean substituted { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble supervisedOfCommand;
+        public bool substituted { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double supervisedOfCommand { get; set; }
+
         [BsonDefaultValue("")]
-        public BsonString tag { get; set; }
+        public string tag { get; set; }
+
         [BsonDefaultValue(null)]
         public BsonValue timeTag { get; set; }
         [BsonDefaultValue(null)]
         public BsonValue timeTagAlarm { get; set; }
         [BsonDefaultValue(null)]
         public BsonValue timeTagAtSource { get; set; }
-        [BsonDefaultValue(false)]
-        public BsonBoolean timeTagAtSourceOk { get; set; }
-        [BsonDefaultValue(false)]
-        public BsonBoolean transient { get; set; }
-        [BsonDefaultValue("digital")]
-        public BsonString type { get; set; }
-        [BsonDefaultValue("")]
-        public BsonString ungroupedDescription { get; set; }
-        [BsonDefaultValue("")]
-        public BsonString unit { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble updatesCnt;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble valueDefault;
-        [BsonDefaultValue("")]
-        public BsonString valueJson { get; set; }
-        [BsonDefaultValue("")]
-        public BsonString valueString { get; set; }
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble value;
-        [BsonSerializer(typeof(BsonDoubleSerializer)), BsonDefaultValue(0.0)]
-        public BsonDouble zeroDeadband;
 
+        [BsonDefaultValue(false)]
+        public bool timeTagAtSourceOk { get; set; }
+
+        [BsonDefaultValue(false)]
+        public bool transient { get; set; }
+
+        [BsonDefaultValue("digital")]
+        public string type { get; set; }
+
+        [BsonDefaultValue("")]
+        public string ungroupedDescription { get; set; }
+
+        [BsonDefaultValue("")]
+        public string unit { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double updatesCnt { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double valueDefault { get; set; }
+
+        [BsonDefaultValue("")]
+        public string valueJson { get; set; }
+
+        [BsonDefaultValue("")]
+        public string valueString { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double value { get; set; }
+
+        [BsonDefaultValue(0.0)]
+        public double zeroDeadband { get; set; }
     }
     public static rtData newRealtimeDoc(OPC_Value ov, double _id, double commandOfSupervised)
     {
