@@ -42,7 +42,6 @@ process.on('uncaughtException', (err) =>
   const jsConfig = LoadConfig() // load and parse config file
   Log.levelCurrent = jsConfig.LogLevel
 
-  // let server = null
   let clientMongo = null
 
   while (true) {
@@ -947,8 +946,11 @@ function convertValueVariant(rtData) {
           break
         case 'nodeid':
           dataType = DataType.NodeId
-          if (!('Identifier' in obj) || !('NamespaceIndex' in obj)) {
-            obj = NodeId(NodeIdType.NUMERIC, 0, 0)
+          if (
+            obj !== null &&
+            (!('Identifier' in obj) || !('NamespaceIndex' in obj))
+          ) {
+            obj = new NodeId(NodeIdType.NUMERIC, 0, 0)
             break
           }
           try {
@@ -959,7 +961,7 @@ function convertValueVariant(rtData) {
               obj.IdType = NodeIdType.STRING
             obj = new NodeId(obj.IdType, obj.Identifier, obj.NamespaceIndex)
           } catch (e) {
-            obj = NodeId(NodeIdType.NUMERIC, 0, 0)
+            obj = new NodeId(NodeIdType.NUMERIC, 0, 0)
           }
           break
         case 'nodeid[]':
