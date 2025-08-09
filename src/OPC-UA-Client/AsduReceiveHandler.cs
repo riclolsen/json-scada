@@ -429,7 +429,7 @@ partial class MainClass
                                         hasSourceTimestamp = false,
                                         sourceTimestamp = DateTime.MinValue,
                                         serverTimestamp = DateTime.Now,
-                                        quality = false,
+                                        quality = StatusCode.IsGood(dataValues[i].StatusCode),
                                         cot = 20,
                                         conn_number = conn_number,
                                         conn_name = conn_name,
