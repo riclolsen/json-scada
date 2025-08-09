@@ -933,6 +933,8 @@ const pipeline = [
                       ?.rangeCheck ||
                     value !== change.fullDocument.value ||
                     valueString !== change.fullDocument.valueString ||
+                    (change.fullDocument.type === 'json' && valueJson !== change.fullDocument.valueJson) ||
+                    change.fullDocument.timeTag === null ||
                     invalid !== change.fullDocument.invalid) &&
                   !change.updateDescription.updatedFields.sourceDataUpdate
                     ?.isHistorical
