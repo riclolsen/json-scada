@@ -732,7 +732,7 @@ process.on('uncaughtException', (err) =>
               },
             ]
 
-            let changeStream = rtCollection.watch(csPipeline, {
+            const changeStream = rtCollection.watch(csPipeline, {
               fullDocument: 'updateLookup',
             })
 
@@ -758,12 +758,9 @@ process.on('uncaughtException', (err) =>
                 const v = convertValueVariant(change.fullDocument)
                 for (let i = 0; i < servers.length; i++) {
                   try {
-                    let srv = servers[i]
+                    const srv = servers[i]
 
-                    //if (change.fullDocument.ungroupedDescription === 'Random')
-                    //  change.fullDocument.ungroupedDescription = 'Random'
-
-                    let m = srv._metrics[change.fullDocument?.tag]
+                    const m = srv._metrics[change.fullDocument?.tag]
                     if (m !== undefined) {
                       m.setValueFromSource(
                         {
