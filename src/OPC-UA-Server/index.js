@@ -62,6 +62,7 @@ process.on('uncaughtException', (err) =>
           )
           clientMongo = client
           const servers = []
+          let allGroups1ToFilterCS = []
 
           // specify db and collections
           const db = client.db(jsConfig.mongoDatabaseName)
@@ -254,6 +255,7 @@ process.on('uncaughtException', (err) =>
               // defaultSecureTokenLifetime: 10000000,
             })
             server._metrics = {}
+            server._name = connection.name
             servers.push(server)
 
             await server.initialize()
@@ -327,17 +329,13 @@ process.on('uncaughtException', (err) =>
             // console.log(connection)
 
             let filterGroup1 = {}
-            let filterGroup1CS = {
-              'fullDocument.group1': {
-                $exists: true,
-              },
-            }
 
             if ('topics' in connection && 'length' in connection.topics) {
               if (connection.topics.length > 0) {
                 filterGroup1.group1 = { $in: connection.topics }
-                filterGroup1CS = {
-                  'fullDocument.group1': { $in: connection.topics },
+                if (allGroups1ToFilterCS !== null) {
+                  if (connection.topics.length === 0) allGroups1ToFilterCS == null
+                  else allGroups1ToFilterCS = allGroups1ToFilterCS.concat(connection.topics)
                 }
                 Log.log('Filter tags: ' + JSON.stringify(filterGroup1))
               }
@@ -603,6 +601,7 @@ process.on('uncaughtException', (err) =>
                   }
 
                   Log.log(
+                    server._name + ' - ' +
                     'Creating node: ' +
                       element.tag +
                       ' ' +
@@ -707,6 +706,18 @@ process.on('uncaughtException', (err) =>
 
             Log.log(`Finished creating OPC UA Variables.`)
 
+            let csFilterGroup1 = {
+              'fullDocument.group1': {
+                $exists: true,
+              },
+            }
+
+            if (allGroups1ToFilterCS !== null && allGroups1ToFilterCS?.length > 0) {
+              csFilterGroup1 = {
+                'fullDocument.group1': { $in: allGroups1ToFilterCS },
+              }
+            }
+
             const csPipeline = [
               {
                 $project: { documentKey: false },
@@ -721,7 +732,7 @@ process.on('uncaughtException', (err) =>
                             $exists: false,
                           },
                         },
-                        filterGroup1CS,
+                        csFilterGroup1,
                         {
                           'fullDocument._id': {
                             $ne: -2,
@@ -764,14 +775,17 @@ process.on('uncaughtException', (err) =>
 
               // start to listen for changes
               changeStream.on('change', (change) => {
+                const v = convertValueVariant(change.fullDocument)
                 for (let i = 0; i < servers.length; i++) {
                   try {
                     let srv = servers[i]
 
+                    if (change.fullDocument.ungroupedDescription === 'Random')
+                      change.fullDocument.ungroupedDescription = 'Random'
+
                     let m = srv._metrics[change.fullDocument?.tag]
                     if (m !== undefined) {
-                      const v = convertValueVariant(change.fullDocument)
-                      srv._metrics[change.fullDocument.tag].setValueFromSource(
+                      m.setValueFromSource(
                         {
                           dataType: v.dataType,
                           ...(v.arrayType ? { arrayType: v.arrayType } : {}),
@@ -782,12 +796,13 @@ process.on('uncaughtException', (err) =>
                           : StatusCodes.Good,
                         !('timeTagAtSource' in change.fullDocument) ||
                           change.fullDocument.timeTagAtSource === null
-                          ? new Date(0) 
+                          ? new Date(0)
                           : change.fullDocument.timeTagAtSource
                       )
 
                       if (Log.levelCurrent >= Log.levelDebug) {
                         Log.log(
+                          srv._name + ' - Update: ' +
                           change.fullDocument?.tag +
                             ' ' +
                             change.fullDocument?.value +
