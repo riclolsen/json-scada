@@ -934,6 +934,7 @@ const pipeline = [
                     value !== change.fullDocument.value ||
                     valueString !== change.fullDocument.valueString ||
                     (change.fullDocument.type === 'json' && valueJson !== change.fullDocument.valueJson) ||
+                    change.fullDocument?.timeTagAtSource !== change.updateDescription.updatedFields.sourceDataUpdate?.timeTagAtSource ||
                     change.fullDocument.timeTag === null ||
                     invalid !== change.fullDocument.invalid) &&
                   !change.updateDescription.updatedFields.sourceDataUpdate
