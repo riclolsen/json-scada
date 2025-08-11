@@ -23,6 +23,7 @@ const {
   OPCUAServer,
   Variant,
   DataType,
+  DataValue,
   StatusCodes,
   VariantArrayType,
   AccessLevelFlag,
@@ -657,21 +658,42 @@ process.on('uncaughtException', (err) =>
                         ? AccessLevelFlag.CurrentWrite
                         : writeFlag),
                     ...cmdWriteProp,
+                    value: {
+                      timestamped_get: () =>
+                        new DataValue({
+                          statusCode: element.invalid
+                            ? StatusCodes.Bad
+                            : StatusCodes.Good,
+                          sourceTimestamp:
+                            !('timeTagAtSource' in element) ||
+                            element.timeTagAtSource === null
+                              ? new Date(0)
+                              : element.timeTagAtSource,
+                          serverTimestamp: element.timeTag,
+                          value: new Variant({
+                            dataType: v.dataType,
+                            ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                            value: v.value,
+                          }),
+                        }),
+                    },
                   })
-                  if (element.origin !== 'command') {
-                    server._metrics[element.tag].setValueFromSource(
-                      {
-                        dataType: v.dataType,
-                        ...(v.arrayType ? { arrayType: v.arrayType } : {}),
-                        value: v.value,
-                      },
-                      element.invalid ? StatusCodes.Bad : StatusCodes.Good,
-                      !('timeTagAtSource' in element) ||
-                        element.timeTagAtSource === null
-                        ? new Date(1970, 0, 1)
-                        : element.timeTagAtSource
-                    )
-                  }
+                  //if (element.origin !== 'command') {
+                  //  server._metrics[element.tag].serverTimestamp =
+                  //    element.timeTag
+                  //  server._metrics[element.tag].setValueFromSource(
+                  //    {
+                  //      dataType: v.dataType,
+                  //      ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                  //      value: v.value,
+                  //    },
+                  //    element.invalid ? StatusCodes.Bad : StatusCodes.Good,
+                  //    !('timeTagAtSource' in element) ||
+                  //      element.timeTagAtSource === null
+                  //      ? new Date(0)
+                  //      : element.timeTagAtSource
+                  //  )
+                  //}
                 }
               } catch (e) {
                 Log.log(
@@ -760,7 +782,7 @@ process.on('uncaughtException', (err) =>
                           : StatusCodes.Good,
                         !('timeTagAtSource' in change.fullDocument) ||
                           change.fullDocument.timeTagAtSource === null
-                          ? new Date(1970, 0, 1)
+                          ? new Date(0) 
                           : change.fullDocument.timeTagAtSource
                       )
 
