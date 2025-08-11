@@ -657,42 +657,22 @@ process.on('uncaughtException', (err) =>
                         ? AccessLevelFlag.CurrentWrite
                         : writeFlag),
                     ...cmdWriteProp,
-                    value: {
-                      timestamped_get: () =>
-                        new DataValue({
-                          statusCode: element.invalid
-                            ? StatusCodes.Bad
-                            : StatusCodes.Good,
-                          sourceTimestamp:
-                            !('timeTagAtSource' in element) ||
-                            element.timeTagAtSource === null
-                              ? new Date(0)
-                              : element.timeTagAtSource,
-                          serverTimestamp: element.timeTag,
-                          value: new Variant({
-                            dataType: v.dataType,
-                            ...(v.arrayType ? { arrayType: v.arrayType } : {}),
-                            value: v.value,
-                          }),
-                        }),
-                    },
+                    // timestamped_get will not be used, values will be updated by change stream
                   })
-                  //if (element.origin !== 'command') {
-                  //  server._metrics[element.tag].serverTimestamp =
-                  //    element.timeTag
-                  //  server._metrics[element.tag].setValueFromSource(
-                  //    {
-                  //      dataType: v.dataType,
-                  //      ...(v.arrayType ? { arrayType: v.arrayType } : {}),
-                  //      value: v.value,
-                  //    },
-                  //    element.invalid ? StatusCodes.Bad : StatusCodes.Good,
-                  //    !('timeTagAtSource' in element) ||
-                  //      element.timeTagAtSource === null
-                  //      ? new Date(0)
-                  //      : element.timeTagAtSource
-                  //  )
-                  //}
+                  if (element.origin !== 'command') {
+                    server._metrics[element.tag].setValueFromSource(
+                      {
+                        dataType: v.dataType,
+                        ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                        value: v.value,
+                      },
+                      element.invalid ? StatusCodes.Bad : StatusCodes.Good,
+                      !('timeTagAtSource' in element) ||
+                        element.timeTagAtSource === null
+                        ? new Date(0)
+                        : element.timeTagAtSource
+                    )
+                  }
                 }
               } catch (e) {
                 Log.log(
@@ -780,8 +760,8 @@ process.on('uncaughtException', (err) =>
                   try {
                     let srv = servers[i]
 
-                    if (change.fullDocument.ungroupedDescription === 'Random')
-                      change.fullDocument.ungroupedDescription = 'Random'
+                    //if (change.fullDocument.ungroupedDescription === 'Random')
+                    //  change.fullDocument.ungroupedDescription = 'Random'
 
                     let m = srv._metrics[change.fullDocument?.tag]
                     if (m !== undefined) {
