@@ -393,7 +393,7 @@ partial class MainClass
                                 ParentName = parentName,
                                 Path = path,
                             };
-                            OPCUA_conn.ListMon.Add(new MonitoredItem()
+                            var mi = new MonitoredItem()
                             {
                                 DisplayName = sourceNodes[i].BrowseName.Name,
                                 StartNodeId = sourceNodes[i].NodeId.ToString(),
@@ -402,7 +402,14 @@ partial class MainClass
                                 MonitoringMode = MonitoringMode.Reporting,
                                 DiscardOldest = true,
                                 AttributeId = Attributes.Value
-                            });
+                            };
+                            mi.Filter = new DataChangeFilter()
+                            {
+                                Trigger = DataChangeTrigger.StatusValueTimestamp,
+                                DeadbandType = (uint)DeadbandType.None,
+                                DeadbandValue = 0
+                            };
+                            OPCUA_conn.ListMon.Add(mi);
 
                             if (dataValues[i].Value == null) continue;
 
@@ -497,7 +504,7 @@ partial class MainClass
                     List<MonitoredItem> lm = new List<MonitoredItem>();
                     foreach (var tm in sub.Value)
                     {
-                        lm.Add(new MonitoredItem()
+                        var mi = new MonitoredItem()
                         {
                             DisplayName = tm.ungroupedDescription,
                             StartNodeId = tm.protocolSourceObjectAddress,
@@ -506,7 +513,14 @@ partial class MainClass
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value,
-                        });
+                        };
+                        mi.Filter = new DataChangeFilter()
+                        {
+                            Trigger = DataChangeTrigger.StatusValueTimestamp,
+                            DeadbandType = (uint)DeadbandType.None,
+                            DeadbandValue = 0
+                        };
+                        lm.Add(mi);
                     }
                     lm.ForEach(i => i.Notification += OnNotification);
 

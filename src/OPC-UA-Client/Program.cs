@@ -209,7 +209,7 @@ partial class MainClass
                     });
                     try
                     {
-                        isrv.ListMon.Add(new MonitoredItem()
+                        var mi = new MonitoredItem()
                         {
                             DisplayName = results[i].ungroupedDescription.ToString(),
                             StartNodeId = results[i].protocolSourceObjectAddress.ToString(),
@@ -218,7 +218,14 @@ partial class MainClass
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value
-                        });
+                        };
+                        mi.Filter = new DataChangeFilter()
+                        {
+                            Trigger = DataChangeTrigger.StatusValueTimestamp,
+                            DeadbandType = (uint)DeadbandType.None,
+                            DeadbandValue = 0
+                        };
+                        isrv.ListMon.Add(mi);
                     }
                     catch (Exception ex)
                     {
