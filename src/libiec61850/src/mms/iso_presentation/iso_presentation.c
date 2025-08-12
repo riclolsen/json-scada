@@ -1,7 +1,7 @@
 /*
  *  iso_presentation.c
  *
- *  Copyright 2013-2022 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -34,7 +34,6 @@
 #else
 #define DEBUG_PRES 0
 #endif
-
 
 static uint8_t calledPresentationSelector[] = { 0x00, 0x00, 0x00, 0x01 };
 
@@ -73,7 +72,8 @@ encodeUserData(uint8_t* buffer, int bufPos,
 
     fullyEncodedDataLength += BerEncoder_determineLengthSize(encodedDataSetLength) + 1;
 
-    if (encode) {
+    if (encode)
+    {
         /* fully-encoded-data */
         bufPos = BerEncoder_encodeTL(0x61, fullyEncodedDataLength, buffer, bufPos);
         bufPos = BerEncoder_encodeTL(0x30, encodedDataSetLength, buffer, bufPos);
@@ -87,7 +87,8 @@ encodeUserData(uint8_t* buffer, int bufPos,
 
         return bufPos;
     }
-    else {
+    else
+    {
         int encodedUserDataLength = fullyEncodedDataLength + 1;
         encodedUserDataLength += BerEncoder_determineLengthSize(fullyEncodedDataLength);
 
@@ -195,7 +196,8 @@ parseFullyEncodedData(IsoPresentation* self, uint8_t* buffer, int len, int bufPo
 
     int endPos = bufPos + len;
 
-    if (buffer[bufPos++] != 0x30) {
+    if (buffer[bufPos++] != 0x30)
+    {
         if (DEBUG_PRES)
             printf("PRES: user-data parse error\n");
         return -1;
@@ -203,7 +205,8 @@ parseFullyEncodedData(IsoPresentation* self, uint8_t* buffer, int len, int bufPo
 
     bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, endPos);
 
-    if (bufPos < 0) {
+    if (bufPos < 0)
+    {
         if (DEBUG_PRES)
             printf("PRES: wrong parameter length\n");
         return -1;
@@ -211,19 +214,22 @@ parseFullyEncodedData(IsoPresentation* self, uint8_t* buffer, int len, int bufPo
 
     endPos = bufPos + len;
 
-    while (bufPos < endPos) {
+    while (bufPos < endPos)
+    {
         uint8_t tag = buffer[bufPos++];
         int length;
 
         bufPos = BerDecoder_decodeLength(buffer, &length, bufPos, endPos);
 
-        if (bufPos < 0) {
+        if (bufPos < 0)
+        {
             if (DEBUG_PRES)
                 printf("PRES: wrong parameter length\n");
             return -1;
         }
 
-        switch (tag) {
+        switch (tag)
+        {
         case 0x02: /* presentation-context-identifier */
             if (DEBUG_PRES)
                 printf("PRES: presentation-context-identifier\n");
@@ -262,7 +268,8 @@ parseFullyEncodedData(IsoPresentation* self, uint8_t* buffer, int len, int bufPo
         }
     }
 
-    if (!userDataPresent) {
+    if (!userDataPresent)
+    {
         if (DEBUG_PRES)
             printf("PRES: user-data not present\n");
         return -1;
@@ -280,13 +287,15 @@ parsePCDLEntry(IsoPresentation* self, uint8_t* buffer, int totalLength, int bufP
     bool isAcse = false;
     bool isMms = false;
 
-    while (bufPos < endPos) {
+    while (bufPos < endPos)
+    {
         uint8_t tag = buffer[bufPos++];
         int len;
 
         bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, endPos);
 
-        if (bufPos < 0) {
+        if (bufPos < 0)
+        {
             if (DEBUG_PRES)
                 printf("PRES: Invalid PDU\n");
             return -1;
@@ -302,11 +311,13 @@ parsePCDLEntry(IsoPresentation* self, uint8_t* buffer, int totalLength, int bufP
             if (DEBUG_PRES)
                 printf("PRES: abstract-syntax-name with len %i\n", len);
 
-            if (len == 5) {
+            if (len == 5)
+            {
                 if (memcmp(buffer + bufPos, asn_id_mms, 5) == 0)
                     isMms = true;
             }
-            else if (len == 4) {
+            else if (len == 4)
+            {
                 if (memcmp(buffer + bufPos, asn_id_as_acse, 4) == 0)
                     isAcse = true;
             }
@@ -333,26 +344,30 @@ parsePCDLEntry(IsoPresentation* self, uint8_t* buffer, int totalLength, int bufP
         }
     }
 
-    if (contextId < 0) {
+    if (contextId < 0)
+    {
         if (DEBUG_PRES)
             printf("PRES: ContextId not defined!\n");
         return -1;
     }
 
-    if ((isAcse == false) && (isMms == false)) {
+    if ((isAcse == false) && (isMms == false))
+    {
         if (DEBUG_PRES)
             printf("PRES: not an ACSE or MMS context definition\n");
 
         return -1;
     }
 
-    if (isMms) {
-        self->mmsContextId = (uint8_t) contextId;
+    if (isMms)
+    {
+        self->mmsContextId = (uint8_t)contextId;
         if (DEBUG_PRES)
             printf("PRES: MMS context id is %i\n", contextId);
     }
-    else {
-        self->acseContextId = (uint8_t) contextId;
+    else
+    {
+        self->acseContextId = (uint8_t)contextId;
         if (DEBUG_PRES)
             printf("PRES: ACSE context id is %i\n", contextId);
     }
@@ -365,7 +380,8 @@ parsePresentationContextDefinitionList(IsoPresentation* self, uint8_t* buffer, i
 {
     int endPos = bufPos + totalLength;
 
-    while (bufPos < endPos) {
+    while (bufPos < endPos)
+    {
         uint8_t tag = buffer[bufPos++];
         int len;
 
@@ -373,7 +389,8 @@ parsePresentationContextDefinitionList(IsoPresentation* self, uint8_t* buffer, i
         if (bufPos < 0)
             return -1;
 
-        switch (tag) {
+        switch (tag)
+        {
         case 0x30:
             if (DEBUG_PRES)
                 printf("PRES: parse pcd entry\n");
@@ -404,11 +421,13 @@ parseNormalModeParameters(IsoPresentation* self, uint8_t* buffer, int totalLengt
 
     bool hasUserData = false;
 
-    while (bufPos < endPos) {
+    while (bufPos < endPos)
+    {
         uint8_t tag = buffer[bufPos++];
         int len;
 
-        if (bufPos == endPos) {
+        if (bufPos == endPos)
+        {
             if (DEBUG_PRES)
                 printf("PRES: invalid message\n");
             return -1;
@@ -416,20 +435,24 @@ parseNormalModeParameters(IsoPresentation* self, uint8_t* buffer, int totalLengt
 
         bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, endPos);
 
-        if (bufPos < 0) {
+        if (bufPos < 0)
+        {
             if (DEBUG_PRES)
                 printf("PRES: wrong parameter length\n");
             return -1;
         }
 
-        switch (tag) {
+        switch (tag)
+        {
         case 0x81: /* calling-presentation-selector */
 
-            if (len > 16) {
+            if (len > 16)
+            {
                 if (DEBUG_PRES)
                     printf("PRES: calling-presentation-sel too large\n");
             }
-            else {
+            else
+            {
                 self->callingPresentationSelector.size = len;
                 int i;
                 for (i = 0; i < len; i++)
@@ -441,11 +464,13 @@ parseNormalModeParameters(IsoPresentation* self, uint8_t* buffer, int totalLengt
 
         case 0x82: /* called-presentation-selector */
 
-            if (len > 16) {
+            if (len > 16)
+            {
                 if (DEBUG_PRES)
                     printf("PRES: called-presentation-sel too large\n");
             }
-            else {
+            else
+            {
                 self->calledPresentationSelector.size = len;
                 int i;
                 for (i = 0; i < len; i++)
@@ -457,7 +482,8 @@ parseNormalModeParameters(IsoPresentation* self, uint8_t* buffer, int totalLengt
 
         case 0x83: /* responding-presentation-selector */
 
-            if (len > 16) {
+            if (len > 16)
+            {
                 if (DEBUG_PRES)
                     printf("PRES: responding-presentation-sel too large\n");
             }
@@ -505,7 +531,8 @@ parseNormalModeParameters(IsoPresentation* self, uint8_t* buffer, int totalLengt
         }
     }
 
-    if (hasUserData == false) {
+    if (hasUserData == false)
+    {
         if (DEBUG_PRES)
             printf("PRES: user-data is missing\n");
 
@@ -525,7 +552,8 @@ IsoPresentation_parseAcceptMessage(IsoPresentation* self, ByteBuffer* byteBuffer
 
     uint8_t cpTag = buffer[bufPos++];
 
-    if (cpTag != 0x31) {
+    if (cpTag != 0x31)
+    {
         if (DEBUG_PRES)
             printf("PRES: not a CPA message\n");
         return 0;
@@ -535,18 +563,21 @@ IsoPresentation_parseAcceptMessage(IsoPresentation* self, ByteBuffer* byteBuffer
 
     bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-    if (bufPos < 0) {
+    if (bufPos < 0)
+    {
         if (DEBUG_PRES)
             printf("PRES: Invalid message\n");
         return 0;
     }
 
-    while (bufPos < maxBufPos) {
+    while (bufPos < maxBufPos)
+    {
         uint8_t tag = buffer[bufPos++];
 
         bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-        if (bufPos < 0) {
+        if (bufPos < 0)
+        {
             if (DEBUG_PRES)
                 printf("PRES: wrong parameter length\n");
             return 0;
@@ -559,7 +590,8 @@ IsoPresentation_parseAcceptMessage(IsoPresentation* self, ByteBuffer* byteBuffer
         case 0xa2: /* normal-mode-parameters */
             bufPos = parseNormalModeParameters(self, buffer, len, bufPos);
 
-            if (bufPos < 0) {
+            if (bufPos < 0)
+            {
                 if (DEBUG_PRES)
                     printf("PRES: error parsing normal-mode-parameters\n");
                 return 0;
@@ -594,7 +626,7 @@ IsoPresentation_createUserData(IsoPresentation* self, BufferChain writeBuffer, B
     int payloadLength = payload->length;
 
     int userDataLengthFieldSize = BerEncoder_determineLengthSize(payloadLength);
-    ;
+
     int pdvListLength = payloadLength + (userDataLengthFieldSize + 4);
 
     int pdvListLengthFieldSize = BerEncoder_determineLengthSize(pdvListLength);
@@ -624,7 +656,7 @@ IsoPresentation_createUserDataACSE(IsoPresentation* self, BufferChain writeBuffe
     int payloadLength = payload->length;
 
     int userDataLengthFieldSize = BerEncoder_determineLengthSize(payloadLength);
-    ;
+
     int pdvListLength = payloadLength + (userDataLengthFieldSize + 4);
 
     int pdvListLengthFieldSize = BerEncoder_determineLengthSize(pdvListLength);
@@ -664,7 +696,8 @@ IsoPresentation_parseUserData(IsoPresentation* self, ByteBuffer* readBuffer)
 
     bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-    if (bufPos < 0) {
+    if (bufPos < 0)
+    {
         if (DEBUG_PRES)
             printf("PRES: invalid message!\n");
         return 0;
@@ -675,25 +708,29 @@ IsoPresentation_parseUserData(IsoPresentation* self, ByteBuffer* readBuffer)
 
     bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-    if (bufPos < 0) {
+    if (bufPos < 0)
+    {
         if (DEBUG_PRES)
             printf("PRES: invalid message!\n");
         return 0;
     }
 
-    while (bufPos < maxBufPos) {
+    while (bufPos < maxBufPos)
+    {
         uint8_t tag = buffer[bufPos++];
         uint8_t lenField = buffer[bufPos];
 
         bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-        if (bufPos < 0) {
+        if (bufPos < 0)
+        {
             if (DEBUG_PRES)
                 printf("PRES: wrong parameter length\n");
             return 0;
         }
 
-        switch (tag) {
+        switch (tag)
+        {
         case 0x02: /* abstract-syntax-name */
             self->nextContextId = buffer[bufPos];
             hasAbstractSyntaxName = true;
@@ -703,8 +740,10 @@ IsoPresentation_parseUserData(IsoPresentation* self, ByteBuffer* readBuffer)
         case 0x06: /* transfer-syntax-name */
             {
                 /* check if basic-encoding (2.1.1 - 51 01) */
-                if ((buffer[bufPos] != 0x51) || (buffer[bufPos + 1] != 0x01)) {
-                    if (DEBUG_PRES) {
+                if ((buffer[bufPos] != 0x51) || (buffer[bufPos + 1] != 0x01))
+                {
+                    if (DEBUG_PRES)
+                    {
                         printf("PRES: unknown transfer-syntax-name\n");
                     }
 
@@ -715,10 +754,10 @@ IsoPresentation_parseUserData(IsoPresentation* self, ByteBuffer* readBuffer)
             }
             break;
 
-
-        case 0xa0: /* presentation data */
+            case 0xa0: /* presentation data */
             {
-                if (hasAbstractSyntaxName == false) {
+                if (hasAbstractSyntaxName == false)
+                {
                     if (DEBUG_PRES)
                         printf("PRES: abstract-syntax-name missing!\n");
 
@@ -752,7 +791,8 @@ IsoPresentation_parseConnect(IsoPresentation* self, ByteBuffer* byteBuffer)
 
     uint8_t cpTag = buffer[bufPos++];
 
-    if (cpTag != 0x31) {
+    if (cpTag != 0x31)
+    {
         if (DEBUG_PRES)
             printf("PRES: not a CP type\n");
         return 0;
@@ -762,7 +802,8 @@ IsoPresentation_parseConnect(IsoPresentation* self, ByteBuffer* byteBuffer)
 
     bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-    if (bufPos < 0) {
+    if (bufPos < 0)
+    {
         if (DEBUG_PRES)
             printf("PRES: invalid message!\n");
         return 0;
@@ -771,21 +812,25 @@ IsoPresentation_parseConnect(IsoPresentation* self, ByteBuffer* byteBuffer)
     if (DEBUG_PRES)
         printf("PRES: CPType with len %i\n", len);
 
-    while (bufPos < maxBufPos) {
+    while (bufPos < maxBufPos)
+    {
         uint8_t tag = buffer[bufPos++];
 
         bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-        if (bufPos < 0) {
+        if (bufPos < 0)
+        {
             if (DEBUG_PRES)
                 printf("PRES: invalid message!\n");
             return 0;
         }
 
-        switch (tag) {
+        switch (tag)
+        {
         case 0xa0: /* mode-selection */
             {
-                if (buffer[bufPos++] != 0x80) {
+                if (buffer[bufPos++] != 0x80)
+                {
                     if (DEBUG_PRES)
                         printf("PRES: mode-value of wrong type!\n");
                     return 0;
@@ -793,7 +838,8 @@ IsoPresentation_parseConnect(IsoPresentation* self, ByteBuffer* byteBuffer)
 
                 bufPos = BerDecoder_decodeLength(buffer, &len, bufPos, maxBufPos);
 
-                if (bufPos < 0) {
+                if (bufPos < 0)
+                {
                     if (DEBUG_PRES)
                         printf("PRES: invalid message!\n");
                     return 0;
@@ -810,12 +856,14 @@ IsoPresentation_parseConnect(IsoPresentation* self, ByteBuffer* byteBuffer)
         case 0xa2: /* normal-mode-parameters */
             bufPos = parseNormalModeParameters(self, buffer, len, bufPos);
 
-            if (bufPos < 0) {
+            if (bufPos < 0)
+            {
                 if (DEBUG_PRES)
                     printf("PRES: error parsing normal-mode-parameters\n");
                 return 0;
             }
-            else {
+            else
+            {
                 hasNormalModeParameters = true;
             }
 
@@ -830,7 +878,8 @@ IsoPresentation_parseConnect(IsoPresentation* self, ByteBuffer* byteBuffer)
         }
     }
 
-    if (hasNormalModeParameters == false) {
+    if (hasNormalModeParameters == false)
+    {
         if (DEBUG_PRES)
             printf("PRES: error - normal mode parameters are missing\n");
 

@@ -60,16 +60,19 @@ ClientReportControlBlock_create(const char* objectReference)
 
     isBuffered = isBufferedRcb(objectReference, &isReferenceValid);
 
-    if (isReferenceValid == false) {
+    if (isReferenceValid == false)
+    {
         if (DEBUG_IED_CLIENT)
             printf("DEBUG_IED_CLIENT: RCB reference invalid\n");
 
         return NULL;
     }
 
-    ClientReportControlBlock self = (ClientReportControlBlock) GLOBAL_CALLOC(1, sizeof(struct sClientReportControlBlock));
+    ClientReportControlBlock self =
+        (ClientReportControlBlock)GLOBAL_CALLOC(1, sizeof(struct sClientReportControlBlock));
 
-    if (self) {
+    if (self)
+    {
         self->objectReference = StringUtils_copyString(objectReference);
         self->isBuffered = isBuffered;
     }
@@ -80,26 +83,29 @@ ClientReportControlBlock_create(const char* objectReference)
 void
 ClientReportControlBlock_destroy(ClientReportControlBlock self)
 {
-    GLOBAL_FREEMEM(self->objectReference);
+    if (self)
+    {
+        GLOBAL_FREEMEM(self->objectReference);
 
-    MmsValue_delete(self->rptId);
-    MmsValue_delete(self->rptEna);
-    MmsValue_delete(self->resv);
-    MmsValue_delete(self->datSet);
-    MmsValue_delete(self->confRev);
-    MmsValue_delete(self->optFlds);
-    MmsValue_delete(self->bufTm);
-    MmsValue_delete(self->sqNum);
-    MmsValue_delete(self->trgOps);
-    MmsValue_delete(self->intgPd);
-    MmsValue_delete(self->gi);
-    MmsValue_delete(self->purgeBuf);
-    MmsValue_delete(self->entryId);
-    MmsValue_delete(self->timeOfEntry);
-    MmsValue_delete(self->resvTms);
-    MmsValue_delete(self->owner);
+        MmsValue_delete(self->rptId);
+        MmsValue_delete(self->rptEna);
+        MmsValue_delete(self->resv);
+        MmsValue_delete(self->datSet);
+        MmsValue_delete(self->confRev);
+        MmsValue_delete(self->optFlds);
+        MmsValue_delete(self->bufTm);
+        MmsValue_delete(self->sqNum);
+        MmsValue_delete(self->trgOps);
+        MmsValue_delete(self->intgPd);
+        MmsValue_delete(self->gi);
+        MmsValue_delete(self->purgeBuf);
+        MmsValue_delete(self->entryId);
+        MmsValue_delete(self->timeOfEntry);
+        MmsValue_delete(self->resvTms);
+        MmsValue_delete(self->owner);
 
-    GLOBAL_FREEMEM(self);
+        GLOBAL_FREEMEM(self);
+    }
 }
 
 char*
@@ -117,7 +123,7 @@ ClientReportControlBlock_isBuffered(ClientReportControlBlock self)
 const char*
 ClientReportControlBlock_getRptId(ClientReportControlBlock self)
 {
-    if (self->rptId != NULL)
+    if (self->rptId)
         return MmsValue_toString(self->rptId);
     else
         return NULL;
@@ -132,11 +138,11 @@ ClientReportControlBlock_setRptId(ClientReportControlBlock self, const char* rpt
         MmsValue_setVisibleString(self->rptId, rptId);
 }
 
-
 bool
 ClientReportControlBlock_getRptEna(ClientReportControlBlock self)
 {
-    if (self->rptEna != NULL) {
+    if (self->rptEna)
+    {
         return MmsValue_getBoolean(self->rptEna);
     }
     else
@@ -155,7 +161,8 @@ ClientReportControlBlock_setRptEna(ClientReportControlBlock self, bool rptEna)
 bool
 ClientReportControlBlock_getResv(ClientReportControlBlock self)
 {
-    if (self->resv != NULL) {
+    if (self->resv)
+    {
         return MmsValue_getBoolean(self->resv);
     }
     else
@@ -174,7 +181,7 @@ ClientReportControlBlock_setResv(ClientReportControlBlock self, bool resv)
 const char*
 ClientReportControlBlock_getDataSetReference(ClientReportControlBlock self)
 {
-    if (self->datSet != NULL)
+    if (self->datSet)
         return MmsValue_toString(self->datSet);
     else
         return NULL;
@@ -192,7 +199,7 @@ ClientReportControlBlock_setDataSetReference(ClientReportControlBlock self, cons
 uint32_t
 ClientReportControlBlock_getConfRev(ClientReportControlBlock self)
 {
-    if (self->confRev != NULL)
+    if (self->confRev)
         return MmsValue_toUint32(self->confRev);
     else
         return 0;
@@ -219,7 +226,7 @@ ClientReportControlBlock_setOptFlds(ClientReportControlBlock self, int optFlds)
 uint32_t
 ClientReportControlBlock_getBufTm(ClientReportControlBlock self)
 {
-    if (self->bufTm != NULL)
+    if (self->bufTm)
         return MmsValue_toUint32(self->bufTm);
     else
         return 0;
@@ -237,7 +244,7 @@ ClientReportControlBlock_setBufTm(ClientReportControlBlock self, uint32_t bufTm)
 uint16_t
 ClientReportControlBlock_getSqNum(ClientReportControlBlock self)
 {
-    if (self->sqNum != NULL)
+    if (self->sqNum)
         return (uint16_t) MmsValue_toUint32(self->sqNum);
     else
         return 0;
@@ -248,7 +255,8 @@ ClientReportControlBlock_getTrgOps(ClientReportControlBlock self)
 {
     int triggerOps = 0;
 
-    if (self->trgOps != NULL) {
+    if (self->trgOps)
+    {
         if (MmsValue_getBitStringBit(self->trgOps, 1))
             triggerOps += TRG_OPT_DATA_CHANGED;
         if (MmsValue_getBitStringBit(self->trgOps, 2))
@@ -276,7 +284,7 @@ ClientReportControlBlock_setTrgOps(ClientReportControlBlock self, int trgOps)
 uint32_t
 ClientReportControlBlock_getIntgPd(ClientReportControlBlock self)
 {
-    if (self->intgPd != NULL)
+    if (self->intgPd)
         return MmsValue_toUint32(self->intgPd);
     else
         return 0;
@@ -294,7 +302,7 @@ ClientReportControlBlock_setIntgPd(ClientReportControlBlock self, uint32_t intgP
 bool
 ClientReportControlBlock_getGI(ClientReportControlBlock self)
 {
-    if (self->gi != NULL)
+    if (self->gi)
         return MmsValue_getBoolean(self->gi);
     else
         return false;
@@ -312,7 +320,7 @@ ClientReportControlBlock_setGI(ClientReportControlBlock self, bool gi)
 bool
 ClientReportControlBlock_getPurgeBuf(ClientReportControlBlock self)
 {
-    if (self->purgeBuf != NULL)
+    if (self->purgeBuf)
         return MmsValue_getBoolean(self->purgeBuf);
     else
         return false;
@@ -336,7 +344,7 @@ ClientReportControlBlock_hasResvTms(ClientReportControlBlock self)
 int16_t
 ClientReportControlBlock_getResvTms(ClientReportControlBlock self)
 {
-    if (self->resvTms != NULL)
+    if (self->resvTms)
         return (int16_t) MmsValue_toInt32(self->resvTms);
     else
         return 0;
@@ -360,11 +368,14 @@ ClientReportControlBlock_getEntryId(ClientReportControlBlock self)
 void
 ClientReportControlBlock_setEntryId(ClientReportControlBlock self, MmsValue* entryId)
 {
-    if (self->entryId != NULL) {
+    if (self->entryId)
+    {
         MmsValue_update(self->entryId, entryId);
     }
-    else {
-        if (MmsValue_getType(entryId) != MMS_OCTET_STRING) {
+    else
+    {
+        if (MmsValue_getType(entryId) != MMS_OCTET_STRING)
+        {
             if (DEBUG_IED_CLIENT)
                 printf("IED_CLIENT: ClientReportControlBlock_setEntryId invalid argument type\n");
         }
@@ -376,7 +387,7 @@ ClientReportControlBlock_setEntryId(ClientReportControlBlock self, MmsValue* ent
 uint64_t
 ClientReportControlBlock_getEntryTime(ClientReportControlBlock self)
 {
-    if (self->timeOfEntry != NULL)
+    if (self->timeOfEntry)
         return MmsValue_getBinaryTimeAsUtcMs(self->timeOfEntry);
     else
         return 0;
@@ -391,7 +402,7 @@ ClientReportControlBlock_getOwner(ClientReportControlBlock self)
 static void
 updateOrClone(MmsValue** valuePtr, MmsValue* values, int index)
 {
-    if (*valuePtr != NULL)
+    if (*valuePtr)
         MmsValue_update(*valuePtr, MmsValue_getElement(values, index));
     else
         *valuePtr = MmsValue_clone(MmsValue_getElement(values, index));
@@ -421,53 +432,87 @@ clientReportControlBlock_updateValues(ClientReportControlBlock self, MmsValue* v
 
     int rcbElementCount = MmsValue_getArraySize(values);
 
-    if (self->isBuffered) {
-        if ((rcbElementCount < 13) || (rcbElementCount > 15)) {
+    if (self->isBuffered)
+    {
+        if ((rcbElementCount < 13) || (rcbElementCount > 15))
+        {
             return false;
         }
 
-        if (!checkElementType(values, 0, MMS_VISIBLE_STRING)) return false;
-        if (!checkElementType(values, 1, MMS_BOOLEAN)) return false;
-        if (!checkElementType(values, 2, MMS_VISIBLE_STRING)) return false;
-        if (!checkElementType(values, 3, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 4, MMS_BIT_STRING)) return false;
-        if (!checkElementType(values, 5, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 6, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 7, MMS_BIT_STRING)) return false;
-        if (!checkElementType(values, 8, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 9, MMS_BOOLEAN)) return false;
-        if (!checkElementType(values, 10, MMS_BOOLEAN)) return false;
-        if (!checkElementType(values, 11, MMS_OCTET_STRING)) return false;
-        if (!checkElementType(values, 12, MMS_BINARY_TIME)) return false;
+        if (!checkElementType(values, 0, MMS_VISIBLE_STRING))
+            return false;
+        if (!checkElementType(values, 1, MMS_BOOLEAN))
+            return false;
+        if (!checkElementType(values, 2, MMS_VISIBLE_STRING))
+            return false;
+        if (!checkElementType(values, 3, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 4, MMS_BIT_STRING))
+            return false;
+        if (!checkElementType(values, 5, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 6, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 7, MMS_BIT_STRING))
+            return false;
+        if (!checkElementType(values, 8, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 9, MMS_BOOLEAN))
+            return false;
+        if (!checkElementType(values, 10, MMS_BOOLEAN))
+            return false;
+        if (!checkElementType(values, 11, MMS_OCTET_STRING))
+            return false;
+        if (!checkElementType(values, 12, MMS_BINARY_TIME))
+            return false;
 
-        if (rcbElementCount == 14) {
+        if (rcbElementCount == 14)
+        {
             if (!checkElementType(values, 13, MMS_OCTET_STRING) && !checkElementType(values, 13, MMS_INTEGER))
                 return false;
         }
-        else if (rcbElementCount == 15) {
-            if (!checkElementType(values, 13, MMS_INTEGER)) return false;
-            if (!checkElementType(values, 14, MMS_OCTET_STRING)) return false;
+        else if (rcbElementCount == 15)
+        {
+            if (!checkElementType(values, 13, MMS_INTEGER))
+                return false;
+            if (!checkElementType(values, 14, MMS_OCTET_STRING))
+                return false;
         }
     }
-    else {
-        if ((rcbElementCount < 11) || (rcbElementCount > 12)) {
+    else
+    {
+        if ((rcbElementCount < 11) || (rcbElementCount > 12))
+        {
             return false;
         }
 
-        if (!checkElementType(values, 0, MMS_VISIBLE_STRING)) return false;
-        if (!checkElementType(values, 1, MMS_BOOLEAN)) return false;
-        if (!checkElementType(values, 2, MMS_BOOLEAN)) return false;
-        if (!checkElementType(values, 3, MMS_VISIBLE_STRING)) return false;
-        if (!checkElementType(values, 4, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 5, MMS_BIT_STRING)) return false;
-        if (!checkElementType(values, 6, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 7, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 8, MMS_BIT_STRING)) return false;
-        if (!checkElementType(values, 9, MMS_UNSIGNED)) return false;
-        if (!checkElementType(values, 10, MMS_BOOLEAN)) return false;
+        if (!checkElementType(values, 0, MMS_VISIBLE_STRING))
+            return false;
+        if (!checkElementType(values, 1, MMS_BOOLEAN))
+            return false;
+        if (!checkElementType(values, 2, MMS_BOOLEAN))
+            return false;
+        if (!checkElementType(values, 3, MMS_VISIBLE_STRING))
+            return false;
+        if (!checkElementType(values, 4, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 5, MMS_BIT_STRING))
+            return false;
+        if (!checkElementType(values, 6, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 7, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 8, MMS_BIT_STRING))
+            return false;
+        if (!checkElementType(values, 9, MMS_UNSIGNED))
+            return false;
+        if (!checkElementType(values, 10, MMS_BOOLEAN))
+            return false;
 
-        if (rcbElementCount == 12) {
-            if (!checkElementType(values, 11, MMS_OCTET_STRING)) return false;
+        if (rcbElementCount == 12)
+        {
+            if (!checkElementType(values, 11, MMS_OCTET_STRING))
+                return false;
         }
     }
 
@@ -476,34 +521,37 @@ clientReportControlBlock_updateValues(ClientReportControlBlock self, MmsValue* v
     updateOrClone(&(self->rptId), values, 0);
     updateOrClone(&(self->rptEna), values, 1);
 
-    if (self->isBuffered) {
+    if (self->isBuffered)
+    {
         updateOrClone(&(self->datSet), values, 2);
         updateOrClone(&(self->confRev), values, 3);
         updateOrClone(&(self->optFlds), values, 4);
         updateOrClone(&(self->bufTm), values, 5);
         updateOrClone(&(self->sqNum), values, 6);
-        updateOrClone(&(self->trgOps), values,7);
+        updateOrClone(&(self->trgOps), values, 7);
         updateOrClone(&(self->intgPd), values, 8);
         updateOrClone(&(self->gi), values, 9);
         updateOrClone(&(self->purgeBuf), values, 10);
         updateOrClone(&(self->entryId), values, 11);
         updateOrClone(&(self->timeOfEntry), values, 12);
 
-        if (rcbElementCount > 13) {
+        if (rcbElementCount > 13)
+        {
             MmsValue* element13 = MmsValue_getElement(values, 13);
 
             if (MmsValue_getType(element13) == MMS_OCTET_STRING)
                 updateOrClone(&(self->owner), values, 13);
-            else {
+            else
+            {
                 updateOrClone(&(self->resvTms), values, 13);
 
                 if (rcbElementCount > 14)
                     updateOrClone(&(self->owner), values, 14);
             }
         }
-
     }
-    else {
+    else
+    {
         updateOrClone(&(self->resv), values, 2);
         updateOrClone(&(self->datSet), values, 3);
         updateOrClone(&(self->confRev), values, 4);
@@ -518,7 +566,7 @@ clientReportControlBlock_updateValues(ClientReportControlBlock self, MmsValue* v
             updateOrClone(&(self->owner), values, 11);
     }
 
-	return true;
+    return true;
 }
 
 static void
@@ -645,7 +693,7 @@ IedConnection_getRCBValuesAsync(IedConnection self, IedClientError* error, const
 
 ClientReportControlBlock
 IedConnection_getRCBValues(IedConnection self, IedClientError* error, const char* rcbReference,
-        ClientReportControlBlock updateRcb)
+                           ClientReportControlBlock updateRcb)
 {
     MmsError mmsError = MMS_ERROR_NONE;
 
@@ -667,30 +715,33 @@ IedConnection_getRCBValues(IedConnection self, IedClientError* error, const char
 
     MmsValue* rcb = MmsConnection_readVariable(self->connection, &mmsError, domainId, itemId);
 
-    if (mmsError != MMS_ERROR_NONE) {
+    if (mmsError != MMS_ERROR_NONE)
+    {
         *error = iedConnection_mapMmsErrorToIedError(mmsError);
 
         return NULL;
     }
 
-    if (rcb == NULL) {
+    if (rcb == NULL)
+    {
         *error = IED_ERROR_OBJECT_DOES_NOT_EXIST;
         return NULL;
     }
 
-    if (MmsValue_getType(rcb) == MMS_DATA_ACCESS_ERROR) {
+    if (MmsValue_getType(rcb) == MMS_DATA_ACCESS_ERROR)
+    {
         if (DEBUG_IED_CLIENT)
             printf("DEBUG_IED_CLIENT: getRCBValues returned data-access-error!\n");
 
-        *error = iedConnection_mapDataAccessErrorToIedError(
-                        MmsValue_getDataAccessError(rcb));
+        *error = iedConnection_mapDataAccessErrorToIedError(MmsValue_getDataAccessError(rcb));
 
         MmsValue_delete(rcb);
 
         return NULL;
     }
 
-    if (MmsValue_getType(rcb) != MMS_STRUCTURE) {
+    if (MmsValue_getType(rcb) != MMS_STRUCTURE)
+    {
         if (DEBUG_IED_CLIENT)
             printf("DEBUG_IED_CLIENT: getRCBValues returned wrong type!\n");
 
@@ -703,16 +754,19 @@ IedConnection_getRCBValues(IedConnection self, IedClientError* error, const char
     if (returnRcb == NULL)
         returnRcb = ClientReportControlBlock_create(rcbReference);
 
-    if (clientReportControlBlock_updateValues(returnRcb, rcb)) {
+    if (clientReportControlBlock_updateValues(returnRcb, rcb))
+    {
         *error = IED_ERROR_OK;
     }
-    else {
+    else
+    {
         if (DEBUG_IED_CLIENT)
             printf("DEBUG_IED_CLIENT: getRCBValues returned wrong type!\n");
 
         *error = IED_ERROR_TYPE_INCONSISTENT;
 
-        if (updateRcb == NULL) {
+        if (updateRcb == NULL)
+        {
             ClientReportControlBlock_destroy(returnRcb);
             returnRcb = NULL;
         }
@@ -724,26 +778,30 @@ IedConnection_getRCBValues(IedConnection self, IedClientError* error, const char
 }
 
 static void
-writeMultipleVariablesHandler(uint32_t invokeId, void* parameter, MmsError mmsError, LinkedList /* <MmsValue*> */ accessResults)
+writeMultipleVariablesHandler(uint32_t invokeId, void* parameter, MmsError mmsError,
+                              LinkedList /* <MmsValue*> */ accessResults)
 {
-    IedConnection self = (IedConnection) parameter;
+    IedConnection self = (IedConnection)parameter;
 
     IedConnectionOutstandingCall call = iedConnection_lookupOutstandingCall(self, invokeId);
 
-    if (call) {
+    if (call)
+    {
+        IedConnection_GenericServiceHandler handler = (IedConnection_GenericServiceHandler)call->callback;
 
-        IedConnection_GenericServiceHandler handler = (IedConnection_GenericServiceHandler) call->callback;
-
-        if (accessResults != NULL) {
+        if (accessResults)
+        {
 
             IedClientError error = IED_ERROR_OK;
 
             LinkedList accessResult = LinkedList_getNext(accessResults);
 
-            while (accessResult != NULL) {
-                MmsValue* dataAccessError = (MmsValue*) accessResult->data;
+            while (accessResult)
+            {
+                MmsValue* dataAccessError = (MmsValue*)accessResult->data;
 
-                if (MmsValue_getDataAccessError(dataAccessError) != DATA_ACCESS_ERROR_SUCCESS) {
+                if (MmsValue_getDataAccessError(dataAccessError) != DATA_ACCESS_ERROR_SUCCESS)
+                {
                     error = iedConnection_mapDataAccessErrorToIedError(MmsValue_getDataAccessError(dataAccessError));
                     break;
                 }
@@ -751,17 +809,19 @@ writeMultipleVariablesHandler(uint32_t invokeId, void* parameter, MmsError mmsEr
                 accessResult = LinkedList_getNext(accessResult);
             }
 
-            LinkedList_destroyDeep(accessResults, (LinkedListValueDeleteFunction) MmsValue_delete);
+            LinkedList_destroyDeep(accessResults, (LinkedListValueDeleteFunction)MmsValue_delete);
 
             handler(invokeId, call->callbackParameter, error);
         }
-        else {
+        else
+        {
             handler(invokeId, call->callbackParameter, iedConnection_mapMmsErrorToIedError(mmsError));
         }
 
         iedConnection_releaseOutstandingCall(self, call);
     }
-    else {
+    else
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: internal error - no matching outstanding call with invoke ID: %u!\n", invokeId);
     }
@@ -793,18 +853,19 @@ releaseWriteCall(IedConnection self, IedConnectionOutstandingCall call, struct s
 static void
 writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsDataAccessError accessError)
 {
-    IedConnection self = (IedConnection) parameter;
+    IedConnection self = (IedConnection)parameter;
 
     IedConnectionOutstandingCall call = iedConnection_lookupOutstandingCall(self, invokeId);
 
-    if (call) {
+    if (call)
+    {
+        IedConnection_GenericServiceHandler handler = (IedConnection_GenericServiceHandler)call->callback;
 
-        IedConnection_GenericServiceHandler handler = (IedConnection_GenericServiceHandler) call->callback;
+        struct sWriteRcbVariablesParameter* param =
+            (struct sWriteRcbVariablesParameter*)call->specificParameter2.pointer;
 
-        struct sWriteRcbVariablesParameter* param = (struct sWriteRcbVariablesParameter*) call->specificParameter2.pointer;
-
-        if ((mmsError != MMS_ERROR_NONE) || (accessError != DATA_ACCESS_ERROR_SUCCESS)) {
-
+        if ((mmsError != MMS_ERROR_NONE) || (accessError != DATA_ACCESS_ERROR_SUCCESS))
+        {
             IedClientError err;
 
             if (mmsError != MMS_ERROR_NONE)
@@ -821,30 +882,36 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
 
         param->currentItemId = LinkedList_getNext(param->currentItemId);
 
-        if (param->currentItemId == NULL) {
+        if (param->currentItemId == NULL)
+        {
             handler(param->originalInvokeId, call->callbackParameter, IED_ERROR_OK);
 
             releaseWriteCall(self, call, param);
         }
-        else {
+        else
+        {
             param->currentValue = LinkedList_getNext(param->currentValue);
 
-            char* itemId = (char*) LinkedList_getData(param->currentItemId);
-            MmsValue* value = (MmsValue*) LinkedList_getData(param->currentValue);
+            char* itemId = (char*)LinkedList_getData(param->currentItemId);
+            MmsValue* value = (MmsValue*)LinkedList_getData(param->currentValue);
 
             MmsError writeError;
 
-            MmsConnection_writeVariableAsync(self->connection, &(call->invokeId), &writeError, param->domainId, itemId, value, writeVariableHandler, self);
+            MmsConnection_writeVariableAsync(self->connection, &(call->invokeId), &writeError, param->domainId, itemId,
+                                             value, writeVariableHandler, self);
 
-            if (writeError != MMS_ERROR_NONE) {
+            if (writeError != MMS_ERROR_NONE)
+            {
 
-                handler(param->originalInvokeId, call->callbackParameter, iedConnection_mapMmsErrorToIedError(writeError));
+                handler(param->originalInvokeId, call->callbackParameter,
+                        iedConnection_mapMmsErrorToIedError(writeError));
 
                 releaseWriteCall(self, call, param);
             }
         }
     }
-    else {
+    else
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: internal error - no matching outstanding call!\n");
     }
@@ -856,7 +923,8 @@ exit_function:
 
 uint32_t
 IedConnection_setRCBValuesAsync(IedConnection self, IedClientError* error, ClientReportControlBlock rcb,
-        uint32_t parametersMask, bool singleRequest, IedConnection_GenericServiceHandler handler, void* parameter)
+                                uint32_t parametersMask, bool singleRequest,
+                                IedConnection_GenericServiceHandler handler, void* parameter)
 {
     uint32_t invokeId = 0;
 
@@ -866,230 +934,258 @@ IedConnection_setRCBValuesAsync(IedConnection self, IedClientError* error, Clien
     char domainId[65];
     char itemId[130];
 
-     char* rcbReference = ClientReportControlBlock_getObjectReference(rcb);
+    char* rcbReference = ClientReportControlBlock_getObjectReference(rcb);
 
-     MmsMapping_getMmsDomainFromObjectReference(rcbReference, domainId);
+    MmsMapping_getMmsDomainFromObjectReference(rcbReference, domainId);
 
-     StringUtils_copyStringMax(itemId, 130, rcbReference + strlen(domainId) + 1);
-     StringUtils_replace(itemId, '.', '$');
+    StringUtils_copyStringMax(itemId, 130, rcbReference + strlen(domainId) + 1);
+    StringUtils_replace(itemId, '.', '$');
 
-     int itemIdLen = strlen(itemId);
+    int itemIdLen = strlen(itemId);
 
-     if (DEBUG_IED_CLIENT)
-         printf("DEBUG_IED_CLIENT: setRCBValues for %s\n", rcbReference);
+    if (DEBUG_IED_CLIENT)
+        printf("DEBUG_IED_CLIENT: setRCBValues for %s\n", rcbReference);
 
-     /* prepare data to send -> create the list of requested itemIds references */
-     LinkedList itemIds = LinkedList_create();
-     LinkedList values = LinkedList_create();
+    /* prepare data to send -> create the list of requested itemIds references */
+    LinkedList itemIds = LinkedList_create();
+    LinkedList values = LinkedList_create();
 
-     /* add resv/resvTms as first element and rptEna as last element */
-     if (parametersMask & RCB_ELEMENT_RESV) {
-         if (isBuffered)
-             goto error_invalid_parameter;
+    /* add resv/resvTms as first element and rptEna as last element */
+    if (parametersMask & RCB_ELEMENT_RESV)
+    {
+        if (isBuffered)
+            goto error_invalid_parameter;
 
-         StringUtils_appendString(itemId, 130, "$Resv");
+        StringUtils_appendString(itemId, 130, "$Resv");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->resv);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->resv);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_RESV_TMS) {
-         if (!isBuffered)
-             goto error_invalid_parameter;
+    if (parametersMask & RCB_ELEMENT_RESV_TMS)
+    {
+        if (!isBuffered)
+            goto error_invalid_parameter;
 
-         StringUtils_appendString(itemId, 130, "$ResvTms");
+        StringUtils_appendString(itemId, 130, "$ResvTms");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->resvTms);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->resvTms);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_RPT_ID) {
-         StringUtils_appendString(itemId, 130, "$RptID");
+    if (parametersMask & RCB_ELEMENT_RPT_ID)
+    {
+        StringUtils_appendString(itemId, 130, "$RptID");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->rptId);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->rptId);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_DATSET) {
-         StringUtils_appendString(itemId, 130, "$DatSet");
+    if (parametersMask & RCB_ELEMENT_DATSET)
+    {
+        StringUtils_appendString(itemId, 130, "$DatSet");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->datSet);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->datSet);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_ENTRY_ID) {
-         StringUtils_appendString(itemId, 130, "$EntryID");
+    if (parametersMask & RCB_ELEMENT_ENTRY_ID)
+    {
+        StringUtils_appendString(itemId, 130, "$EntryID");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->entryId);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->entryId);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_OPT_FLDS) {
-         StringUtils_appendString(itemId, 130, "$OptFlds");
+    if (parametersMask & RCB_ELEMENT_OPT_FLDS)
+    {
+        StringUtils_appendString(itemId, 130, "$OptFlds");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->optFlds);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->optFlds);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_BUF_TM) {
-         StringUtils_appendString(itemId, 130, "$BufTm");
+    if (parametersMask & RCB_ELEMENT_BUF_TM)
+    {
+        StringUtils_appendString(itemId, 130, "$BufTm");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->bufTm);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->bufTm);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_TRG_OPS) {
-         StringUtils_appendString(itemId, 130, "$TrgOps");
+    if (parametersMask & RCB_ELEMENT_TRG_OPS)
+    {
+        StringUtils_appendString(itemId, 130, "$TrgOps");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->trgOps);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->trgOps);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_INTG_PD) {
-         StringUtils_appendString(itemId, 130, "$IntgPd");
+    if (parametersMask & RCB_ELEMENT_INTG_PD)
+    {
+        StringUtils_appendString(itemId, 130, "$IntgPd");
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->intgPd);
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->intgPd);
 
-         itemId[itemIdLen] = 0;
-     }
+        itemId[itemIdLen] = 0;
+    }
 
-     if (parametersMask & RCB_ELEMENT_GI) {
+    if (parametersMask & RCB_ELEMENT_GI)
+    {
+        if (parametersMask & RCB_ELEMENT_RPT_ENA)
+        {
+            if (MmsValue_getBoolean(rcb->rptEna))
+                sendGILast = true;
+        }
 
-         if (parametersMask & RCB_ELEMENT_RPT_ENA) {
-             if (MmsValue_getBoolean(rcb->rptEna))
-                 sendGILast = true;
-         }
+        if (sendGILast == false)
+        {
+            StringUtils_appendString(itemId, 130, "$GI");
 
-         if (sendGILast == false) {
-             StringUtils_appendString(itemId, 130, "$GI");
+            LinkedList_add(itemIds, StringUtils_copyString(itemId));
+            LinkedList_add(values, rcb->gi);
 
-             LinkedList_add(itemIds, StringUtils_copyString(itemId));
-             LinkedList_add(values, rcb->gi);
+            itemId[itemIdLen] = 0;
+        }
+    }
 
-             itemId[itemIdLen] = 0;
-         }
-     }
+    if (parametersMask & RCB_ELEMENT_PURGE_BUF)
+    {
+        if (!isBuffered)
+            goto error_invalid_parameter;
 
-     if (parametersMask & RCB_ELEMENT_PURGE_BUF) {
-         if (!isBuffered)
-             goto error_invalid_parameter;
+        StringUtils_appendString(itemId, 130, "$PurgeBuf");
 
-         StringUtils_appendString(itemId, 130, "$PurgeBuf");
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->purgeBuf);
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->purgeBuf);
+        itemId[itemIdLen] = 0;
+    }
 
-         itemId[itemIdLen] = 0;
-     }
+    if (parametersMask & RCB_ELEMENT_TIME_OF_ENTRY)
+    {
+        if (!isBuffered)
+            goto error_invalid_parameter;
 
-     if (parametersMask & RCB_ELEMENT_TIME_OF_ENTRY) {
-         if (!isBuffered)
-             goto error_invalid_parameter;
+        StringUtils_appendString(itemId, 130, "$TimeofEntry");
 
-         StringUtils_appendString(itemId, 130, "$TimeofEntry");
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->timeOfEntry);
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->timeOfEntry);
+        itemId[itemIdLen] = 0;
+    }
 
-         itemId[itemIdLen] = 0;
-     }
+    if (parametersMask & RCB_ELEMENT_RPT_ENA)
+    {
+        StringUtils_appendString(itemId, 130, "$RptEna");
 
-     if (parametersMask & RCB_ELEMENT_RPT_ENA) {
-         StringUtils_appendString(itemId, 130, "$RptEna");
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->rptEna);
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->rptEna);
+        itemId[itemIdLen] = 0;
+    }
 
-         itemId[itemIdLen] = 0;
-     }
+    if (sendGILast)
+    {
+        StringUtils_appendString(itemId, 130, "$GI");
 
-     if (sendGILast) {
-         StringUtils_appendString(itemId, 130, "$GI");
+        LinkedList_add(itemIds, StringUtils_copyString(itemId));
+        LinkedList_add(values, rcb->gi);
 
-         LinkedList_add(itemIds, StringUtils_copyString(itemId));
-         LinkedList_add(values, rcb->gi);
+        itemId[itemIdLen] = 0;
+    }
 
-         itemId[itemIdLen] = 0;
-     }
+    IedConnectionOutstandingCall call = iedConnection_allocateOutstandingCall(self);
 
-     IedConnectionOutstandingCall call = iedConnection_allocateOutstandingCall(self);
+    if (call == NULL)
+    {
+        *error = IED_ERROR_OUTSTANDING_CALL_LIMIT_REACHED;
+        goto exit_function;
+    }
 
-     if (call == NULL) {
-         *error = IED_ERROR_OUTSTANDING_CALL_LIMIT_REACHED;
-         goto exit_function;
-     }
+    call->callback = handler;
+    call->callbackParameter = parameter;
+    call->specificParameter = rcb;
 
-     call->callback = handler;
-     call->callbackParameter = parameter;
-     call->specificParameter = rcb;
+    MmsError err;
 
-     MmsError err;
+    if (singleRequest)
+    {
+        MmsConnection_writeMultipleVariablesAsync(self->connection, &(call->invokeId), &err, domainId, itemIds, values,
+                                                  writeMultipleVariablesHandler, self);
 
-     if (singleRequest) {
+        *error = iedConnection_mapMmsErrorToIedError(err);
 
-         MmsConnection_writeMultipleVariablesAsync(self->connection, &(call->invokeId), &err, domainId, itemIds, values, writeMultipleVariablesHandler, self);
+        if (err != MMS_ERROR_NONE)
+        {
+            iedConnection_releaseOutstandingCall(self, call);
+        }
+        else
+        {
+            invokeId = call->invokeId;
+        }
 
-         *error = iedConnection_mapMmsErrorToIedError(err);
+        goto exit_function;
+    }
+    else
+    {
+        struct sWriteRcbVariablesParameter* param =
+            (struct sWriteRcbVariablesParameter*)GLOBAL_MALLOC(sizeof(struct sWriteRcbVariablesParameter));
 
-         if (err != MMS_ERROR_NONE) {
-             iedConnection_releaseOutstandingCall(self, call);
-         }
-         else {
-             invokeId = call->invokeId;
-         }
+        if (param == NULL)
+        {
+            *error = IED_ERROR_UNKNOWN;
+            goto exit_function;
+        }
 
-         goto exit_function;
-     }
-     else {
+        call->specificParameter2.pointer = param;
 
-         struct sWriteRcbVariablesParameter* param = (struct sWriteRcbVariablesParameter*) GLOBAL_MALLOC(sizeof(struct sWriteRcbVariablesParameter));
+        param->itemIds = itemIds;
+        param->values = values;
 
-         call->specificParameter2.pointer = param;
+        param->currentItemId = LinkedList_getNext(itemIds);
+        param->currentValue = LinkedList_getNext(values);
+        param->domainId = StringUtils_copyString(domainId);
 
-         param->itemIds = itemIds;
-         param->values = values;
+        char* variableId = (char*)LinkedList_getData(param->currentItemId);
+        MmsValue* value = (MmsValue*)LinkedList_getData(param->currentValue);
 
-         param->currentItemId = LinkedList_getNext(itemIds);
-         param->currentValue = LinkedList_getNext(values);
-         param->domainId = StringUtils_copyString(domainId);
+        MmsConnection_writeVariableAsync(self->connection, &(call->invokeId), &err, domainId, variableId, value,
+                                         writeVariableHandler, self);
 
-         char* variableId = (char*) LinkedList_getData(param->currentItemId);
-         MmsValue* value = (MmsValue*) LinkedList_getData(param->currentValue);
+        param->originalInvokeId = call->invokeId;
 
-         MmsConnection_writeVariableAsync(self->connection, &(call->invokeId), &err, domainId, variableId, value, writeVariableHandler, self);
+        invokeId = call->invokeId;
 
-         param->originalInvokeId = call->invokeId;
+        *error = iedConnection_mapMmsErrorToIedError(err);
 
-         invokeId = call->invokeId;
-
-         *error = iedConnection_mapMmsErrorToIedError(err);
-
-         if (err != MMS_ERROR_NONE) {
-             iedConnection_releaseOutstandingCall(self, call);
-             GLOBAL_FREEMEM(param->domainId);
-             GLOBAL_FREEMEM(param);
-             goto exit_function;
-         }
-         else
-             return invokeId;
-     }
+        if (err != MMS_ERROR_NONE)
+        {
+            iedConnection_releaseOutstandingCall(self, call);
+            GLOBAL_FREEMEM(param->domainId);
+            GLOBAL_FREEMEM(param);
+            goto exit_function;
+        }
+        else
+            return invokeId;
+    }
 
 error_invalid_parameter:
     *error = IED_ERROR_USER_PROVIDED_INVALID_ARGUMENT;
@@ -1103,7 +1199,7 @@ exit_function:
 
 void
 IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientReportControlBlock rcb,
-        uint32_t parametersMask, bool singleRequest)
+                           uint32_t parametersMask, bool singleRequest)
 {
     *error = IED_ERROR_OK;
 
@@ -1132,8 +1228,10 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
     LinkedList values = LinkedList_create();
 
     /* add rptEna = false as first element */
-    if (ClientReportControlBlock_getRptEna(rcb) == false)  {
-        if (parametersMask & RCB_ELEMENT_RPT_ENA) {
+    if (ClientReportControlBlock_getRptEna(rcb) == false)
+    {
+        if (parametersMask & RCB_ELEMENT_RPT_ENA)
+        {
             StringUtils_appendString(itemId, 130, "$RptEna");
 
             LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1144,7 +1242,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
     }
 
     /* add resv/resvTms as first element and rptEna as last element when enabling a report */
-    if (parametersMask & RCB_ELEMENT_RESV) {
+    if (parametersMask & RCB_ELEMENT_RESV)
+    {
         if (isBuffered)
             goto error_invalid_parameter;
 
@@ -1156,7 +1255,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_RESV_TMS) {
+    if (parametersMask & RCB_ELEMENT_RESV_TMS)
+    {
         if (!isBuffered)
             goto error_invalid_parameter;
 
@@ -1168,7 +1268,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_RPT_ID) {
+    if (parametersMask & RCB_ELEMENT_RPT_ID)
+    {
         StringUtils_appendString(itemId, 130, "$RptID");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1177,7 +1278,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_DATSET) {
+    if (parametersMask & RCB_ELEMENT_DATSET)
+    {
         StringUtils_appendString(itemId, 130, "$DatSet");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1186,7 +1288,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_ENTRY_ID) {
+    if (parametersMask & RCB_ELEMENT_ENTRY_ID)
+    {
         StringUtils_appendString(itemId, 130, "$EntryID");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1195,7 +1298,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_OPT_FLDS) {
+    if (parametersMask & RCB_ELEMENT_OPT_FLDS)
+    {
         StringUtils_appendString(itemId, 130, "$OptFlds");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1204,7 +1308,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_BUF_TM) {
+    if (parametersMask & RCB_ELEMENT_BUF_TM)
+    {
         StringUtils_appendString(itemId, 130, "$BufTm");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1213,7 +1318,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_TRG_OPS) {
+    if (parametersMask & RCB_ELEMENT_TRG_OPS)
+    {
         StringUtils_appendString(itemId, 130, "$TrgOps");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1222,7 +1328,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_INTG_PD) {
+    if (parametersMask & RCB_ELEMENT_INTG_PD)
+    {
         StringUtils_appendString(itemId, 130, "$IntgPd");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1231,14 +1338,16 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_GI) {
-
-        if (parametersMask & RCB_ELEMENT_RPT_ENA) {
+    if (parametersMask & RCB_ELEMENT_GI)
+    {
+        if (parametersMask & RCB_ELEMENT_RPT_ENA)
+        {
             if (MmsValue_getBoolean(rcb->rptEna))
                 sendGILast = true;
         }
 
-        if (sendGILast == false) {
+        if (sendGILast == false)
+        {
             StringUtils_appendString(itemId, 130, "$GI");
 
             LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1248,7 +1357,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         }
     }
 
-    if (parametersMask & RCB_ELEMENT_PURGE_BUF) {
+    if (parametersMask & RCB_ELEMENT_PURGE_BUF)
+    {
         if (!isBuffered)
             goto error_invalid_parameter;
 
@@ -1260,7 +1370,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (parametersMask & RCB_ELEMENT_TIME_OF_ENTRY) {
+    if (parametersMask & RCB_ELEMENT_TIME_OF_ENTRY)
+    {
         if (!isBuffered)
             goto error_invalid_parameter;
 
@@ -1272,8 +1383,10 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (ClientReportControlBlock_getRptEna(rcb) == true)  {
-        if (parametersMask & RCB_ELEMENT_RPT_ENA) {
+    if (ClientReportControlBlock_getRptEna(rcb) == true)
+    {
+        if (parametersMask & RCB_ELEMENT_RPT_ENA)
+        {
             StringUtils_appendString(itemId, 130, "$RptEna");
 
             LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1283,7 +1396,8 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         }
     }
 
-    if (sendGILast) {
+    if (sendGILast)
+    {
         StringUtils_appendString(itemId, 130, "$GI");
 
         LinkedList_add(itemIds, StringUtils_copyString(itemId));
@@ -1292,19 +1406,23 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
         itemId[itemIdLen] = 0;
     }
 
-    if (singleRequest) {
+    if (singleRequest)
+    {
         LinkedList accessResults = NULL;
 
         MmsConnection_writeMultipleVariables(self->connection, &mmsError, domainId, itemIds, values, &accessResults);
 
-        if (accessResults != NULL) {
+        if (accessResults)
+        {
 
             LinkedList accessResult = LinkedList_getNext(accessResults);
 
-            while (accessResult != NULL) {
-                MmsValue* dataAccessError = (MmsValue*) accessResult->data;
+            while (accessResult)
+            {
+                MmsValue* dataAccessError = (MmsValue*)accessResult->data;
 
-                if (MmsValue_getDataAccessError(dataAccessError) != DATA_ACCESS_ERROR_SUCCESS) {
+                if (MmsValue_getDataAccessError(dataAccessError) != DATA_ACCESS_ERROR_SUCCESS)
+                {
                     *error = iedConnection_mapDataAccessErrorToIedError(MmsValue_getDataAccessError(dataAccessError));
                     break;
                 }
@@ -1312,20 +1430,22 @@ IedConnection_setRCBValues(IedConnection self, IedClientError* error, ClientRepo
                 accessResult = LinkedList_getNext(accessResult);
             }
 
-            LinkedList_destroyDeep(accessResults, (LinkedListValueDeleteFunction) MmsValue_delete);
+            LinkedList_destroyDeep(accessResults, (LinkedListValueDeleteFunction)MmsValue_delete);
         }
         else
             *error = iedConnection_mapMmsErrorToIedError(mmsError);
 
         goto exit_function;
     }
-    else {
+    else
+    {
         LinkedList itemIdElement = LinkedList_getNext(itemIds);
         LinkedList valueElement = LinkedList_getNext(values);
 
-        while (itemIdElement != NULL) {
-            char* rcbItemId = (char*) itemIdElement->data;
-            MmsValue* value = (MmsValue*) valueElement->data;
+        while (itemIdElement)
+        {
+            char* rcbItemId = (char*)itemIdElement->data;
+            MmsValue* value = (MmsValue*)valueElement->data;
 
             MmsConnection_writeVariable(self->connection, &mmsError, domainId, rcbItemId, value);
 

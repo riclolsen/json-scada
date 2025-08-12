@@ -71,7 +71,7 @@ struct sGooseReceiver
 GooseReceiver
 GooseReceiver_createEx(uint8_t* buffer)
 {
-    GooseReceiver self = (GooseReceiver) GLOBAL_MALLOC(sizeof(struct sGooseReceiver));
+    GooseReceiver self = (GooseReceiver) GLOBAL_CALLOC(1, sizeof(struct sGooseReceiver));
 
     if (self)
     {
@@ -79,6 +79,9 @@ GooseReceiver_createEx(uint8_t* buffer)
         self->stop = false;
         self->interfaceId = NULL;
         self->buffer = buffer;
+#if (CONFIG_IEC61850_R_GOOSE == 1)
+        self->session = NULL;
+#endif /* (CONFIG_IEC61850_R_GOOSE == 1) */
         self->ethSocket = NULL;
         self->subscriberList = LinkedList_create();
 #if (CONFIG_MMS_THREADLESS_STACK == 0)
@@ -762,15 +765,13 @@ parseGoosePayload(GooseReceiver self, uint8_t* buffer, int apduLength)
 
             uint8_t tag = buffer[bufPos++];
             bufPos = BerDecoder_decodeLength(buffer, &elementLength, bufPos, apduLength);
+
             if (bufPos < 0)
             {
                 if (DEBUG_GOOSE_SUBSCRIBER)
                     printf("GOOSE_SUBSCRIBER: Malformed message: failed to decode BER length tag!\n");
                 return 0;
             }
-
-            if (bufPos == -1)
-                goto exit_with_fault;
 
             switch (tag)
             {
@@ -1000,9 +1001,9 @@ parseGoosePayload(GooseReceiver self, uint8_t* buffer, int apduLength)
         return 0;
     }
 
-exit_with_fault:
     if (DEBUG_GOOSE_SUBSCRIBER)
         printf("GOOSE_SUBSCRIBER: Invalid goose payload\n");
+
     return -1;
 }
 
@@ -1246,7 +1247,8 @@ GooseReceiver_start(GooseReceiver self)
             Thread_destroy(self->thread);
             self->thread = NULL;
         }
-        else {
+        else
+        {
             if (DEBUG_GOOSE_SUBSCRIBER)
                 printf("GOOSE_SUBSCRIBER: Starting GOOSE receiver failed for interface %s\n", self->interfaceId);
         }
@@ -1317,7 +1319,8 @@ GooseReceiver_startThreadless(GooseReceiver self)
             return (EthernetSocket)0;
         }
     }
-    else {
+    else
+    {
 #endif /* (CONFIG_IEC61850_R_GOOSE == 1) */
 
 #if (CONFIG_IEC61850_L2_GOOSE == 1)
@@ -1419,6 +1422,8 @@ GooseReceiver_tick(GooseReceiver self)
 #if (CONFIG_IEC61850_R_GOOSE == 1)
     }
 #endif /* (CONFIG_IEC61850_R_GOOSE == 1) */
+
+    return false;
 }
 
 void

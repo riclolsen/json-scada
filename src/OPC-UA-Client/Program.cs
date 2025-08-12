@@ -30,7 +30,7 @@ partial class MainClass
 {
     public static String CopyrightMessage = "{json:scada} OPC-UA Client Driver - Copyright 2021-2025 RLO";
     public static String ProtocolDriverName = "OPC-UA";
-    public static String DriverVersion = "0.3.0";
+    public static String DriverVersion = "0.4.0";
     public static bool Active = false; // indicates this driver instance is the active node in the moment
     public static UInt32 DataBufferLimit = 50000; // limit to start dequeuing and discarding data from the acquisition buffer
     public static UInt32 CntNotificEvents = 0; // count events of data updates (on notification)
@@ -194,31 +194,38 @@ partial class MainClass
             {
                 if (results[i].origin == "supervised")
                 {
-                    if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval.AsDouble))
+                    if (!isrv.OpcSubscriptions.ContainsKey(results[i].protocolSourcePublishingInterval))
                     {
-                        Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval.AsDouble + " seconds.");
-                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble] = new List<rtMonitTag>();
+                        Log(isrv.name.ToString() + " - Found publishing interval of " + results[i].protocolSourcePublishingInterval + " seconds.");
+                        isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval] = new List<rtMonitTag>();
                     }
-                    isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval.AsDouble].Add(new rtMonitTag
+                    isrv.OpcSubscriptions[results[i].protocolSourcePublishingInterval].Add(new rtMonitTag
                     {
                         tag = results[i].tag.ToString(),
-                        protocolSourceObjectAddress = results[i].protocolSourceObjectAddress.AsString,
-                        protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval.AsDouble,
-                        protocolSourceQueueSize = results[i].protocolSourceQueueSize.AsDouble,
-                        ungroupedDescription = results[i].ungroupedDescription.AsString,
+                        protocolSourceObjectAddress = results[i].protocolSourceObjectAddress,
+                        protocolSourceSamplingInterval = results[i].protocolSourceSamplingInterval,
+                        protocolSourceQueueSize = results[i].protocolSourceQueueSize,
+                        ungroupedDescription = results[i].ungroupedDescription,
                     });
                     try
                     {
-                        isrv.ListMon.Add(new MonitoredItem()
+                        var mi = new MonitoredItem()
                         {
                             DisplayName = results[i].ungroupedDescription.ToString(),
                             StartNodeId = results[i].protocolSourceObjectAddress.ToString(),
-                            SamplingInterval = System.Convert.ToInt32(results[i].protocolSourceSamplingInterval.AsDouble) * 1000,
-                            QueueSize = System.Convert.ToUInt32(results[i].protocolSourceQueueSize.AsDouble),
+                            SamplingInterval = System.Convert.ToInt32(results[i].protocolSourceSamplingInterval) * 1000,
+                            QueueSize = System.Convert.ToUInt32(results[i].protocolSourceQueueSize),
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value
-                        });
+                        };
+                        mi.Filter = new DataChangeFilter()
+                        {
+                            Trigger = DataChangeTrigger.StatusValueTimestamp,
+                            DeadbandType = (uint)DeadbandType.None,
+                            DeadbandValue = 0
+                        };
+                        isrv.ListMon.Add(mi);
                     }
                     catch (Exception ex)
                     {

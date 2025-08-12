@@ -34,7 +34,7 @@ iedModel_emptyVariableInitializer(void)
 void
 IedModel_setIedNameForDynamicModel(IedModel* self, const char* name)
 {
-    if (self->name != NULL)
+    if (self->name)
         GLOBAL_FREEMEM(self->name);
 
     self->name = StringUtils_copyString(name);
@@ -43,7 +43,7 @@ IedModel_setIedNameForDynamicModel(IedModel* self, const char* name)
 IedModel*
 IedModel_create(const char* name)
 {
-    IedModel* self = (IedModel*) GLOBAL_CALLOC(1, sizeof(IedModel));
+    IedModel* self = (IedModel*)GLOBAL_CALLOC(1, sizeof(IedModel));
 
     if (self)
     {
@@ -74,14 +74,17 @@ static void
 IedModel_addDataSet(IedModel* self, DataSet* dataSet)
 {
     if (self->dataSets == NULL)
+    {
         self->dataSets = dataSet;
+    }
     else
     {
         DataSet* lastDataSet = self->dataSets;
 
-        while (lastDataSet != NULL)
+        while (lastDataSet)
         {
-            if (lastDataSet->sibling == NULL) {
+            if (lastDataSet->sibling == NULL)
+            {
                 lastDataSet->sibling = dataSet;
                 break;
             }
@@ -95,15 +98,17 @@ static void
 IedModel_addLogicalDevice(IedModel* self, LogicalDevice* lDevice)
 {
     if (self->firstChild == NULL)
+    {
         self->firstChild = lDevice;
+    }
     else
     {
         LogicalDevice* sibling = self->firstChild;
 
-        while (sibling->sibling != NULL)
-            sibling = (LogicalDevice*) sibling->sibling;
+        while (sibling->sibling)
+            sibling = (LogicalDevice*)sibling->sibling;
 
-        sibling->sibling = (ModelNode*) lDevice;
+        sibling->sibling = (ModelNode*)lDevice;
     }
 }
 
@@ -111,12 +116,14 @@ static void
 IedModel_addLog(IedModel* self, Log* log)
 {
     if (self->logs == NULL)
+    {
         self->logs = log;
+    }
     else
     {
         Log* lastLog = self->logs;
 
-        while (lastLog->sibling != NULL)
+        while (lastLog->sibling)
             lastLog = lastLog->sibling;
 
         lastLog->sibling = log;
@@ -127,12 +134,14 @@ static void
 IedModel_addLogControlBlock(IedModel* self, LogControlBlock* lcb)
 {
     if (self->lcbs == NULL)
+    {
         self->lcbs = lcb;
+    }
     else
     {
         LogControlBlock* lastLcb = self->lcbs;
 
-        while (lastLcb->sibling != NULL)
+        while (lastLcb->sibling)
             lastLcb = lastLcb->sibling;
 
         lastLcb->sibling = lcb;
@@ -143,12 +152,14 @@ static void
 IedModel_addReportControlBlock(IedModel* self, ReportControlBlock* rcb)
 {
     if (self->rcbs == NULL)
+    {
         self->rcbs = rcb;
+    }
     else
     {
         ReportControlBlock* lastRcb = self->rcbs;
 
-        while (lastRcb->sibling != NULL)
+        while (lastRcb->sibling)
             lastRcb = lastRcb->sibling;
 
         lastRcb->sibling = rcb;
@@ -160,12 +171,14 @@ static void
 IedModel_addSettingGroupControlBlock(IedModel* self, SettingGroupControlBlock* sgcb)
 {
     if (self->sgcbs == NULL)
+    {
         self->sgcbs = sgcb;
+    }
     else
     {
         SettingGroupControlBlock* lastSgcb = self->sgcbs;
 
-        while (lastSgcb->sibling != NULL)
+        while (lastSgcb->sibling)
             lastSgcb = lastSgcb->sibling;
 
         lastSgcb->sibling = sgcb;
@@ -177,7 +190,9 @@ static void
 IedModel_addGSEControlBlock(IedModel* self, GSEControlBlock* gcb)
 {
     if (self->gseCBs == NULL)
+    {
         self->gseCBs = gcb;
+    }
     else
     {
         GSEControlBlock* lastGcb = self->gseCBs;
@@ -192,7 +207,8 @@ IedModel_addGSEControlBlock(IedModel* self, GSEControlBlock* gcb)
 static void
 IedModel_addSMVControlBlock(IedModel* self, SVControlBlock* smvcb)
 {
-    if (self->svCBs == NULL) {
+    if (self->svCBs == NULL)
+    {
         self->svCBs = smvcb;
     }
     else
@@ -209,13 +225,13 @@ IedModel_addSMVControlBlock(IedModel* self, SVControlBlock* smvcb)
 LogicalDevice*
 LogicalDevice_createEx(const char* inst, IedModel* parent, const char* ldName)
 {
-    LogicalDevice* self = (LogicalDevice*) GLOBAL_CALLOC(1, sizeof(LogicalDevice));
+    LogicalDevice* self = (LogicalDevice*)GLOBAL_CALLOC(1, sizeof(LogicalDevice));
 
     if (self)
     {
         self->name = StringUtils_copyString(inst);
         self->modelType = LogicalDeviceModelType;
-        self->parent = (ModelNode*) parent;
+        self->parent = (ModelNode*)parent;
         self->sibling = NULL;
 
         if (ldName)
@@ -238,13 +254,14 @@ LogicalDevice_create(const char* inst, IedModel* parent)
 static LogicalNode*
 LogicalDevice_getLastLogicalNode(LogicalDevice* self)
 {
-    LogicalNode* lastNode = (LogicalNode*) self->firstChild;
+    LogicalNode* lastNode = (LogicalNode*)self->firstChild;
 
     LogicalNode* nextNode = lastNode;
 
-    while (nextNode != NULL) {
+    while (nextNode)
+    {
         lastNode = nextNode;
-        nextNode = (LogicalNode*) nextNode->sibling;
+        nextNode = (LogicalNode*)nextNode->sibling;
     }
 
     return lastNode;
@@ -254,11 +271,14 @@ static void
 LogicalDevice_addLogicalNode(LogicalDevice* self, LogicalNode* lNode)
 {
     if (self->firstChild == NULL)
-        self->firstChild = (ModelNode*) lNode;
-    else {
+    {
+        self->firstChild = (ModelNode*)lNode;
+    }
+    else
+    {
         LogicalNode* lastNode = LogicalDevice_getLastLogicalNode(self);
 
-        lastNode->sibling = (ModelNode*) lNode;
+        lastNode->sibling = (ModelNode*)lNode;
     }
 }
 
@@ -288,7 +308,8 @@ LogicalNode_getLastDataObject(LogicalNode* self)
 
     DataObject* nextNode = lastNode;
 
-    while (nextNode != NULL) {
+    while (nextNode)
+    {
         lastNode = nextNode;
         nextNode = (DataObject*) nextNode->sibling;
     }
@@ -301,11 +322,14 @@ static void
 LogicalNode_addDataObject(LogicalNode* self, DataObject* dataObject)
 {
     if (self->firstChild == NULL)
-        self->firstChild = (ModelNode*) dataObject;
-    else {
+    {
+        self->firstChild = (ModelNode*)dataObject;
+    }
+    else
+    {
         DataObject* lastDataObject = LogicalNode_getLastDataObject(self);
 
-        lastDataObject->sibling = (ModelNode*) dataObject;
+        lastDataObject->sibling = (ModelNode*)dataObject;
     }
 }
 
@@ -435,15 +459,18 @@ ReportControlBlock_create(const char* name, LogicalNode* parent, const char* rpt
 void
 ReportControlBlock_setPreconfiguredClient(ReportControlBlock* self, uint8_t clientType, const uint8_t* clientAddress)
 {
-    if (clientType == 4) { /* IPv4 address */
+    if (clientType == 4) /* IPv4 address */
+    {
         self->clientReservation[0] = 4;
         memcpy(self->clientReservation + 1, clientAddress, 4);
     }
-    else if (clientType == 6) { /* IPv6 address */
+    else if (clientType == 6) /* IPv6 address */
+    {
         self->clientReservation[0] = 6;
         memcpy(self->clientReservation + 1, clientAddress, 6);
     }
-    else { /* no reservation or unknown type */
+    else /* no reservation or unknown type */
+    {
         self->clientReservation[0] = 0;
     }
 }
@@ -536,7 +563,7 @@ GSEControlBlock_create(const char* name, LogicalNode* parent, const char* appId,
 
         self->sibling = NULL;
 
-        if (parent != NULL)
+        if (parent)
             LogicalNode_addGSEControlBlock(parent, self);
     }
 
@@ -587,6 +614,13 @@ SVControlBlock_create(const char* name, LogicalNode* parent, const char* svID, c
     return self;
 }
 
+
+const char*
+SVControlBlock_getName(SVControlBlock* self)
+{
+    return self->name;
+}
+
 void
 SVControlBlock_addPhyComAddress(SVControlBlock* self, PhyComAddress* phyComAddress)
 {
@@ -623,9 +657,10 @@ DataObject_getLastChild(DataObject* self)
 
     ModelNode* nextNode = lastNode;
 
-    while (nextNode != NULL) {
+    while (nextNode)
+    {
         lastNode = nextNode;
-        nextNode = (ModelNode*) nextNode->sibling;
+        nextNode = (ModelNode*)nextNode->sibling;
     }
 
     return lastNode;
@@ -635,8 +670,11 @@ static void
 DataObject_addChild(DataObject* self, ModelNode* child)
 {
     if (self->firstChild == NULL)
+    {
         self->firstChild = child;
-    else {
+    }
+    else
+    {
         ModelNode* lastChild = DataObject_getLastChild(self);
 
         lastChild->sibling = child;
@@ -699,9 +737,10 @@ DataAttribute_getLastChild(DataAttribute* self)
 
     ModelNode* nextNode = lastNode;
 
-    while (nextNode != NULL) {
+    while (nextNode)
+    {
         lastNode = nextNode;
-        nextNode = (ModelNode*) nextNode->sibling;
+        nextNode = (ModelNode*)nextNode->sibling;
     }
 
     return lastNode;
@@ -711,8 +750,11 @@ static void
 DataAttribute_addChild(DataAttribute* self, ModelNode* child)
 {
     if (self->firstChild == NULL)
+    {
         self->firstChild = child;
-    else {
+    }
+    else
+    {
         ModelNode* lastChild = DataAttribute_getLastChild(self);
 
         lastChild->sibling = child;
@@ -798,10 +840,12 @@ DataAttribute_getTrgOps(DataAttribute* self)
 void
 DataAttribute_setValue(DataAttribute* self, MmsValue* value)
 {
-    if (self->mmsValue) {
+    if (self->mmsValue)
+    {
         MmsValue_update(self->mmsValue, value);
     }
-    else {
+    else
+    {
         self->mmsValue = MmsValue_clone(value);
     }
 }
@@ -862,7 +906,7 @@ DataSet_addEntry(DataSet* self, DataSetEntry* newEntry)
     {
         DataSetEntry* lastEntry = self->fcdas;
 
-        while (lastEntry != NULL)
+        while (lastEntry)
         {
             if (lastEntry->sibling == NULL) {
                 lastEntry->sibling = newEntry;
@@ -877,7 +921,7 @@ DataSet_addEntry(DataSet* self, DataSetEntry* newEntry)
 DataSetEntry*
 DataSetEntry_create(DataSet* dataSet, const char* variable, int index, const char* component)
 {
-    DataSetEntry* self = (DataSetEntry*) GLOBAL_MALLOC(sizeof(DataSetEntry));
+    DataSetEntry* self = (DataSetEntry*)GLOBAL_MALLOC(sizeof(DataSetEntry));
 
     if (self)
     {
@@ -887,7 +931,7 @@ DataSetEntry_create(DataSet* dataSet, const char* variable, int index, const cha
 
         char* separator = strchr(variableName, '/');
 
-        if (separator != NULL)
+        if (separator)
         {
             *separator = 0;
 
@@ -902,7 +946,7 @@ DataSetEntry_create(DataSet* dataSet, const char* variable, int index, const cha
             self->isLDNameDynamicallyAllocated = false;
         }
 
-        if (component != NULL)
+        if (component)
             self->componentName = StringUtils_copyString(component);
         else
             self->componentName = NULL;
@@ -929,7 +973,7 @@ ModelNode_destroy(ModelNode* modelNode)
 
         ModelNode* currentChild = modelNode->firstChild;
 
-        while (currentChild != NULL)
+        while (currentChild)
         {
             ModelNode* nextChild = currentChild->sibling;
 
@@ -940,9 +984,10 @@ ModelNode_destroy(ModelNode* modelNode)
 
         if (modelNode->modelType == DataAttributeModelType)
         {
-            DataAttribute* dataAttribute = (DataAttribute*) modelNode;
+            DataAttribute* dataAttribute = (DataAttribute*)modelNode;
 
-            if (dataAttribute->mmsValue != NULL) {
+            if (dataAttribute->mmsValue)
+            {
                 MmsValue_delete(dataAttribute->mmsValue);
                 dataAttribute->mmsValue = NULL;
             }
@@ -955,47 +1000,49 @@ ModelNode_destroy(ModelNode* modelNode)
 void
 IedModel_destroy(IedModel* model)
 {
-    if (model) {
+    if (model)
+    {
         /* delete all model nodes and dynamically created strings */
 
         /* delete all logical devices */
 
         LogicalDevice* ld = model->firstChild;
 
-        while (ld != NULL)
+        while (ld)
         {
             if (ld->name)
                 GLOBAL_FREEMEM(ld->name);
 
             if (ld->ldName)
-                GLOBAL_FREEMEM (ld->ldName);
+                GLOBAL_FREEMEM(ld->ldName);
 
-            LogicalNode* ln = (LogicalNode*) ld->firstChild;
+            LogicalNode* ln = (LogicalNode*)ld->firstChild;
 
-            while (ln != NULL)
+            while (ln)
             {
                 GLOBAL_FREEMEM(ln->name);
 
                 /* delete all data objects */
 
-                DataObject* currentDataObject = (DataObject*) ln->firstChild;
+                DataObject* currentDataObject = (DataObject*)ln->firstChild;
 
-                while (currentDataObject != NULL) {
-                    DataObject* nextDataObject = (DataObject*) currentDataObject->sibling;
+                while (currentDataObject)
+                {
+                    DataObject* nextDataObject = (DataObject*)currentDataObject->sibling;
 
-                    ModelNode_destroy((ModelNode*) currentDataObject);
+                    ModelNode_destroy((ModelNode*)currentDataObject);
 
                     currentDataObject = nextDataObject;
                 }
 
                 LogicalNode* currentLn = ln;
-                ln = (LogicalNode*) ln->sibling;
+                ln = (LogicalNode*)ln->sibling;
 
                 GLOBAL_FREEMEM(currentLn);
             }
 
             LogicalDevice* currentLd = ld;
-            ld = (LogicalDevice*) ld->sibling;
+            ld = (LogicalDevice*)ld->sibling;
 
             GLOBAL_FREEMEM(currentLd);
         }
@@ -1004,17 +1051,19 @@ IedModel_destroy(IedModel* model)
 
         DataSet* dataSet = model->dataSets;
 
-        while (dataSet != NULL) {
+        while (dataSet)
+        {
             DataSet* nextDataSet = dataSet->sibling;
 
             GLOBAL_FREEMEM(dataSet->name);
 
             DataSetEntry* dse = dataSet->fcdas;
 
-            while (dse != NULL) {
+            while (dse)
+            {
                 DataSetEntry* nextDse = dse->sibling;
 
-                if (dse->componentName != NULL)
+                if (dse->componentName)
                     GLOBAL_FREEMEM(dse->componentName);
 
                 GLOBAL_FREEMEM(dse->variableName);
@@ -1036,7 +1085,8 @@ IedModel_destroy(IedModel* model)
 
         ReportControlBlock* rcb = model->rcbs;
 
-        while (rcb != NULL) {
+        while (rcb)
+        {
             ReportControlBlock* nextRcb = rcb->sibling;
 
             GLOBAL_FREEMEM(rcb->name);
@@ -1056,7 +1106,8 @@ IedModel_destroy(IedModel* model)
 
         GSEControlBlock* gcb = model->gseCBs;
 
-        while (gcb != NULL) {
+        while (gcb)
+        {
             GSEControlBlock* nextGcb = gcb->sibling;
 
             GLOBAL_FREEMEM(gcb->name);
@@ -1071,11 +1122,12 @@ IedModel_destroy(IedModel* model)
             gcb = nextGcb;
         }
 
-        /* delete setting controls */
+        /* delete setting group controls */
 
         SettingGroupControlBlock* sgcb = model->sgcbs;
 
-        while (sgcb != NULL) {
+        while (sgcb)
+        {
             SettingGroupControlBlock* nextSgcb = sgcb->sibling;
 
             GLOBAL_FREEMEM(sgcb);
@@ -1086,7 +1138,8 @@ IedModel_destroy(IedModel* model)
         /* delete all LCBs */
         LogControlBlock* lcb = model->lcbs;
 
-        while (lcb != NULL) {
+        while (lcb)
+        {
             LogControlBlock* nextLcb = lcb->sibling;
 
             if (lcb->name)
@@ -1106,7 +1159,8 @@ IedModel_destroy(IedModel* model)
         /* delete all LOGs */
         Log* log = model->logs;
 
-        while (log != NULL) {
+        while (log)
+        {
             Log* nextLog = log->sibling;
 
             if (log->name)

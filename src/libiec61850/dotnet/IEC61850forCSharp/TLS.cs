@@ -21,15 +21,10 @@
  *  See COPYING file for the complete license text.
  */
 using System;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Collections;
-using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
-
-using IEC61850.Common;
 
 /// <summary>
 /// IEC 61850 API for the libiec61850 .NET wrapper library
@@ -115,7 +110,7 @@ namespace IEC61850
                     {
                         if (isValid)
                         {
-                            return (TLSConfigVersion)TLSConnection_getTLSVersion((IntPtr)self);
+                            return (TLSConfigVersion)TLSConnection_getTLSVersion(self);
                         }
                         else
                         {
@@ -137,7 +132,7 @@ namespace IEC61850
                         if (isValid)
                         {
                             IntPtr peerAddrBuf = Marshal.AllocHGlobal(130);
-                            IntPtr peerAddrStr = TLSConnection_getPeerAddress(this.self, peerAddrBuf);
+                            IntPtr peerAddrStr = TLSConnection_getPeerAddress(self, peerAddrBuf);
 
                             string peerAddr = null;
 
@@ -217,6 +212,12 @@ namespace IEC61850
             private bool allowOnlyKnownCerts = false;
             private bool chainValidation = true;
 
+            private bool sessionResumptionEnabled = true; /* default is true */
+
+            private int sessionResumptionInterval = 21600; /* in seconds */
+
+            private bool timeValidation = true; /* validate validity time in vertificates (default: true) */
+
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr TLSConfiguration_create();
 
@@ -264,17 +265,40 @@ namespace IEC61850
             [return: MarshalAs(UnmanagedType.I1)]
             static extern bool TLSConfiguration_addCACertificateFromFile(IntPtr self, string filename);
 
-            [DllImport("tase2", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool TLSConfiguration_addCRL(IntPtr self, byte[] crl, int crlLen);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool TLSConfiguration_addCRLFromFile(IntPtr self, string filename);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void TLSConfiguration_resetCRL(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void TLSConfiguration_setMinTlsVersion(IntPtr self, int version);
 
-            [DllImport("tase2", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void TLSConfiguration_setMaxTlsVersion(IntPtr self, int version);
 
-            [DllImport("tase2", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void TLSConfiguration_addCipherSuite(IntPtr self, int ciphersuite);
 
-            [DllImport("tase2", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void TLSConfiguration_clearCipherSuiteList(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void TLSConfiguration_enableSessionResumption(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void TLSConfiguration_setSessionResumptionInterval(IntPtr self, int value);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void TLSConfiguration_setTimeValidation(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void TLSConfiguration_setRenegotiationTime(IntPtr self, int value);
 
             private TLSEventHandler eventHandler = null;
             private object eventHandlerParameter = null;
@@ -303,8 +327,8 @@ namespace IEC61850
 
             public void SetEventHandler(TLSEventHandler handler, object parameter)
             {
-                this.eventHandler = handler;
-                this.eventHandlerParameter = parameter;
+                eventHandler = handler;
+                eventHandlerParameter = parameter;
 
                 if (internalTLSEventHandlerRef == null)
                 {
@@ -353,6 +377,64 @@ namespace IEC61850
                 {
                     return chainValidation;
                 }
+            }
+
+            /// <summary>
+            /// Enable or disable session resumption (enabled by default)
+            /// </summary>
+            public bool SessionResumption
+            {
+                set
+                {
+                    TLSConfiguration_enableSessionResumption(self, value);
+                    sessionResumptionEnabled = value;
+                }
+                get
+                {
+                    return sessionResumptionEnabled;
+                }
+            }
+
+
+            /// <summary>
+            /// Get or set the session resumption interval in seconds
+            /// </summary>
+            public int SessionResumptionInterval
+            {
+                set
+                {
+                    TLSConfiguration_setSessionResumptionInterval(self, value);
+                    sessionResumptionInterval = value;
+                }
+                get
+                {
+                    return sessionResumptionInterval;
+                }
+            }
+
+            /// <summary>
+            /// Verify validity of times in certificates and CRLs (default: true)
+            /// </summary>
+            public bool TimeValidation
+            {
+                set
+                {
+                    TLSConfiguration_setTimeValidation(self, value);
+                    timeValidation = value;
+                }
+                get
+                {
+                    return timeValidation;
+                }
+            }
+
+            /// <summary>
+            /// Set the TLS session renegotiation timeout.
+            /// </summary>
+            /// <param name="timeInMs">session renegotiation timeout in milliseconds</param>
+            public void SetRenegotiationTime(int timeInMs)
+            {
+                TLSConfiguration_setRenegotiationTime(self, timeInMs);
             }
 
             public void SetClientMode()
@@ -414,7 +496,13 @@ namespace IEC61850
                 }
             }
 
-            public void SetOwnKey(string filename, string password)
+            /// <summary>
+            /// Set own private key from file
+            /// </summary>
+            /// <param name="filename">Filename of a DER or PEM private key file</param>
+            /// <param name="password">Password in case the private key is password protected</param>
+            /// <exception cref="CryptographicException"></exception>
+            public void SetOwnKey(string filename, string password = null)
             {
                 if (TLSConfiguration_setOwnKeyFromFile(self, filename, password) == false)
                 {
@@ -430,6 +518,26 @@ namespace IEC61850
                 {
                     throw new CryptographicException("Failed to set own key");
                 }
+            }
+
+            /// <summary>
+            /// Add a CRL from a X509 CRL file
+            /// </summary>
+            /// <param name="filename">the name of the CRL file</param>
+            public void AddCRL(string filename)
+            {
+                if (TLSConfiguration_addCRLFromFile(self, filename) == false)
+                {
+                    throw new CryptographicException("Failed to read CRL from file");
+                }
+            }
+
+            /// <summary>
+            /// Removes any CRL (certificate revocation list) currently in use
+            /// </summary>
+            public void ResetCRL()
+            {
+                TLSConfiguration_resetCRL(self);
             }
 
             /// <summary>
@@ -455,7 +563,7 @@ namespace IEC61850
             /// Add an allowed ciphersuite to the list of allowed ciphersuites
             /// </summary>
             /// <param name="ciphersuite"></param>
-            public void addCipherSuite(TlsCipherSuite ciphersuite)
+            public void AddCipherSuite(TlsCipherSuite ciphersuite)
             {
                 TLSConfiguration_addCipherSuite(self,(int) ciphersuite);
             }
@@ -465,7 +573,7 @@ namespace IEC61850
             /// </summary>
             /// <remarks>Version for .NET framework that does not support TlsCipherSuite enum</remarks>
             /// <param name="ciphersuite"></param>
-            public void addCipherSuite(int ciphersuite)
+            public void AddCipherSuite(int ciphersuite)
             {
                 TLSConfiguration_addCipherSuite(self, ciphersuite);
             }
@@ -474,7 +582,7 @@ namespace IEC61850
             /// Clears list of allowed ciphersuites
             /// </summary>
             /// <returns></returns>
-            public void clearCipherSuiteList()
+            public void ClearCipherSuiteList()
             {
                 TLSConfiguration_clearCipherSuiteList(self);
             }

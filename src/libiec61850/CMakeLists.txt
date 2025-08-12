@@ -12,7 +12,7 @@ ENABLE_TESTING()
 
 set(LIB_VERSION_MAJOR "1")
 set(LIB_VERSION_MINOR "6")
-set(LIB_VERSION_PATCH "0")
+set(LIB_VERSION_PATCH "1")
 set(LIB_VERSION "${LIB_VERSION_MAJOR}.${LIB_VERSION_MINOR}.${LIB_VERSION_PATCH}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/third_party/cmake/modules/")
@@ -93,40 +93,6 @@ include_directories(
     ${CMAKE_CURRENT_LIST_DIR}/src/logging
 )
 
-set(API_HEADERS
-    hal/inc/hal_base.h
-    hal/inc/hal_time.h
-    hal/inc/hal_thread.h
-    hal/inc/hal_filesystem.h
-    hal/inc/hal_ethernet.h
-    hal/inc/hal_socket.h
-    hal/inc/tls_config.h
-    src/common/inc/libiec61850_common_api.h
-    src/common/inc/linked_list.h
-    src/common/inc/sntp_client.h
-    src/iec61850/inc/iec61850_client.h
-    src/iec61850/inc/iec61850_common.h
-    src/iec61850/inc/iec61850_server.h
-    src/iec61850/inc/iec61850_model.h
-    src/iec61850/inc/iec61850_cdc.h
-    src/iec61850/inc/iec61850_dynamic_model.h
-    src/iec61850/inc/iec61850_config_file_parser.h
-    src/mms/inc/mms_value.h
-    src/mms/inc/mms_common.h
-    src/mms/inc/mms_types.h
-    src/mms/inc/mms_type_spec.h
-    src/mms/inc/mms_client_connection.h
-    src/mms/inc/mms_server.h
-    src/mms/inc/iso_connection_parameters.h
-    src/goose/goose_subscriber.h
-    src/goose/goose_receiver.h
-    src/goose/goose_publisher.h
-    src/sampled_values/sv_subscriber.h
-    src/sampled_values/sv_publisher.h
-    src/r_session/r_session.h
-    src/logging/logging_api.h
-)
-
 if(MSVC AND MSVC_VERSION LESS 1800)
     include_directories(
         ${CMAKE_CURRENT_LIST_DIR}/src/vs
@@ -158,6 +124,7 @@ endif(CONFIG_USE_EXTERNAL_MBEDTLS_DYNLIB)
 
 if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/third_party/sqlite/sqlite3.h)
 set(FOUND_SQLITE3_SOURCE 1)
+set(SQLITE_INCLUDE_DIR"${CMAKE_CURRENT_LIST_DIR}/third_party/sqlite")
 message("Found sqlite3 source in third_party folder -> can compile with log service support")
 endif(EXISTS ${CMAKE_CURRENT_LIST_DIR}/third_party/sqlite/sqlite3.h)
 
@@ -193,6 +160,41 @@ set(CONFIG_IEC61850_R_GOOSE 0)
 set(CONFIG_IEC61850_R_SMV 0)
 
 endif(WITH_MBEDTLS OR WITH_MBEDTLS3)
+
+set(API_HEADERS
+    hal/inc/hal_base.h
+    hal/inc/hal_time.h
+    hal/inc/hal_thread.h
+    hal/inc/hal_filesystem.h
+    hal/inc/hal_ethernet.h
+    hal/inc/hal_socket.h
+    hal/inc/tls_config.h
+    hal/inc/tls_ciphers.h
+    src/common/inc/libiec61850_common_api.h
+    src/common/inc/linked_list.h
+    src/common/inc/sntp_client.h
+    src/iec61850/inc/iec61850_client.h
+    src/iec61850/inc/iec61850_common.h
+    src/iec61850/inc/iec61850_server.h
+    src/iec61850/inc/iec61850_model.h
+    src/iec61850/inc/iec61850_cdc.h
+    src/iec61850/inc/iec61850_dynamic_model.h
+    src/iec61850/inc/iec61850_config_file_parser.h
+    src/mms/inc/mms_value.h
+    src/mms/inc/mms_common.h
+    src/mms/inc/mms_types.h
+    src/mms/inc/mms_type_spec.h
+    src/mms/inc/mms_client_connection.h
+    src/mms/inc/mms_server.h
+    src/mms/inc/iso_connection_parameters.h
+    src/goose/goose_subscriber.h
+    src/goose/goose_receiver.h
+    src/goose/goose_publisher.h
+    src/sampled_values/sv_subscriber.h
+    src/sampled_values/sv_publisher.h
+    src/r_session/r_session.h
+    src/logging/logging_api.h
+)
 
 include(CheckCCompilerFlag)
 

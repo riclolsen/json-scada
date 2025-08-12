@@ -5,7 +5,7 @@
  *
  *  Partial implementation of the ISO 8073 COTP (ISO TP0) protocol for MMS.
  *
- *  Copyright 2013-2023 Michael Zillgith
+ *  Copyright 2013-2024 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *

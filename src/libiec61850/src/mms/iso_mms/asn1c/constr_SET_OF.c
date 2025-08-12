@@ -158,22 +158,31 @@ SET_OF_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
 		case -1: RETURN(RC_FAIL);
 		}
 
-		if(ctx->left < 0 && ((const uint8_t *)ptr)[0] == 0) {
-			if(LEFT < 2) {
-				if(SIZE_VIOLATION)
-					RETURN(RC_FAIL);
-				else
-					RETURN(RC_WMORE);
-			} else if(((const uint8_t *)ptr)[1] == 0) {
-				/*
-				 * Found the terminator of the
-				 * indefinite length structure.
-				 */
-				break;
+        if (ctx->left < 0 && ((const uint8_t*)ptr)[0] == 0)
+        {
+            if (LEFT < 2)
+            {
+                if (SIZE_VIOLATION)
+                    RETURN(RC_FAIL);
+                else
+                    RETURN(RC_WMORE);
+            }
+            else if (((const uint8_t*)ptr)[1] == 0)
+            {
+                /*
+                 * Found the terminator of the
+                 * indefinite length structure.
+                 */
+                break;
+            }
+			else
+			{
+				/* this case should not happen when the message is correctly encoded */
+				RETURN(RC_FAIL);
 			}
-		}
+        }
 
-		/* Outmost tag may be unknown and cannot be fetched/compared */
+        /* Outmost tag may be unknown and cannot be fetched/compared */
 		if(elm->tag != (ber_tlv_tag_t)-1) {
 		    if(BER_TAGS_EQUAL(tlv_tag, elm->tag)) {
 			/*

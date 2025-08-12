@@ -140,7 +140,7 @@ RSessionKeyMaterial_destroy(RSessionKeyMaterial self)
         GLOBAL_FREEMEM(self->key);
         GLOBAL_FREEMEM(self);
     }
- }
+}
 
 RSession
 RSession_create()

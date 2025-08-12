@@ -145,7 +145,7 @@ Ethernet_setMode(EthernetSocket ethSocket, EthernetSocketMode mode);
  * \param multicastAddress the multicast Ethernet address (this has to be a byte buffer of at least 6 byte)
  */
 PAL_API void
-Ethernet_addMulticastAddress(EthernetSocket ethSocket, uint8_t* multicastAddress);
+Ethernet_addMulticastAddress(EthernetSocket ethSocket, const uint8_t* multicastAddress);
 
 /*
  * \brief set a protocol filter for the specified etherType

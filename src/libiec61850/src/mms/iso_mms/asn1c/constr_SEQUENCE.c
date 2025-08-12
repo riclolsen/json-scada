@@ -223,34 +223,41 @@ SEQUENCE_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
 		case -1: RETURN(RC_FAIL);
 		}
 
-		if(ctx->left < 0 && ((const uint8_t *)ptr)[0] == 0) {
-			if(LEFT < 2) {
-				if(SIZE_VIOLATION)
-					RETURN(RC_FAIL);
-				else
-					RETURN(RC_WMORE);
-			} else if(((const uint8_t *)ptr)[1] == 0) {
+        if (ctx->left < 0 && ((const uint8_t*)ptr)[0] == 0)
+        {
+            if (LEFT < 2)
+            {
+                if (SIZE_VIOLATION)
+                    RETURN(RC_FAIL);
+                else
+                    RETURN(RC_WMORE);
+            }
+            else if (((const uint8_t*)ptr)[1] == 0)
+            {
 
-				if((edx + elements[edx].optional
-					== td->elements_count)
-				|| (IN_EXTENSION_GROUP(specs, edx)
-					&& specs->ext_before
-						> td->elements_count)) {
-					/*
-					 * Yeah, baby! Found the terminator
-					 * of the indefinite length structure.
-					 */
-					/*
-					 * Proceed to the canonical
-					 * finalization function.
-					 * No advancing is necessary.
-					 */
-					goto phase3;
-				}
-			}
-		}
+                if ((edx + elements[edx].optional == td->elements_count) ||
+                    (IN_EXTENSION_GROUP(specs, edx) && specs->ext_before > td->elements_count))
+                {
+                    /*
+                     * Yeah, baby! Found the terminator
+                     * of the indefinite length structure.
+                     */
+                    /*
+                     * Proceed to the canonical
+                     * finalization function.
+                     * No advancing is necessary.
+                     */
+                    goto phase3;
+                }
+            }
+            else
+            {
+                /* this case should not happen when the message is correctly encoded */
+                RETURN(RC_FAIL);
+            }
+        }
 
-		/*
+        /*
 		 * Find the next available type with this tag.
 		 */
 		use_bsearch = 0;
@@ -421,25 +428,33 @@ SEQUENCE_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
 			/*
 			 * If expected <0><0>...
 			 */
-			if(ctx->left < 0
-				&& ((const uint8_t *)ptr)[0] == 0) {
-				if(LEFT < 2) {
-					if(SIZE_VIOLATION)
-						RETURN(RC_FAIL);
-					else
-						RETURN(RC_WMORE);
-				} else if(((const uint8_t *)ptr)[1] == 0) {
-					/*
-					 * Correctly finished with <0><0>.
-					 */
-					ADVANCE(2);
-					ctx->left++;
-					ctx->phase = 4;
-					continue;
-				}
-			}
+            if (ctx->left < 0 && ((const uint8_t*)ptr)[0] == 0)
+            {
+                if (LEFT < 2)
+                {
+                    if (SIZE_VIOLATION)
+                        RETURN(RC_FAIL);
+                    else
+                        RETURN(RC_WMORE);
+                }
+                else if (((const uint8_t*)ptr)[1] == 0)
+                {
+                    /*
+                     * Correctly finished with <0><0>.
+                     */
+                    ADVANCE(2);
+                    ctx->left++;
+                    ctx->phase = 4;
+                    continue;
+                }
+				else
+                {
+                    /* this case should not happen when the message is correctly encoded */
+                    RETURN(RC_FAIL);
+                }
+            }
 
-			if(!IN_EXTENSION_GROUP(specs, td->elements_count)
+            if(!IN_EXTENSION_GROUP(specs, td->elements_count)
 			|| ctx->phase == 4) {
 				RETURN(RC_FAIL);
 			}

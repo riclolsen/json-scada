@@ -96,7 +96,7 @@ LIB61850_INTERNAL ClientConnection
 private_ClientConnection_create(void* serverConnectionHandle);
 
 LIB61850_INTERNAL void
-private_ClientConnection_destroy(ClientConnection self);
+private_ClientConnection_invalidate(ClientConnection self);
 
 LIB61850_INTERNAL int
 private_ClientConnection_getTasksCount(ClientConnection self);

@@ -1,7 +1,7 @@
 /*
  *  client_connection.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -32,15 +32,44 @@
 
 #include "libiec61850_platform_includes.h"
 
+#if __STDC_VERSION__ >= 201112L
+#include <stdatomic.h>
+#else
+#define _TLS_OWN_CNT_SEM 1
+#endif
+
 struct sClientConnection
 {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore tasksCountMutex;
+    Semaphore accessMutex;
 #endif
 
-    int tasksCount;
-    void* serverConnectionHandle;
+    int tasksCount; /* protected by accessMutex */
+    void* serverConnectionHandle; /* protected by accessMutex */
+
+#ifdef _TLS_OWN_CNT_SEM
+    #if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore ownerCountMutex;
+    #endif /*#if (CONFIG_MMS_THREADLESS_STACK != 1) */
+    int ownerCount;
+#else
+    _Atomic(int) ownerCount;
+#endif /* _TLS_OWN_CNT_SEM */
 };
+
+void
+private_ClientConnection_invalidate(ClientConnection self)
+{
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    self->serverConnectionHandle = NULL;
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+}
 
 ClientConnection
 private_ClientConnection_create(void* serverConnectionHandle)
@@ -50,9 +79,14 @@ private_ClientConnection_create(void* serverConnectionHandle)
     if (self)
     {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-        self->tasksCountMutex = Semaphore_create(1);
+        self->accessMutex = Semaphore_create(1);
+
+        #ifdef _TLS_OWN_CNT_SEM
+        self->ownerCountMutex = Semaphore_create(1);
+        #endif
 #endif
 
+        self->ownerCount = 1;
         self->tasksCount = 0;
         self->serverConnectionHandle = serverConnectionHandle;
     }
@@ -60,13 +94,17 @@ private_ClientConnection_create(void* serverConnectionHandle)
     return self;
 }
 
-void
+static void
 private_ClientConnection_destroy(ClientConnection self)
 {
     if (self)
     {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-        Semaphore_destroy(self->tasksCountMutex);
+        Semaphore_destroy(self->accessMutex);
+
+        #ifdef _TLS_OWN_CNT_SEM
+        Semaphore_destroy(self->ownerCountMutex);
+        #endif
 #endif
 
         GLOBAL_FREEMEM(self);
@@ -79,13 +117,13 @@ private_ClientConnection_getTasksCount(ClientConnection self)
     int tasksCount;
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore_wait(self->tasksCountMutex);
+    Semaphore_wait(self->accessMutex);
 #endif
 
     tasksCount = self->tasksCount;
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore_post(self->tasksCountMutex);
+    Semaphore_post(self->accessMutex);
 #endif
 
     return tasksCount;
@@ -95,13 +133,13 @@ void
 private_ClientConnection_increaseTasksCount(ClientConnection self)
 {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore_wait(self->tasksCountMutex);
+    Semaphore_wait(self->accessMutex);
 #endif
 
     self->tasksCount++;
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore_post(self->tasksCountMutex);
+    Semaphore_post(self->accessMutex);
 #endif
 }
 
@@ -109,43 +147,183 @@ void
 private_ClientConnection_decreaseTasksCount(ClientConnection self)
 {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore_wait(self->tasksCountMutex);
+    Semaphore_wait(self->accessMutex);
 #endif
 
     self->tasksCount--;
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
-    Semaphore_post(self->tasksCountMutex);
+    Semaphore_post(self->accessMutex);
 #endif
 }
 
 void*
 private_ClientConnection_getServerConnectionHandle(ClientConnection self)
 {
-    return self->serverConnectionHandle;
+    void* handle = NULL;
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    handle = self->serverConnectionHandle;
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+
+    return handle;
 }
 
 const char*
 ClientConnection_getPeerAddress(ClientConnection self)
 {
-    MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+    char* peerAddress = NULL;
 
-    return MmsServerConnection_getClientAddress(mmsConnection);
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    if (self->serverConnectionHandle)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+
+        peerAddress = MmsServerConnection_getClientAddress(mmsConnection);
+    }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+
+    return peerAddress;
 }
 
 const char*
 ClientConnection_getLocalAddress(ClientConnection self)
 {
-    MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+    char* localAddress = NULL;
 
-    return MmsServerConnection_getLocalAddress(mmsConnection);
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    if (self->serverConnectionHandle)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+
+        localAddress = MmsServerConnection_getLocalAddress(mmsConnection);
+    }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+
+    return localAddress;
 }
-
 
 void*
 ClientConnection_getSecurityToken(ClientConnection self)
 {
-    MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+    void* secToken = NULL;
 
-    return MmsServerConnection_getSecurityToken(mmsConnection);
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    if (self->serverConnectionHandle)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+
+        secToken =  MmsServerConnection_getSecurityToken(mmsConnection);
+    }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+
+    return secToken;
+}
+
+bool
+ClientConnection_abort(ClientConnection self)
+{
+    bool aborted = false;
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    if (self->serverConnectionHandle)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+
+        if (mmsConnection)
+        {
+            MmsServer mmsServer = MmsServerConnection_getServer(mmsConnection);
+
+            aborted = MmsServer_abortConnection(mmsServer, mmsConnection);
+
+            if (aborted)
+            {
+                /* remove reference to underlying connection. Instance cannot be used any longer */
+                self->serverConnectionHandle = NULL;
+            }
+        }
+    }
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+
+    return aborted;
+}
+
+ClientConnection
+ClientConnection_claimOwnership(ClientConnection self)
+{
+#ifdef _TLS_OWN_CNT_SEM
+    #if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->ownerCountMutex);
+    #endif
+    self->ownerCount++;
+    #if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->ownerCountMutex);
+    #endif
+#else
+    atomic_fetch_add(&(self->ownerCount), 1);
+#endif
+
+    return self;
+}
+
+void
+ClientConnection_release(ClientConnection self)
+{
+    if (self)
+    {
+#ifdef _TLS_OWN_CNT_SEM
+
+        int cnt;
+
+        #if (CONFIG_MMS_THREADLESS_STACK != 1)
+        Semaphore_wait(self->ownerCountMutex);
+        #endif
+
+        cnt = self->ownerCount;
+        self->ownerCount--;
+
+        #if (CONFIG_MMS_THREADLESS_STACK != 1)
+        Semaphore_post(self->ownerCountMutex);
+        #endif
+
+        if (cnt == 1) {
+            private_ClientConnection_destroy(self);
+        }
+#else
+        if (atomic_fetch_sub(&(self->ownerCount), 1) == 1)
+        {
+            private_ClientConnection_destroy(self);
+        }
+#endif /* #ifdef _TLS_OWN_CNT_SEM */
+    }
 }

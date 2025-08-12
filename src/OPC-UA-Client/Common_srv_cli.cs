@@ -134,6 +134,7 @@ partial class MainClass
     {
         public bool createCommandForMethod;
         public bool createCommandForSupervised;
+        public byte accessLevels;
         public string valueJson;
         public bool selfPublish;
         public string address;

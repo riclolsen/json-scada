@@ -2130,6 +2130,9 @@ ControlObjectClient_createEx(const char* objectReference, IedConnection connecti
 /**
  * \brief Destroy the client control object instance and release all related resources
  *
+ * NOTE: Can only be called before calling IedConnection_destroy! When calling IedConnection_destroy this
+ * function will be called automatically.
+ *
  * \param self the control object instance to use
  */
 LIB61850_API void

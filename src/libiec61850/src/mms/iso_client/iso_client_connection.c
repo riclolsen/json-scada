@@ -810,6 +810,7 @@ IsoClientConnection_destroy(IsoClientConnection self)
         IsoClientConnection_close(self);
     }
 
+    /// is this required?!
     releaseSocket(self);
 
     if (self->receiveBuf != NULL)

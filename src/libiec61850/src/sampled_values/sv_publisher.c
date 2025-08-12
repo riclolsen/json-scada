@@ -1,7 +1,7 @@
 /*
  *  sv_publisher.c
  *
- *  Copyright 2016-2024 Michael Zillgith
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -21,14 +21,14 @@
  *  See COPYING file for the complete license text.
  */
 
-#include "stack_config.h"
 #include "libiec61850_platform_includes.h"
+#include "stack_config.h"
 
-#include <stdbool.h>
 #include "sv_publisher.h"
+#include <stdbool.h>
 
-#include "hal_ethernet.h"
 #include "ber_encoder.h"
+#include "hal_ethernet.h"
 
 #include "r_session_internal.h"
 
@@ -44,14 +44,17 @@
 
 #define SV_MAX_MESSAGE_SIZE 1518
 
-struct sSVPublisher_ASDU {
+struct sSVPublisher_ASDU
+{
     const char* svID;
     const char* datset;
     int dataSize;
 
+    /* flags to indicate presence of optional fields */
     bool hasRefrTm;
     bool hasSmpRate;
     bool hasSmpMod;
+    bool hasGmIdentity;
 
     uint8_t* _dataBuffer;
 
@@ -59,6 +62,8 @@ struct sSVPublisher_ASDU {
     uint16_t smpCnt;
     uint16_t smpCntLimit;
     uint32_t confRev;
+
+    uint8_t gmIdentity[8];
 
     Timestamp* refrTm;
     uint8_t smpMod;
@@ -70,7 +75,8 @@ struct sSVPublisher_ASDU {
     SVPublisher_ASDU _next;
 };
 
-struct sSVPublisher {
+struct sSVPublisher
+{
     uint8_t* buffer;
 
     uint16_t appId;
@@ -141,7 +147,7 @@ preparePacketBuffer(SVPublisher self, CommParameters* parameters, const char* in
         return false;
     }
 
-    self->buffer = (uint8_t*) GLOBAL_MALLOC(SV_MAX_MESSAGE_SIZE);
+    self->buffer = (uint8_t*)GLOBAL_MALLOC(SV_MAX_MESSAGE_SIZE);
 
     if (self->buffer)
     {
@@ -201,7 +207,7 @@ preparePacketBuffer(SVPublisher self, CommParameters* parameters, const char* in
 static int
 encodeUInt16FixedSize(uint16_t value, uint8_t* buffer, int bufPos)
 {
-    uint8_t* valueArray = (uint8_t*) &value;
+    uint8_t* valueArray = (uint8_t*)&value;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
     buffer[bufPos++] = valueArray[1];
@@ -217,7 +223,7 @@ encodeUInt16FixedSize(uint16_t value, uint8_t* buffer, int bufPos)
 static int
 encodeUInt32FixedSize(uint32_t value, uint8_t* buffer, int bufPos)
 {
-    uint8_t* valueArray = (uint8_t*) &value;
+    uint8_t* valueArray = (uint8_t*)&value;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
     buffer[bufPos++] = valueArray[3];
@@ -237,7 +243,7 @@ encodeUInt32FixedSize(uint32_t value, uint8_t* buffer, int bufPos)
 static int
 encodeInt32FixedSize(int32_t value, uint8_t* buffer, int bufPos)
 {
-    uint8_t* valueArray = (uint8_t*) &value;
+    uint8_t* valueArray = (uint8_t*)&value;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
     buffer[bufPos++] = valueArray[3];
@@ -257,7 +263,7 @@ encodeInt32FixedSize(int32_t value, uint8_t* buffer, int bufPos)
 static int
 encodeInt64FixedSize(int64_t value, uint8_t* buffer, int bufPos)
 {
-    uint8_t* valueArray = (uint8_t*) &value;
+    uint8_t* valueArray = (uint8_t*)&value;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
     buffer[bufPos++] = valueArray[7];
@@ -286,12 +292,13 @@ encodeInt64FixedSize(int64_t value, uint8_t* buffer, int bufPos)
 SVPublisher
 SVPublisher_createRemote(RSession session, uint16_t appId)
 {
-    SVPublisher self = (SVPublisher) GLOBAL_CALLOC(1, sizeof(struct sSVPublisher));
+    SVPublisher self = (SVPublisher)GLOBAL_CALLOC(1, sizeof(struct sSVPublisher));
 
-    if (self) {
+    if (self)
+    {
         self->asduList = NULL;
 
-        self->buffer = (uint8_t*) GLOBAL_MALLOC(SV_MAX_MESSAGE_SIZE);
+        self->buffer = (uint8_t*)GLOBAL_MALLOC(SV_MAX_MESSAGE_SIZE);
 
         self->payloadStart = 0;
         self->remoteSession = session;
@@ -309,7 +316,7 @@ SVPublisher_createRemote(RSession session, uint16_t appId)
 SVPublisher
 SVPublisher_createEx(CommParameters* parameters, const char* interfaceId, bool useVlanTag)
 {
-    SVPublisher self = (SVPublisher) GLOBAL_CALLOC(1, sizeof(struct sSVPublisher));
+    SVPublisher self = (SVPublisher)GLOBAL_CALLOC(1, sizeof(struct sSVPublisher));
 
     if (self)
     {
@@ -321,7 +328,6 @@ SVPublisher_createEx(CommParameters* parameters, const char* interfaceId, bool u
             SVPublisher_destroy(self);
             self = NULL;
         }
-
     }
 
     return self;
@@ -337,25 +343,28 @@ SVPublisher_create(CommParameters* parameters, const char* interfaceId)
 SVPublisher_ASDU
 SVPublisher_addASDU(SVPublisher self, const char* svID, const char* datset, uint32_t confRev)
 {
-    SVPublisher_ASDU newAsdu = (SVPublisher_ASDU) GLOBAL_CALLOC(1, sizeof(struct sSVPublisher_ASDU));
+    SVPublisher_ASDU newAsdu = (SVPublisher_ASDU)GLOBAL_CALLOC(1, sizeof(struct sSVPublisher_ASDU));
 
-    newAsdu->svID = svID;
-    newAsdu->datset = datset;
-    newAsdu->confRev = confRev;
-    newAsdu->smpCntLimit = UINT16_MAX;
-    newAsdu->_next = NULL;
-
-    /* append new ASDU to list */
-    if (self->asduList == NULL)
-        self->asduList = newAsdu;
-    else
+    if (newAsdu)
     {
-        SVPublisher_ASDU lastAsdu = self->asduList;
+        newAsdu->svID = svID;
+        newAsdu->datset = datset;
+        newAsdu->confRev = confRev;
+        newAsdu->smpCntLimit = UINT16_MAX;
+        newAsdu->_next = NULL;
 
-        while (lastAsdu->_next)
-            lastAsdu = lastAsdu->_next;
+        /* append new ASDU to list */
+        if (self->asduList == NULL)
+            self->asduList = newAsdu;
+        else
+        {
+            SVPublisher_ASDU lastAsdu = self->asduList;
 
-        lastAsdu->_next = newAsdu;
+            while (lastAsdu->_next)
+                lastAsdu = lastAsdu->_next;
+
+            lastAsdu->_next = newAsdu;
+        }
     }
 
     return newAsdu;
@@ -385,7 +394,7 @@ SVPublisher_ASDU_getEncodedSize(SVPublisher_ASDU self)
 
     /* refrTm */
     if (self->hasRefrTm)
-        encodedSize += 10; /* ??? */
+        encodedSize += 10;
 
     /* smpSynch */
     encodedSize += 3;
@@ -401,6 +410,10 @@ SVPublisher_ASDU_getEncodedSize(SVPublisher_ASDU self)
     /* smpMod */
     if (self->hasSmpMod)
         encodedSize += 4;
+
+    /* gmIdentity */
+    if (self->hasGmIdentity)
+        encodedSize += 10;
 
     return encodedSize;
 }
@@ -433,7 +446,7 @@ SVPublisher_ASDU_encodeToBuffer(SVPublisher_ASDU self, uint8_t* buffer, int bufP
     if (self->hasRefrTm)
     {
         bufPos = BerEncoder_encodeTL(0x84, 8, buffer, bufPos);
-        self->refrTm = (Timestamp*) (buffer + bufPos);
+        self->refrTm = (Timestamp*)(buffer + bufPos);
         bufPos += 8;
     }
 
@@ -455,12 +468,18 @@ SVPublisher_ASDU_encodeToBuffer(SVPublisher_ASDU self, uint8_t* buffer, int bufP
     self->_dataBuffer = buffer + bufPos;
 
     bufPos += self->dataSize; /* data has to be inserted by user before sending message */
-    
+
     /* SmpMod */
     if (self->hasSmpMod)
     {
         bufPos = BerEncoder_encodeTL(0x88, 2, buffer, bufPos);
         bufPos = encodeUInt16FixedSize(self->smpMod, buffer, bufPos);
+    }
+
+    /* gmIdentity */
+    if (self->hasGmIdentity)
+    {
+        bufPos = BerEncoder_encodeOctetString(0x89, self->gmIdentity, 8, buffer, bufPos);
     }
 
     return bufPos;
@@ -518,7 +537,8 @@ SVPublisher_setupComplete(SVPublisher self)
 
     size_t msgLength = payloadLength + 8;
 
-    if (self->lengthField != 0) {
+    if (self->lengthField != 0)
+    {
         int lengthIndex = self->lengthField;
 
         self->buffer[lengthIndex] = msgLength / 256;
@@ -547,7 +567,8 @@ SVPublisher_publish(SVPublisher self)
         if (DEBUG_SV_PUBLISHER)
             printf("SV_PUBLISHER: send R-SV message\n");
 
-        RSession_sendMessage(self->remoteSession, RSESSION_SPDU_ID_SV, self->simulation, self->appId, self->buffer, self->payloadLength);
+        RSession_sendMessage(self->remoteSession, RSESSION_SPDU_ID_SV, self->simulation, self->appId, self->buffer,
+                             self->payloadLength);
     }
 #endif /* (CONFIG_IEC61850_R_SMV == 1) */
 }
@@ -647,7 +668,7 @@ SVPublisher_ASDU_addFLOAT(SVPublisher_ASDU self)
 void
 SVPublisher_ASDU_setFLOAT(SVPublisher_ASDU self, int index, float value)
 {
-    uint8_t* buf = (uint8_t*) &value;
+    uint8_t* buf = (uint8_t*)&value;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
     BerEncoder_revertByteOrder(buf, 4);
@@ -674,7 +695,7 @@ SVPublisher_ASDU_addFLOAT64(SVPublisher_ASDU self)
 void
 SVPublisher_ASDU_setFLOAT64(SVPublisher_ASDU self, int index, double value)
 {
-    uint8_t* buf = (uint8_t*) &value;
+    uint8_t* buf = (uint8_t*)&value;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
     BerEncoder_revertByteOrder(buf, 8);
@@ -817,4 +838,11 @@ SVPublisher_ASDU_setSmpSynch(SVPublisher_ASDU self, uint16_t smpSynch)
 {
     self->smpSynch = smpSynch;
     *(self->smpSynchBuf) = self->smpSynch;
+}
+
+void
+SVPublisher_ASDU_setGmIdentity(SVPublisher_ASDU self, uint8_t* gmIdentity)
+{
+    self->hasGmIdentity = true;
+    memcpy(self->gmIdentity, gmIdentity, 8);
 }

@@ -35,7 +35,9 @@ const Redundancy = require('./redundancy')
 const AutoTag = require('./auto-tag')
 const { castSparkplugValue: castSparkplugValue } = require('./cast')
 
-process.on('uncaughtException', err => Log.log('Uncaught Exception:' + JSON.stringify(err)))
+process.on('uncaughtException', (err) =>
+  Log.log('Uncaught Exception: ' + err.message)
+)
 
 const SparkplugNS = 'spBv1.0'
 const DevicesList = [] // contains either EoN nodes or devices

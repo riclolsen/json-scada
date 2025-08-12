@@ -57,10 +57,75 @@ AcseAuthenticationParameter_setPassword(AcseAuthenticationParameter self, char* 
     self->value.password.passwordLength = strlen(password);
 }
 
+/* TODO
+->One function returning as string and another as by array*/
+const char*
+AcseAuthenticationParameter_getPassword(AcseAuthenticationParameter self)
+{
+    if (self == NULL)
+        return NULL;
+
+    if (self->mechanism != ACSE_AUTH_PASSWORD)
+        return NULL;
+
+    return (char*)self->value.password.octetString;
+}
+
+int
+AcseAuthenticationParameter_getPasswordLength(AcseAuthenticationParameter self)
+{
+    if (self == NULL)
+        return 0;
+
+    if (self->mechanism != ACSE_AUTH_PASSWORD)
+        return 0;
+
+    return self->value.password.passwordLength;
+}
+
 void
 AcseAuthenticationParameter_setAuthMechanism(AcseAuthenticationParameter self, AcseAuthenticationMechanism mechanism)
 {
     self->mechanism = mechanism;
+}
+
+AcseAuthenticationMechanism
+AcseAuthenticationParameter_getAuthMechanism(AcseAuthenticationParameter self)
+{
+    return self->mechanism;
+}
+
+LIB61850_API int
+IsoApplicationReference_getAeQualifier(IsoApplicationReference self)
+{
+    return self.aeQualifier;
+}
+
+LIB61850_API const ItuObjectIdentifier*
+IsoApplicationReference_getApTitle(const IsoApplicationReference* self)
+{
+    if (self == NULL)
+        return NULL;
+
+    return &(self->apTitle);
+}
+
+LIB61850_API int
+ItuObjectIdentifier_getArcCount(ItuObjectIdentifier* self)
+{
+    if (self == NULL)
+        return 0;
+
+    return self->arcCount;
+}
+
+LIB61850_API const uint16_t*
+ItuObjectIdentifier_getArc(ItuObjectIdentifier* self)
+{
+    if (self == NULL)
+        return NULL;
+
+    return self->arc;
 }
 
 IsoConnectionParameters

@@ -67,6 +67,9 @@ LIB61850_INTERNAL void
 IsoSession_createAcceptSpdu(IsoSession* self, BufferChain buffer, BufferChain payload);
 
 LIB61850_INTERNAL void
+IsoSession_createRefuseSpdu(IsoSession* self, BufferChain buffer, BufferChain payload, uint8_t reasonCode);
+
+LIB61850_INTERNAL void
 IsoSession_createAbortSpdu(IsoSession* self, BufferChain buffer, BufferChain payload);
 
 LIB61850_INTERNAL void

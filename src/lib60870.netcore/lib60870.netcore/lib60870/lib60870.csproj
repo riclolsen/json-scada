@@ -88,7 +88,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="9.0.7" />
 	<None Include="images\icon.png" Pack="true" PackagePath="\" />
 	<None Include="readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>

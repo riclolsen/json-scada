@@ -1,7 +1,7 @@
 ﻿/*
  *  IedServerConfig.cs
  *
- *  Copyright 2018 Michael Zillgith
+ *  Copyright 2018-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -21,9 +21,9 @@
  *  See COPYING file for the complete license text.
  */
 
+using IEC61850.Common;
 using System;
 using System.Runtime.InteropServices;
-using IEC61850.Common;
 
 namespace IEC61850.Server
 {
@@ -408,9 +408,9 @@ namespace IEC61850.Server
         /// <note>Can be used to implement some of Services\ReportSettings options</note>
         /// <param name="settings">the settings that should be configured writeable or read-only</param>
         /// <param name="isDyn">true, settings are writeable, false, settings are read-only</param>
-        public void SetReportSetting(ReportSettings settings)
+        public void SetReportSetting(ReportSettings settings, bool isDyn = true)
         {
-            IedServerConfig_setReportSetting(self, (byte)settings, true);
+            IedServerConfig_setReportSetting(self, (byte)settings, isDyn);
         }
 
         /// <summary>

@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'OPC-UA_SERVER',
   ENV_PREFIX: 'JS_OPCUASERVER_',
   MSG: '{json:scada} - OPC-UA Server',
-  VERSION: '0.2.0',
+  VERSION: '0.3.0',
 }

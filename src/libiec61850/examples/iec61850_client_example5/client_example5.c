@@ -60,7 +60,7 @@ main(int argc, char** argv)
     IsoConnectionParameters_setRemoteAddresses(parameters, remotePSelector, remoteSSelector, localTSelector);
     IsoConnectionParameters_setLocalAddresses(parameters, localPSelector, localSSelector, remoteTSelector);
 
-    char* password = "top secret";
+    char* password = "user1@testpw";
 
     /* use authentication */
     AcseAuthenticationParameter auth = AcseAuthenticationParameter_create();
@@ -83,6 +83,8 @@ main(int argc, char** argv)
     else {
         printf("Failed to connect to %s:%i\n", hostname, tcpPort);
     }
+
+    while (true);
 
     IedConnection_destroy(con);
 

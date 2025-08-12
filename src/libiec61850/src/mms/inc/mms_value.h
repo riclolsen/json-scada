@@ -985,7 +985,7 @@ MmsValue_getSubElement(MmsValue* self, MmsVariableSpecification* varSpec, char* 
  *
  * \return the value type as a human readable string
  */
-LIB61850_API char*
+LIB61850_API const char*
 MmsValue_getTypeString(MmsValue* self);
 
 /**
@@ -1063,6 +1063,16 @@ MmsValue_getMaxEncodedSize(MmsValue* self);
  */
 LIB61850_API int
 MmsVariableSpecification_getMaxEncodedSize(MmsVariableSpecification* self);
+
+/**
+ * \brief Convert an MmsError to a string
+ *
+ * \param err the error to convert
+ *
+ * \return a static string representing the error
+ */
+LIB61850_API const char*
+MmsError_toString(MmsError err);
 
 /**@}*/
 

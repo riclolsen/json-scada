@@ -1,7 +1,7 @@
 /*
  *  ied_server.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -245,21 +245,36 @@ exit_function:
     return success;
 }
 
+#define OBJ_REF_MAX_SIZE 129
+
 static void
 installDefaultValuesForDataAttribute(IedServer self, LogicalDevice* ld, DataAttribute* dataAttribute,
         char* objectReference, int position, int idx, char* componentId, int compIdPos)
 {
+    objectReference[position] = 0;
+
     if (dataAttribute->name)
     {
-        if (idx == -1) {
-            sprintf(objectReference + position, ".%s", dataAttribute->name);
+        if (idx == -1)
+        {
+            objectReference[position] = 0;
+
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, ".");
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, dataAttribute->name);
         }
         else
         {
+            componentId[compIdPos] = 0;
+
             if (compIdPos == 0)
-                sprintf(componentId, "%s", dataAttribute->name);
+            {
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataAttribute->name);
+            }
             else
-                sprintf(componentId + compIdPos, "$%s", dataAttribute->name);
+            {
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, "$");
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataAttribute->name);
+            }
         }
     }
     else
@@ -360,6 +375,8 @@ static void
 installDefaultValuesForDataObject(IedServer self, LogicalDevice* ld, DataObject* dataObject,
         char* objectReference, int position, int idx, char* componentId, int compIdPos)
 {
+    objectReference[position] = 0;
+
     if (dataObject->elementCount > 0)
     {
         if (DEBUG_IED_SERVER)
@@ -367,7 +384,9 @@ installDefaultValuesForDataObject(IedServer self, LogicalDevice* ld, DataObject*
 
         ModelNode* arrayElemNode = dataObject->firstChild;
 
-        sprintf(objectReference + position, ".%s", dataObject->name);
+        StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, ".");
+        StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, dataObject->name);
+
         int childPosition = strlen(objectReference);
 
         int arrayIdx = 0;
@@ -387,14 +406,18 @@ installDefaultValuesForDataObject(IedServer self, LogicalDevice* ld, DataObject*
     {
         if (idx == -1)
         {
-            sprintf(objectReference + position, ".%s", dataObject->name);
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, ".");
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, dataObject->name);
         }
         else
         {
             if (compIdPos == 0)
-                sprintf(componentId, "%s", dataObject->name);
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataObject->name);
             else
-                sprintf(componentId + compIdPos, "$%s", dataObject->name);
+            {
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, "$");
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataObject->name);
+            }
         }
     }
 
@@ -426,27 +449,28 @@ installDefaultValuesInCache(IedServer self)
 {
     IedModel* model = self->model;
 
-    char componentId[130];
-    componentId[0] = 0;
-
-    char objectReference[130];
+    char objectReference[OBJ_REF_MAX_SIZE + 1];
 
     LogicalDevice* logicalDevice = model->firstChild;
 
     while (logicalDevice)
     {
         if (logicalDevice->ldName)
-            sprintf(objectReference, "%s", logicalDevice->ldName);
+            StringUtils_copyStringMax(objectReference, OBJ_REF_MAX_SIZE + 1, logicalDevice->ldName);
         else
-            sprintf(objectReference, "%s", logicalDevice->name);
+            StringUtils_copyStringMax(objectReference, OBJ_REF_MAX_SIZE + 1, logicalDevice->name);
 
         LogicalNode* logicalNode = (LogicalNode*) logicalDevice->firstChild;
+
+        StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, "/");
 
         char* nodeReference = objectReference + strlen(objectReference);
 
         while (logicalNode)
         {
-            sprintf(nodeReference, "/%s", logicalNode->name);
+            *nodeReference = 0;
+
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, logicalNode->name);
 
             DataObject* dataObject = (DataObject*) logicalNode->firstChild;
 
@@ -454,6 +478,7 @@ installDefaultValuesInCache(IedServer self)
 
             while (dataObject)
             {
+                char componentId[OBJ_REF_MAX_SIZE + 1];
                 componentId[0] = 0;
                 installDefaultValuesForDataObject(self, logicalDevice, dataObject, objectReference, refPosition, -1, componentId, 0);
 
@@ -781,7 +806,7 @@ IedServer_destroy(IedServer self)
         if (self->mmsMapping)
             MmsMapping_destroy(self->mmsMapping);
 
-        LinkedList_destroyDeep(self->clientConnections, (LinkedListValueDeleteFunction) private_ClientConnection_destroy);
+        LinkedList_destroyDeep(self->clientConnections, (LinkedListValueDeleteFunction) ClientConnection_release);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
         Semaphore_destroy(self->dataModelLock);
@@ -1317,6 +1342,9 @@ IedServer_updateAttributeValue(IedServer self, DataAttribute* dataAttribute, Mms
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MmsValue_getType(value));
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
     if (MmsValue_equals(dataAttribute->mmsValue, value) == false)
     {
         if (dataAttribute->type == IEC61850_BOOLEAN)
@@ -1350,6 +1378,12 @@ IedServer_updateFloatAttributeValue(IedServer self, DataAttribute* dataAttribute
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_FLOAT);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_FLOAT)
+        return;
+
     float currentValue = MmsValue_toFloat(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1374,6 +1408,12 @@ IedServer_updateInt32AttributeValue(IedServer self, DataAttribute* dataAttribute
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_INTEGER);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_INTEGER)
+        return;
+
     int32_t currentValue = MmsValue_toInt32(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1395,6 +1435,12 @@ IedServer_updateInt32AttributeValue(IedServer self, DataAttribute* dataAttribute
 void
 IedServer_updateDbposValue(IedServer self, DataAttribute* dataAttribute, Dbpos value)
 {
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BIT_STRING)
+        return;
+
     Dbpos currentValue = Dbpos_fromMmsValue(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1419,6 +1465,12 @@ IedServer_updateInt64AttributeValue(IedServer self, DataAttribute* dataAttribute
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_INTEGER);
     assert(self != NULL);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_INTEGER)
+        return;
 
     int64_t currentValue = MmsValue_toInt64(dataAttribute->mmsValue);
 
@@ -1445,6 +1497,12 @@ IedServer_updateUnsignedAttributeValue(IedServer self, DataAttribute* dataAttrib
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_UNSIGNED);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_UNSIGNED)
+        return;
+
     uint32_t currentValue = MmsValue_toUint32(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1470,6 +1528,12 @@ IedServer_updateBitStringAttributeValue(IedServer self, DataAttribute* dataAttri
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_BIT_STRING);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BIT_STRING)
+        return;
+
     uint32_t currentValue = MmsValue_getBitStringAsInteger(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1494,6 +1558,12 @@ IedServer_updateBooleanAttributeValue(IedServer self, DataAttribute* dataAttribu
     assert(self != NULL);
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_BOOLEAN);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BOOLEAN)
+        return;
 
     bool currentValue = MmsValue_getBoolean(dataAttribute->mmsValue);
 
@@ -1529,6 +1599,12 @@ IedServer_updateVisibleStringAttributeValue(IedServer self, DataAttribute* dataA
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_VISIBLE_STRING);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_VISIBLE_STRING)
+        return;
+
     const char* currentValue = MmsValue_toString(dataAttribute->mmsValue);
 
     if (strcmp(currentValue, value))
@@ -1553,6 +1629,12 @@ IedServer_updateUTCTimeAttributeValue(IedServer self, DataAttribute* dataAttribu
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_UTC_TIME);
     assert(self != NULL);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_UTC_TIME)
+        return;
 
     uint64_t currentValue = MmsValue_getUtcTimeInMs(dataAttribute->mmsValue);
 
@@ -1579,6 +1661,12 @@ IedServer_updateTimestampAttributeValue(IedServer self, DataAttribute* dataAttri
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_UTC_TIME);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_UTC_TIME)
+        return;
+
     if (memcmp(dataAttribute->mmsValue->value.utcTime, timestamp->val, 8))
     {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -1602,6 +1690,12 @@ IedServer_updateQuality(IedServer self, DataAttribute* dataAttribute, Quality qu
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_BIT_STRING);
     assert(MmsValue_getBitStringSize(dataAttribute->mmsValue) >= 12);
     assert(MmsValue_getBitStringSize(dataAttribute->mmsValue) <= 15);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BIT_STRING)
+        return;
 
     uint32_t oldQuality = MmsValue_getBitStringAsInteger(dataAttribute->mmsValue);
 
@@ -1814,8 +1908,26 @@ IedServer_getFunctionalConstrainedData(IedServer self, DataObject* dataObject, F
     {
         nameLen = strlen(dataObject->name);
         currentStart -= nameLen;
+
+        if (currentStart < buffer)
+        {
+            if (DEBUG_IED_SERVER)
+                printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+            goto exit_function;
+        }
+
         memcpy(currentStart, dataObject->name, nameLen);
         currentStart--;
+
+        if (currentStart < buffer)
+        {
+            if (DEBUG_IED_SERVER)
+                printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+            goto exit_function;
+        }
+
         *currentStart = '$';
 
         if (dataObject->parent->modelType == DataObjectModelType)
@@ -1825,6 +1937,17 @@ IedServer_getFunctionalConstrainedData(IedServer self, DataObject* dataObject, F
     }
 
     char* fcString = FunctionalConstraint_toString(fc);
+
+    if (fcString == NULL)
+        goto exit_function;
+
+    if (currentStart - 3 < buffer)
+    {
+        if (DEBUG_IED_SERVER)
+            printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+        goto exit_function;
+    }
 
     currentStart--;
     *currentStart = fcString[1];
@@ -1838,6 +1961,15 @@ IedServer_getFunctionalConstrainedData(IedServer self, DataObject* dataObject, F
     nameLen = strlen(ln->name);
 
     currentStart -= nameLen;
+
+    if (currentStart < buffer)
+    {
+        if (DEBUG_IED_SERVER)
+            printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+        goto exit_function;
+    }
+
     memcpy(currentStart, ln->name, nameLen);
 
     LogicalDevice* ld = (LogicalDevice*) ln->parent;

@@ -1,0 +1,2484 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>nunit.framework.legacy</name>
+    </assembly>
+    <members>
+        <member name="T:System.Runtime.CompilerServices.IsExternalInit">
+            <summary>
+                Reserved to be used by the compiler for tracking metadata.
+                This class should not be used by developers in source code.
+            </summary>
+            <remarks>
+                This definition is provided by the <i>IsExternalInit</i> NuGet package (https://www.nuget.org/packages/IsExternalInit).
+                Please see https://github.com/manuelroemer/IsExternalInit for more information.
+            </remarks>
+        </member>
+        <member name="T:NUnit.Framework.Legacy.ClassicAssert">
+            <summary>
+            The Assert class contains a collection of static methods that
+            implement the most common assertions used in NUnit.
+            </summary>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Int32,System.Int32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first int is greater than the second
+            int. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Int32,System.Int32)">
+            <summary>
+            Verifies that the first int is greater than the second
+            int. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.UInt32,System.UInt32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.UInt32,System.UInt32)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Int64,System.Int64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Int64,System.Int64)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.UInt64,System.UInt64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.UInt64,System.UInt64)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Decimal,System.Decimal,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Decimal,System.Decimal)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Double,System.Double,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Double,System.Double)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Single,System.Single,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.Single,System.Single)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.IComparable,System.IComparable,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Greater(System.IComparable,System.IComparable)">
+            <summary>
+            Verifies that the first value is greater than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Int32,System.Int32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Int32,System.Int32)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.UInt32,System.UInt32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.UInt32,System.UInt32)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Int64,System.Int64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Int64,System.Int64)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.UInt64,System.UInt64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.UInt64,System.UInt64)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Decimal,System.Decimal,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Decimal,System.Decimal)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Double,System.Double,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Double,System.Double)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Single,System.Single,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.Single,System.Single)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.IComparable,System.IComparable,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Less(System.IComparable,System.IComparable)">
+            <summary>
+            Verifies that the first value is less than the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Int32,System.Int32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Int32,System.Int32)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.UInt32,System.UInt32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.UInt32,System.UInt32)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Int64,System.Int64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Int64,System.Int64)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.UInt64,System.UInt64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.UInt64,System.UInt64)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Decimal,System.Decimal,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Decimal,System.Decimal)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Double,System.Double,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Double,System.Double)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Single,System.Single,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.Single,System.Single)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.IComparable,System.IComparable,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.GreaterOrEqual(System.IComparable,System.IComparable)">
+            <summary>
+            Verifies that the first value is greater than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be greater</param>
+            <param name="arg2">The second value, expected to be less</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Int32,System.Int32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Int32,System.Int32)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.UInt32,System.UInt32,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.UInt32,System.UInt32)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Int64,System.Int64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Int64,System.Int64)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.UInt64,System.UInt64,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.UInt64,System.UInt64)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Decimal,System.Decimal,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Decimal,System.Decimal)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Double,System.Double,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Double,System.Double)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Single,System.Single,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.Single,System.Single)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.IComparable,System.IComparable,System.String,System.Object[])">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.LessOrEqual(System.IComparable,System.IComparable)">
+            <summary>
+            Verifies that the first value is less than or equal to the second
+            value. If it is not, then an
+            <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="arg1">The first value, expected to be less</param>
+            <param name="arg2">The second value, expected to be greater</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.True(System.Nullable{System.Boolean},System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.True(System.Boolean,System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.True(System.Nullable{System.Boolean})">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.True(System.Boolean)">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsTrue(System.Nullable{System.Boolean},System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsTrue(System.Boolean,System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsTrue(System.Nullable{System.Boolean})">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsTrue(System.Boolean)">
+            <summary>
+            Asserts that a condition is true. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.False(System.Nullable{System.Boolean},System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.False(System.Boolean,System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.False(System.Nullable{System.Boolean})">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.False(System.Boolean)">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsFalse(System.Nullable{System.Boolean},System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsFalse(System.Boolean,System.String,System.Object[])">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsFalse(System.Nullable{System.Boolean})">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsFalse(System.Boolean)">
+            <summary>
+            Asserts that a condition is false. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="condition">The evaluated condition</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotNull(System.Object,System.String,System.Object[])">
+            <summary>
+            Verifies that the object that is passed in is not equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotNull(System.Object)">
+            <summary>
+            Verifies that the object that is passed in is not equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotNull(System.Object,System.String,System.Object[])">
+            <summary>
+            Verifies that the object that is passed in is not equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotNull(System.Object)">
+            <summary>
+            Verifies that the object that is passed in is not equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Null(System.Object,System.String,System.Object[])">
+            <summary>
+            Verifies that the object that is passed in is equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Null(System.Object)">
+            <summary>
+            Verifies that the object that is passed in is equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNull(System.Object,System.String,System.Object[])">
+            <summary>
+            Verifies that the object that is passed in is equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNull(System.Object)">
+            <summary>
+            Verifies that the object that is passed in is equal to <see langword="null"/>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="anObject">The object that is to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNaN(System.Double,System.String,System.Object[])">
+            <summary>
+            Verifies that the double that is passed in is an <c>NaN</c>. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="aDouble">The value that is to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNaN(System.Double)">
+            <summary>
+            Verifies that the double that is passed in is an <c>NaN</c> value. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="aDouble">The value that is to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNaN(System.Nullable{System.Double},System.String,System.Object[])">
+            <summary>
+            Verifies that the double that is passed in is an <c>NaN</c> value. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="aDouble">The value that is to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNaN(System.Nullable{System.Double})">
+            <summary>
+            Verifies that the double that is passed in is an <c>NaN</c> value. Returns without throwing an
+            exception when inside a multiple assert block.
+            </summary>
+            <param name="aDouble">The value that is to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsEmpty(System.String,System.String,System.Object[])">
+            <summary>
+            Assert that a string is empty. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="aString">The string to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsEmpty(System.String)">
+            <summary>
+            Assert that a string is empty. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="aString">The string to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsEmpty(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Assert that an array, list or other collection is empty. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="collection">An array, list or other collection implementing ICollection</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsEmpty(System.Collections.IEnumerable)">
+            <summary>
+            Assert that an array, list or other collection is empty. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="collection">An array, list or other collection implementing ICollection</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotEmpty(System.String,System.String,System.Object[])">
+            <summary>
+            Assert that a string is not empty. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="aString">The string to be tested</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotEmpty(System.String)">
+            <summary>
+            Assert that a string is not empty. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="aString">The string to be tested</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotEmpty(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Assert that an array, list or other collection is not empty. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <param name="collection">An array, list or other collection implementing ICollection</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotEmpty(System.Collections.IEnumerable)">
+            <summary>
+            Assert that an array, list or other collection is not empty. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <param name="collection">An array, list or other collection implementing ICollection</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Int32)">
+            <summary>
+            Asserts that an int is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Int32,System.String,System.Object[])">
+            <summary>
+            Asserts that an int is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.UInt32)">
+            <summary>
+            Asserts that an unsigned int is zero. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.UInt32,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned int is zero. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Int64)">
+            <summary>
+            Asserts that a Long is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Int64,System.String,System.Object[])">
+            <summary>
+            Asserts that a Long is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.UInt64)">
+            <summary>
+            Asserts that an unsigned Long is zero. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.UInt64,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned Long is zero. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Decimal)">
+            <summary>
+            Asserts that a decimal is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Decimal,System.String,System.Object[])">
+            <summary>
+            Asserts that a decimal is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Double)">
+            <summary>
+            Asserts that a double is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Double,System.String,System.Object[])">
+            <summary>
+            Asserts that a double is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Single)">
+            <summary>
+            Asserts that a float is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Zero(System.Single,System.String,System.Object[])">
+            <summary>
+            Asserts that a float is zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Int32)">
+            <summary>
+            Asserts that an int is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Int32,System.String,System.Object[])">
+            <summary>
+            Asserts that an int is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.UInt32)">
+            <summary>
+            Asserts that an unsigned int is not zero. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.UInt32,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned int is not zero. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Int64)">
+            <summary>
+            Asserts that a Long is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Int64,System.String,System.Object[])">
+            <summary>
+            Asserts that a Long is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.UInt64)">
+            <summary>
+            Asserts that an unsigned Long is not zero. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.UInt64,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned Long is not zero. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Decimal)">
+            <summary>
+            Asserts that a decimal is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Decimal,System.String,System.Object[])">
+            <summary>
+            Asserts that a decimal is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Double)">
+            <summary>
+            Asserts that a double is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Double,System.String,System.Object[])">
+            <summary>
+            Asserts that a double is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Single)">
+            <summary>
+            Asserts that a float is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.NotZero(System.Single,System.String,System.Object[])">
+            <summary>
+            Asserts that a float is not zero. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Int32)">
+            <summary>
+            Asserts that an int is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Int32,System.String,System.Object[])">
+            <summary>
+            Asserts that an int is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.UInt32)">
+            <summary>
+            Asserts that an unsigned int is positive. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.UInt32,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned int is positive. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Int64)">
+            <summary>
+            Asserts that a Long is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Int64,System.String,System.Object[])">
+            <summary>
+            Asserts that a Long is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.UInt64)">
+            <summary>
+            Asserts that an unsigned Long is positive. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.UInt64,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned Long is positive. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Decimal)">
+            <summary>
+            Asserts that a decimal is positive. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Decimal,System.String,System.Object[])">
+            <summary>
+            Asserts that a decimal is positive. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Double)">
+            <summary>
+            Asserts that a double is positive. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Double,System.String,System.Object[])">
+            <summary>
+            Asserts that a double is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Single)">
+            <summary>
+            Asserts that a float is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Positive(System.Single,System.String,System.Object[])">
+            <summary>
+            Asserts that a float is positive. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Int32)">
+            <summary>
+            Asserts that an int is negative. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Int32,System.String,System.Object[])">
+            <summary>
+            Asserts that an int is negative. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.UInt32)">
+            <summary>
+            Asserts that an unsigned int is negative. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.UInt32,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned int is negative. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Int64)">
+            <summary>
+            Asserts that a Long is negative. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Int64,System.String,System.Object[])">
+            <summary>
+            Asserts that a Long is negative. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.UInt64)">
+            <summary>
+            Asserts that an unsigned Long is negative. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.UInt64,System.String,System.Object[])">
+            <summary>
+            Asserts that an unsigned Long is negative. Returns without throwing an exception when inside a multiple
+            assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Decimal)">
+            <summary>
+            Asserts that a decimal is negative. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Decimal,System.String,System.Object[])">
+            <summary>
+            Asserts that a decimal is negative. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Double)">
+            <summary>
+            Asserts that a double is negative. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Double,System.String,System.Object[])">
+            <summary>
+            Asserts that a double is negative. Returns without throwing an exception when inside a multiple assert
+            block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Single)">
+            <summary>
+            Asserts that a float is negative. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Negative(System.Single,System.String,System.Object[])">
+            <summary>
+            Asserts that a float is negative. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="actual">The number to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Contains(System.Object,System.Collections.ICollection,System.String,System.Object[])">
+            <summary>
+            Asserts that an object is contained in a collection. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="expected">The expected object</param>
+            <param name="actual">The collection to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Contains(System.Object,System.Collections.ICollection)">
+            <summary>
+            Asserts that an object is contained in a collection. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="expected">The expected object</param>
+            <param name="actual">The collection to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.Equals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE! Use Assert.AreEqual(...) instead.
+            The Equals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.ReferenceEquals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE!
+            The ReferenceEquals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreEqual(System.Double,System.Double,System.Double,System.String,System.Object[])">
+            <summary>
+            Verifies that two doubles are equal considering a delta. If the expected value is infinity then the delta
+            value is ignored. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="expected">The expected value</param>
+            <param name="actual">The actual value</param>
+            <param name="delta">The maximum acceptable difference between the the expected and the actual</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreEqual(System.Double,System.Double,System.Double)">
+            <summary>
+            Verifies that two doubles are equal considering a delta. If the expected value is infinity then the delta
+            value is ignored. Returns without throwing an exception when inside a multiple assert block.
+            </summary>
+            <param name="expected">The expected value</param>
+            <param name="actual">The actual value</param>
+            <param name="delta">The maximum acceptable difference between the the expected and the actual</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreEqual(System.Object,System.Object,System.String,System.Object[])">
+            <summary>
+            Verifies that two objects are equal. Two objects are considered equal if both are null, or if both have the
+            same value. NUnit has special semantics for some object types. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <param name="expected">The value that is expected</param>
+            <param name="actual">The actual value</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreEqual(System.Object,System.Object)">
+            <summary>
+            Verifies that two objects are equal. Two objects are considered equal if both are null, or if both have the
+            same value. NUnit has special semantics for some object types. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <param name="expected">The value that is expected</param>
+            <param name="actual">The actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreNotEqual(System.Object,System.Object,System.String,System.Object[])">
+            <summary>
+            Verifies that two objects are not equal. Two objects are considered equal if both are null, or if both have
+            the same value. NUnit has special semantics for some object types. Returns without throwing an exception
+            when inside a multiple assert block.
+            </summary>
+            <param name="expected">The value that is expected</param>
+            <param name="actual">The actual value</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreNotEqual(System.Object,System.Object)">
+            <summary>
+            Verifies that two objects are not equal. Two objects are considered equal if both are null, or if both have
+            the same value. NUnit has special semantics for some object types. Returns without throwing an exception
+            when inside a multiple assert block.
+            </summary>
+            <param name="expected">The value that is expected</param>
+            <param name="actual">The actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreSame(System.Object,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that two objects refer to the same object. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="expected">The expected object</param>
+            <param name="actual">The actual object</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreSame(System.Object,System.Object)">
+            <summary>
+            Asserts that two objects refer to the same object. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="expected">The expected object</param>
+            <param name="actual">The actual object</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreNotSame(System.Object,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that two objects do not refer to the same object. Returns without throwing an exception when inside
+            a multiple assert block.
+            </summary>
+            <param name="expected">The expected object</param>
+            <param name="actual">The actual object</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AreNotSame(System.Object,System.Object)">
+            <summary>
+            Asserts that two objects do not refer to the same object. Returns without throwing an exception when inside
+            a multiple assert block.
+            </summary>
+            <param name="expected">The expected object</param>
+            <param name="actual">The actual object</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.AssertDoublesAreEqual(System.Double,System.Double,System.Double,System.String,System.Object[])">
+            <summary>
+            Helper for Assert.AreEqual(double expected, double actual, ...)
+            allowing code generation to work consistently.
+            </summary>
+            <param name="expected">The expected value</param>
+            <param name="actual">The actual value</param>
+            <param name="delta">The maximum acceptable difference between the
+            the expected and the actual</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsAssignableFrom(System.Type,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object may be assigned a value of a given Type. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <param name="expected">The expected Type.</param>
+            <param name="actual">The object under examination</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsAssignableFrom(System.Type,System.Object)">
+            <summary>
+            Asserts that an object may be assigned a value of a given Type. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <param name="expected">The expected Type.</param>
+            <param name="actual">The object under examination</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsAssignableFrom``1(System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object may be assigned a value of a given Type. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type.</typeparam>
+            <param name="actual">The object under examination</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsAssignableFrom``1(System.Object)">
+            <summary>
+            Asserts that an object may be assigned a value of a given Type. Returns without throwing an exception when
+            inside a multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type.</typeparam>
+            <param name="actual">The object under examination</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotAssignableFrom(System.Type,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object may not be assigned a value of a given Type. Returns without throwing an exception
+            when inside a multiple assert block.
+            </summary>
+            <param name="expected">The expected Type.</param>
+            <param name="actual">The object under examination</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotAssignableFrom(System.Type,System.Object)">
+            <summary>
+            Asserts that an object may not be assigned a value of a given Type. Returns without throwing an exception
+            when inside a multiple assert block.
+            </summary>
+            <param name="expected">The expected Type.</param>
+            <param name="actual">The object under examination</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotAssignableFrom``1(System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object may not be assigned a value of a given Type. Returns without throwing an exception
+            when inside a multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type.</typeparam>
+            <param name="actual">The object under examination</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotAssignableFrom``1(System.Object)">
+            <summary>
+            Asserts that an object may not be assigned a value of a given Type. Returns without throwing an exception
+            when inside a multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type.</typeparam>
+            <param name="actual">The object under examination</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsInstanceOf(System.Type,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object is an instance of a given type. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="expected">The expected Type</param>
+            <param name="actual">The object being examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsInstanceOf(System.Type,System.Object)">
+            <summary>
+            Asserts that an object is an instance of a given type. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <param name="expected">The expected Type</param>
+            <param name="actual">The object being examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsInstanceOf``1(System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object is an instance of a given type. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type</typeparam>
+            <param name="actual">The object being examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsInstanceOf``1(System.Object)">
+            <summary>
+            Asserts that an object is an instance of a given type. Returns without throwing an exception when inside a
+            multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type</typeparam>
+            <param name="actual">The object being examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotInstanceOf(System.Type,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object is not an instance of a given type. Returns without throwing an exception when inside
+            a multiple assert block.
+            </summary>
+            <param name="expected">The expected Type</param>
+            <param name="actual">The object being examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotInstanceOf(System.Type,System.Object)">
+            <summary>
+            Asserts that an object is not an instance of a given type. Returns without throwing an exception when inside
+            a multiple assert block.
+            </summary>
+            <param name="expected">The expected Type</param>
+            <param name="actual">The object being examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotInstanceOf``1(System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that an object is not an instance of a given type. Returns without throwing an exception when inside
+            a multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type</typeparam>
+            <param name="actual">The object being examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Array of objects to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.ClassicAssert.IsNotInstanceOf``1(System.Object)">
+            <summary>
+            Asserts that an object is not an instance of a given type. Returns without throwing an exception when inside
+            a multiple assert block.
+            </summary>
+            <typeparam name="TExpected">The expected Type</typeparam>
+            <param name="actual">The object being examined</param>
+        </member>
+        <member name="T:NUnit.Framework.Legacy.CollectionAssert">
+            <summary>
+            A set of Assert methods operating on one or more collections
+            </summary>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.Equals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE! Use CollectionAssert.AreEqual(...) instead.
+            The Equals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.ReferenceEquals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE!
+            The ReferenceEquals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AllItemsAreInstancesOfType(System.Collections.IEnumerable,System.Type)">
+            <summary>
+            Asserts that all items contained in collection are of the type specified by expectedType.
+            </summary>
+            <param name="collection">IEnumerable containing objects to be considered</param>
+            <param name="expectedType">System.Type that all objects in collection must be instances of</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AllItemsAreInstancesOfType(System.Collections.IEnumerable,System.Type,System.String,System.Object[])">
+            <summary>
+            Asserts that all items contained in collection are of the type specified by expectedType.
+            </summary>
+            <param name="collection">IEnumerable containing objects to be considered</param>
+            <param name="expectedType">System.Type that all objects in collection must be instances of</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AllItemsAreNotNull(System.Collections.IEnumerable)">
+            <summary>
+            Asserts that all items contained in collection are not equal to null.
+            </summary>
+            <param name="collection">IEnumerable containing objects to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AllItemsAreNotNull(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that all items contained in collection are not equal to null.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AllItemsAreUnique(System.Collections.IEnumerable)">
+            <summary>
+            Ensures that every object contained in collection exists within the collection
+            once and only once.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AllItemsAreUnique(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Ensures that every object contained in collection exists within the collection
+            once and only once.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreEqual(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that expected and actual are exactly equal.  The collections must have the same count,
+            and contain the exact same objects in the same order.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreEqual(System.Collections.IEnumerable,System.Collections.IEnumerable,System.Collections.IComparer)">
+            <summary>
+            Asserts that expected and actual are exactly equal.  The collections must have the same count,
+            and contain the exact same objects in the same order.
+            If comparer is not null then it will be used to compare the objects.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="comparer">The IComparer to use in comparing objects from each IEnumerable</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreEqual(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that expected and actual are exactly equal.  The collections must have the same count,
+            and contain the exact same objects in the same order.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreEqual(System.Collections.IEnumerable,System.Collections.IEnumerable,System.Collections.IComparer,System.String,System.Object[])">
+            <summary>
+            Asserts that expected and actual are exactly equal.  The collections must have the same count,
+            and contain the exact same objects in the same order.
+            If comparer is not null then it will be used to compare the objects.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="comparer">The IComparer to use in comparing objects from each IEnumerable</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreEquivalent(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that expected and actual are equivalent, containing the same objects but the match may be in any order.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreEquivalent(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that expected and actual are equivalent, containing the same objects but the match may be in any order.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreNotEqual(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that expected and actual are not exactly equal.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreNotEqual(System.Collections.IEnumerable,System.Collections.IEnumerable,System.Collections.IComparer)">
+            <summary>
+            Asserts that expected and actual are not exactly equal.
+            If comparer is not null then it will be used to compare the objects.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="comparer">The IComparer to use in comparing objects from each IEnumerable</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreNotEqual(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that expected and actual are not exactly equal.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreNotEqual(System.Collections.IEnumerable,System.Collections.IEnumerable,System.Collections.IComparer,System.String,System.Object[])">
+            <summary>
+            Asserts that expected and actual are not exactly equal.
+            If comparer is not null then it will be used to compare the objects.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="comparer">The IComparer to use in comparing objects from each IEnumerable</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreNotEquivalent(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that expected and actual are not equivalent.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.AreNotEquivalent(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that expected and actual are not equivalent.
+            </summary>
+            <param name="expected">The first IEnumerable of objects to be considered</param>
+            <param name="actual">The second IEnumerable of objects to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.Contains(System.Collections.IEnumerable,System.Object)">
+            <summary>
+            Asserts that collection contains actual as an item.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+            <param name="actual">Object to be found within collection</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.Contains(System.Collections.IEnumerable,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that collection contains actual as an item.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+            <param name="actual">Object to be found within collection</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.DoesNotContain(System.Collections.IEnumerable,System.Object)">
+            <summary>
+            Asserts that collection does not contain actual as an item.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+            <param name="actual">Object that cannot exist within collection</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.DoesNotContain(System.Collections.IEnumerable,System.Object,System.String,System.Object[])">
+            <summary>
+            Asserts that collection does not contain actual as an item.
+            </summary>
+            <param name="collection">IEnumerable of objects to be considered</param>
+            <param name="actual">Object that cannot exist within collection</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsNotSubsetOf(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that the superset does not contain the subset
+            </summary>
+            <param name="subset">The IEnumerable subset to be considered</param>
+            <param name="superset">The IEnumerable superset to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsNotSubsetOf(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that the superset does not contain the subset
+            </summary>
+            <param name="subset">The IEnumerable subset to be considered</param>
+            <param name="superset">The IEnumerable superset to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsSubsetOf(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that the superset contains the subset.
+            </summary>
+            <param name="subset">The IEnumerable subset to be considered</param>
+            <param name="superset">The IEnumerable superset to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsSubsetOf(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that the superset contains the subset.
+            </summary>
+            <param name="subset">The IEnumerable subset to be considered</param>
+            <param name="superset">The IEnumerable superset to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsNotSupersetOf(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that the subset does not contain the superset
+            </summary>
+            <param name="superset">The IEnumerable superset to be considered</param>
+            <param name="subset">The IEnumerable subset to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsNotSupersetOf(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that the subset does not contain the superset
+            </summary>
+            <param name="superset">The IEnumerable superset to be considered</param>
+            <param name="subset">The IEnumerable subset to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsSupersetOf(System.Collections.IEnumerable,System.Collections.IEnumerable)">
+            <summary>
+            Asserts that the subset contains the superset.
+            </summary>
+            <param name="superset">The IEnumerable superset to be considered</param>
+            <param name="subset">The IEnumerable subset to be considered</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsSupersetOf(System.Collections.IEnumerable,System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Asserts that the subset contains the superset.
+            </summary>
+            <param name="superset">The IEnumerable superset to be considered</param>
+            <param name="subset">The IEnumerable subset to be considered</param>
+            <param name="message">The message that will be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsEmpty(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Assert that an array, list or other collection is empty
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+            <param name="message">The message to be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsEmpty(System.Collections.IEnumerable)">
+            <summary>
+            Assert that an array,list or other collection is empty
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsNotEmpty(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Assert that an array, list or other collection is not empty.
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+            <param name="message">The message to be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsNotEmpty(System.Collections.IEnumerable)">
+            <summary>
+            Assert that an array, list or other collection is not empty.
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsOrdered(System.Collections.IEnumerable,System.String,System.Object[])">
+            <summary>
+            Assert that an array, list or other collection is ordered
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+            <param name="message">The message to be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsOrdered(System.Collections.IEnumerable)">
+            <summary>
+            Assert that an array, list or other collection is ordered
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsOrdered(System.Collections.IEnumerable,System.Collections.IComparer,System.String,System.Object[])">
+            <summary>
+            Assert that an array, list or other collection is ordered
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+            <param name="comparer">A custom comparer to perform the comparisons</param>
+            <param name="message">The message to be displayed on failure</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.CollectionAssert.IsOrdered(System.Collections.IEnumerable,System.Collections.IComparer)">
+            <summary>
+            Assert that an array, list or other collection is ordered
+            </summary>
+            <param name="collection">An array, list or other collection implementing IEnumerable</param>
+            <param name="comparer">A custom comparer to perform the comparisons</param>
+        </member>
+        <member name="T:NUnit.Framework.Legacy.DirectoryAssert">
+            <summary>
+            Asserts on Directories
+            </summary>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.Equals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE! Use DirectoryAssert.AreEqual(...) instead.
+            The Equals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.ReferenceEquals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE!
+            The ReferenceEquals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.AreEqual(System.IO.DirectoryInfo,System.IO.DirectoryInfo,System.String,System.Object[])">
+            <summary>
+            Verifies that two directories are equal.  Two directories are considered
+            equal if both are null, or if both point to the same directory.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A directory containing the value that is expected</param>
+            <param name="actual">A directory containing the actual value</param>
+            <param name="message">The message to display if the directories are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.AreEqual(System.IO.DirectoryInfo,System.IO.DirectoryInfo)">
+            <summary>
+            Verifies that two directories are equal.  Two directories are considered
+            equal if both are null, or if both point to the same directory.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A directory containing the value that is expected</param>
+            <param name="actual">A directory containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.AreNotEqual(System.IO.DirectoryInfo,System.IO.DirectoryInfo,System.String,System.Object[])">
+            <summary>
+            Asserts that two directories are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A directory containing the value that is expected</param>
+            <param name="actual">A directory containing the actual value</param>
+            <param name="message">The message to display if directories are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.AreNotEqual(System.IO.DirectoryInfo,System.IO.DirectoryInfo)">
+            <summary>
+            Asserts that two directories are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A directory containing the value that is expected</param>
+            <param name="actual">A directory containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.Exists(System.IO.DirectoryInfo,System.String,System.Object[])">
+            <summary>
+            Asserts that the directory exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A directory containing the actual value</param>
+            <param name="message">The message to display if directories are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.Exists(System.IO.DirectoryInfo)">
+            <summary>
+            Asserts that the directory exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A directory containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.Exists(System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that the directory exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a directory containing the actual value</param>
+            <param name="message">The message to display if directories are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.Exists(System.String)">
+            <summary>
+            Asserts that the directory exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a directory containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.DoesNotExist(System.IO.DirectoryInfo,System.String,System.Object[])">
+            <summary>
+            Asserts that the directory does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A directory containing the actual value</param>
+            <param name="message">The message to display if directories are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.DoesNotExist(System.IO.DirectoryInfo)">
+            <summary>
+            Asserts that the directory does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A directory containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.DoesNotExist(System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that the directory does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a directory containing the actual value</param>
+            <param name="message">The message to display if directories are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.DirectoryAssert.DoesNotExist(System.String)">
+            <summary>
+            Asserts that the directory does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a directory containing the actual value</param>
+        </member>
+        <member name="T:NUnit.Framework.Legacy.FileAssert">
+            <summary>
+            Asserts on Files
+            </summary>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.Equals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE! Use FileAssert.AreEqual(...) instead.
+            The Equals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.ReferenceEquals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE!
+            The ReferenceEquals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreEqual(System.IO.Stream,System.IO.Stream,System.String,System.Object[])">
+            <summary>
+            Verifies that two Streams are equal.  Two Streams are considered
+            equal if both are null, or if both have the same value byte for byte.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The expected Stream</param>
+            <param name="actual">The actual Stream</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreEqual(System.IO.Stream,System.IO.Stream)">
+            <summary>
+            Verifies that two Streams are equal.  Two Streams are considered
+            equal if both are null, or if both have the same value byte for byte.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The expected Stream</param>
+            <param name="actual">The actual Stream</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreEqual(System.IO.FileInfo,System.IO.FileInfo,System.String,System.Object[])">
+            <summary>
+            Verifies that two files are equal.  Two files are considered
+            equal if both are null, or if both have the same value byte for byte.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A file containing the value that is expected</param>
+            <param name="actual">A file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreEqual(System.IO.FileInfo,System.IO.FileInfo)">
+            <summary>
+            Verifies that two files are equal.  Two files are considered
+            equal if both are null, or if both have the same value byte for byte.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A file containing the value that is expected</param>
+            <param name="actual">A file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreEqual(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Verifies that two files are equal.  Two files are considered
+            equal if both are null, or if both have the same value byte for byte.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The path to a file containing the value that is expected</param>
+            <param name="actual">The path to a file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreEqual(System.String,System.String)">
+            <summary>
+            Verifies that two files are equal.  Two files are considered
+            equal if both are null, or if both have the same value byte for byte.
+            If they are not equal an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The path to a file containing the value that is expected</param>
+            <param name="actual">The path to a file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreNotEqual(System.IO.Stream,System.IO.Stream,System.String,System.Object[])">
+            <summary>
+            Asserts that two Streams are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The expected Stream</param>
+            <param name="actual">The actual Stream</param>
+            <param name="message">The message to be displayed when the two Stream are the same.</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreNotEqual(System.IO.Stream,System.IO.Stream)">
+            <summary>
+            Asserts that two Streams are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The expected Stream</param>
+            <param name="actual">The actual Stream</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreNotEqual(System.IO.FileInfo,System.IO.FileInfo,System.String,System.Object[])">
+            <summary>
+            Asserts that two files are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A file containing the value that is expected</param>
+            <param name="actual">A file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreNotEqual(System.IO.FileInfo,System.IO.FileInfo)">
+            <summary>
+            Asserts that two files are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">A file containing the value that is expected</param>
+            <param name="actual">A file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreNotEqual(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that two files are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The path to a file containing the value that is expected</param>
+            <param name="actual">The path to a file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.AreNotEqual(System.String,System.String)">
+            <summary>
+            Asserts that two files are not equal. If they are equal
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="expected">The path to a file containing the value that is expected</param>
+            <param name="actual">The path to a file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.Exists(System.IO.FileInfo,System.String,System.Object[])">
+            <summary>
+            Asserts that the file exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.Exists(System.IO.FileInfo)">
+            <summary>
+            Asserts that the file exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.Exists(System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that the file exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.Exists(System.String)">
+            <summary>
+            Asserts that the file exists. If it does not exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.DoesNotExist(System.IO.FileInfo,System.String,System.Object[])">
+            <summary>
+            Asserts that the file does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.DoesNotExist(System.IO.FileInfo)">
+            <summary>
+            Asserts that the file does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">A file containing the actual value</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.DoesNotExist(System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that the file does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a file containing the actual value</param>
+            <param name="message">The message to display if Streams are not equal</param>
+            <param name="args">Arguments to be used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.FileAssert.DoesNotExist(System.String)">
+            <summary>
+            Asserts that the file does not exist. If it does exist
+            an <see cref="T:NUnit.Framework.AssertionException"/> is thrown.
+            </summary>
+            <param name="actual">The path to a file containing the actual value</param>
+        </member>
+        <member name="T:NUnit.Framework.Legacy.StringAssert">
+            <summary>
+            Basic Asserts on strings.
+            </summary>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.Equals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE! Use StringAssert.AreEqualIgnoringCase(...) or Assert.AreEqual(...) instead.
+            The Equals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.ReferenceEquals(System.Object,System.Object)">
+            <summary>
+            DO NOT USE!
+            The ReferenceEquals method throws an InvalidOperationException. This is done
+            to make sure there is no mistake by calling this function.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.Contains(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string is found within another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.Contains(System.String,System.String)">
+            <summary>
+            Asserts that a string is found within another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotContain(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string is not found within another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotContain(System.String,System.String)">
+            <summary>
+            Asserts that a string is found within another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.StartsWith(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string starts with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.StartsWith(System.String,System.String)">
+            <summary>
+            Asserts that a string starts with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotStartWith(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string does not start with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotStartWith(System.String,System.String)">
+            <summary>
+            Asserts that a string does not start with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.EndsWith(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string ends with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.EndsWith(System.String,System.String)">
+            <summary>
+            Asserts that a string ends with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotEndWith(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string does not end with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotEndWith(System.String,System.String)">
+            <summary>
+            Asserts that a string does not end with another string.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The string to be examined</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.AreEqualIgnoringCase(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that two strings are equal, without regard to case.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The actual string</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.AreEqualIgnoringCase(System.String,System.String)">
+            <summary>
+            Asserts that two strings are equal, without regard to case.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The actual string</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.AreNotEqualIgnoringCase(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that two strings are not equal, without regard to case.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The actual string</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.AreNotEqualIgnoringCase(System.String,System.String)">
+            <summary>
+            Asserts that two strings are not equal, without regard to case.
+            </summary>
+            <param name="expected">The expected string</param>
+            <param name="actual">The actual string</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.IsMatch(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string matches an expected regular expression pattern.
+            </summary>
+            <param name="pattern">The regex pattern to be matched</param>
+            <param name="actual">The actual string</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.IsMatch(System.String,System.String)">
+            <summary>
+            Asserts that a string matches an expected regular expression pattern.
+            </summary>
+            <param name="pattern">The regex pattern to be matched</param>
+            <param name="actual">The actual string</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotMatch(System.String,System.String,System.String,System.Object[])">
+            <summary>
+            Asserts that a string does not match an expected regular expression pattern.
+            </summary>
+            <param name="pattern">The regex pattern to be used</param>
+            <param name="actual">The actual string</param>
+            <param name="message">The message to display in case of failure</param>
+            <param name="args">Arguments used in formatting the message</param>
+        </member>
+        <member name="M:NUnit.Framework.Legacy.StringAssert.DoesNotMatch(System.String,System.String)">
+            <summary>
+            Asserts that a string does not match an expected regular expression pattern.
+            </summary>
+            <param name="pattern">The regex pattern to be used</param>
+            <param name="actual">The actual string</param>
+        </member>
+    </members>
+</doc>

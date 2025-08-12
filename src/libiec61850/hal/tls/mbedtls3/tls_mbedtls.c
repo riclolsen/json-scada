@@ -11,23 +11,21 @@
 
 #include <string.h>
 
-#include "tls_socket.h"
 #include "hal_thread.h"
-#include "lib_memory.h"
 #include "hal_time.h"
+#include "lib_memory.h"
 #include "linked_list.h"
+#include "tls_socket.h"
 
-#include "mbedtls/platform.h"
-#include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
-// MIGRATE 2.28->3.x.x: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#remove-the-certs-module-from-the-library
-// #include "mbedtls/certs.h" (MIGRATE 2.28->3.x.x)
-#include "mbedtls/x509.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/net_sockets.h"
-#include "mbedtls/error.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/platform.h"
 #include "mbedtls/debug.h"
+#include "mbedtls/error.h"
+#include "mbedtls/net_sockets.h"
+#include "mbedtls/ssl.h"
 #include "mbedtls/ssl_cache.h"
+#include "mbedtls/x509.h"
 
 #define SEC_EVENT_ALARM 2
 #define SEC_EVENT_WARNING 1
@@ -38,14 +36,18 @@
 #endif
 
 #if (CONFIG_DEBUG_TLS == 1)
-#define DEBUG_PRINT(appId, fmt, ...) fprintf(stderr, "%s: " fmt, appId, ## __VA_ARGS__)
+#define DEBUG_PRINT(appId, fmt, ...) fprintf(stderr, "%s: " fmt, appId, ##__VA_ARGS__)
 #else
-#define DEBUG_PRINT(fmt, ...) do {} while(0)
+#define DEBUG_PRINT(fmt, ...)                                                                                          \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (0)
 #endif
 
 static int psaInitCounter = 0;
 
-struct sTLSConfiguration {
+struct sTLSConfiguration
+{
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
 
@@ -68,15 +70,14 @@ struct sTLSConfiguration {
 
     bool chainValidation;
     bool allowOnlyKnownCertificates;
+    bool timeValidation;
 
     /* TLS session renegotiation interval in milliseconds */
     int renegotiationTimeInMs;
 
-    // MIGRATE 2.28->3.x.x: Changed min version to 1.2 to reflect the removal of 1.1 and 1.0
     /* TLS minimum version allowed (default: TLS_VERSION_TLS_1_2) */
     TLSConfigVersion minVersion;
-    
-    // MIGRATE 2.28->3.x.x: Kept the max version but changed documentation
+
     /* TLS maximum version allowed (default: TLS_VERSION_NOT_SELECTED) */
     TLSConfigVersion maxVersion;
 
@@ -95,7 +96,8 @@ struct sTLSConfiguration {
     int maxCiphersuites;
 };
 
-struct sTLSSocket {
+struct sTLSSocket
+{
     mbedtls_ssl_context ssl;
     Socket socket;
     mbedtls_ssl_config conf;
@@ -112,20 +114,21 @@ struct sTLSSocket {
 };
 
 static void
-raiseSecurityEvent(TLSConfiguration config, TLSEventLevel eventCategory, int eventCode, const char* message, TLSSocket socket)
+raiseSecurityEvent(TLSConfiguration config, TLSEventLevel eventCategory, int eventCode, const char* message,
+                   TLSSocket socket)
 {
-    if (config->eventHandler) {
+    if (config->eventHandler)
+    {
         config->eventHandler(config->eventHandlerParameter, eventCategory, eventCode, message, (TLSConnection)socket);
     }
 }
 
 static bool
-compareCertificates(mbedtls_x509_crt *crt1, mbedtls_x509_crt *crt2)
+compareCertificates(mbedtls_x509_crt* crt1, mbedtls_x509_crt* crt2)
 {
-    // MIGRATE 2.28->3.x.x: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#most-structure-fields-are-now-private
-    if (crt1 != NULL && crt2 != NULL && 
-        crt1->raw.len == crt2->raw.len && 
-        memcmp(crt1->raw.p, crt2->raw.p, crt1->raw.len) == 0) {
+    if (crt1 != NULL && crt2 != NULL && crt1->raw.len == crt2->raw.len &&
+        memcmp(crt1->raw.p, crt2->raw.p, crt1->raw.len) == 0)
+    {
         return true;
     }
 
@@ -133,9 +136,9 @@ compareCertificates(mbedtls_x509_crt *crt1, mbedtls_x509_crt *crt2)
 }
 
 static int
-verifyCertificate (void* parameter, mbedtls_x509_crt *crt, int certificate_depth, uint32_t *flags)
+verifyCertificate(void* parameter, mbedtls_x509_crt* crt, int certificate_depth, uint32_t* flags)
 {
-    TLSSocket self = (TLSSocket) parameter;
+    TLSSocket self = (TLSSocket)parameter;
 
     DEBUG_PRINT("TLS", "Verify cert: depth %i\n", certificate_depth);
 
@@ -165,7 +168,7 @@ verifyCertificate (void* parameter, mbedtls_x509_crt *crt, int certificate_depth
 
             while (certList)
             {
-                mbedtls_x509_crt* allowedCert = (mbedtls_x509_crt*) LinkedList_getData(certList);
+                mbedtls_x509_crt* allowedCert = (mbedtls_x509_crt*)LinkedList_getData(certList);
 
                 DEBUG_PRINT("TLS", "Compare With:\n");
                 mbedtls_x509_crt_info(buffer, 1023, "     ", allowedCert);
@@ -181,13 +184,52 @@ verifyCertificate (void* parameter, mbedtls_x509_crt *crt, int certificate_depth
             }
 
             if (certMatches)
-                *flags = 0;
+            {
+                if (self->tlsConfig->chainValidation == false)
+                    *flags = 0;
+            }
             else
             {
-                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED, "Alarm: certificate validation: trusted individual certificate not available", self);
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED,
+                                   "Alarm: certificate validation: trusted individual certificate not available", self);
 
                 *flags |= MBEDTLS_X509_BADCERT_OTHER;
                 return 1;
+            }
+        }
+
+        if (self->tlsConfig->timeValidation == false)
+        {
+            if (*flags & MBEDTLS_X509_BADCERT_EXPIRED)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCERT_EXPIRED;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CERT_EXPIRED,
+                                   "Warning: certificate validation: using expired certificate", self);
+            }
+
+            if (*flags & MBEDTLS_X509_BADCRL_EXPIRED)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCRL_EXPIRED;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CRL_EXPIRED,
+                                   "Warning: certificate validation: using expired CRL", self);
+            }
+
+            if (*flags & MBEDTLS_X509_BADCERT_FUTURE)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCERT_FUTURE;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CERT_NOT_YET_VALID,
+                                   "Warning: certificate validation: using certificate with validity in future", self);
+            }
+
+            if (*flags & MBEDTLS_X509_BADCRL_FUTURE)
+            {
+                *flags = *flags - MBEDTLS_X509_BADCRL_FUTURE;
+
+                raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_CRL_NOT_YET_VALID,
+                                   "Warning: certificate validation: using CRL with validity in future", self);
             }
         }
 
@@ -196,7 +238,7 @@ verifyCertificate (void* parameter, mbedtls_x509_crt *crt, int certificate_depth
             if (*flags == 0)
             {
                 self->peerCertLength = 0;
-                self->peerCert = (uint8_t*) GLOBAL_MALLOC(crt->raw.len);
+                self->peerCert = (uint8_t*)GLOBAL_MALLOC(crt->raw.len);
 
                 if (self->peerCert)
                 {
@@ -218,13 +260,14 @@ TLSConfiguration_setupComplete(TLSConfiguration self)
 {
     if (self->setupComplete == false)
     {
-        mbedtls_ssl_conf_ca_chain( &(self->conf), &(self->cacerts), &(self->crl) );
+        mbedtls_ssl_conf_ca_chain(&(self->conf), &(self->cacerts), &(self->crl));
 
         if (self->ownCertificate.version > 0)
         {
-            int ret = mbedtls_ssl_conf_own_cert( &(self->conf), &(self->ownCertificate), &(self->ownKey));
+            int ret = mbedtls_ssl_conf_own_cert(&(self->conf), &(self->ownCertificate), &(self->ownKey));
 
-            if (ret != 0) {
+            if (ret != 0)
+            {
                 DEBUG_PRINT("TLS", "mbedtls_ssl_conf_own_cert returned -0x%x\n", -ret);
                 return false;
             }
@@ -232,19 +275,17 @@ TLSConfiguration_setupComplete(TLSConfiguration self)
 
         if (self->useSessionResumption)
         {
-            if (mbedtls_ssl_conf_get_endpoint(&(self->conf)) == MBEDTLS_SSL_IS_CLIENT) {
-
+            if (mbedtls_ssl_conf_get_endpoint(&(self->conf)) == MBEDTLS_SSL_IS_CLIENT)
+            {
             }
             else
             {
-                mbedtls_ssl_cache_init( &(self->cache) );
-                
-                // MIGRATE 2.28->3.x.x: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#most-structure-fields-are-now-private
+                mbedtls_ssl_cache_init(&(self->cache));
+
                 mbedtls_ssl_cache_set_timeout(&(self->cache), self->sessionResumptionInterval);
 
-                mbedtls_ssl_conf_session_cache( &(self->conf), &(self->cache),
-                                   mbedtls_ssl_cache_get,
-                                   mbedtls_ssl_cache_set );
+                mbedtls_ssl_conf_session_cache(&(self->conf), &(self->cache), mbedtls_ssl_cache_get,
+                                               mbedtls_ssl_cache_set);
             }
         }
 
@@ -309,31 +350,36 @@ TLSConfiguration_clearCipherSuiteList(TLSConfiguration self)
 TLSConfiguration
 TLSConfiguration_create()
 {
-    TLSConfiguration self = (TLSConfiguration) GLOBAL_CALLOC(1, sizeof(struct sTLSConfiguration));
+    TLSConfiguration self = (TLSConfiguration)GLOBAL_CALLOC(1, sizeof(struct sTLSConfiguration));
 
     if (self)
     {
         /* call to psa_crypto_init required -> see https://github.com/Mbed-TLS/mbedtls/issues/9223 */
-        psa_status_t  psaStatus = psa_crypto_init();
+        psa_status_t psaStatus = psa_crypto_init();
+
+        if (psaStatus != PSA_SUCCESS)
+        {
+            DEBUG_PRINT("TLS", "psa_crypto_init failed with %i\n", psaStatus);
+            GLOBAL_FREEMEM(self);
+            return NULL;
+        }
 
         psaInitCounter++;
 
-        mbedtls_ssl_config_init( &(self->conf) );
-        mbedtls_x509_crt_init( &(self->ownCertificate) );
-        mbedtls_x509_crt_init( &(self->cacerts) );
-        mbedtls_x509_crl_init( &(self->crl) );
-        mbedtls_pk_init( &(self->ownKey) );
-        mbedtls_entropy_init( &(self->entropy) );
-        mbedtls_ctr_drbg_init( &(self->ctr_drbg) );
+        mbedtls_ssl_config_init(&(self->conf));
+        mbedtls_x509_crt_init(&(self->ownCertificate));
+        mbedtls_x509_crt_init(&(self->cacerts));
+        mbedtls_x509_crl_init(&(self->crl));
+        mbedtls_pk_init(&(self->ownKey));
+        mbedtls_entropy_init(&(self->entropy));
+        mbedtls_ctr_drbg_init(&(self->ctr_drbg));
 
         /* WARINING is fixed to server! */
-        mbedtls_ssl_config_defaults( &(self->conf),
-                MBEDTLS_SSL_IS_SERVER,
-                MBEDTLS_SSL_TRANSPORT_STREAM,
-                MBEDTLS_SSL_PRESET_DEFAULT );
+        mbedtls_ssl_config_defaults(&(self->conf), MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM,
+                                    MBEDTLS_SSL_PRESET_DEFAULT);
 
-        mbedtls_ctr_drbg_seed( &(self->ctr_drbg), mbedtls_entropy_func, &(self->entropy), NULL, 0);
-        mbedtls_ssl_conf_rng( &(self->conf), mbedtls_ctr_drbg_random, &(self->ctr_drbg) );
+        mbedtls_ctr_drbg_seed(&(self->ctr_drbg), mbedtls_entropy_func, &(self->entropy), NULL, 0);
+        mbedtls_ssl_conf_rng(&(self->conf), mbedtls_ctr_drbg_random, &(self->ctr_drbg));
 
         mbedtls_ssl_conf_authmode(&(self->conf), MBEDTLS_SSL_VERIFY_REQUIRED);
 
@@ -349,6 +395,9 @@ TLSConfiguration_create()
         /* default behavior is to allow all certificates that are signed by the CA */
         self->chainValidation = true;
         self->allowOnlyKnownCertificates = false;
+
+        /* default behaviour is to check for valid-from and expiration times */
+        self->timeValidation = true;
         self->setupComplete = false;
 
         self->eventHandler = NULL;
@@ -370,13 +419,15 @@ TLSConfiguration_create()
 
             /* mandatory cipher suites by IEC 62351-4:2018 */
             self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA256;
-            /* self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_DH_RSA_WITH_AES_128_GCM_SHA256; */ /* weak - not supported? */
+            /* self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_DH_RSA_WITH_AES_128_GCM_SHA256; */ /* weak - not
+                                                                                                     supported? */
             self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_DHE_RSA_WITH_AES_128_GCM_SHA256;
             self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256;
 
             /* recommended cipher suites by IEC 62351-4:2018 */
 
-            /* self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_DH_RSA_WITH_AES_128_CBC_SHA256; */ /* weak - not supported?*/
+            /* self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_DH_RSA_WITH_AES_128_CBC_SHA256; */ /* weak - not
+                                                                                                     supported?*/
             /* self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_DH_RSA_WITH_AES_256_GCM_SHA384; */ /* not supported?*/
             self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256;
             self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384;
@@ -387,11 +438,16 @@ TLSConfiguration_create()
             self->ciphersuites[cipherIndex++] = MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384;
 
             /* TLS 1.3 cipher suites */
-            self->ciphersuites[cipherIndex++] = MBEDTLS_TLS1_3_AES_128_GCM_SHA256; /* mandatory according IEC 62351-3:2023 */
-            self->ciphersuites[cipherIndex++] = MBEDTLS_TLS1_3_AES_256_GCM_SHA384; /* mandatory according IEC 62351-3:2023 */
-            self->ciphersuites[cipherIndex++] = MBEDTLS_TLS1_3_CHACHA20_POLY1305_SHA256; /* optional according IEC 62351-3:2023 */
-            self->ciphersuites[cipherIndex++] = MBEDTLS_TLS1_3_AES_128_CCM_SHA256; /* mandatory according IEC 62351-3:2023 */
-            self->ciphersuites[cipherIndex++] = MBEDTLS_TLS1_3_AES_128_CCM_8_SHA256 ; /* optional according IEC 62351-3:2023 */
+            self->ciphersuites[cipherIndex++] =
+                MBEDTLS_TLS1_3_AES_128_GCM_SHA256; /* mandatory according IEC 62351-3:2023 */
+            self->ciphersuites[cipherIndex++] =
+                MBEDTLS_TLS1_3_AES_256_GCM_SHA384; /* mandatory according IEC 62351-3:2023 */
+            self->ciphersuites[cipherIndex++] =
+                MBEDTLS_TLS1_3_CHACHA20_POLY1305_SHA256; /* optional according IEC 62351-3:2023 */
+            self->ciphersuites[cipherIndex++] =
+                MBEDTLS_TLS1_3_AES_128_CCM_SHA256; /* mandatory according IEC 62351-3:2023 */
+            self->ciphersuites[cipherIndex++] =
+                MBEDTLS_TLS1_3_AES_128_CCM_8_SHA256; /* optional according IEC 62351-3:2023 */
         }
     }
 
@@ -442,6 +498,12 @@ TLSConfiguration_setChainValidation(TLSConfiguration self, bool value)
 }
 
 void
+TLSConfiguration_setTimeValidation(TLSConfiguration self, bool value)
+{
+    self->timeValidation = value;
+}
+
+void
 TLSConfiguration_setAllowOnlyKnownCertificates(TLSConfiguration self, bool value)
 {
     self->allowOnlyKnownCertificates = value;
@@ -461,7 +523,7 @@ TLSConfiguration_setOwnCertificate(TLSConfiguration self, uint8_t* certificate, 
 bool
 TLSConfiguration_setOwnCertificateFromFile(TLSConfiguration self, const char* filename)
 {
-    int ret =  mbedtls_x509_crt_parse_file(&(self->ownCertificate), filename);
+    int ret = mbedtls_x509_crt_parse_file(&(self->ownCertificate), filename);
 
     if (ret != 0)
         DEBUG_PRINT("TLS", "mbedtls_x509_crt_parse_file returned -0x%x\n", -ret);
@@ -472,9 +534,9 @@ TLSConfiguration_setOwnCertificateFromFile(TLSConfiguration self, const char* fi
 bool
 TLSConfiguration_setOwnKey(TLSConfiguration self, uint8_t* key, int keyLen, const char* keyPassword)
 {
-    // MIGRATE 2.28->3.x.x: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#some-functions-gained-an-rng-parameter
-    // MIGRATE 2.28->3.x.x: drbg needs to be initialized, but it seems to be done in TLSConfiguration_create
-    int ret = mbedtls_pk_parse_key(&(self->ownKey), key, keyLen, (const uint8_t*) keyPassword, (keyPassword == NULL) ? 0 : strlen(keyPassword), mbedtls_ctr_drbg_random, &(self->ctr_drbg));
+    int ret = mbedtls_pk_parse_key(&(self->ownKey), key, keyLen, (const uint8_t*)keyPassword,
+                                   (keyPassword == NULL) ? 0 : strlen(keyPassword), mbedtls_ctr_drbg_random,
+                                   &(self->ctr_drbg));
 
     if (ret != 0)
         DEBUG_PRINT("TLS", "mbedtls_pk_parse_key returned -0x%x\n", -ret);
@@ -485,9 +547,8 @@ TLSConfiguration_setOwnKey(TLSConfiguration self, uint8_t* key, int keyLen, cons
 bool
 TLSConfiguration_setOwnKeyFromFile(TLSConfiguration self, const char* filename, const char* keyPassword)
 {
-    // MIGRATE 2.28->3.x.x: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#some-functions-gained-an-rng-parameter
-    // MIGRATE 2.28->3.x.x: drbg needs to be initialized, but it seems to be done in TLSConfiguration_create
-    int ret =  mbedtls_pk_parse_keyfile(&(self->ownKey), filename, keyPassword, mbedtls_ctr_drbg_random, &(self->ctr_drbg));
+    int ret =
+        mbedtls_pk_parse_keyfile(&(self->ownKey), filename, keyPassword, mbedtls_ctr_drbg_random, &(self->ctr_drbg));
 
     if (ret != 0)
         DEBUG_PRINT("TLS", "mbedtls_pk_parse_keyfile returned -0x%x\n", -ret);
@@ -498,7 +559,7 @@ TLSConfiguration_setOwnKeyFromFile(TLSConfiguration self, const char* filename, 
 bool
 TLSConfiguration_addAllowedCertificate(TLSConfiguration self, uint8_t* certificate, int certLen)
 {
-    mbedtls_x509_crt* cert = (mbedtls_x509_crt*) GLOBAL_CALLOC(1, sizeof(mbedtls_x509_crt));
+    mbedtls_x509_crt* cert = (mbedtls_x509_crt*)GLOBAL_CALLOC(1, sizeof(mbedtls_x509_crt));
 
     int ret = mbedtls_x509_crt_parse(cert, certificate, certLen);
 
@@ -517,7 +578,7 @@ TLSConfiguration_addAllowedCertificate(TLSConfiguration self, uint8_t* certifica
 bool
 TLSConfiguration_addAllowedCertificateFromFile(TLSConfiguration self, const char* filename)
 {
-    mbedtls_x509_crt* cert = (mbedtls_x509_crt*) GLOBAL_CALLOC(1, sizeof(mbedtls_x509_crt));
+    mbedtls_x509_crt* cert = (mbedtls_x509_crt*)GLOBAL_CALLOC(1, sizeof(mbedtls_x509_crt));
 
     int ret = mbedtls_x509_crt_parse_file(cert, filename);
 
@@ -536,7 +597,7 @@ TLSConfiguration_addAllowedCertificateFromFile(TLSConfiguration self, const char
 bool
 TLSConfiguration_addCACertificate(TLSConfiguration self, uint8_t* certificate, int certLen)
 {
-    int ret =  mbedtls_x509_crt_parse(&(self->cacerts), certificate, certLen);
+    int ret = mbedtls_x509_crt_parse(&(self->cacerts), certificate, certLen);
 
     if (ret != 0)
     {
@@ -550,7 +611,7 @@ TLSConfiguration_addCACertificate(TLSConfiguration self, uint8_t* certificate, i
 bool
 TLSConfiguration_addCACertificateFromFile(TLSConfiguration self, const char* filename)
 {
-    int ret =  mbedtls_x509_crt_parse_file(&(self->cacerts), filename);
+    int ret = mbedtls_x509_crt_parse_file(&(self->cacerts), filename);
 
     if (ret != 0)
         DEBUG_PRINT("TLS", "mbedtls_x509_crt_parse returned -0x%x\n", -ret);
@@ -578,10 +639,12 @@ TLSConfiguration_addCRL(TLSConfiguration self, uint8_t* crl, int crlLen)
 {
     int ret = mbedtls_x509_crl_parse(&(self->crl), crl, crlLen);
 
-    if (ret != 0) {
+    if (ret != 0)
+    {
         DEBUG_PRINT("TLS", "mbedtls_x509_crl_parse returned -0x%x\n", -ret);
     }
-    else {
+    else
+    {
         udpatedCRL(self);
     }
 
@@ -591,12 +654,14 @@ TLSConfiguration_addCRL(TLSConfiguration self, uint8_t* crl, int crlLen)
 bool
 TLSConfiguration_addCRLFromFile(TLSConfiguration self, const char* filename)
 {
-    int ret =  mbedtls_x509_crl_parse_file(&(self->crl), filename);
+    int ret = mbedtls_x509_crl_parse_file(&(self->crl), filename);
 
-    if (ret != 0) {
+    if (ret != 0)
+    {
         DEBUG_PRINT("TLS", "mbedtls_x509_crl_parse_file returned %d\n", ret);
     }
-    else {
+    else
+    {
         udpatedCRL(self);
     }
 
@@ -650,7 +715,7 @@ TLSConfiguration_destroy(TLSConfiguration self)
 
         while (certElem)
         {
-            mbedtls_x509_crt* cert = (mbedtls_x509_crt*) LinkedList_getData(certElem);
+            mbedtls_x509_crt* cert = (mbedtls_x509_crt*)LinkedList_getData(certElem);
 
             mbedtls_x509_crt_free(cert);
 
@@ -676,111 +741,136 @@ createSecurityEvents(TLSConfiguration config, int ret, uint32_t flags, TLSSocket
     if (config->eventHandler == NULL)
         return;
 
-    switch (ret) {
+    switch (ret)
+    {
     case MBEDTLS_ERR_X509_UNKNOWN_SIG_ALG:
-        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_NO_CIPHER, "Alarm: Algorithm not supported", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_NO_CIPHER, "Alarm: Algorithm not supported",
+                           socket);
         break;
 
-    // MIGRATE 2.28->3.x.x:https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#changes-in-the-ssl-error-code-space
-    // case MBEDTLS_ERR_SSL_NO_CIPHER_CHOSEN: (MIGRATE 2.28->3.x.x)
-    //     raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_NO_CIPHER, "Alarm: no matching TLS ciphers", socket);
-    //     break;
+        // MIGRATE 2.28->3.x.x:https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#changes-in-the-ssl-error-code-space
+        // case MBEDTLS_ERR_SSL_NO_CIPHER_CHOSEN: (MIGRATE 2.28->3.x.x)
+        //     raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_NO_CIPHER, "Alarm: no matching TLS
+        //     ciphers", socket); break;
 
-    // case MBEDTLS_ERR_SSL_NO_USABLE_CIPHERSUITE: (MIGRATE 2.28->3.x.x)
-    //     raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_ALGO_NOT_SUPPORTED, "Alarm: Algorithm not supported", socket);
-    //     break;
-
+        // case MBEDTLS_ERR_SSL_NO_USABLE_CIPHERSUITE: (MIGRATE 2.28->3.x.x)
+        //     raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_ALGO_NOT_SUPPORTED, "Alarm: Algorithm
+        //     not supported", socket); break;
 
     case MBEDTLS_ERR_SSL_HANDSHAKE_FAILURE:
-        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_ALGO_NOT_SUPPORTED, "Alarm: Handshake failure", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_ALGO_NOT_SUPPORTED,
+                           "Alarm: Handshake failure", socket);
         break;
 
-    // case MBEDTLS_ERR_SSL_BAD_HS_PROTOCOL_VERSION: (MIGRATE 2.28->3.x.x)
-    //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_UNSECURE_COMMUNICATION, "Alarm: Unsecure communication", socket);
-    //     break;
+        // case MBEDTLS_ERR_SSL_BAD_HS_PROTOCOL_VERSION: (MIGRATE 2.28->3.x.x)
+        //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_UNSECURE_COMMUNICATION, "Alarm:
+        //     Unsecure communication", socket); break;
 
     case MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_UNAVAILABLE, "Alarm: certificate unavailable", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_UNAVAILABLE,
+                           "Alarm: certificate unavailable", socket);
         break;
 
-    // case MBEDTLS_ERR_SSL_BAD_HS_CERTIFICATE: (MIGRATE 2.28->3.x.x)
-    //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_BAD_CERT, "Alarm: Bad certificate", socket);
-    //     break;
+        // case MBEDTLS_ERR_SSL_BAD_HS_CERTIFICATE: (MIGRATE 2.28->3.x.x)
+        //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_BAD_CERT, "Alarm: Bad certificate",
+        //     socket); break;
 
     case MBEDTLS_ERR_SSL_BUFFER_TOO_SMALL:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_SIZE_EXCEEDED, "Alarm: TLS certificate size exceeded", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_SIZE_EXCEEDED,
+                           "Alarm: TLS certificate size exceeded", socket);
         break;
 
-    // MIGRATE 2.28->3.x.x: the removal of this is undocumented TODO: Verify migration path
-    // case MBEDTLS_ERR_SSL_PEER_VERIFY_FAILED: (MIGRATE 2.28->3.x.x)
-    //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_VALIDATION_FAILED, "Alarm: certificate validation: certificate signature could not be validated", socket);
-    //     break;
+        // MIGRATE 2.28->3.x.x: the removal of this is undocumented TODO: Verify migration path
+        // case MBEDTLS_ERR_SSL_PEER_VERIFY_FAILED: (MIGRATE 2.28->3.x.x)
+        //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_VALIDATION_FAILED, "Alarm:
+        //     certificate validation: certificate signature could not be validated", socket); break;
 
-    // MIGRATE 2.28->3.x.x: the removal of this is undocumented. The docs say migrating users are affected but don't provide a migration path TODO: Verify migration path (MIGRATE 2.28->3.x.x)
-    // case MBEDTLS_ERR_SSL_CERTIFICATE_REQUIRED:
-    //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_REQUIRED, "Alarm: Certificate required", socket);
-    //     break;
+        // MIGRATE 2.28->3.x.x: the removal of this is undocumented. The docs say migrating users are affected but don't
+        // provide a migration path TODO: Verify migration path (MIGRATE 2.28->3.x.x) case
+        // MBEDTLS_ERR_SSL_CERTIFICATE_REQUIRED:
+        //     raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_REQUIRED, "Alarm: Certificate
+        //     required", socket); break;
 
     case MBEDTLS_ERR_SSL_DECODE_ERROR:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Decode error", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Decode error", socket);
         break;
-    
+
     case MBEDTLS_ERR_SSL_ILLEGAL_PARAMETER:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Illegal parameter", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Illegal parameter", socket);
         break;
 
     case MBEDTLS_ERR_SSL_BAD_PROTOCOL_VERSION:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Bad protocol version", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Bad protocol version", socket);
         break;
 
     case MBEDTLS_ERR_SSL_BAD_CERTIFICATE:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Bad certificate", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Bad certificate", socket);
         break;
-    
+
     case MBEDTLS_ERR_SSL_UNRECOGNIZED_NAME:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Unrecognized name", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Unrecognized name", socket);
         break;
-    
+
     case MBEDTLS_ERR_SSL_UNSUPPORTED_EXTENSION:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Unsupported extension", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Unsupported extension", socket);
         break;
-    
+
     case MBEDTLS_ERR_SSL_NO_APPLICATION_PROTOCOL:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: No application protocol", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: No application protocol", socket);
         break;
 
     case MBEDTLS_ERR_SSL_UNEXPECTED_MESSAGE:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Unexpected message", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Unexpected message", socket);
         break;
 
     case MBEDTLS_ERR_SSL_INTERNAL_ERROR:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: Internal error", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: Internal error", socket);
         break;
 
-    case MBEDTLS_ERR_X509_CERT_VERIFY_FAILED:
+    case MBEDTLS_ERR_X509_CERT_VERIFY_FAILED: {
+        if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
         {
-            if (flags & MBEDTLS_X509_BADCERT_EXPIRED) {
-                raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_EXPIRED, "Alarm: expired certificate", socket);
-            }
-            else if (flags & MBEDTLS_X509_BADCERT_REVOKED) {
-                raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_REVOKED, "Alarm: revoked certificate", socket);
-            }
-            else if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
-                raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_TRUSTED, "Alarm: Certificate validation: CA certificate not available", socket);
-            }
-            else if (flags & MBEDTLS_X509_BADCERT_OTHER) {
-                raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED, "Alarm: Certificate not configured", socket);
-            }
-            else if (flags & MBEDTLS_X509_BADCERT_BAD_KEY) {
-                raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED, "Alarm: Insufficient key length", socket);
-            }
-
-            raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_VALIDATION_FAILED, "Alarm: Certificate verification failed", socket);
+            raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_EXPIRED,
+                               "Alarm: expired certificate", socket);
         }
-        break;
+        else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
+        {
+            raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_REVOKED,
+                               "Alarm: revoked certificate", socket);
+        }
+        else if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
+        {
+            raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_TRUSTED,
+                               "Alarm: Certificate validation: CA certificate not available", socket);
+        }
+        else if (flags & MBEDTLS_X509_BADCERT_OTHER)
+        {
+            raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED,
+                               "Alarm: Certificate not configured", socket);
+        }
+        else if (flags & MBEDTLS_X509_BADCERT_BAD_KEY)
+        {
+            raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_NOT_CONFIGURED,
+                               "Alarm: Insufficient key length", socket);
+        }
+
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_CERT_VALIDATION_FAILED,
+                           "Alarm: Certificate verification failed", socket);
+    }
+    break;
 
     default:
-        raiseSecurityEvent(config,TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON, "Alarm: handshake failed for unknown reason", socket);
+        raiseSecurityEvent(config, TLS_SEC_EVT_INCIDENT, TLS_EVENT_CODE_ALM_HANDSHAKE_FAILED_UNKNOWN_REASON,
+                           "Alarm: handshake failed for unknown reason", socket);
         break;
     }
 }
@@ -788,7 +878,7 @@ createSecurityEvents(TLSConfiguration config, int ret, uint32_t flags, TLSSocket
 static int
 readFunction(void* ctx, unsigned char* buf, size_t len)
 {
-    int ret = Socket_read((Socket) ctx, buf, (int)len);
+    int ret = Socket_read((Socket)ctx, buf, (int)len);
 
     if ((ret == 0) && (len > 0))
     {
@@ -811,37 +901,11 @@ writeFunction(void* ctx, unsigned char* buf, size_t len)
     return ret;
 }
 
-static TLSConfigVersion
-getTLSVersion(int majorVersion, int minorVersion)
-{
-    if (majorVersion != 3) {
-        return TLS_VERSION_NOT_SELECTED;
-    }
-    else
-    {
-        switch (minorVersion) {
-        /* TODO: Remove from here (MIGRATE 2.28->3.x.x) */
-        case 0:
-            return TLS_VERSION_SSL_3_0;
-        case 1:
-            return TLS_VERSION_TLS_1_0;
-        case 2:
-            return TLS_VERSION_TLS_1_1;
-        /* Up until here (MIGRATE 2.28->3.x.x) */
-        case 3:
-            return TLS_VERSION_TLS_1_2;
-        case 4:
-            return TLS_VERSION_TLS_1_3;
-        default:
-            return TLS_VERSION_NOT_SELECTED;
-        }
-    }
-}
-
 static int
 getMajorVersion(TLSConfigVersion version)
 {
-    switch(version) {
+    switch (version)
+    {
     case TLS_VERSION_NOT_SELECTED:
         return 0;
     /* TODO: Remove from here (MIGRATE 2.28->3.x.x) */
@@ -860,7 +924,8 @@ getMajorVersion(TLSConfigVersion version)
 static int
 getMinorVersion(TLSConfigVersion version)
 {
-    switch(version) {
+    switch (version)
+    {
     case TLS_VERSION_NOT_SELECTED:
         return 0;
     /* TODO: Remove from here (MIGRATE 2.28->3.x.x) */
@@ -883,7 +948,7 @@ getMinorVersion(TLSConfigVersion version)
 TLSSocket
 TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClientCert)
 {
-    TLSSocket self = (TLSSocket) GLOBAL_CALLOC(1, sizeof(struct sTLSSocket));
+    TLSSocket self = (TLSSocket)GLOBAL_CALLOC(1, sizeof(struct sTLSSocket));
 
     if (self)
     {
@@ -897,11 +962,11 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
 
         memcpy(&(self->conf), &(configuration->conf), sizeof(mbedtls_ssl_config));
 
-        mbedtls_ssl_conf_verify(&(self->conf), verifyCertificate, (void*) self);
+        mbedtls_ssl_conf_verify(&(self->conf), verifyCertificate, (void*)self);
 
         int ret;
 
-        mbedtls_ssl_conf_ca_chain( &(self->conf), &(configuration->cacerts), &(configuration->crl) );
+        mbedtls_ssl_conf_ca_chain(&(self->conf), &(configuration->cacerts), &(configuration->crl));
 
         self->crlUpdated = configuration->crlUpdated;
 
@@ -912,7 +977,7 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
             int majorVer = getMajorVersion(configuration->minVersion);
             int minorVer = getMinorVersion(configuration->minVersion);
 
-            mbedtls_ssl_conf_min_version( &(self->conf), majorVer, minorVer);
+            mbedtls_ssl_conf_min_version(&(self->conf), majorVer, minorVer);
         }
 
         if (configuration->maxVersion != TLS_VERSION_NOT_SELECTED)
@@ -922,24 +987,24 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
             int majorVer = getMajorVersion(configuration->maxVersion);
             int minorVer = getMinorVersion(configuration->maxVersion);
 
-            mbedtls_ssl_conf_max_version( &(self->conf), majorVer, minorVer);
+            mbedtls_ssl_conf_max_version(&(self->conf), majorVer, minorVer);
         }
 
         if (configuration->ownCertificate.version > 0)
         {
-            ret = mbedtls_ssl_conf_own_cert( &(self->conf), &(configuration->ownCertificate), &(configuration->ownKey));
+            ret = mbedtls_ssl_conf_own_cert(&(self->conf), &(configuration->ownCertificate), &(configuration->ownKey));
 
             if (ret != 0)
                 DEBUG_PRINT("TLS", "mbedtls_ssl_conf_own_cert returned %d\n", ret);
         }
 
-        ret = mbedtls_ssl_setup( &(self->ssl), &(self->conf) );
+        ret = mbedtls_ssl_setup(&(self->ssl), &(self->conf));
 
         if (ret != 0)
             DEBUG_PRINT("TLS", "mbedtls_ssl_setup returned %d\n", ret);
 
-        mbedtls_ssl_set_bio(&(self->ssl), socket, (mbedtls_ssl_send_t*) writeFunction,
-                (mbedtls_ssl_recv_t*) readFunction, NULL);
+        mbedtls_ssl_set_bio(&(self->ssl), socket, (mbedtls_ssl_send_t*)writeFunction, (mbedtls_ssl_recv_t*)readFunction,
+                            NULL);
 
         if (configuration->useSessionResumption)
         {
@@ -947,7 +1012,8 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
             {
                 if (configuration->savedSession && configuration->savedSessionTime > 0)
                 {
-                    if (Hal_getTimeInMs() < (configuration->savedSessionTime + configuration->sessionResumptionInterval * 1000))
+                    if (Hal_getTimeInMs() <
+                        (configuration->savedSessionTime + configuration->sessionResumptionInterval * 1000))
                     {
                         ret = mbedtls_ssl_set_session(&(self->ssl), configuration->savedSession);
 
@@ -970,11 +1036,11 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
             }
         }
 
-        while( (ret = mbedtls_ssl_handshake(&(self->ssl)) ) != 0 )
+        while ((ret = mbedtls_ssl_handshake(&(self->ssl))) != 0)
         {
-            if( ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE )
+            if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
             {
-                DEBUG_PRINT("TLS", "handshake failed - mbedtls_ssl_handshake returned -0x%x\n", -ret );
+                DEBUG_PRINT("TLS", "handshake failed - mbedtls_ssl_handshake returned -0x%x\n", -ret);
 
                 uint32_t flags = mbedtls_ssl_get_verify_result(&(self->ssl));
 
@@ -982,7 +1048,8 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
 
                 mbedtls_ssl_free(&(self->ssl));
 
-                if (self->peerCert) {
+                if (self->peerCert)
+                {
                     GLOBAL_FREEMEM(self->peerCert);
                 }
 
@@ -1022,11 +1089,6 @@ TLSSocket_create(Socket socket, TLSConfiguration configuration, bool storeClient
 
         self->lastRenegotiationTime = Hal_getTimeInMs();
 
-        // MIGRATE 2.28->3.x.x: impossible since mbedtls 3.x.x doesn't support insecure TLS versions
-        // if (getTLSVersion(self->ssl.major_ver, self->ssl.minor_ver) < TLS_VERSION_TLS_1_2) {
-        //     raiseSecurityEvent(configuration, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_INSECURE_TLS_VERSION,  "Warning: Insecure TLS version", self);
-        // }
-
         /* create event that TLS session is established */
         {
             char msg[256];
@@ -1059,21 +1121,19 @@ TLSSocket_performHandshake(TLSSocket self)
     if (ret == 0 || ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE ||
         ret == MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS || ret == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS)
     {
-        // MIGRATE 2.28->3.x.x: impossible since mbedtls 3.x.x doesn't support insecure TLS versions
-        // if (getTLSVersion(self->ssl.major_ver, self->ssl.minor_ver) < TLS_VERSION_TLS_1_2) {
-        //     raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_WARNING, TLS_EVENT_CODE_WRN_INSECURE_TLS_VERSION, "Warning: Insecure TLS version", self);
-        // }
-
         return true;
     }
-    else {
+    else
+    {
         DEBUG_PRINT("TLS", "TLSSocket_performHandshake failed -> ret=%i\n", ret);
 
-        raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INFO, TLS_EVENT_CODE_INF_SESSION_RENEGOTIATION, "Alarm: Renegotiation failed", self);
+        raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INFO, TLS_EVENT_CODE_INF_SESSION_RENEGOTIATION,
+                           "Alarm: Renegotiation failed", self);
 
         /* mbedtls_ssl_renegotiate mandates to reset the ssl session in case of errors */
         ret = mbedtls_ssl_session_reset(&(self->ssl));
-        if (ret != 0) {
+        if (ret != 0)
+        {
             DEBUG_PRINT("TLS", "mbedtls_ssl_session_reset failed -> ret: -0x%X\n", -ret);
         }
 
@@ -1089,7 +1149,7 @@ checkForCRLUpdate(TLSSocket self)
 
     DEBUG_PRINT("TLS", "CRL updated -> refresh CA chain\n");
 
-    mbedtls_ssl_conf_ca_chain( &(self->conf), &( self->tlsConfig->cacerts), &( self->tlsConfig->crl) );
+    mbedtls_ssl_conf_ca_chain(&(self->conf), &(self->tlsConfig->cacerts), &(self->tlsConfig->crl));
 
     self->crlUpdated = self->tlsConfig->crlUpdated;
 
@@ -1104,18 +1164,29 @@ startRenegotiationIfRequired(TLSSocket self)
     if (self->tlsConfig->renegotiationTimeInMs <= 0)
         return true;
 
+    if (self->lastRenegotiationTime == UINT64_MAX)
+        return true;
+
+    if (TLSConnection_getTLSVersion((TLSConnection)(self)) == TLS_VERSION_TLS_1_3)
+    {
+        self->lastRenegotiationTime = UINT64_MAX;
+        DEBUG_PRINT("TLS", "renegotiation not allowed for TLS 1.3\n");
+        return true;
+    }
+
     if (Hal_getTimeInMs() <= self->lastRenegotiationTime + self->tlsConfig->renegotiationTimeInMs)
         return true;
 
-    raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INFO, TLS_EVENT_CODE_INF_SESSION_RENEGOTIATION, "Info: session renegotiation started", self);
+    raiseSecurityEvent(self->tlsConfig, TLS_SEC_EVT_INFO, TLS_EVENT_CODE_INF_SESSION_RENEGOTIATION,
+                       "Info: session renegotiation started", self);
 
     if (TLSSocket_performHandshake(self) == false)
     {
-        DEBUG_PRINT("TLS", " renegotiation failed\n");
+        DEBUG_PRINT("TLS", "renegotiation failed\n");
         return false;
     }
 
-    DEBUG_PRINT("TLS", " started renegotiation\n");
+    DEBUG_PRINT("TLS", "started renegotiation\n");
     self->lastRenegotiationTime = Hal_getTimeInMs();
 
     return true;
@@ -1126,7 +1197,8 @@ TLSSocket_read(TLSSocket self, uint8_t* buf, int size)
 {
     checkForCRLUpdate(self);
 
-    if (startRenegotiationIfRequired(self) == false) {
+    if (startRenegotiationIfRequired(self) == false)
+    {
         return -1;
     }
 
@@ -1135,8 +1207,8 @@ TLSSocket_read(TLSSocket self, uint8_t* buf, int size)
     if ((ret == MBEDTLS_ERR_SSL_WANT_READ) || (ret == MBEDTLS_ERR_SSL_WANT_WRITE))
         return 0;
 
-    if (ret < 0) {
-
+    if (ret < 0)
+    {
         switch (ret)
         {
         case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
@@ -1170,22 +1242,26 @@ TLSSocket_write(TLSSocket self, uint8_t* buf, int size)
 
     checkForCRLUpdate(self);
 
-    if (startRenegotiationIfRequired(self) == false) {
+    if (startRenegotiationIfRequired(self) == false)
+    {
         return -1;
     }
 
     while (len < size)
     {
-        int ret = mbedtls_ssl_write(&(self->ssl), (buf + len), (size -len));
+        int ret = mbedtls_ssl_write(&(self->ssl), (buf + len), (size - len));
         if ((ret == MBEDTLS_ERR_SSL_WANT_READ) || (ret == MBEDTLS_ERR_SSL_WANT_WRITE) ||
-            (ret == MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS) || (ret == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS)) {
+            (ret == MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS) || (ret == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS))
+        {
             continue;
         }
 
-        if (ret < 0) {
+        if (ret < 0)
+        {
             DEBUG_PRINT("TLS", "mbedtls_ssl_write returned -0x%X\n", -ret);
 
-            if (0 != (ret = mbedtls_ssl_session_reset(&(self->ssl)))) {
+            if (0 != (ret = mbedtls_ssl_session_reset(&(self->ssl))))
+            {
                 DEBUG_PRINT("TLS", "mbedtls_ssl_session_reset failed -0x%X\n", -ret);
             }
 
@@ -1229,14 +1305,15 @@ TLSConnection_getPeerAddress(TLSConnection self, char* peerAddrBuf)
 {
     TLSSocket socket = (TLSSocket)self;
 
-    if (peerAddrBuf == NULL) {
+    if (peerAddrBuf == NULL)
+    {
         peerAddrBuf = (char*)GLOBAL_MALLOC(61);
     }
 
     if (peerAddrBuf)
         return Socket_getPeerAddressStatic(socket->socket, peerAddrBuf);
     else
-        return NULL; 
+        return NULL;
 }
 
 uint8_t*
@@ -1251,17 +1328,18 @@ TLSConfigVersion
 TLSConnection_getTLSVersion(TLSConnection self)
 {
     TLSSocket socket = (TLSSocket)self;
-    // MIGRATE 2.28->3.x.x: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/3.0-migration-guide.md#most-structure-fields-are-now-private
+
     mbedtls_ssl_protocol_version version = mbedtls_ssl_get_version_number(&(socket->ssl));
 
-    switch(version) {
-        case MBEDTLS_SSL_VERSION_TLS1_2:
-            return TLS_VERSION_TLS_1_2;
-        case MBEDTLS_SSL_VERSION_TLS1_3:
-            return TLS_VERSION_TLS_1_3;
-        case MBEDTLS_SSL_VERSION_UNKNOWN:   
-        default:
-            return TLS_VERSION_NOT_SELECTED;
+    switch (version)
+    {
+    case MBEDTLS_SSL_VERSION_TLS1_2:
+        return TLS_VERSION_TLS_1_2;
+    case MBEDTLS_SSL_VERSION_TLS1_3:
+        return TLS_VERSION_TLS_1_3;
+    case MBEDTLS_SSL_VERSION_UNKNOWN:
+    default:
+        return TLS_VERSION_NOT_SELECTED;
     }
 }
 
@@ -1270,19 +1348,19 @@ TLSConfigVersion_toString(TLSConfigVersion version)
 {
     switch (version)
     {
-        /* TODO: Remove from here (MIGRATE 2.28->3.x.x) */
-        case TLS_VERSION_SSL_3_0:
-            return "SSL 3.0";
-        case TLS_VERSION_TLS_1_0:
-            return "TLS 1.0";
-        case TLS_VERSION_TLS_1_1:
-            return "TLS 1.1";
-        /* Up until here (MIGRATE 2.28->3.x.x) */
-        case TLS_VERSION_TLS_1_2:
-            return "TLS 1.2";
-        case TLS_VERSION_TLS_1_3:
-            return "TLS 1.3";
-        default:
-            return "unknown TLS version";
+    /* TODO: Remove from here (MIGRATE 2.28->3.x.x) */
+    case TLS_VERSION_SSL_3_0:
+        return "SSL 3.0";
+    case TLS_VERSION_TLS_1_0:
+        return "TLS 1.0";
+    case TLS_VERSION_TLS_1_1:
+        return "TLS 1.1";
+    /* Up until here (MIGRATE 2.28->3.x.x) */
+    case TLS_VERSION_TLS_1_2:
+        return "TLS 1.2";
+    case TLS_VERSION_TLS_1_3:
+        return "TLS 1.3";
+    default:
+        return "unknown TLS version";
     }
 }

@@ -16,26 +16,26 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-using System;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
+using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 partial class MainClass
 {
     public static JsonSerializerOptions jsonSerOpts = new JsonSerializerOptions
     {
-        NumberHandling = JsonNumberHandling.AllowReadingFromString
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
     public enum ExitCode : int
     {
@@ -218,39 +218,43 @@ partial class MainClass
                 };
             }
 
-            try
+            do
             {
-                Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
-                exitCode = ExitCode.ErrorDiscoverEndpoints;
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
-                Log(conn_name + " - " + "Selected endpoint uses: " +
-                    selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
+                try
+                {
+                    Log(conn_name + " - " + "Discover endpoints of " + OPCUA_conn.endpointURLs[0]);
+                    exitCode = ExitCode.ErrorDiscoverEndpoints;
+                    var selectedEndpoint = CoreClientUtils.SelectEndpoint(config, OPCUA_conn.endpointURLs[0], haveAppCertificate && OPCUA_conn.useSecurity, 15000);
+                    Log(conn_name + " - " + "Selected endpoint uses: " +
+                        selectedEndpoint.SecurityPolicyUri.Substring(selectedEndpoint.SecurityPolicyUri.LastIndexOf('#') + 1));
 
-                Log(conn_name + " - " + "Create a session with OPC UA server.");
-                exitCode = ExitCode.ErrorCreateSession;
-                var endpointConfiguration = EndpointConfiguration.Create(config);
-                var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
-                await Task.Delay(50);
-                session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
+                    Log(conn_name + " - " + "Create a session with OPC UA server.");
+                    exitCode = ExitCode.ErrorCreateSession;
+                    var endpointConfiguration = EndpointConfiguration.Create(config);
+                    var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
+                    Thread.Sleep(50);
+                    session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
 
-                // Log("" + session.KeepAliveInterval); // default is 5000
-                session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
+                    // Log("" + session.KeepAliveInterval); // default is 5000
+                    session.KeepAliveInterval = System.Convert.ToInt32(OPCUA_conn.timeoutMs);
 
-                // register keep alive handler
-                session.KeepAlive += Client_KeepAlive;
+                    // register keep alive handler
+                    session.KeepAlive += Client_KeepAlive;
+                }
+                catch (Exception e)
+                {
+                    Log(conn_name + " - WARN: " + e.Message);
+                }
+
+                if (session == null)
+                {
+                    Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
+                    failed = true;
+                    exitCode = ExitCode.ErrorCreateSession;
+                    Thread.Sleep(1000);
+                }
             }
-            catch (Exception e)
-            {
-                Log(conn_name + " - WARN: " + e.Message);
-            }
-
-            if (session == null)
-            {
-                Log(conn_name + " - " + "FATAL: error creating session!", LogLevelNoLog);
-                failed = true;
-                exitCode = ExitCode.ErrorCreateSession;
-                return;
-            }
+            while (session == null || !session.Connected);
 
             if (OPCUA_conn.autoCreateTags)
             {
@@ -259,8 +263,33 @@ partial class MainClass
 
                 var uac = new UAClient(session);
                 var refDescr = await BrowseFullAddressSpaceAsync(uac, Objects.ObjectsFolder).ConfigureAwait(false);
-                Regex regexp = new Regex("/Objects/");
+                var regexp = new Regex("/Objects/");
                 IList<NodeId> nodesList = [];
+
+                // filter out the nodes in refDescr without any topic (OPCUA_conn.topics) in the path
+                if (OPCUA_conn.topics.Length > 0)
+                {
+                    Log(conn_name + " - " + "Filtering nodes by topics: " + string.Join(", ", OPCUA_conn.topics));
+                    foreach (var (reference, path) in refDescr.Values)
+                    {
+                        if (reference.NodeClass == NodeClass.Object) continue;
+                        if (reference.NodeClass == NodeClass.Method && !OPCUA_conn.commandsEnabled) continue;
+                        var keep = false;
+                        foreach (var topic in OPCUA_conn.topics)
+                        {
+                            if ((path+"/").Contains("/"+topic+"/"))
+                            {
+                                keep = true;
+                                break;
+                            }
+                        }
+                        if (!keep)
+                        {
+                            refDescr.Remove(reference.NodeId);
+                        }
+                    }
+                }
+                Log(conn_name + " - " + refDescr.Count + " nodes found in the namespace.");
 
                 foreach (var (reference, path) in refDescr.Values)
                 {
@@ -316,6 +345,7 @@ partial class MainClass
                                         {
                                             createCommandForMethod = true,
                                             createCommandForSupervised = false,
+                                            accessLevels = AccessLevels.CurrentWrite,
                                             valueJson = "",
                                             selfPublish = true,
                                             address = sourceNodes[i].NodeId.ToString(),
@@ -363,7 +393,7 @@ partial class MainClass
                                 ParentName = parentName,
                                 Path = path,
                             };
-                            OPCUA_conn.ListMon.Add(new MonitoredItem()
+                            var mi = new MonitoredItem()
                             {
                                 DisplayName = sourceNodes[i].BrowseName.Name,
                                 StartNodeId = sourceNodes[i].NodeId.ToString(),
@@ -372,7 +402,14 @@ partial class MainClass
                                 MonitoringMode = MonitoringMode.Reporting,
                                 DiscardOldest = true,
                                 AttributeId = Attributes.Value
-                            });
+                            };
+                            mi.Filter = new DataChangeFilter()
+                            {
+                                Trigger = DataChangeTrigger.StatusValueTimestamp,
+                                DeadbandType = (uint)DeadbandType.None,
+                                DeadbandValue = 0
+                            };
+                            OPCUA_conn.ListMon.Add(mi);
 
                             if (dataValues[i].Value == null) continue;
 
@@ -388,6 +425,7 @@ partial class MainClass
                                     {
                                         createCommandForMethod = false,
                                         createCommandForSupervised = createCommandForSupervised,
+                                        accessLevels = (sourceNodes[i] as VariableNode).UserAccessLevel,
                                         valueJson = jsonValue,
                                         selfPublish = true,
                                         address = sourceNodes[i].NodeId.ToString(),
@@ -395,10 +433,10 @@ partial class MainClass
                                         asdu = tp,
                                         value = dblValue,
                                         valueString = strValue,
-                                        hasSourceTimestamp = false,
-                                        sourceTimestamp = DateTime.MinValue,
+                                        hasSourceTimestamp = dataValues[i].SourceTimestamp != DateTime.MinValue,
+                                        sourceTimestamp = dataValues[i].SourceTimestamp.AddHours(OPCUA_conn.hoursShift),
                                         serverTimestamp = DateTime.Now,
-                                        quality = false,
+                                        quality = StatusCode.IsGood(dataValues[i].StatusCode),
                                         cot = 20,
                                         conn_number = conn_number,
                                         conn_name = conn_name,
@@ -466,7 +504,7 @@ partial class MainClass
                     List<MonitoredItem> lm = new List<MonitoredItem>();
                     foreach (var tm in sub.Value)
                     {
-                        lm.Add(new MonitoredItem()
+                        var mi = new MonitoredItem()
                         {
                             DisplayName = tm.ungroupedDescription,
                             StartNodeId = tm.protocolSourceObjectAddress,
@@ -475,7 +513,14 @@ partial class MainClass
                             MonitoringMode = MonitoringMode.Reporting,
                             DiscardOldest = true,
                             AttributeId = Attributes.Value,
-                        });
+                        };
+                        mi.Filter = new DataChangeFilter()
+                        {
+                            Trigger = DataChangeTrigger.StatusValueTimestamp,
+                            DeadbandType = (uint)DeadbandType.None,
+                            DeadbandValue = 0
+                        };
+                        lm.Add(mi);
                     }
                     lm.ForEach(i => i.Notification += OnNotification);
 
@@ -563,7 +608,14 @@ partial class MainClass
 
                         try
                         {
-                            jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                            if (value.Value is System.Collections.IEnumerable enumerable && value.Value is not string)
+                            {
+                                jsonValue = JsonSerializer.Serialize(enumerable.Cast<object>().ToArray(), jsonSerOpts);
+                            }
+                            else
+                            {
+                                jsonValue = JsonSerializer.Serialize(value.Value, jsonSerOpts);
+                            }
                         }
                         catch (Exception)
                         { }
@@ -576,7 +628,7 @@ partial class MainClass
                         }
                         else
                         {
-                            // Log(conn_name + " - " + item.ResolvedNodeId + " TYPE: ?????", LogLevelDetailed);
+                             // Log(conn_name + " - " + value + " TYPE: ?????", LogLevelDetailed);
                         }
 
                         try
@@ -647,6 +699,18 @@ partial class MainClass
                                 }
                             }
                             else
+                            if (base_type == "nodeid" && !isArray)
+                            {
+                                dblValue = 0;
+                                strValue = value.WrappedValue.ToString();
+                            }
+                            else
+                            if (base_type == "expandednodeid" && !isArray)
+                            {
+                                dblValue = 0;
+                                strValue = value.WrappedValue.ToString();
+                            }
+                            else
                             if (base_type == "xmlelement" && !isArray)
                             {
                                 dblValue = 0;
@@ -664,8 +728,6 @@ partial class MainClass
                                 (base_type == "string" ||
                                 base_type == "localeid" ||
                                 base_type == "localizedtext" ||
-                                base_type == "nodeid" ||
-                                base_type == "expandediodeid" ||
                                 base_type == "xmlelement" ||
                                 base_type == "qualifiedname" ||
                                 base_type == "guid")
@@ -679,8 +741,6 @@ partial class MainClass
                             if (base_type == "string" ||
                                 base_type == "localeid" ||
                                 base_type == "localizedtext" ||
-                                base_type == "nodeid" ||
-                                base_type == "expandednodeid" ||
                                 base_type == "xmlelement" ||
                                 base_type == "gualifiedname" ||
                                 base_type == "guid")
@@ -762,7 +822,7 @@ partial class MainClass
                             value = dblValue,
                             valueString = strValue,
                             hasSourceTimestamp = value.SourceTimestamp != DateTime.MinValue,
-                            sourceTimestamp = value.SourceTimestamp != DateTime.MinValue ? value.SourceTimestamp.AddHours(OPCUA_conn.hoursShift) : DateTime.MinValue,
+                            sourceTimestamp = value.SourceTimestamp.AddHours(OPCUA_conn.hoursShift),
                             serverTimestamp = DateTime.Now,
                             quality = StatusCode.IsGood(value.StatusCode),
                             cot = 3,

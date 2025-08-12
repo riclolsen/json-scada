@@ -95,14 +95,17 @@ ifndef INSTALL_PREFIX
 INSTALL_PREFIX = ./.install
 endif
 
-LIB_API_HEADER_FILES = hal/inc/hal_time.h 
+LIB_API_HEADER_FILES += hal/inc/hal_base.h
+LIB_API_HEADER_FILES += hal/inc/hal_time.h
 LIB_API_HEADER_FILES += hal/inc/hal_thread.h
 LIB_API_HEADER_FILES += hal/inc/hal_filesystem.h
+LIB_API_HEADER_FILES += hal/inc/hal_ethernet.h
+LIB_API_HEADER_FILES += hal/inc/hal_socket.h
 LIB_API_HEADER_FILES += hal/inc/tls_config.h
-LIB_API_HEADER_FILES += hal/inc/lib_memory.h
-LIB_API_HEADER_FILES += hal/inc/hal_base.h
+LIB_API_HEADER_FILES += hal/inc/tls_ciphers.h
 LIB_API_HEADER_FILES += src/common/inc/libiec61850_common_api.h
 LIB_API_HEADER_FILES += src/common/inc/linked_list.h
+LIB_API_HEADER_FILES += src/common/inc/sntp_client.h
 LIB_API_HEADER_FILES += src/iec61850/inc/iec61850_client.h
 LIB_API_HEADER_FILES += src/iec61850/inc/iec61850_common.h
 LIB_API_HEADER_FILES += src/iec61850/inc/iec61850_server.h
@@ -122,8 +125,8 @@ LIB_API_HEADER_FILES += src/goose/goose_receiver.h
 LIB_API_HEADER_FILES += src/goose/goose_publisher.h
 LIB_API_HEADER_FILES += src/sampled_values/sv_subscriber.h
 LIB_API_HEADER_FILES += src/sampled_values/sv_publisher.h
-LIB_API_HEADER_FILES += src/logging/logging_api.h
 LIB_API_HEADER_FILES += src/r_session/r_session.h
+LIB_API_HEADER_FILES += src/logging/logging_api.h
 
 get_sources_from_directory  = $(wildcard $1/*.c)
 get_sources = $(foreach dir, $1, $(call get_sources_from_directory,$(dir)))
@@ -158,7 +161,7 @@ static_checks:	lib
 	splint -preproc +posixlib +skip-sys-headers +gnuextensions $(LIB_INCLUDES) $(LIB_SOURCES)
 
 cppcheck:	lib
-	cppcheck --force --std=c99 --enable=all $(LIB_INCLUDES) $(LIB_SOURCES) 2> cppcheck-output.xml
+	cppcheck --force --std=c99 --xml --enable=all $(LIB_INCLUDES) $(LIB_SOURCES) 2> cppcheck-output.xml
 
 lib:	$(LIB_NAME)
 

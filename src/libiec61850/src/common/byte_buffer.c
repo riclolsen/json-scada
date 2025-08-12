@@ -21,89 +21,104 @@
  *	See COPYING file for the complete license text.
  */
 
-#include "libiec61850_platform_includes.h"
 #include "byte_buffer.h"
+#include "libiec61850_platform_includes.h"
 
 ByteBuffer*
 ByteBuffer_create(ByteBuffer* self, int maxSize)
 {
-	if (self == NULL) {
-		self = (ByteBuffer*) GLOBAL_CALLOC(1, sizeof(ByteBuffer));
-	}
+    if (self == NULL)
+    {
+        self = (ByteBuffer*)GLOBAL_CALLOC(1, sizeof(ByteBuffer));
+    }
 
-	self->buffer = (uint8_t*) GLOBAL_CALLOC(maxSize, sizeof(uint8_t));
-	self->maxSize = maxSize;
-	self->size = 0;
+    if (self)
+    {
+        self->buffer = (uint8_t*)GLOBAL_CALLOC(maxSize, sizeof(uint8_t));
 
-	return self;
+        if (self->buffer == NULL)
+        {
+            GLOBAL_FREEMEM(self);
+            self = NULL;
+        }
+        else
+        {
+            self->maxSize = maxSize;
+            self->size = 0;
+        }
+    }
+
+    return self;
 }
 
 void
 ByteBuffer_destroy(ByteBuffer* self)
 {
-	GLOBAL_FREEMEM(self->buffer);
-	GLOBAL_FREEMEM(self);
+    GLOBAL_FREEMEM(self->buffer);
+    GLOBAL_FREEMEM(self);
 }
 
 void
 ByteBuffer_wrap(ByteBuffer* self, uint8_t* buf, int size, int maxSize)
 {
-	self->buffer = buf;
-	self->size = size;
-	self->maxSize = maxSize;
+    self->buffer = buf;
+    self->size = size;
+    self->maxSize = maxSize;
 }
 
 int
 ByteBuffer_append(ByteBuffer* self, uint8_t* data, int dataSize)
 {
-	if (self->size + dataSize <= self->maxSize) {
-		memcpy(self->buffer + self->size, data, dataSize);
-		self->size += dataSize;
-		return dataSize;
-	}
-	else {
-		return -1;
-	}
+    if (self->size + dataSize <= self->maxSize)
+    {
+        memcpy(self->buffer + self->size, data, dataSize);
+        self->size += dataSize;
+        return dataSize;
+    }
+    else
+    {
+        return -1;
+    }
 }
 
 int
 ByteBuffer_appendByte(ByteBuffer* self, uint8_t byte)
 {
-	if (self->size  < self->maxSize) {
-		self->buffer[self->size] = byte;
-		self->size ++;
-		return 1;
-	}
-	else
-		return 0;
+    if (self->size < self->maxSize)
+    {
+        self->buffer[self->size] = byte;
+        self->size++;
+        return 1;
+    }
+    else
+        return 0;
 }
-
 
 uint8_t*
 ByteBuffer_getBuffer(ByteBuffer* self)
 {
-	return self->buffer;
+    return self->buffer;
 }
 
 int
 ByteBuffer_getMaxSize(ByteBuffer* self)
 {
-	return self->maxSize;
+    return self->maxSize;
 }
 
 int
 ByteBuffer_getSize(ByteBuffer* self)
 {
-	return self->size;
+    return self->size;
 }
 
 int
 ByteBuffer_setSize(ByteBuffer* self, int size)
 {
-	if (size <= self->maxSize)
-		self->size = size;
+    if (size <= self->maxSize)
+        self->size = size;
 
-	return self->size;
+    return self->size;
 }
 
 #if 0

@@ -10,7 +10,7 @@ namespace log_client
 		private static void PrintJournalEntries(List<MmsJournalEntry> journalEntries) {
 			foreach (MmsJournalEntry entry in journalEntries) {
 				Console.WriteLine("EntryID: " + BitConverter.ToString(entry.GetEntryID()));
-				Console.WriteLine("  occurence time: " + MmsValue.MsTimeToDateTimeOffset(entry.GetOccurenceTime()).ToString());
+                Console.WriteLine("  occurence time: " + MmsValue.MsTimeToDateTimeOffset(entry.GetOccurenceTime()).ToString());
 				foreach (MmsJournalVariable variable in entry.GetJournalVariables()) {
 					Console.WriteLine("    variable: " + variable.GetTag());
 					Console.WriteLine("       value: " + variable.GetValue().ToString());
@@ -47,12 +47,14 @@ namespace log_client
 					Console.WriteLine("LD: " + deviceName);
 					List<string> deviceDirectory = con.GetLogicalDeviceDirectory(deviceName);
 
-					foreach (string lnName in deviceDirectory) {
+					foreach (string lnName in deviceDirectory)
+					{
 						Console.WriteLine("  LN: " + lnName);
 
 						List<string> lcbs = con.GetLogicalNodeDirectory(deviceName + "/" + lnName, IEC61850.Common.ACSIClass.ACSI_CLASS_LCB);
 
-						foreach(string lcbName in lcbs) {
+						foreach (string lcbName in lcbs)
+						{
 							Console.WriteLine("    LCB: " + lcbName);
 
 							MmsValue lcbValues = con.ReadValue(deviceName + "/" + lnName + "." + lcbName, FunctionalConstraint.LG);
@@ -62,7 +64,8 @@ namespace log_client
 
 						List<string> logs = con.GetLogicalNodeDirectory(deviceName + "/" + lnName, IEC61850.Common.ACSIClass.ACSI_CLASS_LOG);
 
-						foreach(string logName in logs) {
+						foreach (string logName in logs)
+						{
 							Console.WriteLine("    LOG: " + logName);
 						}
 					}
@@ -72,7 +75,10 @@ namespace log_client
 
 				Console.WriteLine("\nQueryLogAfter:");
 
-				List<MmsJournalEntry> journalEntries = con.QueryLogAfter("simpleIOGenericIO/LLN0$EventLog", 
+                Console.WriteLine(DateTime.UtcNow);
+
+
+                List<MmsJournalEntry> journalEntries = con.QueryLogAfter("simpleIOGenericIO/LLN0$EventLog", 
 					new byte[]{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 0, out moreFollows);
 
 				PrintJournalEntries(journalEntries);

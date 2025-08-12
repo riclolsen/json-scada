@@ -1,7 +1,7 @@
 /*
  *  config_file_parser.c
  *
- *  Copyright 2014-2024 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -41,15 +41,15 @@ readLine(FileHandle fileHandle, uint8_t* buffer, int maxSize)
     int fileReadResult = 1;
 
     /* eat up leading cr or lf */
-    while (fileReadResult > 0) {
-
+    while (fileReadResult > 0)
+    {
         if (bytesRead == maxSize)
             break;
 
         fileReadResult = FileSystem_readFile(fileHandle, buffer + bufPos, 1);
 
-        if (fileReadResult == 1) {
-
+        if (fileReadResult == 1)
+        {
             if (!((buffer[bufPos] == '\n') || (buffer[bufPos] == '\r'))) {
                 bufPos++;
                 bytesRead++;
@@ -58,16 +58,17 @@ readLine(FileHandle fileHandle, uint8_t* buffer, int maxSize)
         }
     }
 
-    if (fileReadResult > 0) {
-        while (fileReadResult > 0) {
-
+    if (fileReadResult > 0)
+    {
+        while (fileReadResult > 0)
+        {
             if (bytesRead == maxSize)
                 break;
 
             fileReadResult = FileSystem_readFile(fileHandle, buffer + bufPos, 1);
 
-            if (fileReadResult == 1) {
-
+            if (fileReadResult == 1)
+            {
                 if ((buffer[bufPos] == '\n') || (buffer[bufPos] == '\r'))
                     break;
                 else {
@@ -86,8 +87,10 @@ terminateString(char* string, char ch)
 {
     int index = 0;
 
-    while (string[index] != 0) {
-        if (string[index] == ch) {
+    while (string[index] != 0)
+    {
+        if (string[index] == ch)
+        {
             string[index] = 0;
             break;
         }
@@ -101,7 +104,8 @@ ConfigFileParser_createModelFromConfigFileEx(const char* filename)
 {
     FileHandle configFile = FileSystem_openFile((char*)filename, false);
 
-    if (configFile == NULL) {
+    if (configFile == NULL)
+    {
         if (DEBUG_IED_SERVER)
             printf("IED_SERVER: Error opening config file!\n");
         return NULL;
@@ -119,7 +123,8 @@ setValue(char* lineBuffer, DataAttribute* dataAttribute)
 {
     char* valueIndicator = strchr((char*) lineBuffer, '=');
 
-    if (valueIndicator != NULL) {
+    if (valueIndicator)
+    {
         switch (dataAttribute->type) {
         case IEC61850_UNICODE_STRING_255:
             {
@@ -226,7 +231,7 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
     uint8_t* lineBuffer = (uint8_t*)GLOBAL_MALLOC(READ_BUFFER_MAX_SIZE);
 
     if (lineBuffer == NULL)
-        goto exit_error;
+        return NULL;
 
     int bytesRead = 1;
 
@@ -261,43 +266,54 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
             lineBuffer[bytesRead] = 0;
 
             /* trim trailing spaces */
-            while (bytesRead > 1) {
+            while (bytesRead > 1)
+            {
                 bytesRead--;
 
-                if (isspace(lineBuffer[bytesRead])) {
+                if (isspace(lineBuffer[bytesRead]))
+                {
                     lineBuffer[bytesRead] = 0;
                 }
-                else {
+                else
+                {
                     break;
                 }
             }
 
             if (stateInModel)
             {
-                if (StringUtils_startsWith((char*) lineBuffer, "}")) {
-                    if (indendation == 1) {
+                if (StringUtils_startsWith((char*)lineBuffer, "}"))
+                {
+                    if (indendation == 1)
+                    {
                         stateInModel = false;
                         indendation = 0;
                     }
-                    else if (indendation == 2) {
+                    else if (indendation == 2)
+                    {
                         indendation = 1;
                     }
-                    else if (indendation == 3) {
+                    else if (indendation == 3)
+                    {
                         indendation = 2;
                     }
-                    else if (indendation == 4) {
+                    else if (indendation == 4)
+                    {
                         indendation = 3;
                     }
-                    else if (indendation > 4) {
-
-                        if (inArrayElement && currentModelNode->parent == currentArrayNode) {
+                    else if (indendation > 4)
+                    {
+                        if (inArrayElement && currentModelNode->parent == currentArrayNode)
+                        {
                             inArrayElement = false;
                         }
-                        else {
+                        else
+                        {
                             indendation--;
                         }
 
-                        if (inArray && currentModelNode == currentArrayNode) {
+                        if (inArray && currentModelNode == currentArrayNode)
+                        {
                             inArray = false;
                         }
 
@@ -306,14 +322,14 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                 }
                 else if (indendation == 1)
                 {
-                    if (StringUtils_startsWith((char*) lineBuffer, "LD"))
+                    if (StringUtils_startsWith((char*)lineBuffer, "LD"))
                     {
                         indendation = 2;
 
                         char ldName[65];
                         ldName[0] = 0;
 
-                        if (sscanf((char*) lineBuffer, "LD(%129s %64s)", nameString, ldName) < 1)
+                        if (sscanf((char*)lineBuffer, "LD(%129s %64s)", nameString, ldName) < 1)
                             goto exit_error;
 
                         terminateString(nameString, ')');
@@ -324,7 +340,8 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 
                             currentLD = LogicalDevice_createEx(nameString, model, ldName);
                         }
-                        else {
+                        else
+                        {
                             currentLD = LogicalDevice_create(nameString, model);
                         }
                     }
@@ -349,24 +366,26 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                 }
                 else if (indendation == 3)
                 {
-                    if (StringUtils_startsWith((char*) lineBuffer, "DO"))
+                    if (StringUtils_startsWith((char*)lineBuffer, "DO"))
                     {
                         indendation = 4;
 
                         int arrayElements = 0;
 
-                        if (sscanf((char*)lineBuffer, "DO(%129s %i)", nameString, &arrayElements) != 2) {
+                        if (sscanf((char*)lineBuffer, "DO(%129s %i)", nameString, &arrayElements) != 2)
+                        {
                             goto exit_error;
                         }
 
-                        currentModelNode = (ModelNode*)
-                                DataObject_create(nameString, (ModelNode*) currentLN, arrayElements);
+                        currentModelNode =
+                            (ModelNode*)DataObject_create(nameString, (ModelNode*)currentLN, arrayElements);
                     }
-                    else if (StringUtils_startsWith((char*) lineBuffer, "DS"))
+                    else if (StringUtils_startsWith((char*)lineBuffer, "DS"))
                     {
                         indendation = 4;
 
-                        if (sscanf((char*)lineBuffer, "DS(%129s)", nameString) != 1) {
+                        if (sscanf((char*)lineBuffer, "DS(%129s)", nameString) != 1)
+                        {
                             goto exit_error;
                         }
 
@@ -448,9 +467,12 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         if (matchedItems < 5) goto exit_error;
 
                         currentGoCB = GSEControlBlock_create(nameString, currentLN, nameString2,
-                                nameString3, confRef, fixedOffs, minTime, maxTime);
+                                    nameString3, confRef, fixedOffs, minTime, maxTime);
 
-                        indendation = 4;
+                        if (StringUtils_endsWith((char*) lineBuffer, "{"))
+                        {
+                            indendation = 4;
+                        }
                     }
                     else if (StringUtils_startsWith((char*) lineBuffer, "SMVC"))
                     {
@@ -467,13 +489,16 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
 
                         currentSMVCB = SVControlBlock_create(nameString, currentLN, nameString2, nameString3, confRev, smpMod, smpRate, optFlds, (bool) isUnicast);
 
-                        indendation = 4;
+                        if (StringUtils_endsWith((char*) lineBuffer, "{"))
+                        {
+                            indendation = 4;
+                        }
                     }
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
                     else if (StringUtils_startsWith((char*) lineBuffer, "SG"))
                     {
-
-                        if (strcmp(currentLN->name, "LLN0") != 0) {
+                        if (strcmp(currentLN->name, "LLN0") != 0)
+                        {
                             if (DEBUG_IED_SERVER)
                                 printf("IED_SERVER: Setting group control is not defined in LLN0\n");
 
@@ -491,14 +516,13 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         SettingGroupControlBlock_create(currentLN, actSG, numOfSGs);
                     }
 #endif /* (CONFIG_IEC61850_SETTING_GROUPS == 1) */
-
-                    else {
+                    else
+                    {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: Unknown identifier (%s)\n", lineBuffer);
 
                         goto exit_error;
                     }
-
                 }
                 else if (indendation > 3)
                 {
@@ -522,17 +546,20 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                     }
                     else if (StringUtils_startsWith((char*) lineBuffer, "["))
                     {
-                        if (inArray == false) {
-                            goto exit_error;
-                        } 
-
-                        int arrayIndex;
-
-                        if (sscanf((char*)lineBuffer, "[%i]", &arrayIndex) != 1) {
+                        if (inArray == false)
+                        {
                             goto exit_error;
                         }
 
-                        if (arrayIndex < 0) {
+                        int arrayIndex;
+
+                        if (sscanf((char*)lineBuffer, "[%i]", &arrayIndex) != 1)
+                        {
+                            goto exit_error;
+                        }
+
+                        if (arrayIndex < 0)
+                        {
                             goto exit_error;
                         }
 
@@ -543,10 +570,12 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                                 /* array of basic data attribute */
                                 ModelNode* arrayElementNode = ModelNode_getChildWithIdx(currentArrayNode, arrayIndex);
 
-                                if (arrayElementNode) {
+                                if (arrayElementNode)
+                                {
                                     setValue((char*)lineBuffer, (DataAttribute*)arrayElementNode);
                                 }
-                                else {
+                                else
+                                {
                                     goto exit_error;
                                 }
                             }
@@ -555,10 +584,12 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                                 /* array of constructed data attribtute */
                                 currentModelNode = ModelNode_getChildWithIdx(currentArrayNode, arrayIndex);
 
-                                if (currentModelNode) {
+                                if (currentModelNode)
+                                {
                                     inArrayElement = true;
                                 }
-                                else {
+                                else
+                                {
                                     goto exit_error;
                                 }
                             }
@@ -570,10 +601,12 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                                 /* array of constructed data attribtute */
                                 currentModelNode = ModelNode_getChildWithIdx(currentArrayNode, arrayIndex);
 
-                                if (currentModelNode) {
+                                if (currentModelNode)
+                                {
                                     inArrayElement = true;
                                 }
-                                else {
+                                else
+                                {
                                     goto exit_error;
                                 }
                             }
@@ -660,26 +693,30 @@ ConfigFileParser_createModelFromConfigFile(FileHandle fileHandle)
                         uint32_t vlanId;
                         uint32_t appId;
 
-                        int matchedItems = sscanf((char*) lineBuffer, "PA(%u %u %u %129s)", &vlanPrio, &vlanId, &appId, nameString);
+                        int matchedItems =
+                            sscanf((char*)lineBuffer, "PA(%u %u %u %129s)", &vlanPrio, &vlanId, &appId, nameString);
 
-                        if ((matchedItems != 4) || ((currentGoCB == NULL) && (currentSMVCB == NULL))) goto exit_error;
+                        if ((matchedItems != 4) || ((currentGoCB == NULL) && (currentSMVCB == NULL)))
+                            goto exit_error;
 
                         terminateString(nameString, ')');
 
-                        if (strlen(nameString) != 12) goto exit_error;
-
-                        if (StringUtils_createBufferFromHexString(nameString, (uint8_t*) nameString2) != 6)
+                        if (strlen(nameString) != 12)
                             goto exit_error;
 
-                        PhyComAddress* dstAddress =
-                                PhyComAddress_create((uint8_t) vlanPrio, (uint16_t) vlanId, (uint16_t) appId,
-                                        (uint8_t*) nameString2);
+                        if (StringUtils_createBufferFromHexString(nameString, (uint8_t*)nameString2) != 6)
+                            goto exit_error;
 
-                        if (currentGoCB) {
+                        PhyComAddress* dstAddress = PhyComAddress_create((uint8_t)vlanPrio, (uint16_t)vlanId,
+                                                                         (uint16_t)appId, (uint8_t*)nameString2);
+
+                        if (currentGoCB)
+                        {
                             GSEControlBlock_addPhyComAddress(currentGoCB, dstAddress);
                         }
 
-                        if (currentSMVCB) {
+                        if (currentSMVCB)
+                        {
                             SVControlBlock_addPhyComAddress(currentSMVCB, dstAddress);
                         }
                     }
