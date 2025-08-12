@@ -58,8 +58,8 @@ cd %SRCPATH%\dnp3\Dnp3Client\
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% Dnp3Client.csproj
 dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINWINPATH% Dnp3Client.csproj
 
-cd %SRCPATH%\libplctag\libplctag.NET\src\libplctag
-dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
+rem cd %SRCPATH%\libplctag\libplctag.NET\src\libplctag
+rem dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
 cd %SRCPATH%\libplctag\PLCTagsClient
 dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% PLCTagsClient.csproj
 
