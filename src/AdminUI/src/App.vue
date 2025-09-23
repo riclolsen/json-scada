@@ -80,7 +80,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { STORAGE_KEY } from './i18n'
 
-const version = ref('v0.54-alpha')
+const version = ref('v0.55-alpha')
 const router = useRouter()
 const theme = ref('dark')
 const vuetifyTheme = useTheme()
