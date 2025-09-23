@@ -48,7 +48,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.54-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.55-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -90,7 +90,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 ## Documentation
 
 - [Generic Install Guide](docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.54-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.55-alpha)
 - [RedHat/Rocky Linux Installer Script](docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Ubuntu Linux Installer Script](docs/install.md#ubuntu-2404-scripted-installation)
 - [Generic Install Guide](docs/install.md)
@@ -120,7 +120,6 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [OSHMI2JSON Tool](src/oshmi2json/README.md)
 - [Report Generators](docs/report_generators.md)
 - [I104M Client Driver](src/i104m/README.md)
-- [SAGE-web Displays](src/htdocs/sage-cepel-displays/README.md)
 
 ## Protocols Roadmap
 
@@ -176,7 +175,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 - [x] Install Script for Ubuntu 24.04 Linux x86-64 and arm64
 - [ ] Linux Image / VM
 - [x] Supervisor (Linux process manager) examples
-- [x] Project IDX Configuration
+- [x] Firebase Studio Configuration
 - [ ] InfluxDB Integration
 - [x] Telegraf Integration
 - [x] PowerBI Integration (via PostgreSQL connector)
