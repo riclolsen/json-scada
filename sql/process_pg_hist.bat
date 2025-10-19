@@ -1,9 +1,8 @@
 @ECHO OFF
 
 rem look for process already running, if found get out
-wmic process get commandline |find /I "process_pg_hist.bat"   |find /C /I "cmd" |find /I "2"
-
-if %ERRORLEVEL% EQU 0 GOTO END
+rem Get-Process -Name cmd | Where-Object {$_.CommandLine -like '*process_pg_hist.bat*'} | Measure-Object | Select-Object -ExpandProperty Count
+rem if %ERRORLEVEL% EQU 0 GOTO END
 
 rem cd \json-scada\sql
 
