@@ -9,17 +9,10 @@ rem Stop services
 call stop_services.bat
 
 REM FORCE STOP OF ANY ACTIVE SERVICE OR PROCESS!
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\grafana-runtime\\bin\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\php\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nodejs-runtime\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\mongodb-runtime\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\inkscape-runtime\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\telegraf-runtime\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%..\\platform-windows\\%'" CALL TERMINATE
-wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE
+REM Use PowerShell to terminate processes matching common JSON-SCADA paths.
+REM WMIC is deprecated; using Get-CimInstance + Invoke-CimMethod for termination.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0kill_processes_by_pattern.ps1' \
+	-Patterns 'c:\\\\json-scada\\\\sql\\\\','c:\\\\json-scada\\\\platform-windows\\\\grafana-runtime\\\\bin\\\\','c:\\\\json-scada\\\\platform-windows\\\\nginx_php-runtime\\\\php\\\\','c:\\\\json-scada\\\\platform-windows\\\\nginx_php-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\nodejs-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\browser-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\mongodb-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\inkscape-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\telegraf-runtime\\\\','..\\\\platform-windows\\\\','c:\\\\json-scada\\\\bin\\\\'"
 
 rem Remove service without confimation
 

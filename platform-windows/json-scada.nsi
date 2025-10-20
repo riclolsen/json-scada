@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.55"
-!define VERSION_ "0.55.0.0"
+!define VERSION "v.0.56"
+!define VERSION_ "0.56.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -277,8 +277,8 @@ SetRegView 64
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
-  ; WMIC required for postgresql injection batch files
-  ExecWait 'DISM /Online /Add-Capability /CapabilityName:WMIC'
+  ; WMIC was previously installed for postgresql injection batch files but WMIC is deprecated.
+  ; We use PowerShell helpers (shipped with the installer) instead of WMIC. No DISM install attempted.
   Sleep 1000
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
@@ -799,20 +799,10 @@ Section "Uninstall"
   ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-stop.bat"'
   ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
   Sleep 5000
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
-  Sleep 1000
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\jdk-runtime\\bin\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\grafana-runtime\\bin\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\php\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nginx_php-runtime\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\nodejs-runtime\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\browser-runtime\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\mongodb-runtime\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\inkscape-runtime\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\platform-windows\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%..\\platform-windows\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\bin\\%'" CALL TERMINATE`
-  ExecWait `wmic PROCESS WHERE "COMMANDLINE LIKE '%c:\\json-scada\\sql\\%'" CALL TERMINATE`
+  ; Replaced WMIC calls with a PowerShell helper script that uses Get-CimInstance/Invoke-CimMethod
+  ; The installer will call remove_services.bat which in turn invokes
+  ; kill_processes_by_pattern.ps1 to find and terminate processes by commandline pattern.
+  ; This avoids using the deprecated WMIC tool.
   Sleep 5000
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   Sleep 5000
