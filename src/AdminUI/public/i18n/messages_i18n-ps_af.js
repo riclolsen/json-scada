@@ -3,7 +3,7 @@
 
 var Msg = {
     NomeProduto: '{json:scada}',
-    VersaoProduto: '0.55',
+    VersaoProduto: '0.56',
 
     NomeVisorTelas: 'د نښته کتنې لیدل',
     NomeVisorEventos: 'د واقعو کتنې لیدل',
