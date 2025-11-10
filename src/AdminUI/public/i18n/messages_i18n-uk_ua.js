@@ -4,7 +4,7 @@
 var Msg =
 {
 NomeProduto: '{json:scada}',
-VersaoProduto: '0.56',
+VersaoProduto: '0.57',
 
 NomeVisorTelas: 'Перегляд ',
 NomeVisorEventos: 'Події',
