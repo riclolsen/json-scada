@@ -53,7 +53,7 @@ export function EventsGrid() {
             {events.map((event, index) => (
               <tr
                 key={event.eventId || index}
-                className="border-b hover:bg-gray-50"
+                className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
               >
                 <td className="p-1 whitespace-nowrap">
                   {event.sourceTimestamp.toLocaleString()}

@@ -16,7 +16,7 @@ Start a free instance for dev/test on Google's Firebase Studio platform with jus
 
 3. Wait for the workspace to be imported and built. This will take a while, do not click the recover button. When started, some terminals will open to initialize and build the project. Wait until all the tasks are finished and the workspace is ready. This will take some minutes.
 
-4. Click the "Firebase Studio" button on left sidebar and select "Backend Ports". Click the "Open New Window" action for port 8080. This will give access to the web UI for the project. Login with admin/jsonscada credentials.
+4. Click the "Firebase Studio" button on top rigth corner and select "Backend Ports". Click the "Open New Window" action for port 8080. This will give access to the web UI for the project. Login with admin/jsonscada credentials.
 
 5. On the VSCode's terminal, control JSON-SCADA processes with the "supervisorctl" command.  
 
