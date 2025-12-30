@@ -127,8 +127,8 @@
       titleKey: 'dashboard.svgedit',
       icon: PenTool,
       color: 'warning',
-      route: '/svgedit',
-      page: '/#/svgedit',
+      route: '/svg-edit',
+      page: '/svgedit',
       target: '_blank',
     },
     {
