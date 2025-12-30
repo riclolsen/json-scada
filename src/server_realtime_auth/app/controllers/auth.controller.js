@@ -1066,7 +1066,17 @@ exports.listDisplays = (req, res) => {
 exports.openDisplay = (req, res) => {
   Log.log('openDisplay')
 
-  fs.readFile('../../svg/' + req.query.file, function (err, data) {
+  // Sanitize file path to prevent directory traversal
+  const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
+  const requestedPath = path.resolve(svgDir, path.basename(req.query.file || ''))
+  
+  if (!requestedPath.startsWith(svgDir)) {
+    Log.log('openDisplay: Invalid file path attempted: ' + req.query.file)
+    res.status(400).send({ error: 'Invalid file path' })
+    return
+  }
+
+  fs.readFile(requestedPath, function (err, data) {
     //handling error
     if (err) {
       Log.log(err)
@@ -1081,7 +1091,17 @@ exports.openDisplay = (req, res) => {
 exports.saveDisplay = (req, res) => {
   Log.log('saveDisplay')
 
-  fs.writeFile('../../svg/' + req.body.file, req.body.content, function (err) {
+  // Sanitize file path to prevent directory traversal
+  const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
+  const requestedPath = path.resolve(svgDir, path.basename(req.body.file || ''))
+  
+  if (!requestedPath.startsWith(svgDir)) {
+    Log.log('saveDisplay: Invalid file path attempted: ' + req.body.file)
+    res.status(400).send({ error: 'Invalid file path' })
+    return
+  }
+
+  fs.writeFile(requestedPath, req.body.content, function (err) {
     //handling error
     if (err) {
       Log.log(err)
