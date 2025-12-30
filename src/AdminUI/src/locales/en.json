@@ -34,7 +34,8 @@
     "grafana": "Grafana",
     "metabase": "Metabase",
     "customDevelopments": "Custom Developments",
-    "open": "Open"
+    "open": "Open",
+    "svgedit": "SVG Editor"
   },
   "login": {
     "title": "Login",

@@ -34,7 +34,8 @@
     "grafana": "جرافانا",
     "metabase": "قاعدة البيانات",
     "customDevelopments": "التطورات المخصصة",
-    "open": "يفتح"
+    "open": "يفتح",
+    "svgedit": "محرر SVG"
   },
   "login": {
     "title": "تسجيل الدخول",

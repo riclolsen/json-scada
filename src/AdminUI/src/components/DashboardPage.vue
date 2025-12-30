@@ -9,7 +9,7 @@
         md="4"
       >
         <v-card
-          v-if="!(shortcut.titleKey === 'dashboard.admin' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.logViewer' && !isAdmin())"
+          v-if="!(shortcut.titleKey === 'dashboard.admin' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.logViewer' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.svgedit' && !isAdmin())"
           dense
           :color="shortcut.color"
           hover
@@ -51,6 +51,7 @@
     HelpCircle,
     BarChart,
     Database,
+    PenTool,
     Code,
   } from 'lucide-vue-next'
 
@@ -120,6 +121,14 @@
       color: 'warning',
       route: '/admin',
       page: '/#/admin',
+      target: '_blank',
+    },
+    {
+      titleKey: 'dashboard.svgedit',
+      icon: PenTool,
+      color: 'warning',
+      route: '/svgedit',
+      page: '/#/svgedit',
       target: '_blank',
     },
     {

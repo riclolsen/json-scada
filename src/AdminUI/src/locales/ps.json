@@ -34,7 +34,8 @@
     "grafana": "ګرافانا",
     "metabase": "میټابیس",
     "customDevelopments": "دودیز پرمختګونه",
-    "open": "خلاص"
+    "open": "خلاص",
+    "svgedit": "د SVG مدیر"
   },
   "login": {
     "title": "ننوتل",

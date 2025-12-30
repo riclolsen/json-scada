@@ -34,7 +34,8 @@
     "grafana": "Графана",
     "metabase": "Метабаза",
     "customDevelopments": "Розробки на замовлення",
-    "open": "ВІДЧИНЕНО"
+    "open": "ВІДЧИНЕНО",
+    "svgedit": "SVG-редактор"
   },
   "login": {
     "title": "Логін",
