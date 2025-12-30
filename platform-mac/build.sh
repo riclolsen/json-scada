@@ -125,6 +125,10 @@ cd ../AdminUI
 npm install
 npm run build
 
+cd ../svgedit
+npm install
+npm run build
+
 cd ../log-io/ui
 npm install
 npm run build

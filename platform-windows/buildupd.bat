@@ -215,4 +215,8 @@ call %NPM% i --package-lock-only
 call %NPM% update
 call %NPM% run build
 
+cd %SRCPATH%\svgedit
+call %NPM% install
+call %NPM% run build
+
 cd %JSPATH%\platform-windows
