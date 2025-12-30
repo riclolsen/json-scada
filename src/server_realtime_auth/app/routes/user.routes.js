@@ -113,6 +113,8 @@ module.exports = function (
   app.get(accessPoint + 'test/admin', [authJwt.isAdmin], controller.adminBoard)
 
   app.use('/svg', [authJwt.verifyToken], express.static('../../svg'))
+  
+  app.use('/svgedit', [authJwt.verifyToken], express.static('../svgedit/dist/editor'))
 
   // production
   app.use('/', express.static('../AdminUI/dist'))

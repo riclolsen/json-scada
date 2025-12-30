@@ -124,7 +124,7 @@ const { authJwt } = require('./app/middlewares')
 const { canSendCommands } = require('./app/middlewares/authJwt.js')
 
 process.on('uncaughtException', (err) =>
-  Log.log('Uncaught Exception:' + JSON.stringify(err))
+  Log.log('Uncaught Exception:' + err.message + ' ' + err.stack)
 )
 
 // Argument NOAUTH disables user authentication

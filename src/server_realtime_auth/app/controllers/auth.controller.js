@@ -1063,6 +1063,36 @@ exports.listDisplays = (req, res) => {
   })
 }
 
+exports.openDisplay = (req, res) => {
+  Log.log('openDisplay')
+
+  fs.readFile('../../svg/' + req.query.file, function (err, data) {
+    //handling error
+    if (err) {
+      Log.log(err)
+      res.status(200).send({ error: err })
+      return
+    }
+
+    res.status(200).send(data)
+  })
+}
+
+exports.saveDisplay = (req, res) => {
+  Log.log('saveDisplay')
+
+  fs.writeFile('../../svg/' + req.body.file, req.body.content, function (err) {
+    //handling error
+    if (err) {
+      Log.log(err)
+      res.status(200).send({ error: err })
+      return
+    }
+
+    res.status(200).send({ error: false })
+  })
+}
+
 exports.updateRole = async (req, res) => {
   Log.log('Update role')
   try {

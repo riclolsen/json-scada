@@ -114,6 +114,16 @@ module.exports = function (app, accessPoint) {
     [authJwt.isAdmin],
     controller.listDisplays
   )
+  app.get(
+    accessPoint + 'auth/openDisplay',
+    [authJwt.isAdmin],
+    controller.openDisplay
+  )
+  app.post(
+    accessPoint + 'auth/saveDisplay',
+    [authJwt.isAdmin],
+    controller.saveDisplay
+  )
   app.post(
     accessPoint + 'auth/updateRole',
     [authJwt.isAdmin],
