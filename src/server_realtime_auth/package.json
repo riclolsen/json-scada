@@ -4,7 +4,8 @@
   "description": "Realtime data auth server for JSON SCADA.",
   "main": "index.js",
   "dependencies": {
-    "@apollo/server": "^4.11.0",
+    "@apollo/server": "^5.0.0",
+    "@as-integrations/express5": "^1.0.0",
     "adm-zip": "^0.5.16",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.5",
@@ -12,7 +13,7 @@
     "express": "^5.0.0",
     "express-fileupload": "^1.5.1",
     "express-http-proxy": "^2.1.1",
-    "graphql": "^16.9.0",
+    "graphql": "^16.11.0",
     "graphql-tools": "^9.0.1",
     "http-proxy-middleware": "^3.0.2",
     "jsonwebtoken": "^9.0.0",
