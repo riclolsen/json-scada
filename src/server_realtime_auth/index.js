@@ -723,7 +723,8 @@ let pool = null
                           TimeTagAtSourceOk: null,
                         },
                       },
-                    ]
+                    ],
+                    { updatePipeline: true }
                   )
                   UserActionsQueue.enqueue({
                     username: username,
