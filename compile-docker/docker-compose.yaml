@@ -160,6 +160,7 @@ services:
                      cd /OPC-UA-Server && npm install && chmod -R 777 node_modules &&
                      cd /mqtt-sparkplug && npm install && chmod -R 777 node_modules &&
                      cd /AdminUI && npm install && npm run build && chmod -R 777 node_modules &&
+                     cd /svgedit && npm install && npm run build && chmod -R 777 node_modules &&
                      cd /custom-developments/basic_bargraph && npm install && npx astro telemetry disable && npm run build &&
                      cd /custom-developments/advanced_dashboard && npm install && npm run build &&
                      cd /custom-developments/transformer_with_command && npm install && npm run build"
@@ -176,5 +177,6 @@ services:
       - ../src/OPC-UA-Server:/OPC-UA-Server
       - ../src/mqtt-sparkplug:/mqtt-sparkplug
       - ../src/AdminUI:/AdminUI
+      - ../src/svgedit:/svgedit
       - ../src/custom-developments/:/custom-developments
 
