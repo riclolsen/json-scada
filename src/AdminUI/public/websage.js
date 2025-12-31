@@ -376,6 +376,34 @@ var WebSAGE = {
     WebSAGE.g_seltela = document.getElementById("SELTELA");
 
     var jsuserck = readCookie( "json-scada-user" );
+
+    if ( (typeof optionhtml === 'undefined' || optionhtml === "") && (typeof optval === "undefined" || optval.length === 0) ) {
+      fetchTimeout("/Invoke/auth/listDisplays", 1500)
+       .then(function(r){ return r.json(); })
+       .then(function(data) {
+            var html = "<option id='SELTELA_OPC1' selected disabled='disabled'>Choose a display ...</option>";
+            if (Array.isArray(data)) {
+                html += "<optgroup label='Available Displays'>";
+                var qwerty = "QWERTYUIOPASDFGHJKLZXCVBNM";
+                data.forEach(function(fname, i) {
+                    var dispName = fname.replace(".svg", "").replace(".SVG", "");
+                    if ( i < 9 ) dispName += " [" + (i+1) + "]";
+                    else if ( i === 9 ) dispName += " [0]";
+                    if ( i < qwerty.length ) dispName += "{" + qwerty.charAt(i) + "}";
+                    html += "<option value='../svg/" + fname + "'>" + dispName + "</option>";
+                });
+                html += "</optgroup>";
+            }
+            optionhtml = html;
+            
+            var sFile = WebSAGE.lista_telas(filename, indscr);
+            if (sFile && sFile !== "") WebSAGE.init_svg(sFile);
+            WebSAGE.atalhosTela();
+       })
+       .catch(function(err){ console.log("Error loading display list: " + err); });
+       
+       return "";
+    }
     if (jsuserck) {
       jsuserObj = JSON.parse(decodeURIComponent(jsuserck))
       for (i=0; i<jsuserObj.rights.displayList.length; i++) {

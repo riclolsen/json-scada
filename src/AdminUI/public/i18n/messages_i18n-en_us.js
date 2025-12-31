@@ -40,7 +40,7 @@ QNormal:     'NORMAL',
 QDPIntermed: 'INTERMEDIARY',
 QDPInvalido: 'INVALID',
 QValor:      'value',
-SELTELA_OPC1:'Choose a screen ...',
+SELTELA_OPC1:'Choose a display ...',
 
 // Events.html
 Eventos:       'Events',
