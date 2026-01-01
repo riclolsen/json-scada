@@ -32,7 +32,7 @@ partial class MainClass
     static public int AutoKeyMultiplier = 1000000; // maximum number of points on each connection self-published (auto numbered points)
 
     // This process updates acquired values in the mongodb collection for realtime data
-    static public async void ProcessMongo()
+    static public async Task ProcessMongo()
     {
         do
         {
@@ -292,15 +292,14 @@ partial class MainClass
                         Log("MongoDB - Bulk writing " + listWrites.Count + ", Total enqueued data " + OPCDataQueue.Count);
                         try
                         {
-                            var bulkWriteResult =
-                              collection
+                            var bulkWriteResult = await collection
                                 .WithWriteConcern(WriteConcern.Unacknowledged)
-                                .BulkWrite(listWrites, new BulkWriteOptions
+                                .BulkWriteAsync(listWrites, new BulkWriteOptions
                                 {
                                     IsOrdered = false,
                                     BypassDocumentValidation = true,
-                                });
-                            // Log($"MongoDB - Bulk write - Inserted:{bulkWriteResult.InsertedCount} - Updated:{bulkWriteResult.ModifiedCount}");
+                                }).ConfigureAwait(false);
+
                             var ups = (uint)((float)listWrites.Count / ((float)stopWatch.ElapsedMilliseconds / 1000));
                             Log($"MongoDB - Bulk written {listWrites.Count} documents in {stopWatch.ElapsedMilliseconds} ms, updates per second: {ups}");
                             listWrites.Clear();
@@ -313,7 +312,7 @@ partial class MainClass
 
                     if (OPCDataQueue.Count == 0)
                     {
-                        Thread.Sleep(200);
+                        await Task.Delay(200).ConfigureAwait(false);
                     }
                 }
                 while (true);
@@ -326,7 +325,7 @@ partial class MainClass
                     .ToString()
                     .Substring(0,
                     e.ToString().IndexOf(Environment.NewLine)));
-                Thread.Sleep(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
         }
         while (true);
