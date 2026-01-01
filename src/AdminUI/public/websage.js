@@ -331,6 +331,7 @@ var WebSAGE = {
           document.getElementById("loader").style.display = "none";
           //console.log(performance.now()-ini);
 
+          if (optionhtml === "") return;
           var titu =
             WebSAGE.g_seltela.options[WebSAGE.g_seltela.options.selectedIndex]
               .text;
@@ -463,6 +464,35 @@ var WebSAGE = {
 
         // seleciona tela aberta no combo box
         WebSAGE.g_seltela.selectedIndex = i;
+        // get left of [ or {
+        var titu = WebSAGE.g_seltela.options[i].text;
+        var pos = titu.indexOf("[");
+          if (pos <= 0) {
+            pos = 100;
+          }
+          titu = titu.substring(0, pos);
+          pos = titu.indexOf("{");
+          if (pos <= 0) {
+            pos = 100;
+          }
+          titu = titu.substring(0, pos);
+        
+          titu = titu.replace(new RegExp("[\\s.]+$", "g"), "");
+          WebSAGE.g_titulo_janela =
+            titu +
+            " - " +
+            Msg.NomeVisorTelas +
+            " - " +
+            Msg.NomeProduto +
+            " - " +
+            Msg.VersaoProduto + getUsernameFmt();
+          // document.title = "."; // necessário devido a um bug do chromium!
+          document.title = WebSAGE.g_titulo_janela;
+          // coloca o nome da tela na toolbar, se configurado
+          if (ScreenViewer_ShowScreenNameTB) {
+            $("#NOME_TELA").text(titu + " ");
+            $("#NOME_TELA").css("display", "");
+          }
         break;
       }
     }
