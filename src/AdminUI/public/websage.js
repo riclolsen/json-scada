@@ -2942,11 +2942,11 @@ else
                 if (item.style != undefined) {
                   if (item.style.strokeWidth != "") {
                     inksage_labelvec[lbv].grafico.style.strokeWidth =
-                      item.style.strokeWidth;
+                      item.style.strokeWidth || item.getAttributeNS(null, "stroke-width");
                   }
                   if (item.style.stroke != "") {
                     inksage_labelvec[lbv].grafico.style.stroke =
-                      item.style.stroke;
+                      item.style.stroke || item.getAttributeNS(null, "stroke");
                   }
                 }
 
