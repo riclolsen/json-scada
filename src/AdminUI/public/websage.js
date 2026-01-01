@@ -2587,7 +2587,7 @@ else
                 // size and color from the rectangle
                 jsoncfg.w = item.getAttributeNS(null, "width");
                 jsoncfg.h = item.getAttributeNS(null, "height");
-                jsoncfg.color = d3.scale.ordinal().range([item.style.fill]);
+                jsoncfg.color = d3.scale.ordinal().range([item.style.fill||item.getAttributeNS(null, "fill")]);
                 item.chart.config(jsoncfg);
                 var svg = d3.select(SVGDoc);
                 // insert the chart in the parent of rect object (hopefully its inkscape layer)
@@ -2776,8 +2776,8 @@ else
             break;
           case "color":
             if (item.style !== null) {
-              inksage_labelvec[lbv].initfill = item.style.fill;
-              inksage_labelvec[lbv].initstroke = item.style.stroke;
+              inksage_labelvec[lbv].initfill = item.style.fill||item.getAttributeNS(null, "fill");
+              inksage_labelvec[lbv].initstroke = item.style.stroke||item.getAttributeNS(null, "stroke");
             } else {
               inksage_labelvec[lbv].initfill = "";
               inksage_labelvec[lbv].initstroke = "";
