@@ -289,7 +289,7 @@ func iterateCommandsChangeStream(stream *mongo.ChangeStream, protConns []*protoc
 					log.Println("Commands - Command canceled!", insDoc.FullDocument.ID, err)
 					break
 				}
-				ch := wrReq.Execute()
+				ch := wrReq.Execute(context.TODO())
 				wrReqResult := <-ch
 				if wrReqResult.GetErr() != nil {
 					commandCancel(collectionCommands, insDoc.FullDocument.ID, wrReqResult.GetErr().Error())
@@ -435,33 +435,22 @@ func main() {
 			protocolConn.AddrSeparator, _ = addrSep, addrParts
 
 			// try to connect to plc
-			connectionRequestChanel := driverManager.GetConnection(connUrl)
-			var connectionResult plc4go.PlcConnectionConnectResult
-			for {
-				select {
-				case connectionResult = <-connectionRequestChanel:
-				default:
-					processRedundancy(collectionInstances, instanceId, cfg)
-					time.Sleep(2 * time.Second)
-					continue
-				}
-				break
-			}
-			// connectionResult := <-connectionRequestChanel
-			if connectionResult.GetErr() != nil {
-				log.Printf("%s: Error connecting to PLC: %s", protocolConn.Name, connectionResult.GetErr().Error())
-				protocolConn.PlcConn = nil
+			var connection plc4go.PlcConnection
+			var err error
+			connection, err = driverManager.GetConnection(context.TODO(), connUrl)
+			if err != nil {
+				log.Printf("%s: Error connecting to PLC: %s", protocolConn.Name, err.Error())
 				continue
+
 			}
 
 			// get and store connection instance
-			protocolConn.PlcConn = connectionResult.GetConnection()
+			protocolConn.PlcConn = connection
 
 			// try to ping the plc
-			pingResultChannel := protocolConn.PlcConn.Ping()
-			pingResult := <-pingResultChannel
-			if pingResult.GetErr() != nil {
-				log.Printf("%s: Couldn't ping device: %s", protocolConn.Name, pingResult.GetErr().Error())
+			err = protocolConn.PlcConn.Ping(context.TODO())
+			if err != nil {
+				log.Printf("%s: Couldn't ping device: %s", protocolConn.Name, err.Error())
 				protocolConn.PlcConn.Close()
 				protocolConn.PlcConn = nil
 				continue
@@ -568,7 +557,7 @@ func main() {
 					}
 				}
 			}
-			var err error
+
 			protocolConn.ReadRequest, err = reqBld.Build()
 			if err != nil {
 				log.Printf(protocolConn.Name + ": error preparing read-request: %s")
@@ -581,7 +570,7 @@ func main() {
 				}
 
 				// Execute a read-request
-				readResponseChanel := protocolConn.ReadRequest.Execute()
+				readResponseChanel := protocolConn.ReadRequest.Execute(context.TODO())
 
 				// Wait for the response to finish
 				readRequestResult := <-readResponseChanel
@@ -686,10 +675,9 @@ func main() {
 						if err == nil {
 							continue
 						}
-						pingResultChannel := protocolConn.PlcConn.Ping()
-						pingResult := <-pingResultChannel
-						if pingResult.GetErr() != nil {
-							log.Printf("Couldn't ping device: %s", pingResult.GetErr().Error())
+						err = protocolConn.PlcConn.Ping(context.TODO())
+						if err != nil {
+							log.Printf("Couldn't ping device: %s", err.Error())
 							protocolConn.PlcConn.Close()
 							protocolConn.PlcConn = nil
 							break
