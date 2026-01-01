@@ -2939,16 +2939,10 @@ else
                 }
 
                 // faz a cor e espessura do gráfico igual ao do retângulo que o contém
-                if (item.style != undefined) {
-                  if (item.style.strokeWidth != "") {
-                    inksage_labelvec[lbv].grafico.style.strokeWidth =
-                      item.style.strokeWidth || item.getAttributeNS(null, "stroke-width");
-                  }
-                  if (item.style.stroke != "") {
-                    inksage_labelvec[lbv].grafico.style.stroke =
-                      item.style.stroke || item.getAttributeNS(null, "stroke");
-                  }
-                }
+                inksage_labelvec[lbv].grafico.style.strokeWidth =
+                  item?.style?.strokeWidth || item.getAttributeNS(null, "stroke-width");
+                inksage_labelvec[lbv].grafico.style.stroke =
+                  item?.style?.stroke || item.getAttributeNS(null, "stroke");
 
                 // source field format: point number|plot style|superior limit style|inferior limit style
                 // Ex: Source: 1234|stroke:green|stroke:red|stroke:orange
