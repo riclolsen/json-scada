@@ -91,7 +91,7 @@ sudo chown postgres:postgres /etc/postgresql/18/main/postgresql.conf
 sudo systemctl restart postgresql
 
 # Install Inkscape and SCADA extension
-# sudo apt -y install inkscape
+sudo apt -y remove inkscape
 sudo add-apt-repository -y universe
 sudo add-apt-repository -y ppa:inkscape.dev/stable
 sudo apt-get update
