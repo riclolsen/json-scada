@@ -36,16 +36,9 @@ sudo apt -y install podman docker.io
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# Inkscape build dependencies
-sudo apt -y install ninja-build libjpeg-dev libxslt-dev libgtkmm-3.0-dev libboost-all-dev \
-    libpoppler-dev libpoppler-glib-dev libgtest-dev libharfbuzz-dev libwpg-dev librevenge-dev libvisio-dev \
-    libcdr-dev libreadline-dev libmagick++-dev libgraphicsmagick++1-dev libpango1.0-dev libgsl-dev \
-    libsoup2.4-dev liblcms2-dev libgc-dev libdouble-conversion-dev potrace python3-scour
-sudo apt -y install libgspell-1-dev libgspell-1-2 libpotrace-dev libpoppler-private-dev
-
 # Install Go
-wget --inet4-only https://go.dev/dl/go1.23.4.linux-$ARCHITECTURE.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-$ARCHITECTURE.tar.gz
+wget --inet4-only https://go.dev/dl/go1.25.5.linux-$ARCHITECTURE.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.25.5.linux-$ARCHITECTURE.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 
