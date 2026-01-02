@@ -96,6 +96,11 @@ sudo cp postgresql.conf /etc/postgresql/17/main/
 sudo chown postgres:postgres /etc/postgresql/17/main/postgresql.conf
 sudo systemctl restart postgresql
 
+# Install Inkscape and SCADA extension
+sudo apt -y install inkscape
+sudo -u $JS_USERNAME sh -c 'cp ../src/inkscape-extension/scada.inx ~/.config/inkscape/extensions/'
+sudo -u $JS_USERNAME sh -c 'cp ../src/inkscape-extension/scada.py ~/.config/inkscape/extensions/'
+
 # Configure web server
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -188,7 +193,7 @@ sudo supervisorctl start all
 sudo supervisorctl status
 
 echo "Installation complete!"
-echo "To compile and install Inkscape+SAGE, run: sudo sh ./inkscape-plus-sage.sh"
+# echo "To compile and install Inkscape+SAGE, run: sudo sh ./inkscape-plus-sage.sh"
 echo "To open web interface run: firefox http://localhost"
 echo "Default credentials: admin / jsonscada"
 echo "Default Metabase credentials: json@scada.com / jsonscada123"
