@@ -3063,14 +3063,15 @@ else
             nohs = SVGDoc.getElementsByTagName("use");
             for (i = 0; i < nohs.length; i++) {
               if (
-                nohs
+                (nohs
                   .item(i)
-                  .getAttributeNS("http://www.w3.org/1999/xlink", "href") ==
-                "#" + item.getAttributeNS(null, "id")
+                  .getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+                  nohs.item(i).getAttributeNS(null, 'href')) ==
+                '#' + item.getAttributeNS(null, 'id')
               ) {
-                clone = nohs.item(i);
-                inksage_labelvec[lbv].clone = clone;
-                break;
+                clone = nohs.item(i)
+                inksage_labelvec[lbv].clone = clone
+                break
               }
             }
             if (clone != undefined) {
