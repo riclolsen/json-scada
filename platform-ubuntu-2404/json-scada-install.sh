@@ -138,7 +138,7 @@ sudo systemctl daemon-reload
 
 # Install Metabase
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.52.5/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.57.1/metabase.jar -O ../metabase/metabase.jar'
 
 # Install Node.js
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
