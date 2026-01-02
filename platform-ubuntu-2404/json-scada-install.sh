@@ -31,6 +31,7 @@ sudo apt -y upgrade
 sudo apt -y install ffmpeg bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev
 
 # Docker and container tools
+sudo apt -y remove containerd.io
 sudo apt -y install podman docker.io
 sudo systemctl enable docker
 sudo systemctl start docker
@@ -97,7 +98,12 @@ sudo chown postgres:postgres /etc/postgresql/17/main/postgresql.conf
 sudo systemctl restart postgresql
 
 # Install Inkscape and SCADA extension
-sudo apt -y install inkscape
+# sudo apt -y install inkscape
+sudo add-apt-repository -y universe
+sudo add-apt-repository -y ppa:inkscape.dev/stable
+sudo apt-get update
+sudo apt -y install inkscape python3-tk
+
 sudo -u $JS_USERNAME sh -c 'cp ../src/inkscape-extension/scada.inx ~/.config/inkscape/extensions/'
 sudo -u $JS_USERNAME sh -c 'cp ../src/inkscape-extension/scada.py ~/.config/inkscape/extensions/'
 
