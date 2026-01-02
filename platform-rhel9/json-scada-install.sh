@@ -26,7 +26,7 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rp
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel python3-tkinter
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel python3-tkinter sqlite-devel
 sudo dnf -y install curl --allowerasing
 
 # docker/podman can be used to run DNP3 and OPC-DA on linux
