@@ -82,19 +82,19 @@ echo "deb [signed-by=/usr/share/keyrings/grafana-archive-keyring.gpg] https://pa
 sudo apt update
 sudo apt -y install gnupg postgresql-common apt-transport-https lsb-release
 sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-sudo apt -y install postgresql-server-dev-17
+sudo apt -y install postgresql-server-dev-18
 echo "deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb_release -c -s) main" | sudo tee /etc/apt/sources.list.d/timescaledb.list
 wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/timescaledb.gpg --yes
 sudo apt update
-sudo apt -y install timescaledb-2-postgresql-17 postgresql-client-17
+sudo apt -y install timescaledb-2-postgresql-18 postgresql-client-18
 sudo timescaledb-tune -yes
 sudo systemctl enable postgresql
 sudo systemctl restart postgresql
 
-sudo cp pg_hba.conf /etc/postgresql/17/main/
-sudo chown postgres:postgres /etc/postgresql/17/main/pg_hba.conf
-sudo cp postgresql.conf /etc/postgresql/17/main/
-sudo chown postgres:postgres /etc/postgresql/17/main/postgresql.conf
+sudo cp pg_hba.conf /etc/postgresql/18/main/
+sudo chown postgres:postgres /etc/postgresql/18/main/pg_hba.conf
+sudo cp postgresql.conf /etc/postgresql/18/main/
+sudo chown postgres:postgres /etc/postgresql/18/main/postgresql.conf
 sudo systemctl restart postgresql
 
 # Install Inkscape and SCADA extension
