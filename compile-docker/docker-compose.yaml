@@ -28,13 +28,6 @@ services:
                     rm -rf obj bin && dotnet clean &&
                     dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
-                    cd /src/libplctag/libplctag.NET/src/libplctag &&
-                    dotnet build --self-contained -c Release -o /publish_bin/ &&
-                    cd /src/libplctag/PLCTagsClient &&
-                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/libplctag/libplctag.NET/src/libplctag &&
-                    rm -rf obj bin &&
                     cd /src/libiec61850 &&
                     mkdir -p build &&
                     cd build &&
@@ -76,7 +69,7 @@ services:
       - ../src/libiec61850:/src/libiec61850
       - ../src/lib60870.netcore:/src/lib60870.netcore
       - ../src/OPC-UA-Client:/src/OPC-UA-Client
-      - ../src/libplctag:/src/libplctag
+      # - ../src/libplctag:/src/libplctag
       - ../src/mongo-cxx-driver:/src/mongo-cxx-driver
       - ../src/dnp3:/src/dnp3
       - ../demo-docker/bin:/publish_bin
