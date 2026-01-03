@@ -29,6 +29,7 @@ services:
                     dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
                     rm -rf obj bin &&
                     cd /src/libiec61850 &&
+                    rm -rf build &&
                     mkdir -p build &&
                     cd build &&
                     cmake .. &&
