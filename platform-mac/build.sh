@@ -25,7 +25,7 @@ mkdir build
 cd build
 cmake ..
 make
-cp src/libiec61850.so src/libiec61850.so.1.6.0 ../../../bin/
+cp src/libiec61850.so src/libiec61850.so.* ../../../bin/
 cd ../dotnet/core/2.0/IEC61850.NET.core.2.0
 dotnet publish --no-self-contained --runtime $ARG1 -c Release
 cd ../../../../../iec61850_client

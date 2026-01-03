@@ -25,7 +25,7 @@ mkdir build
 cd build
 cmake ..
 make
-cp src/libiec61850.so src/libiec61850.so.1.6.1 ../../../bin/
+cp src/libiec61850.so src/libiec61850.so.* ../../../bin/
 cd ../dotnet/core/2.0/IEC61850.NET.core.2.0
 dotnet publish --no-self-contained --runtime $ARG1 -c Release
 cd ../../../../../iec61850_client
@@ -33,7 +33,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 
 sleep 1
 cd ../lib60870.netcore
-dotnet publish --no-self-contained --runtime $ARG1 -p:IsPackable=false -p:GeneratePackageOnBuild=false -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet publish --no-self-contained --runtime $ARG1   -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
 dotnet restore
