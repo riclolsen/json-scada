@@ -44,7 +44,10 @@ services:
                     rm -rf obj bin &&
                     cd /src/libiec61850 &&
                     rm -rf .install &&
-                    cd /src/mongo-cxx-driver/mongo-cxx-driver/build &&
+                    cd /src/mongo-cxx-driver/mongo-cxx-driver &&
+                    rm -rf build &&
+                    mkdir -p build &&
+                    cd build &&
                     sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake &&
                     cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF &&
                     cmake --build . --config Release &&
