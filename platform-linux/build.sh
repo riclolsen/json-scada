@@ -33,7 +33,7 @@ dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c 
 
 sleep 1
 cd ../lib60870.netcore
-dotnet publish --no-self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+dotnet publish --no-self-contained --runtime $ARG1 -p:IsPackable=false -p:GeneratePackageOnBuild=false -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../OPC-UA-Client
 dotnet restore
