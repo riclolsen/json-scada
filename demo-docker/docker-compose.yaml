@@ -10,7 +10,7 @@ services:
 
   # must create a mongodb instance or cluster with a replica set
   jsdemo_mongorsn1:
-    image: mongo:8.0
+    image: mongo:8.2
     container_name: jsdemo_mongors1
     hostname: jsdemo_mongorsn1
     restart: unless-stopped
@@ -33,7 +33,7 @@ services:
   
   # Postgresql/TimescaleDB historian. Without auth! 
   timescaledb:
-    image: timescale/timescaledb-ha:pg17
+    image: timescale/timescaledb-ha:pg18
     container_name: jsdemo_timescaledb
     restart: unless-stopped
     #command: postgres -c shared_preload_libraries=timescaledb
@@ -58,7 +58,7 @@ services:
 
   # Postgresql/TimescaleDB Process SQL hist files 
   process_pg_hist:
-    image: timescale/timescaledb-ha:pg17
+    image: timescale/timescaledb-ha:pg18
     container_name: jsdemo_process_pg_hist
     command: /bin/sh /sql/process_pg_hist.sh
     restart: unless-stopped
@@ -79,7 +79,7 @@ services:
 
   # Postgresql/TimescaleDB Process SQL current data files 
   process_pg_rtdata:
-    image: timescale/timescaledb-ha:pg17
+    image: timescale/timescaledb-ha:pg18
     container_name: jsdemo_process_pg_rtdata
     command: /bin/sh /sql/process_pg_rtdata.sh
     restart: unless-stopped
@@ -300,6 +300,7 @@ services:
       - ../src/AdminUI:/AdminUI
       - ../src/custom-developments:/custom-developments
       - ../svg:/svg
+      - ../src/svgedit:/svgedit
       - ./conf:/conf
       - ./log:/log
     links:
@@ -459,6 +460,7 @@ services:
       - ../src/AdminUI:/AdminUI
       - ../src/custom-developments:/custom-developments
       - ../svg:/svg
+      - ../src/svgedit:/svgedit
     restart: unless-stopped
     links:
       - server_realtime
