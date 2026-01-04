@@ -1,17 +1,32 @@
+# SVG Editing Options for JSON-SCADA
+
+There are now 3 options for SVG editing in JSON-SCADA:
+
+1. Integrated Web-based SVG editor. This editor can load and save SVG files directly from the JSON-SCADA server. This is the most convenient option.
+2. Current version of Inkscape with SCADA extension, a desktop application. This is the most powerful option, but it can only interact with the JSON-SCADA server when running on the same machine.
+3. Customized build of Inkscape 1.2 with SCADA-UI in the object properties dialog (deprecated, but still available).
+
+# Web-based SVG Editor
+
+This editor can be accessed from the JSON-SCADA web interface by users with the "admin" role.
+
+Select the "SCADA Animations" tool from the left panel toolbar to edit the animations for the selected SVG object.
+
 # SVG Synoptic Display Editor - Inkscape + SCADA Extension
 
-The official SVG editor for JSON-SCADA is now the regular Inkscape with the SCADA extension.
+The official desktop application for SVG editing on JSON-SCADA, it is now the regular Inkscape with the SCADA extension.
 
 Any graphics properties can be animated with live data, such as fill/stroke colors, size, position, rotation, etc.
 
 It comes ready to use when you install JSON-SCADA in Windows.
 
+* Select the SVG object to edit (only one object at a time).
 * Access the SCADA extension from the "Extensions" menu.
-* After each SCADA modification for SVG object exit with ESC.
+* After each SCADA modification for SVG object exit with ESC (do not return to the main Inkscape window without exiting the SCADA dialog).
 * To access the SCADA extension subsequently, use ALT+Q.
 * The old "Object Properties" menu is not available anymore.
 
-## Creating Displays
+# Creating Displays
 
 To create a new display
 
