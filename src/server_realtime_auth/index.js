@@ -165,11 +165,16 @@ let pool = null
     app.use(
       fileUpload({
         createParentPath: true,
+        limits: {
+          fileSize: 100 * 1024 * 1024,
+          fieldSize: 100 * 1024 * 1024,
+        },
       })
     )
-    app.use(express.json())
+    app.use(express.json({ limit: '100mb' }))
     app.use(
       express.urlencoded({
+        limit: '100mb',
         extended: true,
       })
     )
@@ -211,9 +216,10 @@ let pool = null
       })
     )
     app.options(OPCAPI_AP, cors()) // enable pre-flight request
-    app.use(express.json())
+    app.use(express.json({ limit: '50mb' }))
     app.use(
       express.urlencoded({
+        limit: '50mb',
         extended: true,
       })
     )
