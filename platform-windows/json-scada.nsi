@@ -484,9 +484,12 @@ SetRegView 64
   ; Inkscape + SCADA extension
   SetOutPath $INSTDIR\platform-windows\inkscape-runtime
   File /a /r "..\platform-windows\inkscape-runtime\*.*"
-  SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\inkscape\extensions
+  ;SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\inkscape\extensions
+  ;File /a /r "..\src\inkscape-extension\scada.inx"
+  ;File /a /r "..\src\inkscape-extension\scada.py"
+  SetOutPath $AppData\inkscape\extensions
   File /a /r "..\src\inkscape-extension\scada.inx"
-  File /a /r "..\src\inkscape-extension\scada.py"
+  File /a /r "..\src\inkscape-extension\scada.py"  
 
   ; Inkscape additional symbols
   ; SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\symbols
