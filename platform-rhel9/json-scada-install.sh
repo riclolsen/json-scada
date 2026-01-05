@@ -26,7 +26,7 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rp
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel python3-tkinter sqlite-devel
 sudo dnf -y install curl --allowerasing
 
 # docker/podman can be used to run DNP3 and OPC-DA on linux
@@ -38,21 +38,21 @@ sudo systemctl start docker
 #sudo usermod -aG docker $JS_USERNAME
 #sudo chmod 777 /var/run/docker.sock
 
-# to compile inkscape
-sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
-sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
-sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
-wget --inet4-only https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.$(arch).rpm
-sudo dnf -y install ./potrace-devel-1.16-7.el9.$(arch).rpm
 sudo dnf install --nogpgcheck https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm
 sudo dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
 sudo dnf install -y ffmpeg ffmpeg-devel
 sudo dnf remove -y python3-circuitbreaker
 
+sudo dnf install -y flatpak
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.inkscape.Inkscape -y
+sudo -u $JS_USERNAME sh -c 'cp ../src/inkscape-extension/scada.inx ~/.var/app/org.inkscape.Inkscape/config/inkscape/extensions/'
+sudo -u $JS_USERNAME sh -c 'cp ../src/inkscape-extension/scada.py ~/.var/app/org.inkscape.Inkscape/config/inkscape/extensions/'
+
 sudo update-crypto-policies --set LEGACY
 
-wget --inet4-only https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
+wget --inet4-only https://go.dev/dl/go1.25.5.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.25.5.linux-amd64.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 source ~/.bashrc
@@ -79,7 +79,7 @@ sudo systemctl start disable-transparent-huge-pages
 sudo tee /etc/yum.repos.d/mongodb-org-8.0.repo <<EOF
 [mongodb-org-8.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/\$basearch/
+baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.2/\$basearch/
 gpgcheck=1
 enabled=1
 gpgkey=https://pgp.mongodb.com/server-8.0.asc
@@ -117,16 +117,16 @@ metadata_expire=300
 EOL
 sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo dnf -y install timescaledb-2-postgresql-17 postgresql17 postgresql17-contrib
-sudo dnf -y install timescaledb-toolkit-postgresql-17
-sudo /usr/pgsql-17/bin/postgresql-17-setup initdb
+sudo dnf -y install timescaledb-2-postgresql-18 postgresql18 postgresql18-contrib
+sudo dnf -y install timescaledb-toolkit-postgresql-18
+sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/17/data/
-sudo chown postgres:postgres /var/lib/pgsql/17/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/17/data/
-sudo chown postgres:postgres /var/lib/pgsql/17/data/postgresql.conf
-sudo systemctl enable postgresql-17
-sudo timescaledb-tune -yes --pg-config=/usr/pgsql-17/bin/pg_config
+sudo cp pg_hba.conf /var/lib/pgsql/18/data/
+sudo chown postgres:postgres /var/lib/pgsql/18/data/pg_hba.conf
+sudo cp postgresql.conf /var/lib/pgsql/18/data/
+sudo chown postgres:postgres /var/lib/pgsql/18/data/postgresql.conf
+sudo systemctl enable postgresql-18
+sudo timescaledb-tune -yes --pg-config=/usr/pgsql-18/bin/pg_config
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -153,14 +153,14 @@ sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.52.5/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.57.1/metabase.jar -O ../metabase/metabase.jar'
 
 sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_22.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-17
+sudo systemctl start postgresql-18
 sudo systemctl start mongod
 
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1

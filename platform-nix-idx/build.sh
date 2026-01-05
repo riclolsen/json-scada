@@ -149,6 +149,11 @@ npm install
 npm run build
 rm -rf ~/json-scada/src/AdminUI/node_modules
 
+cd ../svgedit
+npm install
+npm run build
+rm -rf ~/json-scada/src/svgedit/node_modules
+
 #cd ../log-io/ui
 #npm install
 #npm run build

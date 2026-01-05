@@ -201,4 +201,8 @@ cd %SRCPATH%\custom-developments\transformer_with_command
 call %NPM% install
 call %NPM% run build
 
+cd %SRCPATH%\svgedit
+call %NPM% install
+call %NPM% run build
+
 cd %JSPATH%\platform-windows

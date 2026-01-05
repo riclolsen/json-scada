@@ -331,6 +331,7 @@ var WebSAGE = {
           document.getElementById("loader").style.display = "none";
           //console.log(performance.now()-ini);
 
+          if (optionhtml === "") return;
           var titu =
             WebSAGE.g_seltela.options[WebSAGE.g_seltela.options.selectedIndex]
               .text;
@@ -376,6 +377,34 @@ var WebSAGE = {
     WebSAGE.g_seltela = document.getElementById("SELTELA");
 
     var jsuserck = readCookie( "json-scada-user" );
+
+    if ( (typeof optionhtml === 'undefined' || optionhtml === "") && (typeof optval === "undefined" || optval.length === 0) ) {
+      fetchTimeout("/Invoke/auth/listDisplays", 1500)
+       .then(function(r){ return r.json(); })
+       .then(function(data) {
+            var html = "<option id='SELTELA_OPC1' selected disabled='disabled'>Choose a display ...</option>";
+            if (Array.isArray(data)) {
+                html += "<optgroup label='Available Displays'>";
+                var qwerty = "QWERTYUIOPASDFGHJKLZXCVBNM";
+                data.forEach(function(fname, i) {
+                    var dispName = fname.replace(".svg", "").replace(".SVG", "");
+                    if ( i < 9 ) dispName += " [" + (i+1) + "]";
+                    else if ( i === 9 ) dispName += " [0]";
+                    if ( i < qwerty.length ) dispName += "{" + qwerty.charAt(i) + "}";
+                    html += "<option value='../svg/" + fname + "'>" + dispName + "</option>";
+                });
+                html += "</optgroup>";
+            }
+            optionhtml = html;
+            
+            var sFile = WebSAGE.lista_telas(filename, indscr);
+            if (sFile && sFile !== "") WebSAGE.init_svg(sFile);
+            WebSAGE.atalhosTela();
+       })
+       .catch(function(err){ console.log("Error loading display list: " + err); });
+       
+       return "";
+    }
     if (jsuserck) {
       jsuserObj = JSON.parse(decodeURIComponent(jsuserck))
       for (i=0; i<jsuserObj.rights.displayList.length; i++) {
@@ -435,6 +464,35 @@ var WebSAGE = {
 
         // seleciona tela aberta no combo box
         WebSAGE.g_seltela.selectedIndex = i;
+        // get left of [ or {
+        var titu = WebSAGE.g_seltela.options[i].text;
+        var pos = titu.indexOf("[");
+          if (pos <= 0) {
+            pos = 100;
+          }
+          titu = titu.substring(0, pos);
+          pos = titu.indexOf("{");
+          if (pos <= 0) {
+            pos = 100;
+          }
+          titu = titu.substring(0, pos);
+        
+          titu = titu.replace(new RegExp("[\\s.]+$", "g"), "");
+          WebSAGE.g_titulo_janela =
+            titu +
+            " - " +
+            Msg.NomeVisorTelas +
+            " - " +
+            Msg.NomeProduto +
+            " - " +
+            Msg.VersaoProduto + getUsernameFmt();
+          // document.title = "."; // necessário devido a um bug do chromium!
+          document.title = WebSAGE.g_titulo_janela;
+          // coloca o nome da tela na toolbar, se configurado
+          if (ScreenViewer_ShowScreenNameTB) {
+            $("#NOME_TELA").text(titu + " ");
+            $("#NOME_TELA").css("display", "");
+          }
         break;
       }
     }
@@ -2529,7 +2587,7 @@ else
                 // size and color from the rectangle
                 jsoncfg.w = item.getAttributeNS(null, "width");
                 jsoncfg.h = item.getAttributeNS(null, "height");
-                jsoncfg.color = d3.scale.ordinal().range([item.style.fill]);
+                jsoncfg.color = d3.scale.ordinal().range([item.style.fill||item.getAttributeNS(null, "fill")]);
                 item.chart.config(jsoncfg);
                 var svg = d3.select(SVGDoc);
                 // insert the chart in the parent of rect object (hopefully its inkscape layer)
@@ -2718,8 +2776,8 @@ else
             break;
           case "color":
             if (item.style !== null) {
-              inksage_labelvec[lbv].initfill = item.style.fill;
-              inksage_labelvec[lbv].initstroke = item.style.stroke;
+              inksage_labelvec[lbv].initfill = item.style.fill||item.getAttributeNS(null, "fill");
+              inksage_labelvec[lbv].initstroke = item.style.stroke||item.getAttributeNS(null, "stroke");
             } else {
               inksage_labelvec[lbv].initfill = "";
               inksage_labelvec[lbv].initstroke = "";
@@ -2881,16 +2939,10 @@ else
                 }
 
                 // faz a cor e espessura do gráfico igual ao do retângulo que o contém
-                if (item.style != undefined) {
-                  if (item.style.strokeWidth != "") {
-                    inksage_labelvec[lbv].grafico.style.strokeWidth =
-                      item.style.strokeWidth;
-                  }
-                  if (item.style.stroke != "") {
-                    inksage_labelvec[lbv].grafico.style.stroke =
-                      item.style.stroke;
-                  }
-                }
+                inksage_labelvec[lbv].grafico.style.strokeWidth =
+                  item?.style?.strokeWidth || item.getAttributeNS(null, "stroke-width");
+                inksage_labelvec[lbv].grafico.style.stroke =
+                  item?.style?.stroke || item.getAttributeNS(null, "stroke");
 
                 // source field format: point number|plot style|superior limit style|inferior limit style
                 // Ex: Source: 1234|stroke:green|stroke:red|stroke:orange
@@ -3011,14 +3063,15 @@ else
             nohs = SVGDoc.getElementsByTagName("use");
             for (i = 0; i < nohs.length; i++) {
               if (
-                nohs
+                (nohs
                   .item(i)
-                  .getAttributeNS("http://www.w3.org/1999/xlink", "href") ==
-                "#" + item.getAttributeNS(null, "id")
+                  .getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+                  nohs.item(i).getAttributeNS(null, 'href')) ==
+                '#' + item.getAttributeNS(null, 'id')
               ) {
-                clone = nohs.item(i);
-                inksage_labelvec[lbv].clone = clone;
-                break;
+                clone = nohs.item(i)
+                inksage_labelvec[lbv].clone = clone
+                break
               }
             }
             if (clone != undefined) {

@@ -34,7 +34,8 @@
     "grafana": "グラファナ",
     "metabase": "メタベース",
     "customDevelopments": "カスタム開発",
-    "open": "開ける"
+    "open": "開ける",
+    "svgedit": "SVGエディター"
   },
   "login": {
     "title": "ログイン",

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Opc.Ua.Client;
@@ -257,10 +258,13 @@ partial class MainClass
         thrMongoRedundacy.Start();
 
         // start thread to update acquired data to database
-        var thrMongo =
-            new Thread(() =>
-                    ProcessMongo());
-        thrMongo.Start();
+        // var thrMongo =
+        //     new Thread(() =>
+        //             ProcessMongo());
+        // thrMongo.Start();
+
+        // updated: start ProcessMongo as a background Task
+        _ = Task.Run(ProcessMongo);
 
         // start thread to watch for commands in the database using a change stream
         var thrMongoCmd =

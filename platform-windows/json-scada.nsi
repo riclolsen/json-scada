@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.57"
-!define VERSION_ "0.57.0.0"
+!define VERSION "v.0.58"
+!define VERSION_ "0.58.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -342,9 +342,9 @@ SetRegView 64
   File /a "..\src\certificate-creator\server.conf"
   File /a "..\src\certificate-creator\create_certs.sh"
 
-  SetOutPath $INSTDIR\svg
-  File /a    "..\conf-templates\*.svg"
-  File /a    "..\conf-templates\screen_list.js"
+  #SetOutPath $INSTDIR\svg
+  #File /a    "..\conf-templates\*.svg"
+  #File /a    "..\conf-templates\screen_list.js"
   SetOutPath $INSTDIR\src\AdminUI
   File /a    "..\src\AdminUI\*.*"
   SetOutPath $INSTDIR\src\AdminUI\src
@@ -352,6 +352,9 @@ SetRegView 64
   SetOutPath $INSTDIR\src\AdminUI\dist
   File /a /r   "..\src\AdminUI\dist\*.*"
   File /a    ".\release_notes.txt"
+
+  SetOutPath $INSTDIR\src\svgedit
+  File /a /r "..\src\svgedit\*.*"
   
   #SetOutPath $INSTDIR\src\htdocs
   #File /a "..\src\htdocs\*.*"
@@ -481,9 +484,12 @@ SetRegView 64
   ; Inkscape + SCADA extension
   SetOutPath $INSTDIR\platform-windows\inkscape-runtime
   File /a /r "..\platform-windows\inkscape-runtime\*.*"
-  SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\inkscape\extensions
-  File /a /r "..\platform-windows\inkscape-extension\scada.inx"
-  File /a /r "..\platform-windows\inkscape-extension\scada.py"
+  ;SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\inkscape\extensions
+  ;File /a /r "..\src\inkscape-extension\scada.inx"
+  ;File /a /r "..\src\inkscape-extension\scada.py"
+  SetOutPath $AppData\inkscape\extensions
+  File /a /r "..\src\inkscape-extension\scada.inx"
+  File /a /r "..\src\inkscape-extension\scada.py"  
 
   ; Inkscape additional symbols
   ; SetOutPath $INSTDIR\platform-windows\inkscape-runtime\share\symbols
@@ -501,7 +507,7 @@ SetRegView 64
   File /a /r "..\src\AdminUI\public\conf\*.*"
 
   SetOutPath $INSTDIR\svg
-  File /a /r "..\svg\*.*"
+  File /a "..\conf-templates\*.svg"
 
   SetOutPath $INSTDIR\src\cs_custom_processor
   File /a "..\src\cs_custom_processor\customized_module.js"

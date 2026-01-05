@@ -1,7 +1,7 @@
 const { ApolloServer } = require('@apollo/server')
-const { expressMiddleware } = require('@apollo/server/express4')
+const { expressMiddleware } = require('@as-integrations/express5')
 const cors = require('cors')
-const bodyParser = require('body-parser')
+const express = require('express')
 const { authJwt } = require('./app/middlewares')
 
 async function initGQLServer(app, db) {
@@ -160,7 +160,7 @@ async function initGQLServer(app, db) {
     },
   })
   await srvApollo.start()
-  app.use(cors(), bodyParser.json())
+  app.use(cors(), express.json())
   app.use('/apollo', [authJwt.verifyToken], expressMiddleware(srvApollo))
 }
 

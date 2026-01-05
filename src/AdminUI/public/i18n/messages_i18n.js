@@ -4,7 +4,7 @@
 var Msg =
 {
 NomeProduto: '{json:scada}',
-VersaoProduto: '0.57',
+VersaoProduto: '0.58',
     
 NomeVisorTelas:       'Display Viewer',
 NomeVisorEventos:     'Events Viewer',
@@ -40,7 +40,7 @@ QNormal:     'NORMAL',
 QDPIntermed: 'INTERMEDIARY',
 QDPInvalido: 'INVALID',
 QValor:      'value',
-SELTELA_OPC1:'Choose a screen ...',
+SELTELA_OPC1:'Choose a display ...',
 
 // Events.html
 Eventos:       'Events',

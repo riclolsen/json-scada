@@ -11,7 +11,7 @@
   "dependencies": {
     "fast-zlib": "^2.0.1",
     "fs": "0.0.1-security",
-    "mongodb": "^6.6.2",
+    "mongodb": "^7.0.0",
     "queue-fifo": "^0.2.6"
   }
 }

@@ -34,7 +34,8 @@
     "grafana": "گرافانا",
     "metabase": "متاباز",
     "customDevelopments": "توسعه های سفارشی",
-    "open": "باز کنید"
+    "open": "باز کنید",
+    "svgedit": "ویرایشگر SVG"
   },
   "login": {
     "title": "وارد شوید",
