@@ -20,7 +20,7 @@
   "author": "Ricardo Lastra Olsen",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.1.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "mongodb": "^7.0.0",
     "zod": "^4.3.5"
   },
