@@ -4,7 +4,7 @@
   "description": "Realtime data auth server for JSON SCADA.",
   "main": "index.js",
   "dependencies": {
-    "@apollo/server": "^5.0.0",
+    "@apollo/server": "^5.4.0",
     "@as-integrations/express5": "^1.0.0",
     "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.3",
