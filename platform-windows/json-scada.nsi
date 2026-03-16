@@ -1,6 +1,6 @@
 ; json-scada.nsi
 ; {json:scada} installer script
-; Copyright 2020-2025 - Ricardo L. Olsen
+; Copyright 2020-2026 - Ricardo L. Olsen
 
 ; NSIS (Nullsoft Scriptable Install System) - http://nsis.sourceforge.net/Main_Page
 
@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.59"
-!define VERSION_ "0.59.0.0"
+!define VERSION "v.0.60"
+!define VERSION_ "0.60.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'

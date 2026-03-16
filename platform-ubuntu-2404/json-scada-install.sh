@@ -28,7 +28,7 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 # Update and install base packages
 sudo apt update
 sudo apt -y upgrade
-sudo apt -y install ffmpeg bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev
+sudo apt -y install ffmpeg bzip2 tar build-essential dotnet-sdk-8.0 openjdk-21-jdk php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev
 
 # Docker and container tools
 sudo apt -y remove containerd.io
@@ -37,8 +37,8 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # Install Go
-wget --inet4-only https://go.dev/dl/go1.25.5.linux-$ARCHITECTURE.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.25.5.linux-$ARCHITECTURE.tar.gz
+wget --inet4-only https://go.dev/dl/go1.26.0.linux-$ARCHITECTURE.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.26.0.linux-$ARCHITECTURE.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 

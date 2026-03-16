@@ -1,9 +1,9 @@
 // Internationalization Messages
-// {json:scada} - Copyright (c) 2008-2025 - Ricardo L. Olsen
+// {json:scada} - Copyright (c) 2008-2026 - Ricardo L. Olsen
 
 var Msg = {
     NomeProduto: '{json:scada}',
-    VersaoProduto: '0.59',
+    VersaoProduto: '0.60',
 
     NomeVisorTelas: 'د نښته کتنې لیدل',
     NomeVisorEventos: 'د واقعو کتنې لیدل',
