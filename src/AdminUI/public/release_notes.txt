@@ -1,6 +1,6 @@
     {json:scada} 
     
-    © 2008-2025 Ricardo L. Olsen 
+    © 2008-2026 Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify
@@ -136,11 +136,49 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.60:
+
+* Return of custom build of Inkscape+SAGE SVG editor, now based on Inkscape 1.4.3.
+* NPM packages updated.
+* Chromium runtime updated to 146.0.7680.76.
+* Nodejs runtime updated to 24.14.0.
+* MongoDB Community Server updated to 8.2.5.
+* MongoDB Compass updated to 1.49.4.
+* Telegraf runtime updated to 1.37.1.
+* Grafana updated to 12.4.1.
+* Metabase updated to 1.59.2.
+* Nginx updated to 1.28.2.
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+* On the JSON-SCADA desktop folder: execute "_Start_Services".
+* On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 12GB RAM and 30GB of free space in the "C:" drive.
+* MongoDB requires AVX instructions on x86 CPU. Use a modern x86 CPU with 6 cores or more.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 443, 8080, 3000, 3001, 9000, 20000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+
+-------------------------------------------------------------------
+
 Notes for version 0.59:
 
+* Added MCP Server for access to JSON-SCADA data structures from MongoDB.
+* Added UA-EdgeTranslator runtime with support for multiple protocols.
+* OPC-UA Client driver can now be fully configured from the Admin UI.
 * New refactored cs_custom_processor with typescript submodule for JSON-SCADA data structures.
-* Added UA-EdgeTranslator runtime for multiple protocols support.
 * NPM packages updated.
+* Nodejs runtime updated to 24.13.0.
+* Dotnet runtimes updated to 8.0.23/10.0.2.
+* MongoDB Compass updated to 1.49.0.
+* Telegraf runtime updated to 1.37.1.
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
