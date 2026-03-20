@@ -188,7 +188,6 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Install Script for Ubuntu 24.04 Linux x86-64 and arm64
 - [x] Online Demo
 - [x] Supervisor (Linux process manager) examples
-- [x] Firebase Studio Configuration
 - [ ] InfluxDB Integration
 - [x] Telegraf Integration
 - [x] PowerBI Integration (via PostgreSQL connector)
@@ -208,12 +207,6 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Linux Image / VM
 - [x] Managed Cloud Service
 - [x] Supported LTS versions
-
-## Spin up a free private instance on Google's Firebase Studio
-
-With just a Google account, you can spin up a free private instance for test/dev on Google's Firebase Studio. This is a great way to get started with the project. This will build the code from the Github repo and deploy it to a private Linux VM on the cloud running protocols and providing a web UI for you to interact with. There will be a web-based code editor available for you to develop new apps and view/change the code on the VM. You can also get help from Google's Gemini AI for coding and other tasks. This is free and there no need to install any software on your local machine.
-
-See details [here](https://github.com/riclolsen/json-scada/blob/master/platform-nix-idx/README.md). 
 
 ## Online Demo (substations simulation)
 

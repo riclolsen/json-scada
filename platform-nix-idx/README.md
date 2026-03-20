@@ -1,4 +1,4 @@
-# Firebase Studio Setup
+# Firebase Studio Setup (This platform is deprecated by Google!)
 
 Start a free instance for dev/test on Google's Firebase Studio platform with just a Google account.
 
