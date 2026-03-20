@@ -82,12 +82,11 @@
         <v-spacer></v-spacer>
         <v-btn
           color="orange darken-1"
-          text
           variant="tonal"
           @click="closeAddUserDialog"
           >{{ $t('common.cancel') }}</v-btn
         >
-        <v-btn color="blue darken-1" text variant="tonal" @click="createUser">{{
+        <v-btn color="blue darken-1" variant="tonal" @click="createUser">{{
           $t('common.save')
         }}</v-btn>
         <v-chip v-if="error" color="red darken-1">{{
@@ -164,7 +163,6 @@
         <v-spacer> </v-spacer>
         <v-btn
           color="orange darken-1"
-          text
           variant="tonal"
           @click="closeEditUserDialog"
         >
@@ -172,7 +170,6 @@
         </v-btn>
         <v-btn
           color="blue darken-1"
-          text
           variant="tonal"
           @click="updateUser(editedUser)"
         >
@@ -203,7 +200,6 @@
         <v-spacer></v-spacer>
         <v-btn
           color="orange darken-1"
-          text
           variant="tonal"
           @click="closeDeleteConfirmDialog"
         >
@@ -211,7 +207,6 @@
         </v-btn>
         <v-btn
           color="red darken-1"
-          text
           variant="tonal"
           @click="deleteUser(userToDelete)"
         >

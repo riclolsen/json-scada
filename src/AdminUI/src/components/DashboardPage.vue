@@ -10,7 +10,7 @@
       >
         <v-card
           v-if="!(shortcut.titleKey === 'dashboard.admin' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.logViewer' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.svgedit' && !isAdmin())"
-          dense
+          density="compact"
           :color="shortcut.color"
           hover
           @click="handleCardClick(shortcut)"

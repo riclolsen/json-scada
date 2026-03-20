@@ -1,11 +1,12 @@
 <template>
   <v-data-table-server
+    v-model:page="page"
     v-model:items-per-page="itemsPerPage"
+    v-model:sort-by="sortBy"
     v-model:expanded="expanded"
     show-expand
     :headers="headers"
     :items="userActions"
-    v-model:options="options"
     :items-length="totalUserActions"
     :loading="loading"
     :items-per-page-options="[10, 25, 50, 100, 250, 500, 1000]"
@@ -16,8 +17,8 @@
   >
     <template v-slot:top>
       <v-toolbar flat class="d-print-none">
-        <v-btn color="primary" dark class="mb-2 mr-2" @click="fetchUserActions">
-          <v-icon dark> mdi-refresh </v-icon>
+        <v-btn color="primary" class="mb-2 mr-2" @click="fetchUserActions">
+          <v-icon> mdi-refresh </v-icon>
         </v-btn>
         <v-divider class="mx-4" inset vertical></v-divider>
         <v-text-field
@@ -58,8 +59,7 @@
           <v-date-picker
             v-model="dates"
             :locale="locale"
-            no-title
-            scrollable
+            hide-title
             show-adjacent-months
             multiple="range"
             @update:model-value="fetchUserActions"
@@ -93,13 +93,9 @@
   const itemsPerPage = ref(10)
   const dates = ref([])
   const loading = ref(true)
-  const options = ref({
-    page: 1,
-    itemsPerPage: 10,
-    sortBy: [],
-    sortDesc: [],
-  })
+  const page = ref(1)
   const expanded = ref([])
+  const sortBy = ref([])
 
   const headers = computed(() => [
     {
@@ -139,7 +135,7 @@
   })
 
   watch(
-    options,
+    [page, itemsPerPage, sortBy],
     () => {
       fetchUserActions()
     },
@@ -151,7 +147,11 @@
   })
 
   const fetchUserActions = async () => {
-    const { sortBy, sortDesc, page, itemsPerPage } = toRaw(options.value)
+    // Adapter for Vuetify 4 sortBy object array to old sortBy/sortDesc arrays
+    const sb = toRaw(sortBy.value).map(s => s.key)
+    const sd = toRaw(sortBy.value).map(s => s.order === 'desc')
+    const pg = page.value
+    const iPP = itemsPerPage.value
     let filter = {}
 
     if (searchUsername.value.trim() !== '')
@@ -185,10 +185,10 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          itemsPerPage,
-          sortBy,
-          sortDesc,
-          page,
+          itemsPerPage: iPP,
+          sortBy: sb,
+          sortDesc: sd,
+          page: pg,
           filter,
         }),
       })

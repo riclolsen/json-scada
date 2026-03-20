@@ -20,19 +20,19 @@
       </v-btn>
       <v-menu v-if="loggedInUser" offset-y>
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" text class="ml-2">
+          <v-btn v-bind="props" variant="text" class="ml-2">
             <v-icon right size="small">mdi-account-circle</v-icon>
             {{ loggedInUser }}
           </v-btn>
         </template>
         <v-list>
           <v-list-item @click="logout">
-            <v-list-item-title>{{ $t('app.logout') }} <v-icon dark> mdi-logout </v-icon>
+            <v-list-item-title>{{ $t('app.logout') }} <v-icon> mdi-logout </v-icon>
             </v-list-item-title>
           </v-list-item>
           <v-list-item v-if="!isLDAPUser" @click="openChangePasswordDialog">
             <v-list-item-title>{{ $t('login.changePassword') }}
-              <v-icon dark> mdi-lock-reset </v-icon>
+              <v-icon> mdi-lock-reset </v-icon>
             </v-list-item-title>
           </v-list-item>
         </v-list>
@@ -54,7 +54,7 @@
             required></v-text-field>
         </v-card-text>
         <v-card-actions>
-          <v-alert v-if="errorMessage" type="error" dense>
+          <v-alert v-if="errorMessage" type="error" density="compact">
             {{ errorMessage }}
           </v-alert>
           <v-btn color="orange" variant="tonal" @click="showChangePasswordDialog = false">
