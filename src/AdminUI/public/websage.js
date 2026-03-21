@@ -4225,7 +4225,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
                     }
                   }
 
-                if (WebSAGE.InkSage[i].parent.firstElementChild?.nodeName === "tspan") 
+                if (WebSAGE.InkSage[i].parent?.firstElementChild?.nodeName === "tspan") 
                   WebSAGE.InkSage[i].parent.firstElementChild.textContent = val;
                 else
                   WebSAGE.InkSage[i].parent.textContent = val;
