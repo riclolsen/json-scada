@@ -2725,15 +2725,15 @@ else
             if (
               inksage_labelvec[
                 lbv
-              ].parent.firstElementChild.textContent.indexOf("|") >= 0
+              ].parent.textContent.indexOf("|") >= 0
             ) {
               // guarda mensagens OFF|ON|FAILED
               inksage_labelvec[lbv].txtOFFON = inksage_labelvec[
                 lbv
-              ].parent.firstElementChild.textContent.split("|");
+              ].parent.textContent.split("|");
             } else {
               inksage_labelvec[lbv].formatoC =
-                inksage_labelvec[lbv].parent.firstElementChild.textContent;
+                inksage_labelvec[lbv].parent.textContent;
 
               pnt = inksage_labelvec[lbv].tag;
               if (isNaN(parseInt(pnt))) {
@@ -4201,7 +4201,7 @@ getHistoricalData: function (i, pnt, timeBegin) {
                 );
               }
               if (
-                val != WebSAGE.InkSage[i].parent.firstElementChild.textContent
+                val != WebSAGE.InkSage[i].parent.textContent
               ) {
                 // value changed?
                 if (WebSAGE.InkSage[i].parent.changeAnim != undefined)
@@ -4225,7 +4225,10 @@ getHistoricalData: function (i, pnt, timeBegin) {
                     }
                   }
 
-                WebSAGE.InkSage[i].parent.firstElementChild.textContent = val;
+                if (WebSAGE.InkSage[i].parent.firstElementChild?.nodeName === "tspan") 
+                  WebSAGE.InkSage[i].parent.firstElementChild.textContent = val;
+                else
+                  WebSAGE.InkSage[i].parent.textContent = val;
                 if (
                   typeof WebSAGE.InkSage[i].parent.changeAnim !== "undefined" &&
                   typeof WebSAGE.InkSage[i].parent.changeAnim.beginElement ===
