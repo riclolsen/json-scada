@@ -3,7 +3,7 @@
     <v-row justify="center">
       <v-col cols="12" sm="8" md="6" lg="4">
         <v-card class="elevation-12">
-          <v-toolbar color="primary" dark flat>
+          <v-toolbar color="primary" flat>
             <v-toolbar-title>{{ $t('login.title') }}</v-toolbar-title>
           </v-toolbar>
           <v-card-text>
@@ -27,7 +27,7 @@
                 type="password"
                 required
               ></v-text-field>
-              <v-alert v-if="errorMessage" type="error" dense>
+              <v-alert v-if="errorMessage" type="error" density="compact">
                 {{ errorMessage }}
               </v-alert>
             </v-form>

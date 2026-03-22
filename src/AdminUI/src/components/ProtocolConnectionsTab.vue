@@ -167,7 +167,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -178,7 +178,7 @@
                         hide-details="auto"
                         v-model="editedConnection.localLinkAddress"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -212,7 +212,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -223,7 +223,7 @@
                         hide-details="auto"
                         v-model="editedConnection.remoteLinkAddress"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -272,7 +272,7 @@
                     variant="tonal"
                     @click="dialogAddURL = true"
                   >
-                    <v-icon dark> mdi-plus </v-icon>
+                    <v-icon> mdi-plus </v-icon>
                     {{ $t('admin.protocolConnections.remoteEndpointsAddNew') }}
                   </v-btn>
                 </v-col>
@@ -335,7 +335,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -343,7 +343,7 @@
                         hide-details="auto"
                         v-model="editedConnection.options"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -373,7 +373,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :model-value="isActive"
@@ -381,7 +381,7 @@
                         hide-details="auto"
                         v-model="editedConnection.username"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -411,7 +411,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :model-value="isActive"
@@ -419,7 +419,7 @@
                         hide-details="auto"
                         v-model="editedConnection.password"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -439,7 +439,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="string"
                         :model-value="isActive"
@@ -447,7 +447,7 @@
                         hide-details="auto"
                         v-model="editedConnection.configFileName"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -501,7 +501,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :model-value="isActive"
@@ -513,7 +513,7 @@
                           editedConnection.autoCreateTagPublishingInterval
                         "
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -541,7 +541,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :model-value="isActive"
@@ -551,7 +551,7 @@
                         hide-details="auto"
                         v-model="editedConnection.autoCreateTagSamplingInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -577,7 +577,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :model-value="isActive"
@@ -585,7 +585,7 @@
                         hide-details="auto"
                         v-model="editedConnection.autoCreateTagQueueSize"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -605,7 +605,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :model-value="isActive"
@@ -613,7 +613,7 @@
                         hide-details="auto"
                         v-model="editedConnection.deadBand"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -644,7 +644,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :model-value="isActive"
@@ -652,7 +652,7 @@
                         hide-details="auto"
                         v-model="editedConnection.hoursShift"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -681,7 +681,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :model-value="isActive"
@@ -689,7 +689,7 @@
                         hide-details="auto"
                         v-model="editedConnection.timeoutMs"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -724,7 +724,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -733,7 +733,7 @@
                         hide-details="auto"
                         v-model="editedConnection.giInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -757,7 +757,7 @@
               <template #default="{ isActive }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -766,7 +766,7 @@
                         hide-details="auto"
                         v-model="editedConnection.testCommandInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -790,7 +790,7 @@
               <template #default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -801,7 +801,7 @@
                         hide-details="auto"
                         v-model="editedConnection.timeSyncInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -827,7 +827,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -836,7 +836,7 @@
                         hide-details="auto"
                         v-model="editedConnection.k"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -860,7 +860,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -869,7 +869,7 @@
                         hide-details="auto"
                         v-model="editedConnection.w"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -893,7 +893,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -902,7 +902,7 @@
                         hide-details="auto"
                         v-model="editedConnection.t0"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -926,7 +926,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -935,7 +935,7 @@
                         hide-details="auto"
                         v-model="editedConnection.t1"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -959,7 +959,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -968,7 +968,7 @@
                         hide-details="auto"
                         v-model="editedConnection.t2"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -992,7 +992,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -1001,7 +1001,7 @@
                         hide-details="auto"
                         v-model="editedConnection.t3"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1028,7 +1028,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="itemsSizeOfCOT"
                         :input-value="active"
@@ -1036,7 +1036,7 @@
                         v-model="editedConnection.sizeOfCOT"
                         :label="$t('admin.protocolConnections.sizeOfCot')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1063,7 +1063,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="itemsSizeOfCA"
                         :input-value="active"
@@ -1071,7 +1071,7 @@
                         v-model="editedConnection.sizeOfCA"
                         :label="$t('admin.protocolConnections.sizeOfCa')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1098,7 +1098,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="itemsSizeOfIOA"
                         :input-value="active"
@@ -1106,7 +1106,7 @@
                         v-model="editedConnection.sizeOfIOA"
                         label="Size of IOA"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1151,7 +1151,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -1163,7 +1163,7 @@
                         v-model="editedConnection.maxClientConnections"
                       >
                       </v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1197,7 +1197,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -1206,7 +1206,7 @@
                         hide-details="auto"
                         v-model="editedConnection.maxQueueSize"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1228,7 +1228,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -1237,7 +1237,7 @@
                         hide-details="auto"
                         v-model="editedConnection.class0ScanInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1257,7 +1257,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -1266,7 +1266,7 @@
                         hide-details="auto"
                         v-model="editedConnection.class1ScanInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1286,7 +1286,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -1295,7 +1295,7 @@
                         hide-details="auto"
                         v-model="editedConnection.class2ScanInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1315,7 +1315,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -1324,7 +1324,7 @@
                         hide-details="auto"
                         v-model="editedConnection.class3ScanInterval"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1344,7 +1344,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -1353,7 +1353,7 @@
                         hide-details="auto"
                         v-model="editedConnection.timeSyncMode"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1410,7 +1410,7 @@
                     variant="tonal"
                     @click="dialogAddRangeScan = true"
                   >
-                    <v-icon dark> mdi-plus </v-icon>
+                    <v-icon> mdi-plus </v-icon>
                     {{ $t('admin.protocolConnections.rangeScanAddNew') }}
                   </v-btn>
                 </v-col>
@@ -1499,7 +1499,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -1508,7 +1508,7 @@
                         hide-details="auto"
                         v-model="editedConnection.timeoutForACK"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1532,7 +1532,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="1"
@@ -1541,7 +1541,7 @@
                         hide-details="auto"
                         v-model="editedConnection.timeoutRepeat"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1565,7 +1565,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="sizeOfLinkAddressItems"
                         :input-value="active"
@@ -1575,7 +1575,7 @@
                           $t('admin.protocolConnections.sizeOfLinkAddress')
                         "
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1686,7 +1686,7 @@
               {{ $t('admin.protocolConnections.tcpParameters') }}
             </span>
           </v-card-title>
-          <v-list flat dense shaped>
+          <v-list flat density="compact" shaped>
             <v-list-item
               v-if="
                 [
@@ -1707,7 +1707,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :rules="[rules.required, rules.ipPort]"
@@ -1716,7 +1716,7 @@
                         hide-details="auto"
                         v-model="editedConnection.ipAddressLocalBind"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1770,7 +1770,7 @@
                     variant="tonal"
                     @click="dialogAddIP = true"
                   >
-                    <v-icon dark> mdi-plus </v-icon>
+                    <v-icon> mdi-plus </v-icon>
                     {{ $t('admin.protocolConnections.remoteIpAddressAdd') }}
                   </v-btn>
                 </v-col>
@@ -1848,7 +1848,7 @@
             </span>
           </v-card-title>
 
-          <v-list flat dense shaped>
+          <v-list flat density="compact" shaped>
             <v-list-item
               v-if="
                 [
@@ -1870,7 +1870,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -1882,7 +1882,7 @@
                         hide-details="auto"
                         v-model="editedConnection.localCertFilePath"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1912,7 +1912,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="securityModeItems"
                         :input-value="active"
@@ -1920,7 +1920,7 @@
                         v-model="editedConnection.securityMode"
                         :label="$t('admin.protocolConnections.securityMode')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1942,7 +1942,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="securityPolicyItems"
                         :input-value="active"
@@ -1950,7 +1950,7 @@
                         v-model="editedConnection.securityPolicy"
                         :label="$t('admin.protocolConnections.securityPolicy')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -1975,7 +1975,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -1983,7 +1983,7 @@
                         hide-details="auto"
                         v-model="editedConnection.pfxFilePath"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2014,7 +2014,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2022,7 +2022,7 @@
                         hide-details="auto"
                         v-model="editedConnection.passphrase"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2053,7 +2053,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2063,7 +2063,7 @@
                         hide-details="auto"
                         v-model="editedConnection.privateKeyFilePath"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2100,7 +2100,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2112,7 +2112,7 @@
                         hide-details="auto"
                         v-model="editedConnection.peerCertFilePath"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2167,7 +2167,7 @@
                     variant="tonal"
                     @click="dialogAddCertPath = true"
                   >
-                    <v-icon dark> mdi-plus </v-icon>
+                    <v-icon> mdi-plus </v-icon>
                     {{
                       $t(
                         'admin.protocolConnections.peerCertificateFilesPathsAdd'
@@ -2238,7 +2238,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2250,7 +2250,7 @@
                         hide-details="auto"
                         v-model="editedConnection.rootCertFilePath"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2286,7 +2286,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2296,7 +2296,7 @@
                         hide-details="auto"
                         v-model="editedConnection.cipherList"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2517,7 +2517,7 @@
             </span>
           </v-card-title>
 
-          <v-list flat dense shaped>
+          <v-list flat density="compact" shaped>
             <v-list-item
               v-if="
                 [
@@ -2531,7 +2531,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2539,7 +2539,7 @@
                         hide-details="auto"
                         v-model="editedConnection.domain"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2592,7 +2592,7 @@
                     variant="tonal"
                     @click="dialogAddTopic = true"
                   >
-                    <v-icon dark> mdi-plus </v-icon>
+                    <v-icon> mdi-plus </v-icon>
                     {{ $t('admin.protocolConnections.topicsAddNew') }}
                   </v-btn>
                 </v-col>
@@ -2648,7 +2648,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         :rules="[rules.required]"
@@ -2657,7 +2657,7 @@
                         hide-details="auto"
                         v-model="editedConnection.aeQualifier"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2681,7 +2681,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2689,7 +2689,7 @@
                         hide-details="auto"
                         v-model="editedConnection.localAppTitle"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2713,7 +2713,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :rules="[rules.required, rules.isoSelectors]"
@@ -2722,7 +2722,7 @@
                         hide-details="auto"
                         v-model="editedConnection.localSelectors"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2746,7 +2746,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2754,7 +2754,7 @@
                         hide-details="auto"
                         v-model="editedConnection.remoteAppTitle"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2774,7 +2774,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :rules="[rules.required, rules.isoSelectors]"
@@ -2783,7 +2783,7 @@
                         hide-details="auto"
                         v-model="editedConnection.remoteSelectors"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2821,7 +2821,7 @@
                     variant="tonal"
                     @click="dialogAddTopicAsFile = true"
                   >
-                    <v-icon dark> mdi-plus </v-icon>
+                    <v-icon> mdi-plus </v-icon>
                     {{ $t('admin.protocolConnections.topicsAddNew') }}
                   </v-btn>
                 </v-col>
@@ -2878,17 +2878,17 @@
             >
               <v-row fill-height>
                 <v-col fill-height>
-                  <v-card dense tile>
+                  <v-card density="compact" tile>
                     <v-card-text> Scripted Topics </v-card-text>
                     <template
                       v-for="(item, index) in editedConnection.topicsScripted"
                     >
                       <v-container :key="item.dummy" v-if="true" fluid>
-                        <v-card dense>
-                          <v-card-text dense>
+                        <v-card density="compact">
+                          <v-card-text density="compact">
                             <v-text-field
                               style="font-size: 1em"
-                              dense
+                              density="compact"
                               :label="$t('admin.protocolConnections.topic')"
                               v-model="item.topic"
                               :rules="[rules.required, rules.topic]"
@@ -2901,7 +2901,7 @@
                               class="ma-0"
                               outlined
                               rows="4"
-                              dense
+                              density="compact"
                               :label="
                                 $t('admin.protocolConnections.topicScript')
                               "
@@ -2911,14 +2911,14 @@
 
                             <v-btn
                               class="ma-0"
-                              dark
+                             
                               x-small
                               color="red"
                               text
                               variant="tonal"
                               @click="deleteTopicScripted(index)"
                             >
-                              <v-icon dark> mdi-minus </v-icon>
+                              <v-icon> mdi-minus </v-icon>
                               {{
                                 $t('admin.protocolConnections.topicDelete') +
                                 ' - ' +
@@ -2932,14 +2932,14 @@
                     <v-card-text>
                       <v-btn
                         class="ma-0"
-                        dark
+                       
                         x-small
                         color="blue"
                         text
                         variant="tonal"
                         @click="addNewTopicScripted"
                       >
-                        <v-icon dark> mdi-plus </v-icon>
+                        <v-icon> mdi-plus </v-icon>
                         {{ $t('admin.protocolConnections.topicsScriptedNew') }}
                       </v-btn>
                     </v-card-text>
@@ -2961,7 +2961,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -2970,7 +2970,7 @@
                         v-model="editedConnection.clientId"
                         :rules="[rules.subtopic]"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -2994,7 +2994,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -3003,7 +3003,7 @@
                         v-model="editedConnection.groupId"
                         :rules="[rules.subtopic]"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3025,7 +3025,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -3034,7 +3034,7 @@
                         v-model="editedConnection.edgeNodeId"
                         :rules="[rules.subtopic]"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3056,7 +3056,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -3065,7 +3065,7 @@
                         v-model="editedConnection.deviceId"
                         :rules="[rules.subtopic]"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3091,7 +3091,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -3100,7 +3100,7 @@
                         v-model="editedConnection.scadaHostId"
                         :rules="[rules.subtopic]"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3122,7 +3122,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -3133,7 +3133,7 @@
                         v-model="editedConnection.publishTopicRoot"
                         :rules="[rules.subtopic]"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3171,7 +3171,7 @@
             </span>
           </v-card-title>
 
-          <v-list flat dense shaped>
+          <v-list flat density="compact" shaped>
             <v-list-item
               v-if="
                 [
@@ -3186,7 +3186,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="text"
                         :input-value="active"
@@ -3194,7 +3194,7 @@
                         hide-details="auto"
                         v-model="editedConnection.portName"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3222,7 +3222,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="150"
@@ -3231,7 +3231,7 @@
                         hide-details="auto"
                         v-model="editedConnection.baudRate"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3259,7 +3259,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="parityItems"
                         :input-value="active"
@@ -3267,7 +3267,7 @@
                         v-model="editedConnection.parity"
                         :label="$t('admin.protocolConnections.parity')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3295,7 +3295,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="stopBitsItems"
                         :input-value="active"
@@ -3303,7 +3303,7 @@
                         v-model="editedConnection.stopBits"
                         :label="$t('admin.protocolConnections.stopBits')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3331,7 +3331,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-select
                         :items="handshakeItems"
                         :input-value="active"
@@ -3339,7 +3339,7 @@
                         v-model="editedConnection.handshake"
                         :label="$t('admin.protocolConnections.handshake')"
                       ></v-select>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
@@ -3359,7 +3359,7 @@
               <template v-slot:default="{ active }">
                 <v-row>
                   <v-col>
-                    <v-list-item-action>
+                    <div>
                       <v-text-field
                         type="number"
                         min="0"
@@ -3368,7 +3368,7 @@
                         hide-details="auto"
                         v-model="editedConnection.asyncOpenDelay"
                       ></v-text-field>
-                    </v-list-item-action>
+                    </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>

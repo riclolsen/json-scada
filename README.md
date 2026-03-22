@@ -56,7 +56,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.60-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.61-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -98,7 +98,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 ## Documentation
 
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.60-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.61-alpha)
 - [RedHat/Rocky Linux Installer Script](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Ubuntu Linux Installer Script](https://github.com/riclolsen/json-scada/blob/master/docs/install.md#ubuntu-2404-scripted-installation)
 - [Generic Install Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md)
@@ -188,7 +188,6 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Install Script for Ubuntu 24.04 Linux x86-64 and arm64
 - [x] Online Demo
 - [x] Supervisor (Linux process manager) examples
-- [x] Firebase Studio Configuration
 - [ ] InfluxDB Integration
 - [x] Telegraf Integration
 - [x] PowerBI Integration (via PostgreSQL connector)
@@ -208,12 +207,6 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Linux Image / VM
 - [x] Managed Cloud Service
 - [x] Supported LTS versions
-
-## Spin up a free private instance on Google's Firebase Studio
-
-With just a Google account, you can spin up a free private instance for test/dev on Google's Firebase Studio. This is a great way to get started with the project. This will build the code from the Github repo and deploy it to a private Linux VM on the cloud running protocols and providing a web UI for you to interact with. There will be a web-based code editor available for you to develop new apps and view/change the code on the VM. You can also get help from Google's Gemini AI for coding and other tasks. This is free and there no need to install any software on your local machine.
-
-See details [here](https://github.com/riclolsen/json-scada/blob/master/platform-nix-idx/README.md). 
 
 ## Online Demo (substations simulation)
 
