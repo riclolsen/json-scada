@@ -89,6 +89,9 @@ namespace ServerPlugin
         [BsonDefaultValue(true)]
         public bool commandsEnabled { get; set; }
 
+        [BsonDefaultValue(false)]
+        public bool autoCreateTags { get; set; }
+
         // group1 values to expose as OPC-DA items (matches OPC-UA-Server 'topics')
         [BsonDefaultValue(new string[] { })]
         public string[] topics { get; set; }
@@ -167,14 +170,19 @@ namespace ServerPlugin
         [BsonSerializer(typeof(BsonDoubleSerializer))]
         public BsonDouble protocolSourceConnectionNumber { get; set; } = new BsonDouble(0.0);
 
-        [BsonSerializer(typeof(BsonStringSerializer)), BsonDefaultValue("double")]
-        public string protocolSourceASDU { get; set; }   // canonical OPC type hint
+        public BsonValue protocolSourceASDU { get; set; } = new BsonString("");
 
-        [BsonSerializer(typeof(BsonDoubleSerializer))]
-        public BsonDouble protocolSourceObjectAddress { get; set; } = new BsonDouble(0.0);
+        public BsonValue protocolSourceObjectAddress { get; set; } = new BsonString("");
+
+        public BsonValue protocolSourceCommonAddress { get; set; } = new BsonString("");
 
         [BsonSerializer(typeof(BsonDoubleSerializer))]
         public BsonDouble protocolSourceAccessLevel { get; set; } = new BsonDouble(0.0);
+
+        [BsonSerializer(typeof(BsonDoubleSerializer))]
+        public BsonDouble protocolSourceCommandDuration { get; set; } = new BsonDouble(0.0);
+
+        public BsonBoolean protocolSourceCommandUseSBO { get; set; } = new BsonBoolean(false);
 
         [BsonDefaultValue(null)]
         public RtDataProtocDest[] protocolDestinations { get; set; }
@@ -189,8 +197,8 @@ namespace ServerPlugin
         [BsonSerializer(typeof(BsonDoubleSerializer))]
         public BsonDouble protocolDestinationConnectionNumber { get; set; } = new BsonDouble(0.0);
 
-        [BsonSerializer(typeof(BsonDoubleSerializer))]
-        public BsonDouble protocolDestinationObjectAddress { get; set; } = new BsonDouble(0.0);
+        [BsonDefaultValue(null)]
+        public BsonValue protocolDestinationObjectAddress { get; set; } = new BsonDouble(0.0);
 
         [BsonSerializer(typeof(BsonDoubleSerializer))]
         public BsonDouble protocolDestinationASDU { get; set; } = new BsonDouble(0.0);

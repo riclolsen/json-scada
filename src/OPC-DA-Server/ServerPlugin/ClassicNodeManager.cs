@@ -223,6 +223,19 @@ namespace ServerPlugin
             rtCollection_  = db.GetCollection<RtDataItem>("realtimeData");
             cmdCollection_ = db.GetCollection<BsonDocument>("commandsQueue");
 
+            // --- Auto-create protocolDestinations for command tags (mirrors DNP3 server logic) ---
+            if (connection_.commandsEnabled && connection_.autoCreateTags)
+            {
+                try
+                {
+                    AutoCreateTagDestinations(db);
+                }
+                catch (Exception ex)
+                {
+                    Log("Warning: AutoCreateTagDestinations — " + ex.Message);
+                }
+            }
+
             // --- Query realtimeData tags ---
             List<RtDataItem> tags;
             try
@@ -322,16 +335,21 @@ namespace ServerPlugin
                     double doubleVal = ConvertWriteValueToDouble(values[i].Value);
                     string strVal    = values[i].Value?.ToString() ?? "";
 
+                    Log($"OnWriteItems: tag '{meta.tag}' doubleValue='{doubleVal}' stringValue='{strVal}'");
+
                     var cmdDoc = new BsonDocument
                     {
                         { "protocolSourceConnectionNumber", meta.protocolSourceConnectionNumber.ToDouble() },
-                        { "protocolSourceObjectAddress",    meta.protocolSourceObjectAddress.ToDouble()    },
-                        { "pointKey",    meta._id.ToInt32()   },
-                        { "tag",         meta.tag              },
-                        { "value",       new BsonDouble(doubleVal) },
-                        { "valueString", strVal                },
-                        { "originatorUserName",
-                          $"OPC-DA connection: {connection_.protocolConnectionNumber} {connection_.name}" },
+                        { "protocolSourceObjectAddress",    meta.protocolSourceObjectAddress },
+                        { "protocolSourceCommonAddress",    meta.protocolSourceCommonAddress }, 
+                        { "protocolSourceASDU",             meta.protocolSourceASDU },
+                        { "protocolSourceCommandDuration",  meta.protocolSourceCommandDuration },
+                        { "protocolSourceCommandUseSBO",    meta.protocolSourceCommandUseSBO },
+                        { "pointKey",                       meta._id.ToInt32() },
+                        { "tag",                            meta.tag },
+                        { "value",                          new BsonDouble(doubleVal) },
+                        { "valueString",                    strVal },
+                        { "originatorUserName",             $"OPC-DA connection: {connection_.protocolConnectionNumber} {connection_.name}" },
                         { "originatorIpAddress", "" },
                         { "timeTag", DateTime.UtcNow }
                     };
@@ -469,6 +487,9 @@ namespace ServerPlugin
                 .Include(x => x.protocolSourceConnectionNumber)
                 .Include(x => x.protocolSourceASDU)
                 .Include(x => x.protocolSourceObjectAddress)
+                .Include(x => x.protocolSourceCommonAddress)
+                .Include(x => x.protocolSourceCommandDuration)
+                .Include(x => x.protocolSourceCommandUseSBO)
                 .Include(x => x.protocolSourceAccessLevel)
                 .Include(x => x.protocolDestinations);
 
@@ -581,7 +602,8 @@ namespace ServerPlugin
 
                 case "analog":
                 default:
-                    switch (tag.protocolSourceASDU?.ToLowerInvariant())
+                    string asduStr = tag.protocolSourceASDU?.IsString == true ? tag.protocolSourceASDU.AsString : "";
+                    switch (asduStr.ToLowerInvariant())
                     {
                         case "boolean": return tag.value.ToDouble() != 0.0;
                         case "float":   return (float)tag.value.ToDouble();
@@ -602,7 +624,8 @@ namespace ServerPlugin
         private static bool IsAnalogType(RtDataItem tag)
         {
             if (tag.type == "digital" || tag.type == "string") return false;
-            var asdu = tag.protocolSourceASDU?.ToLowerInvariant() ?? "";
+            string asduStr = tag.protocolSourceASDU?.IsString == true ? tag.protocolSourceASDU.AsString : "";
+            var asdu = asduStr.ToLowerInvariant();
             return asdu != "boolean";
         }
 
@@ -626,6 +649,140 @@ namespace ServerPlugin
                 SetItemValue(handle, newVal, quality, ts);
             Log($"Update: {tag} = {newVal}" +
                 (quality == (short)DaQualityBits.Bad ? " [BAD]" : ""), 3);
+        }
+
+        // -----------------------------------------------------------------------
+        // Auto-create protocolDestinations entries for command tags exported by
+        // this OPC-DA Server connection that do not yet have such an entry.
+        // -----------------------------------------------------------------------
+        private static void AutoCreateTagDestinations(IMongoDatabase db)
+        {
+            Log("Auto Create Tags: adding protocolDestinations for command tags.");
+
+            var rtBsonCol = db.GetCollection<BsonDocument>("realtimeData");
+            int connNum   = connection_.protocolConnectionNumber;
+
+            var types = new[] { "digital", "analog" };
+
+            foreach (var type in types)
+            {
+                var f = Builders<BsonDocument>.Filter.And(
+                    Builders<BsonDocument>.Filter.Eq("type",   type),
+                    Builders<BsonDocument>.Filter.Eq("origin", "command"),
+                    Builders<BsonDocument>.Filter.Ne(
+                        "protocolDestinations.protocolDestinationConnectionNumber",
+                        (double)connNum));
+
+                var sort = Builders<BsonDocument>.Sort.Ascending("_id");
+                foreach (var doc in rtBsonCol.Find(f).Sort(sort).ToEnumerable())
+                {
+                    // Topic filter — substring match, same as DNP3 driver
+                    if (connection_.topics?.Length > 0)
+                    {
+                        string g1 = GetBsonString(doc, "group1");
+                        if (!connection_.topics.Any(t => g1.Contains(t))) continue;
+                    }
+
+                    var    idVal  = doc["_id"];
+                    string tagStr = GetBsonString(doc, "tag");
+                    string itemId = BuildItemIdFromBson(doc);
+
+                    Log($"Auto Create Tags: adding destination for {type} command [{idVal}] '{tagStr}' itemId={itemId}");
+
+                    EnsureProtocolDestinationsArray(rtBsonCol, idVal, doc);
+                    PushProtocolDestination(rtBsonCol, idVal, connNum, itemId);
+                }
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Helpers for AutoCreateTagDestinations
+        // -----------------------------------------------------------------------
+
+        private static string BuildItemIdFromBson(BsonDocument doc)
+        {
+            var parts = new List<string>();
+
+            string browsePath = GetBsonString(doc, "protocolSourceBrowsePath");
+            if (!string.IsNullOrWhiteSpace(browsePath))
+            {
+                var pathParts = browsePath.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in pathParts)
+                {
+                    if (!string.IsNullOrWhiteSpace(part))
+                        parts.Add(part.Trim());
+                }
+            }
+            else
+            {
+                string g1 = GetBsonString(doc, "group1");
+                string g2 = GetBsonString(doc, "group2");
+                string g3 = GetBsonString(doc, "group3");
+                if (!string.IsNullOrWhiteSpace(g1)) parts.Add(g1.Trim());
+                if (!string.IsNullOrWhiteSpace(g2)) parts.Add(g2.Trim());
+                if (!string.IsNullOrWhiteSpace(g3)) parts.Add(g3.Trim());
+            }
+
+            string tagStr = GetBsonString(doc, "tag");
+            if (!string.IsNullOrWhiteSpace(tagStr))
+            {
+                parts.Add(tagStr.Trim());
+            }
+
+            return string.Join(".", parts);
+        }
+
+        /// <summary>Safely read a string BSON field, returning "" if absent or non-string.</summary>
+        private static string GetBsonString(BsonDocument d, string key)
+        {
+            if (!d.Contains(key)) return "";
+            var v = d[key];
+            if (v.BsonType == BsonType.String) return v.AsString;
+            if (v.BsonType == BsonType.Null)   return "";
+            return "";
+        }
+
+        /// <summary>
+        /// Ensures the <c>protocolDestinations</c> field exists as an array.
+        /// Initialises it to <c>[]</c> if the field is absent or null — the same
+        /// guard used in the DNP3 driver before the $push update.
+        /// </summary>
+        private static void EnsureProtocolDestinationsArray(
+            IMongoCollection<BsonDocument> col, BsonValue idVal, BsonDocument doc)
+        {
+            if (!doc.Contains("protocolDestinations") ||
+                doc["protocolDestinations"].BsonType == BsonType.Null)
+            {
+                col.UpdateOne(
+                    Builders<BsonDocument>.Filter.Eq("_id", idVal),
+                    Builders<BsonDocument>.Update.Set("protocolDestinations", new BsonArray()));
+            }
+        }
+
+        /// <summary>
+        /// Appends a new protocolDestinations sub-document to the tag identified
+        /// by <paramref name="idVal"/>.
+        /// </summary>
+        private static void PushProtocolDestination(
+            IMongoCollection<BsonDocument> col, BsonValue idVal, int connNum, string itemId)
+        {
+            var dest = new BsonDocument
+            {
+                { "protocolDestinationConnectionNumber", new BsonDouble(connNum) },
+                { "protocolDestinationCommonAddress",    new BsonDouble(0.0)     },
+                { "protocolDestinationObjectAddress",    itemId                  },
+                { "protocolDestinationASDU",             new BsonDouble(0.0)     },
+                { "protocolDestinationCommandDuration",  new BsonDouble(0.0)     },
+                { "protocolDestinationCommandUseSBO",    BsonBoolean.False       },
+                { "protocolDestinationKConv1",           new BsonDouble(1.0)     },
+                { "protocolDestinationKConv2",           new BsonDouble(0.0)     },
+                { "protocolDestinationGroup",            new BsonDouble(0.0)     },
+                { "protocolDestinationHoursShift",       new BsonDouble(0.0)     }
+            };
+
+            col.UpdateOne(
+                Builders<BsonDocument>.Filter.Eq("_id", idVal),
+                Builders<BsonDocument>.Update.Push("protocolDestinations", dest));
         }
     }
 }
