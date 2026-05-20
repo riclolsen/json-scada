@@ -75,6 +75,12 @@ rmdir bin /S /Q
 dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -c Release -o %BINPATH% OPC-DA-Client.csproj
 dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -c Release -o %BINWINPATH% OPC-DA-Client.csproj
 
+cd %SRCPATH%\OPC-DA-Server\
+rmdir bin /S /Q
+msbuild OPC-DA-Server.sln /p:Configuration=Release /p:Platform=x64
+mkdir %BINPATH%\OPC-DA_Server
+copy /Y bin\x64\Release\*.* %BINPATH%\OPC-DA_Server\
+
 cd %SRCPATH%\OPC-UA-Client\  
 rmdir obj /S /Q
 rmdir bin /S /Q

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <AssemblyName>ServerPlugin</AssemblyName>
+    <RootNamespace>ServerPlugin</RootNamespace>
+    <OutputType>Library</OutputType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <ProjectGuid>{A2C3D4E5-0001-0001-0001-A2C3D4E50001}</ProjectGuid>
+    <FileUpgradeFlags />
+    <OldToolsVersion>15.0</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <StartupObject />
+    <Prefer32Bit>false</Prefer32Bit>
+    <NuGetPackageImportStamp />
+  </PropertyGroup>
+
+  <!-- ===== x86 Debug ===== -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\net\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <!-- ===== x86 Release ===== -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>bin\x86\Release\net\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <PlatformTarget>x86</PlatformTarget>
+    <Optimize>true</Optimize>
+    <ErrorReport>prompt</ErrorReport>
+    <DocumentationFile>bin\x86\Release\net\ServerPlugin.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <!-- ===== x64 Debug ===== -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\net\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <!-- ===== x64 Release ===== -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>bin\x64\Release\net\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <PlatformTarget>x64</PlatformTarget>
+    <Optimize>true</Optimize>
+    <ErrorReport>prompt</ErrorReport>
+    <DocumentationFile>bin\x64\Release\net\ServerPlugin.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <!-- ===== Framework References ===== -->
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <!-- ===== NuGet References ===== -->
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.2.0.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Bson">
+      <HintPath>..\packages\MongoDB.Bson.2.23.1\lib\netstandard2.0\MongoDB.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver">
+      <HintPath>..\packages\MongoDB.Driver.2.23.1\lib\netstandard2.0\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver.Core">
+      <HintPath>..\packages\MongoDB.Driver.Core.2.23.1\lib\netstandard2.0\MongoDB.Driver.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DnsClient">
+      <HintPath>..\packages\DnsClient.1.7.0\lib\net471\DnsClient.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Libmongocrypt">
+      <HintPath>..\packages\MongoDB.Libmongocrypt.1.8.1\lib\netstandard2.0\MongoDB.Libmongocrypt.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpCompress">
+      <HintPath>..\packages\SharpCompress.0.34.2\lib\netstandard2.0\SharpCompress.dll</HintPath>
+    </Reference>
+    <Reference Include="Snappier">
+      <HintPath>..\packages\Snappier.1.1.0\lib\netstandard2.0\Snappier.dll</HintPath>
+    </Reference>
+    <Reference Include="ZstdSharp">
+      <HintPath>..\packages\ZstdSharp.Port.0.7.1\lib\netstandard2.0\ZstdSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- ===== Source Files ===== -->
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="ClassicBaseNodeManager.cs" />
+    <Compile Include="ClassicNodeManager.cs" />
+    <Compile Include="MongoConfig.cs" />
+    <Compile Include="MongoChangeStream.cs" />
+  </ItemGroup>
+
+  <!-- ===== Content ===== -->
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="app.config" />
+    <Content Include="..\README.md" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
+  <!--
+    Post-Build:
+    Copy compiled ServerPlugin.dll next to OpcNetDaServer*.exe in the bin\ folder.
+    Adjust the source path to match the Technosoftware generic server EXE location.
+  -->
+  <PropertyGroup>
+    <PostBuildEvent>
+      ECHO [PostBuild] Platform: $(Platform)
+      ECHO [PostBuild] Configuration: $(Configuration)
+      ECHO [PostBuild] TargetDir: $(TargetDir)
+      ECHO [PostBuild] SolutionDir: $(SolutionDir)
+      IF EXIST "$(TargetDir)ServerPlugin.dll" (
+        IF NOT EXIST "$(SolutionDir)bin\$(Platform)\$(Configuration)" mkdir "$(SolutionDir)bin\$(Platform)\$(Configuration)"
+        COPY /Y "$(TargetDir)*.dll" "$(SolutionDir)bin\$(Platform)\$(Configuration)"
+        IF EXIST "$(TargetDir)ServerPlugin.dll.config" (
+          COPY /Y "$(TargetDir)ServerPlugin.dll.config" "$(SolutionDir)bin\$(Platform)\$(Configuration)\OpcNetDaServer.exe.config"
+        )
+      )
+      EXIT 0
+    </PostBuildEvent>
+  </PropertyGroup>
+
+</Project>

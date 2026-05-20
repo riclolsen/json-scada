@@ -56,5 +56,7 @@ nssm remove JSON_SCADA_log_io_server confirm
 nssm remove JSON_SCADA_onvif confirm
 nssm remove JSON_SCADA_mcp_server confirm
 
+\json-scada\bin\OPC-DA_Server\OpcNetDaServer.exe -unregserver
+
 PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& {Start-Process PowerShell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""remove_jsonscada_services.ps1""' -Verb RunAs}"
 
