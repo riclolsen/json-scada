@@ -37,6 +37,22 @@ const ProtocolDriverInstance = db.protocolDriverInstance
 const ProtocolConnection = db.protocolConnection
 const UserAction = db.userAction
 
+/**
+ * Generates a CLSID-style UUID (version 4)
+ * Format: {xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx}
+ */
+const generateClsid = () => {
+  const generateHex = (length) => {
+    let result = ''
+    for (let i = 0; i < length; i++) {
+      result += Math.floor(Math.random() * 16).toString(16)
+    }
+    return result
+  }
+
+  return `{${generateHex(8)}-${generateHex(4)}-4${generateHex(3)}-${(Math.floor(Math.random() * 4) + 8).toString(16)}${generateHex(3)}-${generateHex(12)}}`
+}
+
 // add header to identify json-scada user for Grafana auto-login (auth.proxy)
 exports.addXWebAuthUser = (req) => {
   let ck = checkToken(req)
@@ -475,6 +491,21 @@ exports.updateProtocolConnection = async (req, res) => {
   if (['OPC-DA', 'OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
     if (!('deadBand' in req.body)) {
       req.body.deadBand = 0.0
+    }
+  }
+  if (['OPC-DA_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('clsIdApp' in req.body)) {
+      req.body.clsIdApp = generateClsid()
+    }
+    if (!('clsIdServer' in req.body)) {
+      req.body.clsIdServer = generateClsid()
+    }
+    if (!('prgIdServer' in req.body)) {
+      req.body.prgIdServer = 'JsonScada.OpcDaServer'
+    }
+    if (!('prgIdCurrServer' in req.body)) {
+      req.body.prgIdCurrServer =
+        req.body.prgIdServer + '.' + req.body.protocolConnectionNumber
     }
   }
   if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {

@@ -184,6 +184,12 @@ const ProtocolConnection = mongoose.model(
     timeoutRepeat: { type: Double, min: 1, default: 1000 },
     useSingleCharACK: { type: Boolean, default: true },
     sizeOfLinkAddress: { type: Double, min: 0, default: 1 },
+
+    // OPC-DA_SERVER
+    clsIdApp: { type: String, default: '' },
+    clsIdServer: { type: String, default: '' },
+    prgIdServer: { type: String, default: '' },
+    prgIdCurrServer: { type: String, default: '' },
   }),
   'protocolConnections'
 )

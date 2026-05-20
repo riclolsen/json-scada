@@ -639,6 +639,18 @@ var protocolConnectionsValidator = {
       passphrase: {
         bsonType: ["string", "null"],
       },
+      clsIdApp: {
+        bsonType: ["string", "null"],
+      },      
+      clsIdServer: {
+        bsonType: ["string", "null"],
+      },      
+      prgIdServer: {
+        bsonType: ["string", "null"],
+      },      
+      prgIdCurrServer: {
+        bsonType: ["string", "null"],
+      },
       stats: {
         bsonType: ["object", "null"],
         description: "Driver specific statistics.",
