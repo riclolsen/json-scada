@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.61"
-!define VERSION_ "0.61.0.0"
+!define VERSION "v.0.62"
+!define VERSION_ "0.62.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -56,7 +56,7 @@ VIProductVersion ${VERSION_}
 VIAddVersionKey ProductName "JSON SCADA"
 VIAddVersionKey Comments "SCADA IIoT Software"
 VIAddVersionKey CompanyName "Ricardo Olsen"
-VIAddVersionKey LegalCopyright "Copyright 2020-2025 Ricardo L. Olsen"
+VIAddVersionKey LegalCopyright "Copyright 2020-Present Ricardo L. Olsen"
 VIAddVersionKey FileDescription "JSON SCADA Installer"
 VIAddVersionKey FileVersion ${VERSION}
 VIAddVersionKey ProductVersion ${VERSION}
@@ -347,9 +347,8 @@ SetRegView 64
   File /a "..\src\certificate-creator\server.conf"
   File /a "..\src\certificate-creator\create_certs.sh"
 
-  #SetOutPath $INSTDIR\svg
-  #File /a    "..\conf-templates\*.svg"
-  #File /a    "..\conf-templates\screen_list.js"
+  SetOutPath $INSTDIR\svg\.agents\skills\svg-scada
+  File /a "..\svg\.agents\skills\svg-scada\SKILL.md"
   SetOutPath $INSTDIR\src\AdminUI
   File /a    "..\src\AdminUI\*.*"
   SetOutPath $INSTDIR\src\AdminUI\src

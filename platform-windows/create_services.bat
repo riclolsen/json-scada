@@ -271,6 +271,9 @@ nssm set JSON_SCADA_mcp_server AppDirectory "C:\json-scada\src\mcp-json-scada-db
 nssm set JSON_SCADA_mcp_server AppEnvironmentExtra MCP_TRANSPORT=http BIND=127.0.0.1 PORT=6001
 nssm set JSON_SCADA_mcp_server Start SERVICE_DEMAND_START
 
+REM OPC-DA Server
+\json-scada\bin\OPC-DA_Server\OpcNetDaServer.exe -regserver
+
 REM Create scheduled task for log rotation (alternative log rotator), configure with logrotate.conf
 REM Should stop services to force log file to close. See https://sourceforge.net/p/logrotatewin/wiki/LogRotate/
 REM SCHTASKS /CREATE /SC DAILY /TN "MyTasks\JSON-SCADA logrotate task" /TR "C:\json-scada\bin\logrotate C:\json-scada\platform-windows\logrotate.conf" /ST 04:00

@@ -56,7 +56,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.61-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.62-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -98,7 +98,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 ## Documentation
 
 - [Generic Install Guide](docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.61-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.62-alpha)
 - [RedHat/Rocky/Alma Linux Installer Script](docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Ubuntu Linux Installer Script](docs/install.md#ubuntu-2404-scripted-installation)
 - [Generic Install Guide](docs/install.md)
@@ -119,6 +119,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [OPC-UA Client Driver](src/OPC-UA-Client/README.md)
 - [OPC-UA Server Driver](src/OPC-UA-Server/README.md)
 - [OPC-DA Client Driver](src/OPC-DA-Client/README.md)
+- [OPC-DA Server Driver](src/OPC-DA-Server/README.md)
 - [PLC4X-GO Modbus Client Driver](src/plc4x-client/README.md)
 - [CIP Ethernet/IP PLCTags Client Driver](src/libplctag/PLCTagsClient/README.md)
 - [Calculations](src/calculations/README.md)
@@ -154,7 +155,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [ ] OPC UA Historical Data Server
 - [x] OPC DA Client (Windows)
 - [ ] OPC AE Client (Windows)
-- [ ] OPC DA Server (Windows)
+- [x] OPC DA Server (Windows)
 - [x] CIP Ethernet/IP (libplctag, experimental)
 - [ ] Siemens S7
 - [ ] BACNET

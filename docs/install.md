@@ -69,7 +69,7 @@ To configure safe remote client access, configure IP address access control, HTT
 
 For more info about configuration please read the protocols documentation.
 
-## RHEL9.4 and compatible systems (Rocky/Alma/Oracle Linux), scripted installation
+## RHEL 9/10 and compatible systems (Rocky/Alma/Oracle Linux), scripted installation
 
 Execute commands below for scripted installation:
 
@@ -90,6 +90,8 @@ Execute commands below for scripted installation:
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
     cd json-scada/platform-rhel9
+    # or 
+    # cd json-scada/platform-rhel10
 
     # on x86-64 platform run
     sudo sh ./json-scada-install.sh
@@ -100,7 +102,7 @@ Execute commands below for scripted installation:
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh
 
-## Ubuntu 24.04, scripted installation
+## Ubuntu 24.04/26.04, scripted installation
 
 Execute commands below for scripted installation:
 
@@ -121,6 +123,8 @@ Execute commands below for scripted installation:
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
     cd json-scada/platform-ubuntu-2404
+    # or 
+    # cd json-scada/platform-ubuntu-2604
 
     # on x86-64 or ARM64 platform run
     sudo sh ./json-scada-install.sh

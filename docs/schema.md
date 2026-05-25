@@ -71,6 +71,7 @@ Example document.
         "protocolSourceSamplingInterval": 5.0,
         "protocolSourceQueueSize": 5.0,
         "protocolSourceDiscardOldest": true,
+        "protocolSourceAccessLevel": 0.0,
         "sourceDataUpdate": {
             "valueAtSource": 2.9959075450897217,
             "valueStringAtSource": "2.9959075450897217",
@@ -166,6 +167,7 @@ Example document.
 * _**_protocolSourceSamplingInterval_**_ [Double] - Sampling interval. See protocol documentation. **Optional parameter**.
 * _**_protocolSourcePublishingInterval_**_ [Double] - Publishing interval. See protocol documentation. **Optional parameter**.
 * _**_protocolSourceDiscardOldest_**_ [Boolean] - Discard oldest data when queue is full. See protocol documentation. **Optional parameter**.
+* _**_protocolSourceAccessLevel_**_ [Double] - Access level. See protocol documentation. **Optional parameter**.
 * _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or empty array when not point is not to be distributed. See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinationConnectionNumber_**_ [Double] - Indicates the protocol connection that will monitor updates to the point. Should contain only integer values. **Mandatory parameter**.
 * _**_protocolDestinationCommonAddress_**_ [Double or String] - Protocol common address (device address). See protocol documentation. **Mandatory parameter**.
