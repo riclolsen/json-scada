@@ -32,9 +32,9 @@ import (
 	"time"
 
 	"github.com/riclolsen/tase2/tase2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // datasetDef holds a dataset name and its member ObjectRefs.
@@ -293,12 +293,16 @@ func main() {
 					}
 				}
 
-				// Add as indication point
-				ipType, qualityFlag, tsFlag := getIndicationPointType(tag)
-				ip := domain.AddIndicationPoint(pointName, ipType, qualityFlag, tsFlag)
-				val, qual := convertToDataValueWithQuality(tag)
-				ip.UpdateValue(val, qual)
-				ipByTag[tag.Tag] = ip
+				// Add as indication point only when the tag type maps to a standard
+				// ICCP data type (digital→StateQTimeTag, analog→RealQTimeTag).
+				// String, JSON, and other non-standard types are not exposed via ICCP.
+				iccpType := getICCPType(tag)
+				if iccpType != tase2.ICCPTypeUnknown {
+					ip := domain.AddDataPoint(pointName, iccpType)
+					val := convertToICCPValue(tag, iccpType)
+					ip.UpdateValue(val, nil) // quality and timestamp embedded in ICCP value
+					ipByTag[tag.Tag] = ip
+				}
 			}
 
 			LogMsg(LogLevelNormal, "DataModel - Created %d domains, %d indication points, %d control points",
@@ -341,15 +345,15 @@ func main() {
 						dstsName := fmt.Sprintf("DSTrans_%04d", chunkIdx)
 
 						dsts := domain.AddDSTransferSet(dstsName)
-						dsts.AttachDataSet("", dsName)
+						dsts.AttachDataSet(domainName, dsName)
 
 						LogMsg(LogLevelDetailed, "DataModel - Domain %s chunk %d: dataset '%s' (%d points)",
-							domainName, chunkIdx, dsName, len(chunkPointNames))
+							domainName, chunkIdx, domainName+"/"+dsName, len(chunkPointNames))
 					}
 				} else {
-					// Single-dataset mode (existing behavior, backward compatible).
+					// Single-dataset mode: domain-scope DSTS with domain-scoped dataset.
 					dsts := domain.AddDSTransferSet("DSTrans")
-					dsts.AttachDataSet("", dsPrefix)
+					dsts.AttachDataSet(domainName, dsPrefix)
 				}
 			}
 
@@ -383,13 +387,13 @@ func main() {
 						for _, pn := range pointNames[offset:end] {
 							dsItems = append(dsItems, tase2.ObjectRef{Domain: domainName, Item: pn})
 						}
-						datasetDefs = append(datasetDefs, datasetDef{name: dsName, items: dsItems})
+						datasetDefs = append(datasetDefs, datasetDef{name: domainName + "/" + dsName, items: dsItems})
 					}
 					LogMsg(LogLevelNormal, "DataModel - Domain %s: %d points in %d chunk(s) of %d",
 						domainName, len(pointNames), chunkIdx, datasetChunkSize)
 				} else {
-					// Single-dataset mode (existing behavior)
-					dsName := sanitizePointName(domainName) + "_DataSet"
+					// Single-dataset mode: store dataset under domain-scoped key.
+					dsName := domainName + "/" + sanitizePointName(domainName) + "_DataSet"
 					var dsItems []tase2.ObjectRef
 					for name := range domain.IndicationPoints {
 						dsItems = append(dsItems, tase2.ObjectRef{Domain: domainName, Item: name})
@@ -445,10 +449,10 @@ func main() {
 					ModelName:                 "ICCP-Server",
 					Revision:                  DriverVersion,
 					AuthenticationPassword:    conn.AuthenticationPassword,
-				GetNameListMaxPerResponse: getNameListMaxPerResponse,
-				GetNameListMaxBytes:       getNameListMaxBytes,
-				MaxNVLAttrsItems:          maxNVLAttrsItems,
-			}
+					GetNameListMaxPerResponse: getNameListMaxPerResponse,
+					GetNameListMaxBytes:       getNameListMaxBytes,
+					MaxNVLAttrsItems:          maxNVLAttrsItems,
+				}
 
 				endpoint := tase2.NewEndpoint(tase2.EndpointPassive)
 				endpoint.SetLocalAPTitle(localAPTitle, localAEQual)
@@ -587,6 +591,13 @@ func buildServer(
 	// serve paginated discovery without rebuilding/re-sorting on every request.
 	srv.BuildDiscoverySnapshots()
 
+	totalItems := 0
+	for _, ds := range datasetDefs {
+		totalItems += len(ds.items)
+	}
+	LogMsg(LogLevelNormal, "ICCP - Server built for %s: %d datasets, %d total items, topics=%v",
+		conn.Name, len(datasetDefs), totalItems, conn.Topics)
+
 	// Register device control handlers for command forwarding
 	if conn.CommandsEnabled {
 		srv.SetOperateHandler(func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
@@ -645,6 +656,26 @@ func watchRealtimeDataChanges(
 	connNumbers map[int]bool,
 	topicList []string,
 ) {
+	// Start a ticker goroutine that flushes coalesced updates at most once per
+	// second. Without this, every change-stream notification would trigger an
+	// immediate DSTS report — a burst of hundreds of updates would flood the
+	// client with reports.
+	stopFlushCh := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(pendingFlushInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopFlushCh:
+				// Final flush before exit: drain remaining buffered changes.
+				flushPendingChanges()
+				return
+			case <-ticker.C:
+				flushPendingChanges()
+			}
+		}
+	}()
+
 	for {
 		// Build change stream pipeline
 		pipeline := mongo.Pipeline{
@@ -706,14 +737,23 @@ func watchRealtimeDataChanges(
 				continue
 			}
 
-			// Update indication point
+			// Update indication point via the buffering layer: coalesce into
+			// the pending map so the ticker flushes at most once per second.
 			ip, ok := ipByTag[tag.Tag]
 			if !ok {
 				continue
 			}
 
-			newVal, newQual := convertToDataValueWithQuality(tag)
+			var newVal *tase2.DataValue
+			var newQual *tase2.Quality
+			if ip.ICCPType != tase2.ICCPTypeUnknown {
+				newVal = convertToICCPValue(tag, ip.ICCPType)
+			} else {
+				newVal, newQual = convertToDataValueWithQuality(tag)
+			}
+
 			servers := registry.snapshot()
+			pendingChangesMu.Lock()
 			for _, entry := range servers {
 				// Check topic filter for this connection
 				if len(entry.connection.Topics) > 0 {
@@ -721,12 +761,21 @@ func watchRealtimeDataChanges(
 						continue
 					}
 				}
-				entry.server.UpdateOnlineValue(ip, newVal, newQual)
+				srv := entry.server
+				srvMap := pendingChangesMap[srv]
+				if srvMap == nil {
+					srvMap = make(map[*tase2.IndicationPoint]pendingPointUpdate)
+					pendingChangesMap[srv] = srvMap
+				}
+				// Keep only the latest value for each point — overwrite any
+				// earlier change that hasn't been flushed yet.
+				srvMap[ip] = pendingPointUpdate{ip: ip, value: newVal, quality: newQual}
 			}
+			pendingChangesMu.Unlock()
 
 			if currentLogLevel >= LogLevelDebug {
-				LogMsg(LogLevelDebug, "ChangeStream - Updated %s = %v (invalid=%v)",
-					tag.Tag, tag.Value, tag.Invalid)
+				LogMsg(LogLevelDebug, "ChangeStream - Buffered %s = %v (invalid=%v) for %d server(s)",
+					tag.Tag, tag.Value, tag.Invalid, len(servers))
 			}
 		}
 
@@ -736,6 +785,38 @@ func watchRealtimeDataChanges(
 
 		cs.Close(context.TODO())
 		time.Sleep(5 * time.Second)
+	}
+}
+
+// flushPendingChanges atomically drains the pending-changes buffer and applies
+// every queued update via server.UpdateOnlineValue. The drain-and-replace
+// pattern keeps the mutex held only briefly (O(map size) memory, not O(n) I/O).
+func flushPendingChanges() {
+	// Atomically extract the pending map and replace it with a fresh empty one.
+	pendingChangesMu.Lock()
+	old := pendingChangesMap
+	pendingChangesMap = make(map[*tase2.Server]map[*tase2.IndicationPoint]pendingPointUpdate, len(old))
+	pendingChangesMu.Unlock()
+
+	totalUpdates := 0
+	for _, srvMap := range old {
+		totalUpdates += len(srvMap)
+	}
+	if totalUpdates > 0 && currentLogLevel >= LogLevelDetailed {
+		LogMsg(LogLevelDetailed, "ChangeStream - Flushing %d pending updates across %d servers",
+			totalUpdates, len(old))
+	}
+
+	// Apply all updates outside the lock so UpdateOnlineValue (which may
+	// acquire server-level locks and perform MMS I/O) doesn't block the
+	// change-stream consumer.
+	for srv, srvMap := range old {
+		if currentLogLevel >= LogLevelDebug && len(srvMap) > 0 {
+			LogMsg(LogLevelDebug, "ChangeStream - Flushing %d updates to server %p", len(srvMap), srv)
+		}
+		for _, upd := range srvMap {
+			srv.UpdateOnlineValue(upd.ip, upd.value, upd.quality)
+		}
 	}
 }
 
@@ -787,29 +868,47 @@ func convertToDataValueWithQuality(tag rtData) (*tase2.DataValue, *tase2.Quality
 	return val, qual
 }
 
-// getIndicationPointType determines the TASE2 indication point type from a realtimeData tag.
-func getIndicationPointType(tag rtData) (tase2.IndPointType, tase2.QualityFlag, tase2.TimestampFlag) {
-	qualityFlag := tase2.QualityIncluded
-	tsFlag := tase2.TimestampIncluded
-
+// getICCPType maps a realtimeData tag type to an ICCP data type with quality
+// and timestamp. Returns ICCPTypeUnknown for types that don't map to a
+// standard ICCP type (e.g. strings, JSON).
+func getICCPType(tag rtData) tase2.ICCPType {
 	switch tag.Type {
 	case "digital":
-		return tase2.IndPointTypeState, qualityFlag, tsFlag
+		return tase2.ICCPTypeStateQTimeTag
 	case "analog":
-		// Check ASDU for type hints
-		asdu := asduToString(tag.ProtocolSourceASDU)
-		switch asdu {
-		case "int16", "uint16", "int32", "uint32", "int64", "uint64":
-			return tase2.IndPointTypeDiscrete, qualityFlag, tsFlag
-		default:
-			return tase2.IndPointTypeReal, qualityFlag, tsFlag
-		}
-	case "string":
-		return tase2.IndPointTypeComplex, qualityFlag, tsFlag
-	case "json":
-		return tase2.IndPointTypeComplex, qualityFlag, tsFlag
+		return tase2.ICCPTypeRealQTimeTag
 	default:
-		return tase2.IndPointTypeReal, qualityFlag, tsFlag
+		return tase2.ICCPTypeUnknown
+	}
+}
+
+// convertToICCPValue converts a realtimeData document to an ICCP-typed DataValue
+// using the appropriate constructor for the given ICCP type. The returned value
+// embeds quality and timestamp per the ICCP data type specification.
+func convertToICCPValue(tag rtData, iccpType tase2.ICCPType) *tase2.DataValue {
+	q := &tase2.Quality{Validity: "good", Source: "process"}
+	if tag.Invalid {
+		q = &tase2.Quality{Validity: "invalid", Source: "process"}
+	}
+	tod := tase2.TimeTagNow()
+	if tag.TimeTagAtSource != nil && tag.TimeTagAtSourceOk {
+		tod = tase2.TimeTagFrom(*tag.TimeTagAtSource)
+	}
+
+	switch iccpType {
+	case tase2.ICCPTypeStateQTimeTag:
+		state := tase2.StateOff
+		if tag.Value != 0 {
+			state = tase2.StateOn
+		}
+		return tase2.NewStateQTimeTag(state, q, tod)
+	case tase2.ICCPTypeRealQTimeTag:
+		return tase2.NewRealQTimeTag(float32(tag.Value), q, tod)
+	case tase2.ICCPTypeDiscreteQTimeTag:
+		return tase2.NewDiscreteQTimeTag(int64(tag.Value), q, tod)
+	default:
+		val, _ := convertToDataValueWithQuality(tag)
+		return val
 	}
 }
 
@@ -843,6 +942,25 @@ func sanitizePointName(name string) string {
 	}
 	return result
 }
+
+// pendingPointUpdate holds a buffered indication-point update that will be
+// flushed to the server on the next tick (coalescing rapid-fire change stream
+// notifications into at-most-once-per-second DSTS reports).
+type pendingPointUpdate struct {
+	ip      *tase2.IndicationPoint
+	value   *tase2.DataValue
+	quality *tase2.Quality
+}
+
+// Change-stream buffering: updates are collected per-server into
+// pendingChangesMap and flushed every pendingFlushInterval by the ticker
+// goroutine started in watchRealtimeDataChanges.
+var (
+	pendingChangesMu  sync.Mutex
+	pendingChangesMap = make(map[*tase2.Server]map[*tase2.IndicationPoint]pendingPointUpdate)
+)
+
+const pendingFlushInterval = 1 * time.Second
 
 // A global cache for tag-to-realtimeData lookup, populated at startup.
 var rtDataByTag = make(map[string]rtData)

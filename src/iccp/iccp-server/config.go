@@ -29,10 +29,9 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // configData holds the JSON-SCADA main configuration file contents.
@@ -56,7 +55,7 @@ type configData struct {
 
 // protocolDriverInstance mirrors the protocolDriverInstances collection document.
 type protocolDriverInstance struct {
-	ID                               primitive.ObjectID `bson:"_id"`
+	ID                               bson.ObjectID `bson:"_id"`
 	ProtocolDriver                   string             `bson:"protocolDriver"`
 	ProtocolDriverInstanceNumber     int                `bson:"protocolDriverInstanceNumber"`
 	Enabled                          bool               `bson:"enabled"`
@@ -69,7 +68,7 @@ type protocolDriverInstance struct {
 
 // protocolConnection mirrors the protocolConnections collection document.
 type protocolConnection struct {
-	ID                           primitive.ObjectID     `bson:"_id"`
+	ID                           bson.ObjectID     `bson:"_id"`
 	ProtocolDriver               string                 `bson:"protocolDriver"`
 	ProtocolDriverInstanceNumber int                    `bson:"protocolDriverInstanceNumber"`
 	ProtocolConnectionNumber     int                    `bson:"protocolConnectionNumber"`
@@ -125,7 +124,7 @@ type rtData struct {
 
 // commandQueueEntry mirrors the commandsQueue collection document.
 type commandQueueEntry struct {
-	ID                             primitive.ObjectID `bson:"_id"`
+	ID                             bson.ObjectID `bson:"_id"`
 	ProtocolSourceConnectionNumber float64            `bson:"protocolSourceConnectionNumber"`
 	ProtocolSourceCommonAddress    interface{}        `bson:"protocolSourceCommonAddress"`
 	ProtocolSourceObjectAddress    interface{}        `bson:"protocolSourceObjectAddress"`
@@ -223,9 +222,6 @@ func readConfigFile() (cfg configData, instanceNumber int, instLogLevel int) {
 
 // mongoConnect establishes a MongoDB connection.
 func mongoConnect(cfg configData) (*mongo.Client, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-
 	connStr := cfg.MongoConnectionString
 	if cfg.TLSCaPemFile != "" || cfg.TLSClientPemFile != "" {
 		if !strings.Contains(connStr, "tls=true") {
@@ -242,10 +238,12 @@ func mongoConnect(cfg configData) (*mongo.Client, error) {
 		connStr = connStr + "&tlsCertificateKeyFilePassword=" + cfg.TLSClientKeyPassword
 	}
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))
+	client, err := mongo.Connect(options.Client().ApplyURI(connStr))
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -330,7 +328,7 @@ var (
 	isActive                       bool
 )
 
-func processRedundancy(collectionInstances *mongo.Collection, id primitive.ObjectID, cfg configData) {
+func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, cfg configData) {
 	var instance protocolDriverInstance
 	filter := bson.D{{Key: "_id", Value: id}}
 	err := collectionInstances.FindOne(context.TODO(), filter).Decode(&instance)
@@ -372,7 +370,7 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 			bson.M{"_id": bson.M{"$eq": id}},
 			bson.M{"$set": bson.M{
 				"activeNodeName":             cfg.NodeName,
-				"activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now()),
+				"activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now()),
 			}},
 		)
 		if err != nil {
