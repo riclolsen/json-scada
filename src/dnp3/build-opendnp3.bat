@@ -18,20 +18,26 @@ cmake -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL-Win64" -DOPENSSL_USE_STATIC_L
 msbuild Dnp3Server.sln /p:Configuration=Release
 
 MSYS2
+cp asio.cmake opendnp3/deps/asio.cmake
 cd opendnp3
+rm -rf build
 mkdir build
 cd build
 cmake -DDNP3_EXAMPLES=ON -DDNP3_TLS=ON -DOPENSSL_ROOT_DIR="d:/msys64/mingw64" -DOPENSSL_USE_STATIC_LIBS=TRUE ..
 cmake --build . --config Release
 
-cd Dnp3Server
+cd ../../Dnp3Server
+rm -rf build
 mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
+cp Dnp3Server.exe ../../../../bin/
 
-cd Dnp3ClientCpp
+cd ../../Dnp3ClientCpp
+rm -rf build
 mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
+cp Dnp3ClientCpp.exe ../../../../bin/

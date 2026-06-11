@@ -8,7 +8,14 @@ set(DNP3_CLIENT_VERSION
 
 project(Dnp3ClientCpp VERSION ${DNP3_CLIENT_VERSION})
 
-add_executable(Dnp3ClientCpp ./main.cpp)
+add_executable(Dnp3ClientCpp
+    ./main.cpp
+    ./utils.cpp
+    ./soe_handler.cpp
+    ./connection.cpp
+    ./autocreate.cpp
+    ./mongo.cpp
+)
 set_target_properties(Dnp3ClientCpp PROPERTIES FOLDER cpp/json-scada-drivers)
 target_compile_features(Dnp3ClientCpp PRIVATE cxx_std_17)
 target_include_directories(
@@ -29,6 +36,7 @@ set(WINDOWS_BUILD ${MSVC})
 if(WINDOWS_BUILD OR NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
 
   if(WINDOWS_BUILD)
+  # WINDOWS MSVC
     set(CMAKE_EXE_LINKER_FLAGS
         "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
 
@@ -58,6 +66,7 @@ if(WINDOWS_BUILD OR NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
         winspool.lib
         ws2_32.lib)
   else()
+  # MSYS2
     add_library(libmongocxx STATIC IMPORTED)
     set_target_properties(libmongocxx PROPERTIES IMPORTED_LOCATION ../../../mongo-cxx-driver-lib/lib/libmongocxx-static.a)
 
@@ -103,6 +112,8 @@ if(WINDOWS_BUILD OR NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
   endif()
 
 else()
+
+# LINUX
 
   if(EXISTS "/etc/os-release")
     file(READ "/etc/os-release" OS_RELEASE_CONTENT)
