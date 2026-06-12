@@ -67,6 +67,14 @@ make
 cp Dnp3Server ../../../../bin/
 cd ../..
 
+cd Dnp3ClientCpp
+mkdir build
+cd build
+cmake ..
+make
+cp Dnp3ClientCpp ../../../../bin/
+cd ../..
+
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
 
