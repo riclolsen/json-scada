@@ -47,9 +47,14 @@ static void executeCommand(const bsoncxx::document::view& command, mongocxx::col
         cancelCommand(collection, id, "connection_not_found");
         return;
     }
-    if (!conn->isConnected || !conn->commandsEnabled)
+    if (!conn->isConnected)
     {
         cancelCommand(collection, id, "not_connected");
+        return;
+    }
+    if (!conn->commandsEnabled)
+    {
+        cancelCommand(collection, id, "cmds_disabled");
         return;
     }
     if (nowMs() - getDateMs(command, "timeTag", nowMs()) > 10000)
@@ -65,7 +70,14 @@ static void executeCommand(const bsoncxx::document::view& command, mongocxx::col
     const double   value     = getDouble(command, "value");
     const int      duration  = static_cast<int>(getDouble(command, "protocolSourceCommandDuration"));
 
-    auto callback = [id, collection](const ICommandTaskResult& result) mutable {
+    // The callback is invoked on the opendnp3 executor strand. Blocking that strand
+    // prevents the master from sending the application confirm for outstation unsolicited
+    // responses, causing repeated "Unsolicited confirmation timed out" on the outstation.
+    // Dispatch the MongoDB write to a detached thread so the strand returns immediately.
+    // The thread must NOT reuse the caller's collection: a mongocxx::client and its
+    // children are single-threaded, and the processMongoCmd thread is concurrently
+    // blocked on the change-stream cursor of that same client. Open a fresh client.
+    auto callback = [id](const ICommandTaskResult& result) {
         const bool ok = result.summary == TaskCompletion::SUCCESS;
         string resultStr;
         switch (result.summary)
@@ -78,7 +90,19 @@ static void executeCommand(const bsoncxx::document::view& command, mongocxx::col
         case TaskCompletion::FAILURE_NO_COMMS:             resultStr = "FAILURE_NO_COMMS";              break;
         default:                                            resultStr = "UNKNOWN";                       break;
         }
-        ackCommand(collection, id, ok, resultStr);
+        thread([id, ok, resultStr]() {
+            try
+            {
+                auto client = connectMongoClient();
+                auto db = (*client)[JSConfig.mongoDatabaseName];
+                auto cmdCollection = db[CommandsQueueCollectionName];
+                ackCommand(cmdCollection, id, ok, resultStr);
+            }
+            catch (const exception& ex)
+            {
+                Log.log("ackCommand error: " + string(ex.what()));
+            }
+        }).detach();
     };
 
     if (group == 12)

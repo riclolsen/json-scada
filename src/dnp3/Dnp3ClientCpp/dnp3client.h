@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <opendnp3/ConsoleLogger.h>
 #include <opendnp3/DNP3Manager.h>
 #include <opendnp3/channel/PrintingChannelListener.h>
+#include <opendnp3/logging/ILogHandler.h>
 #include <opendnp3/logging/LogLevels.h>
 #include <opendnp3/master/DefaultMasterApplication.h>
 #include <opendnp3/master/IMasterApplication.h>

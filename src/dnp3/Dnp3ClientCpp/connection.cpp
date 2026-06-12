@@ -70,26 +70,50 @@ public:
 
     void OnStateChange(ChannelState state) override
     {
-        conn->isConnected = state == ChannelState::OPEN;
+        const bool open = state == ChannelState::OPEN;
+        // Channels can be shared by multiple connections (tryReuseChannel), but only
+        // the first connection's listener is registered with opendnp3. Propagate the
+        // state to every connection on the same channel so commands are not rejected
+        // with "not_connected" on the sharing connections.
+        vector<int> connNumbers;
+        conn->isConnected = open;
+        connNumbers.push_back(conn->protocolConnectionNumber);
+        for (const auto& other : snapshotConnections())
+        {
+            if (other.get() != conn.get() && other->channel && other->channel == conn->channel)
+            {
+                other->isConnected = open;
+                connNumbers.push_back(other->protocolConnectionNumber);
+            }
+        }
         Log.log(conn->name + " - Channel state changed.");
         if (state != ChannelState::CLOSED)
             return;
-        try
-        {
-            auto client = connectMongoClient();
-            auto db = (*client)[JSConfig.mongoDatabaseName];
-            auto collection = db[RealtimeDataCollectionName];
-            auto filter = make_document(kvp("protocolSourceConnectionNumber", conn->protocolConnectionNumber));
-            auto update  = make_document(kvp("$set", make_document(
-                kvp("invalid", true),
-                kvp("timeTag", bsoncxx::types::b_date(chrono::milliseconds(nowMs()))))));
-            collection.update_many(filter.view(), update.view());
-        }
-        catch (const exception& ex)
-        {
-            Log.log(conn->name + " - Failed to invalidate points: " + string(ex.what()),
-                Logger::Level::Detailed);
-        }
+        // This runs on the opendnp3 executor strand; do the MongoDB write on a
+        // detached thread (with its own client) so the strand is never blocked.
+        const string connName = conn->name;
+        thread([connName, connNumbers]() {
+            try
+            {
+                auto client = connectMongoClient();
+                auto db = (*client)[JSConfig.mongoDatabaseName];
+                auto collection = db[RealtimeDataCollectionName];
+                auto numbersArr = bsoncxx::builder::basic::array{};
+                for (const int n : connNumbers)
+                    numbersArr.append(n);
+                auto filter = make_document(kvp("protocolSourceConnectionNumber",
+                    make_document(kvp("$in", numbersArr))));
+                auto update  = make_document(kvp("$set", make_document(
+                    kvp("invalid", true),
+                    kvp("timeTag", bsoncxx::types::b_date(chrono::milliseconds(nowMs()))))));
+                collection.update_many(filter.view(), update.view());
+            }
+            catch (const exception& ex)
+            {
+                Log.log(connName + " - Failed to invalidate points: " + string(ex.what()),
+                    Logger::Level::Detailed);
+            }
+        }).detach();
     }
 
 private:
@@ -427,6 +451,7 @@ void loadConnections(bool applyInstanceLogLevel)
     {
         if (!conn->autoCreateTags)
             continue;
+        Log.log( conn->name + " - Auto creating tags for connection.");
         mongocxx::options::find opts;
         opts.projection(make_document(
             kvp("protocolSourceCommonAddress", 1),
