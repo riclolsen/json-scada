@@ -18,6 +18,7 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Timers;
@@ -34,7 +35,7 @@ namespace Iec10XDriver
     partial class MainClass
     {
         public static String ProtocolDriverName = "IEC60870-5-104";
-        public static String DriverVersion = "0.2.1";
+        public static String DriverVersion = "0.2.2";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static Int32 DataBufferLimit = 10000; // limit to start dequeuing and discarding data from the acquisition buffer
 
@@ -106,6 +107,13 @@ namespace Iec10XDriver
             public bool allowOnlySpecificCertificates { get; set; }
             [BsonDefaultValue(false)]
             public bool chainValidation { get; set; }
+            [BsonDefaultValue(false)]
+            public bool autoCreateTags { get; set; }
+            // Runtime state: touched only by the ProcessMongo thread after startup preload — no locking needed.
+            [BsonIgnore]
+            public double LastNewKeyCreated = 0;
+            [BsonIgnore]
+            public HashSet<(int ca, int ioa)> InsertedAddresses = new HashSet<(int, int)>();
             public Connection connection;
             public Connection conn1;
             public Connection conn2;
@@ -318,6 +326,24 @@ namespace Iec10XDriver
             {
                 Log("No connections found!");
                 Environment.Exit(-1);
+            }
+
+            // Preload existing tag addresses so autoCreateTags never re-creates them after a restart
+            foreach (IEC10X_connection isrv in IEC10Xconns)
+            {
+                if (!isrv.autoCreateTags) continue;
+                var colRt = DB.GetCollection<BsonDocument>(RealtimeDataCollectionName);
+                var prj = Builders<BsonDocument>.Projection
+                    .Include("protocolSourceCommonAddress")
+                    .Include("protocolSourceObjectAddress");
+                var existingDocs = colRt
+                    .Find(new BsonDocument("protocolSourceConnectionNumber", isrv.protocolConnectionNumber))
+                    .Project(prj).ToList();
+                foreach (var d in existingDocs)
+                    isrv.InsertedAddresses.Add(
+                        (d.GetValue("protocolSourceCommonAddress", -1).ToInt32(),
+                         d.GetValue("protocolSourceObjectAddress", -1).ToInt32()));
+                Log(isrv.name + " - Found " + existingDocs.Count + " tags in database.");
             }
 
             // start thread to process redundancy control

@@ -36,7 +36,7 @@ namespace Iec10XDriver
     partial class MainClass
     {
         public static String ProtocolDriverName = "IEC60870-5-101_SERVER";
-        public static String DriverVersion = "0.2.1";
+        public static String DriverVersion = "0.2.2";
         public static MongoClient Client = null;
         public static Boolean IsMongoLive = false;
         public static Int32 timeToExpireCommandsWithTime = 20;
@@ -104,6 +104,12 @@ namespace Iec10XDriver
             public int maxClientConnections { get; set; }
             [BsonDefaultValue(1000)]
             public int maxQueueSize { get; set; }
+            [BsonDefaultValue(false)]
+            public bool autoCreateTags { get; set; }
+            [BsonDefaultValue(1)]
+            public int autoCreateTagsCommonAddress { get; set; }
+            [BsonDefaultValue(new string[] { })]
+            public string[] topics { get; set; }
             public CS101Slave server;
             public ConcurrentQueue<InfoCA> infoCAQueue = new ConcurrentQueue<InfoCA>(); // data objects to send 
         }
@@ -314,6 +320,8 @@ namespace Iec10XDriver
                 Log("No connections found!");
                 Environment.Exit(-1);
             }
+
+            DistributeAutoTags(DB);
 
             // start thread to dequeue iec data and send to connections
             Thread thrDeqIecInfo =

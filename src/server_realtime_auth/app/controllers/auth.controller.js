@@ -301,6 +301,12 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-DA',
       'ICCP',
       'DNP3_SERVER',
+      'DNP3',
+      'ICCP',
+      'IEC60870-5-104_SERVER',
+      'IEC60870-5-104',
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-101',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('autoCreateTags' in req.body)) {
@@ -320,6 +326,11 @@ exports.updateProtocolConnection = async (req, res) => {
       'ICCP',
       'ICCP_SERVER',
       'DNP3_SERVER',
+      'DNP3',
+      'IEC60870-5-104_SERVER',
+      'IEC60870-5-104',
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-101',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('topics' in req.body)) {

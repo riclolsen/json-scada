@@ -473,6 +473,11 @@
                   'OPC-DA',
                   'ICCP',
                   'DNP3_SERVER',
+                  'DNP3',
+                  'IEC60870-5-104_SERVER',
+                  'IEC60870-5-104',
+                  'IEC60870-5-101_SERVER',
+                  'IEC60870-5-104',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -2504,11 +2509,18 @@
               'PLC4X',
               'OPC-DA',
               'OPC-DA_SERVER',
-              'ICCP',
               'ICCP_SERVER',
             ].includes(editedConnection.protocolDriver)
             ||
-            ['DNP3_SERVER'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
+            [
+              'ICCP',
+              'DNP3_SERVER',
+              'DNP3', 
+              'IEC60870-5-101',
+              'IEC60870-5-101_SERVER',
+              'IEC60870-5-104',
+              'IEC60870-5-104_SERVER',
+            ].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
           "
         >
           <v-card-title>
@@ -2566,11 +2578,18 @@
                   'PLC4X',
                   'OPC-DA',
                   'OPC-DA_SERVER',
-                  'ICCP',
                   'ICCP_SERVER',
                 ].includes(editedConnection.protocolDriver)
                 ||
-                ['DNP3_SERVER'].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
+                [
+                  'ICCP',
+                  'DNP3_SERVER',
+                  'DNP3', 
+                  'IEC60870-5-101',
+                  'IEC60870-5-101_SERVER',
+                  'IEC60870-5-104',
+                  'IEC60870-5-104_SERVER',
+                ].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
               "
             >
               <v-row>

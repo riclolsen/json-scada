@@ -37,12 +37,15 @@ namespace Iec10XDriver
                     var DB = Client.GetDatabase(jsConfig.mongoDatabaseName);
                     var collection =
                         DB.GetCollection<rtData>(RealtimeDataCollectionName);
+                    var collectionRtBson =
+                        DB.GetCollection<BsonDocument>(RealtimeDataCollectionName);
                     var collection_cmd =
                         DB
                             .GetCollection
                             <rtCommand>(CommandsQueueCollectionName);
 
                     var listWrites = new List<WriteModel<rtData>>();
+                    var insertDocs = new List<BsonDocument>();
                     do
                     {
                         bool isMongoLive =
@@ -93,6 +96,17 @@ namespace Iec10XDriver
                         IEC_Value iv;
                         while (IECDataQueue.TryDequeue(out iv))
                         {
+                            // Auto-create a new realtimeData tag document on first value for a new {CA, IOA} pair
+                            var srv = IEC10Xconns.Find(c => c.protocolConnectionNumber == iv.conn_number);
+                            if (srv != null && srv.autoCreateTags &&
+                                srv.InsertedAddresses.Add((iv.common_address, iv.address)))
+                            {
+                                var newId = GetNextAutoKey(srv, collectionRtBson);
+                                insertDocs.Add(NewRealtimeTagDoc(iv, srv.name, newId));
+                                Log(srv.name + " - INSERT NEW TAG: " + srv.name + ";" +
+                                    iv.common_address + ";" + iv.address, LogLevelBasic);
+                            }
+
                             DateTime tt = DateTime.MinValue;
                             BsonValue bsontt = BsonNull.Value;
                             try
@@ -244,6 +258,22 @@ namespace Iec10XDriver
                                 .Add(new UpdateOneModel<rtData>(filt
                                         .ToBsonDocument(),
                                     update));
+                        }
+
+                        // Flush inserts before updates so the update filter finds the new docs
+                        if (insertDocs.Count > 0)
+                        {
+                            try
+                            {
+                                await collectionRtBson.InsertManyAsync(insertDocs,
+                                    new InsertManyOptions { IsOrdered = false });
+                            }
+                            catch (Exception e)
+                            {
+                                // Duplicate key on redundancy failover is tolerated
+                                Log("Mongo - InsertMany error (possible duplicate): " + e.Message, LogLevelDetailed);
+                            }
+                            insertDocs.Clear();
                         }
 
                         if (listWrites.Count > 0)
