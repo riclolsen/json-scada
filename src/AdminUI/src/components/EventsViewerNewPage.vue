@@ -2,7 +2,8 @@
   <v-container fluid class="pa-1 events-root" :style="rootStyle">
     <!-- Toolbar -->
     <v-toolbar density="compact" color="surface" class="mb-1 px-2" flat>
-      <v-btn-toggle v-model="mode" mandatory density="compact" variant="outlined" divided class="mr-2" @update:model-value="onModeChange">
+      <v-btn-toggle v-model="mode" mandatory density="compact" variant="outlined" divided class="mr-2"
+        @update:model-value="onModeChange">
         <v-btn :value="0" size="small">{{ $t('eventsViewer.modes.normal') }}</v-btn>
         <v-btn :value="1" size="small">{{ $t('eventsViewer.modes.aggregated') }}</v-btn>
         <v-btn :value="2" size="small">{{ $t('eventsViewer.modes.panic') }}</v-btn>
@@ -10,14 +11,8 @@
         <v-btn :value="4" size="small">{{ $t('eventsViewer.modes.historical') }}</v-btn>
       </v-btn-toggle>
 
-      <v-btn
-        v-if="gpsToggleVisible"
-        size="small"
-        variant="tonal"
-        class="mr-2"
-        :title="$t('eventsViewer.toolbar.gpsTime')"
-        @click="toggleGpsTime"
-      >
+      <v-btn v-if="gpsToggleVisible" size="small" variant="tonal" class="mr-2"
+        :title="$t('eventsViewer.toolbar.gpsTime')" @click="toggleGpsTime">
         <v-icon start>{{ gpsTime ? 'mdi-satellite-variant' : 'mdi-clock-outline' }}</v-icon>
         {{ gpsTime ? $t('eventsViewer.toolbar.gpsTime') : $t('eventsViewer.toolbar.localTime') }}
       </v-btn>
@@ -38,25 +33,21 @@
         </v-card>
       </v-menu>
 
-      <v-btn size="small" variant="tonal" color="warning" class="mr-1" :disabled="!userHasRight('ackEvents')" @click="ackAll">
+      <v-btn size="small" variant="tonal" color="warning" class="mr-1" :disabled="!userHasRight('ackEvents')"
+        @click="ackAll">
         {{ $t('eventsViewer.toolbar.ackAll') }} (F8)
       </v-btn>
-      <v-btn size="small" variant="tonal" color="error" class="mr-1" :disabled="!userHasRight('ackEvents')" @click="removeAll">
+      <v-btn size="small" variant="tonal" color="error" class="mr-1" :disabled="!userHasRight('ackEvents')"
+        @click="removeAll">
         {{ $t('eventsViewer.toolbar.removeAll') }} (F2)
       </v-btn>
-      <v-btn
-        v-if="alarmBeep"
-        icon
-        size="small"
-        variant="text"
-        color="error"
-        :title="$t('eventsViewer.toolbar.silence')"
-        @click="silenceBeep"
-      >
+      <v-btn v-if="alarmBeep" icon size="small" variant="text" color="error" :title="$t('eventsViewer.toolbar.silence')"
+        @click="silenceBeep">
         <v-icon>mdi-bell-off</v-icon>
       </v-btn>
 
-      <v-btn icon size="small" variant="text" :title="$t('eventsViewer.toolbar.toggleKeyCols')" @click="showKeyCols = !showKeyCols">
+      <v-btn icon size="small" variant="text" :title="$t('eventsViewer.toolbar.toggleKeyCols')"
+        @click="showKeyCols = !showKeyCols">
         <v-icon>mdi-key</v-icon>
       </v-btn>
       <v-btn icon size="small" variant="text" :title="$t('eventsViewer.toolbar.fontUp')" @click="fontInc(1)">
@@ -77,35 +68,49 @@
     <!-- Historical controls -->
     <v-toolbar v-if="mode === 4" density="compact" color="surface" class="mb-1 px-2" flat>
       <span class="text-caption mr-1">{{ $t('eventsViewer.hist.date') }}</span>
-      <v-text-field v-model="histDate" type="date" density="compact" variant="outlined" hide-details class="mr-2" style="max-width: 170px"></v-text-field>
+      <v-text-field v-model="histDate" type="date" density="compact" variant="outlined" hide-details class="mr-2"
+        style="max-width: 170px"></v-text-field>
       <span class="text-caption mr-1">{{ $t('eventsViewer.hist.time') }}</span>
-      <v-text-field v-model="histTime" type="time" step="1" density="compact" variant="outlined" hide-details class="mr-2" style="max-width: 140px"></v-text-field>
+      <v-text-field v-model="histTime" type="time" step="1" density="compact" variant="outlined" hide-details
+        class="mr-2" style="max-width: 140px"></v-text-field>
       <span class="text-caption mr-1">{{ $t('eventsViewer.hist.filter') }}</span>
-      <v-text-field v-model="histFilter" density="compact" variant="outlined" hide-details class="mr-2" style="max-width: 160px"></v-text-field>
-      <v-btn size="small" color="primary" variant="tonal" @click="histSearch">{{ $t('eventsViewer.toolbar.find') }}</v-btn>
+      <v-text-field v-model="histFilter" density="compact" variant="outlined" hide-details class="mr-2"
+        style="max-width: 160px"></v-text-field>
+      <v-btn size="small" color="primary" variant="tonal" @click="histSearch">{{ $t('eventsViewer.toolbar.find')
+        }}</v-btn>
     </v-toolbar>
 
     <!-- Grid -->
-    <v-data-table-virtual
-      :headers="headers"
-      :items="visibleRows"
-      :no-data-text="failed ? $t('eventsViewer.serverFail') : $t('eventsViewer.noData')"
-      density="compact"
-      fixed-header
-      :height="gridHeight"
-      :item-height="rowHeight"
-      item-value="rowId"
-      class="events-grid"
-      :style="{ '--row-height': rowHeight + 'px' }"
-      :row-props="rowProps"
-      @click:row="onRowClick"
-    >
+    <v-data-table-virtual :headers="headers" :items="visibleRows"
+      :no-data-text="failed ? $t('eventsViewer.serverFail') : $t('eventsViewer.noData')" density="compact" fixed-header
+      :height="gridHeight" :item-height="rowHeight" item-value="rowId" class="events-grid"
+      :style="{ '--row-height': rowHeight + 'px' }" :row-props="rowProps" @click:row="onRowClick">
       <template #[`item.qualifier`]="{ item }">
         <span class="qualif" :style="qualifPillStyle(item)">{{ item.qualifier }}</span>
       </template>
       <template #[`item.station`]="{ item }">
-        <span :style="{ color: colorOfStation(item.station) }">{{ item.station }}</span>
+        <span class="d-inline-block text-truncate"
+          :style="{ maxWidth: '100px', color: colorOfStation(item.station) }">{{ item.station }}</span>
       </template>
+      <template #[`item.location`]="{ item }">
+        <span class="d-inline-block text-truncate"
+          :style="{ maxWidth: '100px'}">
+          {{ item.location }}
+        </span>
+      </template>
+      <template #[`item.description`]="{ item }">
+        <span class="d-inline-block text-truncate"
+          :style="{ maxWidth: '800px'}">
+          {{ item.description }}
+        </span>
+      </template>
+      <template #[`item.event`]="{ item }">
+        <span class="d-inline-block text-truncate"
+          :style="{ maxWidth: '300px'}">
+          {{ item.event }}
+        </span>
+      </template>
+
     </v-data-table-virtual>
 
     <!-- Point Info + Command dialogs (shared component) -->
@@ -281,7 +286,7 @@ function colorOfPriority(pri) {
 }
 const stationIndex = computed(() => {
   const m = {}
-  ;[...group1List.value].sort().forEach((s, i) => (m[s] = i))
+    ;[...group1List.value].sort().forEach((s, i) => (m[s] = i))
   return m
 })
 function colorOfStation(station) {
@@ -416,10 +421,10 @@ async function histSearch() {
   const begin = new Date(histDate.value)
   begin.setTime(
     begin.getTime() +
-      (begin.getTimezoneOffset() / 60) * 3600000 +
-      tp[0] * 3600000 +
-      tp[1] * 60000 +
-      tp[2] * 1000
+    (begin.getTimezoneOffset() / 60) * 3600000 +
+    tp[0] * 3600000 +
+    tp[1] * 60000 +
+    tp[2] * 1000
   )
   const end = new Date(histDate.value)
   end.setTime(
@@ -658,7 +663,7 @@ onMounted(async () => {
   beepTimer = setInterval(() => {
     if (alarmBeep.value) {
       const el = alarmBeepType.value === 2 ? criticalSound.value : nonCriticalSound.value
-      if (el) el.play().catch(() => {})
+      if (el) el.play().catch(() => { })
     }
   }, 1500)
 })
@@ -679,27 +684,33 @@ onUnmounted(() => {
   font-size: var(--eve-font-size, 14px);
   user-select: none;
 }
+
 .events-grid {
   font-size: var(--eve-font-size, 14px);
 }
+
 .events-grid :deep(td) {
   padding: 0 4px !important;
   line-height: 1;
   height: var(--row-height) !important;
   user-select: none;
 }
+
 .events-grid :deep(th) {
   padding: 0 4px !important;
   height: var(--row-height) !important;
   user-select: none;
 }
+
 .events-grid :deep(tr:nth-child(even) td) {
   background-color: rgba(128, 128, 128, 0.05) !important;
 }
+
 .fan {
   font-family: courier, monospace;
   font-weight: bold;
 }
+
 .qualif {
   font-size: smaller;
 }

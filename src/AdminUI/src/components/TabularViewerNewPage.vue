@@ -4,56 +4,24 @@
     <v-toolbar density="compact" color="surface" class="mb-1 px-2" flat>
       <template v-if="!isAlarmsViewer">
         <span class="text-caption mr-1">{{ $t('tabularViewer.station') }}</span>
-        <v-select
-          v-model="filterStation"
-          :items="group1List"
-          density="compact"
-          variant="outlined"
-          hide-details
-          class="mr-2"
-          style="max-width: 200px"
-          @update:model-value="onStationChange"
-        ></v-select>
+        <v-select v-model="filterStation" :items="group1List" density="compact" variant="outlined" hide-details
+          class="mr-2" style="max-width: 200px" @update:model-value="onStationChange"></v-select>
         <span class="text-caption mr-1">{{ $t('tabularViewer.bay') }}</span>
-        <v-select
-          v-model="filterBay"
-          :items="bayList"
-          density="compact"
-          variant="outlined"
-          hide-details
-          class="mr-2"
-          style="max-width: 200px"
-          @update:model-value="onFilterChange"
-        ></v-select>
-        <v-checkbox
-          v-model="showOnlyCommandable"
-          :label="$t('tabularViewer.showCommandable')"
-          density="compact"
-          hide-details
-          class="mr-2"
-        ></v-checkbox>
-        <v-checkbox
-          v-model="showOnlyAbnormal"
-          :label="$t('tabularViewer.showAbnormal')"
-          density="compact"
-          hide-details
-          class="mr-2"
-        ></v-checkbox>
+        <v-select v-model="filterBay" :items="bayList" density="compact" variant="outlined" hide-details class="mr-2"
+          style="max-width: 200px" @update:model-value="onFilterChange"></v-select>
+        <v-checkbox v-model="showOnlyCommandable" :label="$t('tabularViewer.showCommandable')" density="compact"
+          hide-details class="mr-2"></v-checkbox>
+        <v-checkbox v-model="showOnlyAbnormal" :label="$t('tabularViewer.showAbnormal')" density="compact" hide-details
+          class="mr-2"></v-checkbox>
       </template>
 
-      <v-btn
-        v-if="isAlarmsViewer"
-        size="small"
-        variant="tonal"
-        color="warning"
-        class="mr-2"
-        :disabled="!userHasRight('ackAlarms')"
-        @click="ackAll"
-      >
+      <v-btn v-if="isAlarmsViewer" size="small" variant="tonal" color="warning" class="mr-2"
+        :disabled="!userHasRight('ackAlarms')" @click="ackAll">
         {{ $t('tabularViewer.ackAll') }} (F8)
       </v-btn>
 
-      <v-btn icon size="small" variant="text" :title="$t('tabularViewer.toggleKeyCols')" @click="showKeyCols = !showKeyCols">
+      <v-btn icon size="small" variant="text" :title="$t('tabularViewer.toggleKeyCols')"
+        @click="showKeyCols = !showKeyCols">
         <v-icon>mdi-key</v-icon>
       </v-btn>
       <v-btn icon size="small" variant="text" :title="$t('tabularViewer.fontUp')" @click="fontInc(1)">
@@ -65,36 +33,18 @@
       <v-btn icon size="small" variant="text" :title="$t('tabularViewer.copy')" @click="copyGrid">
         <v-icon>mdi-content-copy</v-icon>
       </v-btn>
-      <v-btn
-        v-if="isAlarmsViewer"
-        icon
-        size="small"
-        variant="text"
-        :title="$t('tabularViewer.beep')"
-        @click="toggleBeep"
-      >
+      <v-btn v-if="isAlarmsViewer" icon size="small" variant="text" :title="$t('tabularViewer.beep')"
+        @click="toggleBeep">
         <v-icon>{{ beepOn ? 'mdi-volume-high' : 'mdi-volume-off' }}</v-icon>
       </v-btn>
-      <v-btn
-        v-if="alarmBeep && isAlarmsViewer"
-        icon
-        size="small"
-        variant="text"
-        color="error"
-        :title="$t('tabularViewer.silenceBeep')"
-        @click="silenceBeep"
-      >
+      <v-btn v-if="alarmBeep && isAlarmsViewer" icon size="small" variant="text" color="error"
+        :title="$t('tabularViewer.silenceBeep')" @click="silenceBeep">
         <v-icon>mdi-bell-off</v-icon>
       </v-btn>
 
       <v-spacer></v-spacer>
-      <v-checkbox
-        v-model="blockUpdates"
-        :label="$t('tabularViewer.blockUpdates')"
-        density="compact"
-        hide-details
-        class="mr-2"
-      ></v-checkbox>
+      <v-checkbox v-model="blockUpdates" :label="$t('tabularViewer.blockUpdates')" density="compact" hide-details
+        class="mr-2"></v-checkbox>
       <span class="text-caption mr-2">
         <b>{{ visibleRows.length }}</b> / {{ rows.length }} — {{ lastUpdate }}
       </span>
@@ -109,61 +59,50 @@
       <v-btn size="x-small" variant="tonal" class="mr-2" @click="selectAllStations(false)">
         {{ $t('tabularViewer.unselectAll') }}
       </v-btn>
-      <v-btn
-        v-for="sel in cfg.TabularViewer_CustomFiltersSelectors"
-        :key="sel.name"
-        size="x-small"
-        variant="tonal"
-        class="mr-1"
-        @click="applyCustomSelector(sel)"
-      >
+      <v-btn v-for="sel in cfg.TabularViewer_CustomFiltersSelectors" :key="sel.name" size="x-small" variant="tonal"
+        class="mr-1" @click="applyCustomSelector(sel)">
         {{ sel.name }}
       </v-btn>
       <span class="chip-group">
-        <span
-          v-for="pri in priorityChips"
-          :key="'pri' + pri.id"
-          class="alm-chip"
-          :style="{ opacity: filterOut[pri.id] ? 0.25 : 1 }"
-          @click="toggleFilterOut(pri.id)"
-        >
+        <span v-for="pri in priorityChips" :key="'pri' + pri.id" class="alm-chip"
+          :style="{ opacity: filterOut[pri.id] ? 0.25 : 1 }" @click="toggleFilterOut(pri.id)">
           {{ pri.id }}
-          <span class="badge" :style="{ backgroundColor: colorOfPriority(pri.minNack), borderColor: colorOfPriority(pri.minNack) }">{{ pri.nack }}</span>
-          <span class="badge ack" :style="{ backgroundColor: colorOfPriority(pri.minAck), borderColor: colorOfPriority(pri.minAck) }">{{ pri.ack }}</span>
+          <span class="badge"
+            :style="{ backgroundColor: colorOfPriority(pri.minNack), borderColor: colorOfPriority(pri.minNack) }">{{
+              pri.nack }}</span>
+          <span class="badge ack"
+            :style="{ backgroundColor: colorOfPriority(pri.minAck), borderColor: colorOfPriority(pri.minAck) }">{{
+              pri.ack
+            }}</span>
         </span>
       </span>
       <span class="chip-group">
-        <span
-          v-for="st in stationChips"
-          :key="'st' + st.id"
-          class="alm-chip"
-          :style="{ opacity: filterOut[st.id] ? 0.25 : 1 }"
-          @click="toggleFilterOut(st.id)"
-        >
+        <span v-for="st in stationChips" :key="'st' + st.id" class="alm-chip"
+          :style="{ opacity: filterOut[st.id] ? 0.25 : 1 }" @click="toggleFilterOut(st.id)">
           {{ st.id }}
-          <span class="badge" :style="{ backgroundColor: colorOfPriority(st.minNack), borderColor: colorOfPriority(st.minNack) }">{{ st.nack }}</span>
-          <span class="badge ack" :style="{ backgroundColor: colorOfPriority(st.minAck), borderColor: colorOfPriority(st.minAck) }">{{ st.ack }}</span>
+          <span class="badge"
+            :style="{ backgroundColor: colorOfPriority(st.minNack), borderColor: colorOfPriority(st.minNack) }">{{
+              st.nack
+            }}</span>
+          <span class="badge ack"
+            :style="{ backgroundColor: colorOfPriority(st.minAck), borderColor: colorOfPriority(st.minAck) }">{{ st.ack
+            }}</span>
         </span>
       </span>
     </div>
 
     <!-- Data grid -->
-    <v-data-table-virtual
-      :headers="headers"
-      :items="visibleRows"
-      :no-data-text="failed ? $t('tabularViewer.serverFail') : $t('tabularViewer.noData')"
-      density="compact"
-      fixed-header
-      :height="gridHeight"
-      :item-height="rowHeight"
-      item-value="key"
-      class="tabular-grid"
-      :style="{ '--row-height': rowHeight + 'px' }"
-      :row-props="rowProps"
-      @click:row="onRowClick"
-    >
+    <v-data-table-virtual :headers="headers" :items="visibleRows"
+      :no-data-text="failed ? $t('tabularViewer.serverFail') : $t('tabularViewer.noData')" density="compact"
+      fixed-header :height="gridHeight" :item-height="rowHeight" item-value="key" class="tabular-grid"
+      :style="{ '--row-height': rowHeight + 'px' }" :row-props="rowProps" @click:row="onRowClick">
+      <template #[`item.descr`]="{ item }">
+        <span class="d-inline-block text-truncate" :title="item.descr" :style="{ maxWidth: '300px' }">{{ item.descr
+        }}</span>
+      </template>
       <template #[`item.value`]="{ item }">
-        <span :style="{ display: 'block', textAlign: (item.flags & 0x20) ? 'right' : 'left', paddingRight: (item.flags & 0x20) ? '20px' : '0' }">
+        <span class="d-inline-block text-truncate" :title="item.valueStr"
+          :style="{ maxWidth: '500px', textAlign: (item.flags & 0x20) ? 'right' : 'left', paddingRight: (item.flags & 0x20) ? '20px' : '0' }">
           {{ item.valueStr }}
         </span>
       </template>
@@ -173,7 +112,8 @@
         </span>
       </template>
       <template #[`item.station`]="{ item }">
-        <span :style="isAlarmsViewer ? { color: colorOfStation(item.station) } : {}">
+        <span class="d-inline-block text-truncate"
+          :style="isAlarmsViewer ? { maxWidth: '100px', color: colorOfStation(item.station) } : { maxWidth: '100px' }">
           {{ item.station }}
         </span>
       </template>
@@ -263,7 +203,7 @@ const headers = computed(() => {
     h.push({ title: t('tabularViewer.columns.id'), key: 'tag', width: 230, sortable: false })
   }
   h.push({ title: t('tabularViewer.columns.location'), key: 'station', width: 90, sortable: false })
-  h.push({ title: t('tabularViewer.columns.description'), key: 'descr', sortable: false })
+  h.push({ title: t('tabularViewer.columns.description'), key: 'descr', width: 200, sortable: false })
   h.push({ title: t('tabularViewer.columns.value'), key: 'value', width: 180, sortable: false })
   h.push({ title: t('tabularViewer.columns.qualifier'), key: 'qualifier', width: 70, sortable: false })
   h.push({ title: t('tabularViewer.columns.alarmTime'), key: 'alarmTime', width: 170, sortable: false })
@@ -344,7 +284,7 @@ function colorOfPriority(pri) {
 }
 const stationIndex = computed(() => {
   const m = {}
-  ;[...group1List.value].sort().forEach((s, i) => (m[s] = i))
+    ;[...group1List.value].sort().forEach((s, i) => (m[s] = i))
   return m
 })
 function colorOfStation(station) {
@@ -492,7 +432,7 @@ function silenceBeep() {
 }
 function toggleBeep() {
   beepOn.value = !beepOn.value
-  if (beepOn.value && nonCriticalSound.value) nonCriticalSound.value.play().catch(() => {})
+  if (beepOn.value && nonCriticalSound.value) nonCriticalSound.value.play().catch(() => { })
 }
 
 // --- alarms-viewer filter chips ----------------------------------------------
@@ -594,7 +534,7 @@ onMounted(async () => {
     beepTimer = setInterval(() => {
       if (beepOn.value && alarmBeep.value) {
         const el = alarmBeepType.value === 2 ? criticalSound.value : nonCriticalSound.value
-        if (el) el.play().catch(() => {})
+        if (el) el.play().catch(() => { })
       }
     }, 1500)
   }
@@ -619,27 +559,33 @@ onUnmounted(() => {
   font-size: var(--tab-font-size, 13px);
   user-select: none;
 }
+
 .tabular-grid {
   font-size: var(--tab-font-size, 13px);
 }
+
 .tabular-grid :deep(td) {
   padding: 0 4px !important;
   line-height: 1;
   height: var(--row-height) !important;
   user-select: none;
 }
+
 .tabular-grid :deep(th) {
   padding: 0 4px !important;
   height: var(--row-height) !important;
   user-select: none;
 }
+
 .tabular-grid :deep(tr:nth-child(even) td) {
   background-color: rgba(128, 128, 128, 0.05) !important;
 }
+
 .fan {
   font-family: courier, monospace;
   font-weight: bold;
 }
+
 .chips-bar {
   display: flex;
   flex-wrap: wrap;
@@ -649,12 +595,14 @@ onUnmounted(() => {
   max-height: 72px;
   overflow-y: auto;
 }
+
 .chip-group {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 3px;
   margin-left: 6px;
 }
+
 .alm-chip {
   cursor: pointer;
   box-shadow: 1px 1px 1px #666;
@@ -666,6 +614,7 @@ onUnmounted(() => {
   text-align: center;
   line-height: 1;
 }
+
 .alm-chip .badge {
   display: inline-block;
   font-size: 11px;
@@ -676,9 +625,11 @@ onUnmounted(() => {
   min-width: 16px;
   color: black;
 }
+
 .alm-chip .badge.ack {
   filter: contrast(0.7);
 }
+
 .qualif {
   font-size: smaller;
 }
