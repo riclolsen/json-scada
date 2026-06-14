@@ -15,6 +15,7 @@ string dnp3TypeFromBaseGroup(int g)
     case 1:   // Binary Input
     case 3:   // Double-bit Binary Input
     case 10:  // Binary Output Status
+    case 12:  // CROB Command
         return "digital";
     default:
         return "analog";
