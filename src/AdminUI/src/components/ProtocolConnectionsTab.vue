@@ -142,6 +142,35 @@
           class="mt-n6"
         ></v-switch>
 
+        <v-switch
+          class="mt-n6"
+          v-model="editedConnection.autoCreateTags"
+          inset
+          color="primary"
+          :label="`${$t('admin.protocolConnections.autoCreateTags')}${
+            editedConnection.autoCreateTags
+              ? $t('admin.protocolConnections.autoCreateTagsTrue')
+              : $t('admin.protocolConnections.autoCreateTagsFalse')
+          }`"
+          v-if="
+          [
+            'OPC-UA',
+            'MQTT-SPARKPLUG-B',
+            'TELEGRAF-LISTENER',
+            'IEC61850',
+            'PLC4X',
+            'OPC-DA',
+            'ICCP',
+            'DNP3_SERVER',
+            'DNP3',
+            'IEC60870-5-104_SERVER',
+            'IEC60870-5-104',
+            'IEC60870-5-101_SERVER',
+            'IEC60870-5-104',
+          ].includes(editedConnection.protocolDriver)
+        "
+        ></v-switch>
+
         <v-card class="mt-n4" tile variant="outlined">
           <v-card-title>
             <span class="text-h5">
@@ -459,39 +488,6 @@
                   </v-col>
                 </v-row>
               </template>
-            </v-list-item>
-
-            <v-list-item
-              class="ma-0"
-              v-if="
-                [
-                  'OPC-UA',
-                  'MQTT-SPARKPLUG-B',
-                  'TELEGRAF-LISTENER',
-                  'IEC61850',
-                  'PLC4X',
-                  'OPC-DA',
-                  'ICCP',
-                  'DNP3_SERVER',
-                  'DNP3',
-                  'IEC60870-5-104_SERVER',
-                  'IEC60870-5-104',
-                  'IEC60870-5-101_SERVER',
-                  'IEC60870-5-104',
-                ].includes(editedConnection.protocolDriver)
-              "
-            >
-              <v-switch
-                class="ma-0"
-                v-model="editedConnection.autoCreateTags"
-                inset
-                color="primary"
-                :label="`${$t('admin.protocolConnections.autoCreateTags')}${
-                  editedConnection.autoCreateTags
-                    ? $t('admin.protocolConnections.autoCreateTagsTrue')
-                    : $t('admin.protocolConnections.autoCreateTagsFalse')
-                }`"
-              ></v-switch>
             </v-list-item>
 
             <v-list-item
@@ -2500,25 +2496,22 @@
           v-if="
             [
               'MQTT-SPARKPLUG-B',
-              'OPC-UA',
               'OPC-UA_SERVER',
               'IEC61850',
               'IEC61850_SERVER',
               'PI_DATA_ARCHIVE_INJECTOR',
               'PI_DATA_ARCHIVE_CLIENT',
               'PLC4X',
-              'OPC-DA',
               'OPC-DA_SERVER',
               'ICCP_SERVER',
             ].includes(editedConnection.protocolDriver)
             ||
             [
+              'OPC-UA',
+              'OPC-DA',
               'ICCP',
               'DNP3_SERVER',
-              'DNP3', 
-              'IEC60870-5-101',
               'IEC60870-5-101_SERVER',
-              'IEC60870-5-104',
               'IEC60870-5-104_SERVER',
             ].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
           "
@@ -2584,10 +2577,7 @@
                 [
                   'ICCP',
                   'DNP3_SERVER',
-                  'DNP3', 
-                  'IEC60870-5-101',
                   'IEC60870-5-101_SERVER',
-                  'IEC60870-5-104',
                   'IEC60870-5-104_SERVER',
                 ].includes(editedConnection.protocolDriver) && editedConnection.autoCreateTags
               "
