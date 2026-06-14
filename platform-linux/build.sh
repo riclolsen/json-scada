@@ -98,12 +98,14 @@ cd ../iccp/iccp-server
 #go mod tidy 
 #go build
 cp iccp-server-linux-amd64 ../../../bin/iccp-server
+chmod +x ../../../bin/iccp-server
 cd ..
 
 #cd ../iccp/iccp-client
 #go mod tidy 
 #go build
 #cp iccp-client-linux-amd64 ../../../bin/iccp-client
+#chmod +x ../../../bin/iccp-client
 #cd ..
 
 # release some disk space
