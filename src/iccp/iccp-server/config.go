@@ -56,19 +56,19 @@ type configData struct {
 // protocolDriverInstance mirrors the protocolDriverInstances collection document.
 type protocolDriverInstance struct {
 	ID                               bson.ObjectID `bson:"_id"`
-	ProtocolDriver                   string             `bson:"protocolDriver"`
-	ProtocolDriverInstanceNumber     int                `bson:"protocolDriverInstanceNumber"`
-	Enabled                          bool               `bson:"enabled"`
-	LogLevel                         int                `bson:"logLevel"`
-	NodeNames                        []string           `bson:"nodeNames"`
-	ActiveNodeName                   string             `bson:"activeNodeName"`
-	ActiveNodeKeepAliveTimeTag       time.Time          `bson:"activeNodeKeepAliveTimeTag"`
-	KeepProtocolRunningWhileInactive bool               `bson:"keepProtocolRunningWhileInactive"`
+	ProtocolDriver                   string        `bson:"protocolDriver"`
+	ProtocolDriverInstanceNumber     int           `bson:"protocolDriverInstanceNumber"`
+	Enabled                          bool          `bson:"enabled"`
+	LogLevel                         int           `bson:"logLevel"`
+	NodeNames                        []string      `bson:"nodeNames"`
+	ActiveNodeName                   string        `bson:"activeNodeName"`
+	ActiveNodeKeepAliveTimeTag       time.Time     `bson:"activeNodeKeepAliveTimeTag"`
+	KeepProtocolRunningWhileInactive bool          `bson:"keepProtocolRunningWhileInactive"`
 }
 
 // protocolConnection mirrors the protocolConnections collection document.
 type protocolConnection struct {
-	ID                           bson.ObjectID     `bson:"_id"`
+	ID                           bson.ObjectID          `bson:"_id"`
 	ProtocolDriver               string                 `bson:"protocolDriver"`
 	ProtocolDriverInstanceNumber int                    `bson:"protocolDriverInstanceNumber"`
 	ProtocolConnectionNumber     int                    `bson:"protocolConnectionNumber"`
@@ -125,19 +125,19 @@ type rtData struct {
 // commandQueueEntry mirrors the commandsQueue collection document.
 type commandQueueEntry struct {
 	ID                             bson.ObjectID `bson:"_id"`
-	ProtocolSourceConnectionNumber float64            `bson:"protocolSourceConnectionNumber"`
-	ProtocolSourceCommonAddress    interface{}        `bson:"protocolSourceCommonAddress"`
-	ProtocolSourceObjectAddress    interface{}        `bson:"protocolSourceObjectAddress"`
-	ProtocolSourceASDU             interface{}        `bson:"protocolSourceASDU"`
-	ProtocolSourceCommandDuration  float64            `bson:"protocolSourceCommandDuration"`
-	ProtocolSourceCommandUseSBO    bool               `bson:"protocolSourceCommandUseSBO"`
-	PointKey                       float64            `bson:"pointKey"`
-	Tag                            string             `bson:"tag"`
-	TimeTag                        time.Time          `bson:"timeTag"`
-	Value                          float64            `bson:"value"`
-	ValueString                    string             `bson:"valueString"`
-	OriginatorUserName             string             `bson:"originatorUserName"`
-	OriginatorIPAddress            string             `bson:"originatorIpAddress"`
+	ProtocolSourceConnectionNumber float64       `bson:"protocolSourceConnectionNumber"`
+	ProtocolSourceCommonAddress    interface{}   `bson:"protocolSourceCommonAddress"`
+	ProtocolSourceObjectAddress    interface{}   `bson:"protocolSourceObjectAddress"`
+	ProtocolSourceASDU             interface{}   `bson:"protocolSourceASDU"`
+	ProtocolSourceCommandDuration  float64       `bson:"protocolSourceCommandDuration"`
+	ProtocolSourceCommandUseSBO    bool          `bson:"protocolSourceCommandUseSBO"`
+	PointKey                       float64       `bson:"pointKey"`
+	Tag                            string        `bson:"tag"`
+	TimeTag                        time.Time     `bson:"timeTag"`
+	Value                          float64       `bson:"value"`
+	ValueString                    string        `bson:"valueString"`
+	OriginatorUserName             string        `bson:"originatorUserName"`
+	OriginatorIPAddress            string        `bson:"originatorIpAddress"`
 }
 
 // insertChange wraps a MongoDB change stream insert event.
@@ -190,9 +190,12 @@ func readConfigFile() (cfg configData, instanceNumber int, instLogLevel int) {
 	}
 
 	// Config file path
-	cfgFileName := filepath.Join("..", "..", "conf", "json-scada.json")
+	cfgFileName := filepath.Join("..", "conf", "json-scada.json")
 	if _, err := os.Stat(cfgFileName); err != nil {
-		cfgFileName = filepath.Join("c:\\", "json-scada", "conf", "json-scada.json")
+		cfgFileName = filepath.Join("~", "json-scada", "conf", "json-scada.json")
+	}
+	if _, err := os.Stat(cfgFileName); err != nil {
+		cfgFileName = filepath.Join("c:", "json-scada", "conf", "json-scada.json")
 	}
 	if os.Getenv("JS_CONFIG_FILE") != "" {
 		cfgFileName = os.Getenv("JS_CONFIG_FILE")
