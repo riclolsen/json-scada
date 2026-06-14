@@ -102,6 +102,9 @@ rem copy /Y %SRCPATH%\dnp3\Dnp3Server\build\Release\Dnp3Server.exe %BINPATH%
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
+set GOOS=windows
+set GOARCH=amd64
+
 cd %SRCPATH%\calculations
 go mod tidy 
 go build -ldflags="-s -w"
@@ -116,6 +119,32 @@ cd %SRCPATH%\plc4x-client
 go mod tidy 
 go build -ldflags="-s -w"
 copy /Y plc4x-client.exe %BINPATH%
+
+rem cd %SRCPATH%\iccp\iccp-server
+rem go mod tidy 
+rem go build -ldflags="-s -w"
+rem copy /Y iccp-server.exe %BINPATH%
+
+rem set GOOS=linux
+rem set GOARCH=arm64
+rem go build -ldflags="-s -w" -o iccp-server-linux-arm64
+
+rem set GOOS=linux
+rem set GOARCH=amd64
+rem go build -ldflags="-s -w" -o iccp-server-linux-amd64
+
+rem cd %SRCPATH%\iccp\iccp-server
+rem go mod tidy 
+rem go build -ldflags="-s -w"
+rem copy /Y iccp-client.exe %BINPATH%
+
+rem set GOOS=linux
+rem set GOARCH=arm64
+rem go build -ldflags="-s -w" -o iccp-client-linux-arm64
+
+rem set GOOS=linux
+rem set GOARCH=amd64
+rem go build -ldflags="-s -w" -o iccp-client-linux-amd64
 
 cd %SRCPATH%\cs_data_processor
 call %NPM% install

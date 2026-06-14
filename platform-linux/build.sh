@@ -94,6 +94,18 @@ go mod tidy
 go build
 cp plc4x-client ../../bin/
 
+cd ../iccp/iccp-server
+#go mod tidy 
+#go build
+cp iccp-server-linux-amd64 ../../../bin/iccp-server
+cd ..
+
+#cd ../iccp/iccp-client
+#go mod tidy 
+#go build
+#cp iccp-client-linux-amd64 ../../../bin/iccp-client
+#cd ..
+
 # release some disk space
 rm -rf ~/.cache
 
