@@ -1,0 +1,968 @@
+/*
+ * SAGE Display Viewer engine — native rewrite of the core of websage.js.
+ *
+ * Parses SAGE/Inkscape-tagged SVG screens (inkscape:label JSON tag-objects),
+ * collects referenced points, polls realtime data via the shared opcClient, and
+ * animates the SVG each refresh (color/bar/rotate/opac/slider/get-text/text-map/
+ * tooltips), plus point-access click wiring, zoom/pan, blink and beep status.
+ *
+ * Advanced legacy features (Vega charts, live trend plots on <rect>, radar,
+ * camera/foreign-object, Time Machine historical replay) are recognized but
+ * deferred — see the methods marked DEFERRED.
+ *
+ * {json:scada} - Copyright 2020-2026 - Ricardo L. Olsen
+ */
+
+import * as opc from '../opcClient'
+import { OpcStatusCodes } from '../opcCodes'
+import { buildColorTable, traduzCor } from './sageColors'
+import { printf } from './sageFormat'
+
+const RETNOK = '?#?'
+const SVGNS = 'http://www.w3.org/2000/svg'
+const INKNS = 'http://www.inkscape.org/namespaces/inkscape'
+
+// linear RGB mix (chroma.mix substitute for color interpolation anchors)
+function rgbMix(a, b, t) {
+  const ctx = document.createElement('canvas').getContext('2d')
+  const parse = (c) => {
+    ctx.fillStyle = c
+    const h = ctx.fillStyle
+    return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
+  }
+  const ca = parse(a)
+  const cb = parse(b)
+  const tt = Math.max(0, Math.min(1, t))
+  const mix = ca.map((v, i) => Math.round(v + (cb[i] - v) * tt))
+  return `rgb(${mix[0]},${mix[1]},${mix[2]})`
+}
+
+export class SageEngine {
+  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink }) {
+    this.container = container
+    this.cfg = cfg
+    this.onOpenPoint = onOpenPoint || (() => {})
+    this.onAlarmBeep = onAlarmBeep || (() => {})
+    this.onStatus = onStatus || (() => {})
+    this.onScreenLink = onScreenLink || (() => {})
+    this.colorTable = buildColorTable(cfg)
+
+    this.svgEl = null
+    this.bindings = []
+    this.plotBindings = []
+    this._plotsFilled = false
+    this.queryKeys = new Set()
+    this.valueByKey = new Map()
+    this.keyByTag = new Map()
+    this.zoom = {
+      x: 0,
+      y: 0,
+      w: cfg.ScreenViewer_SVGMaxWidth,
+      h: cfg.ScreenViewer_SVGMaxHeight,
+    }
+    this.fitZoom = null
+    this.refreshTimer = null
+    this.blinkTimer = null
+    this.blinkOn = true
+    this.blinkList = []
+    this.disposed = false
+    this.pass = 0
+  }
+
+  // --- screen load -----------------------------------------------------------
+  async loadScreen(svgUrl, opts = {}) {
+    this.stop()
+    this.bindings = []
+    this.plotBindings = []
+    this._plotsFilled = false
+    this.queryKeys.clear()
+    const resp = await fetch(svgUrl)
+    const text = await resp.text()
+    this.container.innerHTML = text
+    this.svgEl = this.container.querySelector('svg')
+    if (!this.svgEl) throw new Error('No <svg> root in ' + svgUrl)
+
+    // initial viewBox from authored size (read BEFORE overriding width/height)
+    this.computeInitialZoom(opts)
+    this.svgEl.setAttribute('width', '100%')
+    this.svgEl.setAttribute('height', '100%')
+    this.applyViewBox()
+    this.setBackground(this.cfg.VisorTelas_BackgroundSVG || this.cfg.ScreenViewer_Background)
+
+    await this.runEmbeddedScripts()
+    this.parse()
+    this.startBlink()
+    await this.refresh()
+  }
+
+  // Determine the initial viewBox: explicit opts.zoom, else the SVG's authored
+  // viewBox or width/height, else the configured max canvas. Caches it as fitZoom
+  // so the "center/fit" control returns here.
+  computeInitialZoom(opts) {
+    let x = 0
+    let y = 0
+    let w = 0
+    let h = 0
+    const vb = this.svgEl.getAttribute('viewBox')
+    if (vb) {
+      const p = vb.split(/[ ,]+/).map(parseFloat)
+      if (p.length === 4 && p[2] > 0) {
+        x = p[0]
+        y = p[1]
+        w = p[2]
+        h = p[3]
+      }
+    }
+    if (!w) {
+      const pw = parseFloat(this.svgEl.getAttribute('width'))
+      const ph = parseFloat(this.svgEl.getAttribute('height'))
+      if (pw > 0 && ph > 0) {
+        w = pw
+        h = ph
+      }
+    }
+    if (!w) {
+      w = this.cfg.ScreenViewer_SVGMaxWidth
+      h = this.cfg.ScreenViewer_SVGMaxHeight
+    }
+    this.fitZoom = { x, y, w, h }
+    this.zoom = opts && opts.zoom ? { ...opts.zoom } : { ...this.fitZoom }
+  }
+
+  // Execute scripts embedded in the SVG (authored, trusted content). Guarded.
+  async runEmbeddedScripts() {
+    const scripts = this.svgEl.getElementsByTagName('script')
+    let code = ''
+    for (let i = 0; i < scripts.length; i++) {
+      const href =
+        scripts[i].getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+        scripts[i].getAttribute('href')
+      try {
+        if (href) code += await (await fetch(href)).text() + '\n'
+        else code += scripts[i].textContent + '\n'
+      } catch (e) {
+        /* ignore individual script load errors */
+      }
+    }
+    if (code.trim() !== '') {
+      try {
+        // eslint-disable-next-line no-new-func
+        new Function('SVGDoc', code)(this.svgEl)
+      } catch (e) {
+        this.onStatus('Screen script error: ' + e.message)
+      }
+    }
+  }
+
+  // --- tag parsing -----------------------------------------------------------
+  parse() {
+    const all = this.svgEl.querySelectorAll('*')
+    all.forEach((el) => this.parseElement(el))
+  }
+
+  getLabel(el) {
+    return (
+      el.getAttributeNS(INKNS, 'label') ||
+      el.getAttribute('inkscape:label') ||
+      null
+    )
+  }
+
+  // Resolve a clone tag like "%n" or "!SLIM%n" against the nearest ancestor
+  // group's clone map (["%n=26549", ...]). Returns the tag unchanged if no match.
+  resolveCloneTag(el, tag) {
+    if (tag == null) return tag
+    const s = String(tag)
+    if (s.indexOf('%') < 0) return tag
+    let node = el.parentNode
+    while (node && node !== this.svgEl && node.nodeType === 1) {
+      if (node._cloneMap) {
+        for (const m of node._cloneMap) {
+          const eq = m.indexOf('=')
+          if (eq < 0) continue
+          const pat = m.substring(0, eq)
+          const val = m.substring(eq + 1)
+          const pos = s.indexOf('%')
+          if (pat === s.substring(pos, pos + pat.length)) {
+            return s.substring(0, pos) + val + s.substring(pos + pat.length)
+          }
+        }
+      }
+      node = node.parentNode
+    }
+    return tag
+  }
+
+  parseElement(el) {
+    let label = this.getLabel(el)
+    if (!label) return
+    let vec
+    try {
+      vec = JSON.parse('[' + label + ']')
+    } catch (e) {
+      return
+    }
+    // First pass: capture a clone map so descendant %n tags can resolve.
+    for (const o of vec) {
+      if (o.attr === 'clone' && Array.isArray(o.map)) el._cloneMap = o.map
+    }
+    for (const tagObj of vec) {
+      tagObj.parent = el
+      if (tagObj.tag !== undefined) tagObj.tag = this.resolveCloneTag(el, tagObj.tag)
+      switch (tagObj.attr) {
+        case 'get':
+          this.parseGet(el, tagObj)
+          break
+        case 'color':
+          this.parseColor(el, tagObj)
+          break
+        case 'bar':
+          tagObj.initheight = parseFloat(el.getAttributeNS(null, 'height'))
+          this.collectPoint(tagObj.tag)
+          this.wirePopup(el, tagObj.tag)
+          break
+        case 'opac':
+          this.collectPoint(tagObj.tag)
+          this.wirePopup(el, tagObj.tag)
+          break
+        case 'rotate':
+          tagObj.inittransform = el.getAttributeNS(null, 'transform') || ''
+          this.collectPoint(tagObj.tag)
+          this.wirePopup(el, tagObj.tag)
+          break
+        case 'slider':
+          this.parseSlider(el, tagObj)
+          break
+        case 'text':
+          this.collectPoint(tagObj.tag)
+          this.wirePopup(el, tagObj.tag)
+          break
+        case 'tooltips':
+          this.parseTooltip(el, tagObj)
+          break
+        case 'popup':
+          this.parsePopup(el, tagObj)
+          break
+        case 'open':
+          this.parseOpen(el, tagObj)
+          break
+        case 'zoom':
+          this.parseZoomRegion(el)
+          break
+        case 'set':
+        case 'script':
+          // DEFERRED: vega/radar/camera/foreign-object/exec — recognized, basic exec only
+          this.parseSetScript(el, tagObj)
+          break
+        default:
+          break
+      }
+      this.bindings.push(tagObj)
+    }
+  }
+
+  parseGet(el, tagObj) {
+    const tc = el.textContent || ''
+    if (tc.indexOf('|') >= 0) tagObj.txtOFFON = tc.split('|')
+    else tagObj.formatoC = tc
+    this.collectPoint(tagObj.tag)
+    this.wirePopup(el, tagObj.tag)
+  }
+
+  parseColor(el, tagObj) {
+    tagObj.initfill = (el.style && el.style.fill) || el.getAttributeNS(null, 'fill') || ''
+    tagObj.initstroke = (el.style && el.style.stroke) || el.getAttributeNS(null, 'stroke') || ''
+    if (!Array.isArray(tagObj.list)) return
+    tagObj.list.forEach((entry, j) => {
+      entry.tag = this.resolveCloneTag(el, entry.tag)
+      entry.cfill = ''
+      entry.cstroke = ''
+      entry.cscript = ''
+      entry.cattrib = ''
+      entry.cattribval = ''
+      const param = entry.param || ''
+      if (param.indexOf('attrib: ') === 0) {
+        const arr = param.substr(8).split('=')
+        if (arr.length > 1) {
+          entry.cattrib = arr[0]
+          entry.cattribval = arr[1]
+        }
+      } else if (param.indexOf('script: ') === 0) {
+        entry.cscript = param.substr(8)
+      } else {
+        const arr = param.split('|')
+        entry.cfill = traduzCor(arr[0], this.colorTable)
+        entry.cstroke = arr.length > 1 ? traduzCor(arr[1], this.colorTable) : entry.cfill
+      }
+      this.collectPoint(entry.tag)
+      if (j === 0) this.wirePopup(el, entry.tag)
+    })
+  }
+
+  parseSlider(el, tagObj) {
+    tagObj.inittransform = el.getAttributeNS(null, 'transform') || ''
+    tagObj.min = parseFloat(tagObj.min)
+    tagObj.max = parseFloat(tagObj.max)
+    // find the <use> clone referencing this element to read the displacement range
+    const id = el.getAttributeNS(null, 'id')
+    const uses = this.svgEl.getElementsByTagName('use')
+    for (let i = 0; i < uses.length; i++) {
+      const href =
+        uses[i].getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+        uses[i].getAttributeNS(null, 'href')
+      if (href === '#' + id) {
+        const ctf = uses[i].getAttributeNS(null, 'transform') || ''
+        uses[i].style.display = 'none'
+        const s1 = ctf.indexOf('(')
+        let s2 = ctf.indexOf(',')
+        const s3 = ctf.indexOf(')')
+        if (s2 === -1) s2 = ctf.indexOf(' ')
+        if (s2 === -1) s2 = s3
+        tagObj.rangex = parseFloat(ctf.substring(s1 + 1, s2)) || 0
+        tagObj.rangey = parseFloat(ctf.substring(s2 + 1, s3)) || 0
+        break
+      }
+    }
+    this.collectPoint(tagObj.tag)
+    this.wirePopup(el, tagObj.tag)
+  }
+
+  parseTooltip(el, tagObj) {
+    const params = Array.isArray(tagObj.param) ? tagObj.param : [tagObj.param]
+    const title = document.createElementNS(SVGNS, 'title')
+    title.textContent = params.join('\n')
+    el.appendChild(title)
+  }
+
+  parsePopup(el, tagObj) {
+    const src = this.resolveCloneTag(el, tagObj.src)
+    tagObj.src = src
+    if (src === 'block') {
+      tagObj.blockPopup = 1
+      el.blockPopup = 1
+    } else if (src === 'notrace') {
+      el.noTrace = 1
+    } else if (typeof src === 'string' && src.indexOf('preview:') === 0) {
+      // DEFERRED: hover preview
+    } else {
+      this.collectPoint(src)
+      this.wirePopup(el, src)
+      el.pontoPopup = src
+    }
+  }
+
+  parseOpen(el, tagObj) {
+    if (tagObj.istag) {
+      // live trend plot drawn into a <rect>
+      if (el.tagName !== 'rect') return
+      const parts = String(this.resolveCloneTag(el, tagObj.src) || '').split('|')
+      tagObj.tag = parts[0]
+      tagObj.plotValMin = parseFloat(tagObj.y) || 0
+      tagObj.plotValSpan = parseFloat(tagObj.height) || 1
+      tagObj.windowSec = Math.abs(parseFloat(tagObj.width)) || 1800
+      const poly = document.createElementNS(SVGNS, 'polyline')
+      const stroke = (el.style && el.style.stroke) || el.getAttributeNS(null, 'stroke') || 'white'
+      const sw = (el.style && el.style.strokeWidth) || el.getAttributeNS(null, 'stroke-width') || 2
+      poly.setAttribute('style', `fill:none;stroke:${stroke};stroke-width:${sw}`)
+      if (parts[1] && parts[1].trim() !== '') poly.setAttribute('style', parts[1])
+      const tfm = el.getAttributeNS(null, 'transform')
+      if (tfm) poly.setAttribute('transform', tfm)
+      el.parentNode.appendChild(poly)
+      tagObj.poly = poly
+      tagObj.vals = []
+      tagObj.times = []
+      tagObj.histLoaded = false
+      this.collectPoint(tagObj.tag)
+      this.wirePopup(el, tagObj.tag)
+      this.plotBindings.push(tagObj)
+      return
+    }
+    const src = String(tagObj.src || '')
+    if (src.indexOf('new:') === 0) {
+      const url = src.substr(4)
+      el.style.cursor = 'pointer'
+      el.addEventListener('click', () =>
+        window.open(url, '', `height=${tagObj.height},width=${tagObj.width}`)
+      )
+    } else if (src.indexOf('preview:') === 0) {
+      // DEFERRED: hover preview
+    } else {
+      // link to another screen (file name without path/extension)
+      const screen = src.trim()
+      el.style.cursor = 'pointer'
+      el.addEventListener('click', () => this.onScreenLink(screen))
+    }
+  }
+
+  parseZoomRegion(el) {
+    el.style.cursor = 'pointer'
+    el.addEventListener('click', () => {
+      const bb = el.getBoundingClientRect()
+      const ctm = this.svgEl.getScreenCTM().inverse()
+      const p1 = this.toSvgPoint(bb.left, bb.top, ctm)
+      const p2 = this.toSvgPoint(bb.right, bb.bottom, ctm)
+      this.zoom = {
+        x: p1.x,
+        y: p1.y,
+        w: (p2.x - p1.x) * 2,
+        h: (p2.y - p1.y) * 2,
+      }
+      this.applyViewBox()
+      el.style.display = 'none'
+    })
+  }
+
+  parseSetScript(el, tagObj) {
+    // Faithful subset: #set_filter (alarm box), exec scripts. Vega/radar deferred.
+    if (tagObj.attr === 'set' && tagObj.tag === '#set_filter' && tagObj.src) {
+      tagObj.screenFilter = tagObj.src
+    }
+  }
+
+  // --- point collection / value resolution -----------------------------------
+  collectPoint(tag) {
+    if (tag === undefined || tag === null || tag === '') return
+    const s = String(tag).trim()
+    if (s.charAt(0) === '#' || s.charAt(0) === '%') return // special object / clone
+    if (s.charAt(0) === '!') {
+      // special code referencing a trailing point
+      const m = s.match(/^!(?:SLIM|ILIM|TAG|DCR|STON|STOFF|STVAL|ALR|ALM|TMP)\s*(.+)$/)
+      if (m) this.queryKeys.add(m[1].trim())
+      return
+    }
+    this.queryKeys.add(s)
+  }
+
+  wirePopup(el, tag) {
+    if (el.blockPopup || el.pontoPopup !== undefined) return
+    if (tag === undefined || String(tag).charAt(0) === '#') return
+    el.style.cursor = 'pointer'
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      const key = this.resolveKey(tag)
+      if (key !== undefined) this.onOpenPoint(key)
+    })
+  }
+
+  resolveKey(tag) {
+    const t = parseInt(tag)
+    if (!isNaN(t) && this.valueByKey.has(t)) return t
+    const s = String(tag).trim()
+    if (this.keyByTag.has(s)) return this.keyByTag.get(s)
+    return isNaN(t) ? undefined : t
+  }
+
+  getState(tag) {
+    const t = parseInt(tag)
+    if (!isNaN(t)) return this.valueByKey.get(t)
+    const s = String(tag).trim()
+    if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s))
+    return undefined
+  }
+
+  getValue(tag) {
+    const st = this.getState(tag)
+    return st ? st.value : 0
+  }
+  getFlags(tag) {
+    const st = this.getState(tag)
+    return st ? st.flags : undefined
+  }
+
+  // Resolve a tag/number/special-code to a value (ports valorTagueado).
+  valorTagueado(tag, obj) {
+    if (tag === '' || tag === undefined) return RETNOK
+    const t = parseInt(tag)
+    if (!isNaN(t) && String(tag).indexOf('!') !== 0) {
+      const st = this.valueByKey.get(t)
+      if (!st) {
+        this.markInvalid(obj)
+        return RETNOK
+      }
+      return st.value
+    }
+    const s = String(tag).trim()
+    if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s)).value
+    if (s.charAt(0) === '#' || s.charAt(0) === '%') return RETNOK
+
+    const sub = (n) => {
+      let x = s.substr(n).trim()
+      if (isNaN(parseInt(x))) x = this.keyByTag.get(x)
+      else x = parseInt(x)
+      return x
+    }
+    if (s.indexOf('!SLIM') === 0) {
+      const st = this.valueByKey.get(sub(5))
+      return st && isFinite(st.hiLimit) ? st.hiLimit : 999999
+    }
+    if (s.indexOf('!ILIM') === 0) {
+      const st = this.valueByKey.get(sub(5))
+      return st && isFinite(st.loLimit) ? st.loLimit : -999999
+    }
+    if (s.indexOf('!TAG') === 0) {
+      const st = this.valueByKey.get(sub(4))
+      return st ? st.tag : ''
+    }
+    if (s.indexOf('!DCR') === 0) {
+      const st = this.valueByKey.get(sub(4))
+      return st ? st.descr : ''
+    }
+    if (s.indexOf('!STON') === 0) {
+      const st = this.valueByKey.get(sub(5))
+      return st ? st.stateTextTrue : ''
+    }
+    if (s.indexOf('!STOFF') === 0) {
+      const st = this.valueByKey.get(sub(6))
+      return st ? st.stateTextFalse : ''
+    }
+    if (s.indexOf('!STVAL') === 0) {
+      const st = this.valueByKey.get(sub(6))
+      if (!st) return ''
+      if ((st.flags & 0x03) === 0x02) return st.stateTextTrue
+      if ((st.flags & 0x03) === 0x01) return st.stateTextFalse
+      return ''
+    }
+    if (s.indexOf('!ALR') === 0) {
+      const st = this.valueByKey.get(sub(4))
+      return st && st.flags & 0x100 ? 1 : 0
+    }
+    if (s.indexOf('!ALM') === 0) {
+      const st = this.valueByKey.get(sub(4))
+      return st && (st.flags & 0x800 || st.flags & 0x100) ? 1 : 0
+    }
+    if (s.indexOf('!TMP') === 0) {
+      const st = this.valueByKey.get(sub(4))
+      return st ? st.alarmTime : ''
+    }
+    this.markInvalid(obj)
+    return RETNOK
+  }
+
+  interpretaFormatoC(fmt, tag, obj) {
+    const valr = this.valorTagueado(tag, obj)
+    if (valr === RETNOK) return valr
+    if (fmt === undefined || fmt === '') fmt = isNaN(parseFloat(valr)) ? '%s' : '%1.1f'
+    const flg = this.getFlags(tag)
+    if (typeof flg !== 'undefined' && flg & 0x20) {
+      // directional arrow codes for analogs
+      if (/[udrla]\^/.test(fmt)) {
+        const v = valr
+        fmt = fmt.replace('u^', String.fromCharCode(v >= 0 ? 0x2191 : 0x2193))
+        fmt = fmt.replace('d^', String.fromCharCode(v >= 0 ? 0x2193 : 0x2191))
+        fmt = fmt.replace('r^', String.fromCharCode(v >= 0 ? 0x21a3 : 0x21a2))
+        fmt = fmt.replace('l^', String.fromCharCode(v >= 0 ? 0x21a2 : 0x21a3))
+        fmt = fmt.replace('a^', '')
+        return printf(fmt, Math.abs(valr))
+      }
+    }
+    if (fmt.indexOf('%') < 0) return String(valr)
+    return printf(fmt, valr)
+  }
+
+  markInvalid(obj) {
+    if (obj && obj.style) obj.style.visibility = 'collapse'
+  }
+
+  // --- refresh loop ----------------------------------------------------------
+  async refresh() {
+    if (this.disposed) return
+    try {
+      const keys = [...this.queryKeys]
+      if (keys.length > 0) {
+        const points = await opc.readPoints(keys, false, this.cfg)
+        this.ingest(points)
+      }
+      // after first data load, prefill live-plot histories (needs key->tag map)
+      if (!this._plotsFilled && this.plotBindings.length > 0) {
+        this._plotsFilled = true
+        this.fillAllPlots()
+      }
+      // beep status
+      const beep = await opc.readPoints([opc.BEEP_POINTKEY], true, this.cfg)
+      this.onAlarmBeep(beep.length && beep[0].valueRaw ? 1 : 0)
+      this.applyBindings()
+      this.pass++
+      this.onStatus('')
+    } catch (e) {
+      this.onStatus('Server error')
+    }
+    this.refreshTimer = setTimeout(
+      () => this.refresh(),
+      this.cfg.ScreenViewer_RefreshTime * 1000
+    )
+  }
+
+  // Map normalized points into display-semantics value state (V/F arrays).
+  ingest(points) {
+    points.forEach((p) => {
+      let value
+      let flags = 0
+      if (p.type === 'digital') {
+        value = p.valueRaw ? 0 : 1 // OSHMI: on(true)=0, off(false)=1
+        flags = p.valueRaw ? 0x02 : 0x01
+      } else if (p.type === 'analog') {
+        value = parseFloat(p.valueRaw)
+        flags = 0x20
+      } else {
+        value = parseFloat(p.valueRaw)
+        flags = 0
+      }
+      if (p.quality !== OpcStatusCodes.Good) flags |= 0x80
+      if (p.alarmed) flags |= 0x100
+      if (p.alarmDisabled) flags |= 0x400
+      if (p.annotation) flags |= 0x200
+      if (p.manual) flags |= 0x0c
+      if (p.frozen) flags |= 0x1000
+      if (p.flags & 0x800) flags |= 0x800
+      this.valueByKey.set(p.key, {
+        value,
+        valueStr: p.valueStr,
+        flags,
+        stateTextTrue: p.stateTextTrue,
+        stateTextFalse: p.stateTextFalse,
+        hiLimit: p.hiLimit,
+        loLimit: p.loLimit,
+        alarmTime: p.alarmTime,
+        tag: p.tag,
+        descr: p.descr,
+      })
+      this.keyByTag.set(p.tag, p.key)
+    })
+  }
+
+  applyBindings() {
+    this.blinkList = []
+    for (const b of this.bindings) {
+      const el = b.parent
+      if (!el) continue
+      let vt = RETNOK
+      if (b.tag !== undefined) vt = this.valorTagueado(b.tag, el)
+      if (vt === RETNOK && b.attr !== 'color' && b.attr !== 'set' && b.attr !== 'script') continue
+      try {
+        this.applyOne(b, el, vt)
+      } catch (e) {
+        /* keep animating other elements */
+      }
+    }
+  }
+
+  applyOne(b, el, vt) {
+    switch (b.attr) {
+      case 'get':
+        this.applyGet(b, el)
+        break
+      case 'color':
+        this.applyColor(b, el)
+        break
+      case 'bar': {
+        let h = (b.initheight * (vt - b.min)) / (b.max - b.min)
+        if (h < 0) h = 0
+        if (h > b.initheight) h = b.initheight
+        el.setAttributeNS(null, 'height', h)
+        this.blinkIfAlarmed(b.tag, el)
+        break
+      }
+      case 'opac':
+        el.style.opacity = (vt - b.min) / (b.max - b.min)
+        this.blinkIfAlarmed(b.tag, el)
+        break
+      case 'rotate': {
+        const bb = el.getBBox()
+        const tcx =
+          parseFloat(el.getAttributeNS(INKNS, 'transform-center-x') || el.getAttributeNS(null, 'inkscape:transform-center-x')) || 0
+        const tcy =
+          parseFloat(el.getAttributeNS(INKNS, 'transform-center-y') || el.getAttributeNS(null, 'inkscape:transform-center-y')) || 0
+        const xcen = bb.x + bb.width / 2 + tcx
+        const ycen = bb.y + bb.height / 2 - tcy
+        const ang = ((vt - b.min) / (b.max - b.min)) * 360
+        el.setAttributeNS(null, 'transform', `${b.inittransform} rotate(${ang} ${xcen} ${ycen}) `)
+        this.blinkIfAlarmed(b.tag, el)
+        break
+      }
+      case 'slider': {
+        let v = vt
+        if (v > b.max) v = b.max
+        if (v < b.min) v = b.min
+        const prop = (v - b.min) / (b.max - b.min)
+        el.setAttributeNS(null, 'transform', `${b.inittransform} translate(${prop * b.rangex} ${prop * b.rangey}) `)
+        this.blinkIfAlarmed(b.tag, el)
+        break
+      }
+      case 'text':
+        this.applyTextMap(b, el, vt)
+        break
+      case 'open':
+        if (b.istag && b.poly) this.updatePlot(b, el, vt)
+        break
+      default:
+        break
+    }
+  }
+
+  // --- live trend plots ------------------------------------------------------
+  fillAllPlots() {
+    this.plotBindings.forEach((b, i) => {
+      // stagger the historian queries slightly
+      setTimeout(() => this.fillPlotHistory(b), 200 * i)
+    })
+  }
+
+  async fillPlotHistory(b) {
+    let tag = b.tag
+    const k = parseInt(tag)
+    if (!isNaN(k) && this.valueByKey.has(k)) tag = this.valueByKey.get(k).tag
+    try {
+      const begin = new Date(Date.now() - b.windowSec * 1000)
+      const hist = await opc.readHistory(tag, begin, new Date())
+      b.vals = hist.map((h) => h.value)
+      b.times = hist.map((h) => h.time)
+      b.histLoaded = true
+    } catch (e) {
+      /* leave empty; realtime samples will accumulate */
+    }
+  }
+
+  updatePlot(b, el, vt) {
+    const now = Date.now()
+    b.vals.push(vt)
+    b.times.push(now)
+    let bb
+    try {
+      bb = el.getBBox()
+    } catch (e) {
+      return
+    }
+    const right = bb.x + bb.width
+    const top = bb.y
+    const bottom = bb.y + bb.height
+    const win = b.windowSec * 1000
+    let pts = ''
+    for (let k = b.vals.length - 1; k >= 0; k--) {
+      const age = now - b.times[k]
+      if (age > win) {
+        b.vals.splice(k, 1)
+        b.times.splice(k, 1)
+        continue
+      }
+      const xx = right - (age / win) * bb.width
+      let yy = bottom - ((b.vals[k] - b.plotValMin) / b.plotValSpan) * bb.height
+      if (yy > bottom) yy = bottom
+      if (yy < top) yy = top
+      pts += xx.toFixed(2) + ' ' + yy.toFixed(2) + (k === 0 ? '' : ',')
+    }
+    b.poly.setAttribute('points', pts)
+  }
+
+  applyGet(b, el) {
+    let val
+    if (b.txtOFFON !== undefined) {
+      val = this.valorTagueado(b.tag, el) === 0 ? b.txtOFFON[1] : b.txtOFFON[0]
+    } else {
+      val = this.interpretaFormatoC(b.formatoC, b.tag, el)
+    }
+    if (val === RETNOK) return
+    if (val !== el.textContent) {
+      if (el.firstElementChild && el.firstElementChild.nodeName === 'tspan')
+        el.firstElementChild.textContent = val
+      else el.textContent = val
+    }
+    this.blinkIfAlarmed(b.tag, el)
+  }
+
+  applyTextMap(b, el, vt) {
+    if (!Array.isArray(b.map)) return
+    const ft = this.getFlags(b.tag)
+    const digital = (ft & 0x20) === 0
+    let txt = ''
+    for (const entry of b.map) {
+      const poseq = entry.indexOf('=')
+      const ch = entry.substring(0, 1)
+      const thr = entry.substring(0, poseq)
+      const rhs = entry.substring(poseq + 1)
+      if (digital) {
+        const val = parseInt(thr)
+        if ((ft & 0x03) >= val || (ch === 'a' && ft & 0x100) || (ch === 'f' && ft & 0x80)) txt = rhs
+      } else {
+        const val = parseFloat(thr)
+        if (vt >= val || (ch === 'a' && ft & 0x100) || (ch === 'f' && ft & 0x80)) txt = rhs
+      }
+    }
+    if (txt !== el.textContent) {
+      if (el.firstChild && el.firstChild.tagName === 'tspan') el.firstChild.textContent = txt
+      else el.textContent = txt
+    }
+    this.blinkIfAlarmed(b.tag, el)
+  }
+
+  applyColor(b, el) {
+    let fill = ''
+    let stroke = ''
+    let attrib = ''
+    let attribval = ''
+    let script = ''
+    let tag = ''
+    let vt = 0
+    if (!Array.isArray(b.list)) return
+    for (let j = 0; j < b.list.length; j++) {
+      const entry = b.list[j]
+      if (tag !== entry.tag) {
+        tag = entry.tag
+        vt = this.valorTagueado(tag, el)
+      }
+      let ft = this.getFlags(tag)
+      if (ft === undefined) ft = vt === RETNOK ? 0x80 | 0x20 : 0x20
+      const digital = (ft & 0x20) === 0
+      if (vt === RETNOK) continue
+      const ch = entry.data
+      if (digital) {
+        const val = parseInt(ch)
+        if (
+          (!isNaN(val) && (ft & 0x03) >= val) ||
+          (!isNaN(val) && (ft & 0x83) >= (val | 0x80)) ||
+          (ch === 'a' && ft & 0x100) ||
+          (ch === 'f' && ft & 0x80)
+        ) {
+          fill = entry.cfill
+          stroke = entry.cstroke
+          script = entry.cscript
+          attrib = entry.cattrib
+          attribval = entry.cattribval
+        }
+      } else {
+        const val = parseFloat(ch)
+        if (
+          (ch === 'n' && ft & 0x800) ||
+          (ch === 'c' && ft & 0x1000) ||
+          (ch === 'a' && ft & 0x100) ||
+          (ch === 'f' && ft & 0x80) ||
+          (!isNaN(val) && vt >= val)
+        ) {
+          const next = b.list[j + 1]
+          if (next) {
+            fill = this.interpColor(entry.cfill, next.cfill, vt, val, parseFloat(next.data))
+            stroke = this.interpColor(entry.cstroke, next.cstroke, vt, val, parseFloat(next.data))
+          } else {
+            fill = entry.cfill.replace(/^@/, '')
+            stroke = entry.cstroke.replace(/^@/, '')
+          }
+          script = entry.cscript
+          attrib = entry.cattrib
+          attribval = entry.cattribval
+        }
+      }
+      this.blinkIfAlarmed(tag, el)
+    }
+
+    if (attrib !== '') {
+      el.setAttributeNS(null, attrib, attribval)
+    } else if (script !== '') {
+      // DEFERRED: per-color inline scripts (eval). Reset to init colors.
+      if (el.style) {
+        el.style.fill = b.initfill
+        el.style.stroke = b.initstroke
+      }
+    } else if (el.style) {
+      el.style.fill = fill !== '' ? fill : b.initfill
+      el.style.stroke = stroke !== '' ? stroke : b.initstroke
+    }
+  }
+
+  interpColor(curr, next, vt, val, proxval) {
+    if (next && next[0] === '@') {
+      const a = curr[0] === '@' ? curr.substring(1) : curr
+      const b = next.substring(1)
+      const t = (vt - val) / (proxval - val)
+      return rgbMix(a, b, t)
+    }
+    return curr.replace(/^@/, '')
+  }
+
+  // --- blink -----------------------------------------------------------------
+  blinkIfAlarmed(tag, el) {
+    const f = this.getFlags(tag)
+    if (f !== undefined && f & 0x100 && !(f & 0x400)) this.blinkList.push(el)
+  }
+  startBlink() {
+    this.blinkTimer = setInterval(() => {
+      this.blinkOn = !this.blinkOn
+      this.blinkList.forEach((el) => el.setAttributeNS(null, 'opacity', this.blinkOn ? 1 : 0.25))
+    }, 500)
+  }
+
+  // --- zoom / pan ------------------------------------------------------------
+  toSvgPoint(clientX, clientY, ctm) {
+    const pt = this.svgEl.createSVGPoint()
+    pt.x = clientX
+    pt.y = clientY
+    return pt.matrixTransform(ctm || this.svgEl.getScreenCTM().inverse())
+  }
+  applyViewBox() {
+    if (!this.svgEl) return
+    const z = this.zoom
+    this.svgEl.setAttribute('viewBox', `${z.x} ${z.y} ${z.w} ${z.h}`)
+  }
+  zoomPan(op, mul = 1) {
+    const z = this.zoom
+    const W = this.cfg.ScreenViewer_SVGMaxWidth
+    switch (op) {
+      case 'in':
+        z.w *= 0.9
+        z.h *= 0.9
+        break
+      case 'out':
+        z.w *= 1.1
+        z.h *= 1.1
+        break
+      case 'up':
+        z.y += (mul * 20 * z.w) / W
+        break
+      case 'down':
+        z.y -= (mul * 20 * z.w) / W
+        break
+      case 'left':
+        z.x += (mul * 30 * z.w) / W
+        break
+      case 'right':
+        z.x -= (mul * 30 * z.w) / W
+        break
+      case 'center':
+        this.zoom = this.fitZoom ? { ...this.fitZoom } : { x: 0, y: 0, w: this.cfg.ScreenViewer_SVGMaxWidth, h: this.cfg.ScreenViewer_SVGMaxHeight }
+        this.applyViewBox()
+        return
+      default:
+        break
+    }
+    this.applyViewBox()
+  }
+  wheelZoom(ev) {
+    const ctm = this.svgEl.getScreenCTM().inverse()
+    const p = this.toSvgPoint(ev.clientX, ev.clientY, ctm)
+    const z = this.zoom
+    const factor = ev.deltaY < 0 ? 0.95 : 1.05
+    const w = z.w
+    const h = z.h
+    z.w *= factor
+    z.h *= factor
+    z.x += (w - z.w) * ((p.x - z.x) / w)
+    z.y += (h - z.h) * ((p.y - z.y) / h)
+    this.applyViewBox()
+  }
+
+  setBackground(color) {
+    if (this.svgEl) this.svgEl.style.backgroundColor = color
+    if (this.container) this.container.style.backgroundColor = color
+  }
+
+  // --- lifecycle -------------------------------------------------------------
+  stop() {
+    clearTimeout(this.refreshTimer)
+    clearInterval(this.blinkTimer)
+    this.refreshTimer = null
+    this.blinkTimer = null
+  }
+  dispose() {
+    this.disposed = true
+    this.stop()
+    if (this.container) this.container.innerHTML = ''
+  }
+}
