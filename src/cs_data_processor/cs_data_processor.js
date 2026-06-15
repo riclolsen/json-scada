@@ -927,18 +927,17 @@ const pipeline = [
                 }
 
                 // update only realtimeData if changed or for SOE, must not be historical backfill
-                if (
+                if ( 
                   (isSOE ||
-                    change.updateDescription.updatedFields.sourceDataUpdate
-                      ?.rangeCheck ||
-                    value !== change.fullDocument.value ||
-                    valueString !== change.fullDocument.valueString ||
+                    change.updateDescription.updatedFields.sourceDataUpdate?.rangeCheck ||
+                    value !== change.fullDocument.value && !(!isSOE && change.fullDocument.type === 'digital' && change.fullDocument.isEvent === true) ||
+                    (change.fullDocument.type === 'string' && valueString !== change.fullDocument.valueString) ||
                     (change.fullDocument.type === 'json' && valueJson !== change.fullDocument.valueJson) ||
-                    change.fullDocument?.timeTagAtSource !== change.updateDescription.updatedFields.sourceDataUpdate?.timeTagAtSource ||
+                    change.updateDescription.updatedFields.sourceDataUpdate?.timeTagAtSource && 
+                      (change.fullDocument?.timeTagAtSource !== change.updateDescription.updatedFields.sourceDataUpdate?.timeTagAtSource) ||
                     change.fullDocument.timeTag === null ||
                     invalid !== change.fullDocument.invalid) &&
-                  !change.updateDescription.updatedFields.sourceDataUpdate
-                    ?.isHistorical
+                  !change.updateDescription.updatedFields.sourceDataUpdate?.isHistorical
                 ) {
                   let dt = new Date()
 
@@ -1217,6 +1216,7 @@ const pipeline = [
                 // prepare update to soeData collection, do not put into SOE when alarm disabled or update is not for historical record
                 if (
                   isSOE &&
+                  change.fullDocument.type !== 'analog' &&
                   !change.fullDocument.alarmDisabled &&
                   !change.updateDescription.updatedFields.sourceDataUpdate
                     ?.isNotForHistorical
