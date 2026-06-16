@@ -17,6 +17,8 @@ import * as opc from '../opcClient'
 import { OpcStatusCodes } from '../opcCodes'
 import { buildColorTable, traduzCor } from './sageColors'
 import { printf } from './sageFormat'
+import { initVegaChart, updateVegaChart } from './sageVega'
+import { initRadarChart, drawRadar, initArcChart, drawArc } from './sageCharts'
 
 const RETNOK = '?#?'
 const SVGNS = 'http://www.w3.org/2000/svg'
@@ -89,10 +91,27 @@ export class SageEngine {
     this.applyViewBox()
     this.setBackground(this.cfg.VisorTelas_BackgroundSVG || this.cfg.ScreenViewer_Background)
 
+    // expose ShowHideTranslate for screen scripts (e.g. the section "eye" toggles),
+    // scoped to this engine's SVG.
+    window.ShowHideTranslate = (idorobj, xd, yd) => this.showHideTranslate(idorobj, xd, yd)
+
     await this.runEmbeddedScripts()
     this.parse()
     this.startBlink()
     await this.refresh()
+  }
+
+  // Toggle display (and optional translate) of an element by id — port of the
+  // legacy global ShowHideTranslate(), scoped to this engine's SVG.
+  showHideTranslate(idorobj, xd = 0, yd = 0) {
+    if (!this.svgEl) return
+    const obj = typeof idorobj === 'object' ? idorobj : this.svgEl.getElementById(idorobj)
+    if (!obj) return
+    obj.style.display = obj.style.display === 'none' ? 'block' : 'none'
+    if (obj._inittransform === undefined) obj._inittransform = obj.getAttributeNS(null, 'transform') || ''
+    if (parseFloat(xd) !== 0 || parseFloat(yd) !== 0) {
+      obj.setAttributeNS(null, 'transform', obj._inittransform + ' translate(' + parseFloat(xd) + ' ' + parseFloat(yd) + ')')
+    }
   }
 
   // Determine the initial viewBox: explicit opts.zoom, else the SVG's authored
@@ -124,6 +143,14 @@ export class SageEngine {
     if (!w) {
       w = this.cfg.ScreenViewer_SVGMaxWidth
       h = this.cfg.ScreenViewer_SVGMaxHeight
+    }
+    // Fit to width for readability (matches the legacy viewer): make the viewBox
+    // aspect match the container so content fills the width; taller content is
+    // pannable downward. Falls back to the authored box if the container is unsized.
+    const cw = this.container ? this.container.clientWidth : 0
+    const ch = this.container ? this.container.clientHeight : 0
+    if (cw > 0 && ch > 0) {
+      h = w * (ch / cw)
     }
     this.fitZoom = { x, y, w, h }
     this.zoom = opts && opts.zoom ? { ...opts.zoom } : { ...this.fitZoom }
@@ -194,8 +221,11 @@ export class SageEngine {
   }
 
   parseElement(el) {
-    let label = this.getLabel(el)
-    if (!label) return
+    const label = this.getLabel(el)
+    if (label) this.parseLabel(el, label)
+  }
+
+  parseLabel(el, label) {
     let vec
     try {
       vec = JSON.parse('[' + label + ']')
@@ -291,8 +321,8 @@ export class SageEngine {
         entry.cscript = param.substr(8)
       } else {
         const arr = param.split('|')
-        entry.cfill = traduzCor(arr[0], this.colorTable)
-        entry.cstroke = arr.length > 1 ? traduzCor(arr[1], this.colorTable) : entry.cfill
+        entry.cfill = traduzCor(arr[0], this.colorTable, this.cfg)
+        entry.cstroke = arr.length > 1 ? traduzCor(arr[1], this.colorTable, this.cfg) : entry.cfill
       }
       this.collectPoint(entry.tag)
       if (j === 0) this.wirePopup(el, entry.tag)
@@ -413,9 +443,91 @@ export class SageEngine {
   }
 
   parseSetScript(el, tagObj) {
-    // Faithful subset: #set_filter (alarm box), exec scripts. Vega/radar deferred.
+    // script: attach DOM event handlers (mouseup/down/over/out/move, keydown) that
+    // run the param with `thisobj`=element; exec_once runs once at parse. Used e.g.
+    // by the "eye" toggles: window.ShowHideTranslate("gDetalhe230",0,0).
+    if (tagObj.attr === 'script' && Array.isArray(tagObj.list)) {
+      const mouseEvts = ['mouseup', 'mousedown', 'mouseover', 'mouseout', 'mousemove', 'click']
+      const vegaEvts = ['vega', 'vega4', 'vega3', 'vega-lite']
+      for (const it of tagObj.list) {
+        const evt = it.evt
+        const param = it.param || ''
+        if (vegaEvts.includes(evt)) {
+          // first line of param = comma-separated point list, rest = the spec
+          const nl = param.indexOf('\n')
+          tagObj.vegaPoints = (nl >= 0 ? param.slice(0, nl) : '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+          tagObj.vegaSpec = nl >= 0 ? param.slice(nl + 1) : param
+          tagObj._vega = true
+          tagObj.isVegaLite = evt === 'vega-lite'
+          tagObj.vegaPoints.forEach((p) => this.collectPoint(p))
+          initVegaChart(this, tagObj, el)
+        } else if (mouseEvts.includes(evt) || evt === 'keydown') {
+          el.addEventListener(evt, (event) => {
+            try {
+              // eslint-disable-next-line no-new-func
+              new Function('thisobj', 'evt', 'SVGDoc', param)(event.currentTarget, event, this.svgEl)
+            } catch (e) {
+              this.onStatus('script error: ' + e.message)
+            }
+          })
+          if (evt.indexOf('mouse') >= 0 && el.style && !el.blockPopup) el.style.cursor = 'pointer'
+        } else if (evt === 'exec_once') {
+          try {
+            // eslint-disable-next-line no-new-func
+            new Function('thisobj', 'SVGDoc', param)(el, this.svgEl)
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      }
+      return
+    }
+    // #copy_xsac_from: copy the SAGE binding(s) from named model element(s) onto
+    // this element, then (re)parse — %n in the copied label resolves against this
+    // element's own clone map. This is how cloned measurement blocks get their
+    // value bindings from a single model definition.
+    if (tagObj.attr === 'set' && tagObj.tag === '#copy_xsac_from' && tagObj.src) {
+      const ids = String(tagObj.src).split(',')
+      for (const id of ids) {
+        const model = this.svgEl.getElementById(id.trim())
+        if (model) {
+          const ml = this.getLabel(model)
+          if (ml) this.parseLabel(el, ml)
+        }
+      }
+      return
+    }
+    // #exec / #exec_once: run the script once at load with `thisobj` = element.
+    // Authored screens use this e.g. to hide detail layers by default
+    // (thisobj.style.display="none";) — revealed later on zoom/interaction.
+    if (
+      tagObj.attr === 'set' &&
+      (tagObj.tag === '#exec' || tagObj.tag === '#exec_once') &&
+      tagObj.src
+    ) {
+      try {
+        // eslint-disable-next-line no-new-func
+        new Function('thisobj', 'SVGDoc', tagObj.src)(el, this.svgEl)
+      } catch (e) {
+        this.onStatus('exec error: ' + e.message)
+      }
+      return
+    }
+    // #radar (spider chart) / #arc (donut gauge)
+    if (tagObj.attr === 'set' && tagObj.tag === '#radar' && tagObj.src) {
+      initRadarChart(this, tagObj, el)
+      return
+    }
+    if (tagObj.attr === 'set' && tagObj.tag === '#arc' && tagObj.src) {
+      initArcChart(this, tagObj, el)
+      return
+    }
+    // #set_filter: station filter for the (deferred) alarm box
     if (tagObj.attr === 'set' && tagObj.tag === '#set_filter' && tagObj.src) {
-      tagObj.screenFilter = tagObj.src
+      this.screenFilter = tagObj.src
     }
   }
 
@@ -436,6 +548,10 @@ export class SageEngine {
   wirePopup(el, tag) {
     if (el.blockPopup || el.pontoPopup !== undefined) return
     if (tag === undefined || String(tag).charAt(0) === '#') return
+    // skip dummy/constant tags (legacy: pnt !== 99999 && pnt !== 0) — these are
+    // placeholder points used for static coloring, not clickable.
+    const n = parseInt(tag)
+    if (n === 99999 || n === 0) return
     el.style.cursor = 'pointer'
     el.addEventListener('click', (ev) => {
       ev.stopPropagation()
@@ -569,8 +685,11 @@ export class SageEngine {
     try {
       const keys = [...this.queryKeys]
       if (keys.length > 0) {
-        const points = await opc.readPoints(keys, false, this.cfg)
-        this.ingest(points)
+        // read full properties (group1/group2/descr/stateText/limits) on the first
+        // pass only, values-only after (legacy: askinfo = Pass===0)
+        const full = this.pass === 0
+        const points = await opc.readPoints(keys, full, this.cfg)
+        this.ingest(points, full)
       }
       // after first data load, prefill live-plot histories (needs key->tag map)
       if (!this._plotsFilled && this.plotBindings.length > 0) {
@@ -593,7 +712,9 @@ export class SageEngine {
   }
 
   // Map normalized points into display-semantics value state (V/F arrays).
-  ingest(points) {
+  // `full` (first pass) carries static props (group/descr/stateText/limits);
+  // later value-only passes preserve them.
+  ingest(points, full) {
     points.forEach((p) => {
       let value
       let flags = 0
@@ -614,18 +735,27 @@ export class SageEngine {
       if (p.manual) flags |= 0x0c
       if (p.frozen) flags |= 0x1000
       if (p.flags & 0x800) flags |= 0x800
-      this.valueByKey.set(p.key, {
-        value,
-        valueStr: p.valueStr,
-        flags,
-        stateTextTrue: p.stateTextTrue,
-        stateTextFalse: p.stateTextFalse,
-        hiLimit: p.hiLimit,
-        loLimit: p.loLimit,
-        alarmTime: p.alarmTime,
-        tag: p.tag,
-        descr: p.descr,
-      })
+      const prev = this.valueByKey.get(p.key)
+      if (prev && !full) {
+        // value-only update: keep static fields, refresh dynamic ones
+        prev.value = value
+        prev.flags = flags
+      } else {
+        this.valueByKey.set(p.key, {
+          value,
+          valueStr: p.valueStr,
+          flags,
+          stateTextTrue: p.stateTextTrue,
+          stateTextFalse: p.stateTextFalse,
+          hiLimit: p.hiLimit,
+          loLimit: p.loLimit,
+          alarmTime: p.alarmTime,
+          tag: p.tag,
+          descr: p.descr,
+          bay: p.bay,
+          station: p.station,
+        })
+      }
       this.keyByTag.set(p.tag, p.key)
     })
   }
@@ -693,6 +823,29 @@ export class SageEngine {
         break
       case 'open':
         if (b.istag && b.poly) this.updatePlot(b, el, vt)
+        break
+      case 'script':
+        // vega chart: re-render with current data each refresh
+        if (b._vega) updateVegaChart(this, b)
+        break
+      case 'set':
+        if (b.tag === '#radar') {
+          drawRadar(this, b, el)
+          break
+        }
+        if (b.tag === '#arc') {
+          drawArc(this, b, el)
+          break
+        }
+        // #exec_on_update: re-run the script every refresh
+        if (b.tag === '#exec_on_update' && b.src) {
+          try {
+            // eslint-disable-next-line no-new-func
+            new Function('thisobj', 'SVGDoc', b.src)(el, this.svgEl)
+          } catch (e) {
+            /* keep animating */
+          }
+        }
         break
       default:
         break

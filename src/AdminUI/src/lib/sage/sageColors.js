@@ -75,9 +75,10 @@ export function buildColorTable(cfg) {
   return t
 }
 
-// Translate a color shortcut. `-cor-NN` -> ColorTable[NN]; a leading `@` marks
-// an interpolation anchor (handled by the caller); otherwise pass through.
-export function traduzCor(name, colorTable) {
+// Translate a color shortcut (port of websage.js TraduzCor). Handles the named
+// `-cor-`/`-clr-` shortcuts (bgd/tbr/almini/medfal), numeric `-cor-NN` ->
+// ColorTable[NN] (non-numeric -> "none"), and a leading `@` interpolation anchor.
+export function traduzCor(name, colorTable, cfg) {
   if (name == null) return ''
   let s = String(name).trim()
   let prefix = ''
@@ -85,10 +86,26 @@ export function traduzCor(name, colorTable) {
     prefix = '@'
     s = s.substring(1)
   }
-  const m = s.match(/^-cor-(\d+)$/)
-  if (m) {
-    const idx = parseInt(m[1])
-    return prefix + (colorTable[idx] !== undefined ? colorTable[idx] : '')
+  if (s.startsWith('-cor-') || s.startsWith('-clr-')) {
+    switch (s) {
+      case '-clr-bgd':
+      case '-cor-bgd':
+        return prefix + (cfg.VisorTelas_BackgroundSVG || cfg.ScreenViewer_Background)
+      case '-clr-tbr':
+      case '-cor-tbr':
+        return prefix + cfg.ScreenViewer_ToolbarColor
+      case '-clr-almini':
+      case '-cor-almini':
+        return prefix + (cfg.ScreenViewer_TagInhAlmFillColor || 'lightgray')
+      case '-clr-failed':
+      case '-cor-medfal':
+        return prefix + (cfg.ScreenViewer_TagFillColor || 'white')
+      default: {
+        const num = parseInt(s.substr(5), 10)
+        if (isNaN(num)) return prefix + 'none'
+        return prefix + (colorTable[num] !== undefined ? colorTable[num] : 'none')
+      }
+    }
   }
   return prefix + s
 }
