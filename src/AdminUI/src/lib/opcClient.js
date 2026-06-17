@@ -725,4 +725,65 @@ export async function readHistory(tag, timeBegin, timeEnd) {
   }))
 }
 
+// --- historical point-in-time snapshot (Time Machine) ------------------------
+// Reads the value each given tag had at instant `timeSnap` (StartTime==EndTime),
+// from the historian (Postgresql namespace). Returns
+// [{ tag, value, type, quality, serverTime(ms) }] for tags that had a sample.
+export async function readHistorySnapshot(tags, timeSnap) {
+  if (!Array.isArray(tags) || tags.length === 0) return []
+  const handle = newHandle()
+  const iso = timeSnap.toISOString()
+  const req = {
+    ServiceId: OpcServiceCode.HistoryReadRequest,
+    Body: {
+      RequestHeader: {
+        Timestamp: new Date().toISOString(),
+        RequestHandle: handle,
+        TimeoutHint: 8000,
+        ReturnDiagnostics: 2,
+        AuthenticationToken: null,
+      },
+      TimestampsToReturn: TimestampsToReturn.Server,
+      HistoryReadDetails: {
+        ParameterTypeId: OpcServiceCode.ReadRawModifiedDetails,
+        ParameterData: { IsModified: false, StartTime: iso, EndTime: iso },
+      },
+      NodesToRead: tags.map((t) => ({
+        NodeId: { IdType: OpcKeyType.String, Id: t, Namespace: OpcNamespacePostgresql },
+        AttributeId: OpcAttributeId.Value,
+      })),
+    },
+  }
+  const data = await invoke(req, 8000)
+  if (
+    !isValidResponse(data, handle, [
+      OpcServiceCode.HistoryReadResponse,
+      OpcServiceCode.ServiceFault,
+    ])
+  )
+    return []
+  if (
+    data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.Good &&
+    data.Body.ResponseHeader.ServiceResult !== OpcStatusCodes.GoodNoData
+  ) {
+    checkAccessDenied(data)
+    return []
+  }
+  const out = []
+  if (Array.isArray(data.Body.Results))
+    data.Body.Results.forEach((node) => {
+      if (node.StatusCode !== undefined && node.StatusCode !== OpcStatusCodes.Good) return
+      const hd = Array.isArray(node.HistoryData) ? node.HistoryData[0] : null
+      if (!hd || !hd.Value) return
+      out.push({
+        tag: node.NodeId.Id,
+        value: hd.Value.Body,
+        type: hd.Value.Type,
+        quality: hd.Value.Quality,
+        serverTime: Date.parse(hd.ServerTimestamp),
+      })
+    })
+  return out
+}
+
 export { BEEP_POINTKEY }

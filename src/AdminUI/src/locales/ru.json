@@ -120,7 +120,9 @@
     "panRight": "Повернуть вправо",
     "center": "Центр / посадка",
     "slideshow": "Слайд-шоу",
-    "silence": "Тишина, звуковой сигнал"
+    "silence": "Тишина, звуковой сигнал",
+    "timeMachine": "Машина времени",
+    "timeMachineExit": "Жить"
   },
   "eventsViewer": {
     "events": "События",

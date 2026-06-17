@@ -48,6 +48,16 @@
         <v-icon>{{ slideshow ? 'mdi-pause' : 'mdi-play' }}</v-icon>
       </v-btn>
       <v-btn
+        icon
+        size="small"
+        variant="text"
+        :color="tmActive ? 'warning' : undefined"
+        :title="$t('displayViewer.timeMachine')"
+        @click="toggleTimeMachine"
+      >
+        <v-icon>mdi-history</v-icon>
+      </v-btn>
+      <v-btn
         v-if="alarmBeep"
         icon
         size="small"
@@ -61,8 +71,27 @@
 
       <v-spacer></v-spacer>
       <span class="text-caption mr-2">{{ statusMsg }}</span>
-      <span class="text-caption">{{ clock }}</span>
+      <span class="text-caption" :class="{ 'tm-clock': tmActive }">{{ tmActive ? tmDate + ' ' + tmTimeStr : clock }}</span>
     </v-toolbar>
+
+    <!-- Time Machine controls -->
+    <div v-if="tmActive" class="tm-bar px-2">
+      <v-icon size="small" class="mr-2">mdi-history</v-icon>
+      <span class="text-caption mr-2">{{ $t('displayViewer.timeMachine') }}</span>
+      <input type="date" v-model="tmDate" :max="todayStr" min="2013-01-01" class="tm-date" @change="tmChanged" />
+      <span class="tm-time mx-3">{{ tmTimeStr }}</span>
+      <input
+        type="range"
+        min="0"
+        :max="tmSliderMax"
+        v-model.number="tmSeconds"
+        class="tm-slider"
+        @change="tmChanged"
+      />
+      <v-btn size="small" variant="tonal" class="ml-3" @click="exitTimeMachine">
+        {{ $t('displayViewer.timeMachineExit') }}
+      </v-btn>
+    </div>
 
     <!-- SVG mount -->
     <div ref="svgContainer" class="svg-container" @wheel.prevent="onWheel"></div>
@@ -77,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { loadViewersConfig, getViewersConfig } from '../lib/viewersConfig'
 import { onAccessDenied, writeAck } from '../lib/opcClient'
@@ -99,6 +128,66 @@ const slideshow = ref(false)
 
 const infoOpen = ref(false)
 const infoKey = ref(0)
+
+// --- Time Machine (historical replay) ---
+const tmActive = ref(false)
+const tmDate = ref('')
+const tmSeconds = ref(0)
+const todayStr = ref('')
+let tmDebounce = null
+
+const tmTimeStr = computed(() => fmtHMS(tmSeconds.value))
+const tmSliderMax = computed(() => (tmDate.value === todayStr.value ? nowSeconds() : 86399))
+
+function nowSeconds() {
+  const d = new Date()
+  return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
+}
+function fmtHMS(s) {
+  s = Math.max(0, Math.floor(s))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  const p = (n) => String(n).padStart(2, '0')
+  return `${p(h)}:${p(m)}:${p(ss)}`
+}
+function localDateStr(d) {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+function toggleTimeMachine() {
+  if (tmActive.value) {
+    exitTimeMachine()
+    return
+  }
+  if (!engine) return
+  if (slideshow.value) toggleSlideshow()
+  tmActive.value = true
+  todayStr.value = localDateStr(new Date())
+  tmDate.value = todayStr.value
+  tmSeconds.value = nowSeconds()
+  engine.enterTimeMachine()
+  tmChanged()
+}
+
+function exitTimeMachine() {
+  tmActive.value = false
+  clearTimeout(tmDebounce)
+  if (engine) engine.exitTimeMachine()
+}
+
+function tmChanged() {
+  clearTimeout(tmDebounce)
+  tmDebounce = setTimeout(() => {
+    if (!engine || !tmActive.value || !tmDate.value) return
+    const [y, mo, d] = tmDate.value.split('-').map(Number)
+    const dt = new Date(y, mo - 1, d, 0, 0, 0, 0)
+    dt.setSeconds(tmSeconds.value)
+    if (dt > new Date()) dt.setTime(Date.now())
+    engine.gotoTime(dt)
+  }, 500)
+}
 
 const criticalSound = ref(null)
 const nonCriticalSound = ref(null)
@@ -215,6 +304,7 @@ onUnmounted(() => {
   clearInterval(clockTimer)
   clearInterval(beepTimer)
   clearInterval(slideTimer)
+  clearTimeout(tmDebounce)
   window.removeEventListener('keydown', onKeydown)
 })
 </script>
@@ -233,5 +323,36 @@ onUnmounted(() => {
 .svg-container :deep(svg) {
   width: 100%;
   height: 100%;
+}
+.tm-bar {
+  display: flex;
+  align-items: center;
+  background-color: var(--tm-bg, #2e7d32);
+  color: #fff;
+  height: 40px;
+  flex: 0 0 auto;
+}
+.tm-bar .v-icon {
+  color: #fff;
+}
+.tm-date {
+  background: #fff;
+  color: #000;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.85rem;
+}
+.tm-time {
+  font-family: monospace;
+  font-size: 0.95rem;
+  min-width: 70px;
+}
+.tm-slider {
+  flex: 1 1 auto;
+  accent-color: #fff;
+}
+.tm-clock {
+  color: #ffb74d;
+  font-weight: 600;
 }
 </style>

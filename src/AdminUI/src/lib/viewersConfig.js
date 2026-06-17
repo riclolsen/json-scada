@@ -99,6 +99,14 @@ export const defaultConfig = {
   ScreenViewer_DisplayPreviewZoom: 0.5,
   ScreenViewer_DisplayPreviewTimeout: 1500, // ms hover delay before showing a preview
   ScreenViewer_SecurityCardScale: 1.0, // scale of the pinned annotation badge
+  // Pinned documental-annotations panel (#PIN notes filtered by #set_filter group1)
+  ScreenViewer_PinnedAnnotationsBGColor: 'slategray',
+  ScreenViewer_PinnedAnnotationsTextColor: 'white',
+  ScreenViewer_PinnedAnnotationsWidth: '300px',
+  ScreenViewer_PinnedAnnotationsBorder: '1px solid black',
+  ScreenViewer_PinnedAnnotationsFont: 'calibri',
+  ScreenViewer_PinnedAnnotationsFontSize: '12px',
+  ScreenViewer_PinnedAnnotationsRefresh: 9.5, // seconds between panel refreshes
   ScreenViewer_SlideShowInterval: 10, // seconds
   ScreenViewer_EnableTimeMachine: 1,
   VisorTelas_BackgroundSVG: '#dddddd',

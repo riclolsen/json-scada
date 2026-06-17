@@ -120,7 +120,9 @@
     "panRight": "右にパンする",
     "center": "センター／フィット",
     "slideshow": "スライドショー",
-    "silence": "サイレントビープ音"
+    "silence": "サイレントビープ音",
+    "timeMachine": "タイムマシン",
+    "timeMachineExit": "ライブ"
   },
   "eventsViewer": {
     "events": "イベント",

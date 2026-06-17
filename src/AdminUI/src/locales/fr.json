@@ -120,7 +120,9 @@
     "panRight": "Panoramique vers la droite",
     "center": "Centre / ajustement",
     "slideshow": "Diaporama",
-    "silence": "Silence bip"
+    "silence": "Silence bip",
+    "timeMachine": "Machine à remonter le temps",
+    "timeMachineExit": "En direct"
   },
   "eventsViewer": {
     "events": "Événements",

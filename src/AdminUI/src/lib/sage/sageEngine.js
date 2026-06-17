@@ -14,12 +14,13 @@
  */
 
 import * as opc from '../opcClient'
-import { OpcStatusCodes } from '../opcCodes'
+import { OpcStatusCodes, OpcValueTypes } from '../opcCodes'
 import { buildColorTable, traduzCor } from './sageColors'
 import { printf } from './sageFormat'
 import { initVegaChart, updateVegaChart } from './sageVega'
 import { initRadarChart, drawRadar, initArcChart, drawArc } from './sageCharts'
 import { PreviewOverlay } from './sagePreview'
+import { PinnedAnnotationsPanel } from './sagePinned'
 
 // "security card" badge shape (port of websage.js produzEtiq) shown next to a
 // point that carries an annotation or has alarms inhibited.
@@ -64,6 +65,9 @@ export class SageEngine {
     this.annotEls = [] // elements anchoring a pinned-annotation badge
     this._plotsFilled = false
     this.preview = new PreviewOverlay(cfg)
+    this.pinnedPanel = new PinnedAnnotationsPanel(cfg)
+    this.pinnedTimer = null
+    this.screenFilter = '' // group1 filter from #set_filter markup
     this.queryKeys = new Set()
     this.valueByKey = new Map()
     this.keyByTag = new Map()
@@ -80,6 +84,8 @@ export class SageEngine {
     this.blinkList = []
     this.disposed = false
     this.pass = 0
+    this.timeMachine = false // historical-replay mode (pauses realtime polling)
+    this.tmTime = null
   }
 
   // --- screen load -----------------------------------------------------------
@@ -90,6 +96,8 @@ export class SageEngine {
     this.annotEls = []
     this._plotsFilled = false
     this.preview.hide()
+    this.pinnedPanel.hide()
+    this.screenFilter = ''
     this.queryKeys.clear()
     // Reset to pass 0 so this screen's first refresh does a FULL read (askInfo):
     // group1/group2(bay)/descr/stateText/limits only come back on the full read.
@@ -119,6 +127,43 @@ export class SageEngine {
     this.parse()
     this.startBlink()
     await this.refresh()
+    this.startPinnedAnnotations()
+  }
+
+  // --- pinned documental annotations (#PIN notes) ----------------------------
+  // If the screen declared a group1 filter via #set_filter, periodically fetch
+  // that group1's points and list those whose `notes` contain "#PIN".
+  startPinnedAnnotations() {
+    clearInterval(this.pinnedTimer)
+    this.pinnedTimer = null
+    this.pinnedPanel.hide()
+    if (!this.screenFilter) return
+    this.refreshPinnedAnnotations()
+    const sec = this.cfg.ScreenViewer_PinnedAnnotationsRefresh || 9.5
+    this.pinnedTimer = setInterval(() => this.refreshPinnedAnnotations(), sec * 1000)
+  }
+
+  async refreshPinnedAnnotations() {
+    if (this.disposed || !this.screenFilter) return
+    try {
+      const pts = await opc.readFiltered({ station: this.screenFilter }, this.cfg)
+      const items = []
+      for (const p of pts) {
+        if (typeof p.notes === 'string' && p.notes.indexOf('#PIN') !== -1) {
+          let d = p.descr || ''
+          if (p.bay && d.indexOf(p.bay + ' | ') === 0) d = d.substring((p.bay + ' | ').length)
+          items.push({
+            sub: p.station || '',
+            bay: p.bay || '',
+            descr: d,
+            note: p.notes.replace(/#PIN/g, '').trim(),
+          })
+        }
+      }
+      this.pinnedPanel.render(items)
+    } catch (e) {
+      /* keep the last rendered list */
+    }
   }
 
   // Toggle display (and optional translate) of an element by id — port of the
@@ -865,7 +910,7 @@ export class SageEngine {
 
   // --- refresh loop ----------------------------------------------------------
   async refresh() {
-    if (this.disposed) return
+    if (this.disposed || this.timeMachine) return // paused during historical replay
     try {
       const keys = [...this.queryKeys]
       if (keys.length > 0) {
@@ -894,6 +939,70 @@ export class SageEngine {
       () => this.refresh(),
       this.cfg.ScreenViewer_RefreshTime * 1000
     )
+  }
+
+  // --- Time Machine (historical replay) --------------------------------------
+  // Enter pauses realtime polling so historical snapshots aren't overwritten.
+  enterTimeMachine() {
+    this.timeMachine = true
+    clearTimeout(this.refreshTimer)
+    this.refreshTimer = null
+    // historical replay shows past values; live-only overlays don't apply
+    this.preview.hide()
+  }
+
+  // Exit resumes realtime polling (next refresh reloads live values).
+  exitTimeMachine() {
+    if (!this.timeMachine) return
+    this.timeMachine = false
+    this.tmTime = null
+    this.refresh()
+  }
+
+  // Render the screen as it was at instant `date`: snapshot every screen point
+  // from the historian and re-apply. Points without a sample show as failed.
+  async gotoTime(date) {
+    if (this.disposed) return
+    this.timeMachine = true
+    this.tmTime = date
+    const tags = []
+    this.valueByKey.forEach((st) => {
+      if (st.tag) tags.push(st.tag)
+    })
+    if (tags.length === 0) return
+    // blank to failed first; snapshot then overwrites points that had a sample
+    this.valueByKey.forEach((st) => {
+      st.value = 0
+      st.flags |= 0x83
+    })
+    try {
+      const snap = await opc.readHistorySnapshot(tags, date)
+      if (this.tmTime !== date) return // a newer request superseded this one
+      for (const s of snap) {
+        const key = this.keyByTag.get(s.tag)
+        if (key === undefined) continue
+        const st = this.valueByKey.get(key)
+        if (!st) continue
+        const stale = date.getTime() - s.serverTime > 3600 * 1000
+        const badQ = (s.quality & 0x80000000) !== 0
+        const qflag = stale || badQ ? 0x80 : 0
+        if (s.type === OpcValueTypes.Boolean) {
+          st.value = s.value ? 0 : 1 // OSHMI: on(true)=0, off(false)=1
+          st.flags = (s.value ? 0x02 : 0x01) | qflag
+          st.valueStr = st.value === 0 ? st.stateTextTrue || '' : st.stateTextFalse || ''
+        } else {
+          const num = typeof s.value === 'number' ? s.value : parseFloat(s.value)
+          st.value = isNaN(num) ? 0 : num
+          st.flags = 0x20 | qflag
+          st.valueStr = String(s.value)
+        }
+      }
+      this.onStatus('')
+    } catch (e) {
+      this.onStatus('Historian error')
+    }
+    this.applyBindings()
+    this.updateAnnotations()
   }
 
   // Map normalized points into display-semantics value state (V/F arrays).
@@ -1321,13 +1430,16 @@ export class SageEngine {
   stop() {
     clearTimeout(this.refreshTimer)
     clearInterval(this.blinkTimer)
+    clearInterval(this.pinnedTimer)
     this.refreshTimer = null
     this.blinkTimer = null
+    this.pinnedTimer = null
   }
   dispose() {
     this.disposed = true
     this.stop()
     this.preview.dispose()
+    this.pinnedPanel.dispose()
     if (this.container) this.container.innerHTML = ''
   }
 }

@@ -71,7 +71,7 @@
       titleKey: 'dashboard.displayViewer',
       icon: Monitor,
       color: 'primary',
-      route: '/display-viewer',
+      route: '/display-viewer-new',
       page: '/display.html',
       target: '_blank',
     },

@@ -120,7 +120,9 @@
     "panRight": "Desplazamiento a la derecha",
     "center": "Centro / ajuste",
     "slideshow": "Presentación de diapositivas",
-    "silence": "Silencio pitido"
+    "silence": "Silencio pitido",
+    "timeMachine": "Máquina del tiempo",
+    "timeMachineExit": "Vivir"
   },
   "eventsViewer": {
     "events": "Eventos",

@@ -120,7 +120,9 @@
     "panRight": "Pan right",
     "center": "Center / fit",
     "slideshow": "Slideshow",
-    "silence": "Silence beep"
+    "silence": "Silence beep",
+    "timeMachine": "Time Machine",
+    "timeMachineExit": "Live"
   },
   "eventsViewer": {
     "events": "Events",

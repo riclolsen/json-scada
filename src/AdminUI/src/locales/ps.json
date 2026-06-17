@@ -120,7 +120,9 @@
     "panRight": "ښي خوا ته پین ​​کړئ",
     "center": "مرکز / فټ",
     "slideshow": "سلایډ شو",
-    "silence": "د چوپتیا بیپ"
+    "silence": "د چوپتیا بیپ",
+    "timeMachine": "د وخت ماشین",
+    "timeMachineExit": "ژوندی"
   },
   "eventsViewer": {
     "events": "پیښې",

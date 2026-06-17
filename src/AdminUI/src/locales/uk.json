@@ -120,7 +120,9 @@
     "panRight": "Панорамування праворуч",
     "center": "Центр / посадка",
     "slideshow": "Слайд-шоу",
-    "silence": "Звуковий сигнал без звуку"
+    "silence": "Звуковий сигнал без звуку",
+    "timeMachine": "Машина часу",
+    "timeMachineExit": "Живий"
   },
   "eventsViewer": {
     "events": "Події",

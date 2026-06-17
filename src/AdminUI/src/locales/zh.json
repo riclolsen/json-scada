@@ -120,7 +120,9 @@
     "panRight": "向右平移",
     "center": "中心/合",
     "slideshow": "幻灯片",
-    "silence": "静音提示音"
+    "silence": "静音提示音",
+    "timeMachine": "时间机器",
+    "timeMachineExit": "居住"
   },
   "eventsViewer": {
     "events": "活动",
