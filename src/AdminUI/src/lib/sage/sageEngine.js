@@ -21,6 +21,7 @@ import { initVegaChart, updateVegaChart } from './sageVega'
 import { initRadarChart, drawRadar, initArcChart, drawArc } from './sageCharts'
 import { PreviewOverlay } from './sagePreview'
 import { PinnedAnnotationsPanel } from './sagePinned'
+import { AlarmBoxPanel } from './sageAlarmBox'
 
 // "security card" badge shape (port of websage.js produzEtiq) shown next to a
 // point that carries an annotation or has alarms inhibited.
@@ -33,6 +34,26 @@ const SECURITY_CARD_PATH =
 const RETNOK = '?#?'
 const SVGNS = 'http://www.w3.org/2000/svg'
 const INKNS = 'http://www.inkscape.org/namespaces/inkscape'
+
+// SMIL animation helpers exposed to screen scripts (legacy $W.Animate/RemoveAnimate)
+function animateEl(obj, type, attrs) {
+  if (!obj || !obj.appendChild) return
+  const a = document.createElementNS(SVGNS, type || 'animate')
+  if (attrs) for (const k in attrs) a.setAttributeNS(null, k, attrs[k])
+  obj.appendChild(a)
+  if (typeof a.beginElement === 'function') {
+    try {
+      a.beginElement()
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  return a
+}
+function removeAnimateEl(obj) {
+  if (!obj || !obj.querySelectorAll) return
+  obj.querySelectorAll('animate, animateTransform, animateMotion, animateColor').forEach((n) => n.remove())
+}
 
 // linear RGB mix (chroma.mix substitute for color interpolation anchors)
 function rgbMix(a, b, t) {
@@ -67,6 +88,7 @@ export class SageEngine {
     this.preview = new PreviewOverlay(cfg)
     this.pinnedPanel = new PinnedAnnotationsPanel(cfg)
     this.pinnedTimer = null
+    this.alarmBox = new AlarmBoxPanel(cfg, (k) => this.onOpenPoint(k))
     this.screenFilter = '' // group1 filter from #set_filter markup
     this.queryKeys = new Set()
     this.valueByKey = new Map()
@@ -86,6 +108,86 @@ export class SageEngine {
     this.pass = 0
     this.timeMachine = false // historical-replay mode (pauses realtime polling)
     this.tmTime = null
+
+    // per-refresh script bindings (#exec_on_update / script evt exec_on_update)
+    this.execOnUpdate = []
+    // tooltips whose text contains inline !EVAL ... !END expressions
+    this.dynTooltips = []
+    this.setupScriptApi()
+  }
+
+  // Build the value/flag lookups (V/F/S/T) and the $W/WebSAGE compat object that
+  // screen-authored !EVAL expressions and exec/script snippets reference (ported
+  // from the legacy global WebSAGE arrays/functions).
+  setupScriptApi() {
+    const byKey = (k) => (typeof k === 'string' || typeof k === 'number' ? this.valueByKey.get(parseInt(k)) : undefined)
+    const proxy = (pick) =>
+      new Proxy(
+        {},
+        {
+          get: (_t, k) => {
+            const st = byKey(k)
+            return st ? pick(st) : pick(null)
+          },
+        }
+      )
+    this._V = proxy((st) => (st ? st.value : 0))
+    this._F = proxy((st) => (st ? st.flags : 0))
+    this._S = proxy((st) => (st ? st.valueStr : ''))
+    this._T = proxy((st) => (st ? st.alarmTime : ''))
+    this._scriptApi = {
+      V: this._V,
+      F: this._F,
+      S: this._S,
+      T: this._T,
+      getValue: (t) => this.getValue(t),
+      getFlags: (t) => this.getFlags(t),
+      valorTagueado: (t, o) => this.valorTagueado(t, o),
+      Animate: (obj, type, attrs) => animateEl(obj, type, attrs),
+      RemoveAnimate: (obj) => removeAnimateEl(obj),
+    }
+  }
+
+  // Evaluate a screen expression and return its value (for !EVAL). Returns
+  // undefined on error. `el` is exposed as `thisobj`.
+  evalValue(expr, el) {
+    try {
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', 'return (' + expr + ')')
+      return fn(el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi)
+    } catch (e) {
+      return undefined
+    }
+  }
+
+  // Run a screen script snippet (statements) with the compat API in scope.
+  runScript(src, el) {
+    try {
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', src)
+      fn(el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi)
+    } catch (e) {
+      /* ignore screen-script errors */
+    }
+  }
+
+  // Replace inline `!EVAL <expr> !END <tail>` segments in `text` with the
+  // evaluated (numeric→%1.3f) result. Used by dynamic tooltips / text.
+  evalInline(text, el) {
+    let out = String(text)
+    let guard = 0
+    while (out.indexOf('!EVAL') !== -1 && guard++ < 32) {
+      const pini = out.indexOf('!EVAL')
+      const pend = out.indexOf('!END', pini + 1)
+      const exprEnd = pend === -1 ? out.length : pend
+      const expr = out.substring(pini + 5, exprEnd)
+      let val = this.evalValue(expr, el)
+      const n = Number(val)
+      if (val !== undefined && val !== null && isFinite(n)) val = printf('%1.3f', n)
+      const tail = pend === -1 ? '' : out.substring(pend + 4)
+      out = out.substring(0, pini) + (val == null ? '' : val) + tail
+    }
+    return out
   }
 
   // --- screen load -----------------------------------------------------------
@@ -94,9 +196,12 @@ export class SageEngine {
     this.bindings = []
     this.plotBindings = []
     this.annotEls = []
+    this.execOnUpdate = []
+    this.dynTooltips = []
     this._plotsFilled = false
     this.preview.hide()
     this.pinnedPanel.hide()
+    this.alarmBox.hide()
     this.screenFilter = ''
     this.queryKeys.clear()
     // Reset to pass 0 so this screen's first refresh does a FULL read (askInfo):
@@ -275,8 +380,12 @@ export class SageEngine {
   // group's clone map (["%n=26549", ...]). Returns the tag unchanged if no match.
   resolveCloneTag(el, tag) {
     if (tag == null) return tag
-    const s = String(tag)
+    let s = String(tag)
     if (s.indexOf('%') < 0) return tag
+    // Replace EVERY occurrence of EVERY clone-map variable, walking from the
+    // nearest ancestor map outward (inner maps win, since their substitution
+    // runs first and removes the pattern). Handles multi-var !EVAL expressions
+    // like `V[%n]+V[%m]`, not just a single leading %n.
     let node = el.parentNode
     while (node && node !== this.svgEl && node.nodeType === 1) {
       if (node._cloneMap) {
@@ -285,15 +394,12 @@ export class SageEngine {
           if (eq < 0) continue
           const pat = m.substring(0, eq)
           const val = m.substring(eq + 1)
-          const pos = s.indexOf('%')
-          if (pat === s.substring(pos, pos + pat.length)) {
-            return s.substring(0, pos) + val + s.substring(pos + pat.length)
-          }
+          if (pat && s.indexOf(pat) !== -1) s = s.split(pat).join(val)
         }
       }
       node = node.parentNode
     }
-    return tag
+    return s
   }
 
   parseElement(el) {
@@ -458,9 +564,23 @@ export class SageEngine {
 
   parseTooltip(el, tagObj) {
     const params = Array.isArray(tagObj.param) ? tagObj.param : [tagObj.param]
+    let text = this.resolveCloneTag(el, params.join('\n'))
     const title = document.createElementNS(SVGNS, 'title')
-    title.textContent = params.join('\n')
     el.appendChild(title)
+    if (text.indexOf('!EVAL') !== -1) {
+      // live tooltip: re-evaluate the inline !EVAL expressions each refresh
+      this.dynTooltips.push({ titleEl: title, el, template: text })
+      title.textContent = this.evalInline(text, el)
+    } else {
+      title.textContent = text
+    }
+  }
+
+  updateDynamicTooltips() {
+    for (const t of this.dynTooltips) {
+      const txt = this.evalInline(t.template, t.el)
+      if (t.titleEl.textContent !== txt) t.titleEl.textContent = txt
+    }
   }
 
   parsePopup(el, tagObj) {
@@ -587,12 +707,11 @@ export class SageEngine {
           })
           if (evt.indexOf('mouse') >= 0 && el.style && !el.blockPopup) el.style.cursor = 'pointer'
         } else if (evt === 'exec_once') {
-          try {
-            // eslint-disable-next-line no-new-func
-            new Function('thisobj', 'SVGDoc', param)(el, this.svgEl)
-          } catch (e) {
-            /* ignore */
-          }
+          this.runScript(param, el)
+        } else if (evt === 'exec_on_update') {
+          // run this snippet every refresh
+          this.execOnUpdate.push({ el, src: param })
+          this.runScript(param, el)
         }
       }
       return
@@ -620,12 +739,35 @@ export class SageEngine {
       (tagObj.tag === '#exec' || tagObj.tag === '#exec_once') &&
       tagObj.src
     ) {
-      try {
-        // eslint-disable-next-line no-new-func
-        new Function('thisobj', 'SVGDoc', tagObj.src)(el, this.svgEl)
-      } catch (e) {
-        this.onStatus('exec error: ' + e.message)
+      this.runScript(tagObj.src, el)
+      return
+    }
+    // #exec_on_update: run the script on every data refresh (thisobj = element)
+    if (tagObj.attr === 'set' && tagObj.tag === '#exec_on_update' && tagObj.src) {
+      this.execOnUpdate.push({ el, src: tagObj.src })
+      this.runScript(tagObj.src, el)
+      return
+    }
+    // #camera / #foreign_object: replace the placeholder <rect> with a
+    // <foreignObject> hosting an <iframe> (camera stream or arbitrary URL).
+    if (
+      tagObj.attr === 'set' &&
+      (tagObj.tag === '#camera' || tagObj.tag === '#foreign_object') &&
+      el.tagName === 'rect'
+    ) {
+      const decor =
+        tagObj.prompt || 'width="100%" height="100%" frameborder="0" scrolling="no"'
+      const url =
+        tagObj.tag === '#camera'
+          ? 'camera.html?CameraName=' + encodeURIComponent(tagObj.src || 'CAM001')
+          : String(tagObj.src || '')
+      const fo = document.createElementNS(SVGNS, 'foreignObject')
+      for (const a of ['x', 'y', 'width', 'height', 'transform', 'id', 'style', 'class']) {
+        const v = el.getAttributeNS(null, a)
+        if (v != null) fo.setAttributeNS(null, a, v)
       }
+      fo.innerHTML = `<iframe ${decor} src="${url}"></iframe>`
+      el.parentNode.replaceChild(fo, el)
       return
     }
     // #radar (spider chart) / #arc (donut gauge)
@@ -841,6 +983,14 @@ export class SageEngine {
     if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s)).value
     if (s.charAt(0) === '#' || s.charAt(0) === '%') return RETNOK
 
+    // !EVAL <expr> [!END ...] : evaluate the expression (thisobj = element)
+    if (s.indexOf('!EVAL') === 0) {
+      const pend = s.indexOf('!END', 5)
+      const expr = s.substring(5, pend === -1 ? s.length : pend)
+      const v = this.evalValue(expr, obj)
+      return v === undefined ? RETNOK : v
+    }
+
     const sub = (n) => {
       let x = s.substr(n).trim()
       if (isNaN(parseInt(x))) x = this.keyByTag.get(x)
@@ -941,6 +1091,7 @@ export class SageEngine {
       this.onAlarmBeep(beep.length && beep[0].valueRaw ? 1 : 0)
       this.applyBindings()
       this.updateAnnotations()
+      this.refreshAlarmBox() // fire-and-forget; current alarms for the #set_filter group1
       this.pass++
       this.onStatus('')
     } catch (e) {
@@ -952,6 +1103,38 @@ export class SageEngine {
     )
   }
 
+  // Refresh the embedded alarm box with the current alarms of the screen's
+  // group1 filter (#set_filter). No filter -> no box.
+  async refreshAlarmBox() {
+    if (this.disposed || this.timeMachine || !this.screenFilter) return
+    if (this._alarmBusy) return
+    this._alarmBusy = true
+    try {
+      const pts = await opc.readFiltered(
+        { station: this.screenFilter, onlyAlarms: true },
+        this.cfg
+      )
+      pts.sort((a, b) => (b.priority || 0) - (a.priority || 0) || (b.key || 0) - (a.key || 0))
+      const items = pts.map((p) => {
+        let d = p.descr || ''
+        if (p.bay && d.indexOf(p.bay + ' | ') === 0) d = d.substring((p.bay + ' | ').length)
+        return {
+          key: p.key,
+          sub: p.station || '',
+          bay: p.bay || '',
+          descr: d,
+          valueStr: p.valueStr || '',
+          alarmTime: p.alarmTime || '',
+        }
+      })
+      this.alarmBox.render(items)
+    } catch (e) {
+      /* keep last list */
+    } finally {
+      this._alarmBusy = false
+    }
+  }
+
   // --- Time Machine (historical replay) --------------------------------------
   // Enter pauses realtime polling so historical snapshots aren't overwritten.
   enterTimeMachine() {
@@ -960,6 +1143,7 @@ export class SageEngine {
     this.refreshTimer = null
     // historical replay shows past values; live-only overlays don't apply
     this.preview.hide()
+    this.alarmBox.hide() // alarms are realtime — hidden during replay (legacy)
   }
 
   // Exit resumes realtime polling (next refresh reloads live values).
@@ -1105,6 +1289,9 @@ export class SageEngine {
         /* keep animating other elements */
       }
     }
+    // per-refresh screen scripts and live !EVAL tooltips
+    for (const e of this.execOnUpdate) this.runScript(e.src, e.el)
+    this.updateDynamicTooltips()
   }
 
   applyOne(b, el, vt) {
@@ -1340,11 +1527,13 @@ export class SageEngine {
     if (attrib !== '') {
       el.setAttributeNS(null, attrib, attribval)
     } else if (script !== '') {
-      // DEFERRED: per-color inline scripts (eval). Reset to init colors.
+      // per-color inline script: reset to authored colors, then run the snippet
+      // (e.g. $W.Animate(thisobj, ...)) with thisobj = element.
       if (el.style) {
         el.style.fill = b.initfill
         el.style.stroke = b.initstroke
       }
+      this.runScript(script, el)
     } else if (el.style) {
       el.style.fill = fill !== '' ? fill : b.initfill
       el.style.stroke = stroke !== '' ? stroke : b.initstroke
@@ -1451,6 +1640,7 @@ export class SageEngine {
     this.stop()
     this.preview.dispose()
     this.pinnedPanel.dispose()
+    this.alarmBox.dispose()
     if (this.container) this.container.innerHTML = ''
   }
 }
