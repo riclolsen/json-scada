@@ -19,6 +19,15 @@ import { buildColorTable, traduzCor } from './sageColors'
 import { printf } from './sageFormat'
 import { initVegaChart, updateVegaChart } from './sageVega'
 import { initRadarChart, drawRadar, initArcChart, drawArc } from './sageCharts'
+import { PreviewOverlay } from './sagePreview'
+
+// "security card" badge shape (port of websage.js produzEtiq) shown next to a
+// point that carries an annotation or has alarms inhibited.
+const SECURITY_CARD_PATH =
+  'M0.413787841796875 0.5425290489196777L0.413787841796875 5.095224800109864' +
+  'L7.873085021972656 11.345515670776367L12.482757568359375 6.48417896270752' +
+  'L5.6939697265625 0.38820165634155274L0.4976043701171875 0.31103796005249024' +
+  'L0.413787841796875 0.6196927452087402'
 
 const RETNOK = '?#?'
 const SVGNS = 'http://www.w3.org/2000/svg'
@@ -52,7 +61,9 @@ export class SageEngine {
     this.svgEl = null
     this.bindings = []
     this.plotBindings = []
+    this.annotEls = [] // elements anchoring a pinned-annotation badge
     this._plotsFilled = false
+    this.preview = new PreviewOverlay(cfg)
     this.queryKeys = new Set()
     this.valueByKey = new Map()
     this.keyByTag = new Map()
@@ -76,8 +87,17 @@ export class SageEngine {
     this.stop()
     this.bindings = []
     this.plotBindings = []
+    this.annotEls = []
     this._plotsFilled = false
+    this.preview.hide()
     this.queryKeys.clear()
+    // Reset to pass 0 so this screen's first refresh does a FULL read (askInfo):
+    // group1/group2(bay)/descr/stateText/limits only come back on the full read.
+    // Without this, switching screens (engine reused) left pass>0, so new points
+    // got value-only reads and labels like BAY#/DCR# stayed blank until a reload.
+    this.pass = 0
+    this.valueByKey.clear()
+    this.keyByTag.clear()
     const resp = await fetch(svgUrl)
     const text = await resp.text()
     this.container.innerHTML = text
@@ -289,12 +309,35 @@ export class SageEngine {
       }
       this.bindings.push(tagObj)
     }
+    // Faceplate: a clone group carries ONE pinned tag for the whole symbol (its
+    // primary %-variable point); its internal objects don't get their own (see
+    // registerAnnotation). Done after the loop so notrace/block is already set.
+    if (el._cloneMap && el._cloneMap.length && el.children && el.children.length) {
+      const first = String(el._cloneMap[0])
+      const eq = first.indexOf('=')
+      const primary = eq >= 0 ? first.substring(eq + 1).trim() : ''
+      if (primary) this.registerAnnotation(el, primary)
+    }
   }
 
   parseGet(el, tagObj) {
     const tc = el.textContent || ''
-    if (tc.indexOf('|') >= 0) tagObj.txtOFFON = tc.split('|')
-    else tagObj.formatoC = tc
+    if (tc.indexOf('|') >= 0) {
+      tagObj.txtOFFON = tc.split('|')
+    } else {
+      tagObj.formatoC = tc
+      // single analog reading: hovering it previews the point's trend chart
+      const tag = tagObj.tag
+      this.preview.attach(
+        el,
+        () => {
+          const key = this.resolveKey(tag)
+          return key !== undefined ? 'trend.html?NPONTO=' + key + '&HIDECTRLS=1' : null
+        },
+        610,
+        340
+      )
+    }
     this.collectPoint(tagObj.tag)
     this.wirePopup(el, tagObj.tag)
   }
@@ -370,10 +413,13 @@ export class SageEngine {
     if (src === 'block') {
       tagObj.blockPopup = 1
       el.blockPopup = 1
+      this.unregisterAnnotation(el) // never show a tag symbol on a blocked object
     } else if (src === 'notrace') {
       el.noTrace = 1
+      this.unregisterAnnotation(el) // never show a tag symbol on a notrace object
     } else if (typeof src === 'string' && src.indexOf('preview:') === 0) {
-      // DEFERRED: hover preview
+      // hover preview of an arbitrary URL
+      this.preview.attach(el, src.substr(8), tagObj.width, tagObj.height)
     } else {
       this.collectPoint(src)
       this.wirePopup(el, src)
@@ -415,12 +461,22 @@ export class SageEngine {
         window.open(url, '', `height=${tagObj.height},width=${tagObj.width}`)
       )
     } else if (src.indexOf('preview:') === 0) {
-      // DEFERRED: hover preview
+      // hover preview of an arbitrary URL
+      this.preview.attach(el, src.substr(8), tagObj.width, tagObj.height)
     } else {
       // link to another screen (file name without path/extension)
       const screen = src.trim()
       el.style.cursor = 'pointer'
       el.addEventListener('click', () => this.onScreenLink(screen))
+      // hovering a screen link previews that screen (zoomed-out, toolbar hidden)
+      const name = screen.endsWith('.svg') ? screen : screen + '.svg'
+      const zoom = this.cfg.ScreenViewer_DisplayPreviewZoom || 0.5
+      const zpw = Math.round(this.cfg.ScreenViewer_SVGMaxWidth / zoom)
+      const zph = Math.round(this.cfg.ScreenViewer_SVGMaxHeight / zoom)
+      this.preview.attach(
+        el,
+        `display.html?SELTELA=../svg/${name}&ZPX=0&ZPY=0&ZPW=${zpw}&ZPH=${zph}&HIDETB=1`
+      )
     }
   }
 
@@ -558,6 +614,134 @@ export class SageEngine {
       const key = this.resolveKey(tag)
       if (key !== undefined) this.onOpenPoint(key)
     })
+    this.registerAnnotation(el, tag)
+  }
+
+  // True if `el` or any ancestor is marked popup `notrace`/`block` — those
+  // objects (and everything inside them, e.g. clone groups whose children copy
+  // bindings via #copy_xsac_from) must never show a pinned tag symbol.
+  isTraceBlocked(el) {
+    let node = el
+    while (node && node !== this.svgEl && node.nodeType === 1) {
+      if (node.noTrace || node.blockPopup) return true
+      node = node.parentNode
+    }
+    return false
+  }
+
+  // True if `el` sits INSIDE a faceplate (clone group). Such internal objects
+  // don't carry their own pinned tag — the faceplate group does (registered in
+  // parseLabel), so the symbol shows a single tag instead of one per element.
+  insideFaceplate(el) {
+    let node = el.parentNode
+    while (node && node !== this.svgEl && node.nodeType === 1) {
+      if (node._cloneMap) return true
+      node = node.parentNode
+    }
+    return false
+  }
+
+  isDummyTag(tag) {
+    const n = parseInt(tag)
+    return n === 99999 || n === 99989 || n === 0
+  }
+
+  // Register `el` as the anchor for `tag`'s pinned-annotation badge. The badge
+  // itself is created lazily the first time the point actually carries an
+  // annotation or has alarms inhibited (see updateAnnotations). One per element.
+  // Skipped for: popup `notrace`/`block` objects (directly or via an ancestor),
+  // objects inside a faceplate clone group, and dummy points. parse() runs in
+  // document order so a group's flags are set before its children are parsed.
+  registerAnnotation(el, tag) {
+    if (el._annotTag !== undefined || this.isTraceBlocked(el) || this.insideFaceplate(el)) return
+    const s = String(tag).trim()
+    if (s === '' || s.charAt(0) === '#' || s.charAt(0) === '%' || this.isDummyTag(s)) return
+    el._annotTag = s
+    this.annotEls.push(el)
+  }
+
+  // Remove any pinned-annotation registration/badge from `el`. Called when an
+  // element is (later) marked popup `notrace`/`block` so its tag symbol never
+  // appears, regardless of the order its SAGE bindings were parsed.
+  unregisterAnnotation(el) {
+    const i = this.annotEls.indexOf(el)
+    if (i >= 0) this.annotEls.splice(i, 1)
+    el._annotTag = undefined
+    if (el._annotBadge) {
+      if (el._annotBadge.parentNode) el._annotBadge.parentNode.removeChild(el._annotBadge)
+      el._annotBadge = null
+    }
+  }
+
+  // Create the (hidden) annotation badge anchored to the bottom-right of `el`.
+  ensureAnnotBadge(el) {
+    if (el._annotBadge) return el._annotBadge
+    let bb
+    try {
+      bb = el._bbox || el.getBBox()
+      el._bbox = bb
+    } catch (e) {
+      return null
+    }
+    let x = bb.x + bb.width
+    let y = bb.y + bb.height
+    if (x === 0 && y === 0) {
+      x = parseFloat(el.getAttributeNS(null, 'x')) || 0
+      y = parseFloat(el.getAttributeNS(null, 'y')) || 0
+    }
+    const xfm = el.getAttributeNS(null, 'transform') || ''
+    const scale = this.cfg.ScreenViewer_SecurityCardScale || 1
+    const badge = document.createElementNS(SVGNS, 'path')
+    badge.setAttributeNS(null, 'd', SECURITY_CARD_PATH)
+    badge.setAttributeNS(null, 'stroke-width', '1.1')
+    badge.setAttributeNS(null, 'stroke-opacity', '0.9')
+    badge.setAttributeNS(null, 'fill-opacity', '0.8')
+    badge.setAttributeNS(null, 'cursor', 'pointer')
+    badge.setAttributeNS(null, 'transform', `${xfm} translate(${x} ${y}) scale(${scale})`)
+    badge.style.display = 'none'
+    const title = document.createElementNS(SVGNS, 'title')
+    badge.appendChild(title)
+    badge.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      const key = this.resolveKey(el._annotTag)
+      if (key !== undefined) this.onOpenPoint(key)
+    })
+    el.parentNode.appendChild(badge)
+    el._annotBadge = badge
+    return badge
+  }
+
+  // Per-refresh: show a pinned badge on every point that has an annotation
+  // (yellow, tooltip = annotation text) or has alarms inhibited (gray); hide it
+  // otherwise. Port of websage.js visibEtiq.
+  updateAnnotations() {
+    for (const el of this.annotEls) {
+      const st = this.getState(el._annotTag)
+      if (!st) continue
+      const note = st.annotation || ''
+      const inhibited = (st.flags & 0x400) !== 0
+      if (note === '' && !inhibited) {
+        if (el._annotBadge) {
+          el._annotBadge.style.display = 'none'
+          el._annotBadge.firstElementChild.textContent = ''
+        }
+        continue
+      }
+      const badge = this.ensureAnnotBadge(el)
+      if (!badge) continue
+      if (note !== '') {
+        badge.setAttributeNS(null, 'fill', this.cfg.ScreenViewer_TagFillColor)
+        badge.setAttributeNS(null, 'stroke', this.cfg.ScreenViewer_TagStrokeColor)
+        badge.setAttributeNS(null, 'opacity', '0.8')
+        badge.firstElementChild.textContent = note.replace(/[|^]/g, '\n')
+      } else {
+        badge.setAttributeNS(null, 'fill', this.cfg.ScreenViewer_TagInhAlmFillColor)
+        badge.setAttributeNS(null, 'stroke', this.cfg.ScreenViewer_TagInhAlmStrokeColor)
+        badge.setAttributeNS(null, 'opacity', '0.5')
+        badge.firstElementChild.textContent = ''
+      }
+      badge.style.display = ''
+    }
   }
 
   resolveKey(tag) {
@@ -700,6 +884,7 @@ export class SageEngine {
       const beep = await opc.readPoints([opc.BEEP_POINTKEY], true, this.cfg)
       this.onAlarmBeep(beep.length && beep[0].valueRaw ? 1 : 0)
       this.applyBindings()
+      this.updateAnnotations()
       this.pass++
       this.onStatus('')
     } catch (e) {
@@ -737,9 +922,11 @@ export class SageEngine {
       if (p.flags & 0x800) flags |= 0x800
       const prev = this.valueByKey.get(p.key)
       if (prev && !full) {
-        // value-only update: keep static fields, refresh dynamic ones
+        // value-only update: keep static fields, refresh dynamic ones. The
+        // annotation/alarm-inhibited bits only come back on the full (askInfo)
+        // read, so preserve them from the last full pass.
         prev.value = value
-        prev.flags = flags
+        prev.flags = flags | (prev.flags & (0x200 | 0x400))
       } else {
         this.valueByKey.set(p.key, {
           value,
@@ -754,10 +941,34 @@ export class SageEngine {
           descr: p.descr,
           bay: p.bay,
           station: p.station,
+          annotation: p.annotation || '',
         })
       }
       this.keyByTag.set(p.tag, p.key)
     })
+  }
+
+  // Re-read a single point's FULL properties (askInfo) and re-apply. Used after
+  // the point dialog writes an annotation / alarm-inhibit / limits so the change
+  // (e.g. the pinned-annotation badge) shows immediately, without waiting for a
+  // screen reload — annotation/limits only come back on a full read. A short
+  // delay + one retry covers the write's propagation into the realtime store.
+  async refreshPoint(key) {
+    if (this.disposed || key === undefined || key === null) return
+    for (let attempt = 0; attempt < 2 && !this.disposed; attempt++) {
+      await new Promise((r) => setTimeout(r, attempt === 0 ? 400 : 1200))
+      try {
+        const points = await opc.readPoints([key], true, this.cfg)
+        if (points.length) {
+          this.ingest(points, true)
+          this.applyBindings()
+          this.updateAnnotations()
+          if (points[0].annotation || points[0].alarmDisabled) return // change landed
+        }
+      } catch (e) {
+        /* retry */
+      }
+    }
   }
 
   applyBindings() {
@@ -1116,6 +1327,7 @@ export class SageEngine {
   dispose() {
     this.disposed = true
     this.stop()
+    this.preview.dispose()
     if (this.container) this.container.innerHTML = ''
   }
 }

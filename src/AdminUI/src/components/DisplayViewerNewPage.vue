@@ -68,7 +68,7 @@
     <div ref="svgContainer" class="svg-container" @wheel.prevent="onWheel"></div>
 
     <!-- Point Info + Command dialogs (shared component) -->
-    <PointInfoDialog v-model="infoOpen" :point-key="infoKey" />
+    <PointInfoDialog v-model="infoOpen" :point-key="infoKey" @saved="onPointSaved" />
 
     <!-- Beep sounds -->
     <audio ref="criticalSound" src="/sounds/critical.wav"></audio>
@@ -111,6 +111,12 @@ let slideTimer = null
 function openPoint(key) {
   infoKey.value = key
   infoOpen.value = true
+}
+
+// after the dialog writes properties (e.g. a blocking annotation), re-read that
+// point's full info so the pinned-annotation badge appears without a reload
+function onPointSaved(key) {
+  if (engine) engine.refreshPoint(key)
 }
 
 function loadScreenByRef(ref) {

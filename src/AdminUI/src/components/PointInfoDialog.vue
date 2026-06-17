@@ -102,7 +102,7 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   pointKey: { type: [Number, String], default: 0 },
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'saved'])
 
 const { t } = useI18n()
 const cfg = () => getViewersConfig()
@@ -219,6 +219,7 @@ async function saveProperties() {
   }
   await opc.writeProperties({ pointKey: p.key, props: propsToWrite })
   updateCommandBlocked()
+  emit('saved', p.key)
   open.value = false
 }
 

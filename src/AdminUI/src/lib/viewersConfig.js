@@ -97,6 +97,8 @@ export const defaultConfig = {
   ScreenViewer_DefaultDisplayPreviewWidth: 700,
   ScreenViewer_DefaultDisplayPreviewHeight: 480,
   ScreenViewer_DisplayPreviewZoom: 0.5,
+  ScreenViewer_DisplayPreviewTimeout: 1500, // ms hover delay before showing a preview
+  ScreenViewer_SecurityCardScale: 1.0, // scale of the pinned annotation badge
   ScreenViewer_SlideShowInterval: 10, // seconds
   ScreenViewer_EnableTimeMachine: 1,
   VisorTelas_BackgroundSVG: '#dddddd',
