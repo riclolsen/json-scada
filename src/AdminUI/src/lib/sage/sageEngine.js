@@ -225,17 +225,28 @@ export class SageEngine {
   async runEmbeddedScripts() {
     const scripts = this.svgEl.getElementsByTagName('script')
     let code = ''
+    let skippedExternal = 0
     for (let i = 0; i < scripts.length; i++) {
       const href =
         scripts[i].getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
         scripts[i].getAttribute('href')
+      // Do NOT load external <script href=...> libraries: unlike the standalone
+      // legacy display.html (which owns the whole page), here the viewer runs
+      // inside the AdminUI SPA. Some screens embed full standalone-SVG GUI
+      // frameworks (e.g. pergola.js) that seize document.documentElement and
+      // collapse the host app to 0x0. Only run the screen's own inline scripts.
+      if (href) {
+        skippedExternal++
+        continue
+      }
       try {
-        if (href) code += await (await fetch(href)).text() + '\n'
-        else code += scripts[i].textContent + '\n'
+        code += scripts[i].textContent + '\n'
       } catch (e) {
-        /* ignore individual script load errors */
+        /* ignore individual script errors */
       }
     }
+    if (skippedExternal > 0)
+      this.onStatus(`Skipped ${skippedExternal} external screen script(s)`)
     if (code.trim() !== '') {
       try {
         // eslint-disable-next-line no-new-func

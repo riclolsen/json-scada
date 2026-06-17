@@ -89,7 +89,7 @@ export class PinnedAnnotationsPanel {
       '</div>'
     for (const it of items) {
       const text = `:: ${it.sub} | ${it.bay} | ${it.descr}\n${it.note}\n`
-      html += `<div style="${st};border-radius:5px;">${escapeHtml(text)}</div>`
+      html += `<div class="sage-pin-row" style="${st};border-radius:5px;word-break:break-word;">${escapeHtml(text)}</div>`
     }
     if (this._html !== html) {
       this.inner.innerHTML = html
@@ -107,7 +107,11 @@ export class PinnedAnnotationsPanel {
 
   applyCollapsed() {
     if (!this.outer) return
+    this.outer.style.overflowX = 'hidden'
     if (this.collapsed) {
+      // collapsed: show ONLY the count chip (a small rounded badge), like the
+      // legacy viewer — hide the rows entirely so nothing (and no scrollbar)
+      // peeks through.
       this.outer.style.maxHeight = '35px'
       this.outer.style.overflowY = 'hidden'
       this.inner.style.width = '28px'
@@ -116,9 +120,11 @@ export class PinnedAnnotationsPanel {
       this.outer.style.overflowY = 'auto'
       this.inner.style.width = this.cfg.ScreenViewer_PinnedAnnotationsWidth || '300px'
     }
-    // the count chip shows only when collapsed
     const c = this.inner.querySelector('.sage-pin-count')
     if (c) c.style.display = this.collapsed ? '' : 'none'
+    this.inner.querySelectorAll('.sage-pin-row').forEach((r) => {
+      r.style.display = this.collapsed ? 'none' : ''
+    })
   }
 
   hide() {
