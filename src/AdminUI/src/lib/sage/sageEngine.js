@@ -1114,7 +1114,8 @@ export class SageEngine {
         { station: this.screenFilter, onlyAlarms: true },
         this.cfg
       )
-      pts.sort((a, b) => (b.priority || 0) - (a.priority || 0) || (b.key || 0) - (a.key || 0))
+      // keep the server's result order (legacy almbox adds rows as returned, no
+      // client-side sort) so the listed alarms match the old viewer exactly
       const items = pts.map((p) => {
         let d = p.descr || ''
         if (p.bay && d.indexOf(p.bay + ' | ') === 0) d = d.substring((p.bay + ' | ').length)
