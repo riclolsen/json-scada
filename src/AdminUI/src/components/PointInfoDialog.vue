@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Point Info dialog -->
-    <v-dialog v-model="open" max-width="520" scrollable>
+    <v-dialog v-model="open" max-width="520" scrollable :content-class="cornerClass" :persistent="anchor !== null">
       <v-card v-if="info.point">
         <v-card-title class="text-subtitle-1">
           {{ info.point.key }} : {{ info.point.tag }}
@@ -58,7 +58,7 @@
     </v-dialog>
 
     <!-- Command dialog -->
-    <v-dialog v-model="command.open" max-width="440" scrollable content-class="cmd-dialog">
+    <v-dialog v-model="command.open" max-width="440" scrollable :content-class="cmdContentClass" :persistent="anchor !== null">
       <v-card v-if="command.point">
         <v-card-title class="text-subtitle-1">{{ $t('tabularViewer.cmd.title') }}</v-card-title>
         <v-card-subtitle>{{ command.point.station }} - {{ command.point.descr }}</v-card-subtitle>
@@ -83,7 +83,7 @@
             {{ $t('tabularViewer.cmd.execute') }}
           </v-btn>
           <v-spacer></v-spacer>
-          <v-btn variant="text" @click="command.open = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn variant="text" @click="closeCommand">{{ $t('common.cancel') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -101,17 +101,54 @@ import { userHasRight, storageAvailable, decodeQuality } from '../lib/viewerHelp
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   pointKey: { type: [Number, String], default: 0 },
+  // {x,y} client coords of the clicked object; when set, the dialog pins to the
+  // opposite corner (so the object stays visible) and drops the scrim.
+  anchor: { type: Object, default: null },
 })
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+// Pin the dialog to the screen corner opposite the clicked object.
+const cornerClass = computed(() => {
+  const a = props.anchor
+  if (!a) return ''
+  const w = window.innerWidth || 1
+  const h = window.innerHeight || 1
+  const vert = a.y < h / 2 ? 'b' : 't' // click on top half -> dialog bottom
+  const horz = a.x < w / 2 ? 'r' : 'l' // click on left half -> dialog right
+  return 'pi-anchored pi-' + vert + horz
+})
+
+// When anchored (display viewer), pin the command dialog to the vertical half
+// OPPOSITE the info dialog's corner — i.e. above or below it, whichever has more
+// room — on the same horizontal side. (Info dialog sits opposite the click.)
+const cmdContentClass = computed(() => {
+  const a = props.anchor
+  if (!a) return 'cmd-dialog'
+  const w = window.innerWidth || 1
+  const h = window.innerHeight || 1
+  const infoVert = a.y < h / 2 ? 'b' : 't' // info dialog's vertical corner
+  const infoHorz = a.x < w / 2 ? 'r' : 'l'
+  const cmdVert = infoVert === 'b' ? 't' : 'b' // command goes to the roomier half
+  return 'pi-anchored pi-' + cmdVert + infoHorz
+})
 
 const { t } = useI18n()
 const cfg = () => getViewersConfig()
 let infoTimer = null
 let logCnt = 0
 
+// Never let the info dialog close while the command dialog is open — selecting
+// the command value, clicking its buttons, Esc, focus changes etc. all register
+// as activity outside the info dialog. A short grace period after the command
+// closes absorbs the same click that dismissed it (which would otherwise reach
+// the info dialog's close path right after command.open flipped to false).
+let cmdActiveUntil = 0
 const open = computed({
   get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v),
+  set: (v) => {
+    if (!v && (command.open || Date.now() < cmdActiveUntil)) return
+    emit('update:modelValue', v)
+  },
 })
 
 const qmsg = () => ({
@@ -238,7 +275,16 @@ async function openCommand(cmdKey) {
   command.handle = null
   clearTimeout(cooldownTimer)
   commandCooldown.value = false
+  cmdActiveUntil = Infinity
   command.open = true
+}
+
+// Close the command dialog. Set the grace window SYNCHRONOUSLY (before
+// command.open flips) so the very click that dismisses the command can't also
+// dismiss the still-open info dialog — Vue's watcher would run too late.
+function closeCommand() {
+  cmdActiveUntil = Date.now() + 600
+  command.open = false
 }
 
 async function executeCommand() {
@@ -302,7 +348,10 @@ function openCurves(p) {
 
 // Release cooldown when command dialog closes
 watch(() => command.open, (isOpen) => {
-  if (!isOpen) {
+  if (isOpen) {
+    cmdActiveUntil = Infinity
+  } else {
+    cmdActiveUntil = Date.now() + 500 // grace period so the closing click can't dismiss the info dialog
     clearTimeout(cooldownTimer)
     commandCooldown.value = false
   }
@@ -318,5 +367,37 @@ onUnmounted(() => {
 /* Shift command dialog down so it doesn't cover info dialog's manual value field */
 .cmd-dialog {
   transform: translateY(60px) !important;
+}
+/* Pin the point-info dialog to the screen corner opposite the clicked object,
+   overriding the overlay's centering transform. */
+.pi-anchored {
+  position: fixed !important;
+  transform: none !important;
+  margin: 0 !important;
+  max-height: calc(100vh - 64px) !important;
+}
+.pi-anchored.pi-tr {
+  top: 56px !important;
+  right: 8px !important;
+  left: auto !important;
+  bottom: auto !important;
+}
+.pi-anchored.pi-tl {
+  top: 56px !important;
+  left: 8px !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+.pi-anchored.pi-br {
+  bottom: 8px !important;
+  right: 8px !important;
+  top: auto !important;
+  left: auto !important;
+}
+.pi-anchored.pi-bl {
+  bottom: 8px !important;
+  left: 8px !important;
+  top: auto !important;
+  right: auto !important;
 }
 </style>

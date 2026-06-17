@@ -88,7 +88,11 @@ export class SageEngine {
     this.preview = new PreviewOverlay(cfg)
     this.pinnedPanel = new PinnedAnnotationsPanel(cfg)
     this.pinnedTimer = null
-    this.alarmBox = new AlarmBoxPanel(cfg, (k) => this.onOpenPoint(k))
+    this.alarmBox = new AlarmBoxPanel(cfg, (k) => {
+      this.highlightByKey(k)
+      // alarm box sits top-right, so anchor there -> dialog opens bottom-left
+      this.onOpenPoint(k, { x: window.innerWidth - 40, y: 60 })
+    })
     this.screenFilter = '' // group1 filter from #set_filter markup
     this.queryKeys = new Set()
     this.valueByKey = new Map()
@@ -108,6 +112,7 @@ export class SageEngine {
     this.pass = 0
     this.timeMachine = false // historical-replay mode (pauses realtime polling)
     this.tmTime = null
+    this.highlightEl = null // animated box around the selected object
 
     // per-refresh script bindings (#exec_on_update / script evt exec_on_update)
     this.execOnUpdate = []
@@ -202,6 +207,7 @@ export class SageEngine {
     this.preview.hide()
     this.pinnedPanel.hide()
     this.alarmBox.hide()
+    this.clearHighlight()
     this.screenFilter = ''
     this.queryKeys.clear()
     // Reset to pass 0 so this screen's first refresh does a FULL read (askInfo):
@@ -810,9 +816,82 @@ export class SageEngine {
     el.addEventListener('click', (ev) => {
       ev.stopPropagation()
       const key = this.resolveKey(tag)
-      if (key !== undefined) this.onOpenPoint(key)
+      if (key === undefined) return
+      this.highlight(el)
+      this.onOpenPoint(key, { x: ev.clientX, y: ev.clientY })
     })
     this.registerAnnotation(el, tag)
+  }
+
+  // --- selected-object highlight (animated box) ------------------------------
+  // Draw a pulsing marching-ants box around `el` while its point dialog is open.
+  highlight(el) {
+    this.clearHighlight()
+    if (!el || typeof el.getBBox !== 'function') return
+    let bb
+    try {
+      bb = el.getBBox()
+    } catch (e) {
+      return
+    }
+    let { x, y, width: w, height: h } = bb
+    if (x === 0 && y === 0 && w === 0 && h === 0) {
+      x = parseFloat(el.getAttributeNS(null, 'x')) || 0
+      y = parseFloat(el.getAttributeNS(null, 'y')) || 0
+    }
+    const MIN = 16
+    if (w < MIN) {
+      x -= (MIN - w) / 2
+      w = MIN
+    }
+    if (h < MIN) {
+      y -= (MIN - h) / 2
+      h = MIN
+    }
+    const pad = 4
+    x -= pad
+    y -= pad
+    w += pad * 2
+    h += pad * 2
+    const g = document.createElementNS(SVGNS, 'g')
+    g.setAttribute('pointer-events', 'none')
+    const xfm = el.getAttributeNS(null, 'transform')
+    if (xfm) g.setAttribute('transform', xfm)
+    const rect = document.createElementNS(SVGNS, 'rect')
+    rect.setAttribute('x', x)
+    rect.setAttribute('y', y)
+    rect.setAttribute('width', w)
+    rect.setAttribute('height', h)
+    rect.setAttribute('rx', Math.min(8, w / 4))
+    rect.setAttribute('fill', 'none')
+    rect.setAttribute('stroke', this.cfg.ScreenViewer_TagFillColor || '#ffd400')
+    rect.setAttribute('stroke-width', '3')
+    rect.setAttribute('stroke-dasharray', '10 6')
+    rect.innerHTML =
+      '<animate attributeName="stroke-dashoffset" from="0" to="16" dur="0.6s" repeatCount="indefinite"/>' +
+      '<animate attributeName="stroke-opacity" values="1;0.35;1" dur="1s" repeatCount="indefinite"/>'
+    g.appendChild(rect)
+    el.parentNode.appendChild(g)
+    this.highlightEl = g
+  }
+
+  // Highlight the on-screen element bound to `key` (used for alarm-box clicks
+  // where we have the key but not the element).
+  highlightByKey(key) {
+    for (const b of this.bindings) {
+      if (!b.parent) continue
+      const t = b.tag !== undefined ? b.tag : b.list && b.list[0] && b.list[0].tag
+      if (t !== undefined && this.resolveKey(t) === key) {
+        this.highlight(b.parent)
+        return
+      }
+    }
+    this.clearHighlight()
+  }
+
+  clearHighlight() {
+    if (this.highlightEl && this.highlightEl.parentNode) this.highlightEl.parentNode.removeChild(this.highlightEl)
+    this.highlightEl = null
   }
 
   // True if `el` or any ancestor is marked popup `notrace`/`block` — those
@@ -902,7 +981,9 @@ export class SageEngine {
     badge.addEventListener('click', (ev) => {
       ev.stopPropagation()
       const key = this.resolveKey(el._annotTag)
-      if (key !== undefined) this.onOpenPoint(key)
+      if (key === undefined) return
+      this.highlight(el)
+      this.onOpenPoint(key, { x: ev.clientX, y: ev.clientY })
     })
     el.parentNode.appendChild(badge)
     el._annotBadge = badge
@@ -1642,6 +1723,7 @@ export class SageEngine {
     this.preview.dispose()
     this.pinnedPanel.dispose()
     this.alarmBox.dispose()
+    this.clearHighlight()
     if (this.container) this.container.innerHTML = ''
   }
 }
