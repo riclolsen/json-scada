@@ -361,6 +361,11 @@ onUnmounted(() => {
   clearInterval(infoTimer)
   clearTimeout(cooldownTimer)
 })
+
+// Let the host (display viewer) close the command dialog from its global Esc
+// handler — the command dialog is :persistent there, so it ignores its own Esc.
+const commandOpen = computed(() => command.open)
+defineExpose({ commandOpen, closeCommand })
 </script>
 
 <style>

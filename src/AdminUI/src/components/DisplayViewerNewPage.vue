@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="pa-0 display-root">
     <!-- Toolbar -->
-    <v-toolbar density="compact" color="surface" class="px-2 display-bar" flat>
+    <v-toolbar v-show="!barHidden" density="compact" color="surface" class="px-2 display-bar" flat>
       <v-select
         v-model="selectedScreen"
         :items="screenItems"
@@ -97,7 +97,7 @@
     <div ref="svgContainer" class="svg-container" @wheel.prevent="onWheel"></div>
 
     <!-- Point Info + Command dialogs (shared component) -->
-    <PointInfoDialog v-model="infoOpen" :point-key="infoKey" @saved="onPointSaved" />
+    <PointInfoDialog ref="pointInfoRef" v-model="infoOpen" :point-key="infoKey" :anchor="infoAnchor" @saved="onPointSaved" />
 
     <!-- Beep sounds -->
     <audio ref="criticalSound" src="/sounds/critical.wav"></audio>
@@ -106,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { loadViewersConfig, getViewersConfig } from '../lib/viewersConfig'
 import { onAccessDenied, writeAck } from '../lib/opcClient'
@@ -125,9 +125,12 @@ const alarmBeep = ref(0)
 const statusMsg = ref('')
 const clock = ref('')
 const slideshow = ref(false)
+const barHidden = ref(false)
 
 const infoOpen = ref(false)
 const infoKey = ref(0)
+const infoAnchor = ref(null)
+const pointInfoRef = ref(null)
 
 // --- Time Machine (historical replay) ---
 const tmActive = ref(false)
@@ -197,10 +200,16 @@ let clockTimer = null
 let beepTimer = null
 let slideTimer = null
 
-function openPoint(key) {
+function openPoint(key, pos) {
   infoKey.value = key
+  infoAnchor.value = pos || null
   infoOpen.value = true
 }
+
+// clear the selected-object highlight when the dialog closes
+watch(infoOpen, (open) => {
+  if (!open && engine) engine.clearHighlight()
+})
 
 // after the dialog writes properties (e.g. a blocking annotation), re-read that
 // point's full info so the pinned-annotation badge appears without a reload
@@ -260,15 +269,154 @@ function silenceBeep() {
   alarmBeep.value = 0
 }
 
+// Jump to the Nth screen in the list (1-based, as in the legacy 1..0 shortcuts).
+function selectScreenByIndex(n) {
+  const it = screenItems.value[n - 1]
+  if (it) loadScreenByRef(it.value)
+}
+
+// Jump to the screen whose title carries a "{X}" mnemonic matching the pressed key.
+function selectScreenByLetter(ch) {
+  const up = ch.toUpperCase()
+  const it = screenItems.value.find((i) => {
+    const p = i.title.indexOf('{')
+    return p !== -1 && (i.title.charAt(p + 1) || '').toUpperCase() === up
+  })
+  if (it) {
+    loadScreenByRef(it.value)
+    return true
+  }
+  return false
+}
+
+// Toggle the top toolbar to maximize the screen area (legacy hideShowBar / F10 / numpad*).
+function hideShowBar() {
+  barHidden.value = !barHidden.value
+}
+
+// Serialize the current SVG and open it in a new window so it can be saved (legacy shift+enter).
+function snapshotSvg() {
+  if (!engine || !engine.svgEl) return
+  const blob = new Blob([new XMLSerializer().serializeToString(engine.svgEl)], {
+    type: 'image/svg+xml',
+  })
+  const url = URL.createObjectURL(blob)
+  window.open(url, 'SVG Snapshot')
+}
+
 function onKeydown(e) {
   const tag = (e.target && e.target.tagName) || ''
-  if (tag === 'INPUT' || tag === 'TEXTAREA') return
-  if (e.key === ',') navAdjacent(-1)
-  else if (e.key === '.') navAdjacent(1)
-  else if (e.key === 'F9') {
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return
+
+  // Escape: close the command dialog first (it's :persistent here, so it won't
+  // close itself), then leave Time Machine, then close the point-info dialog.
+  if (e.key === 'Escape') {
+    if (pointInfoRef.value && pointInfoRef.value.commandOpen) {
+      pointInfoRef.value.closeCommand()
+    } else if (tmActive.value) {
+      exitTimeMachine()
+    } else {
+      infoOpen.value = false
+    }
+    return
+  }
+
+  // F9: silence the alarm beep.
+  if (e.key === 'F9') {
     silenceBeep()
     e.preventDefault()
-  } else if (e.key === 'Escape') infoOpen.value = false
+    return
+  }
+
+  // F10 or numpad * : hide/show the toolbar.
+  if (e.key === 'F10' || e.code === 'NumpadMultiply') {
+    hideShowBar()
+    e.preventDefault()
+    return
+  }
+
+  // Shift+Enter: open a saveable SVG snapshot of the current screen.
+  if (e.key === 'Enter' && e.shiftKey) {
+    snapshotSvg()
+    e.preventDefault()
+    return
+  }
+
+  // Zoom / pan (numpad + main keys). Skip when a modifier is held so the legacy
+  // point-navigation chords (shift/ctrl + arrows) don't get hijacked into panning.
+  if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    switch (e.code) {
+      case 'NumpadAdd':
+      case 'Numpad9':
+        zp('in')
+        e.preventDefault()
+        return
+      case 'NumpadSubtract':
+      case 'Numpad3':
+        zp('out')
+        e.preventDefault()
+        return
+      case 'ArrowUp':
+      case 'Numpad8':
+        zp('up')
+        e.preventDefault()
+        return
+      case 'ArrowDown':
+      case 'Numpad2':
+        zp('down')
+        e.preventDefault()
+        return
+      case 'ArrowLeft':
+      case 'Numpad4':
+        zp('left')
+        e.preventDefault()
+        return
+      case 'ArrowRight':
+      case 'Numpad6':
+        zp('right')
+        e.preventDefault()
+        return
+      case 'Home':
+      case 'Numpad5':
+      case 'Numpad7':
+        zp('center')
+        e.preventDefault()
+        return
+      default:
+        break
+    }
+    // '+' / '-' on the main row also zoom (numpad handled above via e.code).
+    if (e.key === '+') {
+      zp('in')
+      return
+    }
+    if (e.key === '-') {
+      zp('out')
+      return
+    }
+  }
+
+  // Screen navigation: ',' previous, '.' next (main keys, no modifiers).
+  if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (e.key === ',') {
+      navAdjacent(-1)
+      return
+    }
+    if (e.key === '.') {
+      navAdjacent(1)
+      return
+    }
+    // Digits 1..9 / 0 select the 1st..9th / 10th screen in the list.
+    if (e.code && e.code.startsWith('Digit')) {
+      const d = e.code.slice(5)
+      selectScreenByIndex(d === '0' ? 10 : Number(d))
+      return
+    }
+    // Letter mnemonics from "{X}" in the screen titles.
+    if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+      selectScreenByLetter(e.key)
+    }
+  }
 }
 
 onMounted(async () => {
@@ -314,6 +462,10 @@ onUnmounted(() => {
   height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
+  /* The mimic is operated by mouse/keyboard, not read as a document — keep
+     panning, double-clicks and shortcuts from selecting labels/SVG text. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .svg-container {
   flex: 1 1 auto;
