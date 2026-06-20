@@ -1,6 +1,7 @@
-import chokidar from 'chokidar'
+import { watch } from 'chokidar'
 import fs from 'fs'
 import { Socket } from 'net'
+import picomatch from 'picomatch'
 import { promisify } from 'util'
 import {
   FileInputConfig,
@@ -8,6 +9,12 @@ import {
   InputConfig,
   WatcherOptions,
 } from './types'
+
+// Normalize path separators to forward slashes so glob matching behaves
+// consistently across platforms (chokidar reports native, e.g. Windows, paths).
+function normalizePath(p: string): string {
+  return p.replace(/\\/g, '/')
+}
 
 const openAsync = promisify(fs.open)
 const readAsync = promisify(fs.read)
@@ -61,10 +68,34 @@ async function startFileWatcher(
   watcherOptions: WatcherOptions,
 ): Promise<void> {
   const fileSizes: FileSizeMap = {}
-  const watcher = chokidar.watch(inputPath, watcherOptions)
+  // chokidar v4 removed built-in glob support, so expand globs ourselves: watch
+  // the static base directory and filter matched files with picomatch. This
+  // keeps the documented glob feature (e.g. "/var/log/**/*.log") working,
+  // including picking up newly created files that match the pattern.
+  const { ignored: userIgnored, ...restOptions } = watcherOptions
+  const normalizedPattern = normalizePath(inputPath)
+  const scan = picomatch.scan(normalizedPattern)
+  const isGlob = scan.isGlob
+  const matchesPattern = isGlob ? picomatch(normalizedPattern, { dot: true }) : null
+  // `basename: true` lets slash-less ignore patterns (e.g. "*.txt") match by
+  // file name anywhere in the tree, matching chokidar v3's documented behavior.
+  const matchesUserIgnored = userIgnored
+    ? picomatch(userIgnored, { dot: true, basename: true })
+    : null
+  const watchTarget = isGlob ? (scan.base || '.') : inputPath
+  // chokidar v4's `ignored` accepts a (path, stats) => boolean predicate.
+  // Never prune directories so the watcher keeps descending into them.
+  const ignored = (filePath: string, stats?: fs.Stats): boolean => {
+    if (!stats || stats.isDirectory()) return false
+    const normalized = normalizePath(filePath)
+    if (matchesUserIgnored && matchesUserIgnored(normalized)) return true
+    if (matchesPattern && !matchesPattern(normalized)) return true
+    return false
+  }
+  const watcher = watch(watchTarget, { ...restOptions, ignored })
   // Capture byte size of a new file
   watcher.on('add', async (filePath: string) => {
-    // eslint-disable-next-line no-console
+
     console.log(`[${streamName}][${sourceName}] Watching: ${filePath}`)
     fileSizes[filePath] = (await statAsync(filePath)).size
   })
@@ -82,7 +113,7 @@ async function startFileWatcher(
       )
       fileSizes[filePath] = newSize
     } catch (err) {
-      // eslint-disable-next-line no-console
+
       console.error(err)
     }
   })
@@ -110,7 +141,7 @@ async function main(config: InputConfig): Promise<void> {
   let lastConnectionAttempt = new Date().getTime()
   // Register new inputs w/ server
   client.on('connect', async () => {
-    // eslint-disable-next-line no-console
+
     console.log(`Connected to server: ${serverStr}`)
     await Promise.all(inputs.map(async (input) => {
       sendInput(client, input)
@@ -121,7 +152,7 @@ async function main(config: InputConfig): Promise<void> {
     const currTime = new Date().getTime()
     if (currTime - lastConnectionAttempt > 5000) {
       lastConnectionAttempt = new Date().getTime()
-      // eslint-disable-next-line no-console
+
       console.error(`Unable to connect to server (${serverStr}), retrying...`)
       await sleep(5000)
       client.connect(messageServer.port, messageServer.host)

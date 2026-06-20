@@ -3,7 +3,7 @@ import basicAuth from 'express-basic-auth'
 import http from 'http'
 import net from 'net'
 import path from 'path'
-import socketio from 'socket.io'
+import { Server, Socket } from 'socket.io'
 import InputRegistry from './inputs'
 import { MessageHandlers, ServerConfig } from './types'
 
@@ -17,7 +17,7 @@ const UI_BUILD_PATH = process.env.LOGIO_SERVER_UI_BUILD_PATH
 async function handleNewMessage(
   config: ServerConfig,
   inputs: InputRegistry,
-  io: socketio.Server,
+  io: Server,
   msgParts: Array<string>,
 ): Promise<void> {
   const [mtype, stream, source] = msgParts.slice(0, 3)
@@ -33,7 +33,7 @@ async function handleNewMessage(
   // Broadcast ping to all browsers
   io.emit('+ping', { inputName, stream, source })
   if (config.debug) {
-    // eslint-disable-next-line no-console
+
     console.log(msgParts.join('|'))
   }
 }
@@ -44,7 +44,7 @@ async function handleNewMessage(
 async function handleRegisterInput(
   config: ServerConfig,
   inputs: InputRegistry,
-  io: socketio.Server,
+  io: Server,
   msgParts: Array<string>,
 ): Promise<void> {
   const [mtype, stream, source] = msgParts.slice(0, 3)
@@ -58,7 +58,7 @@ async function handleRegisterInput(
 async function handleDeregisterInput(
   config: ServerConfig,
   inputs: InputRegistry,
-  io: socketio.Server,
+  io: Server,
   msgParts: Array<string>,
 ): Promise<void> {
   const [mtype, stream, source] = msgParts.slice(0, 3)
@@ -79,7 +79,7 @@ const messageHandlers: MessageHandlers = {
 async function broadcastMessage(
   config: ServerConfig,
   inputs: InputRegistry,
-  io: socketio.Server,
+  io: Server,
   data: Buffer,
 ): Promise<void> {
   // Parse raw message into parts
@@ -95,7 +95,7 @@ async function broadcastMessage(
     if (messageHandler) {
       await messageHandler(config, inputs, io, msgParts)
     } else {
-      // eslint-disable-next-line no-console
+
       console.error(`Unknown message type: ${msgParts[0]}`)
     }
   })
@@ -108,7 +108,7 @@ async function main(config: ServerConfig): Promise<void> {
   // Create HTTP server w/ static file serving, socket.io bindings & basic auth
   const server = express()
   const httpServer = new http.Server(server)
-  const io = new socketio.Server(httpServer, {})
+  const io = new Server(httpServer, {})
   const inputs = new InputRegistry()
   if (config.basicAuth) {
     if (config.basicAuth.users && config.basicAuth.realm) {
@@ -117,7 +117,7 @@ async function main(config: ServerConfig): Promise<void> {
         challenge: true,
       }))
     } else {
-      // eslint-disable-next-line no-console
+
       console.warn(`
 WARNING: Unable to enable basic authentication.
 
@@ -137,7 +137,7 @@ See README for more examples.
   })
 
   // When a new browser connects, register stream activation events
-  io.on('connection', async (socket: socketio.Socket) => {
+  io.on('connection', async (socket: Socket) => {
     // Send existing inputs to browser
     inputs.getInputs().forEach((input) => {
       socket.emit('+input', input)
@@ -153,11 +153,11 @@ See README for more examples.
 
   // Start listening for requests
   messageServer.listen(config.messageServer.port, config.messageServer.host, () => {
-    // eslint-disable-next-line no-console
+
     console.log(`TCP message server listening on port ${config.messageServer.port}`)
   })
   httpServer.listen(config.httpServer.port, config.httpServer.host, () => {
-    // eslint-disable-next-line no-console
+
     console.log(`HTTP server listening on port ${config.httpServer.port}`)
   })
 }

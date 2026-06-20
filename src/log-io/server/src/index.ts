@@ -20,6 +20,6 @@ function loadConfig(configPath: string): ServerConfig {
   const config = await loadConfig(CONFIG_PATH)
   await server(config)
 })().catch((e) => {
-  // eslint-disable-next-line no-console
+
   console.error(e)
 })

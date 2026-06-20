@@ -15,7 +15,7 @@ const CONFIG_PATH = process.env.LOGIO_FILE_INPUT_CONFIG_PATH
 
 // Abort if no configuration file is found
 if (!CONFIG_PATH) {
-  // eslint-disable-next-line no-console
+
   console.error(`
 ERROR: Unable to find a configuration file.
 
@@ -31,7 +31,7 @@ function loadConfig(configPath: string): InputConfig {
   const config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }))
   if (ROOT_PATH) {
     config.inputs.forEach((input: FileInputConfig) => {
-      // eslint-disable-next-line no-param-reassign
+
       input.config.path = path.resolve(ROOT_PATH, input.config.path)
     })
   }
@@ -42,6 +42,6 @@ function loadConfig(configPath: string): InputConfig {
   const config = loadConfig(CONFIG_PATH)
   await fileInput(config)
 })().catch((e) => {
-  // eslint-disable-next-line no-console
+
   console.error(e)
 })

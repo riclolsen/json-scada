@@ -1,5 +1,5 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import App from './components/app'
 import { initializeState } from './reducers'
 import { createSocket } from './socket'
@@ -17,4 +17,8 @@ const Root: React.FC = () => {
   )
 }
 
-ReactDOM.render(<Root />, document.getElementById('root'))
+const container = document.getElementById('root')
+if (!container) {
+  throw new Error('Root element #root not found')
+}
+createRoot(container).render(<Root />)

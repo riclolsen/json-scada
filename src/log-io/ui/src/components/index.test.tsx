@@ -1,11 +1,12 @@
 import React from 'react'
+import { expect, test, vi } from 'vitest'
 import { act, fireEvent, render } from '@testing-library/react'
 import App from './app/index'
 import { initializeState } from '../reducers'
 
 const mockSocket = () => {
   const callbacks:any = {}
-  const mockEmit = jest.fn()
+  const mockEmit = vi.fn()
   return {
     on: (eventName: string, callback: any) => {
       if (!callbacks[eventName as keyof Object]) {

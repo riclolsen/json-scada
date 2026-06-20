@@ -1,6 +1,5 @@
 import { Dispatch } from 'react'
-import socketIO from 'socket.io-client'
-import { Socket } from 'socket.io-client'
+import { io, Socket } from 'socket.io-client'
 import { InputActions } from '../reducers/inputs/types'
 import { MessageActions } from '../reducers/messages/types'
 import { ActionTypes } from '../reducers/types'
@@ -8,10 +7,19 @@ import { ActionTypes } from '../reducers/types'
 import { MessageEvent, PingEvent, RegistrationEvent } from './types'
 
 /**
- * Creates a new socket.io connection to the server
+ * Returns the path the app is served from (the directory of the current page),
+ * e.g. "/" at the root or "/log-io/" when mounted under a reverse proxy.
+ */
+const getBasePath = (): string =>
+  window.location.pathname.replace(/[^/]*$/, '')
+
+/**
+ * Creates a new socket.io connection to the server. The socket.io path is
+ * derived from the page's mount point so it works both at the root and when
+ * served under a reverse-proxy sub-path (e.g. /log-io/socket.io).
  */
 export const createSocket = (): Socket =>
-  socketIO()
+  io({ path: `${getBasePath()}socket.io` })
 
 /**
  * Receives a new input event and adds it to relevant state
