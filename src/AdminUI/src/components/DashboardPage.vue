@@ -72,7 +72,7 @@
       icon: Monitor,
       color: 'primary',
       route: '/display-viewer-new',
-      page: '/display.html',
+      page: '/#/display-viewer-new',
       target: '_blank',
     },
     {
@@ -80,7 +80,7 @@
       icon: Bell,
       color: 'primary',
       route: '/alarms-viewer-new',
-      page: '/alarms-viewer-new',
+      page: '/#/alarms-viewer-new',
       target: '_blank',
     },
     {
@@ -88,7 +88,7 @@
       icon: Table,
       color: 'primary',
       route: '/tabular-viewer-new',
-      page: '/tabular-viewer-new',
+      page: '/#/tabular-viewer-new',
       target: '_blank',
     },
     {
@@ -96,7 +96,7 @@
       icon: Calendar,
       color: 'primary',
       route: '/events-viewer-new',
-      page: '/events.html',
+      page: '/#/events-viewer-new',
       target: '_blank',
     },
     {
