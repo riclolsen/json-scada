@@ -55,6 +55,8 @@ nssm remove JSON_SCADA_log_io_file confirm
 nssm remove JSON_SCADA_log_io_server confirm
 nssm remove JSON_SCADA_onvif confirm
 nssm remove JSON_SCADA_mcp_server confirm
+nssm remove JSON_SCADA_iccp_server confirm
+nssm remove JSON_SCADA_iccp_client confirm
 
 \json-scada\bin\OPC-DA_Server\OpcNetDaServer.exe -unregserver
 
