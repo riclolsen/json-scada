@@ -346,6 +346,8 @@ export async function readPoints(keysOrTags, askInfo, cfg) {
       if (el.NodeId.IdType !== OpcKeyType.String) return
       points.push(normalizePoint(el, cfg))
     })
+  // the server's response timestamp — the moment the data was served
+  points.serverTime = data.Body.ResponseHeader && data.Body.ResponseHeader.Timestamp
   return points
 }
 

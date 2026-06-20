@@ -45,7 +45,16 @@
 
       <v-divider vertical class="mx-1"></v-divider>
       <v-btn icon size="small" variant="text" :title="$t('displayViewer.slideshow')" @click="toggleSlideshow">
-        <v-icon>{{ slideshow ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+        <v-progress-circular
+          v-if="slideshow"
+          :model-value="slideProgress"
+          size="24"
+          width="2.5"
+          color="primary"
+        >
+          <v-icon size="14">mdi-pause</v-icon>
+        </v-progress-circular>
+        <v-icon v-else>mdi-play</v-icon>
       </v-btn>
       <v-btn
         icon
@@ -71,8 +80,14 @@
 
       <v-spacer></v-spacer>
       <span class="text-caption mr-2">{{ statusMsg }}</span>
-      <span class="text-caption" :class="{ 'tm-clock': tmActive }">{{ tmActive ? tmDate + ' ' + tmTimeStr : clock }}</span>
     </v-toolbar>
+
+    <!-- Display update date/time, stacked (date over time); sits left of the alarm
+         box when it is shown, otherwise moves all the way to the right -->
+    <div class="display-datetime" :class="{ 'tm-clock': tmActive, 'dt-no-alarmbox': !alarmBoxShown }">
+      <div class="dd-date">{{ dateStr }}</div>
+      <div class="dd-time">{{ timeStr }}</div>
+    </div>
 
     <!-- Time Machine controls -->
     <div v-if="tmActive" class="tm-bar px-2">
@@ -123,8 +138,11 @@ const screenItems = ref([])
 const selectedScreen = ref('')
 const alarmBeep = ref(0)
 const statusMsg = ref('')
-const clock = ref('')
+const clockDate = ref('')
+const clockTime = ref('')
+const alarmBoxShown = ref(false)
 const slideshow = ref(false)
+const slideProgress = ref(0) // 0-100, time elapsed toward the next slideshow advance
 const barHidden = ref(false)
 
 const infoOpen = ref(false)
@@ -141,6 +159,11 @@ let tmDebounce = null
 
 const tmTimeStr = computed(() => fmtHMS(tmSeconds.value))
 const tmSliderMax = computed(() => (tmDate.value === todayStr.value ? nowSeconds() : 86399))
+
+// date/time shown top-right (left of the alarm box): replay time in Time Machine,
+// otherwise the live wall clock
+const dateStr = computed(() => (tmActive.value ? tmDate.value : clockDate.value))
+const timeStr = computed(() => (tmActive.value ? tmTimeStr.value : clockTime.value))
 
 function nowSeconds() {
   const d = new Date()
@@ -196,9 +219,9 @@ const criticalSound = ref(null)
 const nonCriticalSound = ref(null)
 
 let engine = null
-let clockTimer = null
 let beepTimer = null
 let slideTimer = null
+let slideStart = 0
 
 function openPoint(key, pos) {
   infoKey.value = key
@@ -252,15 +275,34 @@ function onWheel(ev) {
   if (engine) engine.wheelZoom(ev)
 }
 
+// advance to the next screen, wrapping to the first at the end (loop)
+function slideAdvance() {
+  if (screenItems.value.length === 0) return
+  const idx = screenItems.value.findIndex((it) => it.value === selectedScreen.value)
+  const next = (idx + 1) % screenItems.value.length
+  loadScreenByRef(screenItems.value[next].value)
+}
+
+// drive the slideshow: fill the ring over the interval, then load the next screen
+function slideTick() {
+  const interval = (getViewersConfig().ScreenViewer_SlideShowInterval || 10) * 1000
+  const elapsed = Date.now() - slideStart
+  if (elapsed >= interval) {
+    slideStart = Date.now()
+    slideProgress.value = 0
+    slideAdvance()
+  } else {
+    slideProgress.value = Math.min(100, (elapsed / interval) * 100)
+  }
+}
+
 function toggleSlideshow() {
   slideshow.value = !slideshow.value
+  clearInterval(slideTimer)
+  slideProgress.value = 0
   if (slideshow.value) {
-    slideTimer = setInterval(
-      () => navAdjacent(1),
-      (getViewersConfig().ScreenViewer_SlideShowInterval || 10) * 1000
-    )
-  } else {
-    clearInterval(slideTimer)
+    slideStart = Date.now()
+    slideTimer = setInterval(slideTick, 100)
   }
 }
 
@@ -431,6 +473,12 @@ onMounted(async () => {
     onAlarmBeep: (v) => (alarmBeep.value = v),
     onStatus: (m) => (statusMsg.value = m),
     onScreenLink: (screen) => loadScreenByRef(screen),
+    // update the displayed date/time only on a data refresh, using the server time
+    onUpdateTime: (d) => {
+      clockDate.value = d.toLocaleDateString()
+      clockTime.value = d.toLocaleTimeString()
+    },
+    onAlarmBox: (visible) => (alarmBoxShown.value = visible),
   })
 
   const initial =
@@ -441,7 +489,7 @@ onMounted(async () => {
   if (initial) loadScreenByRef(initial)
 
   window.addEventListener('keydown', onKeydown)
-  clockTimer = setInterval(() => (clock.value = new Date().toLocaleString()), 1000)
+  // date/time is driven by the engine's onUpdateTime (server data timestamp), not a wall clock
   beepTimer = setInterval(() => {
     if (alarmBeep.value && nonCriticalSound.value) nonCriticalSound.value.play().catch(() => {})
   }, 1500)
@@ -449,7 +497,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (engine) engine.dispose()
-  clearInterval(clockTimer)
   clearInterval(beepTimer)
   clearInterval(slideTimer)
   clearTimeout(tmDebounce)
@@ -506,5 +553,34 @@ onUnmounted(() => {
 .tm-clock {
   color: #ffb74d;
   font-weight: 600;
+}
+/* Display update date/time — stacked, anchored just left of the alarm box
+   (alarm box is fixed at right:0, width 372). */
+.display-datetime {
+  position: fixed;
+  top: 50px;
+  right: 380px;
+  z-index: 7;
+  text-align: right;
+  line-height: 1.05;
+  pointer-events: none;
+  font-family: tahoma, sans-serif;
+  /* follow the theme like the rest of the toolbar text */
+  color: rgb(var(--v-theme-on-surface));
+}
+.display-datetime .dd-date {
+  font-size: 10px;
+  opacity: 0.9;
+}
+.display-datetime .dd-time {
+  font-size: 15px;
+  font-weight: 700;
+}
+/* no alarm box -> use the full right edge */
+.display-datetime.dt-no-alarmbox {
+  right: 8px;
+}
+.display-datetime.tm-clock {
+  color: #ffb74d;
 }
 </style>

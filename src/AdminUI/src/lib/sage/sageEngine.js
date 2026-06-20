@@ -71,13 +71,15 @@ function rgbMix(a, b, t) {
 }
 
 export class SageEngine {
-  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink }) {
+  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink, onUpdateTime, onAlarmBox }) {
     this.container = container
     this.cfg = cfg
     this.onOpenPoint = onOpenPoint || (() => {})
     this.onAlarmBeep = onAlarmBeep || (() => {})
     this.onStatus = onStatus || (() => {})
     this.onScreenLink = onScreenLink || (() => {})
+    this.onUpdateTime = onUpdateTime || (() => {})
+    this.onAlarmBox = onAlarmBox || (() => {}) // reports alarm-box visibility
     this.colorTable = buildColorTable(cfg)
 
     this.svgEl = null
@@ -207,6 +209,7 @@ export class SageEngine {
     this.preview.hide()
     this.pinnedPanel.hide()
     this.alarmBox.hide()
+    this.onAlarmBox(false)
     this.clearHighlight()
     this.screenFilter = ''
     this.queryKeys.clear()
@@ -1161,6 +1164,9 @@ export class SageEngine {
         const full = this.pass === 0
         const points = await opc.readPoints(keys, full, this.cfg)
         this.ingest(points, full)
+        // report the server's data timestamp so the display clock updates only
+        // on a real data update, using the server time (not the client clock)
+        if (points.serverTime) this.onUpdateTime(new Date(points.serverTime))
       }
       // after first data load, prefill live-plot histories (needs key->tag map)
       if (!this._plotsFilled && this.plotBindings.length > 0) {
@@ -1210,6 +1216,7 @@ export class SageEngine {
         }
       })
       this.alarmBox.render(items)
+      this.onAlarmBox(items.length > 0) // box is shown only when there are alarms
     } catch (e) {
       /* keep last list */
     } finally {
@@ -1226,6 +1233,7 @@ export class SageEngine {
     // historical replay shows past values; live-only overlays don't apply
     this.preview.hide()
     this.alarmBox.hide() // alarms are realtime — hidden during replay (legacy)
+    this.onAlarmBox(false)
   }
 
   // Exit resumes realtime polling (next refresh reloads live values).
