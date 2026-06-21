@@ -86,7 +86,7 @@ type protocolConnection struct {
 	RemoteAeQualifier            int                    `bson:"remoteAeQualifier"`
 	UseSecurity                  bool                   `bson:"useSecurity"`
 	Password                     string                 `bson:"password"`
-	HoursShift                   int                    `bson:"hoursShift"`
+	HoursShift                   float64                `bson:"hoursShift"`
 	Stats                        map[string]interface{} `bson:"stats"`
 }
 
