@@ -133,7 +133,7 @@ rem set GOOS=linux
 rem set GOARCH=amd64
 rem go build -ldflags="-s -w" -o iccp-server-linux-amd64
 
-rem cd %SRCPATH%\iccp\iccp-server
+rem cd %SRCPATH%\iccp\iccp-client
 rem go mod tidy 
 rem go build -ldflags="-s -w"
 rem copy /Y iccp-client.exe %BINPATH%
