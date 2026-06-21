@@ -432,6 +432,8 @@
                   'OPC-DA',
                   'OPC-UA',
                   'ONVIF',
+                  'ICCP',
+                  'ICCP_SERVER',
                 ].includes(
                   editedConnection.protocolDriver
                 )
@@ -494,7 +496,7 @@
               v-if="
                 (['OPC-UA'].includes(editedConnection.protocolDriver) &&
                   editedConnection.autoCreateTags) ||
-                ['OPC-DA', 'OPC-DA_SERVER', 'ICCP', 'ICCP_SERVER'].includes(
+                ['OPC-DA', 'OPC-DA_SERVER', 'ICCP'].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -2526,41 +2528,6 @@
             <v-list-item
               v-if="
                 [
-                  'ICCP', 
-                  'ICCP_SERVER'
-                ].includes(
-                  editedConnection.protocolDriver
-                )
-              "
-            >
-              <template v-slot:default="{ active }">
-                <v-row>
-                  <v-col>
-                    <div>
-                      <v-text-field
-                        type="text"
-                        :input-value="active"
-                        :label="$t('admin.protocolConnections.domain')"
-                        hide-details="auto"
-                        v-model="editedConnection.domain"
-                      ></v-text-field>
-                    </div>
-                  </v-col>
-                  <v-col>
-                    <v-list-item-title>
-                      {{ $t('admin.protocolConnections.domainTitle') }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      {{ $t('admin.protocolConnections.domainHint') }}
-                    </v-list-item-subtitle>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-list-item>
-
-            <v-list-item
-              v-if="
-                [
                   'MQTT-SPARKPLUG-B',
                   'OPC-UA',
                   'OPC-UA_SERVER',
@@ -2662,7 +2629,7 @@
                         type="number"
                         :rules="[rules.required]"
                         :input-value="active"
-                        :label="$t('admin.protocolConnections.aeQualifier')"
+                        :label="$t('admin.protocolConnections.localAeQualifier')"
                         hide-details="auto"
                         v-model="editedConnection.aeQualifier"
                       ></v-text-field>
@@ -2670,10 +2637,10 @@
                   </v-col>
                   <v-col>
                     <v-list-item-title>
-                      {{ $t('admin.protocolConnections.aeQualifierTitle') }}
+                      {{ $t('admin.protocolConnections.localAeQualifierTitle') }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
-                      {{ $t('admin.protocolConnections.aeQualifierHint') }}
+                      {{ $t('admin.protocolConnections.localAeQualifierHint') }}
                     </v-list-item-subtitle>
                   </v-col>
                 </v-row>
@@ -2694,7 +2661,7 @@
                       <v-text-field
                         type="text"
                         :input-value="active"
-                        :label="$t('admin.protocolConnections.localAppTitle')"
+                        :label="$t('admin.protocolConnections.localApTitle')"
                         hide-details="auto"
                         v-model="editedConnection.localAppTitle"
                       ></v-text-field>
@@ -2702,10 +2669,43 @@
                   </v-col>
                   <v-col>
                     <v-list-item-title>
-                      {{ $t('admin.protocolConnections.localAppTitleTitle') }}
+                      {{ $t('admin.protocolConnections.localApTitleTitle') }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
-                      {{ $t('admin.protocolConnections.localAppTitleHint') }}
+                      {{ $t('admin.protocolConnections.localApTitleHint') }}
+                    </v-list-item-subtitle>
+                  </v-col>
+                </v-row>
+              </template>
+            </v-list-item>
+
+            <v-list-item
+              v-if="
+                ['ICCP', 'ICCP_SERVER'].includes(
+                  editedConnection.protocolDriver
+                )
+              "
+            >
+              <template v-slot:default="{ active }">
+                <v-row>
+                  <v-col>
+                    <div>
+                      <v-text-field
+                        type="number"
+                        :rules="[rules.required]"
+                        :input-value="active"
+                        :label="$t('admin.protocolConnections.remoteAeQualifier')"
+                        hide-details="auto"
+                        v-model="editedConnection.aeQualifier"
+                      ></v-text-field>
+                    </div>
+                  </v-col>
+                  <v-col>
+                    <v-list-item-title>
+                      {{ $t('admin.protocolConnections.remoteAeQualifierTitle') }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ $t('admin.protocolConnections.remoteAeQualifierHint') }}
                     </v-list-item-subtitle>
                   </v-col>
                 </v-row>
@@ -2725,81 +2725,19 @@
                     <div>
                       <v-text-field
                         type="text"
-                        :rules="[rules.required, rules.isoSelectors]"
                         :input-value="active"
-                        :label="$t('admin.protocolConnections.localSelectors')"
+                        :label="$t('admin.protocolConnections.remoteApTitle')"
                         hide-details="auto"
-                        v-model="editedConnection.localSelectors"
+                        v-model="editedConnection.remoteApTitle"
                       ></v-text-field>
                     </div>
                   </v-col>
                   <v-col>
                     <v-list-item-title>
-                      {{ $t('admin.protocolConnections.localSelectorsTitle') }}
+                      {{ $t('admin.protocolConnections.remoteApTitleTitle') }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
-                      {{ $t('admin.protocolConnections.localSelectorsHint') }}
-                    </v-list-item-subtitle>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-list-item>
-
-            <v-list-item
-              v-if="
-                ['ICCP', 'ICCP_SERVER'].includes(
-                  editedConnection.protocolDriver
-                )
-              "
-            >
-              <template v-slot:default="{ active }">
-                <v-row>
-                  <v-col>
-                    <div>
-                      <v-text-field
-                        type="text"
-                        :input-value="active"
-                        :label="$t('admin.protocolConnections.remoteAppTitle')"
-                        hide-details="auto"
-                        v-model="editedConnection.remoteAppTitle"
-                      ></v-text-field>
-                    </div>
-                  </v-col>
-                  <v-col>
-                    <v-list-item-title>
-                      {{ $t('admin.protocolConnections.remoteAppTitleTitle') }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      {{ $t('admin.protocolConnections.remoteAppTitleHint') }}
-                    </v-list-item-subtitle>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-list-item>
-
-            <v-list-item
-              v-if="['ICCP'].includes(editedConnection.protocolDriver)"
-            >
-              <template v-slot:default="{ active }">
-                <v-row>
-                  <v-col>
-                    <div>
-                      <v-text-field
-                        type="text"
-                        :rules="[rules.required, rules.isoSelectors]"
-                        :input-value="active"
-                        :label="$t('admin.protocolConnections.remoteSelectors')"
-                        hide-details="auto"
-                        v-model="editedConnection.remoteSelectors"
-                      ></v-text-field>
-                    </div>
-                  </v-col>
-                  <v-col>
-                    <v-list-item-title>
-                      {{ $t('admin.protocolConnections.remoteSelectorsTitle') }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      {{ $t('admin.protocolConnections.remoteSelectorsHint') }}
+                      {{ $t('admin.protocolConnections.remoteApTitleHint') }}
                     </v-list-item-subtitle>
                   </v-col>
                 </v-row>

@@ -85,11 +85,9 @@ type protocolConnection struct {
 	RemoteApTitle                string                 `bson:"remoteApTitle"`
 	RemoteAeQualifier            int                    `bson:"remoteAeQualifier"`
 	UseSecurity                  bool                   `bson:"useSecurity"`
-	LocalCertFilePath            string                 `bson:"localCertFilePath"`
-	PrivateKeyFilePath           string                 `bson:"privateKeyFilePath"`
-	AuthenticationPassword       string                 `bson:"authenticationPassword"`
+	Password                     string                 `bson:"password"`
+	HoursShift                   int                    `bson:"hoursShift"`
 	Stats                        map[string]interface{} `bson:"stats"`
-	GiInterval                   float64                `bson:"giInterval"`
 }
 
 // rtData holds a realtimeData document from MongoDB.

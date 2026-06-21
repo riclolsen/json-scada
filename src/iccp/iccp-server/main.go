@@ -448,7 +448,7 @@ func main() {
 					VendorName:                "JSON-SCADA",
 					ModelName:                 "ICCP-Server",
 					Revision:                  DriverVersion,
-					AuthenticationPassword:    conn.AuthenticationPassword,
+					AuthenticationPassword:    conn.Password,
 					GetNameListMaxPerResponse: getNameListMaxPerResponse,
 					GetNameListMaxBytes:       getNameListMaxBytes,
 					MaxNVLAttrsItems:          maxNVLAttrsItems,

@@ -71,7 +71,7 @@ db.protocolConnections.insert({
     remoteApTitle: "1.1.999.2",
     remoteAeQualifier: 12,
     useSecurity: false,
-    authenticationPassword: "",
+    password: "",
     localCertFilePath: "",
     privateKeyFilePath: "",
     stats: {}
@@ -86,7 +86,7 @@ db.protocolConnections.insert({
 - **enabled** [Boolean] - Enable/disable connection. **Mandatory**.
 - **commandsEnabled** [Boolean] - Enable command forwarding. **Mandatory**.
 - **ipAddressLocalBind** [String] - Listen address and port (e.g. "0.0.0.0:102"). Default port is 102. **Mandatory**.
-- **ipAddresses** [Array of Strings] - Allowed client IP addresses. Empty = allow all. **Optional**.
+- **ipAddresses** [Array of Strings] - Allowed client IP addresses (not yet enforced!). Empty = allow all. **Optional**.
 - **topics** [Array of Strings] - `group1` filter for exposed tags. Empty = all tags. **Optional**.
 - **timeoutMs** [Double] - Connection timeout in ms. **Optional**.
 - **localApTitle** [String] - Local AP Title (e.g. "1.1.999.1"). Gets a default if empty. **Optional**.
@@ -94,7 +94,7 @@ db.protocolConnections.insert({
 - **remoteApTitle** [String] - Authorized remote AP Title for bilateral table. Empty = open mode. **Optional**.
 - **remoteAeQualifier** [Integer] - Remote AE Qualifier. **Optional**.
 - **useSecurity** [Boolean] - Reserved for future TLS support. **Optional**.
-- **authenticationPassword** [String] - ACSE authentication password. Empty = no auth. **Optional**.
+- **password** [String] - ACSE authentication password. Empty = no auth. **Optional**.
 - **stats** [Object] - Protocol statistics (updated by driver). **Mandatory**.
 
 ## Command Line Arguments
