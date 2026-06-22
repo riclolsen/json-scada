@@ -136,6 +136,35 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.63:
+
+* New ICCP TASE2 server protocol driver.
+* New portable DNP3 Client C++ driver with auto creation of detected tags.
+* Auto creation of tags on IEC 101/104 drivers.
+* Display, Events, Alarms, Tabular Viewers as native Vuetify components.
+* Log-io log monitoring updated with modern packages.
+* MongoDB Go driver upgraded.
+* NPM packages updated.
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+* On the JSON-SCADA desktop folder: execute "_Start_Services".
+* On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 12GB RAM and 30GB of free space in the "C:" drive.
+* MongoDB requires AVX instructions on x86 CPU. Use a modern x86 CPU with 6 cores or more.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 443, 8080, 3000, 3001, 9000, 20000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+
+-------------------------------------------------------------------
+
 Notes for version 0.62:
 
 * Added OPC DA server protocol driver.
