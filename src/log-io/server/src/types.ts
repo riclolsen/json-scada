@@ -1,5 +1,5 @@
 import InputRegistry from './inputs'
-import socketio from 'socket.io'
+import { Server } from 'socket.io'
 
 export type ServerConfig = {
   messageServer: {
@@ -22,7 +22,7 @@ export type ServerConfig = {
 export type MessageHandlerFunction = (
   config: ServerConfig,
   inputs: InputRegistry,
-  io: socketio.Server,
+  io: Server,
   msgParts: Array<string>
 ) => Promise<void>
 

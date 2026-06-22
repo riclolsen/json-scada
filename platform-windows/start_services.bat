@@ -14,7 +14,7 @@ ping -n 5 127.0.0.1
 
 net start JSON_SCADA_log_io_file
 net start JSON_SCADA_cs_data_processor
-net start JSON_SCADA_cs_custom_processor
+rem net start JSON_SCADA_cs_custom_processor
 net start JSON_SCADA_server_realtime_auth
 net start JSON_SCADA_calculations 
 net start JSON_SCADA_process_rtdata

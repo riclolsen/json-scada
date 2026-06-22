@@ -37,10 +37,9 @@ import (
 	"github.com/tealeg/xlsx/v3"
 	"github.com/xuri/excelize/v2"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var softwareVersion string = "{json:scada} I104M Protocol Driver v.0.1.4 - Copyright 2020-2023 Ricardo L. Olsen"
@@ -73,7 +72,7 @@ type configData struct {
 }
 
 type commandQueueEntry struct {
-	ID                             primitive.ObjectID `json:"_id" bson:"_id"`
+	ID                             bson.ObjectID `json:"_id" bson:"_id"`
 	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
 	ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
 	ProtocolSourceObjectAddress    int                `json:"protocolSourceObjectAddress"`
@@ -95,7 +94,7 @@ type insertChange struct {
 }
 
 type protocolDriverInstance struct {
-	ID                               primitive.ObjectID `json:"_id" bson:"_id"`
+	ID                               bson.ObjectID `json:"_id" bson:"_id"`
 	ProtocolDriver                   string             `json:"protocolDriver"`
 	ProtocolDriverInstanceNumber     int                `json:"protocolDriverInstanceNumber"`
 	Enabled                          bool               `json:"enabled"`
@@ -126,7 +125,6 @@ func checkFatalError(err error) {
 }
 
 func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collection, collInsts *mongo.Collection, collConns *mongo.Collection, collCmds *mongo.Collection, err error) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
@@ -152,12 +150,12 @@ func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collecti
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
 	}
 
-	client, err = mongo.NewClient(options.Client().ApplyURI(cfg.MongoConnectionString))
+	client, err = mongo.Connect(options.Client().ApplyURI(cfg.MongoConnectionString))
 	if err != nil {
 		return client, collRTD, collInsts, collConns, collCmds, err
 	}
 
-	err = client.Connect(ctx)
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		return client, collRTD, collInsts, collConns, collCmds, err
 	}
@@ -170,7 +168,7 @@ func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collecti
 }
 
 // Cancel a command on commandsQueue collection
-func commandCancel(collectionCommands *mongo.Collection, ID primitive.ObjectID, cancelReason string) {
+func commandCancel(collectionCommands *mongo.Collection, ID bson.ObjectID, cancelReason string) {
 	// write cancel to the command in mongo
 	_, err := collectionCommands.UpdateOne(
 		context.TODO(),
@@ -184,7 +182,7 @@ func commandCancel(collectionCommands *mongo.Collection, ID primitive.ObjectID, 
 }
 
 // Signals a command delvered to protocol on commandsQueue collection
-func commandDelivered(collectionCommands *mongo.Collection, ID primitive.ObjectID) {
+func commandDelivered(collectionCommands *mongo.Collection, ID bson.ObjectID) {
 	// write cancel to the command in mongo
 	_, err := collectionCommands.UpdateOne(
 		context.TODO(),
@@ -477,7 +475,7 @@ var countKeepAliveUpdates = 0
 var countKeepAliveUpdatesLimit = 4
 var lastActiveNodeKeepAliveTimeTag time.Time
 
-func processRedundancy(collectionInstances *mongo.Collection, id primitive.ObjectID, cfg configData) {
+func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, cfg configData) {
 
 	var instance protocolDriverInstance
 	filter := bson.D{{Key: "_id", Value: id}}
@@ -524,7 +522,7 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 		_, err := collectionInstances.UpdateOne(
 			context.TODO(),
 			bson.M{"_id": bson.M{"$eq": id}},
-			bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now())}},
+			bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now())}},
 		)
 		if err != nil {
 			log.Println("Redundancy - error updating mongodb!")

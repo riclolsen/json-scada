@@ -116,6 +116,26 @@
     },
     {
       "source": "node1",
+      "stream": "iccpclient",
+      "config": {
+        "path": "/json-scada/log/iccpclient.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "iccpserver",
+      "config": {
+        "path": "/json-scada/log/iccpserver.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "mqttsparkplugclient",
       "config": {
         "path": "/json-scada/log/mqttsparkplugclient.log",
@@ -139,6 +159,16 @@
       "stream": "opcdaclient",
       "config": {
         "path": "/json-scada/log/opcdaclient.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
+      "stream": "opcdaserver",
+      "config": {
+        "path": "/json-scada/log/opcdaserver.log",
         "watcherOptions": {
           "usePolling": true
         }

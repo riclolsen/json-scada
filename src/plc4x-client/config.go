@@ -30,10 +30,9 @@ import (
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/model"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 const (
@@ -59,8 +58,8 @@ type configData struct {
 }
 
 type commandQueueEntry struct {
-	ID                             primitive.ObjectID `json:"_id" bson:"_id"`
-	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
+	ID                             bson.ObjectID `json:"_id" bson:"_id"`
+	ProtocolSourceConnectionNumber int           `json:"protocolSourceConnectionNumber"`
 	//ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
 	ProtocolSourceObjectAddress string `json:"protocolSourceObjectAddress"`
 	ProtocolSourceASDU          string `json:"protocolSourceASDU"`
@@ -81,8 +80,8 @@ type insertChange struct {
 }
 
 type protocolDriverInstance struct {
-	ID                               primitive.ObjectID `json:"_id" bson:"_id"`
-	ProtocolDriver                   string             `json:"protocolDriver"`
+	ID                               bson.ObjectID `json:"_id" bson:"_id"`
+	ProtocolDriver                   string        `json:"protocolDriver"`
 	ProtocolDriverInstanceNumber     int                `json:"protocolDriverInstanceNumber"`
 	Enabled                          bool               `json:"enabled"`
 	LogLevel                         int                `json:"logLevel"`
@@ -223,11 +222,11 @@ func mongoConnect(cfg configData) (client *mongo.Client, collRTD *mongo.Collecti
 		cfg.MongoConnectionString = cfg.MongoConnectionString + "&tlsAllowInvalidHostnames=true"
 	}
 
-	bsonOpts := &options.BSONOptions{
-		// UseJSONStructTags:       true,
-		// StringifyMapKeysWithFmt: true,
+	client, err = mongo.Connect(options.Client().ApplyURI(cfg.MongoConnectionString))
+	if err != nil {
+		return client, collRTD, collInsts, collConns, collCmds, err
 	}
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoConnectionString).SetBSONOptions(bsonOpts))
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		return client, collRTD, collInsts, collConns, collCmds, err
 	}
@@ -243,7 +242,7 @@ var countKeepAliveUpdates = 0
 var countKeepAliveUpdatesLimit = 4
 var lastActiveNodeKeepAliveTimeTag time.Time
 
-func processRedundancy(collectionInstances *mongo.Collection, id primitive.ObjectID, cfg configData) {
+func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, cfg configData) {
 
 	var instance protocolDriverInstance
 	filter := bson.D{{Key: "_id", Value: id}}
@@ -291,7 +290,7 @@ func processRedundancy(collectionInstances *mongo.Collection, id primitive.Objec
 		result, err := collectionInstances.UpdateOne(
 			context.TODO(),
 			bson.M{"_id": bson.M{"$eq": id}},
-			bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now())}},
+			bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now())}},
 		)
 		if err != nil {
 			log.Println(err)
@@ -314,7 +313,7 @@ func contains(a []string, str string) bool {
 	return false
 }
 
-func configInstance(client *mongo.Client, collectionInstances, collectionConnections, collectionCommands *mongo.Collection, instanceNumber int) (protocolConns []*protocolConnection, csCommands *mongo.ChangeStream, instanceId primitive.ObjectID) {
+func configInstance(client *mongo.Client, collectionInstances, collectionConnections, collectionCommands *mongo.Collection, instanceNumber int) (protocolConns []*protocolConnection, csCommands *mongo.ChangeStream, instanceId bson.ObjectID) {
 
 	// Check the connection
 	err := client.Ping(context.TODO(), nil)

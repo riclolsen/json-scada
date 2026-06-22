@@ -1,5 +1,5 @@
 import React, { Dispatch, useContext, useEffect, useMemo, useState } from 'react'
-import { DebounceInput } from 'react-debounce-input'
+import DebouncedInput from '../DebouncedInput'
 
 import { DispatchContext, StateContext } from '../../contexts'
 import { ActionTypes, State } from '../../reducers/types'
@@ -103,7 +103,7 @@ const Screen: React.FC<ScreenProps> = ({
           Screen {screenIndex + 1}
         </div>
         <div className="controls">
-          <DebounceInput
+          <DebouncedInput
             minLength={2}
             debounceTimeout={200}
             placeholder="Filter"

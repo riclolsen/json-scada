@@ -301,6 +301,12 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-DA',
       'ICCP',
       'DNP3_SERVER',
+      'DNP3',
+      'ICCP',
+      'IEC60870-5-104_SERVER',
+      'IEC60870-5-104',
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-101',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('autoCreateTags' in req.body)) {
@@ -320,6 +326,11 @@ exports.updateProtocolConnection = async (req, res) => {
       'ICCP',
       'ICCP_SERVER',
       'DNP3_SERVER',
+      'DNP3',
+      'IEC60870-5-104_SERVER',
+      'IEC60870-5-104',
+      'IEC60870-5-101_SERVER',
+      'IEC60870-5-101',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('topics' in req.body)) {
@@ -358,10 +369,17 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('username' in req.body)) {
       req.body.username = ''
     }
+  }
+  if (
+    ['MQTT-SPARKPLUG-B', 'OPC-DA', 'OPC-UA', 'ONVIF', 'ICCP', 'ICCP_SERVER'].includes(
+      req?.body?.protocolDriver
+    )
+  ) {
     if (!('password' in req.body)) {
       req.body.password = ''
     }
   }
+
 
   if (['MQTT-SPARKPLUG-B'].includes(req?.body?.protocolDriver)) {
     if (!('topicsAsFiles' in req.body)) {
@@ -401,6 +419,8 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'IEC61850_SERVER',
       'OPC-DA',
+      'ICCP',
+      'ICCP_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('useSecurity' in req.body)) {
@@ -424,23 +444,20 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
-    if (!('aeQualifier' in req.body)) {
-      req.body.aeQualifier = 12.0
+    if (!('localAeQualifier' in req.body)) {
+      req.body.localAeQualifier = 12.0
     }
     if (!('localAppTitle' in req.body)) {
-      req.body.localAppTitle = '1.1.1.998'
-    }
-    if (!('localSelectors' in req.body)) {
-      req.body.localSelectors = '0 0 0 2 0 2 0 2'
+      req.body.localApTitle = '1.1.998.1'
     }
   }
 
-  if (['ICCP'].includes(req?.body?.protocolDriver)) {
-    if (!('remoteAppTitle' in req.body)) {
-      req.body.remoteAppTitle = '1.1.1.999'
+  if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
+    if (!('remoteAeQualifier' in req.body)) {
+      req.body.remoteAeQualifier = 12.0
     }
-    if (!('remoteSelectors' in req.body)) {
-      req.body.remoteSelectors = '0 0 0 1 0 1 0 1'
+    if (!('remoteAppTitle' in req.body)) {
+      req.body.remoteApTitle = '1.1.999.1'
     }
   }
 
@@ -461,7 +478,7 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.configFileName = ''
     }
   }
-  if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
+  if (['ICCP'].includes(req?.body?.protocolDriver)) {
     if (!('autoCreateTagPublishingInterval' in req.body)) {
       req.body.autoCreateTagPublishingInterval = 2.5
     }
@@ -480,7 +497,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
   if (
-    ['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER', 'DNP3_SERVER'].includes(
+    ['OPC-UA', 'OPC-DA', 'OPC-DA_SERVER', 'DNP3_SERVER', 'ICCP', 'ICCP_SERVER'].includes(
       req?.body?.protocolDriver
     )
   ) {
@@ -506,14 +523,6 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('prgIdCurrServer' in req.body)) {
       req.body.prgIdCurrServer =
         req.body.prgIdServer + '.' + req.body.protocolConnectionNumber
-    }
-  }
-  if (['ICCP', 'ICCP_SERVER'].includes(req?.body?.protocolDriver)) {
-    if (!('domain' in req.body)) {
-      req.body.domain = ''
-    }
-    if (!('hoursShift' in req.body)) {
-      req.body.hoursShift = 0.0
     }
   }
   if (

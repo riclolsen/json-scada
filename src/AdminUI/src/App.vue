@@ -11,6 +11,7 @@
         </router-link>
       </v-app-bar-title>
       <v-spacer></v-spacer>
+      <span class="text-body-2 font-weight-medium" style="position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; white-space: nowrap; opacity: 0.9;">{{ pageTitle }}</span>
       <v-select v-model="currentLocale" :items="availableLocales" variant="outlined" density="compact" hide-details
         class="mr-2" style="max-width: 120px"></v-select>
       <v-btn icon size="small" @click="toggleTheme">
@@ -74,17 +75,47 @@
 </template>
 
 <script setup>
-import { ref, watch, provide, onMounted } from 'vue'
+import { ref, watch, provide, onMounted, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { STORAGE_KEY } from './i18n'
 
-const version = ref('v0.62-alpha')
+const THEME_STORAGE_KEY = 'user-theme'
+
+const version = ref('v0.63-alpha')
 const router = useRouter()
-const theme = ref('dark')
+const route = useRoute()
 const vuetifyTheme = useTheme()
 const { locale, t } = useI18n()
+
+const getStoredTheme = () => localStorage.getItem(THEME_STORAGE_KEY) || 'dark'
+const theme = ref(getStoredTheme())
+
+// Map route paths to i18n dashboard translation keys
+const pageTitle = computed(() => {
+  const map = {
+    '/login': 'login.title',
+    '/dashboard': 'dashboard.title',
+    '/display-viewer': 'dashboard.displayViewer',
+    '/display-viewer-new': 'dashboard.displayViewer',
+    '/alarms-viewer': 'dashboard.alarmsViewer',
+    '/alarms-viewer-new': 'dashboard.alarmsViewer',
+    '/tabular-viewer': 'dashboard.tabularViewer',
+    '/tabular-viewer-new': 'dashboard.tabularViewer',
+    '/events-viewer': 'dashboard.eventsViewer',
+    '/events-viewer-new': 'dashboard.eventsViewer',
+    '/log-viewer': 'dashboard.logViewer',
+    '/about': 'dashboard.about',
+    '/admin': 'dashboard.admin',
+    '/grafana': 'dashboard.grafana',
+    '/metabase': 'dashboard.metabase',
+    '/custom-developments': 'dashboard.customDevelopments',
+    '/svg-edit': 'dashboard.svgedit',
+  }
+  const key = map[route.path]
+  return key ? t(key) : ''
+})
 
 const currentLocale = ref(locale.value)
 const loggedInUser = ref('')
@@ -112,6 +143,7 @@ const availableLocales = [
 ]
 
 onMounted(() => {
+  vuetifyTheme.global.name.value = theme.value
   checkLogin()
   setInterval(checkLogin, 15000)
 })
@@ -119,6 +151,7 @@ onMounted(() => {
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
   vuetifyTheme.global.name.value = theme.value
+  localStorage.setItem(THEME_STORAGE_KEY, theme.value)
 }
 
 const setLoggedInUser = (username) => {

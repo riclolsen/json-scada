@@ -35,10 +35,9 @@ import (
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	"github.com/xuri/excelize/v2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 const softwareVersion string = "0.1.2"
@@ -153,15 +152,15 @@ func readConfigFile(cfg *config) {
 // Reads the config file and connects to MongoDB server
 func mongoConnect(cfg config) (client *mongo.Client, colRTD *mongo.Collection, err error) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-
-	client, err = mongo.NewClient(options.Client().ApplyURI(cfg.MongoConnectionString))
+	client, err = mongo.Connect(options.Client().ApplyURI(cfg.MongoConnectionString))
 	if err != nil {
 		mongoClient = nil
 		return client, colRTD, err
 	}
-	err = client.Connect(ctx)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		mongoClient = nil
 		return client, colRTD, err
@@ -206,7 +205,7 @@ func processRedundancy(cfg config) {
 						"logLevel":                   logLevel,
 						"nodeNames":                  bson.A{},
 						"activeNodeName":             cfg.NodeName,
-						"activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now()),
+						"activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now()),
 						"softwareVersion":            softwareVersion,
 						"periodOfCalculation":        periodOfCalculation,
 					})
@@ -273,7 +272,7 @@ func processRedundancy(cfg config) {
 					_, err := collectionProcessInstances.UpdateOne(
 						context.TODO(),
 						bson.M{"processName": bson.M{"$eq": instance.ProcessName}},
-						bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": primitive.NewDateTimeFromTime(time.Now())}},
+						bson.M{"$set": bson.M{"activeNodeName": cfg.NodeName, "activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now())}},
 					)
 					if err != nil {
 						log.Println("Redundancy - Error updating in processInstances!")

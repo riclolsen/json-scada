@@ -67,6 +67,14 @@ make
 cp Dnp3Server ../../../../bin/
 cd ../..
 
+cd Dnp3ClientCpp
+mkdir build
+cd build
+cmake ..
+make
+cp Dnp3ClientCpp ../../../../bin/
+cd ../..
+
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
 
@@ -85,6 +93,20 @@ cd ../plc4x-client
 go mod tidy 
 go build
 cp plc4x-client ../../bin/
+
+cd ../iccp/iccp-server
+#go mod tidy 
+#go build
+cp iccp-server-linux-amd64 ../../../bin/iccp-server
+chmod +x ../../../bin/iccp-server
+cd ..
+
+#cd ../iccp/iccp-client
+#go mod tidy 
+#go build
+#cp iccp-client-linux-amd64 ../../../bin/iccp-client
+#chmod +x ../../../bin/iccp-client
+#cd ..
 
 # release some disk space
 rm -rf ~/.cache

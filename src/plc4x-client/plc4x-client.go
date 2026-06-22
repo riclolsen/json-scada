@@ -38,10 +38,9 @@ import (
 	"github.com/apache/plc4x/plc4go/pkg/api/transports"
 	"github.com/apache/plc4x/plc4go/pkg/api/values"
 	"github.com/rs/zerolog"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var (
@@ -52,7 +51,7 @@ var (
 )
 
 // cancel a command on commandsQueue collection
-func commandCancel(collectionCommands *mongo.Collection, ID primitive.ObjectID, cancelReason string) {
+func commandCancel(collectionCommands *mongo.Collection, ID bson.ObjectID, cancelReason string) {
 	// write cancel to the command in mongo
 	_, err := collectionCommands.UpdateOne(
 		context.TODO(),
@@ -66,7 +65,7 @@ func commandCancel(collectionCommands *mongo.Collection, ID primitive.ObjectID, 
 }
 
 // signals a command delvered to protocol on commandsQueue collection
-func commandDelivered(collectionCommands *mongo.Collection, ID primitive.ObjectID) {
+func commandDelivered(collectionCommands *mongo.Collection, ID bson.ObjectID) {
 	// write cancel to the command in mongo
 	_, err := collectionCommands.UpdateOne(
 		context.TODO(),
@@ -351,14 +350,14 @@ func main() {
 	chProtConns := make(chan []*protocolConnection)
 	chInstancesColl := make(chan *mongo.Collection)
 	chRtDataColl := make(chan *mongo.Collection)
-	chInstanceId := make(chan primitive.ObjectID)
+	chInstanceId := make(chan bson.ObjectID)
 
 	// start a go routine to handle commands from mongo
 	go mongoWriter(cfg, instanceNumber, chMongoBw, chProtConns, chRtDataColl, chInstancesColl, chInstanceId, logLevel)
 	var protocolConns []*protocolConnection = []*protocolConnection{}
 	var collectionRtData *mongo.Collection
 	var collectionInstances *mongo.Collection
-	var instanceId primitive.ObjectID
+	var instanceId bson.ObjectID
 
 	// keep retrying protocol reconnection when disconnected
 	for {
@@ -1063,7 +1062,7 @@ func mongoWriter(
 	chProtConns chan []*protocolConnection,
 	chRtData chan *mongo.Collection,
 	chInstances chan *mongo.Collection,
-	chInstanceId chan primitive.ObjectID,
+	chInstanceId chan bson.ObjectID,
 	logLevel int,
 ) {
 	for {

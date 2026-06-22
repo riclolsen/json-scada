@@ -29,18 +29,16 @@ const ProtocolConnection = mongoose.model(
     // IEC60870-5-104, IEC60870-5-104_SERVER, DNP3, DNP3_SERVER, PLCTag, I104M, TELEGRAF_LISTENER, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, ICCP, ICCP_SERVER
     ipAddresses: { type: [String], default: [] },
 
-    // MQTT-SPARKPLUG-B, OPC-UA, OPC-UA_SERVER, IEC61850, PLC4X, OPC_DA, OPC-DA_SERVER, ICCP, ICCP_SERVER, DNP3_SERVER
+    // MQTT-SPARKPLUG-B, OPC-UA, OPC-UA_SERVER, IEC61850, PLC4X, OPC_DA, OPC-DA_SERVER, ICCP, ICCP_SERVER, DNP3, DNP3_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER, IEC60870-5-101, IEC60870-5-101_SERVER
     topics: { type: [String], default: [] },
 
     // ICCP, ICCP_SERVER
-    domain: { type: String, default: '' },
-    aeQualifier: { type: Double, default: 12 },
-    localAppTitle: { type: String, default: '1.1.1.998' },
-    localSelectors: { type: String, default: '0 0 0 2 0 2 0 2' },
+    localAeQualifier: { type: Double, default: 12 },
+    localApTitle: { type: String, default: '1.1.1.998' },
 
-    // ICCP
-    remoteAppTitle: { type: String, default: '1.1.1.999' },
-    remoteSelectors: { type: String, default: '0 0 0 1 0 1 0 1' },
+    // ICCP, ICCP_SERVER
+    remoteAeQualifier: { type: Double, default: 12 },
+    remoteApTitle: { type: String, default: '1.1.1.999' },
 
     // MQTT-SPARKPLUG-B, OPC-UA_SERVER
     groupId: { type: String, default: '' },
@@ -62,19 +60,20 @@ const ProtocolConnection = mongoose.model(
 
     // MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, OPC-DA, OPC-UA, ONVIF
     username: { type: String, default: '' },
+    // MQTT-SPARKPLUG-B, IEC61850, IEC61850_SERVER, OPC-DA, OPC-UA, ONVIF, ICCP, ICCP_SERVER
     password: { type: String, default: '' },
 
-    // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP, DNP3_SERVER
+    // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP, DNP3_SERVER, DNP3, IEC61850_SERVER, ICCP, IEC60870-5-104_SERVER, IEC60870-5-104, IEC60870-5-101_SERVER, IEC60870-5-101
     autoCreateTags: { type: Boolean, default: true },
 
-    // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP, ICCP_SERVER
+    // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 5.0 },
 
     // OPC-UA, OPC-DA
     autoCreateTagSamplingInterval: { type: Double, min: 0, default: 5.0 },
     autoCreateTagQueueSize: { type: Double, min: 0, default: 5.0 },
 
-    // OPC-UA, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA
+    // OPC-UA, MQTT-SPARKPLUG-B, OPC-UA_SERVER, IEC61850, IEC61850_SERVER, OPC-DA, ICCP, ICCP_SERVER
     useSecurity: { type: Boolean, default: false },
 
     // OPC-UA, MQTT-SPARKPLUG-B, PLC4X, OPC-DA, ONVIF

@@ -89,7 +89,7 @@ Follow below a list of attributes (“SCADA\|Tab”) that can be utilized to ani
 | Arc, Donut                               | [Set (#arc)](#set-tab)                                                                       |
 | Camera UI (ONVIF) View                   | [Set (#camera)](#set-tab)                                                                    |
 | Generic URL View                         | [Set (#foreign_object)](#set-tab)                                                            |
-| Generic charts                           | [Script](#script-tab) \| [Set (#vega4 #vega4-json #vega-lite)](#set-tab)                     |
+| Generic charts                           | [Script](#script-tab) \| [Set (#vega #vega-json #vega4 #vega4-json #vega-lite)](#set-tab)                     |
 | Control transparency                     | [Opacity](#opacity-tab), [Color](#color-tab)                                                 |
 | Rotate objects                           | [Rotate](#rotate-tab)                                                                        |
 | Create tooltips (on mouse over text)     | [Tooltips](#tooltips-tab)                                                                    |
@@ -366,11 +366,9 @@ The function $W.makeDraggable(obj) can be used to make an object draggable by th
 
 Vega specification markup options:
 
-- **vega**: old style Vega 1/2 specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char. DEPRECATED, use vega4!
-- **vega4**: new style Vega 3/4/5 specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char.
+- **vega**, **vega4**: new style Vega 3/4/5 specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char.
 - **vega-lite**: vega-lite specification. In the first line of the script must be written the tag list comma separated. In the next line either a URL to a specification or the specification itself beginning with a “{” char.
-- **vega-json**: old style Vega 1/2 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data. DEPRECATED, use vega4-json!
-- **vega4-json**: new style Vega 3/4/5 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data.
+- **vega-json**, **vega4-json**: new style Vega 3/4/5 specification with no tags associated. In the first line of the script must be put a URL to a specification or the specification itself beginning with a “{” char. In the data section of the specification define “update_period“ in seconds for the periodic update of the data.
 
 See Vega project site for tools and documentation of syntax: [https://vega.github.io/vega/docs/](https://vega.github.io/vega/docs/).
 
@@ -463,7 +461,7 @@ Functions available:
 - **#camera** in the field Tag – open a camera view (inside a foreignObject/iframe). The field “Source” must contain the camera name (e.g. "CAM001"). The field “Prompt” can be used to define the iframe properties (e.g. '"width=500 height=500 style="transform: scale(0.5);transform-origin: 0 0;" frameborder="0" scrolling="no"').
 - **#foreign_object** in the field Tag – open a generic URL inside a foreignObject/iframe. The field “Source” must contain the URL (e.g. "events.html"). The field “Prompt” can be used to define the iframe properties (e.g. "width=100% height=100%").
 
-- **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038\|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
+- **#vega**, **#vega-json**, **#vega4**, **#vega4-json** or **#vega-lite** in the field “Tag” - define a Vega (version 3/4/5) or VegaLite chart. List the tags in the “Source” field separated by commas. You can set the number of minutes to retrieve for historical data putting the pipe character and a number after the point list in the “Source” field (e.g.: “38038\|15”). The field Prompt must contain the Vega chart specification (JSON code that must begin with a ‘”{” ) or a URL link to a file (e.g. “http://site.com/charts/stacked.json”).
 
 See the Vega project site for tools and documentation of syntax: [https://vega.github.io/vega/docs/](https://vega.github.io/vega/docs/).
 

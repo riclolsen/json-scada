@@ -11,9 +11,9 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/dotnet-8.0-green 'Dotnet 8.0')
 
 ![](https://img.shields.io/badge/mongodb-6.0-green 'MongoDB 6.0+')
-![](https://img.shields.io/badge/postgresql-16-green 'PostgreSQL 16')
+![](https://img.shields.io/badge/postgresql-16-green 'PostgreSQL 16+')
 ![](https://img.shields.io/badge/timescaledb-2.0-green 'TimescaleDB 2.0')
-![](https://img.shields.io/badge/grafana-11-green 'Grafana 11')
+![](https://img.shields.io/badge/grafana-11-green 'Grafana 11+')
 
 ![](https://img.shields.io/badge/linux-x86--64-green 'Linux x86-64')
 ![](https://img.shields.io/badge/linux-ARM-green 'Linux ARM-64')
@@ -22,6 +22,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 ![](https://img.shields.io/badge/macosx-ARM--M1-yellow 'Mac ARM Mx')
 
 ![](https://img.shields.io/badge/IEC61850-green 'IEC61850')
+![](https://img.shields.io/badge/ICCP-green 'ICCP')
 ![](https://img.shields.io/badge/IEC60870--5--104-green 'IEC60870-5-104')
 ![](https://img.shields.io/badge/IEC60870--5--101-green 'IEC60870-5-101')
 ![](https://img.shields.io/badge/DNP3-green 'DNP3')
@@ -56,7 +57,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - MongoDB as the real-time core database, persistence layer, config store, SOE historian.
 - Event-based realtime async data processing with MongoDB Change Streams.
 - Portability and modular interoperability over Linux, Windows, Mac OSX, x86/64, ARM.
-- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.62-alpha).
+- Windows installer available in the [releases section](https://github.com/riclolsen/json-scada/releases/tag/V0.63-alpha).
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
@@ -98,7 +99,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 ## Documentation
 
 - [Generic Install Guide](docs/install.md)
-- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.62-alpha)
+- [Windows Installer](https://github.com/riclolsen/json-scada/releases/tag/V0.63-alpha)
 - [RedHat/Rocky/Alma Linux Installer Script](docs/install.md#rhel94-and-compatible-systems-automated-installation)
 - [Ubuntu Linux Installer Script](docs/install.md#ubuntu-2404-scripted-installation)
 - [Generic Install Guide](docs/install.md)
@@ -112,7 +113,8 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [IEC60870-5-104 Client Driver](src/lib60870.netcore/iec104client/README.md)
 - [IEC60870-5-101 Server Driver](src/lib60870.netcore/iec101server/README.md)
 - [IEC60870-5-101 Client Driver](src/lib60870.netcore/iec101client/README.md)
-- [DNP3 Client Driver](src/dnp3/Dnp3Client/README.md)
+- [DNP3 Client C# Driver](src/dnp3/Dnp3Client/README.md)
+- [DNP3 Client C++ Driver](src/dnp3/Dnp3ClientCpp/README.md)
 - [DNP3 Server Driver](src/dnp3/Dnp3Server/README.md)
 - [Telegraf Listener Driver](src/telegraf-listener/README.md)
 - [MQTT Sparkplug-B Client Driver](src/mqtt-sparkplug/README.md)
@@ -142,11 +144,11 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] IEC 61850 MMS Client TCP/TLS
 - [ ] IEC 61850 MMS Server
 - [ ] IEC 61850 GOOSE/SV Client
-- [x] DNP3 Client TCP/UDP/TLS/Serial - Windows x64 only!
+- [x] DNP3 Client TCP/UDP/TLS/Serial
 - [x] DNP3 Server TCP/UDP/TLS/Serial
 - [x] Modbus Client via PLC4X-GO
 - [ ] ICCP Client TCP/TLS
-- [ ] ICCP Server TCP/TLS
+- [x] ICCP Server - Developed with closed source TASE2 library (100% native Go)
 - [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)
 - [x] MQTT/Sparkplug-B PUB/SUB TCP/TLS
 - [x] OPC UA PubSub over MQTT with JSON payloads client
