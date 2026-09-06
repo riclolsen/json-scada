@@ -27,25 +27,29 @@ import (
 	"context"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // changeStreamLoop watches realtimeData and enqueues model updates.
-func changeStreamLoop(ctx context.Context, cfg JSONSCADAConfig, g *Gateway) {
+func changeStreamLoop(ctx context.Context, cfg jsconfig.Config, g *Gateway) {
 	for ctx.Err() == nil {
-		cli, err := mongoConnect(cfg)
+		cli, _, err := jsmongo.ConnectAndPing(cfg)
 		if err != nil {
-			Log(LogLevelNoLog, "Exception MongoCS")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception MongoCS")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
 		db := cli.Database(cfg.MongoDatabaseName)
 		if err := watchRealtimeData(ctx, db, g); err != nil && ctx.Err() == nil {
-			Log(LogLevelNoLog, "Exception MongoCS")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception MongoCS")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
 		}
 		_ = cli.Disconnect(context.Background())
@@ -71,10 +75,10 @@ func csPipeline(topics []string) mongo.Pipeline {
 }
 
 func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) error {
-	if err := mongoPing(db, 1*time.Second); err != nil {
+	if err := jsmongo.Ping(db, 1*time.Second); err != nil {
 		return err
 	}
-	coll := db.Collection(RealtimeDataCollectionName)
+	coll := db.Collection(jsmongo.RealtimeDataCollectionName)
 
 	cs, err := coll.Watch(ctx, csPipeline(g.conn.Topics),
 		options.ChangeStream().SetFullDocument(options.UpdateLookup))
@@ -83,7 +87,7 @@ func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) erro
 	}
 	defer cs.Close(context.Background())
 
-	Log(LogLevelNoLog, "MongoDB CS - listening for realtime data updates...")
+	jslog.Log(jslog.LevelNoLog, "MongoDB CS - listening for realtime data updates...")
 
 	for cs.Next(ctx) {
 		var ev struct {
@@ -91,7 +95,7 @@ func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) erro
 			FullDocument  bson.M `bson:"fullDocument"`
 		}
 		if err := cs.Decode(&ev); err != nil {
-			Log(LogLevelDetailed, "MongoDB CS - decode: %v", err)
+			jslog.Log(jslog.LevelDetailed, "MongoDB CS - decode: %v", err)
 			continue
 		}
 		if ev.OperationType != "update" && ev.OperationType != "replace" {
@@ -109,7 +113,7 @@ func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) erro
 			// A tag that matches the filter but is not in the model was
 			// created after startup: the model is static, so it will only
 			// be served after a restart.
-			Log(LogLevelDetailed, "MongoDB CS - tag %s is not in the model (added after startup?)", p.Tag)
+			jslog.Log(jslog.LevelDetailed, "MongoDB CS - tag %s is not in the model (added after startup?)", p.Tag)
 			continue
 		}
 		if mp.IsCommand {

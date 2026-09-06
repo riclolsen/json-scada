@@ -27,75 +27,57 @@ import (
 	"sync"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jsrtdata"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // dataQueue holds acquired values until the writer flushes them.
-var dataQueue struct {
-	mu    sync.Mutex
-	items []IECValue
-}
+var dataQueue jsrtdata.Queue[IECValue]
 
 // enqueueValue queues one acquired value. Called from report callbacks, so
 // it must not block.
-func enqueueValue(iv IECValue) {
-	dataQueue.mu.Lock()
-	dataQueue.items = append(dataQueue.items, iv)
-	dataQueue.mu.Unlock()
-}
+func enqueueValue(iv IECValue) { dataQueue.Enqueue(iv) }
 
-func queueLen() int {
-	dataQueue.mu.Lock()
-	defer dataQueue.mu.Unlock()
-	return len(dataQueue.items)
-}
+func queueLen() int { return dataQueue.Len() }
 
 // dequeueValue removes the oldest queued value.
-func dequeueValue() (IECValue, bool) {
-	dataQueue.mu.Lock()
-	defer dataQueue.mu.Unlock()
-	if len(dataQueue.items) == 0 {
-		return IECValue{}, false
-	}
-	iv := dataQueue.items[0]
-	dataQueue.items = dataQueue.items[1:]
-	return iv, true
-}
+func dequeueValue() (IECValue, bool) { return dataQueue.Dequeue() }
 
 // trimQueue discards the oldest values when the database is unreachable and
 // the queue outgrows its limit.
 func trimQueue(limit int) {
-	dataQueue.mu.Lock()
-	for len(dataQueue.items) > limit {
-		dataQueue.items = dataQueue.items[1:]
-		Log(LogLevelDetailed, "MongoDB - Dequeue Data")
-	}
-	dataQueue.mu.Unlock()
+	dataQueue.Trim(limit, func() {
+		jslog.Log(jslog.LevelDetailed, "MongoDB - Dequeue Data")
+	})
 }
 
 // mongoUpdateLoop drains the acquired-value queue into realtimeData,
 // inserting tags discovered by autoCreateTags along the way.
-func mongoUpdateLoop(ctx context.Context, cfg JSONSCADAConfig, conns []*Iec61850Connection) {
+func mongoUpdateLoop(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850Connection) {
 	for ctx.Err() == nil {
-		cli, err := mongoConnect(cfg)
+		cli, _, err := jsmongo.ConnectAndPing(cfg)
 		if err != nil {
-			Log(LogLevelNoLog, "Exception Mongo")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception Mongo")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(1 * time.Second)
 			trimQueue(DataBufferLimit)
 			continue
 		}
 		db := cli.Database(cfg.MongoDatabaseName)
-		collRTD := db.Collection(RealtimeDataCollectionName)
+		collRTD := db.Collection(jsmongo.RealtimeDataCollectionName)
 
-		Log(LogLevelNoLog, "MongoDB Update Thread Started...")
+		jslog.Log(jslog.LevelNoLog, "MongoDB Update Thread Started...")
 
 		err = updateCycle(ctx, db, collRTD, conns)
 		if err != nil && ctx.Err() == nil {
-			Log(LogLevelNoLog, "Exception Mongo")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception Mongo")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(1 * time.Second)
 			trimQueue(DataBufferLimit)
 		}
@@ -110,7 +92,7 @@ func updateCycle(ctx context.Context, db *mongo.Database, collRTD *mongo.Collect
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if err := mongoPing(db, 2500*time.Millisecond); err != nil {
+		if err := jsmongo.Ping(db, 2500*time.Millisecond); err != nil {
 			return err
 		}
 
@@ -139,12 +121,12 @@ func updateCycle(ctx context.Context, db *mongo.Database, collRTD *mongo.Collect
 		}
 
 		if len(writes) > 0 {
-			Log(LogLevelBasic, "MongoDB - Bulk writing %d, Total enqueued data %d", len(writes), queueLen())
+			jslog.Log(jslog.LevelBasic, "MongoDB - Bulk writing %d, Total enqueued data %d", len(writes), queueLen())
 			res, err := collRTD.BulkWrite(ctx, writes, options.BulkWrite().SetOrdered(false))
 			if err != nil {
 				return err
 			}
-			Log(LogLevelBasic, "MongoDB - OK:%t - Inserted:%d - Updated:%d",
+			jslog.Log(jslog.LevelBasic, "MongoDB - OK:%t - Inserted:%d - Updated:%d",
 				res.Acknowledged, res.InsertedCount, res.ModifiedCount)
 		}
 
@@ -173,31 +155,29 @@ func updateModel(iv IECValue) mongo.WriteModel {
 		srcTime = bson.NewDateTimeFromTime(iv.SourceTimestamp)
 	}
 
-	filter := bson.M{
-		"protocolSourceConnectionNumber": float64(iv.ConnNumber),
-		"protocolSourceObjectAddress":    iv.Address,
-		"origin":                         "supervised",
-	}
+	filter := jsrtdata.SupervisedFilter(float64(iv.ConnNumber), iv.Address)
 
-	update := bson.M{"$set": bson.M{"sourceDataUpdate": bson.M{
-		"valueBsonAtSource":           parseValueJSON(iv),
-		"valueAtSource":               iv.Value,
-		"valueStringAtSource":         iv.ValueString,
-		"asduAtSource":                iv.Asdu,
-		"causeOfTransmissionAtSource": strconv.Itoa(iv.Cot),
-		"timeTagAtSource":             srcTime,
-		"timeTagAtSourceOk":           iv.HasSourceTimestamp,
-		"timeTag":                     bson.NewDateTimeFromTime(iv.ServerTimestamp),
-		"notTopicalAtSource":          false,
-		"invalidAtSource":             !iv.Quality,
-		"overflowAtSource":            false,
-		"blockedAtSource":             false,
-		"substitutedAtSource":         false,
-		"transientAtSource":           iv.IsTransient,
-		"originator":                  ProtocolDriverName + "|" + strconv.Itoa(iv.ConnNumber),
-	}}}
+	update := jsrtdata.SourceDataUpdate{
+		ValueAtSource:               iv.Value,
+		ValueStringAtSource:         iv.ValueString,
+		AsduAtSource:                iv.Asdu,
+		CauseOfTransmissionAtSource: strconv.Itoa(iv.Cot),
+		TimeTagAtSource:             srcTime,
+		TimeTagAtSourceOk:           iv.HasSourceTimestamp,
+		TimeTag:                     bson.NewDateTimeFromTime(iv.ServerTimestamp),
+		NotTopicalAtSource:          false,
+		InvalidAtSource:             !iv.Quality,
+		OverflowAtSource:            false,
+		BlockedAtSource:             false,
+		SubstitutedAtSource:         false,
+		Extra: bson.M{
+			"valueBsonAtSource": parseValueJSON(iv),
+			"transientAtSource": iv.IsTransient,
+			"originator":        ProtocolDriverName + "|" + strconv.Itoa(iv.ConnNumber),
+		},
+	}.SetDoc()
 
-	Log(LogLevelDebug, "MongoDB - ADD %s %v", iv.Address, iv.Value)
+	jslog.Log(jslog.LevelDebug, "MongoDB - ADD %s %v", iv.Address, iv.Value)
 
 	return mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
 }
@@ -208,7 +188,7 @@ func updateModel(iv IECValue) mongo.WriteModel {
 func parseValueJSON(iv IECValue) bson.M {
 	var parsed any
 	if err := json.Unmarshal([]byte(iv.ValueJSON), &parsed); err != nil {
-		Log(LogLevelBasic, "%s - %v", iv.ConnName, err)
+		jslog.Log(jslog.LevelBasic, "%s - %v", iv.ConnName, err)
 		return bson.M{}
 	}
 	return bson.M{"a": parsed}
@@ -273,7 +253,7 @@ func createCommandTags(ctx context.Context, collRTD *mongo.Collection, conns []*
 		}).Decode(&sup)
 		cancel()
 		if err == nil {
-			supervisedID = mFloat(sup, "_id", 0)
+			supervisedID = jsmongo.GetDouble(sup, "_id", 0)
 		}
 		if supervisedID == 0 && ct.Attempts < commandLinkAttempts {
 			// The supervised tag is created by the value path; wait for it
@@ -283,12 +263,12 @@ func createCommandTags(ctx context.Context, collRTD *mongo.Collection, conns []*
 			continue
 		}
 
-		id := nextTagKey(ctx, collRTD, conn)
+		id := conn.TagKeys.Next(ctx, collRTD, conn.ProtocolConnectionNumber)
 		insCtx, cancelIns := context.WithTimeout(ctx, 10*time.Second)
 		_, err = collRTD.InsertOne(insCtx, newCommandDoc(ct, id, supervisedID))
 		cancelIns()
 		if err != nil {
-			Log(LogLevelBasic, "%s - command tag insert failed for %s: %v", ct.ConnName, tag, err)
+			jslog.Log(jslog.LevelBasic, "%s - command tag insert failed for %s: %v", ct.ConnName, tag, err)
 			continue
 		}
 		conn.InsertedTags[tag] = true
@@ -300,12 +280,12 @@ func createCommandTags(ctx context.Context, collRTD *mongo.Collection, conns []*
 				bson.M{"$set": bson.M{"commandOfSupervised": id}})
 			cancelUpd()
 			if err != nil {
-				Log(LogLevelBasic, "%s - cannot link %s to its supervised point: %v", ct.ConnName, tag, err)
+				jslog.Log(jslog.LevelBasic, "%s - cannot link %s to its supervised point: %v", ct.ConnName, tag, err)
 			}
-			Log(LogLevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - supervised _id:%v",
+			jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - supervised _id:%v",
 				ct.ConnName, tag, ct.Ref, supervisedID)
 		} else {
-			Log(LogLevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - no supervised point found",
+			jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - no supervised point found",
 				ct.ConnName, tag, ct.Ref)
 		}
 	}
@@ -318,32 +298,6 @@ func connByNumber(conns []*Iec61850Connection, number int) *Iec61850Connection {
 		}
 	}
 	return nil
-}
-
-// nextTagKey allocates the next free _id in the range reserved for a
-// connection's automatically created tags.
-func nextTagKey(ctx context.Context, collRTD *mongo.Collection, conn *Iec61850Connection) float64 {
-	if conn.LastNewKeyCreated == 0 {
-		autoKeyID := float64(conn.ProtocolConnectionNumber) * AutoKeyMultiplier
-		conn.LastNewKeyCreated = autoKeyID
-		findCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		cur, err := collRTD.Find(findCtx,
-			bson.M{"_id": bson.M{
-				"$gt": autoKeyID,
-				"$lt": float64(conn.ProtocolConnectionNumber+1) * AutoKeyMultiplier,
-			}},
-			options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetLimit(1))
-		if err == nil {
-			var docs []bson.M
-			if err := cur.All(findCtx, &docs); err == nil && len(docs) > 0 {
-				conn.LastNewKeyCreated = mFloat(docs[0], "_id", autoKeyID) + 1
-			}
-		}
-	} else {
-		conn.LastNewKeyCreated++
-	}
-	return conn.LastNewKeyCreated
 }
 
 // maybeInsertTag inserts a tag discovered in a report when the connection
@@ -366,7 +320,7 @@ func maybeInsertTag(ctx context.Context, collRTD *mongo.Collection, conns []*Iec
 	}
 	conn.InsertedTags[tag] = true
 
-	Log(LogLevelBasic, "%s - INSERT NEW TAG: %s - Addr:%s", iv.ConnName, tag, iv.Address)
+	jslog.Log(jslog.LevelBasic, "%s - INSERT NEW TAG: %s - Addr:%s", iv.ConnName, tag, iv.Address)
 
-	return mongo.NewInsertOneModel().SetDocument(newRealtimeDoc(iv, nextTagKey(ctx, collRTD, conn)))
+	return mongo.NewInsertOneModel().SetDocument(newRealtimeDoc(iv, conn.TagKeys.Next(ctx, collRTD, conn.ProtocolConnectionNumber)))
 }

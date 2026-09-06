@@ -27,6 +27,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
 )
@@ -113,7 +115,7 @@ func computeModelBounds(conn *ServerConnection) modelBounds {
 	rcbCopies := maxClients
 	if rcbCopies > MaxRcbCopiesPerDataSet {
 		rcbCopies = MaxRcbCopiesPerDataSet
-		Log(LogLevelBasic, "maxClientConnections=%d exceeds the %d report control block instances created "+
+		jslog.Log(jslog.LevelBasic, "maxClientConnections=%d exceeds the %d report control block instances created "+
 			"per data set; clients beyond that cannot enable reports on the same data set concurrently.",
 			maxClients, MaxRcbCopiesPerDataSet)
 	}
@@ -126,7 +128,7 @@ func computeModelBounds(conn *ServerConnection) modelBounds {
 		span = 1
 	}
 	b := modelBounds{rcbCopies: rcbCopies, maxPointsPerLD: EntriesPerDataSet * span}
-	Log(LogLevelBasic, "Model bounds: %d RCB copies/data set, <= %d points per logical device, "+
+	jslog.Log(jslog.LevelBasic, "Model bounds: %d RCB copies/data set, <= %d points per logical device, "+
 		"<= %d entries per data set, <= %d objects per logical node.",
 		b.rcbCopies, b.maxPointsPerLD, EntriesPerDataSet, MaxDataObjectsPerLN)
 	return b
@@ -156,7 +158,7 @@ func BuildModel(points []*Point, conn *ServerConnection) *BuiltModel {
 	if iedName == "" {
 		iedName = "JSONSCADA"
 	}
-	Log(LogLevelBasic, "IED name: %s", iedName)
+	jslog.Log(jslog.LevelBasic, "IED name: %s", iedName)
 
 	bounds := computeModelBounds(conn)
 
@@ -202,7 +204,7 @@ func BuildModel(points []*Point, conn *ServerConnection) *BuiltModel {
 			}
 			batches = append(batches, batch{name, chunk})
 		}
-		Log(LogLevelBasic, "Topic '%s' has %d points - split across %d logical devices.", g1, len(pts), part)
+		jslog.Log(jslog.LevelBasic, "Topic '%s' has %d points - split across %d logical devices.", g1, len(pts), part)
 	}
 
 	ldNameBudget := 62 - len(iedName)
@@ -266,8 +268,8 @@ func BuildModel(points []*Point, conn *ServerConnection) *BuiltModel {
 	}
 
 	built.Devices = len(built.Model.Devices)
-	Log(LogLevelBasic, "Applied model properties (proxy flags: %d, descriptions: %d).", proxyCount, descCount)
-	Log(LogLevelBasic, "Model built: %d logical device(s), %d point(s), %d command(s).",
+	jslog.Log(jslog.LevelBasic, "Applied model properties (proxy flags: %d, descriptions: %d).", proxyCount, descCount)
+	jslog.Log(jslog.LevelBasic, "Model built: %d logical device(s), %d point(s), %d command(s).",
 		built.Devices, len(built.ByTag), len(built.ByCtlObjRef))
 	return built
 }

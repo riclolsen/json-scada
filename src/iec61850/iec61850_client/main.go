@@ -30,6 +30,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmodel"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -41,26 +46,27 @@ func main() {
 	cfg, instNum := readConfigFile()
 	instanceNumber = instNum
 
-	cli, err := mongoConnect(cfg)
+	cli, _, err := jsmongo.ConnectAndPing(cfg)
 	if err != nil {
-		Fatal("Error connecting to MongoDB - %v", err)
+		jslog.Fatal("Error connecting to MongoDB - %v", err)
 	}
 	db := cli.Database(cfg.MongoDatabaseName)
 
 	inst := loadInstance(db, cfg)
-	Log(LogLevelNoLog, "Instance: %d", inst.ProtocolDriverInstanceNumber)
+	jslog.Log(jslog.LevelNoLog, "Instance: %d", inst.ProtocolDriverInstanceNumber)
 
 	conns := loadConnections(db)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go redundancyLoop(ctx, cfg, conns)
+	initRedundancy(ctx, cfg, conns)
+	go redundancy.Run(ctx)
 	go mongoUpdateLoop(ctx, cfg, conns)
 	go commandsLoop(ctx, cfg, conns)
 
 	for _, conn := range conns {
-		Log(LogLevelNoLog, "%s - New Connection", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s - New Connection", conn.Name)
 		go connectionLoop(ctx, conn)
 	}
 
@@ -72,12 +78,12 @@ func main() {
 	for {
 		select {
 		case <-sigs:
-			Log(LogLevelNoLog, "Exiting application!")
+			jslog.Log(jslog.LevelNoLog, "Exiting application!")
 			cancel()
 			for _, conn := range conns {
 				closeConnection(conn)
 			}
-			LogFlush()
+			jslog.Flush()
 			os.Exit(0)
 		case <-ticker.C:
 		}
@@ -86,33 +92,33 @@ func main() {
 
 // loadInstance reads the driver instance document and validates it can run
 // on this node, with the same checks and messages as the C# driver.
-func loadInstance(db *mongo.Database, cfg JSONSCADAConfig) *ProtocolDriverInstance {
+func loadInstance(db *mongo.Database, cfg jsconfig.Config) *jsmodel.DriverInstance {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	coll := db.Collection(ProtocolDriverInstancesCollectionName)
+	coll := db.Collection(jsmongo.ProtocolDriverInstancesCollectionName)
 	cur, err := coll.Find(ctx, bson.M{
 		"protocolDriver":               ProtocolDriverName,
 		"protocolDriverInstanceNumber": instanceNumber,
 	})
 	if err != nil {
-		Fatal("Error reading driver instances - %v", err)
+		jslog.Fatal("Error reading driver instances - %v", err)
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		Fatal("Error reading driver instances - %v", err)
+		jslog.Fatal("Error reading driver instances - %v", err)
 	}
 	if len(docs) == 0 {
-		Fatal("Driver instance [%d] not found in configuration!", instanceNumber)
+		jslog.Fatal("Driver instance [%d] not found in configuration!", instanceNumber)
 	}
 
 	// parity: the C# driver only ever looks at the first document.
-	inst := instanceFromDoc(docs[0])
+	inst := jsmodel.InstanceFromDoc(docs[0])
 	if !inst.Enabled {
-		Fatal("Driver instance [%d] disabled!", instanceNumber)
+		jslog.Fatal("Driver instance [%d] disabled!", instanceNumber)
 	}
-	if !nodeAllowed(inst, cfg.NodeName) {
-		Fatal("Node '%s' not found in instances configuration!", cfg.NodeName)
+	if !jsmodel.NodeAllowed(inst, cfg.NodeName) {
+		jslog.Fatal("Node '%s' not found in instances configuration!", cfg.NodeName)
 	}
 	return inst
 }
@@ -123,35 +129,35 @@ func loadConnections(db *mongo.Database) []*Iec61850Connection {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	coll := db.Collection(ProtocolConnectionsCollectionName)
+	coll := db.Collection(jsmongo.ProtocolConnectionsCollectionName)
 	cur, err := coll.Find(ctx, bson.M{
 		"protocolDriver":               ProtocolDriverName,
 		"protocolDriverInstanceNumber": instanceNumber,
 		"enabled":                      true,
 	})
 	if err != nil {
-		Fatal("Error reading protocol connections - %v", err)
+		jslog.Fatal("Error reading protocol connections - %v", err)
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		Fatal("Error reading protocol connections - %v", err)
+		jslog.Fatal("Error reading protocol connections - %v", err)
 	}
 
-	collRTD := db.Collection(RealtimeDataCollectionName)
+	collRTD := db.Collection(jsmongo.RealtimeDataCollectionName)
 	conns := make([]*Iec61850Connection, 0, len(docs))
 
 	for _, doc := range docs {
 		conn := connectionFromDoc(doc)
 		preloadEntries(ctx, collRTD, conn)
-		conn.LastNewKeyCreated = 0
+		conn.TagKeys.Reset()
 		if len(conn.IPAddresses) < 1 {
-			Fatal("Missing remote endpoint URLs list!")
+			jslog.Fatal("Missing remote endpoint URLs list!")
 		}
 		conns = append(conns, conn)
 	}
 
 	if len(conns) == 0 {
-		Fatal("No connections found!")
+		jslog.Fatal("No connections found!")
 	}
 	return conns
 }
@@ -163,17 +169,17 @@ func preloadEntries(ctx context.Context, collRTD *mongo.Collection, conn *Iec618
 		"protocolSourceConnectionNumber": conn.ProtocolConnectionNumber,
 	})
 	if err != nil {
-		Fatal("Error reading realtime data - %v", err)
+		jslog.Fatal("Error reading realtime data - %v", err)
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		Fatal("Error reading realtime data - %v", err)
+		jslog.Fatal("Error reading realtime data - %v", err)
 	}
 
 	for _, doc := range docs {
-		tag := mString(doc, "tag", "")
-		objAddr := strings.TrimSpace(mString(doc, "protocolSourceObjectAddress", ""))
-		commonAddr := strings.ToUpper(strings.TrimSpace(mString(doc, "protocolSourceCommonAddress", "")))
+		tag := jsmongo.GetString(doc, "tag", "")
+		objAddr := strings.TrimSpace(jsmongo.GetString(doc, "protocolSourceObjectAddress", ""))
+		commonAddr := strings.ToUpper(strings.TrimSpace(jsmongo.GetString(doc, "protocolSourceCommonAddress", "")))
 		if conn.AutoCreateTags {
 			conn.InsertedTags[tag] = true
 		}
@@ -191,5 +197,5 @@ func preloadEntries(ctx context.Context, collRTD *mongo.Collection, conn *Iec618
 			conn.EntryOrder = append(conn.EntryOrder, key)
 		}
 	}
-	Log(LogLevelDetailed, "%s - %d tags configured", conn.Name, len(conn.Entries))
+	jslog.Log(jslog.LevelDetailed, "%s - %d tags configured", conn.Name, len(conn.Entries))
 }

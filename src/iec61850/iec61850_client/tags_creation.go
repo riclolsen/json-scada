@@ -23,9 +23,10 @@
 package main
 
 import (
-	"math"
+	"maps"
 	"strings"
 
+	"github.com/riclolsen/json-scada/src/go-common/jstags"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -57,7 +58,8 @@ func (c CommandTag) Tag() string {
 func newCommandDoc(ct CommandTag, id, supervisedID float64) bson.M {
 	const group1 = "IEC61850"
 
-	doc := bson.M{
+	doc := jstags.BaseDoc()
+	maps.Copy(doc, bson.M{
 		"_id":                            id,
 		"protocolSourceASDU":             ct.Asdu,
 		"protocolSourceCommonAddress":    "CO",
@@ -76,50 +78,12 @@ func newCommandDoc(ct CommandTag, id, supervisedID float64) bson.M {
 		// point, which is where its feedback appears.
 		"supervisedOfCommand":  supervisedID,
 		"commandOfSupervised":  0.0,
-		"alarmDisabled":        false,
-		"alerted":              false,
-		"alarmed":              false,
-		"alertState":           "",
-		"annotation":           "",
-		"commandBlocked":       false,
-		"commissioningRemarks": "",
-		"formula":              0.0,
-		"frozen":               false,
-		"frozenDetectTimeout":  0.0,
-		"hiLimit":              math.MaxFloat64,
-		"hihiLimit":            math.MaxFloat64,
-		"hihihiLimit":          math.MaxFloat64,
-		"historianDeadBand":    0.0,
-		"historianPeriod":      0.0,
-		"hysteresis":           0.0,
 		"invalid":              false,
 		"invalidDetectTimeout": 0.0,
-		"isEvent":              false,
-		"kconv1":               1.0,
-		"kconv2":               0.0,
-		"location":             nil,
-		"loLimit":              -math.MaxFloat64,
-		"loloLimit":            -math.MaxFloat64,
-		"lololoLimit":          -math.MaxFloat64,
-		"notes":                "",
-		"overflow":             false,
-		"parcels":              nil,
-		"priority":             0.0,
 		"protocolDestinations": nil,
-		"sourceDataUpdate":     nil,
-		"substituted":          false,
-		"timeTag":              nil,
-		"timeTagAlarm":         nil,
-		"timeTagAtSource":      nil,
-		"timeTagAtSourceOk":    false,
-		"transient":            false,
-		"unit":                 "",
-		"updatesCnt":           0.0,
 		"value":                0.0,
-		"valueDefault":         0.0,
 		"valueString":          "",
-		"zeroDeadband":         0.0,
-	}
+	})
 
 	if ct.IsDigital {
 		doc["type"] = "digital"
@@ -143,7 +107,8 @@ func newCommandDoc(ct CommandTag, id, supervisedID float64) bson.M {
 func newRealtimeDoc(iv IECValue, id float64) bson.M {
 	const group1 = "IEC61850"
 
-	doc := bson.M{
+	doc := jstags.BaseDoc()
+	maps.Copy(doc, bson.M{
 		"_id":                            id,
 		"protocolSourceASDU":             iv.Asdu,
 		"protocolSourceCommonAddress":    strings.ToUpper(iv.CommonAddress),
@@ -158,50 +123,12 @@ func newRealtimeDoc(iv IECValue, id float64) bson.M {
 		"group3":                         iv.CommonAddress,
 		"origin":                         "supervised",
 		"tag":                            TagFromParameters(iv),
-		"alarmDisabled":                  false,
-		"alerted":                        false,
-		"alarmed":                        false,
-		"alertState":                     "",
-		"annotation":                     "",
-		"commandBlocked":                 false,
 		"commandOfSupervised":            0.0,
-		"commissioningRemarks":           "",
-		"formula":                        0.0,
-		"frozen":                         false,
-		"frozenDetectTimeout":            0.0,
-		"hiLimit":                        math.MaxFloat64,
-		"hihiLimit":                      math.MaxFloat64,
-		"hihihiLimit":                    math.MaxFloat64,
-		"historianDeadBand":              0.0,
-		"historianPeriod":                0.0,
-		"hysteresis":                     0.0,
 		"invalid":                        true,
 		"invalidDetectTimeout":           60000.0,
-		"isEvent":                        false,
-		"kconv1":                         1.0,
-		"kconv2":                         0.0,
-		"location":                       nil,
-		"loLimit":                        -math.MaxFloat64,
-		"loloLimit":                      -math.MaxFloat64,
-		"lololoLimit":                    -math.MaxFloat64,
-		"notes":                          "",
-		"overflow":                       false,
-		"parcels":                        nil,
-		"priority":                       0.0,
 		"protocolDestinations":           nil,
-		"sourceDataUpdate":               nil,
-		"substituted":                    false,
 		"supervisedOfCommand":            0.0,
-		"timeTag":                        nil,
-		"timeTagAlarm":                   nil,
-		"timeTagAtSource":                nil,
-		"timeTagAtSourceOk":              false,
-		"transient":                      false,
-		"unit":                           "",
-		"updatesCnt":                     0.0,
-		"valueDefault":                   0.0,
-		"zeroDeadband":                   0.0,
-	}
+	})
 
 	switch {
 	case strings.EqualFold(iv.Asdu, "boolean") || iv.IsDigital:

@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+
 	"github.com/dscsystems/go-iec61850/client"
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
@@ -56,7 +58,7 @@ func buildIECValue(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Va
 		timestamp uint64
 	)
 
-	logging := LogLevel > LogLevelNoLog && log != nil
+	logging := jslog.Level() > jslog.LevelNoLog && log != nil
 
 	if value != nil && value.Type() == mms.TypeStructure {
 		childs := conn.EntryChilds(entry)
@@ -180,7 +182,7 @@ func buildIECValue(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Va
 // reader goroutine, so it only formats a log line and enqueues values.
 func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 	var log strings.Builder
-	logging := LogLevel > LogLevelNoLog
+	logging := jslog.Level() > jslog.LevelNoLog
 
 	if logging {
 		fmt.Fprintf(&log, "%s Report RCB: %s", conn.Name, st.ref)
@@ -206,7 +208,7 @@ func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 			if last, ok := conn.LastReportID(st.ref); ok && bytes.Equal(last, rep.EntryID) {
 				if logging {
 					log.WriteString("Repeated report!\n")
-					Log(LogLevelBasic, "%s", log.String())
+					jslog.Log(jslog.LevelBasic, "%s", log.String())
 				}
 				return
 			}
@@ -236,7 +238,7 @@ func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 		}
 	}
 	if !hasReasons && len(rep.Entries) > 0 {
-		Log(LogLevelDetailed, "%s Report %s carries no reason codes; forwarding all included elements",
+		jslog.Log(jslog.LevelDetailed, "%s Report %s carries no reason codes; forwarding all included elements",
 			conn.Name, st.ref)
 	}
 
@@ -280,7 +282,7 @@ func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 		enqueueValue(iv)
 	}
 
-	Log(LogLevelBasic, "%s", log.String())
+	jslog.Log(jslog.LevelBasic, "%s", log.String())
 }
 
 // reasonName renders a reason-for-inclusion the way libiec61850's

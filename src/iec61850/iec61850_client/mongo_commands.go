@@ -30,6 +30,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jscommands"
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"github.com/dscsystems/go-iec61850/client"
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
@@ -46,21 +51,21 @@ import (
 const commandExpiry = 10 * time.Second
 
 // commandsLoop watches commandsQueue for inserted commands.
-func commandsLoop(ctx context.Context, cfg JSONSCADAConfig, conns []*Iec61850Connection) {
+func commandsLoop(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850Connection) {
 	for ctx.Err() == nil {
-		cli, err := mongoConnect(cfg)
+		cli, _, err := jsmongo.ConnectAndPing(cfg)
 		if err != nil {
-			Log(LogLevelNoLog, "Exception MongoCmd")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception MongoCmd")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
 		db := cli.Database(cfg.MongoDatabaseName)
-		collCmds := db.Collection(CommandsQueueCollectionName)
+		collCmds := db.Collection(jsmongo.CommandsQueueCollectionName)
 
 		if err := watchCommands(ctx, db, collCmds, conns); err != nil && ctx.Err() == nil {
-			Log(LogLevelNoLog, "Exception MongoCmd")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception MongoCmd")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
 		}
 		_ = cli.Disconnect(context.Background())
@@ -68,28 +73,28 @@ func commandsLoop(ctx context.Context, cfg JSONSCADAConfig, conns []*Iec61850Con
 }
 
 func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Collection, conns []*Iec61850Connection) error {
-	if err := mongoPing(db, 1*time.Second); err != nil {
+	if err := jsmongo.Ping(db, 1*time.Second); err != nil {
 		return err
 	}
 
-	pipeline := mongo.Pipeline{bson.D{{Key: "$match", Value: bson.D{{Key: "operationType", Value: "insert"}}}}}
+	pipeline := jscommands.InsertOnlyPipeline()
 	cs, err := collCmds.Watch(ctx, pipeline, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 	if err != nil {
 		return err
 	}
 	defer cs.Close(context.Background())
 
-	Log(LogLevelNoLog, "MongoDB CMD CS - Start listening for commands via changestream...")
+	jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - Start listening for commands via changestream...")
 
 	for cs.Next(ctx) {
 		var ev struct {
 			FullDocument bson.M `bson:"fullDocument"`
 		}
 		if err := cs.Decode(&ev); err != nil {
-			Log(LogLevelDetailed, "MongoDB CMD CS - decode: %v", err)
+			jslog.Log(jslog.LevelDetailed, "MongoDB CMD CS - decode: %v", err)
 			continue
 		}
-		if !active.Load() {
+		if !redundancy.Active() {
 			continue
 		}
 		handleCommand(ctx, collCmds, conns, ev.FullDocument)
@@ -105,8 +110,8 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*Iec
 	if doc == nil {
 		return
 	}
-	connNumber := mInt(doc, "protocolSourceConnectionNumber", 0)
-	Log(LogLevelBasic, "MongoDB CMD CS - Looking for connection %d...", connNumber)
+	connNumber := jsmongo.GetInt(doc, "protocolSourceConnectionNumber", 0)
+	jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - Looking for connection %d...", connNumber)
 
 	var conn *Iec61850Connection
 	for _, c := range conns {
@@ -120,17 +125,17 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*Iec
 	}
 
 	id := doc["_id"]
-	objAddr := strings.TrimSpace(mString(doc, "protocolSourceObjectAddress", ""))
-	commonAddr := strings.ToUpper(strings.TrimSpace(mString(doc, "protocolSourceCommonAddress", "")))
-	value := mFloat(doc, "value", 0)
-	useSBO := mBool(doc, "protocolSourceCommandUseSBO", false)
-	timeTag := mTime(doc, "timeTag")
+	objAddr := strings.TrimSpace(jsmongo.GetString(doc, "protocolSourceObjectAddress", ""))
+	commonAddr := strings.ToUpper(strings.TrimSpace(jsmongo.GetString(doc, "protocolSourceCommonAddress", "")))
+	value := jsmongo.GetDouble(doc, "value", 0)
+	useSBO := jsmongo.GetBool(doc, "protocolSourceCommandUseSBO", false)
+	timeTag := jsmongo.GetTime(doc, "timeTag")
 
 	if !timeTag.IsZero() {
 		if elapsed := time.Since(timeTag); elapsed > commandExpiry {
-			Log(LogLevelNoLog, "MongoDB CMD CS - %s -  Address %s value %v Expired, %d Seconds old",
+			jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s -  Address %s value %v Expired, %d Seconds old",
 				conn.Name, objAddr, value, int(elapsed.Seconds()))
-			setCommandField(ctx, collCmds, id, bson.M{"cancelReason": "expired"})
+			cancelCommand(ctx, collCmds, id, "expired")
 			return
 		}
 	}
@@ -147,12 +152,12 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*Iec
 		case entry != nil:
 			reason = "not connected"
 		}
-		Log(LogLevelNoLog, "MongoDB CMD CS - %s OA %s value %v %s", conn.Name, objAddr, value, capitalizeReason(reason))
-		setCommandField(ctx, collCmds, id, bson.M{"cancelReason": reason})
+		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s OA %s value %v %s", conn.Name, objAddr, value, capitalizeReason(reason))
+		cancelCommand(ctx, collCmds, id, reason)
 		return
 	}
 
-	Log(LogLevelNoLog, "%s Control %s Value %v", conn.Name, entry.Path, value)
+	jslog.Log(jslog.LevelNoLog, "%s Control %s Value %v", conn.Name, entry.Path, value)
 
 	ok, abort := dispatchCommand(ctx, conn, entry, value, useSBO)
 	if abort {
@@ -161,13 +166,8 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*Iec
 		return
 	}
 
-	Log(LogLevelNoLog, "MongoDB CMD CS - %s -  Address: %s - Command delivered - ", conn.Name, objAddr)
-	setCommandField(ctx, collCmds, id, bson.M{
-		"delivered":         true,
-		"ack":               ok,
-		"ackTimeTag":        bson.NewDateTimeFromTime(time.Now()),
-		"resultDescription": "",
-	})
+	jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s -  Address: %s - Command delivered - ", conn.Name, objAddr)
+	ackCommand(ctx, collCmds, id, ok, "")
 }
 
 // capitalizeReason renders the cancel reason the way the C# log line does.
@@ -181,11 +181,16 @@ func capitalizeReason(reason string) string {
 	return "Command not found!"
 }
 
-func setCommandField(ctx context.Context, collCmds *mongo.Collection, id any, set bson.M) {
-	updCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	if _, err := collCmds.UpdateOne(updCtx, bson.M{"_id": id}, bson.M{"$set": set}); err != nil {
-		Log(LogLevelDetailed, "MongoDB CMD CS - update: %v", err)
+func cancelCommand(ctx context.Context, collCmds *mongo.Collection, id any, reason string) {
+	if err := jscommands.Cancel(ctx, collCmds, id, reason); err != nil {
+		jslog.Log(jslog.LevelDetailed, "MongoDB CMD CS - update: %v", err)
+	}
+}
+
+// ackCommand records the outcome of a command that reached the IED.
+func ackCommand(ctx context.Context, collCmds *mongo.Collection, id any, ok bool, resultDescription string) {
+	if err := jscommands.Ack(ctx, collCmds, id, ok, resultDescription); err != nil {
+		jslog.Log(jslog.LevelDetailed, "MongoDB CMD CS - update: %v", err)
 	}
 }
 
@@ -209,8 +214,8 @@ func writeValueCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec
 
 	current, err := cli.Read(ctx, ref, entry.FC)
 	if err != nil {
-		Log(LogLevelNoLog, "%s Writable object not found! %s", conn.Name, entry.Path)
-		Log(LogLevelNoLog, "%v", err)
+		jslog.Log(jslog.LevelNoLog, "%s Writable object not found! %s", conn.Name, entry.Path)
+		jslog.Log(jslog.LevelNoLog, "%v", err)
 		return false, true
 	}
 
@@ -246,12 +251,12 @@ func writeValueCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec
 		b[0] = byte(uint32(value) % 256)
 		out = mms.NewOctetString(b)
 	default:
-		Log(LogLevelNoLog, "%s Writable object of unsupported type! %s", conn.Name, entry.Path)
+		jslog.Log(jslog.LevelNoLog, "%s Writable object of unsupported type! %s", conn.Name, entry.Path)
 		return false, false
 	}
 
 	if err := cli.Write(ctx, ref, entry.FC, out); err != nil {
-		Log(LogLevelNoLog, "%s Write failed! %s - %v", conn.Name, entry.Path, err)
+		jslog.Log(jslog.LevelNoLog, "%s Write failed! %s - %v", conn.Name, entry.Path, err)
 		return false, false
 	}
 	return true, false
@@ -275,9 +280,9 @@ func controlCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec618
 
 	co, err := cli.ControlFor(ctx, ref)
 	if err != nil || co == nil {
-		Log(LogLevelNoLog, "%s Control object not found! %s", conn.Name, entry.Path)
+		jslog.Log(jslog.LevelNoLog, "%s Control object not found! %s", conn.Name, entry.Path)
 		if err != nil {
-			Log(LogLevelDetailed, "%s Control object exception! %s - %v", conn.Name, entry.Path, err)
+			jslog.Log(jslog.LevelDetailed, "%s Control object exception! %s - %v", conn.Name, entry.Path, err)
 		}
 		return false, true
 	}
@@ -285,20 +290,20 @@ func controlCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec618
 	ctlModel := co.Model()
 	ctlType, err := co.CtlValType(ctx)
 	if err != nil {
-		Log(LogLevelNoLog, "%s Control object exception! %s - %v", conn.Name, entry.Path, err)
+		jslog.Log(jslog.LevelNoLog, "%s Control object exception! %s - %v", conn.Name, entry.Path, err)
 		return false, true
 	}
-	Log(LogLevelNoLog, "%s %s has control model %s", conn.Name, entry.Path, ctlModel)
-	Log(LogLevelNoLog, "%s  type of ctlVal: %s", conn.Name, mmsTypeName(ctlType))
+	jslog.Log(jslog.LevelNoLog, "%s %s has control model %s", conn.Name, entry.Path, ctlModel)
+	jslog.Log(jslog.LevelNoLog, "%s  type of ctlVal: %s", conn.Name, mmsTypeName(ctlType))
 
 	if ctlModel == model.CtlStatusOnly {
-		Log(LogLevelNoLog, "%s Control is status-only!", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s Control is status-only!", conn.Name)
 		return false, false
 	}
 
 	ctlVal, err := buildCtlVal(ctx, co, ctlType, value)
 	if err != nil {
-		Log(LogLevelNoLog, "%s Unsupported Command Type!", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s Unsupported Command Type!", conn.Name)
 		return false, false
 	}
 
@@ -314,27 +319,27 @@ func controlCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec618
 	// prescribes, which is what an IED expects; the flag only forces
 	// select-with-value on a normal-security SBO object.
 	if ctlModel == model.CtlSBONormal && useSBO {
-		Log(LogLevelNoLog, "%s Selecting with value...", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s Selecting with value...", conn.Name)
 		if err := co.SelectWithValue(ctx, ctlVal, opts...); err != nil {
-			Log(LogLevelNoLog, "%s Select with value failed!", conn.Name)
+			jslog.Log(jslog.LevelNoLog, "%s Select with value failed!", conn.Name)
 			logControlError(conn, err)
 			return false, false
 		}
-		Log(LogLevelNoLog, "%s Selected successfully!", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s Selected successfully!", conn.Name)
 		time.Sleep(100 * time.Millisecond)
 		// The selection is open, so the operate below must not select
 		// again; it keeps the control number of the select.
 		opts = append(opts, client.WithModel(model.CtlDirectNormal))
 	} else if ctlModel.HasSelect() {
-		Log(LogLevelNoLog, "%s Selecting...", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s Selecting...", conn.Name)
 	}
 
 	if err := co.Operate(ctx, ctlVal, opts...); err != nil {
-		Log(LogLevelNoLog, "%s Operate failed!", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "%s Operate failed!", conn.Name)
 		logControlError(conn, err)
 		return false, false
 	}
-	Log(LogLevelNoLog, "%s Operated successfully!", conn.Name)
+	jslog.Log(jslog.LevelNoLog, "%s Operated successfully!", conn.Name)
 	return true, false
 }
 
@@ -384,9 +389,9 @@ func buildCtlVal(ctx context.Context, co *client.ControlObject, ctlType mms.Type
 func logControlError(conn *Iec61850Connection, err error) {
 	var ce *client.ControlError
 	if errors.As(err, &ce) {
-		Log(LogLevelNoLog, "%s Error: %v", conn.Name, ce.Err)
-		Log(LogLevelNoLog, "%s Addit.Cause: %s", conn.Name, ce.AddCause)
+		jslog.Log(jslog.LevelNoLog, "%s Error: %v", conn.Name, ce.Err)
+		jslog.Log(jslog.LevelNoLog, "%s Addit.Cause: %s", conn.Name, ce.AddCause)
 		return
 	}
-	Log(LogLevelNoLog, "%s Error: %v", conn.Name, err)
+	jslog.Log(jslog.LevelNoLog, "%s Error: %v", conn.Name, err)
 }

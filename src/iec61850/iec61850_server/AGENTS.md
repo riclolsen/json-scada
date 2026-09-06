@@ -15,7 +15,7 @@ connection document, same model layout and object references, no native library 
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_server`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.2.3 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.2.5 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1, and keep it in step with the client driver
 - **Binary:** `iec61850-server(.exe)` — must differ from the C# `iec61850_server(.exe)` so both can
   live in `bin/`

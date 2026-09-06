@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+
 	"github.com/dscsystems/go-iec61850/client"
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
@@ -67,10 +69,10 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 		kind = "BRCB"
 	}
 	rpname := string(ref)
-	Log(LogLevelBasic, "%s %s: %s", conn.Name, kind, rpname)
+	jslog.Log(jslog.LevelBasic, "%s %s: %s", conn.Name, kind, rpname)
 
 	if len(conn.Topics) > 0 && !containsString(conn.Topics, rpname) {
-		Log(LogLevelBasic, "%s Report will not be activated! not in topics list.", conn.Name)
+		jslog.Log(jslog.LevelBasic, "%s Report will not be activated! not in topics list.", conn.Name)
 		return
 	}
 	if buffered {
@@ -83,7 +85,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	rcb, err := cli.GetRCB(ctx, ref)
 	if err != nil {
 		// parity: the C# log message carries this typo.
-		Log(LogLevelBasic, "%s %s: IED GetRCB excepion - %v", conn.Name, kind, err)
+		jslog.Log(jslog.LevelBasic, "%s %s: IED GetRCB excepion - %v", conn.Name, kind, err)
 		return
 	}
 	rcb.Buffered = buffered
@@ -95,7 +97,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	// EnableReporting never writes RptID, this only fixes the matching.
 	if rcb.RptID == "" {
 		rcb.RptID = domain + "/" + item
-		Log(LogLevelDetailed, "%s %s: empty RptID, matching reports on '%s'", conn.Name, kind, rcb.RptID)
+		jslog.Log(jslog.LevelDetailed, "%s %s: empty RptID, matching reports on '%s'", conn.Name, kind, rcb.RptID)
 	}
 
 	// The dataset members are what gives a report entry its object
@@ -103,12 +105,12 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	// enable a report we would not be able to interpret.
 	dsList := rcb.DataSet
 	if dsList == "" {
-		Log(LogLevelBasic, "%s %s: %s has no data set - not activated", conn.Name, kind, rpname)
+		jslog.Log(jslog.LevelBasic, "%s %s: %s has no data set - not activated", conn.Name, kind, rpname)
 		return
 	}
 	if _, list, ok := strings.Cut(dsList, "/"); ok {
 		if members, err := cli.MMS().GetNamedVariableListAttributes(ctx, domain, list); err != nil || len(members) == 0 {
-			Log(LogLevelBasic, "%s %s: %s dataset members unavailable - report entries cannot be mapped, not activated",
+			jslog.Log(jslog.LevelBasic, "%s %s: %s dataset members unavailable - report entries cannot be mapped, not activated",
 				conn.Name, kind, rpname)
 			return
 		}
@@ -134,7 +136,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	dsKey := st.dataSetRef
 	if prev := conn.RcbByDataSet[dsKey]; prev != nil {
 		conn.mu.Unlock()
-		Log(LogLevelBasic, "%s %s: %s reports the same data set as %s - not activated",
+		jslog.Log(jslog.LevelBasic, "%s %s: %s reports the same data set as %s - not activated",
 			conn.Name, kind, rpname, prev.ref)
 		return
 	}
@@ -144,7 +146,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	if prev, dup := conn.RcbByRptID[rcb.RptID]; dup {
 		prev.collision = true
 		st.collision = true
-		Log(LogLevelBasic, "%s %s: RptID '%s' collides with %s - reports will be matched by dataset",
+		jslog.Log(jslog.LevelBasic, "%s %s: RptID '%s' collides with %s - reports will be matched by dataset",
 			conn.Name, kind, rcb.RptID, prev.ref)
 	}
 	conn.RcbByRptID[rcb.RptID] = st
@@ -167,7 +169,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 		lastEntryID := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 		if saved, ok := conn.LastReportID(rpname); ok && len(saved) > 0 {
 			lastEntryID = saved
-			Log(LogLevelBasic, "%s BRCB: %s - Last seen entryId: %s", conn.Name, rpname, entryIDString(lastEntryID))
+			jslog.Log(jslog.LevelBasic, "%s BRCB: %s - Last seen entryId: %s", conn.Name, rpname, entryIDString(lastEntryID))
 		}
 		rcb.ResyncEntryID = lastEntryID
 	}
@@ -185,7 +187,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 		}
 	}
 	if err != nil {
-		Log(LogLevelBasic, "%s %s: IED SetRCB exception - %v", conn.Name, kind, err)
+		jslog.Log(jslog.LevelBasic, "%s %s: IED SetRCB exception - %v", conn.Name, kind, err)
 		conn.mu.Lock()
 		// Only drop our own registrations: another control block may hold
 		// this RptID. Releasing the data set lets the next instance over it
@@ -202,7 +204,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	conn.AddSubscription(sub)
 
 	if err := cli.TriggerGI(ctx, rcb); err != nil {
-		Log(LogLevelBasic, "%s %s: IED SetRCB exception - %v", conn.Name, kind, err)
+		jslog.Log(jslog.LevelBasic, "%s %s: IED SetRCB exception - %v", conn.Name, kind, err)
 	}
 }
 
@@ -215,7 +217,7 @@ func installReportDiagnostics(conn *Iec61850Connection) func() {
 		return func() {}
 	}
 	return cli.MMS().OnInformationReport(func(ir *mms.InformationReport) {
-		if LogLevel < LogLevelDetailed || len(ir.Values) == 0 {
+		if jslog.Level() < jslog.LevelDetailed || len(ir.Values) == 0 {
 			return
 		}
 		rptID := ir.Values[0].Text()
@@ -223,7 +225,7 @@ func installReportDiagnostics(conn *Iec61850Connection) func() {
 		_, known := conn.RcbByRptID[rptID]
 		conn.mu.Unlock()
 		if !known {
-			Log(LogLevelDetailed, "%s Unmatched report RptID '%s'", conn.Name, rptID)
+			jslog.Log(jslog.LevelDetailed, "%s Unmatched report RptID '%s'", conn.Name, rptID)
 		}
 	})
 }
