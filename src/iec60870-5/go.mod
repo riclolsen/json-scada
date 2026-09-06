@@ -3,7 +3,7 @@ module iec60870-5
 go 1.26.4
 
 require (
-	github.com/riclolsen/go-iecp5 v0.4.3
+	github.com/riclolsen/go-iecp5 v0.4.4
 	github.com/riclolsen/json-scada/src/go-common v0.0.0
 	go.bug.st/serial v1.8.0
 	go.mongodb.org/mongo-driver/v2 v2.8.0
