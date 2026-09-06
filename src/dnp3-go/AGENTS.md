@@ -14,14 +14,21 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
 ## Local Contracts
 
 - **Language:** Go 1.26, module `dnp3-go`, `cmd/` + `internal/` layout as in `src/iec60870-5`
-- **Library:** `github.com/dscsystems/go-dnp3` v0.4.4 (GPLv3+, pure Go) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-dnp3` v0.4.8 (GPLv3+, pure Go) — **pin the version**,
   the API is pre-1.0 and the SKILL.md in that repo says so explicitly. JSON-SCADA is GPL-3.0, so
   the copyleft is not a problem; note it rather than re-litigating it.
   - v0.3.0 and v0.4.x added file transfer (group 70), device attributes (group 0) and
     `multidrop.Registry`, and are otherwise additive: nothing the drivers use changed signature.
     The Registry shares a bus between callers that do not know about each other; this module has
     no use for it, because `dnp3util.BuildGroups` owns bus construction and builds each one once.
-    `multidrop.DefaultQueue` is still 16, so `StationQueue` is still needed. Neither feature is used here —
+    `multidrop.DefaultQueue` is still 16, so `StationQueue` is still needed.
+  - v0.4.5 to v0.4.8 are protocol correctness fixes with no API change beyond additive Stats
+    fields: multi-fragment responses over a confirmed link (which is what serial mode uses),
+    unsolicited retries keeping their sequence number and not losing newly queued events, repeat
+    requests being replayed rather than reprocessed, and validation of link control, broadcast
+    frames and reserved source addresses. Nothing in this module had to change; the new counters
+    (`outstation.Stats.RepeatedRequests`/`IncompleteRequests`,
+    `master.Stats.FragmentsDiscarded`) are available if the stats document ever wants them. Neither feature is used here —
     the C++ drivers do not support them and JSON-SCADA has no schema for either — so they are
     available if a need appears, not a gap. Before the next bump, diff the API of the packages
     this module imports rather than trusting the version number: pre-1.0 minors may break.

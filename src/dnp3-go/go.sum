@@ -1,7 +1,7 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dscsystems/go-dnp3 v0.4.4 h1:bTe5KfaHVXAlqIyTNM8YXdqZ1kDcOH2brbbE44xgg6w=
-github.com/dscsystems/go-dnp3 v0.4.4/go.mod h1:hpIYrs2fVbwgKQ9s5mQMdOJkru3izqG1k2Pa3jhJEKE=
+github.com/dscsystems/go-dnp3 v0.4.8 h1:8Xv1pDV8vxf1Jl53ippV+EO7viqb2qMGMGMLT0wA6Z4=
+github.com/dscsystems/go-dnp3 v0.4.8/go.mod h1:f+oN375gfsduB5iGCQ+QIyiMuJvOn3v1XpypFRZiD+M=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/klauspost/compress v1.18.6 h1:2jupLlAwFm95+YDR+NwD2MEfFO9d4z4Prjl1XXDjuao=
