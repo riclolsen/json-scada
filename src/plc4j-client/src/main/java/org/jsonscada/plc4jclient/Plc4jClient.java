@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.PlcConnectionManager;
+import org.apache.plc4x.java.api.PlcConnectionFactory;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.PlcDriverManager;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
@@ -67,7 +67,7 @@ public final class Plc4jClient {
 
     RedundancyManager redundancy = new RedundancyManager(cfgRes.cfg);
     AutoTagCreator autoTagCreator = new AutoTagCreator();
-    PlcConnectionManager connectionManager = PlcDriverManager.getDefault().getConnectionManager();
+    PlcConnectionFactory connectionFactory = PlcDriverManager.getDefault().getConnectionFactory();
 
     // keep retrying protocol reconnection when disconnected
     while (true) {
@@ -88,7 +88,7 @@ public final class Plc4jClient {
       }
       for (ProtocolConnection pc : conns) {
         try {
-          connectAndScan(pc, connectionManager, rtDataColl, autoTagCreator, writer);
+          connectAndScan(pc, connectionFactory, rtDataColl, autoTagCreator, writer);
         } catch (Exception e) {
           Log.log(pc.name + ": error setting up connection - " + e);
         }
@@ -99,7 +99,7 @@ public final class Plc4jClient {
 
   static void connectAndScan(
       ProtocolConnection pc,
-      PlcConnectionManager connectionManager,
+      PlcConnectionFactory connectionFactory,
       MongoCollection<Document> rtDataColl,
       AutoTagCreator autoTagCreator,
       MongoWriter writer) {
@@ -127,7 +127,7 @@ public final class Plc4jClient {
     // try to connect to plc
     PlcConnection connection;
     try {
-      connection = connectionManager.getConnection(connUrl);
+      connection = connectionFactory.getConnection(connUrl);
     } catch (Exception e) {
       Log.log(pc.name + ": Error connecting to PLC: "
           + (e.getMessage() != null ? e.getMessage() : e.toString()));
@@ -176,7 +176,13 @@ public final class Plc4jClient {
         continue;
       }
       pc.endiannessByTag.put(pt.address, pt.endianness);
-      reqBld.addTagAddress(pt.address, pt.address);
+      // the configured address stays the PLC4X tag name (and the realtimeData
+      // key); only the address handed to PLC4X may have been translated
+      reqBld.addTagAddress(pt.address, pt.plc4xAddress);
+      if (!pt.plc4xAddress.equals(pt.address) && Log.level >= Log.LEVEL_BASIC) {
+        Log.log(pc.name + ": legacy array address '" + pt.address
+            + "' sent to PLC4X as '" + pt.plc4xAddress + "'");
+      }
 
       if (pc.autoCreateTags) {
         if (pt.arrayLength > 1) {

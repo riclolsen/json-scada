@@ -20,6 +20,7 @@ Java-based generic PLC client driver using the Apache PLC4X/PLC4J library. Regis
   - `AutoTagCreator.java` / `RtDataTagDefaults.java` — automatic tag creation (key space connNumber*1e6)
   - `RedundancyManager.java` — active/inactive node state machine
   - `ConfigLoader.java` / `MongoConnector.java` — args/env/config file, TLS conn string
+- **PLC4X version:** 1.0.0 (pinned in `pom.xml` property `plc4x.version`). BACnet/C-Bus drivers and the old singular `plc4j-transport-*` artifacts do not exist at 1.0.0 (transports are now `plc4j-transports-*`).
 - **Dependency management:** Maven (`pom.xml`), fat jar via maven-shade-plugin
 - **Build:** `mvn package` → `target/plc4j-client.jar` (copied to `bin/` with launcher scripts)
 - **Config:** `conf/json-scada.json` + MongoDB collections (protocolDriverInstances, protocolConnections, realtimeData, commandsQueue)
@@ -29,6 +30,8 @@ Java-based generic PLC client driver using the Apache PLC4X/PLC4J library. Regis
 - Behavior must stay in functional parity with the Go plc4x-client (topics format, sourceDataUpdate shape, auto-tag key allocation, command handling) — both serve the same "PLC4X" driver configuration.
 - The shade plugin's ServicesResourceTransformer is CRITICAL: PLC4J drivers register via META-INF/services; without it only one protocol survives in the fat jar.
 - Auto-created tag `_id`s must be BSON doubles.
+- Array addresses: PLC4X 1.0.0 moved the array notation before the type and made it a range (`holding-register:20[0..9]:INT`). `TopicParser.toPlc4xAddress()` translates the legacy `:TYPE[count]` form so existing configs and Go-driver-compatible topics keep working; the configured text stays the PLC4X tag name and the realtimeData key, so never send the translated address as the tag name.
+- API note: 1.0.0 replaced `PlcDriverManager.getConnectionManager()` with `getConnectionFactory()`.
 - Endianness: LITTLE_ENDIAN/REV_ENDIAN swap bytes of the PLC4X-decoded value; BIG_ENDIAN/empty is a no-op.
 
 ## Verification
