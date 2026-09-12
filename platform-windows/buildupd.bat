@@ -75,6 +75,7 @@ dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -
 
 cd %SRCPATH%\OPC-DA-Server\
 rmdir bin /S /Q
+rem msbuild %SRCPATH%\ClassicServerSolutions\src\Technosoftware\Server\ClassicServer\OpcNetDaAeServer.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SolutionDir=%SRCPATH%\ClassicServerSolutions\
 msbuild OPC-DA-Server.sln /p:Configuration=Release /p:Platform=x64
 mkdir %BINPATH%\OPC-DA_Server
 copy /Y bin\x64\Release\*.* %BINPATH%\OPC-DA_Server\

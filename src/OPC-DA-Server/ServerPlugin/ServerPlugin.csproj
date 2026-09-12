@@ -129,6 +129,17 @@
     Copy compiled ServerPlugin.dll next to OpcNetDaServer*.exe in the bin\ folder.
     Adjust the source path to match the Technosoftware generic server EXE location.
   -->
+  <!--
+    Generic server EXE (C++/CLI) built from ClassicServerSolutions:
+      msbuild ..\ClassicServerSolutions\src\Technosoftware\Server\ClassicServer\OpcNetDaAeServer.vcxproj
+    Its x86 output folder is named Win32. Override GenericServerExe to use another location.
+  -->
+  <PropertyGroup>
+    <GenericServerPlatform>$(Platform)</GenericServerPlatform>
+    <GenericServerPlatform Condition=" '$(Platform)' == 'x86' ">Win32</GenericServerPlatform>
+    <GenericServerExe Condition=" '$(GenericServerExe)' == '' ">$(MSBuildProjectDirectory)\..\..\ClassicServerSolutions\src\Technosoftware\Server\ClassicServer\net\$(GenericServerPlatform)\$(Configuration)\OpcNetDaAeServer.exe</GenericServerExe>
+  </PropertyGroup>
+
   <PropertyGroup>
     <PostBuildEvent>
       ECHO [PostBuild] Platform: $(Platform)
@@ -141,6 +152,12 @@
         IF EXIST "$(TargetDir)ServerPlugin.dll.config" (
           COPY /Y "$(TargetDir)ServerPlugin.dll.config" "$(SolutionDir)bin\$(Platform)\$(Configuration)\OpcNetDaServer.exe.config"
         )
+      )
+      IF EXIST "$(GenericServerExe)" (
+        COPY /Y "$(GenericServerExe)" "$(SolutionDir)bin\$(Platform)\$(Configuration)\OpcNetDaServer.exe"
+      ) ELSE (
+        ECHO [PostBuild] WARNING: generic server EXE not found: $(GenericServerExe)
+        ECHO [PostBuild] WARNING: build OpcNetDaAeServer.vcxproj from ClassicServerSolutions first.
       )
       EXIT 0
     </PostBuildEvent>
