@@ -187,13 +187,13 @@ nssm set JSON_SCADA_iccpserver AppRotateOnline 1
 nssm set JSON_SCADA_iccpserver AppRotateBytes 10000000
 nssm set JSON_SCADA_iccpserver Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\Dnp3ClientCpp.exe" 1 1
+nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\dnp3-client.exe" 1 1
 nssm set JSON_SCADA_dnp3client AppStdout C:\json-scada\log\dnp3client.log
 nssm set JSON_SCADA_dnp3client AppRotateOnline 1
 nssm set JSON_SCADA_dnp3client AppRotateBytes 10000000
 nssm set JSON_SCADA_dnp3client Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_dnp3server "C:\json-scada\bin\Dnp3Server.exe" 1 1
+nssm install JSON_SCADA_dnp3server "C:\json-scada\bin\dnp3-server.exe" 1 1
 nssm set JSON_SCADA_dnp3server AppStdout C:\json-scada\log\dnp3server.log
 nssm set JSON_SCADA_dnp3server AppRotateOnline 1
 nssm set JSON_SCADA_dnp3server AppRotateBytes 10000000
@@ -204,6 +204,14 @@ nssm set JSON_SCADA_opcuaclient AppStdout C:\json-scada\log\opcuaclient.log
 nssm set JSON_SCADA_opcuaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcuaclient AppRotateBytes 10000000
 nssm set JSON_SCADA_opcuaclient Start SERVICE_DELAYED_AUTO_START
+
+rem OPC UA client in Go: alternative to JSON_SCADA_opcuaclient, no .NET runtime needed.
+rem Enable EITHER JSON_SCADA_opcuaclient OR JSON_SCADA_opcuagoclient, never both.
+nssm install JSON_SCADA_opcuagoclient "C:\json-scada\bin\opcua-client.exe" 1 1
+nssm set JSON_SCADA_opcuagoclient AppStdout C:\json-scada\log\opcuagoclient.log
+nssm set JSON_SCADA_opcuagoclient AppRotateOnline 1
+nssm set JSON_SCADA_opcuagoclient AppRotateBytes 10000000
+nssm set JSON_SCADA_opcuagoclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 1
 nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
@@ -243,11 +251,11 @@ rem nssm set JSON_SCADA_plc4xclient AppRotateOnline 1
 rem nssm set JSON_SCADA_plc4xclient AppRotateBytes 10000000
 rem nssm set JSON_SCADA_plc4xclient Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
-nssm set JSON_SCADA_plctags AppStdout C:\json-scada\log\plctags.log
-nssm set JSON_SCADA_plctags AppRotateOnline 1
-nssm set JSON_SCADA_plctags AppRotateBytes 10000000
-nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
+rem nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
+rem nssm set JSON_SCADA_plctags AppStdout C:\json-scada\log\plctags.log
+rem nssm set JSON_SCADA_plctags AppRotateOnline 1
+rem nssm set JSON_SCADA_plctags AppRotateBytes 10000000
+rem nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
 
 REM service for OPC-UA Server
 nssm install JSON_SCADA_opcuaserver "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\OPC-UA-Server\index.js" 1 1 "c:\json-scada\conf\json-scada.json"

@@ -20,10 +20,10 @@ net stop JSON_SCADA_opcuaclient
 net stop JSON_SCADA_opcdaclient
 net stop JSON_SCADA_iec61850client
 net stop JSON_SCADA_i104m
-net stop JSON_SCADA_plctags
+rem net stop JSON_SCADA_plctags
 net stop JSON_SCADA_iccpclient
 net stop JSON_SCADA_mqttsparkplugclient
-net stop JSON_SCADA_plc4xclient
+rem net stop JSON_SCADA_plc4xclient
 net stop JSON_SCADA_plc4jclient
 net stop JSON_SCADA_telegraf_runtime
 net stop JSON_SCADA_telegraf_listener
@@ -31,6 +31,8 @@ net stop JSON_SCADA_iec104server
 net stop JSON_SCADA_iec101server
 net stop JSON_SCADA_opcuaserver
 net stop JSON_SCADA_iccpserver
+net stop JSON_SCADA_modbusclient
+net stop JSON_SCADA_modbusserver
 
 REM STOP OTHER PROCESSES
 net stop JSON_SCADA_log_io_file
@@ -75,7 +77,7 @@ net start JSON_SCADA_iec104client
 rem net start JSON_SCADA_iec101client
 net start JSON_SCADA_mqttsparkplugclient
 rem net start JSON_SCADA_plc4xclient
-rem net start JSON_SCADA_plc4jclient
+net start JSON_SCADA_plc4jclient
 net start JSON_SCADA_telegraf_listener
 net start JSON_SCADA_telegraf_runtime
 REM net start JSON_SCADA_iec104server
@@ -91,6 +93,8 @@ REM net start JSON_SCADA_i104m
 REM net start JSON_SCADA_plctags
 net start JSON_SCADA_opcuaserver
 REM net start JSON_SCADA_mcp_server
+rem net start JSON_SCADA_modbusclient
+rem net start JSON_SCADA_modbusserver
 
 net start JSON_SCADA_php
 net start JSON_SCADA_nginx
