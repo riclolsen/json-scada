@@ -29,29 +29,28 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 #dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o ../../../bin-wine/ Dnp3Client.csproj
 
 # IEC 61850 main drivers are now built in Go (src/iec61850), see the Go section below.
-cd src/libiec61850
-mkdir build
-cd build
-cmake ..
-make
-cp src/libiec61850.so src/libiec61850.so.* ../../../bin_alt/
-cd ../dotnet/core/2.0/IEC61850.NET.core.2.0
-dotnet publish --self-contained --runtime $ARG1 -c Release
-cd ../../../../../iec61850_client
-dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin_alt/
+# cd src/libiec61850
+# mkdir build
+# cd build
+# cmake ..
+# make
+# cp src/libiec61850.so src/libiec61850.so.* ../../../bin_alt/
+# cd ../dotnet/core/2.0/IEC61850.NET.core.2.0
+# dotnet publish --self-contained --runtime $ARG1 -c Release
+# cd ../../../../../iec61850_client
+# dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin_alt/
 
-cd ../iec61850_server
-dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin_alt/
+# cd ../iec61850_server
+# dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin_alt/
 
-sleep 1
 # IEC 60870-5-101/104 main drivers are now built in Go (src/iec60870-5), see the Go section below.
-cd ../lib60870.netcore
-dotnet restore
-dotnet publish --self-contained --runtime $ARG1 -p:IsPackable=false -p:GeneratePackageOnBuild=false -p:PublishReadyToRun=true -c Release -o ../../bin_alt/
+# cd ../lib60870.netcore
+# dotnet restore
+# dotnet publish --self-contained --runtime $ARG1 -p:IsPackable=false -p:GeneratePackageOnBuild=false -p:PublishReadyToRun=true -c Release -o ../../bin_alt/
 
-cd ../OPC-UA-Client
-dotnet restore
-dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
+# cd ../OPC-UA-Client
+# dotnet restore
+# dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
 cd ../opcdaaehda-client-solution-net
 dotnet build -f net8.0-windows DaAeHdaNetStandard.sln
@@ -60,33 +59,33 @@ cd ../OPC-DA-Client
 dotnet restore
 dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
 
-cd ../mongo-cxx-driver/mongo-cxx-driver/build
-cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
-cmake --build . --config Release
-cmake --build . --target install --config Release
+#cd ../mongo-cxx-driver/mongo-cxx-driver/build
+#cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
+#cmake --build . --config Release
+#cmake --build . --target install --config Release
 
-cd ../../../dnp3/opendnp3
-mkdir build
-cd build
-cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON ..
-make
-cp cpp/lib/libopendnp3.so ../../../../bin/
+# cd ../../../dnp3/opendnp3
+# mkdir build
+# cd build
+# cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON ..
+# make
+# cp cpp/lib/libopendnp3.so ../../../../bin/
 
-cd ../../Dnp3Server
-mkdir build
-cd build
-cmake ..
-make
-cp Dnp3Server ../../../../bin/
-cd ../..
+# cd ../../Dnp3Server
+# mkdir build
+# cd build
+# cmake ..
+# make
+# cp Dnp3Server ../../../../bin/
+# cd ../..
 
-cd Dnp3ClientCpp
-mkdir build
-cd build
-cmake ..
-make
-cp Dnp3ClientCpp ../../../../bin/
-cd ../..
+# cd Dnp3ClientCpp
+# mkdir build
+# cd build
+# cmake ..
+# make
+# cp Dnp3ClientCpp ../../../../bin/
+# cd ../..
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
@@ -96,16 +95,28 @@ go mod tidy
 go build
 cp calculations ../../bin/
 
-cd ../i104m
-go mod tidy 
-go build
-cp i104m ../../bin/
+# cd ../i104m
+# go mod tidy 
+# go build
+# cp i104m ../../bin/
 
 # you may need a lot of memory to build this step, the build may be killed by the system, if necessary add swap, e.g. 8GB RAM + 4GB Swap
-cd ../plc4x-client
+# cd ../plc4x-client
+# go mod tidy
+# go build
+# cp plc4x-client ../../bin/
+
+cd ../OPC-UA-Client-Go
 go mod tidy
-go build
-cp plc4x-client ../../bin/
+go build -ldflags="-s -w" -o ../../bin/opcua-client
+
+# Go implementation of the DNP3 client and server drivers, drop-in replacements
+# for the C++ Dnp3ClientCpp and Dnp3Server. No opendnp3, mongo-cxx-driver or
+# OpenSSL build is needed for these.
+cd ../dnp3-go
+go mod tidy
+go build -ldflags="-s -w" -o ../../bin/dnp3-client ./cmd/dnp3client
+go build -ldflags="-s -w" -o ../../bin/dnp3-server ./cmd/dnp3server
 
 cd ../iec60870-5
 go mod tidy
