@@ -316,7 +316,6 @@
         "manual": "يدوي"
       },
       "autoRestartOnConfigChange": "إعادة التشغيل تلقائيًا عند تغيير الإعدادات",
-      "executableVariant": "نسخة قابلة للتنفيذ",
       "syncResult": "اكتملت المزامنة: {مؤكد} تم التأكد منه، {أخطاء} أخطاء، {أيتام} خدمة (خدمات) يتيمة.",
       "deleteServiceNote": "سيتم إيقاف خدمة نظام التشغيل {service} وإزالتها على العقدة {node}.",
       "serviceStates": {

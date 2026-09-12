@@ -316,7 +316,6 @@
         "manual": "Handbuch"
       },
       "autoRestartOnConfigChange": "Automatischer Neustart bei Konfigurationsänderung",
-      "executableVariant": "Ausführbare Variante",
       "syncResult": "Synchronisierung abgeschlossen: {ensured} sichergestellt, {errors} Fehler, {orphans} verwaiste Dienste.",
       "deleteServiceNote": "Der Betriebssystemdienst {service} wird auf dem Knoten {node} beendet und entfernt.",
       "serviceStates": {

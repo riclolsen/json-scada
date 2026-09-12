@@ -136,6 +136,7 @@ const opcIdTypeNumber = 0
 const opcIdTypeString = 1
 const beepPointKey = -1
 const EventsRemoveGuardSeconds = 20 // guard not to remove events recently added
+const MaxHistoryRowsPerNode = 10000 // max historian rows returned per requested tag
 
 const jsConfig = LoadConfig()
 let HintMongoIsConnected = true
@@ -1864,7 +1865,10 @@ let pool = null
                       if (node.NodeId.IdType === opcIdTypeString)
                         if ('Id' in node.NodeId) {
                           // only string keys supported here
-                          tags.push("'" + node.NodeId.Id + "'")
+                          // keep the raw tag name: it is passed as a query
+                          // parameter, never concatenated into SQL
+                          if (typeof node.NodeId.Id === 'string')
+                            tags.push(node.NodeId.Id)
                         }
                 }
               }
@@ -2172,23 +2176,81 @@ let pool = null
             return
           }
 
+          // convert the requested time range to Date objects, rejecting
+          // anything that is not a valid timestamp
+          let startTs = new Date(startDateTime)
+          let endTs = new Date(endDateTime)
+          if (
+            typeof startDateTime !== 'string' ||
+            typeof endDateTime !== 'string' ||
+            isNaN(startTs.getTime()) ||
+            isNaN(endTs.getTime())
+          ) {
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.BadHistoryOperationInvalid
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.BadHistoryOperationInvalid),
+              opc.getStatusCodeText(opc.StatusCode.BadHistoryOperationInvalid),
+              'Invalid StartTime/EndTime',
+            ]
+            res.send(OpcResp)
+            return
+          }
+
+          // restrict to tags the user is allowed to see (group1 restriction)
+          let allowedTags = tags
+          if (userRights?.group1List?.length > 0) {
+            try {
+              const accessible = await db
+                .collection(COLL_REALTIME)
+                .find(
+                  {
+                    tag: { $in: tags },
+                    group1: { $in: userRights.group1List },
+                  },
+                  { projection: { tag: 1 } }
+                )
+                .toArray()
+              const accessibleSet = new Set(accessible.map((d) => d.tag))
+              allowedTags = tags.filter((t) => accessibleSet.has(t))
+            } catch (err) {
+              Log.log('HistoryRead - group1 filter error: ' + err.message)
+              allowedTags = []
+            }
+          }
+          if (allowedTags.length === 0) {
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.GoodNoData
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.GoodNoData),
+              opc.getStatusCodeText(opc.StatusCode.GoodNoData),
+              'No accessible NodeId.Ids requested',
+            ]
+            res.send(OpcResp)
+            return
+          }
+
+          // cap the number of rows returned by the historian
+          let rowLimit = parseInt(limitValues, 10)
+          if (isNaN(rowLimit) || rowLimit < 1) rowLimit = MaxHistoryRowsPerNode
+          rowLimit =
+            Math.min(rowLimit, MaxHistoryRowsPerNode) * allowedTags.length
+
+          // all request-supplied values below are bound as query parameters
+          // ($1..$n): never build this query by string concatenation
           let query =
             'SELECT tag, value, flags, ' +
             'time_tag, ' +
             'time_tag_at_source ' +
             'FROM hist ' +
-            "WHERE time_tag>='" +
-            startDateTime +
-            "' AND " +
-            "time_tag<='" +
-            endDateTime +
-            "' AND " +
-            'tag IN (' +
-            tags.join(',') +
-            ') ' +
-            'ORDER BY tag asc, time_tag ASC'
+            'WHERE time_tag>=$1 AND ' +
+            'time_tag<=$2 AND ' +
+            'tag = ANY($3) ' +
+            'ORDER BY tag asc, time_tag ASC ' +
+            'LIMIT $4'
+          let queryParams = [startTs, endTs, allowedTags, rowLimit]
 
-          if (startDateTime === endDateTime) {
+          if (startTs.getTime() === endTs.getTime()) {
             query =
               'SELECT tag as tag, ' +
               'last(value, time_tag) as value, ' +
@@ -2197,15 +2259,10 @@ let pool = null
               'last(time_tag_at_source, time_tag) as time_tag_at_source ' +
               'from hist ' +
               'where ' +
-              "time_tag<='" +
-              startDateTime +
-              "' and " +
-              "time_tag> (TIMESTAMP '" +
-              startDateTime +
-              "' - INTERVAL '0.5 day') and " +
-              'tag in (' +
-              tags.join(',') +
-              ') group by tag'
+              'time_tag<=$1 and ' +
+              "time_tag> ($1::timestamptz - INTERVAL '0.5 day') and " +
+              'tag = ANY($2) group by tag'
+            queryParams = [startTs, allowedTags]
           }
 
           // read data from postgreSQL
@@ -2221,7 +2278,7 @@ let pool = null
             res.send(OpcResp)
             return
           }
-          pool.query(query, (err, resp) => {
+          pool.query(query, queryParams, (err, resp) => {
             if (err) {
               OpcResp.ServiceId = opc.ServiceCode.ServiceFault
               OpcResp.Body.ResponseHeader.ServiceResult =

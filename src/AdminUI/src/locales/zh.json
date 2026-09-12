@@ -316,7 +316,6 @@
         "manual": "手动的"
       },
       "autoRestartOnConfigChange": "配置更改后自动重启",
-      "executableVariant": "可执行变体",
       "syncResult": "同步完成：{ensured} 个已确保，{errors} 个错误，{orphans} 个孤立服务。",
       "deleteServiceNote": "操作系统服务 {service} 将在节点 {node} 上停止并移除。",
       "serviceStates": {

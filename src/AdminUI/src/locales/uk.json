@@ -316,7 +316,6 @@
         "manual": "Ручний"
       },
       "autoRestartOnConfigChange": "Автоматичний перезапуск після зміни конфігурації",
-      "executableVariant": "Виконуваний варіант",
       "syncResult": "Синхронізацію завершено: {ensured} забезпечено, {errors} помилок, {orphans} неактивних служб.",
       "deleteServiceNote": "Службу ОС {service} буде зупинено та видалено на вузлі {node}.",
       "serviceStates": {

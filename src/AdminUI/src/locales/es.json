@@ -316,7 +316,6 @@
         "manual": "Manual"
       },
       "autoRestartOnConfigChange": "Reiniciar automáticamente al cambiar la configuración.",
-      "executableVariant": "Variante ejecutable",
       "syncResult": "Sincronización completa: {ensured} asegurada, {errors} errores, {orphans} servicio(s) huérfano(s).",
       "deleteServiceNote": "El servicio del sistema operativo {service} se detendrá y se eliminará en el nodo {node}.",
       "serviceStates": {

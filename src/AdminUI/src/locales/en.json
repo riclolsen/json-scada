@@ -316,7 +316,6 @@
         "manual": "Manual"
       },
       "autoRestartOnConfigChange": "Restart automatically on configuration change",
-      "executableVariant": "Executable variant",
       "syncResult": "Sync complete: {ensured} ensured, {errors} errors, {orphans} orphan service(s).",
       "deleteServiceNote": "The OS service {service} will be stopped and removed on node {node}.",
       "serviceStates": {

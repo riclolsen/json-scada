@@ -241,18 +241,6 @@
             :label="$t('admin.protocolDriverInstances.autoRestartOnConfigChange')"
             class="mb-0"
           ></v-switch>
-          <v-select
-            v-if="editedInstance.protocolDriver === 'PLC4X'"
-            v-model="editedInstance.processExecutableVariant"
-            :items="[
-              { text: 'plc4x (Go)', value: 'plc4x' },
-              { text: 'plc4j (Java)', value: 'plc4j' },
-            ]"
-            item-title="text"
-            item-value="value"
-            variant="outlined"
-            :label="$t('admin.protocolDriverInstances.executableVariant')"
-          ></v-select>
         </v-container>
       </v-card-text>
 
@@ -459,7 +447,7 @@
       startMode: 'auto',
       autoRestartOnConfigChange: true,
     },
-    processExecutableVariant: '',
+    processExecutableVariant: 'plc4j',
   })
   const editedInstance = ref({ ...editedInstanceDefault.value })
 
@@ -858,8 +846,9 @@
       startMode: pm.startMode === 'manual' ? 'manual' : 'auto',
       autoRestartOnConfigChange: pm.autoRestartOnConfigChange !== false,
     }
-    if (typeof inst.processExecutableVariant !== 'string')
-      inst.processExecutableVariant = ''
+    // plc4j is the only PLC4X implementation offered; older docs may carry
+    // 'plc4x' or nothing at all
+    inst.processExecutableVariant = 'plc4j'
     return inst
   }
 

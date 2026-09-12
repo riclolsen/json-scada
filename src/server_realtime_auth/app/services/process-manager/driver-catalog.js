@@ -65,15 +65,13 @@ const CATALOG = {
   DNP3: {
     key: 'dnp3client',
     type: 'exe',
-    exe: '{bin}/Dnp3ClientCpp',
-    linuxEnv: { LD_LIBRARY_PATH: '{bin}' },
+    exe: '{bin}/dnp3-client',
     defaultStartMode: 'manual',
   },
   DNP3_SERVER: {
     key: 'dnp3server',
     type: 'exe',
-    exe: '{bin}/Dnp3Server',
-    linuxEnv: { LD_LIBRARY_PATH: '{bin}' },
+    exe: '{bin}/dnp3-server',
     defaultStartMode: 'manual',
   },
   IEC61850: {
@@ -109,7 +107,7 @@ const CATALOG = {
   'OPC-UA': {
     key: 'opcuaclient',
     type: 'exe',
-    exe: '{bin}/OPC-UA-Client',
+    exe: '{bin}/opcua-client',
     defaultStartMode: 'auto',
   },
   'OPC-UA_SERVER': {
@@ -126,31 +124,20 @@ const CATALOG = {
     platforms: ['win32'],
     defaultStartMode: 'manual',
   },
-  'OPC-DA': {
+  'OPC-DA_SERVER': {
     key: 'opcdaserver',
     type: 'exe',
     exe: '{bin}/OPC-DA-Server',
     platforms: ['win32'],
     defaultStartMode: 'manual',
   },
-  PLCTAG: {
-    key: 'plctags',
-    type: 'exe',
-    exe: '{bin}/PLCTagsClient',
-    defaultStartMode: 'manual',
-  },
   PLC4X: {
     key: 'plc4xclient',
     type: 'exe',
-    exe: '{bin}/plc4x-client',
-    // optional per-instance variant selects the Java executable instead of the Go one
-    variants: {
-      plc4x: { type: 'exe', exe: '{bin}/plc4x-client' },
-      plc4j: {
-        win32: { type: 'exe', exe: '{bin}/plc4j-client.bat' },
-        linux: { type: 'exe', exe: '{bin}/plc4j-client' },
-      },
-    },
+    exe:
+      process.platform === 'win32'
+        ? '{bin}/plc4j-client.bat'
+        : '{bin}/plc4j-client.sh',
     defaultStartMode: 'manual',
   },
   'TELEGRAF-LISTENER': {
@@ -223,7 +210,9 @@ function getCatalogEntry(driverName) {
   return CATALOG[driverName] || null
 }
 
-// Resolves a catalog entry, honoring the PLC4X executable variant if present.
+// Resolves a catalog entry, honoring a per-instance executable variant if the
+// entry declares one. No entry currently does, so a stored
+// processExecutableVariant is ignored and the entry's own executable is used.
 function resolveEntry(driverName, variant) {
   const entry = CATALOG[driverName]
   if (!entry) return null
