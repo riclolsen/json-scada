@@ -231,11 +231,11 @@ nssm set JSON_SCADA_iec61850server AppRotateOnline 1
 nssm set JSON_SCADA_iec61850server AppRotateBytes 10000000
 nssm set JSON_SCADA_iec61850server Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_i104m "C:\json-scada\bin\i104m.exe" 1 1 
-nssm set JSON_SCADA_i104m AppStdout C:\json-scada\log\i104m.log
-nssm set JSON_SCADA_i104m AppRotateOnline 1
-nssm set JSON_SCADA_i104m AppRotateBytes 10000000
-nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
+REM nssm install JSON_SCADA_i104m "C:\json-scada\bin\i104m.exe" 1 1 
+REM nssm set JSON_SCADA_i104m AppStdout C:\json-scada\log\i104m.log
+REM nssm set JSON_SCADA_i104m AppRotateOnline 1
+REM nssm set JSON_SCADA_i104m AppRotateBytes 10000000
+REM nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
 
 rem PLC4J client: Java alternative executable for the PLC4X driver (requires JRE 17+).
 rem Enable EITHER plc4xclient OR plc4jclient for a given instance number, never both.

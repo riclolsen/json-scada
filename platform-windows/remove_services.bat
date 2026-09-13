@@ -45,7 +45,7 @@ nssm remove JSON_SCADA_dnp3server confirm
 nssm remove JSON_SCADA_opcuaclient confirm
 nssm remove JSON_SCADA_opcdaclient confirm
 nssm remove JSON_SCADA_iec61850client confirm
-nssm remove JSON_SCADA_i104m confirm
+rem nssm remove JSON_SCADA_i104m confirm
 rem nssm remove JSON_SCADA_plctags confirm
 rem nssm remove JSON_SCADA_plc4xclient confirm
 nssm remove JSON_SCADA_plc4jclient confirm

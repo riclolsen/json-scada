@@ -18,7 +18,7 @@ net stop JSON_SCADA_iec61850client
 net stop JSON_SCADA_iec61850goclient
 net stop JSON_SCADA_iec61850goserver
 net stop JSON_SCADA_iec61850server
-net stop JSON_SCADA_i104m
+rem net stop JSON_SCADA_i104m
 rem net stop JSON_SCADA_plctags
 net stop JSON_SCADA_iccpclient
 net stop JSON_SCADA_mqttsparkplugclient
