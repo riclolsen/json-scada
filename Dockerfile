@@ -69,7 +69,7 @@ RUN dotnet --version
 # ==============================================================================
 # GOLANG
 # ==============================================================================
-ENV GO_VERSION=1.27.0
+ENV GO_VERSION=1.27.1
 RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
     && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
     && rm go${GO_VERSION}.linux-amd64.tar.gz
@@ -130,7 +130,7 @@ RUN mkdir -p /etc/apt/keyrings/ \
 # METABASE
 # ==============================================================================
 RUN mkdir -p /app/json-scada/metabase/ \
-    && wget --inet4-only https://downloads.metabase.com/v0.63.2/metabase.jar -O /app/json-scada/metabase/metabase.jar \
+    && wget --inet4-only https://downloads.metabase.com/v0.63.17.x/metabase.jar -O /app/json-scada/metabase/metabase.jar \
     && chmod +x /app/json-scada/metabase/metabase.jar 
 
 # ==============================================================================
@@ -227,35 +227,35 @@ RUN cd src/OPC-UA-Client/ && \
 #RUN cd src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ && rm -rf obj bin || true
 #RUN cd src/libiec61850 && rm -rf .install || true
 
-# Build mongo-cxx-driver
-RUN cd src/mongo-cxx-driver/mongo-cxx-driver && \
-    rm -rf build && \
-    mkdir -p build && \
-    cd build && \
-    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake || true && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF && \
-    cmake --build . --config Release && \
-    cmake --build . --target install --config Release || true
+## Build mongo-cxx-driver
+#RUN cd src/mongo-cxx-driver/mongo-cxx-driver && \
+#    rm -rf build && \
+#    mkdir -p build && \
+#    cd build && \
+#    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake || true && \
+#    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF && \
+#    cmake --build . --config Release && \
+#    cmake --build . --target install --config Release || true#
 
-# Build OpenDNP3
-RUN cd src/dnp3/opendnp3 && \
-    rm -rf build && \
-    mkdir -p build && \
-    cd build && \
-    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && \
-    make && \
-    cp cpp/lib/libopendnp3.so /app/json-scada/bin/ || true
+## Build OpenDNP3
+#RUN cd src/dnp3/opendnp3 && \
+#    rm -rf build && \
+#    mkdir -p build && \
+#    cd build && \
+#    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && \
+#    make && \
+#    cp cpp/lib/libopendnp3.so /app/json-scada/bin/ || true
 
-# Build DNP3 Server
-RUN cd src/dnp3/Dnp3Server/ && \
-    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt || true && \
-    sed -i '/sasl2/a  snappy' ./CMakeLists.txt || true && \
-    rm -rf build && \
-    mkdir -p build && \
-    cd build && \
-    cmake .. && \
-    make && \
-    cp Dnp3Server /app/json-scada/bin/ || true
+## Build DNP3 Server
+#RUN cd src/dnp3/Dnp3Server/ && \
+#    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt || true && \
+#    sed -i '/sasl2/a  snappy' ./CMakeLists.txt || true && \
+#    rm -rf build && \
+#    mkdir -p build && \
+#    cd build && \
+#    cmake .. && \
+#    make && \
+#    cp Dnp3Server /app/json-scada/bin/ || true
 
 # ==============================================================================
 # BUILD GO PROJECTS
@@ -269,17 +269,22 @@ RUN cd src/calculations/ && \
     go build -ldflags="-s -w" && \
     cp calculations /app/json-scada/bin/
 
-# Build i104m
-RUN cd src/i104m/ && \
+# Build cs_data_processor in Go
+RUN cd src/cs_data_processor-go/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" && \
-    cp i104m /app/json-scada/bin/
+    go build -ldflags="-s -w" -o /app/json-scada/bin/cs_data_processor
 
-# Build plc4x-client
-RUN cd src/plc4x-client/ && \
-    go mod tidy && \
-    CGO_ENABLED=1 go build -ldflags="-s -w" && \
-    cp plc4x-client /app/json-scada/bin/ || true
+## Build i104m
+#RUN cd src/i104m/ && \
+#    go mod tidy && \
+#    go build -ldflags="-s -w" && \
+#    cp i104m /app/json-scada/bin/
+
+## Build plc4x-client
+#RUN cd src/plc4x-client/ && \
+#    go mod tidy && \
+#    CGO_ENABLED=1 go build -ldflags="-s -w" && \
+#    cp plc4x-client /app/json-scada/bin/ || true
 
 # Build IEC 60870-5 drivers
 RUN cd src/iec60870-5 \
@@ -299,6 +304,17 @@ RUN cd src/iec61850/iec61850_client/ && \
 RUN cd src/iec61850/iec61850_server/ && \
     go mod tidy && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850-server
+
+# Build OPC-UA client in Go
+RUN cd src/opcua/opcua-client-go/ && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/opcua-client
+
+# Build DNP3 client and server in Go
+RUN cd src/dnp3-go && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
 
 # PLC4J client (Java)
 RUN cd src/plc4j-client && \
@@ -378,6 +394,8 @@ COPY ./platform-ubuntu-2404/grafana_server.ini /etc/supervisor/conf.d/grafana_se
 COPY ./platform-ubuntu-2404/dnp3_client.ini /etc/supervisor/conf.d/dnp3_client.ini
 COPY ./platform-ubuntu-2404/dnp3_server.ini /etc/supervisor/conf.d/dnp3_server.ini
 COPY ./platform-ubuntu-2404/mcp_server.ini /etc/supervisor/conf.d/mcp_server.ini
+COPY ./platform-ubuntu-2404/modbusclient.ini /etc/supervisor/conf.d/modbusclient.ini
+COPY ./platform-ubuntu-2404/modbusserver.ini /etc/supervisor/conf.d/modbusserver.ini
 COPY ./platform-ubuntu-2404/mongofw.ini /etc/supervisor/conf.d/mongofw.ini
 COPY ./platform-ubuntu-2404/mongowr.ini /etc/supervisor/conf.d/mongowr.ini
 COPY ./platform-ubuntu-2404/mqtt-sparkplug.ini /etc/supervisor/conf.d/mqtt-sparkplug.ini
@@ -386,7 +404,7 @@ COPY ./platform-ubuntu-2404/nodered_driver.ini /etc/supervisor/conf.d/nodered_dr
 COPY ./platform-ubuntu-2404/nodered_runtime.ini /etc/supervisor/conf.d/nodered_runtime.ini
 COPY ./platform-ubuntu-2404/opcua_client.ini /etc/supervisor/conf.d/opcua_client.ini
 COPY ./platform-ubuntu-2404/opcua_server.ini /etc/supervisor/conf.d/opcua_server.ini
-COPY ./platform-ubuntu-2404/plc4xclient.ini /etc/supervisor/conf.d/plc4xclient.ini
+#COPY ./platform-ubuntu-2404/plc4xclient.ini /etc/supervisor/conf.d/plc4xclient.ini
 COPY ./platform-ubuntu-2404/plc4jclient.ini /etc/supervisor/conf.d/plc4jclient.ini
 COPY ./platform-ubuntu-2404/process_pg_hist.ini /etc/supervisor/conf.d/process_pg_hist.ini
 COPY ./platform-ubuntu-2404/process_pg_rtdata.ini /etc/supervisor/conf.d/process_pg_rtdata.ini
@@ -466,7 +484,7 @@ RUN echo "vm.swappiness=1" >> /etc/sysctl.conf
 # ==============================================================================
 # Nginx
 EXPOSE 80 443
-# Node.js application ports (customize as needed)
+# Server_Realtime_Auth
 EXPOSE 8080
 # PostgreSQL
 EXPOSE 5432
