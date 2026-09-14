@@ -83,7 +83,7 @@ import { STORAGE_KEY } from './i18n'
 
 const THEME_STORAGE_KEY = 'user-theme'
 
-const version = ref('v0.64-alpha')
+const version = ref('v0.65-alpha')
 const router = useRouter()
 const route = useRoute()
 const vuetifyTheme = useTheme()
