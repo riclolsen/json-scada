@@ -199,11 +199,11 @@ WORKDIR /app/json-scada
 #RUN cd src/lib60870.netcore/iec104server/ && rm -rf obj bin
 #RUN cd src/lib60870.netcore/lib60870.netcore/ && rm -rf obj bin
 
-# Build OPC-UA Client
-RUN cd src/OPC-UA-Client/ && \
-    rm -rf obj bin && dotnet clean && \
-    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /app/json-scada/bin/ && \
-    rm -rf obj bin
+## Build OPC-UA Client
+#RUN cd src/OPC-UA-Client/ && \
+#    rm -rf obj bin && dotnet clean && \
+#    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /app/json-scada/bin/ && \
+#    rm -rf obj bin
 
 ## Build libiec61850 (C library)
 #RUN cd src/libiec61850 && \
@@ -266,8 +266,7 @@ RUN apt update && apt install -y libpcap-dev && rm -rf /var/lib/apt/lists/*
 # Build calculations
 RUN cd src/calculations/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" && \
-    cp calculations /app/json-scada/bin/
+    go build -ldflags="-s -w" -o /app/json-scada/bin/calculations
 
 # Build cs_data_processor in Go
 RUN cd src/cs_data_processor-go/ && \

@@ -7,8 +7,8 @@ use (
 	./dnp3-go
 	./go-common
 	./i104m
-	./iccp/iccp-client
-	./iccp/iccp-server
+//	./iccp/iccp-client
+//	./iccp/iccp-server
 	./iec60870-5
 	./iec61850/iec61850_client
 	./iec61850/iec61850_server
