@@ -312,7 +312,7 @@ RUN cd src/OPC-UA-Client-Go/ && \
 # Build DNP3 client and server in Go
 RUN cd src/dnp3-go && \
     go mod tidy && \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
 
 # Copy ICCP client and server to bin
