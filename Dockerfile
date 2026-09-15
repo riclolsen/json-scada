@@ -305,7 +305,7 @@ RUN cd src/iec61850/iec61850_server/ && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850-server
 
 # Build OPC-UA client in Go
-RUN cd src/opcua/opcua-client-go/ && \
+RUN cd src/OPC-UA-Client-Go/ && \
     go mod tidy && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/opcua-client
 
