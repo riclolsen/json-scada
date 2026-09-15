@@ -12,6 +12,10 @@ LABEL description="Multi-service container with Node.js, .NET, Go, PostgreSQL/Ti
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
+# Target architecture (amd64, arm64), set automatically by BuildKit/buildx.
+# Falls back to the build host architecture on the legacy builder.
+ARG TARGETARCH
+
 # ==============================================================================
 # BASE SYSTEM PACKAGES AND BUILD TOOLS
 # ==============================================================================
@@ -50,9 +54,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && npm install -g npm@latest \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify Node.js installation
-RUN node --version && npm --version
-
 # ==============================================================================
 # .NET SDK 8
 # ==============================================================================
@@ -63,23 +64,18 @@ RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-p
     && apt install -y dotnet-sdk-8.0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify .NET installation
-RUN dotnet --version
-
 # ==============================================================================
 # GOLANG
 # ==============================================================================
 ENV GO_VERSION=1.27.1
-RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
-    && rm go${GO_VERSION}.linux-amd64.tar.gz
+RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} \
+    && wget https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz \
+    && tar -C /usr/local -xzf go${GO_VERSION}.linux-${ARCH}.tar.gz \
+    && rm go${GO_VERSION}.linux-${ARCH}.tar.gz
 
 ENV PATH=$PATH:/usr/local/go/bin
 ENV GOPATH=/go
 ENV PATH=$PATH:$GOPATH/bin
-
-# Verify Go installation
-RUN go version
 
 # ==============================================================================
 # POSTGRESQL (Latest Stable/18) with TIMESCALEDB
@@ -316,12 +312,14 @@ RUN cd src/dnp3-go && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
 
 # Copy ICCP client and server to bin
-RUN cd src/iccp/iccp-server && \
-    cp iccp-server-linux-amd64 /app/json-scada/bin/iccp-server && \
+RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} && \
+    cd src/iccp/iccp-server && \
+    cp iccp-server-linux-${ARCH} /app/json-scada/bin/iccp-server && \
     chmod +x /app/json-scada/bin/iccp-server
 
-RUN cd src/iccp/iccp-client && \
-    cp iccp-client-linux-amd64 /app/json-scada/bin/iccp-client && \
+RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} && \
+    cd src/iccp/iccp-client && \
+    cp iccp-client-linux-${ARCH} /app/json-scada/bin/iccp-client && \
     chmod +x /app/json-scada/bin/iccp-client
 
 # PLC4J client (Java)
