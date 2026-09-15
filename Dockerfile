@@ -317,12 +317,12 @@ RUN cd src/dnp3-go && \
 
 # Copy ICCP client and server to bin
 RUN cd src/iccp/iccp-server && \
-    cp iccp-server-linux-$ARCHITECTURE /app/json-scada/bin/iccp-server && \
-    chmod +x ../../../bin/iccp-server
+    cp iccp-server-linux-amd64 /app/json-scada/bin/iccp-server && \
+    chmod +x /app/json-scada/bin/iccp-server
 
 RUN cd src/iccp/iccp-client && \
-    cp iccp-client-linux-$ARCHITECTURE /app/json-scada/bin/iccp-client && \
-    chmod +x ../../../bin/iccp-client
+    cp iccp-client-linux-amd64 /app/json-scada/bin/iccp-client && \
+    chmod +x /app/json-scada/bin/iccp-client
 
 # PLC4J client (Java)
 RUN cd src/plc4j-client && \
