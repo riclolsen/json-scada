@@ -315,6 +315,15 @@ RUN cd src/dnp3-go && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
 
+# Copy ICCP client and server to bin
+RUN cd src/iccp/iccp-server && \
+    cp iccp-server-linux-$ARCHITECTURE /app/json-scada/bin/iccp-server && \
+    chmod +x ../../../bin/iccp-server
+
+RUN cd src/iccp/iccp-client && \
+    cp iccp-client-linux-$ARCHITECTURE /app/json-scada/bin/iccp-client && \
+    chmod +x ../../../bin/iccp-client
+
 # PLC4J client (Java)
 RUN cd src/plc4j-client && \
     mvn -B -ntp -DskipTests package && \
