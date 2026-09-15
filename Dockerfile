@@ -282,13 +282,13 @@ RUN cd src/cs_data_processor-go/ && \
 #    cp plc4x-client /app/json-scada/bin/ || true
 
 # Build IEC 60870-5 drivers
-RUN cd src/iec60870-5 \
-    go mod tidy \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104client.exe ./cmd/iec104client \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104server.exe ./cmd/iec104server \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101client.exe ./cmd/iec101client \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101server.exe ./cmd/iec101server \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec103client.exe ./cmd/iec103client
+RUN cd src/iec60870-5 && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104client ./cmd/iec104client && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104server ./cmd/iec104server && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101client ./cmd/iec101client && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101server ./cmd/iec101server && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec103client ./cmd/iec103client
 
 # Build the IEC61850 client in Go
 RUN cd src/iec61850/iec61850_client/ && \
