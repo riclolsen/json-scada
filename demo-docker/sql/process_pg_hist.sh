@@ -8,6 +8,8 @@ dbHost=${PGHOST:-"127.0.0.1"}
 dbPort=${PGPORT:-5432}
 dbName=${PGDATABASE:-"json_scada"}
 dbUser=${PGUSER:-"json_scada"}
+# lock file must live in a writable dir (the bind-mounted /sql dir may not be)
+lockFile=${LOCK_FILE:-"${TMPDIR:-/tmp}/process_pg_hist.exclusivelock"}
 # PGPASSWORD=${PGPASSWORD :-""}
 
 cd /sql
@@ -17,7 +19,7 @@ set -e
 
 (
 # locks to avoid multiples of this process running
-# flock -n -x 10 /sql/process_pg_hist.exclusivelock
+# flock -n -x 10 "$lockFile"
 
 # avoids exit in case of errors
 set +e
@@ -29,7 +31,7 @@ while [ 1 ]; do
   if [ "$file" != "pg_hist_*.sql" ]; then
 
 # process sql file into the database
-    res=` psql -h $dbHost -U "$dbUser" -d $dbName -p $dbPort < "$file" `
+    res=`$psqlPath/psql -h $dbHost -U "$dbUser" -d $dbName -p $dbPort < "$file" `
 
     if [ "$?" = "0" ]; then
 
@@ -46,4 +48,4 @@ while [ 1 ]; do
 
 done
 
-) 9>/sql/process_pg_hist.exclusivelock
+) 9>"$lockFile"

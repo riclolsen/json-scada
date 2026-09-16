@@ -431,8 +431,7 @@ RUN mkdir -p /docker-entrypoint-initdb.d/mongo \
     && mkdir -p /app/json-scada/conf \
     && mkdir -p /app/json-scada/log \
     && mkdir -p /app/json-scada/files \
-    && mkdir -p /app/json-scada/sql \
-    && chmod o+w /app/json-scada/sql
+    && mkdir -p /app/json-scada/sql
 
 # Copy initialization scripts and data (relative to project root context)
 COPY ./demo-docker/mongo_seed/files/ /docker-entrypoint-initdb.d/mongo/
@@ -440,6 +439,12 @@ COPY ./mongo_seed/ /docker-entrypoint-initdb.d/mongo/
 COPY ./demo-docker/conf/ /app/json-scada/conf/
 COPY ./conf-templates/json-scada.json /app/json-scada/conf/json-scada.json
 COPY ./sql/ /app/json-scada/sql/
+
+# The sql dir must be writable by the jsonscada service user: cs_data_processor
+# writes pg_*.sql files there and process_pg_*.sh removes them after loading.
+# This must run after the COPY above, which resets ownership/perms to root:root.
+RUN chown -R jsonscada /app/json-scada/sql \
+    && chmod u+rwx /app/json-scada/sql
 
 # Make scripts executable
 RUN chmod +x /docker-entrypoint-initdb.d/mongo/*.sh \
