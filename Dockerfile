@@ -167,6 +167,14 @@ COPY ./src/ /app/json-scada/src/
 COPY ./svg/ /app/json-scada/svg/
 RUN chmod o+w -R /app/json-scada/svg
 
+# src/svgedit is a git submodule: a checkout made without --recursive leaves it
+# empty and its build below would only fail late, so refuse the build here with
+# an actionable message instead of shipping an image without the SVG editor.
+RUN test -f /app/json-scada/src/svgedit/package.json || ( \
+      echo "ERROR: src/svgedit is empty (git submodule not initialized)." >&2; \
+      echo "       Run 'git submodule update --init --recursive' and build again." >&2; \
+      exit 1 )
+
 # Set environment for builds
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV NODE_OPTIONS=--max-old-space-size=10000
@@ -354,17 +362,30 @@ RUN cd src/cs_data_processor && npm install \
     && cd ../mqtt-sparkplug && npm install \
     && cd ../mcp-json-scada-db && npm install && npm run build \
     && cd ../AdminUI && npm install && npm run build && rm -rf node_modules \
-    && cd ../svgedit && npm install && npm run build && rm -rf node_modules \
+    && cd ../svgedit && npm install && npm run build \
+    && test -f dist/editor/index.html && rm -rf node_modules \
     && cd ../custom-developments/basic_bargraph \
     && npm install \
     && npx astro telemetry disable \
-    && npm run build && rm -rf node_modules || true \
-    && cd ../../custom-developments/advanced_dashboard \
+    && npm run build && test -f dist/index.html && rm -rf node_modules \
+    && cd ../advanced_dashboard \
     && npm install \
-    && npm run build && rm -rf node_modules || true \
-    && cd ../../custom-developments/transformer_with_command \
+    && npm run build && test -f dist/index.html && rm -rf node_modules \
+    && cd ../transformer_with_command \
     && npm install \
-    && npm run build && rm -rf node_modules || true
+    && npm run build && test -f dist/index.html && rm -rf node_modules
+
+# ==============================================================================
+# NODE-RED RUNTIME (optional)
+# ==============================================================================
+# Local Node-RED plus the JSON-SCADA palette, installed where the nodered_runtime
+# supervisor program expects them. The program is autostart=false: start it from
+# supervisorctl when the container should host its own Node-RED. The NODE-RED
+# protocol driver (nodered_driver) works against a remote Node-RED as well.
+RUN mkdir -p /app/json-scada/nodered-runtime \
+    && npm install --prefix /app/json-scada/nodered-runtime \
+       node-red@4 node-red-contrib-jsonscada \
+    && test -f /app/json-scada/nodered-runtime/node_modules/node-red/red.js
 
 # ==============================================================================
 # DATABASE INITIALIZATION AND CONFIGURATION
@@ -421,6 +442,10 @@ COPY ./platform-ubuntu-2404/server_realtime_auth.ini /etc/supervisor/conf.d/serv
 # Launcher that gives server_realtime_auth a JWT signing secret unique to this
 # container instead of the public default from the repository (see the script).
 COPY ./platform-ubuntu-2404/start_server_realtime_auth.sh /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh
+
+# Launcher that gives the Node-RED runtime a credential secret unique to this
+# container instead of the public default from the repository (see the script).
+COPY ./platform-ubuntu-2404/start_nodered_runtime.sh /app/json-scada/platform-ubuntu-2404/start_nodered_runtime.sh
 COPY ./platform-ubuntu-2404/telegraf_listener.ini /etc/supervisor/conf.d/telegraf_listener.ini
 COPY ./platform-ubuntu-2404/telegraf.ini /etc/supervisor/conf.d/telegraf.ini
 COPY ./platform-ubuntu-2404/nginx.conf /etc/nginx/nginx.conf
@@ -440,6 +465,11 @@ COPY ./demo-docker/mongo_seed/files/ /docker-entrypoint-initdb.d/mongo/
 COPY ./mongo_seed/ /docker-entrypoint-initdb.d/mongo/
 COPY ./demo-docker/conf/ /app/json-scada/conf/
 COPY ./conf-templates/json-scada.json /app/json-scada/conf/json-scada.json
+# Node-RED settings and user directory for the nodered_runtime program. userDir
+# holds flows/credentials, so it lives under conf/ (a volume) and must be
+# writable by the service user - the chown of conf/ further below covers it.
+COPY ./conf-templates/node-red-settings.js /app/json-scada/conf/node-red-settings.js
+RUN mkdir -p /app/json-scada/conf/node-red
 COPY ./sql/ /app/json-scada/sql/
 
 # The sql dir must be writable by the jsonscada service user: cs_data_processor
@@ -451,10 +481,11 @@ RUN chown -R jsonscada /app/json-scada/sql \
 # Make scripts executable
 RUN chmod +x /docker-entrypoint-initdb.d/mongo/*.sh \
     && chmod +x /app/json-scada/sql/*.sh \
-    && chmod +x /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh
+    && chmod +x /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh \
+    && chmod +x /app/json-scada/platform-ubuntu-2404/start_nodered_runtime.sh
 
-# The JWT secret is generated at first start inside conf/, so the service user
-# must be able to write there.
+# The JWT secret and the Node-RED credential secret are generated at first start
+# inside conf/, so the service user must be able to write there.
 RUN chown -R jsonscada /app/json-scada/conf
 
 # Create a master database initialization script

@@ -102,6 +102,11 @@ Import ready-made flows from Node-RED → Import → Examples → node-red-contr
 - Use TLS (`wss://`) for off-host links (set the cert/key fields on the connection).
 - Keep `commandsEnabled: false` unless flows must issue or receive commands.
 - Enable Node-RED `adminAuth` before any network exposure of the editor.
+- Keep the credential secret out of the repository default: the supervisor program
+  starts Node-RED through `platform-*/start_nodered_runtime.sh`, which generates a
+  random `JS_NODERED_CRED_SECRET` into `conf/nodered.secret` on first start (set the
+  environment variable to override it). Changing it invalidates the credentials
+  already stored in flows.
 
 ## 2. Zero-code alternative: MQTT-Sparkplug
 
