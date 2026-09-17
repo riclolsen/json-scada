@@ -792,7 +792,16 @@ func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mong
 			connNumber := int(cmd.ProtocolSourceConnectionNumber)
 
 			conn, ok := connMap[connNumber]
-			if !ok || !conn.CommandsEnabled {
+			if !ok {
+				// The change stream sees every command in the queue, including
+				// those of other drivers and instances. A connection this driver
+				// does not own is not ours to cancel: just log it.
+				LogMsg(LogLevelDetailed, "Commands CS - Connection %d not handled by this driver, ignoring command", connNumber)
+				continue
+			}
+			if !conn.CommandsEnabled {
+				LogMsg(LogLevelMin, "Commands CS - Commands disabled for %s: %s", conn.Name, cmd.Tag)
+				cancelCommand(collectionCommands, cmd.ID, "commands disabled")
 				continue
 			}
 
