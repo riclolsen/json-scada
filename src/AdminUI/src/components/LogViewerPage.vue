@@ -3,7 +3,7 @@
     <v-row no-gutters class="fill-height">
       <v-col cols="12" class="fill-height">
         <iframe
-          src="/log-io"
+          src="/log-viewer-ui"
           width="100%"
           height="94%"
           frameborder="0"

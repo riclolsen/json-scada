@@ -20,7 +20,8 @@ module.exports = function (
   customJsonQuery,
   logioServer,
   metabaseServer,
-  noderedProxy
+  noderedProxy,
+  supervisorProxy
 ) {
   app.use(function (req, res, next) {
     res.header(
@@ -100,6 +101,31 @@ module.exports = function (
         })
       )
   )
+
+  // Supervisor web interface (linux/docker log viewer), mounted on /supervisor.
+  // Process control is offered there, so it is restricted to admin users:
+  // verifyToken answers the requests without a token, isAdmin the ones of a
+  // non-admin user.
+  // The pages of the ui reference their assets relatively, so they only resolve
+  // when the browser is on '/supervisor/' - send the bare mount path there.
+  app.get('/supervisor', (req, res, next) => {
+    if (req.originalUrl.split('?')[0] !== '/supervisor') return next()
+    const query = req.originalUrl.slice('/supervisor'.length)
+    res.redirect('/supervisor/' + query)
+  })
+  app.use(
+    '/supervisor',
+    [authJwt.verifyToken, authJwt.isAdmin],
+    supervisorProxy
+  )
+
+  // Entry point of the AdminUI log viewer: log.io on windows, where it is part of
+  // the installation, the supervisor web interface on linux and docker, where the
+  // processes are run by supervisord and log.io is not installed.
+  app.get('/log-viewer-ui', (req, res) => {
+    res.redirect(process.platform === 'win32' ? '/log-io' : '/supervisor/')
+  })
+
   app.use('/static', express.static('../log-io/ui/build/static'))
 
   app.post(accessPoint, [authJwt.verifyToken], opcApi) // realtime data API
@@ -130,15 +156,30 @@ module.exports = function (
   app.use('/dashboard', express.static('../AdminUI/dist'))
   app.use('/admin', express.static('../AdminUI/dist'))
 
+  // Directory served by the custom developments routes below.
+  const customDevPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'custom-developments'
+  )
+
+  // Directory to serve for a custom development, or null when it has nothing to
+  // serve. The built app (dist) is preferred, the folder itself is accepted for
+  // examples that ship plain html. A folder with neither (a work in progress, or
+  // an example whose build failed) is not routed and not listed: routing it would
+  // fall through to the index listing below and look like the link does nothing.
+  function customDevContentPath(folder) {
+    return (
+      [path.join(customDevPath, folder, 'dist'), path.join(customDevPath, folder)].find(
+        (p) => fs.existsSync(path.join(p, 'index.html'))
+      ) || null
+    )
+  }
+
   // Dynamically create routes for custom developments
   try {
-    const customDevPath = path.join(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      'custom-developments'
-    )
     const folders = fs
       .readdirSync(customDevPath)
       .filter((file) =>
@@ -147,9 +188,12 @@ module.exports = function (
 
     folders.forEach((folder) => {
       const routePath = `/custom-developments/${folder}`
-      let folderPath = path.join(customDevPath, folder, 'dist')
-      if (!fs.existsSync(folderPath)) {
-        folderPath = path.join(customDevPath, folder)
+      const folderPath = customDevContentPath(folder)
+      if (!folderPath) {
+        Log.log(
+          `Custom development '${folder}' has no index.html (not built?): route ${routePath} not created`
+        )
+        return
       }
       app.use(routePath, express.static(folderPath))
       Log.log(`Created static route for: ${routePath}`)
@@ -160,19 +204,25 @@ module.exports = function (
 
   app.use('/custom-developments', (req, res) => {
     try {
-      const customDevPath = path.join(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        'custom-developments'
-      )
+      // A request for a specific example that got here matched no static route,
+      // i.e. the example is not built. Answer 404 instead of rendering the index
+      // again, which would look like the link simply does not open.
+      if (req.path !== '/') {
+        const name = req.path.split('/')[1] || ''
+        return res
+          .status(404)
+          .send(
+            `Custom development '${name}' is not available: no built content found in ` +
+              `src/custom-developments/${name}/dist (run 'npm install && npm run build' there).`
+          )
+      }
 
-      // Read directory contents
+      // Read directory contents, listing only what is actually routed above.
       const items = fs.readdirSync(customDevPath, { withFileTypes: true })
       const folders = items
         .filter((item) => item.isDirectory())
         .map((item) => item.name)
+        .filter((folder) => customDevContentPath(folder) !== null)
 
       // Generate HTML response
       const html = `

@@ -26,6 +26,9 @@ const METABASE_SERVER =
   process.env.JS_METABASE_SERVER || 'http://127.0.0.1:3001'
 const NODERED_SERVER =
   process.env.NODERED_SERVER || 'http://127.0.0.1:1880/nodered/'
+// supervisord web interface: the log viewer of the linux and docker runtimes
+const SUPERVISOR_SERVER =
+  process.env.JS_SUPERVISOR_SERVER || 'http://admin:jsonscada@127.0.0.1:9000'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
@@ -50,6 +53,7 @@ const {
   attachNoderedUpgrade,
   createLogioProxy,
   attachLogioUpgrade,
+  createSupervisorProxy,
 } = require('./proxy-utils')
 const GetQueryPostgresql = require('./customJsonQueries')
 const initGQLServer = require('./graphql-server.js')
@@ -152,6 +156,9 @@ let pool = null
   // reverse proxy for the log.io ui socket.io (mounted on /socket.io, ws upgrade below)
   const logioProxy = createLogioProxy(LOGIO_SERVER)
 
+  // reverse proxy for the supervisord web interface (mounted on /supervisor)
+  const supervisorProxy = createSupervisorProxy(SUPERVISOR_SERVER)
+
   // JWT Auth Mongo Express https://bezkoder.com/node-js-mongodb-auth-jwt/
   dbAuth.mongoose
     .connect(jsConfig.mongoConnectionString, jsConfig.MongoConnectionOptions)
@@ -240,7 +247,8 @@ let pool = null
     queryJSON,
     LOGIO_SERVER,
     METABASE_SERVER,
-    noderedProxy
+    noderedProxy,
+    supervisorProxy
   )
 
   async function queryJSON(req, res) {

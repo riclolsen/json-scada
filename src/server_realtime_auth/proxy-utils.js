@@ -30,6 +30,10 @@ const NODERED_MOUNT_PATH = '/nodered'
 const NODERED_DEFAULT_SERVER = 'http://127.0.0.1:1880/nodered/'
 const LOGIO_MOUNT_PATH = '/log-io'
 const LOGIO_DEFAULT_SERVER = 'http://127.0.0.1:6688'
+const SUPERVISOR_MOUNT_PATH = '/supervisor'
+// credentials of the [inet_http_server] section of the supervisord.conf shipped
+// in platform-*/ (and of the docker image); override with JS_SUPERVISOR_SERVER.
+const SUPERVISOR_DEFAULT_SERVER = 'http://admin:jsonscada@127.0.0.1:9000'
 
 // Express strips the mount path from req.url when a middleware is mounted with
 // app.use('/nodered', ...), so a proxy mounted that way would forward '/' instead of
@@ -184,6 +188,87 @@ function createLogioProxy(logioServer) {
   )
 }
 
+// Reverse proxy for the supervisord web interface ([inet_http_server], port 9000),
+// mounted on /supervisor. It is the log viewer / process status page of the linux
+// and docker runtimes, where log.io is not installed.
+// Supervisor has no notion of a base path, but every url of its ui is relative
+// ('index.html?action=...', 'logtail/<name>', 'stylesheets/supervisor.css'), so the
+// pages work unchanged as long as the browser resolves them against '/supervisor/'
+// - the route redirects the bare mount path to that trailing slash. What is not
+// relative is the Location of the redirect answering a POST to its form, rewritten
+// below. Basic auth credentials come from the target url and are sent upstream, so
+// the browser is never prompted for the supervisor password.
+function createSupervisorProxy(supervisorServer) {
+  let target
+  try {
+    target = new URL(supervisorServer)
+  } catch (err) {
+    Log.log(
+      'Invalid supervisor server url: ' +
+        supervisorServer +
+        ', using the default one'
+    )
+    target = new URL(SUPERVISOR_DEFAULT_SERVER)
+  }
+
+  const auth =
+    target.username === ''
+      ? undefined
+      : decodeURIComponent(target.username) +
+        ':' +
+        decodeURIComponent(target.password)
+
+  Log.log(
+    'Supervisor reverse proxy on ' +
+      SUPERVISOR_MOUNT_PATH +
+      ' -> ' +
+      target.origin +
+      '/'
+  )
+
+  return withMountedUrl(
+    createProxyMiddleware({
+      target: target.origin,
+      changeOrigin: true,
+      ws: false,
+      ...(auth ? { auth } : {}),
+      pathFilter: mountPathFilter(SUPERVISOR_MOUNT_PATH),
+      pathRewrite: { ['^' + SUPERVISOR_MOUNT_PATH]: '' },
+      on: {
+        // the json/urlencoded body parsers run before this proxy, restore the consumed body
+        proxyReq: fixRequestBody,
+        // supervisor answers its POSTs with an absolute Location built from the url
+        // it received, which points outside the mount path (and, with changeOrigin,
+        // at the supervisor host): put it back under /supervisor.
+        proxyRes: (proxyRes) => {
+          const location = proxyRes.headers?.location
+          if (!location) return
+          try {
+            const url = new URL(location, target.origin)
+            if (url.origin === target.origin)
+              proxyRes.headers.location =
+                SUPERVISOR_MOUNT_PATH + url.pathname + url.search
+          } catch (err) {
+            Log.log('Supervisor proxy: unparsable Location ' + location)
+          }
+        },
+        error: (err, req, resOrSocket) => {
+          Log.log('Supervisor proxy error: ' + err.message)
+          if (typeof resOrSocket?.writeHead === 'function') {
+            if (!resOrSocket.headersSent) {
+              resOrSocket.writeHead(502, { 'Content-Type': 'text/plain' })
+              resOrSocket.end(
+                'Supervisor web interface not available. Enable the [inet_http_server] ' +
+                  'section of supervisord.conf (port 9000).'
+              )
+            }
+          } else resOrSocket?.destroy?.()
+        },
+      },
+    })
+  )
+}
+
 // Proxy the websocket upgrades of a mounted reverse proxy.
 // Upgrade requests never reach the express middlewares (so verifyToken cannot run on
 // them), they are handled on the raw http server and the token is verified here instead.
@@ -221,6 +306,9 @@ module.exports = {
   NODERED_DEFAULT_SERVER,
   LOGIO_MOUNT_PATH,
   LOGIO_DEFAULT_SERVER,
+  SUPERVISOR_MOUNT_PATH,
+  SUPERVISOR_DEFAULT_SERVER,
+  createSupervisorProxy,
   mountPathFilter,
   withMountedUrl,
   createNoderedProxy,
