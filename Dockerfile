@@ -293,12 +293,12 @@ RUN cd src/iec60870-5 && \
 # Build the IEC61850 client in Go
 RUN cd src/iec61850/iec61850_client/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850-client
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850_client
 
 # Build the IEC61850 server in Go
 RUN cd src/iec61850/iec61850_server/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850-server
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850_server
 
 # Build OPC-UA client in Go
 RUN cd src/OPC-UA-Client-Go/ && \
@@ -395,6 +395,8 @@ COPY ./platform-ubuntu-2404/iec104server.ini /etc/supervisor/conf.d/iec104server
 COPY ./platform-ubuntu-2404/iec101client.ini /etc/supervisor/conf.d/iec101client.ini
 COPY ./platform-ubuntu-2404/iec101server.ini /etc/supervisor/conf.d/iec101server.ini
 COPY ./platform-ubuntu-2404/iec61850client.ini /etc/supervisor/conf.d/iec61850client.ini
+COPY ./platform-ubuntu-2404/iec61850server.ini /etc/supervisor/conf.d/iec61850server.ini
+COPY ./platform-ubuntu-2404/onvif.ini /etc/supervisor/conf.d/onvif.ini
 COPY ./platform-ubuntu-2404/metabase.ini /etc/supervisor/conf.d/metabase.ini
 COPY ./platform-ubuntu-2404/grafana_server.ini /etc/supervisor/conf.d/grafana_server.ini
 COPY ./platform-ubuntu-2404/dnp3_client.ini /etc/supervisor/conf.d/dnp3_client.ini
