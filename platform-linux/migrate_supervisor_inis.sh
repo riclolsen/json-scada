@@ -29,11 +29,15 @@ else
   exit 1
 fi
 
-# Program base names that correspond to manageable protocol drivers. Keep in sync
-# with the process manager driver catalog keys.
+# File base names of the manageable protocol driver *.ini files. These are FILE
+# names, not supervisor program names: shipped files keep names like
+# iccp_client.ini while the program inside is [program:iccpclient] (the process
+# manager derives program names from the driver catalog keys). Both spellings of
+# any file renamed over time are listed so old installs migrate too.
 DRIVER_KEYS="iec104client iec104server iec101client iec101server dnp3client dnp3server \
-iec61850client iccpclient iccpserver mqttsparkplugclient mqtt-sparkplug opcuaclient \
-opcuaserver opcdaclient plctags plc4xclient plc4jclient telegraf-listener telegraf_listener \
+iec61850client iec61850server iccpclient iccpserver iccp_client iccp_server \
+mqttsparkplugclient mqtt-sparkplug opcuaclient opcuaserver opcua_client opcua_server \
+opcdaclient plctags plc4xclient plc4jclient telegraf-listener telegraf_listener \
 i104m onvif modbusclient modbusserver nodered_driver n8nclient"
 
 echo "Migrating legacy supervisor driver files:"
