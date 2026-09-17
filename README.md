@@ -49,7 +49,7 @@ To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.
 
     sudo docker run -p 80:80 -p 9000:9000 -p 4840:4840 -p 2404:2404 -p 20000:20000 -d --name=json_scada ricardolo/json-scada:latest
 
-Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See details here: [Docker Image](https://github.com/riclolsen/json-scada/blob/master/docs/docker_image.md). Other installation options and instructions are available in the [Installation Guide](https://github.com/riclolsen/json-scada/blob/master/docs/installation.md).
+Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See details here: [Docker Image](https://github.com/riclolsen/json-scada/blob/master/docs/docker_image.md). Other installation options and instructions are available in the [Installation Guide](https://github.com/riclolsen/json-scada/blob/master/docs/install.md).
 
 ## Major features
 
