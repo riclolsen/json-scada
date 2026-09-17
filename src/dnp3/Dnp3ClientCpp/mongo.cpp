@@ -39,10 +39,20 @@ static void executeCommand(const bsoncxx::document::view& command, mongocxx::col
     if (!Active)
         return;
 
-    const auto id   = command["_id"].get_oid().value;
-    const auto conn = findConnection(
-        static_cast<int>(getDouble(command, "protocolSourceConnectionNumber")));
-    if (!conn || !conn->master)
+    const auto id       = command["_id"].get_oid().value;
+    const int  connNumber = static_cast<int>(getDouble(command, "protocolSourceConnectionNumber"));
+    const auto conn       = findConnection(connNumber);
+    if (!conn)
+    {
+        // The change stream sees every command in the queue, including those of other
+        // drivers and instances. A connection this driver does not own is not ours to
+        // cancel: just log it, as the other {json:scada} drivers do.
+        // Log.log("MongoDB CMD - connection " + to_string(connNumber) +
+        //         " not handled by this driver, ignoring command",
+        //     Logger::Level::Detailed);
+        return;
+    }
+    if (!conn->master)
     {
         cancelCommand(collection, id, "connection_not_found");
         return;

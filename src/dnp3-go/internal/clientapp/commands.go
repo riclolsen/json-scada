@@ -108,13 +108,18 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 		return
 	}
 
-	conn := e.connByNumber(jsmongo.GetInt(cmd, "protocolSourceConnectionNumber", 0))
-	session := (*master.Session)(nil)
-	if conn != nil {
-		session = conn.Session()
+	connNumber := jsmongo.GetInt(cmd, "protocolSourceConnectionNumber", 0)
+	conn := e.connByNumber(connNumber)
+	if conn == nil {
+		// The change stream sees every command in the queue, including those of other
+		// drivers and instances. A connection this driver does not own is not ours to
+		// cancel: just log it, as the other {json:scada} drivers do.
+		jslog.Log(jslog.LevelDetailed, "Mongo CMD: connection %d not handled by this driver, ignoring command", connNumber)
+		return
 	}
+	session := conn.Session()
 	switch {
-	case conn == nil || session == nil:
+	case session == nil:
 		cancelCommand(ctx, coll, id, "connection_not_found")
 		return
 	case !conn.Connected():
