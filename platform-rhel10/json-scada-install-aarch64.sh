@@ -30,7 +30,7 @@ sudo dnf -y install epel-release
 sudo dnf config-manager --set-enabled crb
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk maven php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel
 sudo dnf -y install curl --allowerasing
-sudo dnf -y install policycoreutils-python-utils setools-console
+sudo dnf -y install policycoreutils-python-utils setools-console audit
 
 # to compile inkscape
 #sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
@@ -114,18 +114,18 @@ EOL
 sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
 sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew  /etc/yum.repos.d/pgdg-redhat-all.repo
-sudo dnf -y --enablerepo=pgdg17 update
+sudo dnf -y --enablerepo=pgdg18 update
 curl -s https://packagecloud.io/install/repositories/timescale/timescaledb/script.rpm.sh | sudo bash
-sudo dnf -y install timescaledb_17 postgresql17 postgresql17-contrib
-#sudo dnf -y install timescaledb-toolkit-postgresql-17
-# sudo timescaledb-tune -yes --pg-config=/usr/pgsql-17/bin/pg_config
+sudo dnf -y install timescaledb_18 postgresql18 postgresql18-contrib
+#sudo dnf -y install timescaledb-toolkit-postgresql-18
+# sudo timescaledb-tune -yes --pg-config=/usr/pgsql-18/bin/pg_config
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/17/data/
-sudo chown postgres:postgres /var/lib/pgsql/17/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/17/data/
-sudo chown postgres:postgres /var/lib/pgsql/17/data/postgresql.conf
-sudo systemctl enable postgresql-17
-sudo /usr/pgsql-17/bin/postgresql-17-setup initdb
+sudo cp pg_hba.conf /var/lib/pgsql/18/data/
+sudo chown postgres:postgres /var/lib/pgsql/18/data/pg_hba.conf
+sudo cp postgresql.conf /var/lib/pgsql/18/data/
+sudo chown postgres:postgres /var/lib/pgsql/18/data/postgresql.conf
+sudo systemctl enable postgresql-18
+sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -160,7 +160,7 @@ sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-17
+sudo systemctl start postgresql-18
 sudo systemctl start mongod
 
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
