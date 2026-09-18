@@ -145,6 +145,7 @@ sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
+sudo cp supervisord.conf /etc/supervisord.conf
 sudo systemctl enable supervisord
 
 sudo dnf install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm

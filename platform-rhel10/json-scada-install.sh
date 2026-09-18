@@ -151,6 +151,7 @@ sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
+sudo cp supervisord.conf /etc/supervisord.conf
 # JSON-SCADA process manager: dir for driver services created from the AdminUI.
 # Owned by jsonscada so services can be managed without root; scanned by supervisord.
 mkdir -p ~/json-scada/conf/supervisor.d
