@@ -31,7 +31,7 @@ sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-ope
 sudo dnf -y install curl --allowerasing
 
 # docker/podman can be used to run DNP3 and OPC-DA on linux
-sudo yum install -y yum-utils
+sudo dnf install -y yum-utils
 sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 sudo dnf -y install podman docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 sudo systemctl enable docker
@@ -155,7 +155,7 @@ if ! grep -q 'json-scada/conf/supervisor.d' /etc/supervisord.conf; then
 fi
 sudo systemctl enable supervisord
 
-sudo yum install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
+sudo dnf install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
 #sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server

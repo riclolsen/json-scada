@@ -21,7 +21,7 @@ cd ..
 mkdir bin
 mkdir bin_alt
 mkdir bin-wine
-
+cd src
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 #cp src/dnp3/Dnp3Client/Dependencies/OpenSSL/*.dll bin-wine/ 
@@ -52,12 +52,12 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 # dotnet restore
 # dotnet publish --self-contained --runtime $ARG1 -p:PublishReadyToRun=true -c Release -o ../../bin/
 
-cd ../opcdaaehda-client-solution-net
-dotnet build -f net8.0-windows DaAeHdaNetStandard.sln
+#cd ../opcdaaehda-client-solution-net
+#dotnet build -f net8.0-windows DaAeHdaNetStandard.sln
 
-cd ../OPC-DA-Client
-dotnet restore
-dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
+#cd ../OPC-DA-Client
+#dotnet restore
+#dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
 
 #cd ../mongo-cxx-driver/mongo-cxx-driver/build
 #cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
@@ -90,7 +90,7 @@ dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f n
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
 
-cd ../calculations
+cd calculations
 go mod tidy 
 go build
 cp calculations ../../bin/
