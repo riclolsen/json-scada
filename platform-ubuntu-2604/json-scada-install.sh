@@ -24,6 +24,7 @@ case $(uname -m) in
 esac
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo chmod +x *.sh
 
 # Update and install base packages
 sudo apt update

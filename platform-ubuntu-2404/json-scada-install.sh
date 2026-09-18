@@ -24,6 +24,7 @@ case $(uname -m) in
 esac
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo chmod +x *.sh
 
 # MONGODB WONT'T START IF KERNEL IS UPDATED TO 6.19 OR LATER!
 # Hold the current kernel version to prevent automatic updates.

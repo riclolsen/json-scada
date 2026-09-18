@@ -18,6 +18,7 @@ JS_ARCH=amd64
 # Metabase credentials: json@scada.com / jsonscada123
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo chmod +x *.sh
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
