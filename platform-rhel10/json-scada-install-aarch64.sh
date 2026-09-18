@@ -145,7 +145,7 @@ sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
 sudo systemctl enable supervisord
 
-sudo yum install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
+sudo dnf install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
 #sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
