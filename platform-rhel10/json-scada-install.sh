@@ -21,14 +21,14 @@ sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 sudo chmod +x *.sh
 
 sudo dnf -y update 
-sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
-sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless inkscape
+sudo dnf -y group install --with-optional "Development Tools" ".NET Development" maven
+sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-10-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk maven php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel
 sudo dnf -y install curl --allowerasing
 sudo dnf -y install policycoreutils-python-utils setools-console audit
 
