@@ -186,6 +186,13 @@ mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbI
 # Start Grafana
 sudo systemctl start grafana-server
 
+# Install a local Node-RED runtime for the NODE-RED driver.
+# The driver also works with a remote or containerized Node-RED.
+sudo -u '$JS_USERNAME' bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
+cp ../conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js
+mkdir -p ~/json-scada/conf/node-red
+# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
+
 # Build JSON-SCADA
 cd ../platform-linux
 sudo -u $JS_USERNAME bash -c 'source ~/.bashrc;export PATH=$PATH:/usr/local/go/bin;./build.sh'

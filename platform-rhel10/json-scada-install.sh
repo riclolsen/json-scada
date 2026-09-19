@@ -196,6 +196,13 @@ sudo systemctl start grafana-server
 sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
 
+# Install a local Node-RED runtime for the NODE-RED driver.
+# The driver also works with a remote or containerized Node-RED.
+sudo -u '$JS_USERNAME' bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
+cp ../conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js
+mkdir -p ~/json-scada/conf/node-red
+# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
+
 cd ../platform-linux 
 sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh'
 
@@ -213,10 +220,3 @@ echo "To compile and install Inkscape+SAGE, run the following command: sudo sh .
 echo "To open web interface run: firefox http://localhost"
 echo "Default credentials: admin / jsonscada"
 echo "Default Metabase credentials: json@scada.com / jsonscada123"
-
-# Optional: install a local Node-RED runtime for the NODE-RED driver (commented by
-# default). The driver also works with a remote or containerized Node-RED. To enable:
-#   sudo -u '$JS_USERNAME' bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red@4 node-red-contrib-jsonscada'
-#   cp ../conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js
-#   mkdir -p ~/json-scada/conf/node-red
-# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
