@@ -18,6 +18,7 @@
 
 'use strict'
 
+const http = require('http')
 const {
   createProxyMiddleware,
   fixRequestBody,
@@ -218,6 +219,8 @@ function createSupervisorProxy(supervisorServer) {
         ':' +
         decodeURIComponent(target.password)
 
+  const supervisorAgent = new http.Agent({ keepAlive: true })
+
   Log.log(
     'Supervisor reverse proxy on ' +
       SUPERVISOR_MOUNT_PATH +
@@ -234,9 +237,17 @@ function createSupervisorProxy(supervisorServer) {
       ...(auth ? { auth } : {}),
       pathFilter: mountPathFilter(SUPERVISOR_MOUNT_PATH),
       pathRewrite: { ['^' + SUPERVISOR_MOUNT_PATH]: '' },
+      agent: supervisorAgent,
       on: {
-        // the json/urlencoded body parsers run before this proxy, restore the consumed body
-        proxyReq: fixRequestBody,
+        proxyReq: (proxyReq, req, res) => {
+          // supervisor only streams 'logtail/<name>' (Tail -f) on a persistent
+          // connection (chunked): on 'Connection: close' its medusa server globs
+          // the output into 64KB packets, so the tail never shows. A front nginx
+          // talks HTTP/1.0 + 'Connection: close' to us, which would be forwarded.
+          proxyReq.setHeader('Connection', 'keep-alive')
+          // the json/urlencoded body parsers run before this proxy, restore the consumed body
+          fixRequestBody(proxyReq, req, res)
+        },
         // supervisor answers its POSTs with an absolute Location built from the url
         // it received, which points outside the mount path (and, with changeOrigin,
         // at the supervisor host): put it back under /supervisor.
