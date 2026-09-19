@@ -384,7 +384,7 @@ RUN cd src/cs_data_processor && npm install \
 # protocol driver (nodered_driver) works against a remote Node-RED as well.
 RUN mkdir -p /app/json-scada/nodered-runtime \
     && npm install --prefix /app/json-scada/nodered-runtime \
-       node-red@4 node-red-contrib-jsonscada \
+       node-red node-red-contrib-jsonscada \
     && test -f /app/json-scada/nodered-runtime/node_modules/node-red/red.js
 
 # ==============================================================================
