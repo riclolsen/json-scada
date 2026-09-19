@@ -199,8 +199,8 @@ sudo semodule -X 300 -i my-mongod.pp
 # Install a local Node-RED runtime for the NODE-RED driver.
 # The driver also works with a remote or containerized Node-RED.
 sudo -u $JS_USERNAME bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
-cp ../conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js
-mkdir -p ~/json-scada/conf/node-red
+sudo -u $JS_USERNAME bash -c 'cp ~/json-scada/conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js'
+sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
 # Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
 
 cd ../platform-linux 
