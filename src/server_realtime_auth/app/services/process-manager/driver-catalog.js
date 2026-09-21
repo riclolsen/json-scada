@@ -132,7 +132,11 @@ const CATALOG = {
     defaultStartMode: 'manual',
   },
   PLC4X: {
-    key: 'plc4xclient',
+    // the PLC4X driver is shipped as the java plc4j-client, installed as the
+    // JSON_SCADA_plc4jclient service / plc4jclient supervisor program. The go
+    // plc4x-client is an alternative executable, left disabled in both
+    // create_services.bat and platform-*/plc4xclient.ini.
+    key: 'plc4jclient',
     type: 'exe',
     exe:
       process.platform === 'win32'
