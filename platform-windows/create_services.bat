@@ -199,19 +199,11 @@ nssm set JSON_SCADA_dnp3server AppRotateOnline 1
 nssm set JSON_SCADA_dnp3server AppRotateBytes 10000000
 nssm set JSON_SCADA_dnp3server Start SERVICE_DEMAND_START
 
-nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\OPC-UA-Client.exe" 1 1
+nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\opcua-client.exe" 1 1
 nssm set JSON_SCADA_opcuaclient AppStdout C:\json-scada\log\opcuaclient.log
 nssm set JSON_SCADA_opcuaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcuaclient AppRotateBytes 10000000
-nssm set JSON_SCADA_opcuaclient Start SERVICE_DELAYED_AUTO_START
-
-rem OPC UA client in Go: alternative to JSON_SCADA_opcuaclient, no .NET runtime needed.
-rem Enable EITHER JSON_SCADA_opcuaclient OR JSON_SCADA_opcuagoclient, never both.
-nssm install JSON_SCADA_opcuagoclient "C:\json-scada\bin\opcua-client.exe" 1 1
-nssm set JSON_SCADA_opcuagoclient AppStdout C:\json-scada\log\opcuagoclient.log
-nssm set JSON_SCADA_opcuagoclient AppRotateOnline 1
-nssm set JSON_SCADA_opcuagoclient AppRotateBytes 10000000
-nssm set JSON_SCADA_opcuagoclient Start SERVICE_DEMAND_START
+nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 1
 nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
