@@ -7,7 +7,9 @@ A generic PLC client driver for JSON-SCADA. Based on the Apache PLC4X/PLC4J proj
 
 **This driver registers in MongoDB as `protocolDriver: "PLC4X"`** — it is an alternative Java implementation of the same driver provided by the Go `plc4x-client`. It uses exactly the same MongoDB configuration (instances, connections, tags). IMPORTANT: only ONE of the two executables (Go `plc4x-client` or Java `plc4j-client`) may run for a given instance number — running both would make them dispute the active role and double-poll devices. To use both side by side, assign them distinct instance numbers.
 
-This driver intends to support the protocols provided by the PLC4J library: Modbus (TCP/RTU/ASCII), S7, ADS, OPC UA, KNXnet/IP, BACnet/IP, C-Bus, EtherNet/IP. The PLC4J drivers for S7 and EtherNet/IP are more mature than their Go counterparts. Only Modbus TCP was tested. Any help with testing other protocols is welcome.
+This driver is built on **Apache PLC4X 1.0.0** and supports the protocols provided by that release: Modbus (TCP/RTU/ASCII), S7 (including s7-light), ADS, OPC UA, KNXnet/IP, EtherNet/IP (and Logix), plus the `simulated` driver for testing. The PLC4J drivers for S7 and EtherNet/IP are more mature than their Go counterparts. Only Modbus TCP was tested with real equipment. Any help with testing other protocols is welcome.
+
+Note: BACnet/IP and C-Bus are **not** available here, as those two drivers were not published in the PLC4X 1.0.0 release (they stop at 0.13.1) and cannot be mixed into a 1.0.0 build. They can be re-enabled in `pom.xml` if a 1.0.x release includes them.
 
 Discovery and Subscription features are currently not supported by this driver.
 
@@ -82,7 +84,7 @@ Each instance for this driver can have many client connections defined that must
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 - _**autoCreateTags**_ [Boolean] - Allows to enable automatic creation of tags. **Mandatory parameter**.
-- _**endpointURLs**_ [Array of Strings] - Array of PLC4X formatted PLC URL addresses. When having redundant devices, configure multiple entries. The driver will try to connect with the first device, when disconnected it will switch to the next device in the list. Supported protocol prefixes: "modbus-tcp", "modbus-rtu", "modbus-ascii", "s7", "ads", "opcua", "knxnet-ip", "bacnet-ip", "c-bus", "eip", "simulated". See PLC4X docs for URL parameters. **Mandatory parameter**.
+- _**endpointURLs**_ [Array of Strings] - Array of PLC4X formatted PLC URL addresses. When having redundant devices, configure multiple entries. The driver will try to connect with the first device, when disconnected it will switch to the next device in the list. Supported protocol prefixes: "modbus-tcp", "modbus-rtu", "modbus-ascii", "s7", "s7-light", "ads", "opcua", "knxnet-ip", "eip", "logix", "simulated". See PLC4X docs for URL parameters. **Mandatory parameter**.
 - _**topics**_ [Array of Strings] - Array of PLC tag addresses to be scanned. The format is "TAG_NAME|PLC4X_ADDRESS|ENDIANNESS". A tag name can be provided for automatic creation of tags. See PLC4X docs for the address format. Endianness can be empty (default), LITTLE_ENDIAN, BIG_ENDIAN or REV_ENDIAN (reverse endianness). **Mandatory parameter**.
 - _**giInterval**_ [Double] - General station interrogation period in seconds (when absent or zero, 300s is assumed). **Optional parameter**.
 
@@ -90,6 +92,15 @@ Examples of topics to scan:
 
 - "MODBUS_PLC1_REG_1|holding-register:4:UINT|LITTLE_ENDIAN" - will scan the address 4 holding register, 16 bit unsigned int, little endian, tag will be autocreated as "MODBUS_PLC1_REG_1".
 - "MODBUS_PLC1_REG_20N|holding-register:20:INT[10]" - will scan 10 holding registers at address 20, as 16 bit int, default endianness, tags will be named MODBUS_PLC1_REG_20N[0] ... MODBUS_PLC1_REG_20N[9].
+- "MODBUS_PLC1_REG_20N|holding-register:20[0..9]:INT" - the same scan written in the PLC4X 1.0.0 array notation.
+
+### Array address notation
+
+PLC4X 1.0.0 changed the array notation: the element count that used to follow the data type became a range placed **before** it, so `holding-register:20:INT[10]` is now written `holding-register:20[0..9]:INT`.
+
+This driver accepts **both** forms. A legacy address is translated to the 1.0.0 form before it is sent to PLC4X, while the text you configured remains the tag identity in `realtimeData` (`protocolSourceObjectAddress`). So existing configurations - including those shared with the Go `plc4x-client`, which still uses the legacy notation - keep working unchanged, and the two executables stay interchangeable. The translation is logged at log level 1 or higher.
+
+Array elements are always mapped to tags by position: an address yielding N values produces `TAG[0]` ... `TAG[N-1]` with object addresses `ADDRESS[0]` ... `ADDRESS[N-1]`, regardless of the lower bound used in a range.
 
 Endianness semantics: PLC4X delivers values interpreted with the protocol default byte order (big-endian for Modbus). Use LITTLE_ENDIAN when the device stores little-endian words (bytes are swapped); REV_ENDIAN is an unconditional byte reversal; BIG_ENDIAN or empty keeps the value as delivered by PLC4X.
 

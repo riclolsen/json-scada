@@ -20,8 +20,8 @@ const ProtocolDriverInstance = mongoose.model(
       startMode: { type: String, default: 'auto' }, // auto | manual
       autoRestartOnConfigChange: { type: Boolean, default: true },
     },
-    // PLC4X only: 'plc4x' (Go, default) or 'plc4j' (Java) executable variant
-    processExecutableVariant: { type: String, default: '' },
+    // PLC4X only: 'plc4j' (Java) is the sole implementation offered
+    processExecutableVariant: { type: String, default: 'plc4j' },
   }),
   'protocolDriverInstances'
 )

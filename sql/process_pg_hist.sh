@@ -8,6 +8,8 @@ dbHost=${PGHOST:-"127.0.0.1"}
 dbPort=${PGPORT:-5432}
 dbName=${PGDATABASE:-"json_scada"}
 dbUser=${PGUSER:-"json_scada"}
+# lock file must live in a writable dir (the sql dir may be read-only in containers)
+lockFile=${LOCK_FILE:-"${TMPDIR:-/tmp}/process_pg_hist.exclusivelock"}
 # PGPASSWORD=${PGPASSWORD :-""}
 
 # cd ../sql
@@ -46,4 +48,4 @@ while [ 1 ]; do
 
 done
 
-) 9>process_pg_hist.exclusivelock
+) 9>"$lockFile"

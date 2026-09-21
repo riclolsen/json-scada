@@ -153,7 +153,7 @@
       icon: FileText,
       color: 'warning',
       route: '/log-viewer',
-      page: '/log-io',
+      page: '/log-viewer-ui',
       target: '_blank',
     },
     {

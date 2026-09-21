@@ -30,6 +30,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
 	"github.com/dscsystems/go-iec61850/server"
@@ -119,13 +121,13 @@ func NewGateway(conn *ServerConnection, built *BuiltModel) (*Gateway, error) {
 	// reads them.
 	g.srv = server.New(built.Model, opts...)
 	if n := fixReportIDs(built.Model); n > 0 {
-		Log(LogLevelDetailed, "Report identifiers set on %d report control block instance(s).", n)
+		jslog.Log(jslog.LevelDetailed, "Report identifiers set on %d report control block instance(s).", n)
 	}
 	g.srv.OnConnection(g.onConnection)
 
-	Log(LogLevelBasic, "IedServer created (max %d client connection(s), buffered report depth %d).",
+	jslog.Log(jslog.LevelBasic, "IedServer created (max %d client connection(s), buffered report depth %d).",
 		maxConns, int(conn.MaxQueueSize))
-	Log(LogLevelNoLog, "Bind address: %s%s", g.bindAddr, tlsSuffix(conn.UseSecurity))
+	jslog.Log(jslog.LevelNoLog, "Bind address: %s%s", g.bindAddr, tlsSuffix(conn.UseSecurity))
 	return g, nil
 }
 
@@ -181,18 +183,18 @@ func (g *Gateway) onConnection(ev server.ConnectionEvent) {
 	switch ev.State {
 	case server.ConnectionOpened:
 		g.openConns.Store(int32(ev.Open))
-		Log(LogLevelBasic, "IEC61850 client connected: %s", ev.Peer)
+		jslog.Log(jslog.LevelBasic, "IEC61850 client connected: %s", ev.Peer)
 		if !g.peerAllowed(ev.Peer) {
-			Log(LogLevelBasic, "Client %s not in allow-list, aborting connection.", ev.Peer)
+			jslog.Log(jslog.LevelBasic, "Client %s not in allow-list, aborting connection.", ev.Peer)
 			if ev.Conn != nil {
 				_ = ev.Conn.Close()
 			}
 		}
 	case server.ConnectionClosed:
 		g.openConns.Store(int32(ev.Open))
-		Log(LogLevelBasic, "IEC61850 client disconnected: %s", ev.Peer)
+		jslog.Log(jslog.LevelBasic, "IEC61850 client disconnected: %s", ev.Peer)
 	case server.ConnectionRefused:
-		Log(LogLevelBasic, "Client %s refused: %d connection(s) already open.", ev.Peer, ev.Open)
+		jslog.Log(jslog.LevelBasic, "Client %s refused: %d connection(s) already open.", ev.Peer, ev.Open)
 	}
 }
 
@@ -238,7 +240,7 @@ func (g *Gateway) Start() {
 		// Start is retried every second; do not repeat the message that often.
 		if now := time.Now(); now.Sub(g.lastBindErrLog) >= 30*time.Second {
 			g.lastBindErrLog = now
-			Log(LogLevelNoLog, "ERROR: failed to start MMS server on %s (port in use or insufficient "+
+			jslog.Log(jslog.LevelNoLog, "ERROR: failed to start MMS server on %s (port in use or insufficient "+
 				"privileges for port < 1024?): %v", g.bindAddr, err)
 		}
 		return
@@ -248,7 +250,7 @@ func (g *Gateway) Start() {
 	go func() {
 		_ = g.srv.Serve(ln)
 	}()
-	Log(LogLevelNoLog, "IEC 61850 MMS server STARTED on %s%s", g.bindAddr, tlsSuffix(g.useTLS))
+	jslog.Log(jslog.LevelNoLog, "IEC 61850 MMS server STARTED on %s%s", g.bindAddr, tlsSuffix(g.useTLS))
 }
 
 // Stop closes the listener and every open association.
@@ -259,7 +261,7 @@ func (g *Gateway) Stop() {
 	_ = g.srv.Close()
 	g.serving.Store(false)
 	g.openConns.Store(0)
-	Log(LogLevelNoLog, "IEC 61850 MMS server STOPPED.")
+	jslog.Log(jslog.LevelNoLog, "IEC 61850 MMS server STOPPED.")
 }
 
 // Serving reports whether the MMS server is accepting clients.

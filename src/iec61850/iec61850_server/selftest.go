@@ -32,10 +32,12 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
 )
 
 func runSelfTest(args []string) {
-	LogLevel = LogLevelDetailed
+	jslog.SetLevel(jslog.LevelDetailed)
 	port := 10102
 	if len(args) > 2 {
 		if p, err := strconv.Atoi(args[2]); err == nil {
@@ -49,7 +51,7 @@ func runSelfTest(args []string) {
 		}
 	}
 
-	Log(LogLevelNoLog, "=== IEC61850_SERVER SELF TEST (no MongoDB) ===")
+	jslog.Log(jslog.LevelNoLog, "=== IEC61850_SERVER SELF TEST (no MongoDB) ===")
 
 	conn := &ServerConnection{
 		ProtocolDriver:               ProtocolDriverName,
@@ -68,28 +70,28 @@ func runSelfTest(args []string) {
 	points := syntheticPoints()
 	if bulk > 0 {
 		points = append(points, bulkPoints(bulk)...)
-		Log(LogLevelNoLog, "Bulk points added: %d", bulk)
+		jslog.Log(jslog.LevelNoLog, "Bulk points added: %d", bulk)
 	}
-	Log(LogLevelNoLog, "Synthetic points: %d", len(points))
+	jslog.Log(jslog.LevelNoLog, "Synthetic points: %d", len(points))
 
 	built := BuildModel(points, conn)
 	exportManifest(built, conn)
 
 	gw, err := NewGateway(conn, built)
 	if err != nil {
-		Log(LogLevelNoLog, "SELF TEST: server FAILED to start: %v", err)
-		LogFlush()
+		jslog.Log(jslog.LevelNoLog, "SELF TEST: server FAILED to start: %v", err)
+		jslog.Flush()
 		os.Exit(-1)
 	}
 	installControlHandlers(gw)
 
 	gw.Start()
 	if !gw.Serving() {
-		Log(LogLevelNoLog, "SELF TEST: server FAILED to start.")
-		LogFlush()
+		jslog.Log(jslog.LevelNoLog, "SELF TEST: server FAILED to start.")
+		jslog.Flush()
 		os.Exit(-1)
 	}
-	Log(LogLevelNoLog, "SELF TEST: server RUNNING on %s - browse it with an IEC 61850 client.", gw.Addr())
+	jslog.Log(jslog.LevelNoLog, "SELF TEST: server RUNNING on %s - browse it with an IEC 61850 client.", gw.Addr())
 
 	applyInitialValues(gw, points)
 
@@ -120,14 +122,14 @@ func runSelfTest(args []string) {
 		}
 		time.Sleep(300 * time.Millisecond)
 	}
-	Log(LogLevelNoLog, "SELF TEST: updates applied without error. Server stays up until interrupted...")
+	jslog.Log(jslog.LevelNoLog, "SELF TEST: updates applied without error. Server stays up until interrupted...")
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 	<-sigs
 	gw.Stop()
-	Log(LogLevelNoLog, "SELF TEST: done.")
-	LogFlush()
+	jslog.Log(jslog.LevelNoLog, "SELF TEST: done.")
+	jslog.Flush()
 }
 
 // syntheticPoints covers every mapped class, plus a command of each kind.

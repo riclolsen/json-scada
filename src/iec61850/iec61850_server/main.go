@@ -29,6 +29,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmodel"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -46,9 +51,9 @@ func main() {
 	cfg, instNum := readConfigFile()
 	instanceNumber = instNum
 
-	cli, err := mongoConnect(cfg)
+	cli, _, err := jsmongo.ConnectAndPing(cfg)
 	if err != nil {
-		Fatal("Error connecting to MongoDB - %v", err)
+		jslog.Fatal("Error connecting to MongoDB - %v", err)
 	}
 	db := cli.Database(cfg.MongoDatabaseName)
 
@@ -61,7 +66,7 @@ func main() {
 	// The points to expose, and the model over them. Both are fixed for
 	// the life of the process: the model is static, as in the C# driver.
 	loadCtx, loadCancel := context.WithTimeout(ctx, 5*time.Minute)
-	points := selectPoints(loadCtx, db.Collection(RealtimeDataCollectionName), conn)
+	points := selectPoints(loadCtx, db.Collection(jsmongo.RealtimeDataCollectionName), conn)
 	loadCancel()
 
 	built := BuildModel(points, conn)
@@ -69,7 +74,7 @@ func main() {
 
 	gw, err := NewGateway(conn, built)
 	if err != nil {
-		Fatal("Error creating the MMS server - %v", err)
+		jslog.Fatal("Error creating the MMS server - %v", err)
 	}
 	installControlHandlers(gw)
 
@@ -88,10 +93,10 @@ func main() {
 	for {
 		select {
 		case <-sigs:
-			Log(LogLevelNoLog, "Shutdown requested...")
+			jslog.Log(jslog.LevelNoLog, "Shutdown requested...")
 			cancel()
 			gw.Stop()
-			LogFlush()
+			jslog.Flush()
 			os.Exit(0)
 
 		case <-ticker.C:
@@ -109,7 +114,7 @@ func main() {
 			}
 
 			if open := gw.OpenConnections(); open != lastOpen {
-				Log(LogLevelNoLog, "Open MMS connections: %d", open)
+				jslog.Log(jslog.LevelNoLog, "Open MMS connections: %d", open)
 				lastOpen = open
 			}
 		}
@@ -118,32 +123,32 @@ func main() {
 
 // loadInstance reads the driver instance document and validates it can run
 // on this node, with the same checks and messages as the C# driver.
-func loadInstance(db *mongo.Database, cfg JSONSCADAConfig) *ProtocolDriverInstance {
+func loadInstance(db *mongo.Database, cfg jsconfig.Config) *jsmodel.DriverInstance {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	cur, err := db.Collection(ProtocolDriverInstancesCollectionName).Find(ctx, bson.M{
+	cur, err := db.Collection(jsmongo.ProtocolDriverInstancesCollectionName).Find(ctx, bson.M{
 		"protocolDriver":               ProtocolDriverName,
 		"protocolDriverInstanceNumber": instanceNumber,
 	})
 	if err != nil {
-		Fatal("Error reading driver instances - %v", err)
+		jslog.Fatal("Error reading driver instances - %v", err)
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		Fatal("Error reading driver instances - %v", err)
+		jslog.Fatal("Error reading driver instances - %v", err)
 	}
 	if len(docs) == 0 {
-		Fatal("Driver instance [%d] not found in configuration!", instanceNumber)
+		jslog.Fatal("Driver instance [%d] not found in configuration!", instanceNumber)
 	}
 
 	// parity: the C# driver only ever looks at the first document.
-	inst := instanceFromDoc(docs[0])
+	inst := jsmodel.InstanceFromDoc(docs[0])
 	if !inst.Enabled {
-		Fatal("Driver instance [%d] disabled!", instanceNumber)
+		jslog.Fatal("Driver instance [%d] disabled!", instanceNumber)
 	}
-	if !nodeAllowed(inst, cfg.NodeName) {
-		Fatal("Node '%s' not found in instances configuration!", cfg.NodeName)
+	if !jsmodel.NodeAllowed(inst, cfg.NodeName) {
+		jslog.Fatal("Node '%s' not found in instances configuration!", cfg.NodeName)
 	}
 	return inst
 }
@@ -155,26 +160,26 @@ func loadConnection(db *mongo.Database) *ServerConnection {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	cur, err := db.Collection(ProtocolConnectionsCollectionName).Find(ctx, bson.M{
+	cur, err := db.Collection(jsmongo.ProtocolConnectionsCollectionName).Find(ctx, bson.M{
 		"protocolDriver":               ProtocolDriverName,
 		"protocolDriverInstanceNumber": instanceNumber,
 		"enabled":                      true,
 	})
 	if err != nil {
-		Fatal("Error reading protocol connections - %v", err)
+		jslog.Fatal("Error reading protocol connections - %v", err)
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		Fatal("Error reading protocol connections - %v", err)
+		jslog.Fatal("Error reading protocol connections - %v", err)
 	}
 	if len(docs) == 0 {
-		Fatal("No enabled connection found for this instance!")
+		jslog.Fatal("No enabled connection found for this instance!")
 	}
 
 	conn := connectionFromDoc(docs[0])
 	if len(docs) > 1 {
-		Log(LogLevelNoLog, "WARNING: more than one connection for this instance, using the first: %s", conn.Name)
+		jslog.Log(jslog.LevelNoLog, "WARNING: more than one connection for this instance, using the first: %s", conn.Name)
 	}
-	Log(LogLevelNoLog, "Connection: %s [%d]", conn.Name, conn.ProtocolConnectionNumber)
+	jslog.Log(jslog.LevelNoLog, "Connection: %s [%d]", conn.Name, conn.ProtocolConnectionNumber)
 	return conn
 }

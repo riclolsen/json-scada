@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.64"
-!define VERSION_ "0.64.0.0"
+!define VERSION "v.0.65"
+!define VERSION_ "0.65.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -140,7 +140,7 @@ SetRegView 64
   nsExec::Exec 'net stop JSON_SCADA_iccpclient'
   nsExec::Exec 'net stop JSON_SCADA_iccpserver'
   nsExec::Exec 'net stop JSON_SCADA_iec61850client'
-  nsExec::Exec 'net stop JSON_SCADA_plctags'
+  ; nsExec::Exec 'net stop JSON_SCADA_plctags'
   nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
   nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
   nsExec::Exec 'net stop JSON_SCADA_opcdaclient' 
@@ -344,7 +344,10 @@ SetRegView 64
   File /a /r "..\platform-windows\mongodb-conf\*.*"
 
   SetOutPath $INSTDIR\platform-windows\postgresql-runtime
-  File /a /r /x *.pdb "..\platform-windows\postgresql-runtime\*.*"
+  File /a /r /x *.pdb /x "pgAdmin 4" "..\platform-windows\postgresql-runtime\*.*"
+
+  SetOutPath $INSTDIR\platform-windows\dbx-runtime
+  File /a /r "..\platform-windows\dbx-runtime\*.*"
 
   SetOutPath $INSTDIR\sql
   File /a "..\sql\*.bat"
@@ -604,7 +607,8 @@ SetRegView 64
   
   CreateShortCut "$DESKTOP\JSON-SCADA\Excel Config Spreadsheet.lnk"       "$INSTDIR\conf\json-scada-config.xlsm"
   CreateShortCut "$DESKTOP\JSON-SCADA\Compass (Mongodb GUI Client).lnk"   "$INSTDIR\platform-windows\mongodb-compass-runtime\MongoDBCompass.exe"
-  CreateShortCut "$DESKTOP\JSON-SCADA\pgAdmin4 (Postgres GUI Client).lnk" "$INSTDIR\platform-windows\postgresql-runtime\pgAdmin 4\runtime\pgAdmin4.exe"
+  ;CreateShortCut "$DESKTOP\JSON-SCADA\pgAdmin4 (Postgres GUI Client).lnk" "$INSTDIR\platform-windows\postgresql-runtime\pgAdmin 4\runtime\pgAdmin4.exe"
+  CreateShortCut "$DESKTOP\JSON-SCADA\DBX (DB GUI Client).lnk"      "$INSTDIR\platform-windows\dbx-runtime\dbX.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Inkscape SAGE (SVG Editor).lnk"     "$INSTDIR\platform-windows\inkscape-runtime\bin\inkscape.exe"
   CreateShortCut "$DESKTOP\JSON-SCADA\Uninstall.lnk"                      "$INSTDIR\bt-uninst.exe"
 
@@ -700,10 +704,10 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_i104m"`
   ClearErrors
 
-  ExecWait `"${SC}" stop "JSON_SCADA_plctags"`
-  Sleep 50
-  ExecWait `"${SC}" delete "JSON_SCADA_plctags"`
-  ClearErrors
+  ; ExecWait `"${SC}" stop "JSON_SCADA_plctags"`
+  ; Sleep 50
+  ; ExecWait `"${SC}" delete "JSON_SCADA_plctags"`
+  ; ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_iec101client"`
   Sleep 50

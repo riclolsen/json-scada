@@ -17,50 +17,50 @@ cd %JSPATH%
 mkdir bin
 mkdir bin_alt
 
-copy %SRCPATH%\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll %BINPATH% /y
+rem copy %SRCPATH%\dnp3\Dnp3Client\Dependencies\OpenSSL\*.dll %BINALTPATH% /y
 
 set DOTNET_CLI_TELEMETRY_OPTOUT=1
 
-cd %SRCPATH%\libiec61850
-rmdir build /S /Q
-mkdir build
-cd build	
-rem Run the line below to create solution file for Visual Studio 2022/2026
-cmake .. -A x64 -DCMAKE_SUPPRESS_REGENERATION=ON -DBUILD_EXAMPLES=OFF
-msbuild libiec61850.sln /p:Configuration=Release
-msbuild libiec61850.slnx /p:Configuration=Release
+rem cd %SRCPATH%\libiec61850
+rem rmdir build /S /Q
+rem mkdir build
+rem cd build	
+rem rem Run the line below to create solution file for Visual Studio 2022/2026
+rem cmake .. -A x64 -DCMAKE_SUPPRESS_REGENERATION=ON -DBUILD_EXAMPLES=OFF
+rem msbuild libiec61850.sln /p:Configuration=Release
+rem msbuild libiec61850.slnx /p:Configuration=Release
 
-copy %SRCPATH%\libiec61850\build\src\Release\iec61850.dll %BINPATH%
+rem copy %SRCPATH%\libiec61850\build\src\Release\iec61850.dll %BINPATHrem %
 
-cd %SRCPATH%\libiec61850\dotnet\core\2.0\
-dotnet publish --no-self-contained --runtime win-x64 -c Release -o %BINALTPATH% IEC61850.NET.core.2.0 
+rem cd %SRCPATH%\libiec61850\dotnet\core\2.0\
+rem dotnet publish --no-self-contained --runtime win-x64 -c Release -o %BINALTPATH% IEC61850.NET.core.2.0 
 
-cd %SRCPATH%\iec61850_client
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -p:Platform="Any CPU" -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\iec61850_client
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -p:Platform="Any CPU" -c Release -o %BINALTPATH%
 
-cd %SRCPATH%\iec61850_server
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -p:Platform="Any CPU" -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\iec61850_server
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -p:Platform="Any CPU" -c Release -o %BINALTPATH%
 
 rem IEC 60870-5-101/104 drivers are now built in Go (src\iec60870-5), see the Go section below.
-cd %SRCPATH%\lib60870.netcore\lib60870.netcore\lib60870\
-dotnet build --no-self-contained --runtime win-x64 -c Release
-dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINALTPATH%
-cd %SRCPATH%\lib60870.netcore\iec101client\
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
-cd %SRCPATH%\lib60870.netcore\iec101server\
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
-cd %SRCPATH%\lib60870.netcore\iec104client\ 
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
-cd %SRCPATH%\lib60870.netcore\iec104server\ 
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\lib60870.netcore\lib60870.netcore\lib60870\
+rem dotnet build --no-self-contained --runtime win-x64 -c Release
+rem dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\lib60870.netcore\iec101client\
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\lib60870.netcore\iec101server\
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\lib60870.netcore\iec104client\ 
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
+rem cd %SRCPATH%\lib60870.netcore\iec104server\ 
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH%
 
-cd %SRCPATH%\dnp3\Dnp3Client\
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH% Dnp3Client.csproj
+rem cd %SRCPATH%\dnp3\Dnp3Client\
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH% Dnp3Client.csproj
 
 rem cd %SRCPATH%\libplctag\libplctag.NET\src\libplctag
 rem dotnet build --no-self-contained --runtime win-x64 -c Release -o %BINPATH%
-cd %SRCPATH%\libplctag\PLCTagsClient
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% PLCTagsClient.csproj
+rem cd %SRCPATH%\libplctag\PLCTagsClient
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINALTPATH% PLCTagsClient.csproj
 
 rem cd %SRCPATH%\logrotate\  
 rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -o %BINPATH% logrotate.csproj
@@ -75,30 +75,31 @@ dotnet publish --no-self-contained -p:PublishReadyToRun=true -f net8.0-windows -
 
 cd %SRCPATH%\OPC-DA-Server\
 rmdir bin /S /Q
+rem msbuild %SRCPATH%\ClassicServerSolutions\src\Technosoftware\Server\ClassicServer\OpcNetDaAeServer.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SolutionDir=%SRCPATH%\ClassicServerSolutions\
 nuget restore OPC-DA-Server.sln
 msbuild OPC-DA-Server.sln /p:Configuration=Release /p:Platform=x64
 mkdir %BINPATH%\OPC-DA_Server
 copy /Y bin\x64\Release\*.* %BINPATH%\OPC-DA_Server\
 
-cd %SRCPATH%\OPC-UA-Client\  
-rmdir obj /S /Q
-rmdir bin /S /Q
-dotnet restore -p:Platform="Any CPU"
-dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -p:Platform="Any CPU" -o %BINPATH% OPC-UA-Client.csproj
+rem cd %SRCPATH%\OPC-UA-Client\  
+rem rmdir obj /S /Q
+rem rmdir bin /S /Q
+rem dotnet restore -p:Platform="Any CPU"
+rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -p:Platform="Any CPU" -o %BINALTPATH% OPC-UA-Client.csproj
 
 rem C++ DNP3 client driver. Its native dependencies - OpenSSL, opendnp3 and
 rem mongo-cxx-driver - are a one-time build: run src\dnp3\build-windows-deps.bat
 rem once. This section is skipped while those dependencies are absent, so
 rem build.bat keeps working on machines that have not set them up.
 rem Pass "server" to build-windows.bat below to build Dnp3Server as well.
-cd %SRCPATH%\dnp3
-if exist opendnp3\build\cpp\lib\Release\opendnp3.lib (
-  call build-windows.bat
-) else (
-  echo run src\dnp3\build-windows-deps.bat first.
-   call build-windows-deps.bat
-   call build-windows.bat
-)
+rem cd %SRCPATH%\dnp3
+rem if exist opendnp3\build\cpp\lib\Release\opendnp3.lib (
+rem   call build-windows.bat
+rem ) else (
+rem   echo run src\dnp3\build-windows-deps.bat first.
+rem    call build-windows-deps.bat
+rem    call build-windows.bat
+rem )
 
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
@@ -110,15 +111,33 @@ go mod tidy
 go build -ldflags="-s -w"
 copy /Y calculations.exe %BINPATH%
 
-cd %SRCPATH%\i104m
+cd %SRCPATH%\dnp3-go
 go mod tidy
-go build -ldflags="-s -w"
-copy /Y i104m.exe %BINPATH%
+go build -ldflags="-s -w" -o %BINPATH%\dnp3-client.exe .\cmd\dnp3client
+go build -ldflags="-s -w" -o %BINPATH%\dnp3-server.exe .\cmd\dnp3server
 
-cd %SRCPATH%\plc4x-client
+rem cd %SRCPATH%\i104m
+rem go mod tidy
+rem go build -ldflags="-s -w"
+rem copy /Y i104m.exe %BINALTPATH%
+
+rem cd %SRCPATH%\plc4x-client
+rem go mod tidy
+rem go build -ldflags="-s -w"
+rem copy /Y plc4x-client.exe %BINALTPATH%
+
+cd %SRCPATH%\OPC-UA-Client-Go
 go mod tidy
 go build -ldflags="-s -w"
-copy /Y plc4x-client.exe %BINPATH%
+copy /Y opcua-client.exe %BINPATH%
+
+rem Go implementation of the DNP3 client and server drivers, drop-in
+rem replacements for the C++ Dnp3ClientCpp and Dnp3Server. These need no
+rem opendnp3, mongo-cxx-driver or OpenSSL build.
+cd %SRCPATH%\dnp3-go
+go mod tidy
+go build -ldflags="-s -w" -o %BINPATH%\dnp3-client.exe .\cmd\dnp3client
+go build -ldflags="-s -w" -o %BINPATH%\dnp3-server.exe .\cmd\dnp3server
 
 cd %SRCPATH%\iec60870-5
 go mod tidy

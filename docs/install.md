@@ -10,8 +10,6 @@
 
 * Linux ARM 32 bits (only for protocol drivers). MongoDB does not support any 32 bit OS.
 
-* Mac OSX (x64 Intel or M1).
-
 * If using VirtualBox, configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
 
 * MongoDB requires AVX instructions on x86 CPU.

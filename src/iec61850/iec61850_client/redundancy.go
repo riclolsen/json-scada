@@ -24,133 +24,42 @@ package main
 
 import (
 	"context"
-	"math/rand"
-	"time"
+
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jsstats"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-const countKeepAliveUpdatesLimit = 4
+// redundancy is the arbitrator.
+//
+// parity: this driver gates BOTH axes. Command execution consults Active(),
+// and connectionLoop polls it to keep protocol sessions stopped on standby —
+// which is why no OnActivate/OnDeactivate is supplied: the sessions poll the
+// flag themselves rather than being driven by callbacks, exactly as before.
+var redundancy = &jsredundancy.Controller{}
 
-// redundancyLoop arbitrates the active node and publishes per-connection
-// statistics while active.
-func redundancyLoop(ctx context.Context, cfg JSONSCADAConfig, conns []*Iec61850Connection) {
-	for ctx.Err() == nil {
-		cli, err := mongoConnect(cfg)
-		if err != nil {
-			Log(LogLevelNoLog, "Exception Mongo")
-			Log(LogLevelNoLog, "%v", err)
-			time.Sleep(3 * time.Second)
-			continue
-		}
-		db := cli.Database(cfg.MongoDatabaseName)
-		if err := redundancyCycle(ctx, db, cfg, conns); err != nil && ctx.Err() == nil {
-			Log(LogLevelNoLog, "Exception Mongo")
-			Log(LogLevelNoLog, "%v", err)
-			time.Sleep(3 * time.Second)
-		}
-		_ = cli.Disconnect(context.Background())
-	}
-}
-
-func redundancyCycle(ctx context.Context, db *mongo.Database, cfg JSONSCADAConfig, conns []*Iec61850Connection) error {
-	var lastActiveNodeKeepAliveTimeTag time.Time
-	countKeepAliveUpdates := 0
-
-	collInsts := db.Collection(ProtocolDriverInstancesCollectionName)
-	collConns := db.Collection(ProtocolConnectionsCollectionName)
-
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		if err := mongoPing(db, 1*time.Second); err != nil {
-			return err
-		}
-
-		findCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		var doc bson.M
-		err := collInsts.FindOne(findCtx, bson.M{
-			"protocolDriver":               ProtocolDriverName,
-			"protocolDriverInstanceNumber": instanceNumber,
-		}).Decode(&doc)
-		cancel()
-
-		if err != nil {
-			if active.Load() {
-				Log(LogLevelNoLog, "Redundancy - DEACTIVATING this Node (no instance found)!")
-				countKeepAliveUpdates = 0
-				time.Sleep(time.Duration(1000+rand.Intn(4000)) * time.Millisecond)
-			}
-			active.Store(false)
-		} else {
-			inst := instanceFromDoc(doc)
-			if !nodeAllowed(inst, cfg.NodeName) {
-				Fatal("Node '%s' not found in instances configuration!", cfg.NodeName)
-			}
-
-			if inst.ActiveNodeName == cfg.NodeName {
-				if !active.Load() {
-					Log(LogLevelNoLog, "Redundancy - ACTIVATING this Node!")
-				}
-				active.Store(true)
-				countKeepAliveUpdates = 0
-			} else {
-				if active.Load() {
-					Log(LogLevelNoLog, "Redundancy - DEACTIVATING this Node (other node active)!")
-					countKeepAliveUpdates = 0
-					time.Sleep(time.Duration(1000+rand.Intn(4000)) * time.Millisecond)
-				}
-				active.Store(false)
-				if lastActiveNodeKeepAliveTimeTag.Equal(inst.ActiveNodeKeepAliveTimeTag) {
-					countKeepAliveUpdates++
-				}
-				lastActiveNodeKeepAliveTimeTag = inst.ActiveNodeKeepAliveTimeTag
-				if countKeepAliveUpdates > countKeepAliveUpdatesLimit {
-					Log(LogLevelNoLog, "Redundancy - ACTIVATING this Node!")
-					active.Store(true)
-				}
-			}
-
-			if active.Load() {
-				Log(LogLevelNoLog, "Redundancy - This node is active.")
-				updCtx, cancelUpd := context.WithTimeout(ctx, 10*time.Second)
-				_, err := collInsts.UpdateOne(updCtx,
-					bson.M{
-						"protocolDriver":               ProtocolDriverName,
-						"protocolDriverInstanceNumber": instanceNumber,
-					},
-					bson.M{"$set": bson.M{
-						"activeNodeName":             cfg.NodeName,
-						"activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now()),
-					}})
-				if err != nil {
-					Log(LogLevelDetailed, "Redundancy - %v", err)
-				}
-				updateConnectionStats(updCtx, collConns, cfg, conns)
-				cancelUpd()
-			} else {
-				if inst.ActiveNodeName != "" {
-					Log(LogLevelNoLog, "Redundancy - This node is INACTIVE! Node '%s' is active, wait...", inst.ActiveNodeName)
-				} else {
-					Log(LogLevelNoLog, "Redundancy - This node is INACTIVE! No node is active, wait...")
-				}
-			}
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(5 * time.Second):
-		}
+// initRedundancy configures the arbitrator. Called from main before any
+// goroutine that consults it starts.
+func initRedundancy(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850Connection) {
+	redundancy.Config = cfg
+	redundancy.DriverName = ProtocolDriverName
+	redundancy.InstanceNumber = instanceNumber
+	redundancy.OnTick = func(db *mongo.Database) {
+		updateConnectionStats(ctx,
+			db.Collection(jsmongo.ProtocolConnectionsCollectionName), cfg, conns)
 	}
 }
 
 // updateConnectionStats publishes the last seen buffered-report EntryIDs
 // and a heartbeat on each connection document. The EntryIDs are read back
 // at startup so buffered reports resume where they stopped.
-func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg JSONSCADAConfig, conns []*Iec61850Connection) {
+func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg jsconfig.Config, conns []*Iec61850Connection) {
+	var entries []jsstats.Entry
 	for _, conn := range conns {
 		if conn.Client() == nil {
 			continue
@@ -159,17 +68,15 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 		for k, v := range conn.SnapshotReportIDs() {
 			ids[k] = bson.Binary{Subtype: 0, Data: v}
 		}
-		_, err := collConns.UpdateOne(ctx,
-			bson.M{"protocolConnectionNumber": conn.ProtocolConnectionNumber},
-			bson.M{"$set": bson.M{
-				"lastReportIds": ids,
-				"stats": bson.M{
-					"nodeName": cfg.NodeName,
-					"timeTag":  bson.NewDateTimeFromTime(time.Now()),
-				},
-			}})
-		if err != nil {
-			Log(LogLevelDetailed, "Redundancy - stats update: %v", err)
-		}
+		entries = append(entries, jsstats.Entry{
+			ConnectionNumber: conn.ProtocolConnectionNumber,
+			Extra:            bson.M{"lastReportIds": ids},
+		})
 	}
+	jsstats.Writer{
+		NodeName: cfg.NodeName,
+		OnError: func(_ jsstats.Entry, err error) {
+			jslog.Log(jslog.LevelDetailed, "Redundancy - stats update: %v", err)
+		},
+	}.Write(ctx, collConns, entries)
 }

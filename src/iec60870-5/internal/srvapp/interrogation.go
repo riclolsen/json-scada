@@ -31,9 +31,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"iec60870-5/internal/conv"
-	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
-	"iec60870-5/internal/mongoutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 func formatValue(v float64) string {
@@ -65,7 +66,7 @@ func destASDUToBase(a int) int {
 func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, qoi asdu.QualifierOfInterrogation) {
 	conName := srv.Cfg.Name + " - "
 	q := int(qoi)
-	jscfg.Logf(jscfg.LogLevelBasic, "%s[%d] Group interrogation BEGIN", conName, q)
+	jslog.Log(jslog.LevelBasic, "%s[%d] Group interrogation BEGIN", conName, q)
 
 	// for QOI 20 (general interrogation) filter by all in destination
 	// connection but those marked with group -1; for other groups filter
@@ -86,16 +87,16 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	cur, err := e.DB().Collection(mongoutil.RealtimeDataCollectionName).Find(ctx, filter)
+	cur, err := e.DB().Collection(jsmongo.RealtimeDataCollectionName).Find(ctx, filter)
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, "Exception on Interrogation: "+err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", "Exception on Interrogation: "+err.Error())
 		pack.Coa.IsNegative = true
 		_ = pack.SendReplyMirror(replyTo, asdu.ActivationCon) // negative confirm
 		return
 	}
 	var list []model.RtDataPoint
 	if err := cur.All(ctx, &list); err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, "Exception on Interrogation: "+err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", "Exception on Interrogation: "+err.Error())
 		pack.Coa.IsNegative = true
 		_ = pack.SendReplyMirror(replyTo, asdu.ActivationCon)
 		return
@@ -124,7 +125,7 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 		return di.ASDU < dj.ASDU
 	})
 
-	jscfg.Logf(jscfg.LogLevelBasic, "%s[%d] Group request, %d objects to send.", conName, q, len(list))
+	jslog.Log(jslog.LevelBasic, "%s[%d] Group request, %d objects to send.", conName, q, len(list))
 	_ = pack.SendReplyMirror(replyTo, asdu.ActivationCon) // confirm positive
 
 	coa := asdu.CauseOfTransmission{Cause: asdu.Cause(q)}
@@ -136,17 +137,17 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 		if len(batch) == 0 {
 			return
 		}
-		jscfg.Logf(jscfg.LogLevelBasic, "%s[%d] Send ASDU TI:%d CA:%d with %d objects.",
+		jslog.Log(jslog.LevelBasic, "%s[%d] Send ASDU TI:%d CA:%d with %d objects.",
 			conName, q, lastType, lastCa, len(batch))
 		if err := conv.SendInfoBatch(replyTo, coa, asdu.CommonAddr(lastCa), lastType, batch); err != nil {
-			jscfg.Logf(jscfg.LogLevelBasic, "%s[%d] Error sending ASDU: %s", conName, q, err.Error())
+			jslog.Log(jslog.LevelBasic, "%s[%d] Error sending ASDU: %s", conName, q, err.Error())
 		}
 		batch = nil
 	}
 
 	for i := range list {
 		entry := &list[i]
-		jscfg.Logf(jscfg.LogLevelDetailed, "%s[%d] %s %s Key %v", conName, q, entry.Tag, formatValue(entry.Value), entry.ID)
+		jslog.Log(jslog.LevelDetailed, "%s[%d] %s %s Key %v", conName, q, entry.Tag, formatValue(entry.Value), entry.ID)
 		for _, dst := range entry.ProtocolDestinations {
 			if int(dst.ConnectionNumber) != int(srv.Cfg.ProtocolConnectionNumber) {
 				continue
@@ -181,5 +182,5 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 	}
 	flush()
 	_ = pack.SendReplyMirror(replyTo, asdu.ActivationTerm)
-	jscfg.Logf(jscfg.LogLevelBasic, "%s[%d] Group interrogation END", conName, q)
+	jslog.Log(jslog.LevelBasic, "%s[%d] Group interrogation END", conName, q)
 }

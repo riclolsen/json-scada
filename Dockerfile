@@ -12,6 +12,10 @@ LABEL description="Multi-service container with Node.js, .NET, Go, PostgreSQL/Ti
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
+# Target architecture (amd64, arm64), set automatically by BuildKit/buildx.
+# Falls back to the build host architecture on the legacy builder.
+ARG TARGETARCH
+
 # ==============================================================================
 # BASE SYSTEM PACKAGES AND BUILD TOOLS
 # ==============================================================================
@@ -50,9 +54,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && npm install -g npm@latest \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify Node.js installation
-RUN node --version && npm --version
-
 # ==============================================================================
 # .NET SDK 8
 # ==============================================================================
@@ -63,23 +64,18 @@ RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-p
     && apt install -y dotnet-sdk-8.0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify .NET installation
-RUN dotnet --version
-
 # ==============================================================================
 # GOLANG
 # ==============================================================================
-ENV GO_VERSION=1.27.0
-RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
-    && rm go${GO_VERSION}.linux-amd64.tar.gz
+ENV GO_VERSION=1.27.1
+RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} \
+    && wget https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz \
+    && tar -C /usr/local -xzf go${GO_VERSION}.linux-${ARCH}.tar.gz \
+    && rm go${GO_VERSION}.linux-${ARCH}.tar.gz
 
 ENV PATH=$PATH:/usr/local/go/bin
 ENV GOPATH=/go
 ENV PATH=$PATH:$GOPATH/bin
-
-# Verify Go installation
-RUN go version
 
 # ==============================================================================
 # POSTGRESQL (Latest Stable/18) with TIMESCALEDB
@@ -130,7 +126,7 @@ RUN mkdir -p /etc/apt/keyrings/ \
 # METABASE
 # ==============================================================================
 RUN mkdir -p /app/json-scada/metabase/ \
-    && wget --inet4-only https://downloads.metabase.com/v0.63.2/metabase.jar -O /app/json-scada/metabase/metabase.jar \
+    && wget --inet4-only https://downloads.metabase.com/v0.63.17.x/metabase.jar -O /app/json-scada/metabase/metabase.jar \
     && chmod +x /app/json-scada/metabase/metabase.jar 
 
 # ==============================================================================
@@ -171,6 +167,14 @@ COPY ./src/ /app/json-scada/src/
 COPY ./svg/ /app/json-scada/svg/
 RUN chmod o+w -R /app/json-scada/svg
 
+# src/svgedit is a git submodule: a checkout made without --recursive leaves it
+# empty and its build below would only fail late, so refuse the build here with
+# an actionable message instead of shipping an image without the SVG editor.
+RUN test -f /app/json-scada/src/svgedit/package.json || ( \
+      echo "ERROR: src/svgedit is empty (git submodule not initialized)." >&2; \
+      echo "       Run 'git submodule update --init --recursive' and build again." >&2; \
+      exit 1 )
+
 # Set environment for builds
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV NODE_OPTIONS=--max-old-space-size=10000
@@ -199,11 +203,11 @@ WORKDIR /app/json-scada
 #RUN cd src/lib60870.netcore/iec104server/ && rm -rf obj bin
 #RUN cd src/lib60870.netcore/lib60870.netcore/ && rm -rf obj bin
 
-# Build OPC-UA Client
-RUN cd src/OPC-UA-Client/ && \
-    rm -rf obj bin && dotnet clean && \
-    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /app/json-scada/bin/ && \
-    rm -rf obj bin
+## Build OPC-UA Client
+#RUN cd src/OPC-UA-Client/ && \
+#    rm -rf obj bin && dotnet clean && \
+#    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /app/json-scada/bin/ && \
+#    rm -rf obj bin
 
 ## Build libiec61850 (C library)
 #RUN cd src/libiec61850 && \
@@ -227,35 +231,35 @@ RUN cd src/OPC-UA-Client/ && \
 #RUN cd src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ && rm -rf obj bin || true
 #RUN cd src/libiec61850 && rm -rf .install || true
 
-# Build mongo-cxx-driver
-RUN cd src/mongo-cxx-driver/mongo-cxx-driver && \
-    rm -rf build && \
-    mkdir -p build && \
-    cd build && \
-    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake || true && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF && \
-    cmake --build . --config Release && \
-    cmake --build . --target install --config Release || true
+## Build mongo-cxx-driver
+#RUN cd src/mongo-cxx-driver/mongo-cxx-driver && \
+#    rm -rf build && \
+#    mkdir -p build && \
+#    cd build && \
+#    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake || true && \
+#    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF && \
+#    cmake --build . --config Release && \
+#    cmake --build . --target install --config Release || true#
 
-# Build OpenDNP3
-RUN cd src/dnp3/opendnp3 && \
-    rm -rf build && \
-    mkdir -p build && \
-    cd build && \
-    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && \
-    make && \
-    cp cpp/lib/libopendnp3.so /app/json-scada/bin/ || true
+## Build OpenDNP3
+#RUN cd src/dnp3/opendnp3 && \
+#    rm -rf build && \
+#    mkdir -p build && \
+#    cd build && \
+#    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && \
+#    make && \
+#    cp cpp/lib/libopendnp3.so /app/json-scada/bin/ || true
 
-# Build DNP3 Server
-RUN cd src/dnp3/Dnp3Server/ && \
-    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt || true && \
-    sed -i '/sasl2/a  snappy' ./CMakeLists.txt || true && \
-    rm -rf build && \
-    mkdir -p build && \
-    cd build && \
-    cmake .. && \
-    make && \
-    cp Dnp3Server /app/json-scada/bin/ || true
+## Build DNP3 Server
+#RUN cd src/dnp3/Dnp3Server/ && \
+#    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt || true && \
+#    sed -i '/sasl2/a  snappy' ./CMakeLists.txt || true && \
+#    rm -rf build && \
+#    mkdir -p build && \
+#    cd build && \
+#    cmake .. && \
+#    make && \
+#    cp Dnp3Server /app/json-scada/bin/ || true
 
 # ==============================================================================
 # BUILD GO PROJECTS
@@ -266,39 +270,65 @@ RUN apt update && apt install -y libpcap-dev && rm -rf /var/lib/apt/lists/*
 # Build calculations
 RUN cd src/calculations/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" && \
-    cp calculations /app/json-scada/bin/
+    go build -ldflags="-s -w" -o /app/json-scada/bin/calculations
 
-# Build i104m
-RUN cd src/i104m/ && \
+# Build cs_data_processor in Go
+RUN cd src/cs_data_processor-go/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" && \
-    cp i104m /app/json-scada/bin/
+    go build -ldflags="-s -w" -o /app/json-scada/bin/cs_data_processor
 
-# Build plc4x-client
-RUN cd src/plc4x-client/ && \
-    go mod tidy && \
-    CGO_ENABLED=1 go build -ldflags="-s -w" && \
-    cp plc4x-client /app/json-scada/bin/ || true
+## Build i104m
+#RUN cd src/i104m/ && \
+#    go mod tidy && \
+#    go build -ldflags="-s -w" && \
+#    cp i104m /app/json-scada/bin/
+
+## Build plc4x-client
+#RUN cd src/plc4x-client/ && \
+#    go mod tidy && \
+#    CGO_ENABLED=1 go build -ldflags="-s -w" && \
+#    cp plc4x-client /app/json-scada/bin/ || true
 
 # Build IEC 60870-5 drivers
-RUN cd src/iec60870-5 \
-    go mod tidy \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104client.exe .\cmd\iec104client \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104server.exe .\cmd\iec104server \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101client.exe .\cmd\iec101client \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101server.exe .\cmd\iec101server \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec103client.exe .\cmd\iec103client
+RUN cd src/iec60870-5 && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104client ./cmd/iec104client && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec104server ./cmd/iec104server && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101client ./cmd/iec101client && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec101server ./cmd/iec101server && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec103client ./cmd/iec103client
 
 # Build the IEC61850 client in Go
 RUN cd src/iec61850/iec61850_client/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850-client
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850_client
 
 # Build the IEC61850 server in Go
 RUN cd src/iec61850/iec61850_server/ && \
     go mod tidy && \
-    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850-server
+    go build -ldflags="-s -w" -o /app/json-scada/bin/iec61850_server
+
+# Build OPC-UA client in Go
+RUN cd src/OPC-UA-Client-Go/ && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/opcua-client
+
+# Build DNP3 client and server in Go
+RUN cd src/dnp3-go && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
+
+# Copy ICCP client and server to bin
+RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} && \
+    cd src/iccp/iccp-server && \
+    cp iccp-server-linux-${ARCH} /app/json-scada/bin/iccp-server && \
+    chmod +x /app/json-scada/bin/iccp-server
+
+RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} && \
+    cd src/iccp/iccp-client && \
+    cp iccp-client-linux-${ARCH} /app/json-scada/bin/iccp-client && \
+    chmod +x /app/json-scada/bin/iccp-client
 
 # PLC4J client (Java)
 RUN cd src/plc4j-client && \
@@ -332,17 +362,30 @@ RUN cd src/cs_data_processor && npm install \
     && cd ../mqtt-sparkplug && npm install \
     && cd ../mcp-json-scada-db && npm install && npm run build \
     && cd ../AdminUI && npm install && npm run build && rm -rf node_modules \
-    && cd ../svgedit && npm install && npm run build && rm -rf node_modules \
+    && cd ../svgedit && npm install && npm run build \
+    && test -f dist/editor/index.html && rm -rf node_modules \
     && cd ../custom-developments/basic_bargraph \
     && npm install \
     && npx astro telemetry disable \
-    && npm run build && rm -rf node_modules || true \
-    && cd ../../custom-developments/advanced_dashboard \
+    && npm run build && test -f dist/index.html && rm -rf node_modules \
+    && cd ../advanced_dashboard \
     && npm install \
-    && npm run build && rm -rf node_modules || true \
-    && cd ../../custom-developments/transformer_with_command \
+    && npm run build && test -f dist/index.html && rm -rf node_modules \
+    && cd ../transformer_with_command \
     && npm install \
-    && npm run build && rm -rf node_modules || true
+    && npm run build && test -f dist/index.html && rm -rf node_modules
+
+# ==============================================================================
+# NODE-RED RUNTIME (optional)
+# ==============================================================================
+# Local Node-RED plus the JSON-SCADA palette, installed where the nodered_runtime
+# supervisor program expects them. The program is autostart=false: start it from
+# supervisorctl when the container should host its own Node-RED. The NODE-RED
+# protocol driver (nodered_driver) works against a remote Node-RED as well.
+RUN mkdir -p /app/json-scada/nodered-runtime \
+    && npm install --prefix /app/json-scada/nodered-runtime \
+       node-red node-red-contrib-jsonscada \
+    && test -f /app/json-scada/nodered-runtime/node_modules/node-red/red.js
 
 # ==============================================================================
 # DATABASE INITIALIZATION AND CONFIGURATION
@@ -373,11 +416,15 @@ COPY ./platform-ubuntu-2404/iec104server.ini /etc/supervisor/conf.d/iec104server
 COPY ./platform-ubuntu-2404/iec101client.ini /etc/supervisor/conf.d/iec101client.ini
 COPY ./platform-ubuntu-2404/iec101server.ini /etc/supervisor/conf.d/iec101server.ini
 COPY ./platform-ubuntu-2404/iec61850client.ini /etc/supervisor/conf.d/iec61850client.ini
+COPY ./platform-ubuntu-2404/iec61850server.ini /etc/supervisor/conf.d/iec61850server.ini
+COPY ./platform-ubuntu-2404/onvif.ini /etc/supervisor/conf.d/onvif.ini
 COPY ./platform-ubuntu-2404/metabase.ini /etc/supervisor/conf.d/metabase.ini
 COPY ./platform-ubuntu-2404/grafana_server.ini /etc/supervisor/conf.d/grafana_server.ini
 COPY ./platform-ubuntu-2404/dnp3_client.ini /etc/supervisor/conf.d/dnp3_client.ini
 COPY ./platform-ubuntu-2404/dnp3_server.ini /etc/supervisor/conf.d/dnp3_server.ini
 COPY ./platform-ubuntu-2404/mcp_server.ini /etc/supervisor/conf.d/mcp_server.ini
+COPY ./platform-ubuntu-2404/modbusclient.ini /etc/supervisor/conf.d/modbusclient.ini
+COPY ./platform-ubuntu-2404/modbusserver.ini /etc/supervisor/conf.d/modbusserver.ini
 COPY ./platform-ubuntu-2404/mongofw.ini /etc/supervisor/conf.d/mongofw.ini
 COPY ./platform-ubuntu-2404/mongowr.ini /etc/supervisor/conf.d/mongowr.ini
 COPY ./platform-ubuntu-2404/mqtt-sparkplug.ini /etc/supervisor/conf.d/mqtt-sparkplug.ini
@@ -386,7 +433,7 @@ COPY ./platform-ubuntu-2404/nodered_driver.ini /etc/supervisor/conf.d/nodered_dr
 COPY ./platform-ubuntu-2404/nodered_runtime.ini /etc/supervisor/conf.d/nodered_runtime.ini
 COPY ./platform-ubuntu-2404/opcua_client.ini /etc/supervisor/conf.d/opcua_client.ini
 COPY ./platform-ubuntu-2404/opcua_server.ini /etc/supervisor/conf.d/opcua_server.ini
-COPY ./platform-ubuntu-2404/plc4xclient.ini /etc/supervisor/conf.d/plc4xclient.ini
+#COPY ./platform-ubuntu-2404/plc4xclient.ini /etc/supervisor/conf.d/plc4xclient.ini
 COPY ./platform-ubuntu-2404/plc4jclient.ini /etc/supervisor/conf.d/plc4jclient.ini
 COPY ./platform-ubuntu-2404/process_pg_hist.ini /etc/supervisor/conf.d/process_pg_hist.ini
 COPY ./platform-ubuntu-2404/process_pg_rtdata.ini /etc/supervisor/conf.d/process_pg_rtdata.ini
@@ -395,6 +442,10 @@ COPY ./platform-ubuntu-2404/server_realtime_auth.ini /etc/supervisor/conf.d/serv
 # Launcher that gives server_realtime_auth a JWT signing secret unique to this
 # container instead of the public default from the repository (see the script).
 COPY ./platform-ubuntu-2404/start_server_realtime_auth.sh /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh
+
+# Launcher that gives the Node-RED runtime a credential secret unique to this
+# container instead of the public default from the repository (see the script).
+COPY ./platform-ubuntu-2404/start_nodered_runtime.sh /app/json-scada/platform-ubuntu-2404/start_nodered_runtime.sh
 COPY ./platform-ubuntu-2404/telegraf_listener.ini /etc/supervisor/conf.d/telegraf_listener.ini
 COPY ./platform-ubuntu-2404/telegraf.ini /etc/supervisor/conf.d/telegraf.ini
 COPY ./platform-ubuntu-2404/nginx.conf /etc/nginx/nginx.conf
@@ -407,23 +458,34 @@ RUN mkdir -p /docker-entrypoint-initdb.d/mongo \
     && mkdir -p /app/json-scada/conf \
     && mkdir -p /app/json-scada/log \
     && mkdir -p /app/json-scada/files \
-    && mkdir -p /app/json-scada/sql \
-    && chmod o+w /app/json-scada/sql
+    && mkdir -p /app/json-scada/sql
 
 # Copy initialization scripts and data (relative to project root context)
 COPY ./demo-docker/mongo_seed/files/ /docker-entrypoint-initdb.d/mongo/
 COPY ./mongo_seed/ /docker-entrypoint-initdb.d/mongo/
 COPY ./demo-docker/conf/ /app/json-scada/conf/
 COPY ./conf-templates/json-scada.json /app/json-scada/conf/json-scada.json
+# Node-RED settings and user directory for the nodered_runtime program. userDir
+# holds flows/credentials, so it lives under conf/ (a volume) and must be
+# writable by the service user - the chown of conf/ further below covers it.
+COPY ./conf-templates/node-red-settings.js /app/json-scada/conf/node-red-settings.js
+RUN mkdir -p /app/json-scada/conf/node-red
 COPY ./sql/ /app/json-scada/sql/
+
+# The sql dir must be writable by the jsonscada service user: cs_data_processor
+# writes pg_*.sql files there and process_pg_*.sh removes them after loading.
+# This must run after the COPY above, which resets ownership/perms to root:root.
+RUN chown -R jsonscada /app/json-scada/sql \
+    && chmod u+rwx /app/json-scada/sql
 
 # Make scripts executable
 RUN chmod +x /docker-entrypoint-initdb.d/mongo/*.sh \
     && chmod +x /app/json-scada/sql/*.sh \
-    && chmod +x /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh
+    && chmod +x /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh \
+    && chmod +x /app/json-scada/platform-ubuntu-2404/start_nodered_runtime.sh
 
-# The JWT secret is generated at first start inside conf/, so the service user
-# must be able to write there.
+# The JWT secret and the Node-RED credential secret are generated at first start
+# inside conf/, so the service user must be able to write there.
 RUN chown -R jsonscada /app/json-scada/conf
 
 # Create a master database initialization script
@@ -466,7 +528,7 @@ RUN echo "vm.swappiness=1" >> /etc/sysctl.conf
 # ==============================================================================
 # Nginx
 EXPOSE 80 443
-# Node.js application ports (customize as needed)
+# Server_Realtime_Auth
 EXPOSE 8080
 # PostgreSQL
 EXPOSE 5432

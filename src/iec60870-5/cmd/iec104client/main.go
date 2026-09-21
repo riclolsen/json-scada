@@ -42,8 +42,11 @@ import (
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
-	"iec60870-5/internal/redundancy"
 	"iec60870-5/internal/tlsutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
 )
 
 const (
@@ -51,7 +54,8 @@ const (
 	driverVersion      = "0.3.0"
 )
 
-var active atomic.Bool
+// redundancy arbitrates the active node; command execution gates on it.
+var redundancy = &jsredundancy.Controller{}
 
 // conn104 holds the runtime state of one IEC 104 client connection.
 type conn104 struct {
@@ -90,7 +94,7 @@ func (h *cliHandler) logConfirmation(kind string, pack *asdu.ASDU) error {
 	if pack.Coa.IsNegative {
 		neg = "Negative"
 	}
-	jscfg.Logf(jscfg.LogLevelDetailed, "%s - %s %s", h.c.cfg.Name, neg, kind)
+	jslog.Log(jslog.LevelDetailed, "%s - %s %s", h.c.cfg.Name, neg, kind)
 	return nil
 }
 
@@ -118,7 +122,7 @@ func (h *cliHandler) DelayAcquisitionHandler(_ asdu.Connect, pack *asdu.ASDU) er
 
 func (h *cliHandler) ASDUHandler(cn asdu.Connect, pack *asdu.ASDU, _ *cs104.Server, _ int) error {
 	connNumber := int(h.c.cfg.ProtocolConnectionNumber)
-	jscfg.Logf(jscfg.LogLevelDetailed, "%s - %s", h.c.cfg.Name, pack.String())
+	jslog.Log(jslog.LevelDetailed, "%s - %s", h.c.cfg.Name, pack.String())
 	res := conv.Decode(pack, connNumber)
 	h.e.EnqueueValues(res.Values)
 	h.e.EnqueueAcks(res.Acks)
@@ -127,9 +131,9 @@ func (h *cliHandler) ASDUHandler(cn asdu.Connect, pack *asdu.ASDU, _ *cs104.Serv
 		if exec := h.c.engConn.SelectedFor(sel.Ioa); exec != nil {
 			coa := asdu.CauseOfTransmission{Cause: asdu.Activation}
 			if err := conv.SendCommand(cn, coa, asdu.CommonAddr(sel.Ca), exec); err != nil {
-				jscfg.Logf(jscfg.LogLevelBasic, "%s - Error sending execute after select: %s", h.c.cfg.Name, err.Error())
+				jslog.Log(jslog.LevelBasic, "%s - Error sending execute after select: %s", h.c.cfg.Name, err.Error())
 			} else {
-				jscfg.Logf(jscfg.LogLevelDetailed, "%s - Sending command execute after select confirmed, Object Address %d",
+				jslog.Log(jslog.LevelDetailed, "%s - Sending command execute after select confirmed, Object Address %d",
 					h.c.cfg.Name, sel.Ioa)
 			}
 		}
@@ -161,20 +165,20 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 	}
 
 	cli := cs104.NewClient(&cliHandler{c: c, e: e}, opt)
-	if jscfg.LogLevel() >= jscfg.LogLevelDebug {
+	if jslog.Level() >= jslog.LevelDebug {
 		cli.LogMode(true)
 	}
 	cli.SetOnConnectHandler(func(cl *cs104.Client) {
-		jscfg.Log(jscfg.LogLevelBasic, c.cfg.Name+" - Connected")
+		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connected")
 		cl.SendStartDt() // required to activate the 104 link
 	})
 	cli.SetOnActivatedHandler(func(cl *cs104.Client) {
-		jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - STARTDT CON received")
+		jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - STARTDT CON received")
 		c.connected.Store(true)
 	})
 	cli.SetConnectionLostHandler(func(cl *cs104.Client) {
 		wasConnected := c.connected.Swap(false)
-		jscfg.Log(jscfg.LogLevelBasic, c.cfg.Name+" - Connection closed")
+		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connection closed")
 		if wasConnected {
 			go e.InvalidateConnPoints(int(c.cfg.ProtocolConnectionNumber))
 		}
@@ -183,7 +187,7 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 	c.cli = cli
 	c.mu.Unlock()
 	c.lastConnAttempt = time.Now()
-	jscfg.Logf(jscfg.LogLevelBasic, "%s - Connecting to %s", c.cfg.Name, addr)
+	jslog.Log(jslog.LevelBasic, "%s - Connecting to %s", c.cfg.Name, addr)
 	return cli.Start()
 }
 
@@ -220,7 +224,7 @@ func supervise(c *conn104, e *cliapp.Engine) {
 
 	for {
 		time.Sleep(1 * time.Second)
-		if !active.Load() {
+		if !redundancy.Active() {
 			if c.client() != nil {
 				resetCounters()
 				stopClient(c)
@@ -242,10 +246,10 @@ func supervise(c *conn104, e *cliapp.Engine) {
 			// swap server when a secondary is configured
 			if len(c.cfg.IPAddresses) > 1 {
 				c.addrIdx = (c.addrIdx + 1) % len(c.cfg.IPAddresses)
-				jscfg.Logf(jscfg.LogLevelBasic, "%s - Trying server %s", c.cfg.Name, c.cfg.IPAddresses[c.addrIdx])
+				jslog.Log(jslog.LevelBasic, "%s - Trying server %s", c.cfg.Name, c.cfg.IPAddresses[c.addrIdx])
 			}
 			if err := startClient(c, e); err != nil {
-				jscfg.Logf(jscfg.LogLevelBasic, "%s - Error connecting! %s", c.cfg.Name, err.Error())
+				jslog.Log(jslog.LevelBasic, "%s - Error connecting! %s", c.cfg.Name, err.Error())
 			}
 			continue
 		}
@@ -265,68 +269,68 @@ func supervise(c *conn104, e *cliapp.Engine) {
 		}
 
 		if giInterval > 0 && c.cntGI >= giInterval {
-			jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - Send Interrogation Request")
+			jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - Send Interrogation Request")
 			c.cntGI = 0
 			if err := cli.InterrogationCmd(asdu.CauseOfTransmission{Cause: asdu.Activation},
 				remoteCA, asdu.QOIStation); err != nil {
-				jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - GI error: "+err.Error())
+				jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - GI error: "+err.Error())
 			}
 		}
 		if testInterval > 0 && c.cntTestCommand >= testInterval {
-			jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - Send Test Command")
+			jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - Send Test Command")
 			c.cntTestCommand = 0
 			c.cntTestSeq++
 			if err := asdu.TestCommandCP56Time2a(cli,
 				asdu.CauseOfTransmission{Cause: asdu.Activation}, remoteCA, time.Now()); err != nil {
-				jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - Test command error: "+err.Error())
+				jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - Test command error: "+err.Error())
 			}
 		}
 		if tsInterval > 0 && c.cntTimeSync >= tsInterval {
-			jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - Send Clock Sync")
+			jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - Send Clock Sync")
 			c.cntTimeSync = 0
 			if err := cli.ClockSynchronizationCmd(asdu.CauseOfTransmission{Cause: asdu.Activation},
 				remoteCA, time.Now()); err != nil {
-				jscfg.Log(jscfg.LogLevelDetailed, c.cfg.Name+" - Clock sync error: "+err.Error())
+				jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - Clock sync error: "+err.Error())
 			}
 		}
 	}
 }
 
 func main() {
-	jscfg.Log(jscfg.LogLevelBasic, "{json:scada} IEC60870-5-104 Driver - Copyright 2020-2026 RLO")
-	jscfg.Log(jscfg.LogLevelBasic, "Driver version "+driverVersion+" (Go/go-iecp5)")
+	jslog.Log(jslog.LevelBasic, "{json:scada} IEC60870-5-104 Driver - Copyright 2020-2026 RLO")
+	jslog.Log(jslog.LevelBasic, "Driver version "+driverVersion+" (Go/go-iecp5)")
 
 	cfg, instanceNumber, err := jscfg.Read()
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", err.Error())
 		os.Exit(-1)
 	}
-	jscfg.Log(jscfg.LogLevelBasic, "MongoDB database name: "+cfg.MongoDatabaseName)
-	jscfg.Log(jscfg.LogLevelBasic, "Node name: "+cfg.NodeName)
+	jslog.Log(jslog.LevelBasic, "%s", "MongoDB database name: "+cfg.MongoDatabaseName)
+	jslog.Log(jslog.LevelBasic, "%s", "Node name: "+cfg.NodeName)
 
-	client, db, err := mongoutil.Connect(cfg)
+	client, db, err := jsmongo.ConnectAndPing(cfg)
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, "Error connecting to MongoDB: "+err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", "Error connecting to MongoDB: "+err.Error())
 		os.Exit(-1)
 	}
 
 	if _, err := mongoutil.LoadInstance(db, protocolDriverName, instanceNumber, cfg.NodeName); err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", err.Error())
 		os.Exit(-1)
 	}
-	jscfg.Logf(jscfg.LogLevelBasic, "Instance: %d", instanceNumber)
+	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(db, protocolDriverName, instanceNumber)
 	if err != nil || len(connCfgs) == 0 {
-		jscfg.Log(jscfg.LogLevelBasic, "No connections found!")
+		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
 
-	engine := cliapp.New(cfg, protocolDriverName, instanceNumber, &active)
+	engine := cliapp.New(cfg, protocolDriverName, instanceNumber, redundancy.Active)
 	var conns []*conn104
 	for _, cc := range connCfgs {
 		if len(cc.IPAddresses) < 1 || cc.IPAddresses[0] == "" {
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - Missing ipAddresses list!")
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - Missing ipAddresses list!")
 			os.Exit(-1)
 		}
 		c := &conn104{cfg: cc}
@@ -348,8 +352,8 @@ func main() {
 		}
 		tlsCfg, err := tlsutil.BuildTLSConfig(&c.cfg, false)
 		if err != nil {
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - Error configuring TLS certificates.")
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - "+err.Error())
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - Error configuring TLS certificates.")
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - "+err.Error())
 			os.Exit(1)
 		}
 		c.tlsCfg = tlsCfg
@@ -369,7 +373,7 @@ func main() {
 		c.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		conns = append(conns, c)
-		jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - New Connection")
+		jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - New Connection")
 	}
 
 	// Preload existing tag addresses so autoCreateTags never re-creates them
@@ -377,7 +381,8 @@ func main() {
 	_ = client.Disconnect(context.Background())
 
 	// redundancy control with connection stats updates
-	statsFn := func(collConns *mongo.Collection) {
+	statsFn := func(db *mongo.Database) {
+		collConns := db.Collection(jsmongo.ProtocolConnectionsCollectionName)
 		for _, c := range conns {
 			isConnected := false
 			if cli := c.client(); cli != nil {
@@ -394,13 +399,19 @@ func main() {
 			cancel()
 		}
 	}
-	go redundancy.Run(cfg, protocolDriverName, instanceNumber, &active, statsFn)
+	redundancy.Config = cfg
+	redundancy.DriverName = protocolDriverName
+	redundancy.InstanceNumber = instanceNumber
+	// No OnActivate/OnDeactivate: acquisition runs on both nodes, and only
+	// command execution gates on Active().
+	redundancy.OnTick = statsFn
+	go redundancy.Run(context.Background())
 
 	// data/ack writer and commands change stream
 	go engine.RunMongoWriter()
 	go engine.RunCommandsStream()
 
-	jscfg.Log(jscfg.LogLevelBasic, "Setting up IEC Connections & ASDU handlers...")
+	jslog.Log(jslog.LevelBasic, "Setting up IEC Connections & ASDU handlers...")
 	for _, c := range conns {
 		go supervise(c, engine)
 	}

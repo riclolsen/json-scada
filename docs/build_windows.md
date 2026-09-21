@@ -65,10 +65,10 @@ Install Access Control plugin for NSIS
 
 ## Clone the repo
 
-    git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
+    git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input c:\json-scada
 	
 	or the development repo
-	git clone --recurse-submodules https://github.com/json-scada/json-scada-devel --config core.autocrlf=input
+	git clone --recurse-submodules https://github.com/json-scada/json-scada-devel --config core.autocrlf=input c:\json-scada
 
 ## Compiling and building the source code
 

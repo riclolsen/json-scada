@@ -52,8 +52,8 @@ Each instance for this driver can have many client connections defined that must
         enabled: true,
         commandsEnabled: true,
         autoCreateTags: true,
-        endpointURLs: ["modbus-tcp://192.168.0.101:5001?unit-identifier=1",
-                       "modbus-tcp://192.168.0.102:5001?unit-identifier=1"
+        endpointURLs: ["modbus-tcp://192.168.0.101:5001?default-unit-identifier=1",
+                       "modbus-tcp://192.168.0.102:5001?default-unit-identifier=1"
                       ],
         topics: ["MODBUS_PLC1_REG_1|holding-register:4:UINT|LITTLE_ENDIAN",
                  "MODBUS_PLC1_REG_20N|holding-register:20:INT[10]"
@@ -71,6 +71,8 @@ Each instance for this driver can have many client connections defined that must
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
 - _**autoCreateTags**_ [Boolean] - Allows to enable automatic creation of tags. **Mandatory parameter**.
 - _**endpointURLs**_ [Array of Strings] - Array of PLC4X formatted PLC URL addresses. When having redundant devices, configure multiple entries. The driver will try to connect with the first device, when disconnected it will switch to the next device in the list. Supported protocol prefixes: "modbus-tcp", "modbus-rtu", "modbus-ascii". See PLC4X Modbus docs for URL parameters. **Mandatory parameter**.
+
+  For the Modbus drivers the unit id is set with the `default-unit-identifier` URL parameter (the name also used by plc4j). Earlier PLC4X versions read it from `unit-identifier`; that spelling is no longer recognized by the library, so the driver rewrites it to `default-unit-identifier` on connect and logs that it did. Other Modbus URL parameters: `default-payload-byte-order`, `request-timeout-ms` and `ping-address` (the address read to check that the device is still alive, `4x00001:BOOL` by default).
 - _**topics**_ [Array of Strings] - Array of PLC tag addresses to be scanned. The format is "TAG_NAME|PLC4X_ADDRESS|ENDIANNESS". A tag name can be provided for automatic creation of tags. See PLC4X docs for the address format. Endianness can be empty (default), LITTLE_ENDIAN, BIG_ENDIAN or REV_ENDIAN (reverse endianness). **Mandatory parameter**.
 - _**giInterval**_ [Double] - General station interrogation period in seconds. **Optional parameter**.
 

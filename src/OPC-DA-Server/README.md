@@ -124,23 +124,19 @@ nuget restore ServerPlugin.csproj -PackagesDirectory ..\packages
 
 Or open `OPC-DA-Server.sln` in Visual Studio 2022 and let NuGet auto-restore.
 
-### 2. Copy `OpcNetDaServer.exe`
+### 2. Build the generic server executable
 
-Copy the Technosoftware generic server executable from the `ClassicServerSolutions` distribution:
+`OpcNetDaServer.exe` is the Technosoftware generic C++/CLI server (`OpcNetDaAeServer.vcxproj`) from `src\ClassicServerSolutions`. It is not part of `OPC-DA-Server.sln`, so build it first (use `/p:Platform=Win32` for x86):
 
 ```bat
-:: x86 (recommended for OPC-DA 2.x client compatibility)
-copy ..\ClassicServerSolutions\...\OpcNetDaServer_x86.exe  bin\x86\Release\OpcNetDaServer.exe
-
-:: x64 (for OPC-DA 3.0 64-bit clients)
-copy ..\ClassicServerSolutions\...\OpcNetDaServer_x64.exe  bin\x64\Release\OpcNetDaServer.exe
+msbuild ..\ClassicServerSolutions\src\Technosoftware\Server\ClassicServer\OpcNetDaAeServer.vcxproj /p:Configuration=Release /p:Platform=x64 /p:SolutionDir=%CD%\..\ClassicServerSolutions\
 ```
 
-### 3. Build
+### 3. Build the plugin
 
 ```bat
 msbuild OPC-DA-Server.sln /p:Configuration=Release /p:Platform=x64
 ```
 
-The post-build step copies `ServerPlugin.dll` and MongoDB runtime DLLs alongside `OpcNetDaServer.exe` automatically.
+The post-build step copies `ServerPlugin.dll` and the MongoDB runtime DLLs to `bin\<platform>\Release\`, and copies `OpcNetDaAeServer.exe` there renamed to `OpcNetDaServer.exe`. If the executable from step 2 is missing, the build prints a warning and `bin\` has no exe. `build.bat` runs steps 1–3.
 

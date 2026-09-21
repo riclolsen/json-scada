@@ -316,7 +316,6 @@
         "manual": "دستی"
       },
       "autoRestartOnConfigChange": "با تغییر پیکربندی، به طور خودکار راه‌اندازی مجدد شود",
-      "executableVariant": "نوع قابل اجرا",
       "syncResult": "همگام‌سازی کامل شد: {ensured} تضمین شد، {errors} خطا داد، {orphans} سرویس(های) orphan.",
       "deleteServiceNote": "سرویس سیستم عامل {service} در گره {node} متوقف و حذف خواهد شد.",
       "serviceStates": {

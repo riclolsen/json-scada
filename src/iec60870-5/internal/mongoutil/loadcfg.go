@@ -27,6 +27,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"iec60870-5/internal/model"
+
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 // LoadInstance finds the enabled driver instance and validates the node name
@@ -35,7 +37,7 @@ func LoadInstance(db *mongo.Database, driverName string, instanceNumber int, nod
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	var inst model.DriverInstance
-	err := db.Collection(ProtocolDriverInstancesCollectionName).FindOne(ctx, bson.M{
+	err := db.Collection(jsmongo.ProtocolDriverInstancesCollectionName).FindOne(ctx, bson.M{
 		"protocolDriver":               driverName,
 		"protocolDriverInstanceNumber": instanceNumber,
 		"enabled":                      true,
@@ -59,7 +61,7 @@ func LoadInstance(db *mongo.Database, driverName string, instanceNumber int, nod
 func LoadConns(db *mongo.Database, driverName string, instanceNumber int) ([]model.ConnCfg, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cur, err := db.Collection(ProtocolConnectionsCollectionName).Find(ctx, bson.M{
+	cur, err := db.Collection(jsmongo.ProtocolConnectionsCollectionName).Find(ctx, bson.M{
 		"protocolDriver":               driverName,
 		"protocolDriverInstanceNumber": instanceNumber,
 		"enabled":                      true,

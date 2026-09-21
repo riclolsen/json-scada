@@ -18,17 +18,19 @@ JS_ARCH=arm64
 # Metabase credentials: json@scada.com / jsonscada123
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo chmod +x *.sh
 
 sudo dnf -y update 
-sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
-sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless inkscape
+sudo dnf -y group install --with-optional "Development Tools" ".NET Development" maven
+sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk maven php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel python3-tkinter sqlite-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel python3-tkinter sqlite-devel
 sudo dnf -y install curl --allowerasing
+sudo dnf -y install policycoreutils-python-utils setools-console audit
 
 sudo dnf install --nogpgcheck https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm
 sudo dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
@@ -43,8 +45,8 @@ sudo dnf remove -y python3-circuitbreaker
 
 sudo update-crypto-policies --set LEGACY
 
-wget --inet4-only https://go.dev/dl/go1.27.0.linux-$JS_ARCH.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.0.linux-$JS_ARCH.tar.gz
+wget --inet4-only https://go.dev/dl/go1.27.1.linux-$JS_ARCH.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.1.linux-$JS_ARCH.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 source ~/.bashrc
@@ -141,6 +143,7 @@ sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
+sudo cp supervisord.conf /etc/supervisord.conf
 # JSON-SCADA process manager: dir for driver services created from the AdminUI.
 # Owned by jsonscada so services can be managed without root; scanned by supervisord.
 mkdir -p ~/json-scada/conf/supervisor.d
@@ -149,13 +152,13 @@ if ! grep -q 'json-scada/conf/supervisor.d' /etc/supervisord.conf; then
 fi
 sudo systemctl enable supervisord
 
-sudo yum install -y https://dl.grafana.com/grafana/release/13.2.0/grafana_13.2.0_32077357341_linux_$JS_ARCH.rpm
+sudo dnf install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
 #sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.2/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.17.x/metabase.jar -O ../metabase/metabase.jar'
 
 sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_24.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
@@ -184,6 +187,13 @@ sudo systemctl start grafana-server
 
 sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
+
+# Install a local Node-RED runtime for the NODE-RED driver.
+# The driver also works with a remote or containerized Node-RED.
+sudo -u $JS_USERNAME bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
+sudo -u $JS_USERNAME bash -c 'cp ~/json-scada/conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js'
+sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
+# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
 
 cd ../platform-linux
 sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh linux-$JS_ARCH'

@@ -316,7 +316,6 @@
         "manual": "マニュアル"
       },
       "autoRestartOnConfigChange": "設定変更時に自動的に再起動する",
-      "executableVariant": "実行可能ファイル",
       "syncResult": "同期完了: {ensured} 保証済み、{errors} エラー、{orphans} 孤立サービス。",
       "deleteServiceNote": "OSサービス{service}はノード{node}上で停止され、削除されます。",
       "serviceStates": {

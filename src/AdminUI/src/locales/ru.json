@@ -316,7 +316,6 @@
         "manual": "Руководство"
       },
       "autoRestartOnConfigChange": "Автоматический перезапуск при изменении конфигурации.",
-      "executableVariant": "Исполняемый вариант",
       "syncResult": "Синхронизация завершена: {ensured} гарантировано, {errors} ошибки, {orphans} служба(ы)-сирота.",
       "deleteServiceNote": "Служба операционной системы {service} будет остановлена ​​и удалена на узле {node}.",
       "serviceStates": {

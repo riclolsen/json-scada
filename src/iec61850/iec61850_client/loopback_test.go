@@ -120,8 +120,8 @@ func connectTest(t *testing.T, conn *Iec61850Connection) *client.Client {
 func TestLoopbackDiscovery(t *testing.T) {
 	addr, _ := startTestIED(t)
 	conn := newTestConnection(addr)
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	// A configured supervised point, as preloaded from realtimeData.
 	key := "simpleIOGenericIO/GGIO1.SPCSO1.stVal" + "ST"
@@ -164,8 +164,8 @@ func TestLoopbackDiscovery(t *testing.T) {
 func TestLoopbackConcurrentReports(t *testing.T) {
 	addr, srv := startTestIED(t)
 	conn := newTestConnection(addr)
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	connectTest(t, conn)
 	drainQueue()
@@ -259,8 +259,8 @@ func TestLoopbackConcurrentReports(t *testing.T) {
 func TestLoopbackReportWithDataReferences(t *testing.T) {
 	addr, srv := startTestIED(t)
 	conn := newTestConnection(addr)
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	cli := connectTest(t, conn)
 	drainQueue()
@@ -358,8 +358,8 @@ func TestLoopbackOneSubscriptionPerDataSet(t *testing.T) {
 	t.Cleanup(func() { _ = srv.Close() })
 
 	conn := newTestConnection(ln.Addr().String())
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 	connectTest(t, conn)
 	defer drainQueue()
 
@@ -409,8 +409,8 @@ func TestLoopbackAutoCreateFromBrowse(t *testing.T) {
 	// No reports: whatever is found has to come from the browse.
 	conn.UseBrcb = false
 	conn.UseUrcb = false
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	connectTest(t, conn)
 	drainQueue()
@@ -506,8 +506,8 @@ func TestLoopbackAutoCreateCommands(t *testing.T) {
 	conn.CommandsEnabled = true
 	conn.UseBrcb = false
 	conn.UseUrcb = false
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	connectTest(t, conn)
 	drainQueue()
@@ -579,8 +579,8 @@ func TestLoopbackNoCommandTagsWhenDisabled(t *testing.T) {
 	conn.CommandsEnabled = false
 	conn.UseBrcb = false
 	conn.UseUrcb = false
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	connectTest(t, conn)
 	drainQueue()
@@ -608,8 +608,8 @@ func TestLoopbackConfiguredPointDoesNotSelfPublish(t *testing.T) {
 	conn.AutoCreateTags = true
 	conn.UseBrcb = false
 	conn.UseUrcb = false
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	key := "simpleIOGenericIO/GGIO1.AnIn1" + "MX"
 	conn.Entries[key] = &Iec61850Entry{
@@ -651,8 +651,8 @@ func TestLoopbackPolling(t *testing.T) {
 	conn.AutoCreateTags = false
 	conn.UseBrcb = false
 	conn.UseUrcb = false // no reports: everything is polled
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	key := "simpleIOGenericIO/GGIO1.AnIn1" + "MX"
 	conn.Entries[key] = &Iec61850Entry{
@@ -697,8 +697,8 @@ func TestLoopbackPolling(t *testing.T) {
 func TestLoopbackControl(t *testing.T) {
 	addr, srv := startTestIED(t)
 	conn := newTestConnection(addr)
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	connectTest(t, conn)
 	drainQueue()
@@ -731,8 +731,8 @@ func TestLoopbackControl(t *testing.T) {
 func TestLoopbackWriteCommand(t *testing.T) {
 	addr, srv := startTestIED(t)
 	conn := newTestConnection(addr)
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 
 	connectTest(t, conn)
 	drainQueue()
@@ -831,8 +831,8 @@ func TestLoopbackDoublePointIsDigital(t *testing.T) {
 
 	conn := newTestConnection(ln.Addr().String())
 	conn.AutoCreateTags = true
-	active.Store(true)
-	defer active.Store(false)
+	redundancy.ForceActive(true)
+	defer redundancy.ForceActive(false)
 	connectTest(t, conn)
 	drainQueue()
 	defer drainQueue()

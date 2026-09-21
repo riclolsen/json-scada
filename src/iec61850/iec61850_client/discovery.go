@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+
 	"github.com/dscsystems/go-iec61850/client"
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
@@ -53,7 +55,7 @@ func discoverServer(ctx context.Context, conn *Iec61850Connection) error {
 	}
 
 	for _, ld := range lds {
-		Log(LogLevelBasic, "%s LD: %s", conn.Name, ld)
+		jslog.Log(jslog.LevelBasic, "%s LD: %s", conn.Name, ld)
 
 		lns, err := cli.LogicalNodes(dirCtx, ld)
 		if err != nil {
@@ -89,7 +91,7 @@ func discoverServer(ctx context.Context, conn *Iec61850Connection) error {
 		}
 
 		for _, ln := range lns {
-			Log(LogLevelBasic, "%s  LN: %s", conn.Name, ln)
+			jslog.Log(jslog.LevelBasic, "%s  LN: %s", conn.Name, ln)
 			lnRef := ld + "/" + ln
 			perClass := byLN[ln]
 
@@ -140,7 +142,7 @@ var browsedFCs = map[model.FC]bool{model.ST: true, model.MX: true}
 func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld string) {
 	names, err := conn.Client().MMS().GetNameList(ctx, mms.ClassNamedVariable, ld)
 	if err != nil {
-		Log(LogLevelBasic, "%s Cannot browse %s for tag creation: %v", conn.Name, ld, err)
+		jslog.Log(jslog.LevelBasic, "%s Cannot browse %s for tag creation: %v", conn.Name, ld, err)
 		return
 	}
 
@@ -189,7 +191,7 @@ func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld str
 		}
 	}
 	if added > 0 {
-		Log(LogLevelBasic, "%s %s: %d browsed object(s) registered for tag creation", conn.Name, ld, added)
+		jslog.Log(jslog.LevelBasic, "%s %s: %d browsed object(s) registered for tag creation", conn.Name, ld, added)
 	}
 
 	if conn.CommandsEnabled {
@@ -277,7 +279,7 @@ func registerControlObjects(ctx context.Context, conn *Iec61850Connection, ld st
 		queued++
 	}
 	if queued > 0 {
-		Log(LogLevelBasic, "%s %s: %d controllable object(s) registered for command tag creation",
+		jslog.Log(jslog.LevelBasic, "%s %s: %d controllable object(s) registered for command tag creation",
 			conn.Name, ld, queued)
 	}
 }
@@ -309,7 +311,7 @@ func controlValueKind(ctx context.Context, conn *Iec61850Connection, ld string, 
 		}
 	}
 	// Unknown: a single-point control is by far the most common.
-	Log(LogLevelDetailed, "%s %s: cannot read the control value type, assuming digital: %v", conn.Name, co.ref, err)
+	jslog.Log(jslog.LevelDetailed, "%s %s: cannot read the control value type, assuming digital: %v", conn.Name, co.ref, err)
 	return true, mmsTypeName(mms.TypeBoolean)
 }
 
@@ -321,7 +323,7 @@ func browseDataObject(ctx context.Context, conn *Iec61850Connection, doRef model
 	if len(do) < 2 {
 		return
 	}
-	Log(LogLevelBasic, "%s    DO: %s", conn.Name, strings.Join(do[1:], "."))
+	jslog.Log(jslog.LevelBasic, "%s    DO: %s", conn.Name, strings.Join(do[1:], "."))
 
 	for _, fc := range allFCs {
 		children, err := cli.DataDirectory(ctx, doRef, fc)
@@ -335,11 +337,11 @@ func browseDataObject(ctx context.Context, conn *Iec61850Connection, doRef model
 			if err != nil {
 				continue
 			}
-			Log(LogLevelBasic, "%s      DA/SDO: [%s] %s : %s(%d) ... %s",
+			jslog.Log(jslog.LevelBasic, "%s      DA/SDO: [%s] %s : %s(%d) ... %s",
 				conn.Name, fc, child, spec.Kind, specSize(spec), daRef)
 			if spec.Kind == mms.TypeStructure {
 				for _, comp := range spec.Components {
-					Log(LogLevelBasic, "%s           %s : %s ... %s.%s",
+					jslog.Log(jslog.LevelBasic, "%s           %s : %s ... %s.%s",
 						conn.Name, comp.Name, comp.Spec.Kind, daRef, comp.Name)
 				}
 			}
@@ -377,29 +379,29 @@ func discoverDataSet(ctx context.Context, conn *Iec61850Connection, ld, ln strin
 	}
 	dsName := path[1]
 	dsFullName := ld + "/" + ln + "." + dsName
-	Log(LogLevelBasic, "%s    Dataset: %s", conn.Name, dsFullName)
+	jslog.Log(jslog.LevelBasic, "%s    Dataset: %s", conn.Name, dsFullName)
 	conn.Datasets = append(conn.Datasets, dsName)
 
 	members, err := cli.MMS().GetNamedVariableListAttributes(ctx, ld, ln+"$"+dsName)
 	if err != nil {
-		Log(LogLevelDetailed, "%s     %s - cannot read members: %v", conn.Name, dsFullName, err)
+		jslog.Log(jslog.LevelDetailed, "%s     %s - cannot read members: %v", conn.Name, dsFullName, err)
 		return
 	}
 
 	for _, m := range members {
-		Log(LogLevelBasic, "%s     %s -> %s", conn.Name, dsFullName, m.Item)
+		jslog.Log(jslog.LevelBasic, "%s     %s -> %s", conn.Name, dsFullName, m.Item)
 		ref, fc := model.FromMMS(m.Domain, m.Item)
 		entry := conn.Entry(entryKey(string(ref), fc))
 		if entry == nil {
 			continue
 		}
 		conn.SetEntryDataSet(entry, dsFullName)
-		Log(LogLevelBasic, "%s       Found desired entry %s", conn.Name, entry.Path)
+		jslog.Log(jslog.LevelBasic, "%s       Found desired entry %s", conn.Name, entry.Path)
 		if conn.EntryNeedsChilds(entry) {
 			spec, err := cli.MMS().GetVariableAccessAttributes(ctx, m.Domain, m.Item)
 			if err == nil && spec != nil {
 				for _, comp := range spec.Components {
-					Log(LogLevelBasic, "%s         Child %s", conn.Name, comp.Name)
+					jslog.Log(jslog.LevelBasic, "%s         Child %s", conn.Name, comp.Name)
 					conn.AddEntryChild(entry, comp.Name)
 				}
 			}

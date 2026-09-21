@@ -129,8 +129,10 @@ public class CommandsWatcher implements Runnable {
       }
 
       try {
+        // tag name stays the configured address; the address itself may need the
+        // 1.0.0 array notation (see TopicParser.toPlc4xAddress)
         PlcWriteRequest wrReq = conn.writeRequestBuilder()
-            .addTagAddress(address, address, writeValue)
+            .addTagAddress(address, TopicParser.toPlc4xAddress(address), writeValue)
             .build();
         PlcWriteResponse wrResp =
             wrReq.execute().get(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS);

@@ -18,10 +18,11 @@ JS_ARCH=arm64
 # Metabase credentials: json@scada.com / jsonscada123
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo chmod +x *.sh
 
 sudo dnf -y update 
-sudo dnf -y group install --with-optional "Development Tools" ".NET Development" 
-sudo dnf -y remove golang nodejs java-1.8.0-openjdk-headless inkscape
+sudo dnf -y group install --with-optional "Development Tools" ".NET Development" maven
+sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-10-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm 
@@ -29,6 +30,7 @@ sudo dnf -y install epel-release
 sudo dnf config-manager --set-enabled crb
 sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk maven php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel
 sudo dnf -y install curl --allowerasing
+sudo dnf -y install policycoreutils-python-utils setools-console audit
 
 # to compile inkscape
 #sudo dnf -y install ninja-build libjpeg-devel libxslt-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
@@ -45,8 +47,8 @@ sudo dnf -y install curl --allowerasing
 
 sudo update-crypto-policies --set LEGACY
 
-wget --inet4-only https://go.dev/dl/go1.27.0.linux-$JS_ARCH.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.0.linux-$JS_ARCH.tar.gz
+wget --inet4-only https://go.dev/dl/go1.27.1.linux-$JS_ARCH.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.1.linux-$JS_ARCH.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 source ~/.bashrc
@@ -112,18 +114,18 @@ EOL
 sudo dnf -y update 
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
 sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew  /etc/yum.repos.d/pgdg-redhat-all.repo
-sudo dnf -y --enablerepo=pgdg17 update
+sudo dnf -y --enablerepo=pgdg18 update
 curl -s https://packagecloud.io/install/repositories/timescale/timescaledb/script.rpm.sh | sudo bash
-sudo dnf -y install timescaledb_17 postgresql17 postgresql17-contrib
-#sudo dnf -y install timescaledb-toolkit-postgresql-17
-# sudo timescaledb-tune -yes --pg-config=/usr/pgsql-17/bin/pg_config
+sudo dnf -y install timescaledb_18 postgresql18 postgresql18-contrib
+#sudo dnf -y install timescaledb-toolkit-postgresql-18
+# sudo timescaledb-tune -yes --pg-config=/usr/pgsql-18/bin/pg_config
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/17/data/
-sudo chown postgres:postgres /var/lib/pgsql/17/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/17/data/
-sudo chown postgres:postgres /var/lib/pgsql/17/data/postgresql.conf
-sudo systemctl enable postgresql-17
-sudo /usr/pgsql-17/bin/postgresql-17-setup initdb
+sudo cp pg_hba.conf /var/lib/pgsql/18/data/
+sudo chown postgres:postgres /var/lib/pgsql/18/data/pg_hba.conf
+sudo cp postgresql.conf /var/lib/pgsql/18/data/
+sudo chown postgres:postgres /var/lib/pgsql/18/data/postgresql.conf
+sudo systemctl enable postgresql-18
+sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
 
 sudo cp json_scada_*.conf /etc/nginx/conf.d/
 sudo cp nginx.conf /etc/nginx/
@@ -143,22 +145,23 @@ sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
 sudo cp *.ini /etc/supervisord.d/
+sudo cp supervisord.conf /etc/supervisord.conf
 sudo systemctl enable supervisord
 
-sudo yum install -y https://dl.grafana.com/grafana/release/13.2.0/grafana_13.2.0_32077357341_linux_$JS_ARCH.rpm
+sudo dnf install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
 #sudo dnf -y install grafana
 sudo cp grafana.ini /etc/grafana
 sudo systemctl enable grafana-server
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.2/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.17.x/metabase.jar -O ../metabase/metabase.jar'
 
 sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_24.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-17
+sudo systemctl start postgresql-18
 sudo systemctl start mongod
 
 psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
@@ -180,6 +183,13 @@ sudo systemctl start grafana-server
 
 sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
+
+# Install a local Node-RED runtime for the NODE-RED driver.
+# The driver also works with a remote or containerized Node-RED.
+sudo -u $JS_USERNAME bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
+sudo -u $JS_USERNAME bash -c 'cp ~/json-scada/conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js'
+sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
+# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
 
 cd ../platform-linux
 sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh linux-$JS_ARCH'

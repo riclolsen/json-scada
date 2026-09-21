@@ -34,6 +34,8 @@ import (
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
 	"iec60870-5/internal/srvapp"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
 )
 
 const (
@@ -81,9 +83,9 @@ func (h *srvHandler) DelayAcquisitionHandler(pack *asdu.ASDU, _ uint16) error {
 	return nil
 }
 func (h *srvHandler) ASDUHandler(pack *asdu.ASDU) error {
-	jscfg.Logf(jscfg.LogLevelDetailed, "%s - %s", h.s.cfg.Name, pack.String())
+	jslog.Log(jslog.LevelDetailed, "%s - %s", h.s.cfg.Name, pack.String())
 	if !h.s.engine.HandleCommandASDU(h.s.engConn, h.s.server, pack) {
-		jscfg.Logf(jscfg.LogLevelBasic, "%s -   Not implemented type of ASDU received: %d", h.s.cfg.Name, pack.Type)
+		jslog.Log(jslog.LevelBasic, "%s -   Not implemented type of ASDU received: %d", h.s.cfg.Name, pack.Type)
 		pack.Coa.IsNegative = true
 		_ = pack.SendReplyMirror(h.s.server, asdu.ActivationCon)
 	}
@@ -92,32 +94,32 @@ func (h *srvHandler) ASDUHandler(pack *asdu.ASDU) error {
 func (h *srvHandler) ASDUHandlerAll(*asdu.ASDU, int) error { return nil }
 
 func main() {
-	jscfg.Log(jscfg.LogLevelBasic, "{json:scada} IEC60870-5-101 Server Driver - Copyright 2020-2026 RLO")
-	jscfg.Log(jscfg.LogLevelBasic, "Driver version "+driverVersion+" (Go/go-iecp5)")
+	jslog.Log(jslog.LevelBasic, "{json:scada} IEC60870-5-101 Server Driver - Copyright 2020-2026 RLO")
+	jslog.Log(jslog.LevelBasic, "Driver version "+driverVersion+" (Go/go-iecp5)")
 
 	cfg, instanceNumber, err := jscfg.Read()
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", err.Error())
 		os.Exit(-1)
 	}
-	jscfg.Log(jscfg.LogLevelBasic, "MongoDB database name: "+cfg.MongoDatabaseName)
-	jscfg.Log(jscfg.LogLevelBasic, "Node name: "+cfg.NodeName)
+	jslog.Log(jslog.LevelBasic, "%s", "MongoDB database name: "+cfg.MongoDatabaseName)
+	jslog.Log(jslog.LevelBasic, "%s", "Node name: "+cfg.NodeName)
 
 	engine, err := srvapp.New(cfg, protocolDriverName)
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, "Error connecting to MongoDB: "+err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", "Error connecting to MongoDB: "+err.Error())
 		os.Exit(-1)
 	}
 
 	if _, err := mongoutil.LoadInstance(engine.DB(), protocolDriverName, instanceNumber, cfg.NodeName); err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", err.Error())
 		os.Exit(-1)
 	}
-	jscfg.Logf(jscfg.LogLevelBasic, "Instance: %d", instanceNumber)
+	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(engine.DB(), protocolDriverName, instanceNumber)
 	if err != nil || len(connCfgs) == 0 {
-		jscfg.Log(jscfg.LogLevelBasic, "No connections found!")
+		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
 
@@ -128,12 +130,12 @@ func main() {
 		s.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		servers = append(servers, s)
-		jscfg.Log(jscfg.LogLevelBasic, cc.Name)
+		jslog.Log(jslog.LevelBasic, "%s", cc.Name)
 	}
 
 	engine.DistributeAutoTags()
 
-	jscfg.Log(jscfg.LogLevelBasic, "Setting up IEC Connections & ASDU handlers...")
+	jslog.Log(jslog.LevelBasic, "Setting up IEC Connections & ASDU handlers...")
 	for _, s := range servers {
 		cc := s.cfg
 		server := cs101.NewServer(&srvHandler{s: s})
@@ -144,20 +146,20 @@ func main() {
 
 		config, err := cs101util.BuildConfig(&s.cfg, true)
 		if err != nil {
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - "+err.Error())
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - "+err.Error())
 			os.Exit(-1)
 		}
 		server.SetConfig(config)
 		params := cs101util.BuildParams(&s.cfg)
 		server.SetParams(&params)
-		if jscfg.LogLevel() >= jscfg.LogLevelDebug {
+		if jslog.Level() >= jslog.LevelDebug {
 			server.SetLogMode(true)
 		}
 		if err := server.Start(); err != nil {
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - Error starting server: "+err.Error())
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - Error starting server: "+err.Error())
 			os.Exit(-1)
 		}
-		jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - New server listening on "+cc.PortName)
+		jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - New server listening on "+cc.PortName)
 	}
 
 	go engine.RunDequeueLoop()

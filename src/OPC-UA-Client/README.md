@@ -4,6 +4,8 @@ This driver implements a client for the OPC-UA protocol.
 
 This driver uses the OPC Foundation's .NET Standard library compiled to .NET 5.0 target platform.
 
+> A pure-Go alternative to this driver lives in [`src/OPC-UA-Client-Go`](../OPC-UA-Client-Go/README.md). It reads the same configuration documents and produces the same data, and needs no .NET runtime. Run only one of the two for a given instance number.
+
     https://github.com/OPCFoundation/UA-.NETStandard
 
 The driver can have multiple connections to OPC-UA servers on multiple computers, if needed.

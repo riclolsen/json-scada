@@ -76,13 +76,13 @@ type clientHandler struct {
 	acks   []conv.IecCmdAck
 }
 
-func (h *clientHandler) InterrogationHandler(asdu.Connect, *asdu.ASDU) error         { return nil }
-func (h *clientHandler) CounterInterrogationHandler(asdu.Connect, *asdu.ASDU) error  { return nil }
-func (h *clientHandler) ReadHandler(asdu.Connect, *asdu.ASDU) error                  { return nil }
-func (h *clientHandler) TestCommandHandler(asdu.Connect, *asdu.ASDU) error           { return nil }
-func (h *clientHandler) ClockSyncHandler(asdu.Connect, *asdu.ASDU) error             { return nil }
-func (h *clientHandler) ResetProcessHandler(asdu.Connect, *asdu.ASDU) error          { return nil }
-func (h *clientHandler) DelayAcquisitionHandler(asdu.Connect, *asdu.ASDU) error      { return nil }
+func (h *clientHandler) InterrogationHandler(asdu.Connect, *asdu.ASDU) error        { return nil }
+func (h *clientHandler) CounterInterrogationHandler(asdu.Connect, *asdu.ASDU) error { return nil }
+func (h *clientHandler) ReadHandler(asdu.Connect, *asdu.ASDU) error                 { return nil }
+func (h *clientHandler) TestCommandHandler(asdu.Connect, *asdu.ASDU) error          { return nil }
+func (h *clientHandler) ClockSyncHandler(asdu.Connect, *asdu.ASDU) error            { return nil }
+func (h *clientHandler) ResetProcessHandler(asdu.Connect, *asdu.ASDU) error         { return nil }
+func (h *clientHandler) DelayAcquisitionHandler(asdu.Connect, *asdu.ASDU) error     { return nil }
 func (h *clientHandler) ASDUHandler(c asdu.Connect, pack *asdu.ASDU, _ *cs104.Server, _ int) error {
 	res := conv.Decode(pack, 1)
 	h.mu.Lock()

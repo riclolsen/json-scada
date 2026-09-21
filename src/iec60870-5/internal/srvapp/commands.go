@@ -30,9 +30,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"iec60870-5/internal/conv"
-	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
-	"iec60870-5/internal/mongoutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 // lastPointKeySelectedOk flags the point selected via SBO.
@@ -86,7 +87,7 @@ func (e *Engine) HandleCommandASDU(srv *Conn, replyTo asdu.Connect, pack *asdu.A
 		req.objAddr = int(cmd.Ioa)
 		if cmd.Value != asdu.DCOOn && cmd.Value != asdu.DCOOff {
 			negativeCon(replyTo, pack)
-			jscfg.Logf(jscfg.LogLevelBasic, "%s  Invalid double state command %d", conName, cmd.Value)
+			jslog.Log(jslog.LevelBasic, "%s  Invalid double state command %d", conName, cmd.Value)
 			lastPointKeySelectedOk = 0
 			return true
 		}
@@ -103,7 +104,7 @@ func (e *Engine) HandleCommandASDU(srv *Conn, replyTo asdu.Connect, pack *asdu.A
 		req.objAddr = int(cmd.Ioa)
 		if cmd.Value != asdu.SCOStepUP && cmd.Value != asdu.SCOStepDown {
 			negativeCon(replyTo, pack)
-			jscfg.Logf(jscfg.LogLevelBasic, "%s  Invalid step state command %d", conName, cmd.Value)
+			jslog.Log(jslog.LevelBasic, "%s  Invalid step state command %d", conName, cmd.Value)
 			lastPointKeySelectedOk = 0
 			return true
 		}
@@ -169,7 +170,7 @@ func (e *Engine) HandleCommandASDU(srv *Conn, replyTo asdu.Connect, pack *asdu.A
 	default:
 		return false
 	}
-	jscfg.Logf(jscfg.LogLevelBasic, "%s  %s Obj Address %d", conName, pack.Type.String(), req.objAddr)
+	jslog.Log(jslog.LevelBasic, "%s  %s Obj Address %d", conName, pack.Type.String(), req.objAddr)
 	e.forwardCommand(srv, replyTo, pack, req)
 	return true
 }
@@ -177,7 +178,7 @@ func (e *Engine) HandleCommandASDU(srv *Conn, replyTo asdu.Connect, pack *asdu.A
 // HandleResetProcess processes C_RP_NA_1 (105) — forwarded like a command.
 func (e *Engine) HandleResetProcess(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, qrp asdu.QualifierOfResetProcessCmd) {
 	req := cmdRequest{dur: int(qrp)}
-	jscfg.Logf(jscfg.LogLevelBasic, "%s -   Reset process command QRP %d", srv.Cfg.Name, int(qrp))
+	jslog.Log(jslog.LevelBasic, "%s -   Reset process command QRP %d", srv.Cfg.Name, int(qrp))
 	e.forwardCommand(srv, replyTo, pack, req)
 }
 
@@ -185,14 +186,14 @@ func (e *Engine) HandleResetProcess(srv *Conn, replyTo asdu.Connect, pack *asdu.
 // command when a matching destination exists (C# parity).
 func (e *Engine) HandleCounterInterrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, qcc asdu.QualifierCountCall) {
 	req := cmdRequest{dur: int(qcc.Request) | int(qcc.Freeze)<<6}
-	jscfg.Logf(jscfg.LogLevelBasic, "%s -   Counter interrogation command", srv.Cfg.Name)
+	jslog.Log(jslog.LevelBasic, "%s -   Counter interrogation command", srv.Cfg.Name)
 	e.forwardCommand(srv, replyTo, pack, req)
 }
 
 // HandleClockSync processes C_CS_NA_1 (103): confirm positive and log.
 func (e *Engine) HandleClockSync(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, t time.Time) {
 	positiveCon(replyTo, pack)
-	jscfg.Logf(jscfg.LogLevelBasic, "%s -   Received clock sync command with time %s", srv.Cfg.Name, t.String())
+	jslog.Log(jslog.LevelBasic, "%s -   Received clock sync command with time %s", srv.Cfg.Name, t.String())
 	lastPointKeySelectedOk = 0
 }
 
@@ -206,7 +207,7 @@ func (e *Engine) HandleRead(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, io
 	point, dst := e.findMappedPoint(srv, int(pack.CommonAddr), int(ioa), 0)
 	if point == nil {
 		negativeCon(replyTo, pack)
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  Request to read object not found, address: %d", conName, int(ioa))
+		jslog.Log(jslog.LevelBasic, "%s  Request to read object not found, address: %d", conName, int(ioa))
 		lastPointKeySelectedOk = 0
 		return
 	}
@@ -222,7 +223,7 @@ func (e *Engine) HandleRead(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, io
 		coa := asdu.CauseOfTransmission{Cause: asdu.Request}
 		if err := conv.SendInfoBatch(replyTo, coa, asdu.CommonAddr(int(dst.CommonAddress)), obj.TypeID,
 			[]*conv.InfoObject{obj}); err != nil {
-			jscfg.Logf(jscfg.LogLevelBasic, "%s  Error sending read reply: %s", conName, err.Error())
+			jslog.Log(jslog.LevelBasic, "%s  Error sending read reply: %s", conName, err.Error())
 		}
 	}
 }
@@ -234,19 +235,19 @@ func (e *Engine) findMappedPoint(srv *Conn, ca, ioa, asduType int) (*model.RtDat
 	// with either representation)
 	filter := bson.M{"$and": bson.A{
 		bson.M{"protocolDestinations.protocolDestinationConnectionNumber": srv.Cfg.ProtocolConnectionNumber},
-		bson.M{"protocolDestinations.protocolDestinationCommonAddress": mongoutil.AddrMatch(ca)},
-		bson.M{"protocolDestinations.protocolDestinationObjectAddress": mongoutil.AddrMatch(ioa)},
+		bson.M{"protocolDestinations.protocolDestinationCommonAddress": jsmongo.AddrMatch(ca)},
+		bson.M{"protocolDestinations.protocolDestinationObjectAddress": jsmongo.AddrMatch(ioa)},
 	}}
 	if asduType != 0 {
 		filter["$and"] = append(filter["$and"].(bson.A),
-			bson.M{"protocolDestinations.protocolDestinationASDU": mongoutil.AddrMatch(asduType)})
+			bson.M{"protocolDestinations.protocolDestinationASDU": jsmongo.AddrMatch(asduType)})
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var point model.RtDataPoint
-	if err := e.DB().Collection(mongoutil.RealtimeDataCollectionName).FindOne(ctx, filter).Decode(&point); err != nil {
+	if err := e.DB().Collection(jsmongo.RealtimeDataCollectionName).FindOne(ctx, filter).Decode(&point); err != nil {
 		conName := srv.Cfg.Name + " - "
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  Error finding command point for CA %d, IOA %d, ASDU %d: %s", conName, ca, ioa, asduType, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s  Error finding command point for CA %d, IOA %d, ASDU %d: %s", conName, ca, ioa, asduType, err.Error())
 		return nil, nil
 	}
 	for i := range point.ProtocolDestinations {
@@ -268,11 +269,11 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 	point, dst := e.findMappedPoint(srv, int(pack.CommonAddr), req.objAddr, int(pack.Type))
 	if point == nil {
 		negativeCon(replyTo, pack)
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  Command not found!", conName)
+		jslog.Log(jslog.LevelBasic, "%s  Command not found!", conName)
 		lastPointKeySelectedOk = 0
 		return
 	}
-	jscfg.Logf(jscfg.LogLevelBasic, "%s  Command found.", conName)
+	jslog.Log(jslog.LevelBasic, "%s  Command found.", conName)
 
 	dstkconv1 := dst.KConv1
 	if dstkconv1 == 0 {
@@ -285,7 +286,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 	if req.isSelect && !dstsbo {
 		// tried a select when there is no select expected
 		negativeCon(replyTo, pack)
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  Select tried but not expected!", conName)
+		jslog.Log(jslog.LevelBasic, "%s  Select tried but not expected!", conName)
 		lastPointKeySelectedOk = 0
 		return
 	}
@@ -293,7 +294,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 	if req.dur != dstdur {
 		// duration spec different than expected, reject command
 		negativeCon(replyTo, pack)
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  QU/QL command qualifier not expected: %d, %d wanted", conName, req.dur, dstdur)
+		jslog.Log(jslog.LevelBasic, "%s  QU/QL command qualifier not expected: %d, %d wanted", conName, req.dur, dstdur)
 		lastPointKeySelectedOk = 0
 		return
 	}
@@ -315,7 +316,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 
 	if req.cmdHasTime {
 		if time.Since(req.cmdTime) > TimeToExpireCommandsWithTime {
-			jscfg.Logf(jscfg.LogLevelBasic, "%s  Command with time expired after %v", conName, TimeToExpireCommandsWithTime)
+			jslog.Log(jslog.LevelBasic, "%s  Command with time expired after %v", conName, TimeToExpireCommandsWithTime)
 			negativeCon(replyTo, pack)
 			lastPointKeySelectedOk = 0
 			return
@@ -326,19 +327,19 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 
 	if req.isSelect {
 		lastPointKeySelectedOk = srcpointkey // flag selected point
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  Select!", conName)
+		jslog.Log(jslog.LevelBasic, "%s  Select!", conName)
 		return // do not forward a select
 	}
 
 	if !req.isSelect && dstsbo && lastPointKeySelectedOk != srcpointkey {
 		// tried execute without select first when there is select expected
 		negativeCon(replyTo, pack)
-		jscfg.Logf(jscfg.LogLevelBasic, "%s  Tried execute without select first!", conName)
+		jslog.Log(jslog.LevelBasic, "%s  Tried execute without select first!", conName)
 		lastPointKeySelectedOk = 0
 		return
 	}
 	lastPointKeySelectedOk = 0
-	jscfg.Logf(jscfg.LogLevelBasic, "%s  Execute (forward to queue)!", conName)
+	jslog.Log(jslog.LevelBasic, "%s  Execute (forward to queue)!", conName)
 
 	val := req.val
 	// destination conversion (received value -> engineering value)
@@ -421,7 +422,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if _, err := e.DB().Collection(mongoutil.CommandsQueueCollectionName).InsertOne(ctx, cmdDoc); err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, "  Exception Mongo: "+err.Error())
+	if _, err := e.DB().Collection(jsmongo.CommandsQueueCollectionName).InsertOne(ctx, cmdDoc); err != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "  Exception Mongo: "+err.Error())
 	}
 }

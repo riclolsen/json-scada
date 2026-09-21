@@ -316,7 +316,6 @@
         "manual": "Manual"
       },
       "autoRestartOnConfigChange": "Reiniciar automaticamente ao alterar configuração",
-      "executableVariant": "Variante do executável",
       "syncResult": "Sincronização concluída: {ensured} aplicados, {errors} erros, {orphans} serviço(s) órfão(s).",
       "deleteServiceNote": "O serviço do SO {service} será parado e removido no nó {node}.",
       "serviceStates": {

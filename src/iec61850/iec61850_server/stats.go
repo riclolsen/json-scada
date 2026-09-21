@@ -29,39 +29,44 @@ import (
 	"context"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jsstats"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // statsLoop publishes the instance keep-alive and the connection statistics.
-func statsLoop(ctx context.Context, cfg JSONSCADAConfig, g *Gateway) {
+func statsLoop(ctx context.Context, cfg jsconfig.Config, g *Gateway) {
 	for ctx.Err() == nil {
-		cli, err := mongoConnect(cfg)
+		cli, _, err := jsmongo.ConnectAndPing(cfg)
 		if err != nil {
-			Log(LogLevelNoLog, "Exception Mongo")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception Mongo")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
 		db := cli.Database(cfg.MongoDatabaseName)
 		if err := statsCycle(ctx, db, cfg, g); err != nil && ctx.Err() == nil {
-			Log(LogLevelNoLog, "Exception Mongo")
-			Log(LogLevelNoLog, "%v", err)
+			jslog.Log(jslog.LevelNoLog, "Exception Mongo")
+			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
 		}
 		_ = cli.Disconnect(context.Background())
 	}
 }
 
-func statsCycle(ctx context.Context, db *mongo.Database, cfg JSONSCADAConfig, g *Gateway) error {
-	collInsts := db.Collection(ProtocolDriverInstancesCollectionName)
-	collConns := db.Collection(ProtocolConnectionsCollectionName)
+func statsCycle(ctx context.Context, db *mongo.Database, cfg jsconfig.Config, g *Gateway) error {
+	collInsts := db.Collection(jsmongo.ProtocolDriverInstancesCollectionName)
+	collConns := db.Collection(jsmongo.ProtocolConnectionsCollectionName)
 
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if err := mongoPing(db, 1*time.Second); err != nil {
+		if err := jsmongo.Ping(db, 1*time.Second); err != nil {
 			return err
 		}
 
@@ -75,7 +80,7 @@ func statsCycle(ctx context.Context, db *mongo.Database, cfg JSONSCADAConfig, g 
 				"activeNodeName":             cfg.NodeName,
 				"activeNodeKeepAliveTimeTag": bson.NewDateTimeFromTime(time.Now()),
 			}}); err != nil {
-			Log(LogLevelDetailed, "Stats - %v", err)
+			jslog.Log(jslog.LevelDetailed, "Stats - %v", err)
 		}
 		updateConnectionStats(updCtx, collConns, cfg, g)
 		cancel()
@@ -90,20 +95,21 @@ func statsCycle(ctx context.Context, db *mongo.Database, cfg JSONSCADAConfig, g 
 
 // updateConnectionStats publishes the server view on the connection
 // document, the way the C# driver does.
-func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg JSONSCADAConfig, g *Gateway) {
+func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg jsconfig.Config, g *Gateway) {
 	if g == nil {
 		return
 	}
-	_, err := collConns.UpdateOne(ctx,
-		bson.M{"protocolConnectionNumber": g.conn.ProtocolConnectionNumber},
-		bson.M{"$set": bson.M{"stats": bson.M{
-			"nodeName":        cfg.NodeName,
-			"timeTag":         bson.NewDateTimeFromTime(time.Now()),
+	jsstats.Writer{
+		NodeName: cfg.NodeName,
+		OnError: func(_ jsstats.Entry, err error) {
+			jslog.Log(jslog.LevelDetailed, "Stats - connection stats update: %v", err)
+		},
+	}.Write(ctx, collConns, []jsstats.Entry{{
+		ConnectionNumber: g.conn.ProtocolConnectionNumber,
+		Stats: bson.M{
 			"isRunning":       g.Serving(),
 			"openConnections": g.OpenConnections(),
 			"pointsExposed":   len(g.built.ByTag),
-		}}})
-	if err != nil {
-		Log(LogLevelDetailed, "Stats - connection stats update: %v", err)
-	}
+		},
+	}})
 }

@@ -316,7 +316,6 @@
         "manual": "Manuel"
       },
       "autoRestartOnConfigChange": "Redémarrage automatique en cas de modification de la configuration",
-      "executableVariant": "Variante exécutable",
       "syncResult": "Synchronisation terminée : {ensured} assuré, {errors} erreurs, {orphans} service(s) orphelin(s).",
       "deleteServiceNote": "Le service du système d'exploitation {service} sera arrêté et supprimé sur le nœud {node}.",
       "serviceStates": {

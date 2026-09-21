@@ -29,9 +29,10 @@ import (
 	"github.com/riclolsen/go-iecp5/cs101"
 	"go.bug.st/serial"
 
-	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/tlsutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
 )
 
 func msToSeconds(ms float64, def, min, max int) time.Duration {
@@ -100,7 +101,7 @@ func BuildConfig(cc *model.ConnCfg, isServer bool) (cs101.Config, error) {
 			stopBits = serial.TwoStopBits
 		}
 		if h := strings.ToLower(cc.Handshake); h != "" && h != "none" {
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - Warning: serial handshake '"+cc.Handshake+"' not supported, using none.")
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - Warning: serial handshake '"+cc.Handshake+"' not supported, using none.")
 		}
 		cfg.Serial = cs101.SerialConfig{
 			Address:  portName,
@@ -135,7 +136,7 @@ func BuildConfig(cc *model.ConnCfg, isServer bool) (cs101.Config, error) {
 		cfg.TimeoutSendLinkMsg = time.Duration(cc.TimeoutMessage) * time.Millisecond
 	}
 	if cc.UseSingleCharACK {
-		jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - Note: useSingleCharACK accepted on receive; sending E5 not configurable.")
+		jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - Note: useSingleCharACK accepted on receive; sending E5 not configurable.")
 	}
 	return cfg, nil
 }

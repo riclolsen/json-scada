@@ -33,7 +33,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"iec60870-5/internal/conv"
-	"iec60870-5/internal/mongoutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 // AutoKeyMultiplier partitions the _id space per connection
@@ -55,7 +56,7 @@ func GetNextAutoKey(srv *Conn, colRt *mongo.Collection) float64 {
 			options.FindOne().SetSort(bson.M{"_id": -1}),
 		).Decode(&res)
 		if err == nil {
-			srv.lastNewKey = mongoutil.ToFloat64(res["_id"]) + 1
+			srv.lastNewKey = jsmongo.GetDouble(res, "_id", 0) + 1
 		} else {
 			srv.lastNewKey = baseKey
 		}

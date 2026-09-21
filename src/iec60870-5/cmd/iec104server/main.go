@@ -39,6 +39,9 @@ import (
 	"iec60870-5/internal/mongoutil"
 	"iec60870-5/internal/srvapp"
 	"iec60870-5/internal/tlsutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 const (
@@ -100,7 +103,7 @@ func (s *srv104) updateConnStats(remote, state string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	endpointKey := strings.ReplaceAll(remote, ".", "_") // avoid dotted field paths
-	_, err := s.engine.DB().Collection(mongoutil.ProtocolConnectionsCollectionName).UpdateOne(ctx,
+	_, err := s.engine.DB().Collection(jsmongo.ProtocolConnectionsCollectionName).UpdateOne(ctx,
 		bson.M{"protocolConnectionNumber": s.cfg.ProtocolConnectionNumber},
 		bson.M{"$set": bson.M{"stats": bson.M{
 			"nodeName":          s.engine.Cfg.NodeName,
@@ -113,7 +116,7 @@ func (s *srv104) updateConnStats(remote, state string) {
 			}},
 		}}})
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelDetailed, s.cfg.Name+" - Error updating stats: "+err.Error())
+		jslog.Log(jslog.LevelDetailed, "%s", s.cfg.Name+" - Error updating stats: "+err.Error())
 	}
 }
 
@@ -147,9 +150,9 @@ func (h *srvHandler) DelayAcquisitionHandler(c asdu.Connect, pack *asdu.ASDU, _ 
 	return nil
 }
 func (h *srvHandler) ASDUHandler(c asdu.Connect, pack *asdu.ASDU) error {
-	jscfg.Logf(jscfg.LogLevelDetailed, "%s - %s", h.s.cfg.Name, pack.String())
+	jslog.Log(jslog.LevelDetailed, "%s - %s", h.s.cfg.Name, pack.String())
 	if !h.s.engine.HandleCommandASDU(h.s.engConn, c, pack) {
-		jscfg.Logf(jscfg.LogLevelBasic, "%s -   Not implemented type of ASDU received: %d", h.s.cfg.Name, pack.Type)
+		jslog.Log(jslog.LevelBasic, "%s -   Not implemented type of ASDU received: %d", h.s.cfg.Name, pack.Type)
 		pack.Coa.IsNegative = true
 		_ = pack.SendReplyMirror(c, asdu.ActivationCon)
 	}
@@ -165,32 +168,32 @@ func defInt(v, def int) int {
 }
 
 func main() {
-	jscfg.Log(jscfg.LogLevelBasic, "{json:scada} IEC60870-5-104 Server Driver - Copyright 2020-2026 RLO")
-	jscfg.Log(jscfg.LogLevelBasic, "Driver version "+driverVersion+" (Go/go-iecp5)")
+	jslog.Log(jslog.LevelBasic, "{json:scada} IEC60870-5-104 Server Driver - Copyright 2020-2026 RLO")
+	jslog.Log(jslog.LevelBasic, "Driver version "+driverVersion+" (Go/go-iecp5)")
 
 	cfg, instanceNumber, err := jscfg.Read()
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", err.Error())
 		os.Exit(-1)
 	}
-	jscfg.Log(jscfg.LogLevelBasic, "MongoDB database name: "+cfg.MongoDatabaseName)
-	jscfg.Log(jscfg.LogLevelBasic, "Node name: "+cfg.NodeName)
+	jslog.Log(jslog.LevelBasic, "%s", "MongoDB database name: "+cfg.MongoDatabaseName)
+	jslog.Log(jslog.LevelBasic, "%s", "Node name: "+cfg.NodeName)
 
 	engine, err := srvapp.New(cfg, protocolDriverName)
 	if err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, "Error connecting to MongoDB: "+err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", "Error connecting to MongoDB: "+err.Error())
 		os.Exit(-1)
 	}
 
 	if _, err := mongoutil.LoadInstance(engine.DB(), protocolDriverName, instanceNumber, cfg.NodeName); err != nil {
-		jscfg.Log(jscfg.LogLevelBasic, err.Error())
+		jslog.Log(jslog.LevelBasic, "%s", err.Error())
 		os.Exit(-1)
 	}
-	jscfg.Logf(jscfg.LogLevelBasic, "Instance: %d", instanceNumber)
+	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(engine.DB(), protocolDriverName, instanceNumber)
 	if err != nil || len(connCfgs) == 0 {
-		jscfg.Log(jscfg.LogLevelBasic, "No connections found!")
+		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
 
@@ -202,12 +205,12 @@ func main() {
 		s.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		servers = append(servers, s)
-		jscfg.Log(jscfg.LogLevelBasic, cc.Name)
+		jslog.Log(jslog.LevelBasic, "%s", cc.Name)
 	}
 
 	engine.DistributeAutoTags()
 
-	jscfg.Log(jscfg.LogLevelBasic, "Setting up IEC Connections & ASDU handlers...")
+	jslog.Log(jslog.LevelBasic, "Setting up IEC Connections & ASDU handlers...")
 	for _, s := range servers {
 		cc := s.cfg
 		server := cs104.NewServer(&srvHandler{s: s})
@@ -232,14 +235,14 @@ func main() {
 			IdleTimeout3:      time.Duration(defInt(int(cc.T3), 20)) * time.Second,
 		})
 		server.SetInfoObjTimeZone(time.Local)
-		if jscfg.LogLevel() >= jscfg.LogLevelDebug {
+		if jslog.Level() >= jslog.LevelDebug {
 			server.LogMode(true)
 		}
 
 		tlsCfg, err := tlsutil.BuildTLSConfig(&s.cfg, true)
 		if err != nil {
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - Error configuring TLS certificates.")
-			jscfg.Log(jscfg.LogLevelBasic, cc.Name+" - "+err.Error())
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - Error configuring TLS certificates.")
+			jslog.Log(jslog.LevelBasic, "%s", cc.Name+" - "+err.Error())
 			os.Exit(1)
 		}
 		if tlsCfg != nil {
@@ -253,9 +256,9 @@ func main() {
 			if uc := c.UnderlyingConn(); uc != nil {
 				remote = uc.RemoteAddr().String()
 			}
-			jscfg.Logf(jscfg.LogLevelBasic, "%s - New connection request from IP %s", sref.cfg.Name, remote)
+			jslog.Log(jslog.LevelBasic, "%s - New connection request from IP %s", sref.cfg.Name, remote)
 			if !sref.ipAllowed(remote) || sref.sessionCount() >= maxClients {
-				jscfg.Logf(jscfg.LogLevelBasic, "%s - Connection rejected from %s", sref.cfg.Name, remote)
+				jslog.Log(jslog.LevelBasic, "%s - Connection rejected from %s", sref.cfg.Name, remote)
 				if uc := c.UnderlyingConn(); uc != nil {
 					_ = uc.Close()
 				}
@@ -264,7 +267,7 @@ func main() {
 			sref.sessMu.Lock()
 			sref.sessions[c] = remote
 			sref.sessMu.Unlock()
-			jscfg.Logf(jscfg.LogLevelBasic, "%s - Connection event %s - OPENED", sref.cfg.Name, remote)
+			jslog.Log(jslog.LevelBasic, "%s - Connection event %s - OPENED", sref.cfg.Name, remote)
 			go sref.updateConnStats(remote, "OPENED")
 		})
 		server.SetConnectionLostHandler(func(c asdu.Connect) {
@@ -272,7 +275,7 @@ func main() {
 			remote := sref.sessions[c]
 			delete(sref.sessions, c)
 			sref.sessMu.Unlock()
-			jscfg.Logf(jscfg.LogLevelBasic, "%s - Connection event %s - CLOSED", sref.cfg.Name, remote)
+			jslog.Log(jslog.LevelBasic, "%s - Connection event %s - CLOSED", sref.cfg.Name, remote)
 			go sref.updateConnStats(remote, "CLOSED")
 		})
 
@@ -285,9 +288,9 @@ func main() {
 			localBind += ":2404"
 		}
 		go func(bind string, name string) {
-			jscfg.Logf(jscfg.LogLevelBasic, "%s - New server listening on %s", name, bind)
+			jslog.Log(jslog.LevelBasic, "%s - New server listening on %s", name, bind)
 			server.ListenAndServer(bind) // blocks while serving
-			jscfg.Logf(jscfg.LogLevelBasic, "%s - Server stopped", name)
+			jslog.Log(jslog.LevelBasic, "%s - Server stopped", name)
 			os.Exit(1)
 		}(localBind, cc.Name)
 	}

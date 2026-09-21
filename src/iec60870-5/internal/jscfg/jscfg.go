@@ -1,5 +1,5 @@
 /*
- * IEC 60870-5-101/104 protocol drivers for {json:scada} - shared configuration
+ * IEC 60870-5-101/104 protocol drivers for {json:scada} - configuration entry
  * {json:scada} - Copyright (c) 2020 - 2026 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
@@ -16,71 +16,29 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Package jscfg is what remains of this module's own configuration library
+// after the shared parts moved to go-common: one function, holding the
+// stricter command-line contract of the five IEC 60870-5 binaries.
+//
+// parity: these drivers exit with a diagnostic when the instance number or
+// the log level is not a number, where dnp3-go and the flat drivers log the
+// problem and carry on with the default. That difference is deliberate and is
+// the only reason this package still exists — everything else it used to hold
+// is now jsconfig, jslog or jsmongo.
 package jscfg
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
-	"sync"
-	"time"
+
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
 )
 
-// Log levels (same numbering as the C# drivers).
-const (
-	LogLevelNoLog    = 0
-	LogLevelBasic    = 1
-	LogLevelDetailed = 2
-	LogLevelDebug    = 3
-)
-
-var (
-	logLevel = LogLevelBasic
-	logMutex sync.Mutex
-)
-
-// SetLogLevel sets the global log level.
-func SetLogLevel(level int) { logLevel = level }
-
-// LogLevel returns the global log level.
-func LogLevel() int { return logLevel }
-
-// Log writes a timestamped message to stdout when the global level admits it.
-func Log(level int, msg string) {
-	if logLevel >= level {
-		logMutex.Lock()
-		fmt.Printf("[%s] %s\n", time.Now().Format(time.RFC3339Nano), msg)
-		logMutex.Unlock()
-	}
-}
-
-// Logf is Log with formatting.
-func Logf(level int, format string, args ...interface{}) {
-	if logLevel >= level {
-		Log(level, fmt.Sprintf(format, args...))
-	}
-}
-
-// Config is the base configuration of the system (conf/json-scada.json).
-type Config struct {
-	NodeName                 string `json:"nodeName"`
-	MongoConnectionString    string `json:"mongoConnectionString"`
-	MongoDatabaseName        string `json:"mongoDatabaseName"`
-	TLSCaPemFile             string `json:"tlsCaPemFile"`
-	TLSClientPemFile         string `json:"tlsClientPemFile"`
-	TLSClientPfxFile         string `json:"tlsClientPfxFile"`
-	TLSClientKeyPassword     string `json:"tlsClientKeyPassword"`
-	TLSAllowInvalidHostnames bool   `json:"tlsAllowInvalidHostnames"`
-	TLSAllowChainErrors      bool   `json:"tlsAllowChainErrors"`
-	TLSInsecure              bool   `json:"tlsInsecure"`
-}
-
-// Read parses CLI args (instance number, log level, config file path — same
-// contract as the C# drivers) and loads the json-scada config file.
-func Read() (cfg Config, instanceNumber int, err error) {
+// Read parses the CLI arguments (instance number, log level, config file
+// path) and loads conf/json-scada.json, failing on anything malformed.
+func Read() (cfg jsconfig.Config, instanceNumber int, err error) {
 	instanceNumber = 1
 	if len(os.Args) > 1 {
 		i, cerr := strconv.Atoi(os.Args[1])
@@ -94,41 +52,23 @@ func Read() (cfg Config, instanceNumber int, err error) {
 		if cerr != nil {
 			return cfg, 0, fmt.Errorf("log level parameter should be a number: %v", cerr)
 		}
-		logLevel = i
+		jslog.SetLevel(i)
 	}
 
-	cfgFileName := filepath.Join("..", "conf", "json-scada.json")
-	if _, serr := os.Stat(cfgFileName); serr != nil {
-		cfgFileName = filepath.Join("c:\\", "json-scada", "conf", "json-scada.json")
-	}
-	if os.Getenv("JS_CONFIG_FILE") != "" {
-		cfgFileName = os.Getenv("JS_CONFIG_FILE")
-	}
+	argPath := ""
 	if len(os.Args) > 3 {
-		if _, serr := os.Stat(os.Args[3]); serr == nil {
-			cfgFileName = os.Args[3]
-		}
+		argPath = os.Args[3]
 	}
+	path := jsconfig.ResolvePath(
+		jsconfig.DefaultConfigFilePath, jsconfig.WindowsFallbackPath, argPath)
 
-	Log(LogLevelBasic, "Reading config file "+cfgFileName)
-	data, err := os.ReadFile(cfgFileName)
+	jslog.Log(jslog.LevelBasic, "%s", "Reading config file "+path)
+	cfg, err = jsconfig.Load(path)
 	if err != nil {
-		return cfg, 0, fmt.Errorf("failed to read config file: %v", err)
+		return cfg, 0, err
 	}
-	if err = json.Unmarshal(data, &cfg); err != nil {
-		return cfg, 0, fmt.Errorf("failed to parse config file JSON: %v", err)
-	}
-	cfg.MongoConnectionString = strings.TrimSpace(cfg.MongoConnectionString)
-	cfg.MongoDatabaseName = strings.TrimSpace(cfg.MongoDatabaseName)
-	cfg.NodeName = strings.TrimSpace(cfg.NodeName)
-	if cfg.MongoConnectionString == "" {
-		return cfg, 0, fmt.Errorf("missing MongoDB connection string in config file")
-	}
-	if cfg.MongoDatabaseName == "" {
-		return cfg, 0, fmt.Errorf("missing MongoDB database name in config file")
-	}
-	if cfg.NodeName == "" {
-		return cfg, 0, fmt.Errorf("missing nodeName parameter in config file")
+	if err = jsconfig.Validate(cfg, path); err != nil {
+		return cfg, 0, err
 	}
 	return cfg, instanceNumber, nil
 }

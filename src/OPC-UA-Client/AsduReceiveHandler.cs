@@ -1117,12 +1117,61 @@ partial class MainClass
             var continuationPoints = new ByteStringCollection();
             foreach (var browseResult in browseResultCollection)
             {
-                if (browseResult.ContinuationPoint != null)
+                if (HasContinuationPoint(browseResult))
                 {
                     continuationPoints.Add(browseResult.ContinuationPoint);
                 }
             }
             return continuationPoints;
+        }
+
+        // A zero length continuation point means there is nothing more to
+        // fetch, the same as a null one. Both PrepareBrowseNext and
+        // MergeContinuedReferences must agree on this test, or the responses
+        // stop lining up with the results they belong to.
+        private static bool HasContinuationPoint(BrowseResult browseResult)
+        {
+            return browseResult.ContinuationPoint != null && browseResult.ContinuationPoint.Length > 0;
+        }
+
+        // Appends the references returned by BrowseNext to the results they
+        // continue, and carries over the new continuation point.
+        //
+        // The server returns the BrowseNext results in the order the
+        // continuation points were sent, which is the order of the results
+        // that carried one.
+        //
+        // Without this, every reference past kMaxReferencesPerNode of a node
+        // is silently discarded and those nodes never get a tag. On a
+        // json-scada OPC-UA server whose JsonScadaServer object publishes
+        // 1994 references, that lost 994 of them.
+        private static void MergeContinuedReferences(
+            BrowseResultCollection browseResultCollection,
+            BrowseResultCollection continuedResultCollection)
+        {
+            var next = 0;
+            foreach (var browseResult in browseResultCollection)
+            {
+                if (!HasContinuationPoint(browseResult))
+                {
+                    continue;
+                }
+                if (next >= continuedResultCollection.Count)
+                {
+                    return;
+                }
+
+                var continued = continuedResultCollection[next++];
+                if (continued.References != null && continued.References.Count > 0)
+                {
+                    if (browseResult.References == null)
+                    {
+                        browseResult.References = new ReferenceDescriptionCollection();
+                    }
+                    browseResult.References.AddRange(continued.References);
+                }
+                browseResult.ContinuationPoint = continued.ContinuationPoint;
+            }
         }
         public async Task<Dictionary<ExpandedNodeId, (ReferenceDescription Reference, string Path)>> BrowseFullAddressSpaceAsync(
             IUAClient uaClient,
@@ -1237,6 +1286,10 @@ partial class MainClass
                     ClientBase.ValidateResponse(browseNextResultCollection, continuationPoints);
                     ClientBase.ValidateDiagnosticInfos(diagnosticsInfoCollection, continuationPoints);
                     allBrowseResults.AddRange(browseNextResultCollection);
+                    // allBrowseResults is never read; the path building below
+                    // works from browseResultCollection, so the continued
+                    // references have to be merged back into it.
+                    MergeContinuedReferences(browseResultCollection, browseNextResultCollection);
                     continuationPoints = PrepareBrowseNext(browseNextResultCollection);
                 }
 

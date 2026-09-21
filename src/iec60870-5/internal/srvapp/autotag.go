@@ -30,8 +30,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"iec60870-5/internal/jscfg"
-	"iec60870-5/internal/mongoutil"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 // IOA partition — one shared address space per CA, split into
@@ -50,7 +50,7 @@ const (
 // DistributeAutoTags runs once at startup per connection with
 // autoCreateTags=true.
 func (e *Engine) DistributeAutoTags() {
-	colRt := e.DB().Collection(mongoutil.RealtimeDataCollectionName)
+	colRt := e.DB().Collection(jsmongo.RealtimeDataCollectionName)
 	ctx := context.Background()
 
 	for _, srv := range e.Conns {
@@ -58,10 +58,10 @@ func (e *Engine) DistributeAutoTags() {
 			continue
 		}
 		if srv.Cfg.SizeOfIOA < 2 {
-			jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+" - autoCreateTags not supported with sizeOfIOA=1, skipping.")
+			jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+" - autoCreateTags not supported with sizeOfIOA=1, skipping.")
 			continue
 		}
-		jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+" - autoCreateTags: distributing protocol destinations...")
+		jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+" - autoCreateTags: distributing protocol destinations...")
 
 		// Detect highest IOA already in use for this connection, bucketed by range.
 		lastDigital := ioaBaseDigital - 1
@@ -76,7 +76,7 @@ func (e *Engine) DistributeAutoTags() {
 			options.Find().SetProjection(bson.M{"protocolDestinations": 1}))
 		if err != nil {
 			cancel()
-			jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+" - autoCreateTags: query error: "+err.Error())
+			jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+" - autoCreateTags: query error: "+err.Error())
 			continue
 		}
 		for cur.Next(cctx) {
@@ -87,11 +87,11 @@ func (e *Engine) DistributeAutoTags() {
 				continue
 			}
 			for _, d := range doc.ProtocolDestinations {
-				if int(mongoutil.ToFloat64(d["protocolDestinationConnectionNumber"])) !=
+				if int(jsmongo.GetDouble(d, "protocolDestinationConnectionNumber", 0)) !=
 					int(srv.Cfg.ProtocolConnectionNumber) {
 					continue
 				}
-				ioa := int(mongoutil.ToU32(d["protocolDestinationObjectAddress"]))
+				ioa := int(jsmongo.GetU32(d, "protocolDestinationObjectAddress", 0))
 				if ioa >= ioaBaseDigital && ioa <= ioaTopDigital && ioa > lastDigital {
 					lastDigital = ioa
 				}
@@ -109,18 +109,23 @@ func (e *Engine) DistributeAutoTags() {
 		cur.Close(cctx)
 		cancel()
 
-		// Process four categories: commands first (when enabled), then supervised.
+		// Process four categories: commands first (when enabled), then the
+		// monitored points. Monitored covers every non-command origin
+		// (supervised, calculated, manual, tags without origin), so that with
+		// an empty topics filter the complete database is distributed.
 		categories := []struct {
+			label     string
 			pointType string
-			origin    string
+			origin    bson.M
+			isCommand bool
 			asdu      int
 			startIoa  int
 			topIoa    int
 		}{
-			{"digital", "command", 45, lastDigCmd, ioaTopDigCmd},
-			{"analog", "command", 50, lastAnaCmd, ioaTopAnaCmd},
-			{"digital", "supervised", 1, lastDigital, ioaTopDigital},
-			{"analog", "supervised", 13, lastAnalog, ioaTopAnalog},
+			{"digital command", "digital", bson.M{"origin": "command"}, true, 45, lastDigCmd, ioaTopDigCmd},
+			{"analog command", "analog", bson.M{"origin": "command"}, true, 50, lastAnaCmd, ioaTopAnaCmd},
+			{"digital monitored", "digital", bson.M{"origin": bson.M{"$ne": "command"}}, false, 1, lastDigital, ioaTopDigital},
+			{"analog monitored", "analog", bson.M{"origin": bson.M{"$ne": "command"}}, false, 13, lastAnalog, ioaTopAnalog},
 		}
 
 		// the server's link-level address is used as the common address
@@ -131,13 +136,13 @@ func (e *Engine) DistributeAutoTags() {
 		}
 
 		for _, cat := range categories {
-			if cat.origin == "command" && !srv.Cfg.CommandsEnabledVal() {
+			if cat.isCommand && !srv.Cfg.CommandsEnabledVal() {
 				continue
 			}
 			nextIoa := cat.startIoa
 			filter := bson.M{"$and": bson.A{
 				bson.M{"type": cat.pointType},
-				bson.M{"origin": cat.origin},
+				cat.origin,
 				bson.M{"protocolDestinations": bson.M{"$not": bson.M{"$elemMatch": bson.M{
 					"protocolDestinationConnectionNumber": srv.Cfg.ProtocolConnectionNumber}}}},
 			}}
@@ -147,7 +152,7 @@ func (e *Engine) DistributeAutoTags() {
 					SetProjection(bson.M{"_id": 1, "tag": 1, "group1": 1}))
 			if err != nil {
 				cancel()
-				jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+" - autoCreateTags: query error: "+err.Error())
+				jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+" - autoCreateTags: query error: "+err.Error())
 				continue
 			}
 			for cur.Next(cctx) {
@@ -173,8 +178,8 @@ func (e *Engine) DistributeAutoTags() {
 
 				nextIoa++
 				if nextIoa > cat.topIoa {
-					jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+
-						" - autoCreateTags: IOA range exhausted for "+cat.pointType+" "+cat.origin+", stopping.")
+					jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+
+						" - autoCreateTags: IOA range exhausted for "+cat.label+", stopping.")
 					break
 				}
 
@@ -208,15 +213,29 @@ func (e *Engine) DistributeAutoTags() {
 					bson.M{"$push": bson.M{"protocolDestinations": destDoc}})
 				ucancel()
 				if err != nil {
-					jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+" - autoCreateTags: update error: "+err.Error())
+					jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+" - autoCreateTags: update error: "+err.Error())
 					continue
 				}
-				jscfg.Logf(jscfg.LogLevelBasic, "%s - autoCreateTags: Creating destination for tag: %v %s IOA: %d",
+				jslog.Log(jslog.LevelBasic, "%s - autoCreateTags: Creating destination for tag: %v %s IOA: %d",
 					srv.Cfg.Name, tagID, tagStr, nextIoa)
 			}
 			cur.Close(cctx)
 			cancel()
 		}
-		jscfg.Log(jscfg.LogLevelBasic, srv.Cfg.Name+" - autoCreateTags: Distribution complete.")
+
+		// Report tags left out because their type has no IEC 60870-5
+		// monitor/control representation (only digital and analog are mapped).
+		cctx, cancel = context.WithTimeout(ctx, 60*time.Second)
+		nLeft, err := colRt.CountDocuments(cctx, bson.M{"$and": bson.A{
+			bson.M{"type": bson.M{"$nin": bson.A{"digital", "analog"}}},
+			bson.M{"protocolDestinations": bson.M{"$not": bson.M{"$elemMatch": bson.M{
+				"protocolDestinationConnectionNumber": srv.Cfg.ProtocolConnectionNumber}}}},
+		}})
+		cancel()
+		if err == nil && nLeft > 0 {
+			jslog.Log(jslog.LevelBasic, "%s - autoCreateTags: %d tags not distributed (type not supported by IEC 60870-5).",
+				srv.Cfg.Name, nLeft)
+		}
+		jslog.Log(jslog.LevelBasic, "%s", srv.Cfg.Name+" - autoCreateTags: Distribution complete.")
 	}
 }

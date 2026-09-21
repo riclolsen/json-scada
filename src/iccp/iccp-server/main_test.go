@@ -78,8 +78,8 @@ func TestApplyCommandConversion(t *testing.T) {
 	}{
 		{"digital direct on", 1, rtData{Type: "digital", Kconv1: 1.0}, 1, "true", "true"},
 		{"digital direct off", 0, rtData{Type: "digital", Kconv1: 1.0}, 0, "false", "false"},
-		{"digital direct rounds", 0.6, rtData{Type: "digital"}, 1, "1", "0.600000"},
-		{"digital direct rounds down", 0.4, rtData{Type: "digital"}, 0, "0", "0.400000"},
+		{"digital direct nonzero 0.6", 0.6, rtData{Type: "digital"}, 1, "1", "0.600000"},
+		{"digital direct nonzero 0.4", 0.4, rtData{Type: "digital"}, 1, "1", "0.400000"},
 		{"digital direct non-boolean", 3, rtData{Type: "digital"}, 1, "1", "3"},
 		{"digital inverted on", 1, rtData{Type: "digital", Kconv1: -1.0}, 0, "false", "true"},
 		{"digital inverted off", 0, rtData{Type: "digital", Kconv1: -1.0}, 1, "true", "false"},

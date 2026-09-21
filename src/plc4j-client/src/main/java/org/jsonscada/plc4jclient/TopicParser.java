@@ -25,14 +25,30 @@ import java.util.regex.Pattern;
 /**
  * Parses connection "topics" entries: "TAG_NAME|PLC4X_ADDRESS|ENDIANNESS"
  * (2nd and 3rd parts optional). Same conventions as the Go plc4x-client.
+ *
+ * <p>Array addresses accept both notations: the legacy count after the type,
+ * "holding-register:20:INT[10]" (what the Go plc4x-client and PLC4X up to 0.13.x
+ * use, and what existing JSON-SCADA configurations contain), and the PLC4X 1.0.0
+ * range before the type, "holding-register:20[0..9]:INT". The legacy form is
+ * translated before it reaches PLC4X while the configured text stays the PLC4X
+ * tag name, so realtimeData tags keep matching and the same connection
+ * configuration works with either driver executable.
  */
 public final class TopicParser {
 
-  private static final Pattern ARRAY_PATTERN = Pattern.compile("\\[(.*?)\\]");
+  /** Legacy array notation: everything ending in ":TYPE[count]". */
+  private static final Pattern LEGACY_ARRAY_PATTERN =
+      Pattern.compile("^(.*):([A-Za-z_][A-Za-z0-9_]*)\\[(\\d+)\\]$");
+  /** PLC4X 1.0.0 array notation: "[lower..upper]" before the type. */
+  private static final Pattern RANGE_ARRAY_PATTERN =
+      Pattern.compile("\\[(\\d+)\\.\\.(\\d+)\\]");
 
   public static class ParsedTopic {
     public String jsTagName = "";
+    /** Address exactly as configured: PLC4X tag name and realtimeData key. */
     public String address = "";
+    /** Address handed to PLC4X (legacy array notation translated to 1.0.0). */
+    public String plc4xAddress = "";
     public String endianness = "";
     public int arrayLength = 0; // 0 = not an array address
     public String jsType = "analog";
@@ -54,15 +70,56 @@ public final class TopicParser {
       pt.address = topic;
     }
     pt.jsType = inferType(pt.address, addrSeparator);
-    Matcher m = ARRAY_PATTERN.matcher(pt.address);
-    if (m.find()) {
+    pt.plc4xAddress = toPlc4xAddress(pt.address);
+    pt.arrayLength = arrayLength(pt.address);
+    return pt;
+  }
+
+  /**
+   * Number of elements of an array address, 0 when scalar and -1 when the array
+   * notation cannot be parsed.
+   */
+  public static int arrayLength(String address) {
+    Matcher legacy = LEGACY_ARRAY_PATTERN.matcher(address);
+    if (legacy.matches()) {
       try {
-        pt.arrayLength = Integer.parseInt(m.group(1));
+        return Integer.parseInt(legacy.group(3));
       } catch (NumberFormatException e) {
-        pt.arrayLength = -1; // unparseable array size
+        return -1;
       }
     }
-    return pt;
+    Matcher range = RANGE_ARRAY_PATTERN.matcher(address);
+    if (range.find()) {
+      try {
+        int lower = Integer.parseInt(range.group(1));
+        int upper = Integer.parseInt(range.group(2));
+        return upper >= lower ? upper - lower + 1 : -1;
+      } catch (NumberFormatException e) {
+        return -1;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Translates the legacy ":TYPE[count]" array notation to the "[0..count-1]:TYPE"
+   * form required from PLC4X 1.0.0 on. Any other address is returned unchanged.
+   */
+  public static String toPlc4xAddress(String address) {
+    Matcher legacy = LEGACY_ARRAY_PATTERN.matcher(address);
+    if (!legacy.matches()) {
+      return address;
+    }
+    int count;
+    try {
+      count = Integer.parseInt(legacy.group(3));
+    } catch (NumberFormatException e) {
+      return address;
+    }
+    if (count < 1) {
+      return address;
+    }
+    return legacy.group(1) + "[0.." + (count - 1) + "]:" + legacy.group(2);
   }
 
   /**

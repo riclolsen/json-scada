@@ -33,9 +33,11 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"iec60870-5/internal/conv"
-	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
-	"iec60870-5/internal/mongoutil"
+
+	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
 // TimeToExpireCommandsWithTime is the validity window in seconds for
@@ -103,7 +105,7 @@ func (c *Conn) EnqueueInfo(obj *conv.InfoObject, ca int) {
 
 // Engine is the shared server-driver engine.
 type Engine struct {
-	Cfg        jscfg.Config
+	Cfg        jsconfig.Config
 	DriverName string
 	Conns      []*Conn
 
@@ -114,9 +116,9 @@ type Engine struct {
 }
 
 // New creates the engine and opens its MongoDB handle.
-func New(cfg jscfg.Config, driverName string) (*Engine, error) {
+func New(cfg jsconfig.Config, driverName string) (*Engine, error) {
 	e := &Engine{Cfg: cfg, DriverName: driverName}
-	client, db, err := mongoutil.Connect(cfg)
+	client, db, err := jsmongo.ConnectAndPing(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -136,13 +138,13 @@ func (e *Engine) DB() *mongo.Database {
 // (port of the C# server main loop). Runs forever; call as goroutine.
 func (e *Engine) MaintainMongo() {
 	for {
-		if e.client == nil || !mongoutil.PingOK(e.client) {
+		if e.client == nil || !jsmongo.PingOK(e.client) {
 			e.IsMongoLive.Store(false)
-			jscfg.Log(jscfg.LogLevelBasic, "Exception Mongo - Error on MongoDB connection")
+			jslog.Log(jslog.LevelBasic, "Exception Mongo - Error on MongoDB connection")
 			if e.client != nil {
 				_ = e.client.Disconnect(context.Background())
 			}
-			client, db, err := mongoutil.Connect(e.Cfg)
+			client, db, err := jsmongo.ConnectAndPing(e.Cfg)
 			if err == nil {
 				e.dbMu.Lock()
 				e.client, e.db = client, db
@@ -183,9 +185,9 @@ func (e *Engine) RunDequeueLoop() {
 			coa := asdu.CauseOfTransmission{Cause: asdu.Spontaneous}
 			err := conv.SendInfoBatch(srv.Endpoint, coa, asdu.CommonAddr(batch[0].ca), batch[0].obj.TypeID, objs)
 			if err != nil {
-				jscfg.Logf(jscfg.LogLevelDetailed, "%s - Error sending spontaneous data: %s", srv.Cfg.Name, err.Error())
+				jslog.Log(jslog.LevelDetailed, "%s - Error sending spontaneous data: %s", srv.Cfg.Name, err.Error())
 			} else {
-				jscfg.Logf(jscfg.LogLevelBasic, "%s - Spont ASDU Type: %d with %d objects",
+				jslog.Log(jslog.LevelBasic, "%s - Spont ASDU Type: %d with %d objects",
 					srv.Cfg.Name, batch[0].obj.TypeID, len(batch))
 			}
 		}
@@ -202,19 +204,19 @@ func (e *Engine) RunRealtimeStream() {
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					jscfg.Logf(jscfg.LogLevelBasic, "MongoCS - panic recovered: %v", r)
+					jslog.Log(jslog.LevelBasic, "MongoCS - panic recovered: %v", r)
 				}
 			}()
-			client, db, err := mongoutil.Connect(e.Cfg)
+			client, db, err := jsmongo.ConnectAndPing(e.Cfg)
 			if err != nil {
-				jscfg.Log(jscfg.LogLevelBasic, "Exception MongoCS: "+err.Error())
+				jslog.Log(jslog.LevelBasic, "%s", "Exception MongoCS: "+err.Error())
 				time.Sleep(3 * time.Second)
 				return
 			}
 			defer client.Disconnect(context.Background())
-			collection := db.Collection(mongoutil.RealtimeDataCollectionName)
+			collection := db.Collection(jsmongo.RealtimeDataCollectionName)
 
-			jscfg.Log(jscfg.LogLevelBasic, "MongoDB CMD CS - Start listening for realtime data updates via changestream...")
+			jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - Start listening for realtime data updates via changestream...")
 			// observe updates and replaces, avoid updates with sourceDataUpdate
 			// field (those are handled by cs_data_processor), require
 			// protocolDestinations not null (same filter as the C# driver)
@@ -232,7 +234,7 @@ func (e *Engine) RunRealtimeStream() {
 			stream, err := collection.Watch(ctx, pipeline,
 				options.ChangeStream().SetFullDocument(options.UpdateLookup))
 			if err != nil {
-				jscfg.Log(jscfg.LogLevelBasic, "Exception MongoCS: "+err.Error())
+				jslog.Log(jslog.LevelBasic, "%s", "Exception MongoCS: "+err.Error())
 				time.Sleep(3 * time.Second)
 				return
 			}
@@ -252,7 +254,7 @@ func (e *Engine) RunRealtimeStream() {
 				e.processPointUpdate(&change.FullDocument)
 			}
 			if err := stream.Err(); err != nil {
-				jscfg.Log(jscfg.LogLevelBasic, "Exception MongoCS: "+err.Error())
+				jslog.Log(jslog.LevelBasic, "%s", "Exception MongoCS: "+err.Error())
 			}
 			time.Sleep(3 * time.Second)
 		}()
@@ -287,7 +289,7 @@ func (e *Engine) processPointUpdate(doc *model.RtDataPoint) {
 				false, 0, quality, timeTag, 1, 0, false)
 			if io != nil {
 				srv.EnqueueInfo(io, int(dst.CommonAddress))
-				jscfg.Logf(jscfg.LogLevelDetailed, "%s - Spont Tag:%s Value:%s Key:%v TI:%d CA:%d",
+				jslog.Log(jslog.LevelDetailed, "%s - Spont Tag:%s Value:%s Key:%v TI:%d CA:%d",
 					srv.Cfg.Name, doc.Tag, formatValue(doc.Value), doc.ID, int(dst.ASDU), int(dst.CommonAddress))
 			}
 		}

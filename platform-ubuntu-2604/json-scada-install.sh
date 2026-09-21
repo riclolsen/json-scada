@@ -24,6 +24,7 @@ case $(uname -m) in
 esac
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo chmod +x *.sh
 
 # Update and install base packages
 sudo apt update
@@ -38,8 +39,8 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # Install Go
-wget --inet4-only https://go.dev/dl/go1.27.0.linux-$ARCHITECTURE.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.0.linux-$ARCHITECTURE.tar.gz
+wget --inet4-only https://go.dev/dl/go1.27.1.linux-$ARCHITECTURE.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.1.linux-$ARCHITECTURE.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
 sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
 
@@ -129,7 +130,7 @@ mkdir -p ~/json-scada/conf/supervisor.d
 sudo systemctl enable supervisor
 
 # Install Grafana
-sudo apt -y install grafana=13.2.0
+sudo apt -y install grafana=13.2.2
 sudo apt-mark hold grafana
 sudo cp grafana.ini /etc/grafana/
 sudo systemctl enable grafana-server
@@ -137,7 +138,7 @@ sudo systemctl daemon-reload
 
 # Install Metabase
 sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
-sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.2/metabase.jar -O ../metabase/metabase.jar'
+sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.17.x/metabase.jar -O ../metabase/metabase.jar'
 
 # Install Mongodb Compass
 sudo -u $JS_USERNAME sh -c "wget https://downloads.mongodb.com/compass/mongodb-compass_1.49.14_$ARCHITECTURE.deb"
@@ -177,6 +178,13 @@ mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbI
 # Start Grafana
 sudo systemctl start grafana-server
 
+# Install a local Node-RED runtime for the NODE-RED driver.
+# The driver also works with a remote or containerized Node-RED.
+sudo -u $JS_USERNAME bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
+sudo -u $JS_USERNAME bash -c 'cp ~/json-scada/conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js'
+sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
+# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
+
 # Build JSON-SCADA
 cd ../platform-linux
 sudo -u $JS_USERNAME bash -c 'source ~/.bashrc;export PATH=$PATH:/usr/local/go/bin;./build.sh'
@@ -199,10 +207,3 @@ echo "To compile and install Inkscape+SAGE, run: sudo sh ./inkscape-plus-sage.sh
 echo "To open web interface run: firefox http://localhost"
 echo "Default credentials: admin / jsonscada"
 echo "Default Metabase credentials: json@scada.com / jsonscada123"
-
-# Optional: install a local Node-RED runtime for the NODE-RED driver (commented by
-# default). The driver also works with a remote or containerized Node-RED. To enable:
-#   sudo -u '$JS_USERNAME' bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red@4 node-red-contrib-jsonscada'
-#   cp ../conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js
-#   mkdir -p ~/json-scada/conf/node-red
-# Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.

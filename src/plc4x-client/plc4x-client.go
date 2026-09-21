@@ -304,6 +304,28 @@ func iterateCommandsChangeStream(stream *mongo.ChangeStream, protConns []*protoc
 	log.Println("Commands - Exit change stream monitoring!")
 }
 
+// migrateLegacyModbusOptions adapts a connection string written for the older PLC4X library.
+// The modbus drivers used to read the unit id from "unit-identifier"; they now read it from
+// "default-unit-identifier", the name plc4j has always used, and ignore the old spelling. Left
+// alone, a connection that asked for unit 3 would quietly talk to unit 1 after the upgrade, so
+// the old name is rewritten here and the substitution is logged.
+func migrateLegacyModbusOptions(connName string, connUrl string) string {
+	if !strings.HasPrefix(connUrl, "modbus") {
+		return connUrl
+	}
+	if strings.Contains(connUrl, "default-unit-identifier=") {
+		return connUrl
+	}
+	migrated := connUrl
+	for _, sep := range []string{"?", "&"} {
+		migrated = strings.ReplaceAll(migrated, sep+"unit-identifier=", sep+"default-unit-identifier=")
+	}
+	if migrated != connUrl {
+		log.Printf("%s: Converted legacy 'unit-identifier' option to 'default-unit-identifier': %s", connName, migrated)
+	}
+	return migrated
+}
+
 func main() {
 	log.SetOutput(os.Stdout) // log to standard output
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
@@ -397,6 +419,7 @@ func main() {
 			// log connection info
 			connUrl := protocolConn.EndpointURLs[protocolConn.ReconnectCount%len(protocolConn.EndpointURLs)]
 			protocolConn.ReconnectCount++
+			connUrl = migrateLegacyModbusOptions(protocolConn.Name, connUrl)
 			log.Printf("Instance: %d Connection: %d %s", protocolConn.ProtocolDriverInstanceNumber, protocolConn.ProtocolConnectionNumber, protocolConn.Name)
 			log.Printf("%s: Server endpoint URL: %s", protocolConn.Name, connUrl)
 			protocolId := strings.Split(protocolConn.EndpointURLs[0], ":")[0]
@@ -559,7 +582,7 @@ func main() {
 
 			protocolConn.ReadRequest, err = reqBld.Build()
 			if err != nil {
-				log.Printf(protocolConn.Name + ": error preparing read-request: %s")
+				log.Printf("%s: error preparing read-request", protocolConn.Name)
 				log.Fatal(err)
 			}
 

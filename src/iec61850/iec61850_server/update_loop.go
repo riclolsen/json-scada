@@ -27,6 +27,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
 	"github.com/dscsystems/go-iec61850/server"
@@ -198,5 +200,5 @@ func applyInitialValues(g *Gateway, points []*Point) {
 			n++
 		}
 	})
-	Log(LogLevelBasic, "Initial values loaded into the model (%d points).", n)
+	jslog.Log(jslog.LevelBasic, "Initial values loaded into the model (%d points).", n)
 }

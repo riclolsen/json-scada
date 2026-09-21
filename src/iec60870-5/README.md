@@ -118,9 +118,12 @@ Notable mappings and current limitations:
 - **`autoCreateTags`**: on the **clients** it auto-creates a supervised
   `realtimeData` tag on the first value for a new address; on the **servers** it
   distributes `protocolDestinations` onto existing tags (the server link-level
-  address `localLinkAddress` is used as the destination Common Address, with an
-  optional `topics` group1 filter). See the per-driver READMEs under
-  `cmd/*/README.md` for the full behavior and IOA ranges.
+  address `localLinkAddress` is used as the destination Common Address). With an
+  empty or absent `topics` array the complete database is distributed: every
+  digital and analog tag whatever its origin (supervised, calculated, manual,
+  ...); a non-empty `topics` restricts it to tags whose `group1` contains one of
+  the substrings. See the per-driver READMEs under `cmd/*/README.md` for the
+  full behavior and IOA ranges.
 
 ### Known limitations vs. the C# drivers
 

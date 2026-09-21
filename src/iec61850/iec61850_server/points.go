@@ -26,6 +26,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -72,34 +75,34 @@ func (p *Point) IsCommand() bool { return p.Origin == "command" }
 // pointFromDoc reduces a realtimeData document to a Point.
 func pointFromDoc(doc bson.M) *Point {
 	p := &Point{
-		ID:          mFloat(doc, "_id", 0),
-		Tag:         mString(doc, "tag", ""),
-		Type:        mString(doc, "type", "digital"),
-		Origin:      mString(doc, "origin", ""),
-		Group1:      mString(doc, "group1", ""),
-		Description: mString(doc, "description", ""),
+		ID:          jsmongo.GetDouble(doc, "_id", 0),
+		Tag:         jsmongo.GetString(doc, "tag", ""),
+		Type:        jsmongo.GetString(doc, "type", "digital"),
+		Origin:      jsmongo.GetString(doc, "origin", ""),
+		Group1:      jsmongo.GetString(doc, "group1", ""),
+		Description: jsmongo.GetString(doc, "description", ""),
 
-		Value:       mFloat(doc, "value", 0),
-		ValueString: mString(doc, "valueString", ""),
+		Value:       jsmongo.GetDouble(doc, "value", 0),
+		ValueString: jsmongo.GetString(doc, "valueString", ""),
 
 		// An absent quality flag means unknown, which is invalid.
-		Invalid:           mBool(doc, "invalid", true),
-		Substituted:       mBool(doc, "substituted", false),
-		Overflow:          mBool(doc, "overflow", false),
-		Transient:         mBool(doc, "transient", false),
-		TimeTagAtSourceOk: mBool(doc, "timeTagAtSourceOk", false),
+		Invalid:           jsmongo.GetBool(doc, "invalid", true),
+		Substituted:       jsmongo.GetBool(doc, "substituted", false),
+		Overflow:          jsmongo.GetBool(doc, "overflow", false),
+		Transient:         jsmongo.GetBool(doc, "transient", false),
+		TimeTagAtSourceOk: jsmongo.GetBool(doc, "timeTagAtSourceOk", false),
 
-		Kconv1: mFloat(doc, "kconv1", 1),
-		Kconv2: mFloat(doc, "kconv2", 0),
+		Kconv1: jsmongo.GetDouble(doc, "kconv1", 1),
+		Kconv2: jsmongo.GetDouble(doc, "kconv2", 0),
 
-		SrcConnectionNumber: mFloat(doc, "protocolSourceConnectionNumber", 0),
+		SrcConnectionNumber: jsmongo.GetDouble(doc, "protocolSourceConnectionNumber", 0),
 		SrcCommonAddress:    mRaw(doc, "protocolSourceCommonAddress", ""),
 		SrcObjectAddress:    mRaw(doc, "protocolSourceObjectAddress", ""),
 		SrcASDU:             mRaw(doc, "protocolSourceASDU", ""),
-		SrcCommandDuration:  mFloat(doc, "protocolSourceCommandDuration", 0),
-		SrcCommandUseSBO:    mBool(doc, "protocolSourceCommandUseSBO", false),
+		SrcCommandDuration:  jsmongo.GetDouble(doc, "protocolSourceCommandDuration", 0),
+		SrcCommandUseSBO:    jsmongo.GetBool(doc, "protocolSourceCommandUseSBO", false),
 	}
-	if t := mTime(doc, "timeTagAtSource"); !t.IsZero() {
+	if t := jsmongo.GetTime(doc, "timeTagAtSource"); !t.IsZero() {
 		p.TimeTagAtSource = t.UTC()
 		p.HasTimeTagAtSource = true
 	}
@@ -124,11 +127,11 @@ func selectPoints(ctx context.Context, collRTD *mongo.Collection, conn *ServerCo
 
 	cur, err := collRTD.Find(ctx, filter, options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}))
 	if err != nil {
-		Fatal("Error reading realtime data - %v", err)
+		jslog.Fatal("Error reading realtime data - %v", err)
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		Fatal("Error reading realtime data - %v", err)
+		jslog.Fatal("Error reading realtime data - %v", err)
 	}
 
 	points := make([]*Point, 0, len(docs))
@@ -143,9 +146,9 @@ func selectPoints(ctx context.Context, collRTD *mongo.Collection, conn *ServerCo
 	// be stable across restarts.
 	sort.SliceStable(points, func(i, j int) bool { return points[i].ID < points[j].ID })
 
-	Log(LogLevelNoLog, "Points selected from realtimeData: %d", len(points))
+	jslog.Log(jslog.LevelNoLog, "Points selected from realtimeData: %d", len(points))
 	if len(points) == 0 {
-		Log(LogLevelNoLog, "WARNING: no points matched the topics filter - server model will be empty.")
+		jslog.Log(jslog.LevelNoLog, "WARNING: no points matched the topics filter - server model will be empty.")
 	}
 	return points
 }

@@ -26,6 +26,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
 )
 
 type manifestEntry struct {
@@ -53,7 +55,7 @@ func exportManifest(built *BuiltModel, conn *ServerConnection) {
 
 	data, err := json.MarshalIndent(entries, "", "  ")
 	if err != nil {
-		Log(LogLevelNoLog, "Could not write mapping manifest: %v", err)
+		jslog.Log(jslog.LevelNoLog, "Could not write mapping manifest: %v", err)
 		return
 	}
 
@@ -63,10 +65,10 @@ func exportManifest(built *BuiltModel, conn *ServerConnection) {
 		path = filepath.Join("../log", fname)
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		Log(LogLevelNoLog, "Could not write mapping manifest: %v", err)
+		jslog.Log(jslog.LevelNoLog, "Could not write mapping manifest: %v", err)
 		return
 	}
-	Log(LogLevelBasic, "Mapping manifest written: %s (%d points)", path, len(entries))
+	jslog.Log(jslog.LevelBasic, "Mapping manifest written: %s (%d points)", path, len(entries))
 }
 
 func itoa(n int) string {

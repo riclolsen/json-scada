@@ -44,7 +44,7 @@
     <!-- Latest published PLC4J code. Apache PLC4X does not currently publish
          -SNAPSHOT artifacts to a reachable repository (repository.apache.org is
          being decommissioned), so the newest release is the latest available. -->
-    <plc4x.version>0.13.1</plc4x.version>
+    <plc4x.version>1.0.0</plc4x.version>
     <mongodb.version>5.2.1</mongodb.version>
     <logback.version>1.5.6</logback.version>
   </properties>
@@ -83,16 +83,9 @@
       <artifactId>plc4j-driver-knxnetip</artifactId>
       <version>${plc4x.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-driver-bacnet</artifactId>
-      <version>${plc4x.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-driver-c-bus</artifactId>
-      <version>${plc4x.version}</version>
-    </dependency>
+    <!-- BACnet/IP and C-Bus drivers are NOT part of the PLC4X 1.0.0 release
+         (last published at 0.13.1) and cannot be mixed in, as 1.0.0 restructured
+         the SPI. Re-add them here if/when they are released for 1.0.x. -->
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-driver-eip</artifactId>
@@ -107,17 +100,17 @@
     <!-- PLC4J transports (RTU/ASCII need serial) -->
     <dependency>
       <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-transport-tcp</artifactId>
+      <artifactId>plc4j-transports-tcp</artifactId>
       <version>${plc4x.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-transport-udp</artifactId>
+      <artifactId>plc4j-transports-udp</artifactId>
       <version>${plc4x.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-transport-serial</artifactId>
+      <artifactId>plc4j-transports-serial</artifactId>
       <version>${plc4x.version}</version>
     </dependency>
 

@@ -1,0 +1,16 @@
+go 1.27
+
+use (
+	./OPC-UA-Client-Go
+	./calculations
+	./cs_data_processor-go
+	./dnp3-go
+	./go-common
+	./i104m
+//	./iccp/iccp-client
+//	./iccp/iccp-server
+	./iec60870-5
+	./iec61850/iec61850_client
+	./iec61850/iec61850_server
+	./plc4x-client
+)

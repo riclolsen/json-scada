@@ -33,10 +33,6 @@ import (
 	"sync"
 	"time"
 
-	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
-	"github.com/tealeg/xlsx/v3"
-	"github.com/xuri/excelize/v2"
-
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -73,19 +69,19 @@ type configData struct {
 
 type commandQueueEntry struct {
 	ID                             bson.ObjectID `json:"_id" bson:"_id"`
-	ProtocolSourceConnectionNumber int                `json:"protocolSourceConnectionNumber"`
-	ProtocolSourceCommonAddress    int                `json:"protocolSourceCommonAddress"`
-	ProtocolSourceObjectAddress    int                `json:"protocolSourceObjectAddress"`
-	ProtocolSourceASDU             int                `json:"protocolSourceASDU"`
-	ProtocolSourceCommandDuration  int                `json:"protocolSourceCommandDuration"`
-	ProtocolSourceCommandUseSBO    bool               `json:"protocolSourceCommandUseSBO"`
-	PointKey                       int                `json:"pointKey"`
-	Tag                            string             `json:"tag"`
-	TimeTag                        time.Time          `json:"timeTag"`
-	Value                          float64            `json:"value"`
-	ValueString                    string             `json:"valueString"`
-	OriginatorUserName             string             `json:"originatorUserName"`
-	OriginatorIPAddress            string             `json:"originatorIpAddress"`
+	ProtocolSourceConnectionNumber int           `json:"protocolSourceConnectionNumber"`
+	ProtocolSourceCommonAddress    int           `json:"protocolSourceCommonAddress"`
+	ProtocolSourceObjectAddress    int           `json:"protocolSourceObjectAddress"`
+	ProtocolSourceASDU             int           `json:"protocolSourceASDU"`
+	ProtocolSourceCommandDuration  int           `json:"protocolSourceCommandDuration"`
+	ProtocolSourceCommandUseSBO    bool          `json:"protocolSourceCommandUseSBO"`
+	PointKey                       int           `json:"pointKey"`
+	Tag                            string        `json:"tag"`
+	TimeTag                        time.Time     `json:"timeTag"`
+	Value                          float64       `json:"value"`
+	ValueString                    string        `json:"valueString"`
+	OriginatorUserName             string        `json:"originatorUserName"`
+	OriginatorIPAddress            string        `json:"originatorIpAddress"`
 }
 
 type insertChange struct {
@@ -95,14 +91,14 @@ type insertChange struct {
 
 type protocolDriverInstance struct {
 	ID                               bson.ObjectID `json:"_id" bson:"_id"`
-	ProtocolDriver                   string             `json:"protocolDriver"`
-	ProtocolDriverInstanceNumber     int                `json:"protocolDriverInstanceNumber"`
-	Enabled                          bool               `json:"enabled"`
-	LogLevel                         int                `json:"logLevel"`
-	NodeNames                        []string           `json:"nodeNames"`
-	ActiveNodeName                   string             `json:"activeNodeName"`
-	ActiveNodeKeepAliveTimeTag       time.Time          `json:"activeNodeKeepAliveTimeTag"`
-	KeepProtocolRunningWhileInactive bool               `json:"keepProtocolRunningWhileInactive"`
+	ProtocolDriver                   string        `json:"protocolDriver"`
+	ProtocolDriverInstanceNumber     int           `json:"protocolDriverInstanceNumber"`
+	Enabled                          bool          `json:"enabled"`
+	LogLevel                         int           `json:"logLevel"`
+	NodeNames                        []string      `json:"nodeNames"`
+	ActiveNodeName                   string        `json:"activeNodeName"`
+	ActiveNodeKeepAliveTimeTag       time.Time     `json:"activeNodeKeepAliveTimeTag"`
+	KeepProtocolRunningWhileInactive bool          `json:"keepProtocolRunningWhileInactive"`
 }
 
 type protocolConnection struct {
@@ -618,16 +614,6 @@ func listenI104MUdpPackets(con *net.UDPConn, ipAddresses []string, chanBuf chan 
 			}
 		}
 	}
-}
-
-// this is just to add boilerplate code to avoid false positive av detection
-func __() {
-	f := excelize.NewFile()
-	_ = f
-	wb, _ := xlsx.OpenFile("filename")
-	_ = wb
-	driverManager := plc4go.NewPlcDriverManager()
-	_ = driverManager
 }
 
 func main() {
