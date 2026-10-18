@@ -47,6 +47,18 @@ type commandHandler struct {
 	conn   *Connection
 }
 
+// HasOutput implements outstation.OutputPoints: the handler says every output
+// exists, and answers for the ones that do not itself.
+//
+// Controls and output statuses are separate address spaces here. A connection
+// may publish four binary output statuses and have control points far beyond
+// them, and the outstation database knows only about the statuses. Left to
+// itself, go-dnp3 v0.8.0 refuses any control whose index is past the status
+// count, answering NOT_SUPPORTED before the handler has looked for the command
+// tag. The tag lookup (lookup) is what decides whether an output exists, and
+// it gives the same NOT_SUPPORTED when it does not.
+func (h *commandHandler) HasOutput(_ dnp3.PointType, _ uint16) bool { return true }
+
 // SelectCROB answers whether the outstation would accept the control. It must
 // not operate anything.
 func (h *commandHandler) SelectCROB(index uint16, _ dnp3.ControlRelayOutputBlock) dnp3.CommandStatus {
