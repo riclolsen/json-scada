@@ -37,7 +37,7 @@ const (
 	CopyrightMessage   = "{json:scada} IEC61850 Client Driver (Go) - Copyright 2020-2026 Ricardo Olsen"
 	ProtocolDriverName = "IEC61850"
 	DriverVersion      = "0.2.0"
-	LibraryVersion     = "v0.3.2"
+	LibraryVersion     = "v0.6.5"
 )
 
 // Queue and key-allocation limits, same values as the C# driver.

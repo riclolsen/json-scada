@@ -16,7 +16,7 @@ document, same model layout and object references, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_server`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.3.2 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.6.5 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1, and keep it in step with the client driver
 - **Binary:** `iec61850_server(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -47,11 +47,14 @@ document, same model layout and object references, no native library dependency.
   timestamp as one structure. This needs library ≥ v0.2.3, where `reporting.go:memberChanged`
   matches a member against changes below it as well as above.
 - The model is built once and `server.New` is called once: it materialises report control blocks
-  into the model, so a second call would duplicate them. Start/stop cycles reuse the same server.
+  into the model, so a second call would duplicate them. `Gateway.Stop` is therefore final (the
+  library's `Close` shuts a server down for good) and the process exits after it; only a failed
+  bind is retried, by calling `Start` again.
 - The node is always active: an MMS server is a passive listener, so there is no active/standby
   arbitration. The 1 Hz loop in `main.go` starts the server and retries the bind if it fails.
-- The control handler runs on the connection's goroutine: it must not block, so commands are queued
-  and inserted by a separate goroutine.
+- The control handler runs on the connection's goroutine, holding the server's model write lock:
+  it must not block, and must never call `Update` or `Read` on the server (deadlock). Commands are
+  queued and inserted by a separate goroutine.
 - Values are only ever written through `Update`, which is what drives reporting.
 
 ## Verification

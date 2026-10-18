@@ -15,7 +15,7 @@ MongoDB semantics, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_client`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.3.2 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.6.5 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1
 - **Binary:** `iec61850_client(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -61,6 +61,8 @@ MongoDB semantics, no native library dependency.
   subscription by `RptID` — see the RptID handling in `reports.go` before touching that path.
 - `TrgOps` must include GI: the driver requests a GI right after enabling a block, and a
   conformant server ignores GI when its trigger is off.
+- `configureRCB` leaves `BufTm` at 0, so the IED keeps its own buffer time: the library writes
+  back any non-zero value `GetRCB` read, and an IED with fixed report settings may refuse it.
 - A buffered block resumes after the last EntryID the driver saw (`resyncEntryID`). With none
   saved, no EntryID is written — never all zeros, which some IEDs refuse. An EntryID the IED
   refuses (`entryIDRefused`, e.g. after an IED restart) is forgotten and the block is enabled

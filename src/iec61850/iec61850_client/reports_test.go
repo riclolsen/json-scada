@@ -109,3 +109,27 @@ func TestLoopbackRCBHeldByAnotherClient(t *testing.T) {
 		t.Errorf("data set still claimed by the held block: %v", conn.RcbByDataSet)
 	}
 }
+
+// What the driver asks of a block before enabling it. The buffer time read
+// from the IED is not written back: the library writes any non-zero BufTm,
+// and an IED with fixed report settings may refuse it.
+func TestConfigureRCB(t *testing.T) {
+	conn := &Iec61850Connection{Class0ScanInterval: 30}
+	rcb := &client.RCB{BufTm: 100} // as GetRCB read it
+	configureRCB(conn, rcb, "rcb", true)
+	if rcb.BufTm != 0 {
+		t.Errorf("BufTm = %d, want 0 so the IED keeps its own", rcb.BufTm)
+	}
+	if rcb.TrgOps&model.TrgGI == 0 {
+		t.Error("TrgOps lacks GI")
+	}
+	if rcb.IntgPd != 30*time.Second {
+		t.Errorf("IntgPd = %v, want the class 0 scan interval", rcb.IntgPd)
+	}
+	if rcb.OptFlds&model.OptEntryID == 0 {
+		t.Error("a buffered block must ask for the EntryID")
+	}
+	if rcb.ResyncEntryID != nil {
+		t.Errorf("ResyncEntryID = %x with nothing saved, want none", rcb.ResyncEntryID)
+	}
+}
