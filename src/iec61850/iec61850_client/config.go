@@ -212,18 +212,12 @@ func (c *Iec61850Connection) AddEntryChild(e *Iec61850Entry, name string) {
 	c.mu.Unlock()
 }
 
-// AddEntryChildOnce records a child attribute name, keeping the order the
-// server listed them in and ignoring repeats: a name list names an
-// attribute once per leaf below it.
-func (c *Iec61850Connection) AddEntryChildOnce(e *Iec61850Entry, name string) {
+// SetEntryChilds records the child attribute names of an entry, in the order
+// its value carries them (the type description's declaration order).
+func (c *Iec61850Connection) SetEntryChilds(e *Iec61850Entry, names []string) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	for _, existing := range e.Childs {
-		if existing == name {
-			return
-		}
-	}
-	e.Childs = append(e.Childs, name)
+	e.Childs = append([]string(nil), names...)
+	c.mu.Unlock()
 }
 
 // EntryChilds copies the child attribute names, for logging.

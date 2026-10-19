@@ -148,6 +148,8 @@ func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld str
 
 	added := 0
 	controls := map[string]*controlObject{} // data object path -> what was seen
+	byLN := map[string][]browsedEntry{}     // logical node -> its entries
+	queued := map[*Iec61850Entry]bool{}     // already in byLN
 
 	for _, n := range names {
 		parts := strings.Split(n, "$")
@@ -183,20 +185,77 @@ func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld str
 				added++
 			}
 		}
-		// The direct attributes of the object, in the order the server
-		// lists them: that is what lets the value be read by name (stVal,
-		// mag, …) rather than by guessing from the types.
-		if len(parts) > 3 {
-			conn.AddEntryChildOnce(entry, parts[3])
+		if len(parts) > 3 && !queued[entry] {
+			queued[entry] = true
+			byLN[parts[0]] = append(byLN[parts[0]], browsedEntry{entry: entry, fc: fc, do: parts[2]})
 		}
 	}
 	if added > 0 {
 		jslog.Log(jslog.LevelBasic, "%s %s: %d browsed object(s) registered for tag creation", conn.Name, ld, added)
 	}
+	learnBrowsedChilds(ctx, conn, ld, byLN)
 
 	if conn.CommandsEnabled {
 		registerControlObjects(ctx, conn, ld, controls)
 	}
+}
+
+// browsedEntry is a structured data object found in the name list, waiting
+// for its attribute names.
+type browsedEntry struct {
+	entry *Iec61850Entry
+	fc    model.FC
+	do    string
+}
+
+// learnBrowsedChilds gives each browsed data object the names of its
+// attributes in the order its value carries them, which is what lets the
+// value be read by name (stVal, mag, …) rather than guessed from the types.
+//
+// The order comes from the logical node's type description, one request per
+// node. The name list cannot give it: MMS returns names in alphabetical order
+// ("Pos$q", "Pos$stVal", "Pos$t"), so stVal would point at the quality. When
+// the description cannot be read the names stay unknown and the value is
+// found by type.
+func learnBrowsedChilds(ctx context.Context, conn *Iec61850Connection, ld string, byLN map[string][]browsedEntry) {
+	for ln, entries := range byLN {
+		spec, err := conn.Client().MMS().GetVariableAccessAttributes(ctx, ld, ln)
+		if err != nil {
+			jslog.Log(jslog.LevelDetailed, "%s %s/%s: cannot read the type description: %v", conn.Name, ld, ln, err)
+			continue
+		}
+		for _, b := range entries {
+			if childs := childsFromLNSpec(spec, b.fc, b.do); len(childs) > 0 {
+				conn.SetEntryChilds(b.entry, childs)
+			}
+		}
+	}
+}
+
+// childsFromLNSpec returns, in declaration order, the attribute names of a
+// data object in a logical node's type description: LN -> FC -> DO -> names.
+func childsFromLNSpec(spec *mms.TypeSpec, fc model.FC, do string) []string {
+	doSpec := specComponent(specComponent(spec, fc.String()), do)
+	if doSpec == nil {
+		return nil
+	}
+	names := make([]string, 0, len(doSpec.Components))
+	for _, c := range doSpec.Components {
+		names = append(names, c.Name)
+	}
+	return names
+}
+
+func specComponent(spec *mms.TypeSpec, name string) *mms.TypeSpec {
+	if spec == nil {
+		return nil
+	}
+	for _, c := range spec.Components {
+		if c.Name == name {
+			return c.Spec
+		}
+	}
+	return nil
 }
 
 // controlObject is what the name list says about a controllable object.

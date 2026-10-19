@@ -57,6 +57,11 @@ MongoDB semantics, no native library dependency.
 - Connection fields come from a document decoded into `bson.M`, where sub-documents arrive as
   `bson.D`: read them through the `jsmongo` helpers, and test new fields through a real BSON round
   trip (`config_test.go`), not a hand-built `bson.M`.
+- A data object's attribute names (`Childs`) must be in the order its value carries them, since
+  the value is read by position: take them from a type description (`GetVariableAccessAttributes`,
+  per logical node in `learnBrowsedChilds`), never from an MMS name list, which is alphabetical
+  (`q`, `stVal`, `t` would make `stVal` the quality). The library's own server lists names in
+  declaration order, so loopback tests cannot catch a regression here: `discovery_test.go` pins it.
 - Report entries are identified from the data set members, and reports are matched to their
   subscription by `RptID` — see the RptID handling in `reports.go` before touching that path.
 - `TrgOps` must include GI: the driver requests a GI right after enabling a block, and a
