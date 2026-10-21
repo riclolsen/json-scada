@@ -3,6 +3,8 @@ if not "%1"=="am_admin" (powershell start -verb runas '%0' am_admin & exit /b)
 
 cd \json-scada\platform-windows\
 
+powershell -ExecutionPolicy Bypass -File .\defender_exclusions.ps1
+
 ping -n 2 127.0.0.1
 call postgresql-initdb.bat
 ping -n 15 127.0.0.1
