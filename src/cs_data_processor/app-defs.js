@@ -21,7 +21,7 @@ module.exports = {
   NAME: 'CS_DATA_PROCESSOR',
   ENV_PREFIX: 'JS_CSDATAPROC_',
   MSG: '{json:scada} - Change Stream Data Processor',
-  VERSION: '0.1.9',
+  VERSION: '0.1.10',
   // identifies this build in the latency metrics, so the Node.js and Go
   // numbers can be told apart when compared side by side
   IMPLEMENTATION: 'nodejs',
