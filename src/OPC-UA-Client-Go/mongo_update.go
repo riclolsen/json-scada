@@ -100,10 +100,16 @@ func updateCycle(ctx context.Context, collRTD *mongo.Collection, conns []*OPCUAC
 				break
 			}
 
+			m := updateModel(ov)
 			if ov.SelfPublish {
+				if m == nil {
+					// Too large to store: a new tag is still created, but
+					// without the value, or the insert would fail too.
+					ov.ValueString, ov.ValueJSON = "", ""
+				}
 				writes = append(writes, maybeInsertTag(ctx, collRTD, conns, &ov)...)
 			}
-			if m := updateModel(ov); m != nil {
+			if m != nil {
 				writes = append(writes, m)
 			}
 
@@ -144,6 +150,33 @@ func updateCycle(ctx context.Context, collRTD *mongo.Collection, conns []*OPCUAC
 	}
 }
 
+// maxUpdateBytes is the largest sourceDataUpdate this driver writes.
+//
+// deviation D26: the .NET driver only refused an update over MongoDB's 16 MB
+// document limit. That is not enough: the data processor copies the value
+// into the same realtimeData document (value, valueString, valueJson), so a
+// tag whose update is far below 16 MB still ends up over it, and the write
+// fails with BSONObjectTooLarge. 3 MB leaves room for those copies.
+const maxUpdateBytes = 3 * 1024 * 1024
+
+// updateTooLarge reports whether an update exceeds maxUpdateBytes once
+// encoded, and its encoded size when it does.
+//
+// The rendered length is only a cheap pre-filter: encoded, a numeric array
+// grows to many times its JSON text (an element is a type byte, its index as
+// a key and 8 bytes of value, against "1," in JSON), so the pre-filter is set
+// well below the limit and the decision is the real encoding.
+func updateTooLarge(update bson.M, renderedLen int) (bool, int) {
+	if renderedLen <= maxUpdateBytes/16 {
+		return false, 0
+	}
+	raw, err := bson.Marshal(update)
+	if err != nil {
+		return false, 0
+	}
+	return len(raw) > maxUpdateBytes, len(raw)
+}
+
 // updateModel builds the sourceDataUpdate write for one acquired value.
 func updateModel(ov OPCValue) mongo.WriteModel {
 	var srcTime any
@@ -178,13 +211,12 @@ func updateModel(ov OPCValue) mongo.WriteModel {
 		},
 	}.SetDoc()
 
-	// parity: a value too large to store is dropped rather than failing the
-	// whole bulk write. The test is the rendered lengths *and* the encoded
-	// size, so a merely long string still gets through.
-	if over, size := jsrtdata.Oversize(update, len(ov.ValueJSON)+len(ov.ValueString)); over {
-		jslog.Log(jslog.LevelDetailed,
-			"MongoDB - Too big update for %s - %d bytes, will not be written to MongoDB",
-			ov.Address, size)
+	// deviation D26: an update larger than maxUpdateBytes is logged and
+	// dropped rather than failing with BSONObjectTooLarge.
+	if over, size := updateTooLarge(update, len(ov.ValueJSON)+len(ov.ValueString)); over {
+		jslog.Log(jslog.LevelNoLog,
+			"%s - Update too large for %s - %d bytes (limit %d), discarded",
+			ov.ConnName, ov.Address, size, maxUpdateBytes)
 		return nil
 	}
 
