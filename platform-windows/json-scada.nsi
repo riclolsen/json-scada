@@ -631,6 +631,9 @@ SetRegView 64
 
   WriteUninstaller "bt-uninst.exe"
 
+  ; Windows Defender exclusions for write intensive data files and runtime processes
+  ExecWait 'powershell -ExecutionPolicy Bypass -File "$INSTDIR\platform-windows\defender_exclusions.ps1" -JsonScadaRoot "$INSTDIR"'
+
 ; If database data empty (no previous installation), then do initial setup for MongoDB and PostgreSQL
 IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
 
@@ -915,7 +918,10 @@ Section "Uninstall"
   Sleep 5000
   ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
   Sleep 5000
-  
+
+  ; Remove Windows Defender exclusions (before platform-windows is deleted)
+  ExecWait 'powershell -ExecutionPolicy Bypass -File "$INSTDIR\platform-windows\defender_exclusions.ps1" -JsonScadaRoot "$INSTDIR" -Remove'
+
   ; ExecWait `regsvr32 gbda_aut.dll -u`
   ; ExecWait `regsvr32 gbhda_aw.dll -u`
 

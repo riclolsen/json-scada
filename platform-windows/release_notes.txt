@@ -143,6 +143,7 @@ Notes for version 0.67:
 * Desktop SVG Editor updated to Inkscape 1.4.4 codebase.
 * Improved DNP3 client and server drivers.
 * Improved IEC61850 client and server drivers, fixed Pos/StVal conversion.
+* Reduced latency on protocol data updates.
 * MongoDB Community Server updated to version 9.0.4.
 * MongoDB Compass updated to 1.53.0.
 * Nodejs updated to version 26.12.1.

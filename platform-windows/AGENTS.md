@@ -11,7 +11,7 @@ Windows platform packaging, installation, and runtime management for JSON-SCADA.
 
 ## Local Contracts
 
-- **Installer:** NSIS script (`json-scada.nsi`) — builds the Windows installer package
+- **Installer:** NSIS script (`json-scada.nsi`) — builds the Windows installer package; runs `defender_exclusions.ps1 -JsonScadaRoot $INSTDIR` at install and the same with `-Remove` at uninstall (before `platform-windows` is deleted)
 - **Service management:** `nssm.exe` — Non-Sucking Service Manager for Windows services
 - **Runtime dirs:** `*-runtime/` directories contain pre-downloaded binaries for MongoDB, PostgreSQL, Node.js, Grafana, Metabase, Inkscape, Nginx/PHP, Telegraf, JDK, Ruby, browser, etc.
 - **Service scripts:** `create_services.bat`, `remove_services.bat`, `start_services.bat`, `stop_services.bat`, `restart_services.bat`
