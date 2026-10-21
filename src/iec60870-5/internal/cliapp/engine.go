@@ -235,8 +235,19 @@ func (e *Engine) sourceDataUpdateDoc(iv conv.IecValue) bson.M {
 	}
 }
 
+// writerIdlePing is how long the writer may stay without traffic before it
+// checks the database connection. A failed write also forces a reconnect.
+const writerIdlePing = 5 * time.Second
+
+// writerMaxBatch is the largest number of values sent in one bulk write.
+const writerMaxBatch = 5000
+
 // RunMongoWriter dequeues acquired data and command acks, updating MongoDB
 // (port of MongoUpdate.cs ProcessMongo). Runs forever; call as goroutine.
+//
+// The writer blocks on its queues rather than polling them, so a value is
+// written as soon as it is decoded. Values that arrive while a bulk write is
+// in flight are batched into the next one.
 func (e *Engine) RunMongoWriter() {
 	for {
 		func() {
@@ -255,66 +266,51 @@ func (e *Engine) RunMongoWriter() {
 			collection := db.Collection(jsmongo.RealtimeDataCollectionName)
 			collectionCmd := db.Collection(jsmongo.CommandsQueueCollectionName)
 
+			idle := time.NewTicker(writerIdlePing)
+			defer idle.Stop()
+
 			for {
-				if !jsmongo.PingOK(client) {
-					jslog.Log(jslog.LevelBasic, "Error on MongoDB connection")
-					time.Sleep(3 * time.Second)
-					return // reconnect
+				var pending []conv.IecValue
+				select {
+				case ia := <-e.ackQ:
+					e.writeAck(collectionCmd, ia)
+				case iv := <-e.dataQ:
+					pending = append(pending, iv)
+				case <-idle.C:
+					if !jsmongo.PingOK(client) {
+						jslog.Log(jslog.LevelBasic, "Error on MongoDB connection")
+						time.Sleep(3 * time.Second)
+						return // reconnect
+					}
+					continue
 				}
 
-				// command acks
+				// command acks that are already waiting
 			ackLoop:
 				for {
 					select {
 					case ia := <-e.ackQ:
-						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-						_ = collectionCmd.FindOneAndUpdate(ctx,
-							bson.M{
-								"protocolSourceConnectionNumber": ia.ConnNumber,
-								"protocolSourceObjectAddress":    jsmongo.AddrMatch(ia.ObjectAddress),
-							},
-							bson.M{"$set": bson.M{"ack": ia.Ack, "ackTimeTag": ia.AckTimeTag}},
-							options.FindOneAndUpdate().SetSort(bson.M{"$natural": -1}),
-						)
-						cancel()
+						e.writeAck(collectionCmd, ia)
 					default:
 						break ackLoop
 					}
 				}
 
-				// acquired values
-				var writes []mongo.WriteModel
-				var insertDocs []interface{}
+				// acquired values that are already waiting
 			dataLoop:
-				for len(writes) < 5000 {
+				for len(pending) < writerMaxBatch {
 					select {
 					case iv := <-e.dataQ:
-						// Auto-create a new tag document on first value for a new {CA, IOA} pair
-						srv := e.FindConn(iv.ConnNumber)
-						if srv != nil && srv.Cfg.AutoCreateTags {
-							key := [2]int{iv.CommonAddress, iv.Address}
-							if !srv.inserted[key] {
-								srv.inserted[key] = true
-								newID := GetNextAutoKey(srv, collection)
-								insertDocs = append(insertDocs, NewRealtimeTagDoc(iv, srv.Cfg.Name, newID))
-								jslog.Log(jslog.LevelBasic, "%s - INSERT NEW TAG: %s;%d;%d",
-									srv.Cfg.Name, srv.Cfg.Name, iv.CommonAddress, iv.Address)
-							}
-						}
-						// addresses are matched as number or string (they may be
-						// configured with either representation)
-						filter := bson.M{
-							"protocolSourceConnectionNumber": iv.ConnNumber,
-							"protocolSourceCommonAddress":    jsmongo.AddrMatch(iv.CommonAddress),
-							"protocolSourceObjectAddress":    jsmongo.AddrMatch(iv.Address),
-						}
-						jslog.Log(jslog.LevelDetailed, "MongoDB - ADD %d %s", iv.Address, formatValue(iv.Value))
-						writes = append(writes, mongo.NewUpdateOneModel().
-							SetFilter(filter).SetUpdate(e.sourceDataUpdateDoc(iv)))
+						pending = append(pending, iv)
 					default:
 						break dataLoop
 					}
 				}
+				if len(pending) == 0 {
+					continue
+				}
+
+				writes, insertDocs := e.buildWrites(collection, pending)
 
 				// Flush inserts before updates so the update filter finds the new docs
 				if len(insertDocs) > 0 {
@@ -327,22 +323,69 @@ func (e *Engine) RunMongoWriter() {
 					}
 				}
 
-				if len(writes) > 0 {
-					jslog.Log(jslog.LevelBasic, "MongoDB - Bulk write %d", len(writes))
-					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-					_, err := collection.BulkWrite(ctx, writes, options.BulkWrite().SetOrdered(false))
-					cancel()
-					if err != nil {
-						jslog.Log(jslog.LevelBasic, "%s", "Exception Mongo: "+err.Error())
-						time.Sleep(3 * time.Second)
-						return // reconnect
-					}
-				} else {
-					time.Sleep(100 * time.Millisecond)
+				jslog.Log(jslog.LevelDetailed, "MongoDB - Bulk write %d", len(writes))
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				_, err := collection.BulkWrite(ctx, writes, options.BulkWrite().SetOrdered(false))
+				cancel()
+				if err != nil {
+					jslog.Log(jslog.LevelBasic, "%s", "Exception Mongo: "+err.Error())
+					time.Sleep(3 * time.Second)
+					return // reconnect
 				}
+				idle.Reset(writerIdlePing)
 			}
 		}()
 	}
+}
+
+// writeAck records a command confirmation on the latest matching
+// commandsQueue entry.
+func (e *Engine) writeAck(collectionCmd *mongo.Collection, ia conv.IecCmdAck) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = collectionCmd.FindOneAndUpdate(ctx,
+		bson.M{
+			"protocolSourceConnectionNumber": ia.ConnNumber,
+			"protocolSourceObjectAddress":    jsmongo.AddrMatch(ia.ObjectAddress),
+		},
+		bson.M{"$set": bson.M{"ack": ia.Ack, "ackTimeTag": ia.AckTimeTag}},
+		options.FindOneAndUpdate().SetSort(bson.M{"$natural": -1}),
+	)
+}
+
+// buildWrites turns acquired values into realtimeData updates, plus the tag
+// documents to insert first for new addresses on autoCreateTags connections.
+func (e *Engine) buildWrites(collection *mongo.Collection, vals []conv.IecValue) ([]mongo.WriteModel, []interface{}) {
+	writes := make([]mongo.WriteModel, 0, len(vals))
+	var insertDocs []interface{}
+	detailed := jslog.Level() >= jslog.LevelDetailed
+	for _, iv := range vals {
+		// Auto-create a new tag document on first value for a new {CA, IOA} pair
+		srv := e.FindConn(iv.ConnNumber)
+		if srv != nil && srv.Cfg.AutoCreateTags {
+			key := [2]int{iv.CommonAddress, iv.Address}
+			if !srv.inserted[key] {
+				srv.inserted[key] = true
+				newID := GetNextAutoKey(srv, collection)
+				insertDocs = append(insertDocs, NewRealtimeTagDoc(iv, srv.Cfg.Name, newID))
+				jslog.Log(jslog.LevelBasic, "%s - INSERT NEW TAG: %s;%d;%d",
+					srv.Cfg.Name, srv.Cfg.Name, iv.CommonAddress, iv.Address)
+			}
+		}
+		// addresses are matched as number or string (they may be
+		// configured with either representation)
+		filter := bson.M{
+			"protocolSourceConnectionNumber": iv.ConnNumber,
+			"protocolSourceCommonAddress":    jsmongo.AddrMatch(iv.CommonAddress),
+			"protocolSourceObjectAddress":    jsmongo.AddrMatch(iv.Address),
+		}
+		if detailed {
+			jslog.Log(jslog.LevelDetailed, "MongoDB - ADD %d %s", iv.Address, formatValue(iv.Value))
+		}
+		writes = append(writes, mongo.NewUpdateOneModel().
+			SetFilter(filter).SetUpdate(e.sourceDataUpdateDoc(iv)))
+	}
+	return writes, insertDocs
 }
 
 // RunCommandsStream watches commandsQueue inserts via change stream and

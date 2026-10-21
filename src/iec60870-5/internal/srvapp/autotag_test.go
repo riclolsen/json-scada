@@ -13,108 +13,23 @@ package srvapp
 
 import (
 	"context"
-	"net"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strconv"
 	"testing"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"iec60870-5/internal/model"
+	"iec60870-5/internal/testmongo"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
-// mongodPath returns the bundled mongod binary, or "" when not present.
-func mongodPath() string {
-	if p := os.Getenv("JS_TEST_MONGOD"); p != "" {
-		return p
-	}
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		return ""
-	}
-	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..")
-	cands := []string{
-		filepath.Join(root, "platform-windows", "mongodb-runtime", "bin", "mongod.exe"),
-		filepath.Join(root, "platform-linux", "mongodb-runtime", "bin", "mongod"),
-	}
-	for _, c := range cands {
-		if st, err := os.Stat(c); err == nil && !st.IsDir() {
-			return c
-		}
-	}
-	return ""
-}
-
-func freePort(t *testing.T) int {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("free port: %s", err)
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port
-}
-
-// testDB connects to a temporary MongoDB, starting the bundled mongod when
-// JS_TEST_MONGO_URI is not set. Skips the test when neither is available.
+// testDB returns an empty database on a throwaway MongoDB (skips without one).
 func testDB(t *testing.T) *mongo.Database {
 	t.Helper()
-	uri := os.Getenv("JS_TEST_MONGO_URI")
-	if uri == "" {
-		bin := mongodPath()
-		if bin == "" {
-			t.Skip("no mongod available (set JS_TEST_MONGOD or JS_TEST_MONGO_URI)")
-		}
-		port := freePort(t)
-		dbpath := t.TempDir()
-		cmd := exec.Command(bin, "--dbpath", dbpath, "--port", strconv.Itoa(port),
-			"--bind_ip", "127.0.0.1")
-		if err := cmd.Start(); err != nil {
-			t.Skipf("cannot start mongod: %s", err)
-		}
-		t.Cleanup(func() {
-			_ = cmd.Process.Kill()
-			_, _ = cmd.Process.Wait()
-		})
-		uri = "mongodb://127.0.0.1:" + strconv.Itoa(port)
-	}
-
-	var client *mongo.Client
-	var lastErr error
-	deadline := time.Now().Add(60 * time.Second)
-	for {
-		c, err := mongo.Connect(options.Client().ApplyURI(uri).
-			SetServerSelectionTimeout(2 * time.Second))
-		if err == nil {
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			err = c.Ping(ctx, nil)
-			cancel()
-			if err == nil {
-				client = c
-				break
-			}
-			_ = c.Disconnect(context.Background())
-		}
-		lastErr = err
-		if time.Now().After(deadline) {
-			t.Skipf("MongoDB not reachable at %s: %v", uri, lastErr)
-		}
-		time.Sleep(300 * time.Millisecond)
-	}
-	t.Cleanup(func() { _ = client.Disconnect(context.Background()) })
-	db := client.Database("json_scada_autotag_test")
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-	_ = db.Drop(ctx)
+	_, db := testmongo.DB(t, "json_scada_autotag_test")
 	return db
 }
 
