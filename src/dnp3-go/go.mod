@@ -3,7 +3,7 @@ module dnp3-go
 go 1.26
 
 require (
-	github.com/dscsystems/go-dnp3 v0.6.0
+	github.com/dscsystems/go-dnp3 v0.8.1
 	github.com/riclolsen/json-scada/src/go-common v0.0.0
 	go.mongodb.org/mongo-driver/v2 v2.8.0
 )

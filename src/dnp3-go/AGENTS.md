@@ -14,7 +14,7 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
 ## Local Contracts
 
 - **Language:** Go 1.26, module `dnp3-go`, `cmd/` + `internal/` layout as in `src/iec60870-5`
-- **Library:** `github.com/dscsystems/go-dnp3` v0.6.0 (GPLv3+, pure Go) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-dnp3` v0.8.1 (GPLv3+, pure Go) — **pin the version**,
   the API is pre-1.0 and the SKILL.md in that repo says so explicitly. JSON-SCADA is GPL-3.0, so
   the copyleft is not a problem; note it rather than re-litigating it.
   - Used beyond the basics: device attributes (group 0) on the server, `multidrop.Bus` everywhere.
@@ -49,6 +49,18 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
     Behaviour changes that do apply: UDP sends each application fragment as one datagram (a
     loss drops the whole fragment), event reads are answered by event group, and pattern control
     (g12v2/v3) is refused rather than operated as a CROB. Nothing in this module changed.
+  - v0.7.0/v0.8.0 changed what an outstation does with requests, and **two of those changes
+    needed code here**: a control for an index the database has no output status for is refused
+    before the handler (`OutputPoints`, see Work Guidance), and `Database.Configure` returns false
+    for an event variation it cannot encode. Also: a variation without flags is sent with flags for
+    a point that is not in normal condition; a read past the last point earns OBJECT_UNKNOWN or
+    PARAMETER_ERROR beside the points that exist; `Session.Update` applies the change itself when no
+    connection is being served; a select that expired answers TIMEOUT rather than NO_SELECT; passive
+    channels retry a failed accept instead of ending the session. Additive and unused:
+    `ClockConfig` (re-asserting NEED_TIME), `MaxControlsPerRequest`, `RestartSupport`,
+    `DisableAttributes`, `EventBuffer.Discard`. v0.8.1 fixes events a master had just confirmed
+    being reported again when a request arrived in the same read as the confirm. The server still accepts restart requests, as
+    `NopApplication` does; the C++ server refuses them.
   - Stats counters available if the stats document ever wants them:
     `outstation.Stats.RepeatedRequests`/`IncompleteRequests`, `master.Stats.FragmentsDiscarded`.
   - Before the next bump, diff the API of the packages this module imports rather than trusting
@@ -120,8 +132,19 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
   (`Engine.distribute`). A command tag's destination is in group 12 or 41, which `familyOf` sends to
   the analog family, so applying one overwrites the supervised analog at that index.
   `TestCommandTagChangeDoesNotTouchSuppliedPoints` pins it.
-- `outstation.Session.Update` queues the change for the session loop; it is not applied when the
-  call returns. A test that changes a value and then scans must poll until the change is reported.
+- `outstation.Session.Update` queues the change for the session loop **while a connection is
+  being served**; it is not applied when the call returns. A test that changes a value over a live
+  session and then scans must poll until the change is reported. With no connection (before `Run`,
+  between reconnections) it applies the change itself before returning.
+- **The command handler implements `outstation.OutputPoints`** and says every output exists
+  (`commandHandler.HasOutput`). Without it go-dnp3 v0.8.0 refuses a control whose index is past the
+  database's output status count — NOT_SUPPORTED before the handler looks for the command tag — and
+  controls and output statuses are separate address spaces here.
+  `TestCommandsReachTheHandlerWhateverTheirIndex` pins it.
+- `Database.Configure` returns false for an event variation the library cannot encode;
+  `configure` logs it, and `TestEveryVariationIsAccepted` checks the whole variation table.
+- The time quality a master sees on an event is the **outstation's** synchronisation state (set by a
+  master's clock write, which the driver always accepts), not the tag's `timeTagAtSourceOk`.
 - `Database.Configure` replaces the whole `PointConfig`, so every call is a read-modify-write: a
   zero `Class` is `ClassNone` and silently kills the point's events.
 - An outstation has no `Connected()`. Read the link state from the channel the session runs on

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	dnp3 "github.com/dscsystems/go-dnp3"
+	"github.com/dscsystems/go-dnp3/outstation"
 )
 
 // TestFamilyOf checks that each common address lands in the point family the
@@ -168,6 +169,35 @@ func TestEveryEventCarriesTime(t *testing.T) {
 		check("default", defaultVariations[fam].event)
 		for asdu := 0; asdu <= 20; asdu++ {
 			check(fmt.Sprintf("ASDU %d", asdu), variationsFor(fam, asdu).event)
+		}
+	}
+}
+
+// TestEveryVariationIsAccepted checks that go-dnp3 takes the configuration the
+// driver builds for every family and every ASDU. Database.Configure refuses an
+// event variation the library cannot encode, and a refused point silently keeps
+// its default, so a table entry the library does not know would otherwise show
+// up only as a master reading a different variation than the one configured.
+func TestEveryVariationIsAccepted(t *testing.T) {
+	db := outstation.NewDatabase(outstation.DatabaseConfig{
+		Binary: 1, DoubleBitBinary: 1, Counter: 1, FrozenCounter: 1, Analog: 1,
+		BinaryOutputStatus: 1, AnalogOutputStatus: 1,
+	}, outstation.NewEventBuffer(outstation.EventBufferConfig{}))
+
+	for f := famBinary; f <= famAnalogOutputStatus; f++ {
+		pt, ok := f.pointType()
+		if !ok {
+			continue
+		}
+		check := func(what string, vp variationPair) {
+			cfg := outstation.PointConfig{Class: dnp3.Class2, StaticVariation: vp.static, EventVariation: vp.event}
+			if !db.Configure(pt, 0, cfg) {
+				t.Errorf("family %d %s: static v%d / event v%d refused by go-dnp3", f, what, vp.static, vp.event)
+			}
+		}
+		check("default", defaultVariations[f])
+		for asdu := 0; asdu <= 20; asdu++ {
+			check(fmt.Sprintf("ASDU %d", asdu), variationsFor(f, asdu))
 		}
 	}
 }

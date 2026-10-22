@@ -91,7 +91,7 @@ Intentional differences. Everything not listed here is meant to behave identical
 | D9 | Both change streams resume from a stored token after a MongoDB outage, so a command or a value change inserted during it is not lost. The C++ drivers restart from "now". |
 | D10 | `resultDescription` may carry the DNP3 command status in parentheses after the legacy prefix, e.g. `FAILURE_BAD_RESPONSE (NOT_SUPPORTED)`. The prefix is byte-identical, so anything matching the old strings still matches. |
 | D11 | The server banner no longer says "IEC60870-5-104 Server Driver". |
-| D12 | `timeSyncInterval` is accepted and ignored. The library has no periodic NEED_TIME re-assertion, and the C++ server reads the field into its struct and never uses it either. |
+| D12 | `timeSyncInterval` is accepted and ignored, as in the C++ server, which reads the field into its struct and never uses it. go-dnp3 v0.8.0 can re-assert NEED_TIME after an interval (`outstation.ClockConfig`); the driver leaves it off, so the outstation asks for the time once. |
 | D15 | A tag with no source timestamp is sent as unsynchronised-with-a-time rather than invalid-with-a-time. `dnp3.TimestampInvalid` discards the time entirely, and a measurement with no time at all is worse for a master than one honestly labelled unsynchronised. |
 | D16 | Frozen counters are written to the frozen counter family. The C++ server falls through into the counter branch and writes both to the counter array; the Go database keeps them apart, so the point has to go where it was sized. |
 | D20 | The server writes a `stats` sub-document, which the C++ server never does. It carries the same fields as the client's plus `confirmTimeouts` and `eventsQueued`. |

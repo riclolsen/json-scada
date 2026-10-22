@@ -347,6 +347,11 @@ Integer variations drop the fraction, and a value beyond the range of the intege
 saturated with the OVER_RANGE flag. Floating point is the default and the one to use unless the
 master insists on integers.
 
+**Variations without flags** (analog 3 and 4, counter 5 and 6, and their frozen and event
+counterparts where they exist) are only sent for a point whose quality is normal. A point that is
+invalid, forced or overflowed is sent in the matching variation *with* flags instead
+(g30v3 as g30v1, g20v5 as g20v1), because a master would otherwise read its value as good.
+
 #### Counter and frozen counter
 
 | `protocolDestinationASDU` | Counter: static / event | Frozen counter: static / event |
@@ -413,11 +418,15 @@ Each event carries a time, taken from the tag in this order:
 2. `timeTag`, the time the tag was last updated in JSON-SCADA.
 3. The time the driver applied the change, when the tag has neither.
 
-`protocolDestinationHoursShift` plus the connection's `hoursShift` is added to the time. The time is
-reported as **synchronised** only when the tag has `timeTagAtSourceOk: true`; otherwise it is
-reported as unsynchronised, so a master can tell an accurate field time from a local estimate.
+`protocolDestinationHoursShift` plus the connection's `hoursShift` is added to the time.
 A measurement is never sent without a time: a missing time is replaced by the current one rather
 than sent as invalid.
+
+Whether a master is told the time is **synchronised** is a property of the outstation, not of the
+tag. It is *unsynchronised* from the start of the driver until a master writes the clock, and
+*synchronised* once one has (see [Time](#time)); the tag's own `timeTagAtSourceOk` does not change
+it. A master that never synchronises the outstation therefore sees every time as unsynchronised,
+including accurate field times.
 
 ### Changes from the database
 
@@ -599,8 +608,10 @@ conformance (nothing here is certified), and everything the connection document 
 
 A master may write the outstation's clock. The driver **accepts every clock write**, whatever
 `timeSyncMode` says, and does not use the value: event times come from the tags, not from this
-clock. What the write changes is that the outstation stops asking for the time (the NEED_TIME
-indication, which it raises until a master sets it).
+clock. What the write changes is the outstation's own state: it stops asking for the time (the
+NEED_TIME indication, which it raises until a master sets it), and from then on it reports its time
+stamps as **synchronised**. Without a write the stamps are reported as unsynchronised. The
+outstation does not ask again later.
 
 Refusing the write would not be harmless: the master would repeat it on every connection and see the
 refusal each time.

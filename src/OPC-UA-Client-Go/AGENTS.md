@@ -54,7 +54,7 @@ MongoDB semantics, no .NET runtime dependency.
 
 - The C# driver is the specification. Before changing behaviour, check what
   `src/OPC-UA-Client` does; quirks are reproduced on purpose and marked `parity:` in comments.
-  Intentional differences are numbered (D1 to D25) and listed in `DEVIATIONS.md`, each marked
+  Intentional differences are numbered (D1 to D26) and listed in `DEVIATIONS.md`, each marked
   `deviation Dn` at its code site — add to that list rather than silently diverging.
 - Keep `README.md` true. It states behaviour to users (defaults, `cancelReason` values, the topic
   rules, the type table, the log lines). A change to any of those updates it in the same change.

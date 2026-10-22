@@ -145,7 +145,7 @@ output). Logging goes to stdout only; the service manager redirects it to the lo
 
 ## Value extraction
 
-The value of a data object is the attribute its common data class names — `stVal` for a status, `mag` for a measurand — not whichever member happens to be numeric. The driver learns those names while browsing (and from the data set type descriptions), so a controllable object that also carries an operation counter under `ST` still reads its position.
+The value of a data object is the attribute its common data class names — `stVal` for a status, `mag` for a measurand — not whichever member happens to be numeric. The driver learns those names, in the order the value carries them, from the type description of each logical node while browsing (and of each data set member), so a controllable object that also carries an operation counter under `ST` still reads its position.
 
 **Double points** (`Pos` and any other DPS/DPC) are read from their two-bit `stVal` and become
 **digital** points: `01` off → 0, `10` on → 1. The two remaining states are not positions, and both reach the tag's quality: `00` (intermediate — the switch is moving) is invalid *and* transient, `11` (faulty) is invalid.

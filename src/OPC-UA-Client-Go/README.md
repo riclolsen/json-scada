@@ -459,8 +459,12 @@ The subscription reports a point when its value, its status **or its timestamp**
 that stamps every sample therefore produces an update for every sample even if the value is
 constant.
 
-A value whose JSON and text together exceed about 1 MB, and whose stored update would exceed
-16 MB, is dropped with a message at log level 2.
+A value whose update would take more than 3 MB once stored (large structures and arrays) is
+discarded, with `NAME - Update too large for ADDRESS - N bytes (limit 3145728), discarded` in the
+log at every level. The limit is well below MongoDB's 16 MB per document because the tag document
+holds the value several times over (`sourceDataUpdate`, then `value`, `valueString` and `valueJson`
+once processed); above it the write would fail with `BSONObjectTooLarge`. If the point has no tag
+yet, the tag is still created, without the value.
 
 ## Commands
 
@@ -634,6 +638,7 @@ written. Higher levels cost performance on large systems.
 | Nodes read per request during discovery | 500, falling to 10 if the server needs it |
 | Monitored items per `CreateMonitoredItems` request | 1,000 |
 | Received values waiting to be written | 50,000; more are dropped and counted |
+| Size of one value update | 3 MB; larger updates are logged and discarded |
 | Database operations per bulk write | up to 6,000, at least every 750 ms while data is pending |
 | Command age limit | 10 s |
 | Time to connect, discover and answer a request | `timeoutMs` |

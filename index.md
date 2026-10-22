@@ -66,7 +66,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Various high-quality protocol drivers.
 - Integration with MQTT brokers (compatibility with Sparkplug B).
 - Live point configuration updates.
-- Inkscape-based SVG synoptic display editor.
+- Inkscape-based and web-base SVG synoptic display editors.
 - PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 - Easy development of custom applications with modern stacks like MEAN/MERN, etc. Extensive use of JSON from bottom up.
 - Leverage a huge ecosystem of MongoDB/PostgreSQL tools, community, services, etc.
@@ -146,8 +146,6 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [ ] IEC 61850 GOOSE/SV Client
 - [x] DNP3 Client TCP/UDP/TLS/Serial
 - [x] DNP3 Server TCP/UDP/TLS/Serial
-- [x] Modbus Client TCP/TLS/Serial
-- [x] Modbus Server TCP/TLS/Serial
 - [x] Various protocols (Modbus, S7, etc.) via PLC4X-Java
 - [x] Modbus Client (native) TCP/TLS/RTU/RTU-over-TCP, all byte orders
 - [x] Modbus Server (native) TCP/TLS/RTU/RTU-over-TCP, all byte orders
@@ -181,6 +179,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Customizable Change-Stream Processor (for user implemented scripts)
 - [x] Basic Alarms Processor
 - [ ] Advanced Alarms Processor
+- [ ] Receipt runtime/editor
 - [x] PostgreSQL/TimescaleDB Historian
 - [x] Grafana Integration
 - [x] Metabase Integration (via PostgreSQL/MongoDB connectors)

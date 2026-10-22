@@ -86,7 +86,9 @@ type cliHandler struct {
 
 func (h *cliHandler) decode(pack *asdu.ASDU) error {
 	connNumber := int(h.c.cfg.ProtocolConnectionNumber)
-	jslog.Log(jslog.LevelDetailed, "%s - %s", h.c.cfg.Name, pack.String())
+	if jslog.Level() >= jslog.LevelDetailed { // formatting the ASDU is not free
+		jslog.Log(jslog.LevelDetailed, "%s - %s", h.c.cfg.Name, pack.String())
+	}
 	res := conv.Decode(pack, connNumber)
 	h.e.EnqueueValues(res.Values)
 	h.e.EnqueueAcks(res.Acks)

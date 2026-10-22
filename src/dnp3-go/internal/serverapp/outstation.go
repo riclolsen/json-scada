@@ -147,7 +147,7 @@ func configurePoints(db *outstation.Database, conn *Connection, tags []bson.M, c
 		def := defaultVariations[f]
 		class := defaultClasses[f]
 		for i := 0; i < count; i++ {
-			db.Configure(pt, uint16(i), outstation.PointConfig{
+			configure(db, conn, pt, uint16(i), outstation.PointConfig{
 				Class:           class,
 				StaticVariation: def.static,
 				EventVariation:  def.event,
@@ -178,9 +178,20 @@ func configurePoints(db *outstation.Database, conn *Connection, tags []bson.M, c
 			if pc, found := pointConfig(db, pt, uint16(d.ObjectAddress)); found {
 				pc.StaticVariation = vp.static
 				pc.EventVariation = vp.event
-				db.Configure(pt, uint16(d.ObjectAddress), pc)
+				configure(db, conn, pt, uint16(d.ObjectAddress), pc)
 			}
 		}
+	}
+}
+
+// configure applies a point configuration and says so when the library refuses
+// it. go-dnp3 v0.8.0 refuses an event variation it has no encoding for, which
+// leaves the point on the configuration it had; without this the only symptom
+// would be a master reading a variation other than the one asked for.
+func configure(db *outstation.Database, conn *Connection, pt dnp3.PointType, index uint16, pc outstation.PointConfig) {
+	if !db.Configure(pt, index, pc) {
+		jslog.Log(jslog.LevelBasic, "%s - Point %d of %v: event variation %d refused; keeping the default.",
+			conn.Name, index, pt, pc.EventVariation)
 	}
 }
 

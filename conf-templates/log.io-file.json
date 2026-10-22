@@ -66,6 +66,16 @@
     },
     {
       "source": "node1",
+      "stream": "iec103client",
+      "config": {
+        "path": "/json-scada/log/iec103client.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "iec104client",
       "config": {
         "path": "/json-scada/log/iec104client.log",
@@ -89,26 +99,6 @@
       "stream": "iec61850client",
       "config": {
         "path": "/json-scada/log/iec61850client.log",
-        "watcherOptions": {
-          "usePolling": true
-        }
-      }
-    },
-    {
-      "source": "node1",
-      "stream": "iec61850goclient",
-      "config": {
-        "path": "/json-scada/log/iec61850goclient.log",
-        "watcherOptions": {
-          "usePolling": true
-        }
-      }
-    },
-    {
-      "source": "node1",
-      "stream": "iec61850goserver",
-      "config": {
-        "path": "/json-scada/log/iec61850goserver.log",
         "watcherOptions": {
           "usePolling": true
         }

@@ -154,29 +154,7 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	conn.RcbByDataSet[dsKey] = st
 	conn.mu.Unlock()
 
-	// GI is requested below as soon as the block is enabled, and a server
-	// only answers a GI request whose trigger is enabled in TrgOps
-	// (IEC 61850-7-2). Without it a conformant IED ignores the request and
-	// nothing arrives until the first change or integrity period. The C#
-	// driver left GI out.
-	rcb.TrgOps = model.TrgDataChange | model.TrgIntegrity | model.TrgGI
-	rcb.IntgPd = time.Duration(conn.Class0ScanInterval) * time.Second
-	// The C# driver also requested DATA_REFERENCE. Report entries are
-	// identified here from the data set members instead, and the client
-	// decoder discards the reference strings, so asking for them buys
-	// nothing and costs one string per element per report. It is also a
-	// risk: a report is decoded by position, so a server that announces
-	// data references without sending them shifts every value after the
-	// flags (deviation D10).
-	rcb.OptFlds = model.OptSeqNum | model.OptTimeOfEntry | model.OptReasonCode |
-		model.OptDataSetName | model.OptConfRev
-	if buffered {
-		rcb.OptFlds |= model.OptEntryID
-		rcb.ResyncEntryID = resyncEntryID(conn, rpname)
-		if rcb.ResyncEntryID != nil {
-			jslog.Log(jslog.LevelBasic, "%s BRCB: %s - Last seen entryId: %s", conn.Name, rpname, entryIDString(rcb.ResyncEntryID))
-		}
-	}
+	configureRCB(conn, rcb, rpname, buffered)
 
 	enable := func() (*client.ReportSubscription, error) {
 		return cli.EnableReporting(ctx, rcb, func(rep *client.Report) {
@@ -226,6 +204,40 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 
 	if err := cli.TriggerGI(ctx, rcb); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s %s: IED SetRCB exception - %v", conn.Name, kind, err)
+	}
+}
+
+// configureRCB sets what the driver asks of a report control block before
+// enabling it: triggers, integrity period, optional fields and, for a
+// buffered one, the EntryID to resume after.
+func configureRCB(conn *Iec61850Connection, rcb *client.RCB, rpname string, buffered bool) {
+	// enableRCB requests a GI as soon as the block is enabled, and a server
+	// only answers a GI request whose trigger is enabled in TrgOps
+	// (IEC 61850-7-2). Without it a conformant IED ignores the request and
+	// nothing arrives until the first change or integrity period. The C#
+	// driver left GI out.
+	rcb.TrgOps = model.TrgDataChange | model.TrgIntegrity | model.TrgGI
+	rcb.IntgPd = time.Duration(conn.Class0ScanInterval) * time.Second
+	// parity: the IED keeps its own buffer time. GetRCB reads BufTm and
+	// EnableReporting writes back any non-zero value, a write the C# driver
+	// never made and an IED with fixed report settings may refuse, losing
+	// the block for nothing.
+	rcb.BufTm = 0
+	// The C# driver also requested DATA_REFERENCE. Report entries are
+	// identified here from the data set members instead, and the client
+	// decoder discards the reference strings, so asking for them buys
+	// nothing and costs one string per element per report. It is also a
+	// risk: a report is decoded by position, so a server that announces
+	// data references without sending them shifts every value after the
+	// flags (deviation D10).
+	rcb.OptFlds = model.OptSeqNum | model.OptTimeOfEntry | model.OptReasonCode |
+		model.OptDataSetName | model.OptConfRev
+	if buffered {
+		rcb.OptFlds |= model.OptEntryID
+		rcb.ResyncEntryID = resyncEntryID(conn, rpname)
+		if rcb.ResyncEntryID != nil {
+			jslog.Log(jslog.LevelBasic, "%s BRCB: %s - Last seen entryId: %s", conn.Name, rpname, entryIDString(rcb.ResyncEntryID))
+		}
 	}
 }
 

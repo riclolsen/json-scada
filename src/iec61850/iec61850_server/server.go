@@ -48,6 +48,7 @@ type Gateway struct {
 	tlsCfg   *tls.Config
 
 	serving   atomic.Bool
+	stopped   atomic.Bool // Stop is final, see Stop
 	openConns atomic.Int32
 	listener  net.Listener
 
@@ -220,9 +221,10 @@ func hostOnly(addr string) string {
 }
 
 // Start binds and serves. It is idempotent: starting a running server does
-// nothing.
+// nothing, and a failed bind can simply be retried. A stopped gateway does
+// not start again.
 func (g *Gateway) Start() {
-	if g.serving.Load() {
+	if g.serving.Load() || g.stopped.Load() {
 		return
 	}
 	var ln net.Listener
@@ -249,8 +251,12 @@ func (g *Gateway) Start() {
 	jslog.Log(jslog.LevelNoLog, "IEC 61850 MMS server STARTED on %s%s", g.bindAddr, tlsSuffix(g.useTLS))
 }
 
-// Stop closes the listener and every open association.
+// Stop closes the listener and every open association. It is final: the
+// library's Close shuts the server down for good, and a second server.New
+// over the same model would duplicate its report control blocks, so the
+// process exits after it.
 func (g *Gateway) Stop() {
+	g.stopped.Store(true)
 	if !g.serving.Load() {
 		return
 	}

@@ -106,6 +106,21 @@ const pipeline = [
       ],
     },
   },
+  {
+    // A change event larger than 16MB kills the change stream (BSONObjectTooLarge),
+    // forcing a reconnect/resume that adds seconds of latency and can lose events.
+    // For big documents (e.g. large JSON arrays) drop the copy of sourceDataUpdate
+    // inside fullDocument, it duplicates updateDescription.updatedFields.sourceDataUpdate.
+    $set: {
+      'fullDocument.sourceDataUpdate': {
+        $cond: [
+          { $gt: [{ $bsonSize: '$fullDocument' }, 4 * 1024 * 1024] },
+          '$$REMOVE',
+          '$fullDocument.sourceDataUpdate',
+        ],
+      },
+    },
+  },
 ]
 
 ;(async () => {
@@ -171,19 +186,33 @@ const pipeline = [
     if (typeof sourceTimeMs === 'number') upd[SOURCE_TIME] = sourceTimeMs
     mongoRtDataQueue.enqueue(upd)
     Metrics.inc(Counter.UpdatesQueued)
+    scheduleRtDataFlush()
+  }
+
+  // Flush realtimeData updates as soon as possible instead of waiting for a
+  // fixed polling period. setImmediate lets the change events already read
+  // from the current change stream batch be queued first, and only one bulk
+  // write is in flight at a time, so updates coalesce naturally under load.
+  let rtFlushScheduled = false
+  let rtFlushRunning = false
+  function scheduleRtDataFlush() {
+    if (rtFlushScheduled || rtFlushRunning) return
+    rtFlushScheduled = true
+    setImmediate(processRtDataMongoUpdates)
   }
 
   // process updates to mongo/realtimeData
   async function processRtDataMongoUpdates() {
+    rtFlushScheduled = false
     if (
       !collection ||
       !clientMongo ||
       !MongoStatus.HintMongoIsConnected ||
       mongoRtDataQueue.isEmpty()
     ) {
-      setTimeout(processRtDataMongoUpdates, 150)
       return
     }
+    rtFlushRunning = true
     let cnt = 0
     let updArr = []
     const flushStart = Date.now()
@@ -236,10 +265,13 @@ const pipeline = [
       Metrics.stage(Stage.EndToEnd).observeMs(writeDone - st)
     Metrics.inc(Counter.MongoBulkWrites)
     Metrics.inc(Counter.MongoDocsWritten, cnt)
-    if (cnt) Log.log('Mongo Updates ' + cnt)
-    setTimeout(processRtDataMongoUpdates, 150)
+    if (cnt) Log.log('Mongo Updates ' + cnt, Log.levelDetailed)
+    rtFlushRunning = false
+    // updates queued while the write was in flight
+    if (!mongoRtDataQueue.isEmpty()) scheduleRtDataFlush()
   }
-  processRtDataMongoUpdates()
+  // fallback for updates left queued while MongoDB was disconnected
+  setInterval(scheduleRtDataFlush, 150)
 
   // write values to sql files for later insertion on postgreSQL, and mongo hist
   async function processSqlAndMongoHistUpdates() {
@@ -362,6 +394,25 @@ const pipeline = [
   let latencyIntervalHandle = null
   let resumeToken = null
   let prevResumeToken = null
+  let wakeMainLoop = null
+
+  // a change stream error/close/end can fire more than once for the same
+  // stream (close follows error), handle only the first one per client
+  function closeAndReconnect(client) {
+    if (client !== clientMongo) return
+    Metrics.inc(Counter.ChangeStreamRetries)
+    if (resumeToken !== null && resumeToken === prevResumeToken) {
+      // if resumeToken is the same, it means the error is not recoverable, so cancel the resumeToken
+      prevResumeToken = null
+      resumeToken = null
+    }
+    prevResumeToken = resumeToken
+    clientMongo = null
+    client.close().catch(() => {})
+    // reconnect right away instead of waiting for the next loop cycle
+    if (wakeMainLoop) setTimeout(wakeMainLoop, 100)
+  }
+
   while (true) {
     if (clientMongo === null)
       await MongoClient.connect(
@@ -398,6 +449,7 @@ const pipeline = [
           const changeStream = collection.watch(pipeline, {
             fullDocument: 'updateLookup',
             resumeAfter: resumeToken,
+		 batchSize: 2000 
           })
 
           await createSpecialTags(collection)
@@ -529,33 +581,22 @@ const pipeline = [
           }, invalidDetectCycle)
 
           try {
-            changeStream.on('error', (change) => {
-              Metrics.inc(Counter.ChangeStreamRetries)
-              if (resumeToken !== null && resumeToken === prevResumeToken) {
-                // if resumeToken is the same, it means the error is not recoverable, so cancel the resumeToken
-                prevResumeToken = null
-                resumeToken = null
-              }
-              prevResumeToken = resumeToken
-              if (clientMongo) clientMongo.close()
-              clientMongo = null
-              Log.log('Error on ChangeStream!')
+            changeStream.on('error', (err) => {
+              Log.log(
+                'Error on ChangeStream! ' +
+                  (err?.codeName || err?.code || '') +
+                  ' ' +
+                  (err?.message || err)
+              )
+              closeAndReconnect(client)
             })
-            changeStream.on('close', (change) => {
-              Metrics.inc(Counter.ChangeStreamRetries)
-              if (resumeToken !== null && resumeToken === prevResumeToken) {
-                // if resumeToken is the same, it means the error is not recoverable, so cancel the resumeToken
-                prevResumeToken = null
-                resumeToken = null
-              }
-              prevResumeToken = resumeToken
-              clientMongo = null
+            changeStream.on('close', () => {
               Log.log('Closed ChangeStream!')
+              closeAndReconnect(client)
             })
-            changeStream.on('end', (change) => {
-              if (clientMongo) clientMongo.close()
-              clientMongo = null
+            changeStream.on('end', () => {
               Log.log('Ended ChangeStream!')
+              closeAndReconnect(client)
             })
 
             // start listen to changes
@@ -632,6 +673,9 @@ const pipeline = [
 
                 const sourceDataUpdate =
                   change.updateDescription.updatedFields.sourceDataUpdate
+                // restore when removed by the pipeline to keep the event small
+                if (!('sourceDataUpdate' in fullDocument))
+                  fullDocument.sourceDataUpdate = sourceDataUpdate
 
                 const sduTimeMs = sourceDataUpdate.timeTag.getTime()
                 let delay = new Date().getTime() - sduTimeMs
@@ -1308,8 +1352,12 @@ const pipeline = [
           Log.log(err)
         })
 
-    // wait 5 seconds
-    await new Promise((resolve) => setTimeout(resolve, 5000))
+    // wait 5 seconds, or less when the change stream is lost and must be reopened
+    await new Promise((resolve) => {
+      wakeMainLoop = resolve
+      setTimeout(resolve, 5000)
+    })
+    wakeMainLoop = null
 
     // detect connection problems, if error will null the client to later reconnect
     if (clientMongo === undefined) {

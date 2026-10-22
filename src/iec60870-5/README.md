@@ -57,16 +57,18 @@ iec10Xclient|server [instanceNumber [logLevel [configFileName]]]
 ```
 cmd/                 one main package per binary (thin: wire config -> shared engines -> endpoint)
 internal/
-  jscfg/             json-scada.json + CLI args + log formatting
-  mongoutil/         Mongo connect (TLS via URI), permissive numeric decode, instance/conn loading
+  jscfg/             strict command-line parsing (config, logging and Mongo helpers are in ../go-common)
+  mongoutil/         driver instance / connection loading
   model/             protocolConnections / realtimeData / instances document structs
-  redundancy/        active-node arbitration (clients), connection-stats updates
   conv/              ASDU encode (BuildInfoObj) / decode / batched send — the protocol core
-  cliapp/            client engine: data queue -> Mongo bulk writer, command change stream, autoCreateTags
+  conv103/           IEC 103 ASDU decode to realtimeData values (FUN/INF addressing)
+  cliapp/            client engine: data queue -> event-driven Mongo bulk writer, command change stream,
+                     autoCreateTags
   srvapp/            server engine: realtimeData change stream, spontaneous batcher, interrogation,
                      command validation/forwarding, DistributeAutoTags
   cs101util/         serial + link config mapping for the 101 drivers
   tlsutil/           *tls.Config from the connection certificate fields (PFX or PEM)
+  testmongo/         test support: throwaway MongoDB (bundled mongod) for the Mongo-backed tests
 test/                protocol-level loopback tests (no MongoDB required)
 ```
 
@@ -145,14 +147,29 @@ Replicated intentionally from the C# drivers:
   on the server side.
 - Counter re-initialization offsets on (re)connect (`giInterval-3`/`-2`, etc.).
 
+Deliberately different from the C# drivers:
+
+- The client MongoDB writer (shared by the 101, 103 and 104 clients) blocks on
+  its queues instead of polling them every 100 ms, so a decoded value or command
+  ack is written immediately (about 1 ms added, against 50 ms on average and up
+  to 100 ms before). Values arriving while a bulk write is in flight go into the
+  next one, so bursts are still batched (up to 5000 per write). The database is
+  pinged only after 5 s without traffic; a failed write also forces a reconnect.
+  The per-batch `MongoDB - Bulk write N` line is logged at detailed level (2),
+  since batches are now as small as one value.
+
 ## Testing
 
 ```sh
-go test ./internal/conv/   # encode/decode parity unit tests
-go test ./test/            # cs104 client <-> server protocol loopback (no MongoDB)
+go test ./internal/conv/     # encode/decode parity unit tests
+go test ./test/              # cs104 client <-> server protocol loopback (no MongoDB)
+go test ./internal/cliapp/   # client writer latency and burst batching (MongoDB)
+go test ./internal/srvapp/   # server autoCreateTags distribution (MongoDB)
 ```
 
 The loopback test wires a go-iecp5 server and client over `127.0.0.1` and checks
 interrogation data and a control command round-trip through the `conv` package.
-Full end-to-end verification against a running JSON-SCADA MongoDB, and interop
-against the legacy C# drivers, is described in `GO_DRIVERS_PLAN.md`.
+The MongoDB-backed tests start the bundled `mongod` of `platform-windows` or
+`platform-linux` on a temporary dbpath and free port (override with
+`JS_TEST_MONGOD`, or point them at a running server with `JS_TEST_MONGO_URI`);
+they skip when neither is available.

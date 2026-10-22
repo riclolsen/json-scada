@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -542,41 +543,57 @@ func TestLoopbackConnectionCap(t *testing.T) {
 	}
 }
 
-// The server can be stopped and started again, which is what the main loop
-// does when a bind fails and is retried.
-func TestLoopbackRestart(t *testing.T) {
+// A failed bind is retried: the 1 Hz loop in main.go calls Start until the
+// port is free, and the gateway then serves normally.
+func TestLoopbackStartRetriesBind(t *testing.T) {
+	// Hold a port, as another process would.
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
 	points := loopbackPoints()
 	conn := testConn()
-	conn.IPAddressLocalBind = "127.0.0.1:0"
-	built := BuildModel(points, conn)
-	gw, err := NewGateway(conn, built)
+	conn.IPAddressLocalBind = busy.Addr().String()
+	gw, err := NewGateway(conn, BuildModel(points, conn))
 	if err != nil {
 		t.Fatalf("NewGateway: %v", err)
 	}
 	installControlHandlers(gw)
+	t.Cleanup(gw.Stop)
 
-	for cycle := 0; cycle < 2; cycle++ {
-		gw.Start()
-		if !gw.Serving() {
-			t.Fatalf("cycle %d: server did not start", cycle)
-		}
-		applyInitialValues(gw, points)
+	gw.Start()
+	if gw.Serving() {
+		t.Fatal("started on a port that is in use")
+	}
+	_ = busy.Close()
+	gw.Start()
+	if !gw.Serving() {
+		t.Fatal("did not start once the port was free")
+	}
+	applyInitialValues(gw, points)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		c, err := client.Dial(ctx, gw.Addr(), client.WithTimeout(5*time.Second))
-		if err != nil {
-			cancel()
-			t.Fatalf("cycle %d: dial: %v", cycle, err)
-		}
-		if _, err := c.LogicalDevices(ctx); err != nil {
-			t.Errorf("cycle %d: browse: %v", cycle, err)
-		}
-		c.Close()
-		cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	c, err := client.Dial(ctx, gw.Addr(), client.WithTimeout(5*time.Second))
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer c.Close()
+	if _, err := c.LogicalDevices(ctx); err != nil {
+		t.Errorf("browse: %v", err)
+	}
+}
 
-		gw.Stop()
-		if gw.Serving() {
-			t.Fatalf("cycle %d: server still serving after stop", cycle)
-		}
+// Stop is final: the library's Close shuts the server down for good, so a
+// stopped gateway must not pretend to serve again.
+func TestLoopbackStopIsFinal(t *testing.T) {
+	gw := startGateway(t, testConn(), loopbackPoints())
+	gw.Stop()
+	if gw.Serving() {
+		t.Fatal("still serving after stop")
+	}
+	gw.Start()
+	if gw.Serving() {
+		t.Error("a stopped gateway started again")
 	}
 }

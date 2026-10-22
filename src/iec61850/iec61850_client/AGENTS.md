@@ -15,7 +15,7 @@ MongoDB semantics, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_client`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.3.2 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.6.5 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1
 - **Binary:** `iec61850_client(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -57,10 +57,17 @@ MongoDB semantics, no native library dependency.
 - Connection fields come from a document decoded into `bson.M`, where sub-documents arrive as
   `bson.D`: read them through the `jsmongo` helpers, and test new fields through a real BSON round
   trip (`config_test.go`), not a hand-built `bson.M`.
+- A data object's attribute names (`Childs`) must be in the order its value carries them, since
+  the value is read by position: take them from a type description (`GetVariableAccessAttributes`,
+  per logical node in `learnBrowsedChilds`), never from an MMS name list, which is alphabetical
+  (`q`, `stVal`, `t` would make `stVal` the quality). The library's own server lists names in
+  declaration order, so loopback tests cannot catch a regression here: `discovery_test.go` pins it.
 - Report entries are identified from the data set members, and reports are matched to their
   subscription by `RptID` — see the RptID handling in `reports.go` before touching that path.
 - `TrgOps` must include GI: the driver requests a GI right after enabling a block, and a
   conformant server ignores GI when its trigger is off.
+- `configureRCB` leaves `BufTm` at 0, so the IED keeps its own buffer time: the library writes
+  back any non-zero value `GetRCB` read, and an IED with fixed report settings may refuse it.
 - A buffered block resumes after the last EntryID the driver saw (`resyncEntryID`). With none
   saved, no EntryID is written — never all zeros, which some IEDs refuse. An EntryID the IED
   refuses (`entryIDRefused`, e.g. after an IED restart) is forgotten and the block is enabled
