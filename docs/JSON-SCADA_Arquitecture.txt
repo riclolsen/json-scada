@@ -1,88 +1,157 @@
 @startuml
 
-scale .5
 !include <osa/desktop/desktop>
 !include <osa/vpn/vpn>
 !include <osa/ics/plc/plc>
 
-title JSON-SCADA Architecture
+' ---------------------------------------------------------------- style
+skinparam shadowing false
+skinparam roundCorner 12
+skinparam componentStyle rectangle
+skinparam nodesep 45
+skinparam ranksep 55
+skinparam TitleFontSize 24
+skinparam ArrowColor #607D8B
+skinparam ArrowThickness 1.3
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #455A64
+skinparam ComponentBackgroundColor #E3F2FD
+skinparam ComponentBorderColor #1E88E5
+skinparam PackageBackgroundColor #FAFCFE
+skinparam PackageBorderColor #90A4AE
+skinparam PackageFontColor #37474F
+skinparam NodeBackgroundColor #F5F9FC
+skinparam NodeBorderColor #1565C0
+skinparam NodeFontSize 16
+skinparam DatabaseBackgroundColor #FFF3E0
+skinparam DatabaseBorderColor #EF6C00
+skinparam CloudBackgroundColor #F5F5F5
+skinparam CloudBorderColor #90A4AE
+skinparam RectangleBackgroundColor #FFFFFF
+skinparam RectangleBorderColor #78909C
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #B0BEC5
 
-rectangle "Engineering\nAdmin\nDisplay Creation\n<$desktop>" as Engineering1
+title **{json:scada}** Architecture
 
-cloud "Operators" as WebClients {
-rectangle "Web client\n <$desktop>" as Operator1
-rectangle "Web client\n <$desktop>" as Operator2
-}
-
+' ---------------------------------------------------------------- users / IT / AI (north)
 together {
-cloud "Other\nSCADA Systems"{
-rectangle "SCADA:\n <$vpn>" as SCADA1
+  rectangle "Engineering\nAdmin & Display Creation\n<$desktop>" as Engineering1
+
+  cloud "Operators" as WebClients {
+    rectangle "Web client\n<$desktop>" as Operator1
+    rectangle "Web client\n<$desktop>" as Operator2
+  }
+
+  cloud "AI & Automation" as AIZone #F3E5F5;line:8E24AA {
+    rectangle "AI Agent\nLLM assistants\n(Claude, ChatGPT, local models...)" as AIAgent #FFFFFF;line:8E24AA
+    rectangle "Node-RED\nflows" as NodeRED #FFFFFF;line:8E24AA
+    rectangle "n8n\nworkflows" as N8N #FFFFFF;line:8E24AA
+  }
+
+  cloud "Corporate IT" as Corp {
+    rectangle "ERP / MES / BI\n...\n<$vpn>" as Corp1
+  }
 }
 
-cloud "IoT/IIoT Devices" as MQTTDevices {
-rectangle "Device:\n <$plc>" as MQTTDevice1
+' ---------------------------------------------------------------- json:scada
+node "{json:scada}" as JSCADA {
+
+  [Webserver\nNginx] as Webserver
+  [Realtime Web Server\nNode.js / Express\nAdminUI · /Invoke API · GraphQL] as NodeJS
+  [Grafana] as Grafana
+  [MCP Server\nstdio / HTTP] as MCP #F3E5F5;line:8E24AA
+
+  package "Integration Drivers" as IntDrivers {
+    [Node-RED\nDriver] as NodeREDDrv #F3E5F5;line:8E24AA
+    [n8n\nDriver] as N8NDrv #F3E5F5;line:8E24AA
+    [IT Systems\nIntegrations] as IT1
+  }
+
+  package "Processors" as Processors {
+    [Calculations\nProcessor] as Calc
+    [Change Stream\nProcessor] as CSProc
+    [Custom Change Stream\nProcessor] as CustomCSProc
+    Calc -[hidden]r- CSProc
+    CSProc -[hidden]r- CustomCSProc
+  }
+
+  package "Data Stores" as DataStores {
+    database "MongoDB\nrealtime data" as MongoDB1
+    database "PostgreSQL\nTimescaleDB\nhistory" as PostgreSQL1
+  }
+
+  package "Protocol Drivers" as Drivers {
+    [Server\nProtocol\nDrivers] as ServerProtocol1
+    [Client\nProtocol\nDrivers] as ClientProtocol1
+    [MQTT\nSparkplug B\nDriver] as MQTTDriver1
+    [Telegraf\nAdapter\nDriver] as Telegraf
+  }
 }
 
-cloud "RTU Devices" as RTUDevices {
-rectangle "RTU:\n <$plc>" as RTUDevice1
+queue "MQTT Broker" as Broker #E8F5E9;line:43A047
+
+' ---------------------------------------------------------------- field / OT (south)
+together {
+  cloud "Other\nSCADA Systems" as SCADAs #E8F5E9;line:43A047 {
+    rectangle "SCADA / EMS\n<$vpn>" as SCADA1
+  }
+  cloud "RTU / IED / PLC" as RTUDevices #E8F5E9;line:43A047 {
+    rectangle "RTU\n<$plc>" as RTUDevice1
+  }
+  cloud "IoT / IIoT Devices" as MQTTDevices #E8F5E9;line:43A047 {
+    rectangle "Device\n<$plc>" as MQTTDevice1
+  }
+  rectangle "Network\nInfrastructure\nMonitoring" as NetInfra #E8F5E9;line:43A047
 }
 
-rectangle "Network\nInfrastructure\nMonitoring" as NetInfra
-
-}
-
-Cloud "Corporate IT" as Corp {
-rectangle "ERP\nMES\nBI\n...\n <$vpn>" as Corp1
-}
-
-node "MQTT Broker" as Broker{
-}
-
-node "{json:scada}" {
-
-package Processors {
-[Calculations\nProcessor] as Calc
-[Change Stream\nProcessor] as CSProc
-[Custom Change Stream\nProcessor] as CustomCSProc
-}
-node {
-database "MongoDB\n" as MongoDB1
-database "PostgreSQL\n" as PostgreSQL1
-}
-[Grafana] as Grafana
-[Webserver\nNginx] as Webserver
-package Drivers{
-[Server\nProtocol\nDriver] as ServerProtocol1
-[Client\nProtocol\nDriver] as ClientProtocol1
-[MQTT\nSparkplug B\nProtocol\nDriver] as MQTTDriver1
-[Telegraf\nAdapter\nDriver] as Telegraf
-}
-[IT Systems\nIntegrations] as IT1
-[Front End\nVisualization\nNodeJS/Express] as NodeJS
-}
-
-Engineering1 -d-> Webserver: https\nJWT auth
-Webserver -d-> NodeJS: HTTP\nJWT
+' ---------------------------------------------------------------- user access
+Engineering1 -d-> Webserver : HTTPS\nJWT auth
+Operator1 -d-> Webserver : HTTPS\nJWT auth
+Operator2 -d-> Webserver : HTTPS\nJWT auth
+Webserver -d-> NodeJS : HTTP
+NodeJS -r-> Grafana
 NodeJS -d-> MongoDB1
 NodeJS -d-> PostgreSQL1
-NodeJS -l-> Grafana
 Grafana -d-> PostgreSQL1
-MongoDB1 -r-> PostgreSQL1
-Operator1 -d-> Webserver: https\nJWT auth
-Operator2 -d-> Webserver: https\nJWT auth
-Processors -d-> MongoDB1
-ClientProtocol1 -u-> MongoDB1
-ClientProtocol1 -d-> RTUDevice1: "IEC101/104\nDNP3\nICCP\n..."
-MQTTDriver1 -u-> MongoDB1
-MQTTDriver1 -d-> Broker
-MQTTDevice1 -u-> Broker: "Vanilla MQTT\nSparkplug B"
-Corp1 -d-> Broker: MQTT
+
+' ---------------------------------------------------------------- AI & automation
+AIAgent -d-> MCP : MCP\nstdio / HTTP
+MCP -d-> MongoDB1 : tags, values,\ncommands
+MCP -d-> PostgreSQL1 : history
+MCP -r-> NodeJS : Admin API
+NodeRED <-d-> NodeREDDrv : WebSocket\nJSON
+N8N <-d-> N8NDrv : webhooks /\nHTTP listener
+N8N -d-> Webserver : /Invoke API
+NodeREDDrv -d-> MongoDB1
+N8NDrv -d-> MongoDB1
+
+' ---------------------------------------------------------------- corporate IT
 Corp1 -d-> IT1
+Corp1 -d-> Broker : MQTT
 IT1 -d-> MongoDB1
-Telegraf -d-> NetInfra: SNMP\nModbus\nOPC-UA\nAPIs
-Telegraf -u-> MongoDB1
-ServerProtocol1 -r-> MongoDB1
-SCADA1 -u-> ServerProtocol1: "IEC101/104\n..."
 IT1 -d-> PostgreSQL1
+
+' ---------------------------------------------------------------- data processing
+Processors -d-> MongoDB1
+MongoDB1 -r-> PostgreSQL1 : historian
+
+' ---------------------------------------------------------------- field protocols
+ServerProtocol1 -u-> MongoDB1
+ClientProtocol1 -u-> MongoDB1
+MQTTDriver1 -u-> MongoDB1
+Telegraf -u-> MongoDB1
+SCADA1 -u-> ServerProtocol1 : IEC 101/104\nDNP3 · ICCP\nOPC UA/DA...
+ClientProtocol1 -d-> RTUDevice1 : IEC 101/103/104\nIEC 61850 · DNP3\nModbus · OPC...
+MQTTDriver1 -d-> Broker
+MQTTDevice1 -u-> Broker : MQTT\nSparkplug B
+Telegraf -d-> NetInfra : SNMP · Modbus\nOPC UA · APIs
+
+legend right
+  <back:#E3F2FD>      </back>  {json:scada} services
+  <back:#F3E5F5>      </back>  AI & automation
+  <back:#FFF3E0>      </back>  databases
+  <back:#E8F5E9>      </back>  field / OT
+endlegend
 
 @enduml

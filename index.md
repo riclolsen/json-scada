@@ -66,7 +66,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Various high-quality protocol drivers.
 - Integration with MQTT brokers (compatibility with Sparkplug B).
 - Live point configuration updates.
-- Inkscape-based SVG synoptic display editor.
+- Inkscape-based and web-base SVG synoptic display editors.
 - PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 - Easy development of custom applications with modern stacks like MEAN/MERN, etc. Extensive use of JSON from bottom up.
 - Leverage a huge ecosystem of MongoDB/PostgreSQL tools, community, services, etc.
