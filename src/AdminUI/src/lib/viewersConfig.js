@@ -67,13 +67,10 @@ export const defaultConfig = {
   EventsViewer_LocaleDate: '',
   EventsViewer_LocaleTimeOptions: {},
   EventsViewer_LocaleDateOptions: {},
-  // notification click handler (opens the SVG display for the group1)
+  // notification click handler (opens the SVG display for the group1 in the
+  // display viewer, reusing the same window for later notifications)
   EventsViewer_NotificationClick: (nponto, id, group1) => {
-    window.open(
-      'display.html?SELTELA=../svg/' + group1 + '.svg',
-      'screen',
-      'dependent=no,height=1000,width=800,toolbar=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,modal=no'
-    )
+    window.open('/#/display-viewer-new?screen=' + encodeURIComponent(group1), 'screen')
   },
 
   // Display (Screen) Viewer ---------------------------------------------------
