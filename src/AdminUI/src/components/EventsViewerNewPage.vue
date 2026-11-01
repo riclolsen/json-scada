@@ -160,6 +160,7 @@ const gpsTime = ref(1)
 const histDate = ref('')
 const histTime = ref('00:00:00')
 const histFilter = ref('')
+let histSeed = null // { time, base }: paging seed in histTime and the time it replaced
 const showKeyCols = ref(false)
 const fontScale = ref(13)
 const failed = ref(false)
@@ -414,17 +415,31 @@ async function statusTick() {
   statusTimer = setTimeout(statusTick, 2000)
 }
 
+// a time input value (always 24h HH:mm:ss), unlike the locale-formatted timeStr
+function toTimeInputValue(date) {
+  return [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((v) => String(v).padStart(2, '0'))
+    .join(':')
+}
+
+// continue-from-last paging only applies to the query that produced the seed:
+// a different filter must start again from the time the operator asked for
+watch(histFilter, () => {
+  if (histSeed && histTime.value === histSeed.time) histTime.value = histSeed.base
+  histSeed = null
+})
+
 async function histSearch() {
   const filter = histFilter.value.trim() !== '' ? [histFilter.value.trim()] : []
-  const tp = histTime.value.split(':')
-  if (tp.length === 2) tp[2] = '0'
+  const startTime = histTime.value
+  const [hours, minutes, seconds] = [0, 1, 2].map((i) => Number(startTime.split(':')[i]) || 0)
   const begin = new Date(histDate.value)
   begin.setTime(
     begin.getTime() +
     (begin.getTimezoneOffset() / 60) * 3600000 +
-    tp[0] * 3600000 +
-    tp[1] * 60000 +
-    tp[2] * 1000
+    hours * 3600000 +
+    minutes * 60000 +
+    seconds * 1000
   )
   const end = new Date(histDate.value)
   end.setTime(
@@ -445,8 +460,11 @@ async function histSearch() {
     )
     rows.value = data
     // continue-from-last paging seed
-    if (data.length >= cfg.value.EventsViewer_MaxHistoricalEvents && data.length > 1)
-      histTime.value = data[data.length - 2].timeStr
+    if (data.length >= cfg.value.EventsViewer_MaxHistoricalEvents && data.length > 1) {
+      const base = histSeed && histSeed.time === startTime ? histSeed.base : startTime
+      histTime.value = toTimeInputValue(data[data.length - 2].date)
+      histSeed = { time: histTime.value, base }
+    }
     fanState.value = '.'
   } catch (e) {
     fanState.value = 'E'
@@ -562,6 +580,7 @@ function onModeChange() {
     histDate.value = now.toISOString().slice(0, 10)
     histTime.value = '00:00:00'
     histFilter.value = ''
+    histSeed = null
   }
   setBeforeUnload(mode.value !== 4)
   onResize()

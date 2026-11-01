@@ -111,6 +111,8 @@ g_tblhead: {},
 g_gpstime: 1, // 1=field GPS, 0=local time
 g_titulo_janela: "",
 g_filtro_se: "",
+g_hist_seed: null, // paging seed written to HHORAINI
+g_hist_base: "00:00:00", // HHORAINI value replaced by the paging seed
 g_loadtime: 0,
 g_infomod: {},
 g_infomodtm: {},
@@ -897,6 +899,15 @@ getRealtimeData: function (querykeys, askinfo, callbacksuccess) {
     });
 },
 
+// a different filter must start again from the time the operator asked for, not from the paging seed
+histFiltroAlterado : function()
+{
+var hhoraini = document.getElementById("HHORAINI");
+if (WebSAGE.g_hist_seed !== null && hhoraini.value === WebSAGE.g_hist_seed)
+  hhoraini.value = WebSAGE.g_hist_base;
+WebSAGE.g_hist_seed = null;
+},
+
 histBusca : function()
 {
 WebSAGE.g_tbl.clearAll();
@@ -905,9 +916,7 @@ var group1Filter = [];
 if (document.getElementById("HFILTRO").value.trim() !== "")
   group1Filter.push(document.getElementById("HFILTRO").value);
 
-var timePieces = document.getElementById("HHORAINI").value.split(':');    
-if (timePieces.length == 2)
-  timePieces[2] = 0;
+var timePieces = (document.getElementById("HHORAINI").value + ":0:0").split(':');
 
 var timeBegin = new Date(document.getElementById("HDATAINI").value);
 timeBegin.setTime(timeBegin.getTime() + 
@@ -1088,7 +1097,14 @@ getSoeData: function (group1Filter, useSourceTime, aggregate, limit, timeBegin, 
         );
       return node;
      });
-     document.getElementById("HHORAINI").value = date.toLocaleTimeString();
+     // historical page is full: continue the next query from the last event (input needs 24h HH:mm:ss, not a locale time)
+     if (timeEnd !== null && data.Body.Results.length >= limit) {
+       var hhoraini = document.getElementById("HHORAINI");
+       if (hhoraini.value !== WebSAGE.g_hist_seed)
+         WebSAGE.g_hist_base = hhoraini.value;
+       WebSAGE.g_hist_seed = date.toTimeString().slice(0, 8);
+       hhoraini.value = WebSAGE.g_hist_seed;
+     }
      setTimeout( WebSAGE.showVals, 100 ); WebSAGE.g_waitingServer = 0;
   })
   .catch(function (error) {
@@ -2619,7 +2635,7 @@ function setOpacity(obj, o) {
   </datalist>  
 &nbsp;&nbsp;<span id="SPDATAINI">?</span><input id='HDATAINI' type='date' size='12' style='text-shadow: 1px 1px 1px #808080;' />&nbsp;
 &nbsp;&nbsp;<span id="SPHORAINI">?</span><input id='HHORAINI' list='specialtimes' type='time' step='1' value='00:00:00' size='12' style='text-shadow: 1px 1px 1px #808080;' />&nbsp;
-&nbsp;&nbsp;<span id="SPFILTRO">?</span><input  id='HFILTRO' size='12' style='text-shadow: 1px 1px 1px #808080;' />&nbsp;
+&nbsp;&nbsp;<span id="SPFILTRO">?</span><input  id='HFILTRO' size='12' oninput='WebSAGE.histFiltroAlterado()' style='text-shadow: 1px 1px 1px #808080;' />&nbsp;
 &nbsp;&nbsp;<button id="btBuscaHist" type="button" onclick='WebSAGE.histBusca();'>?</button>
 </div>
 </td>
