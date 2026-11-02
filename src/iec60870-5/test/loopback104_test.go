@@ -28,6 +28,8 @@ type serverHandler struct {
 	mu       sync.Mutex
 	gotCmd   bool
 	cmdValue bool
+	cmdType  asdu.TypeID
+	cmdTime  time.Time
 }
 
 func (h *serverHandler) InterrogationHandler(c asdu.Connect, pack *asdu.ASDU, qoi asdu.QualifierOfInterrogation) error {
@@ -61,6 +63,8 @@ func (h *serverHandler) ASDUHandler(c asdu.Connect, pack *asdu.ASDU) error {
 		h.mu.Lock()
 		h.gotCmd = true
 		h.cmdValue = cmd.Value
+		h.cmdType = pack.Type
+		h.cmdTime = cmd.Time
 		h.mu.Unlock()
 		_ = pack.SendReplyMirror(c, asdu.ActivationCon)
 		return pack.SendReplyMirror(c, asdu.ActivationTerm)
@@ -193,5 +197,53 @@ func TestLoopback104(t *testing.T) {
 	ch.mu.Unlock()
 	if nacks == 0 {
 		t.Errorf("expected at least one command ack, got none")
+	}
+
+	// a command with time tag CP56Time2a (type 58) must reach the server and
+	// its confirmation must be decoded as an ack (go-iecp5 v0.4.3..v0.4.6
+	// dropped types 58..64 on reception)
+	sh.mu.Lock()
+	sh.gotCmd = false
+	sh.mu.Unlock()
+	tagged := conv.BuildInfoObj(58, 6001, 1, false, 0, conv.Quality{}, nil, 1, 0, false)
+	if tagged == nil {
+		t.Fatal("BuildInfoObj returned nil for C_SC_TA_1")
+	}
+	if err := conv.SendCommand(cli, asdu.CauseOfTransmission{Cause: asdu.Activation}, 1, tagged); err != nil {
+		t.Fatal(err)
+	}
+	deadline = time.After(5 * time.Second)
+	for {
+		sh.mu.Lock()
+		got, typ, ts := sh.gotCmd, sh.cmdType, sh.cmdTime
+		sh.mu.Unlock()
+		if got {
+			if typ != asdu.C_SC_TA_1 {
+				t.Errorf("time-tagged command type: got %v want C_SC_TA_1", typ)
+			}
+			if ts.IsZero() || time.Since(ts) > time.Minute {
+				t.Errorf("time-tagged command time not carried: %v", ts)
+			}
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("server did not receive the time-tagged command (C_SC_TA_1)")
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+	deadline = time.After(5 * time.Second)
+	for {
+		ch.mu.Lock()
+		n := len(ch.acks)
+		ch.mu.Unlock()
+		if n > nacks {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("no ack decoded for the time-tagged command confirmation")
+		case <-time.After(50 * time.Millisecond):
+		}
 	}
 }

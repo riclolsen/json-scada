@@ -244,10 +244,21 @@ function loadScreenByRef(ref) {
   const url = screenUrl(ref)
   if (!url || !engine) return
   selectedScreen.value = matchItemValue(ref)
+  loadedScreenRef = ref
   engine.loadScreen(url).catch((e) => (statusMsg.value = e.message))
   // reflect in route without reload
   router.replace({ path: '/display-viewer-new', query: { screen: ref } })
 }
+
+// the screen was changed from outside by the URL, e.g. an events viewer
+// notification click reusing this window (no remount on a query-only change)
+let loadedScreenRef = null
+watch(
+  () => route.value.query.screen,
+  (ref) => {
+    if (ref && ref !== loadedScreenRef) loadScreenByRef(ref)
+  }
+)
 
 // Map a loose ref to a dropdown item value when possible
 function matchItemValue(ref) {

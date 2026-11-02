@@ -15,7 +15,7 @@ MongoDB semantics, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_client`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.6.5 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.6.6 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1
 - **Binary:** `iec61850_client(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it

@@ -16,7 +16,7 @@ document, same model layout and object references, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_server`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.6.5 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.6.6 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1, and keep it in step with the client driver
 - **Binary:** `iec61850_server(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -55,7 +55,10 @@ document, same model layout and object references, no native library dependency.
 - The control handler runs on the connection's goroutine, holding the server's model write lock:
   it must not block, and must never call `Update` or `Read` on the server (deadlock). Commands are
   queued and inserted by a separate goroutine.
-- Values are only ever written through `Update`, which is what drives reporting.
+- Values are only ever written through `Update`, which is what drives reporting. A client must
+  never change a status point: library ≥ v0.6.6 refuses a forged operate (`LN$CO$DO$Oper`) of an
+  object that has no `Oper`, which older versions wrote into its `stVal`.
+  `TestLoopbackForgedControlOfStatusPointIsRefused` pins it.
 
 ## Verification
 

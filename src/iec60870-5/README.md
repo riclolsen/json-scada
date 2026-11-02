@@ -168,7 +168,8 @@ go test ./internal/srvapp/   # server autoCreateTags distribution (MongoDB)
 ```
 
 The loopback test wires a go-iecp5 server and client over `127.0.0.1` and checks
-interrogation data and a control command round-trip through the `conv` package.
+interrogation data and control command round-trips (untagged and CP56 time-tagged,
+with their confirmations decoded as acks) through the `conv` package.
 The MongoDB-backed tests start the bundled `mongod` of `platform-windows` or
 `platform-linux` on a temporary dbpath and free port (override with
 `JS_TEST_MONGOD`, or point them at a running server with `JS_TEST_MONGO_URI`);

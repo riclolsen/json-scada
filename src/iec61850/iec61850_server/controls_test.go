@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -221,5 +222,36 @@ func TestCommandDocumentAppliesKconv(t *testing.T) {
 	doc = send("CMDA", mms.NewStructure(mms.NewFloat32(10)))
 	if doc["value"] != float64(21) || doc["valueString"] != "21" {
 		t.Errorf("scaled analog = %v / %v, want 21 / 21", doc["value"], doc["valueString"])
+	}
+}
+
+// A client cannot change a status point by sending it a control. A forged
+// operate of a status object (GGIO1.Ind1 has no Oper) used to be taken for a
+// direct control and written into its stVal, which every other client of the
+// gateway would then see. It must be refused, the value left alone and
+// nothing queued as a command.
+func TestLoopbackForgedControlOfStatusPointIsRefused(t *testing.T) {
+	points := loopbackPoints()
+	gw := startGateway(t, testConn(), points)
+	c := dialGateway(t, gw)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	pushUpdate(gw, points[0], 1) // LB_DIG_1 -> GGIO1.Ind1 = true
+	drainCommands()
+
+	res, err := c.MMS().Write(ctx, "IEC61850SRVKAW2", []string{"GGIO1$CO$Ind1$Oper"},
+		[]*mms.Value{mms.NewStructure(mms.NewBool(false))})
+	if err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if len(res) == 0 || res[0] == nil {
+		t.Error("a forged operate of a status point was accepted")
+	}
+	if v, err := c.Read(ctx, "IEC61850SRVKAW2/GGIO1.Ind1.stVal", model.ST); err != nil || !v.Bool() {
+		t.Errorf("status value changed by a forged control: %v (%v)", v, err)
+	}
+	if _, queued := dequeueCommand(); queued {
+		t.Error("a forged control queued a command")
 	}
 }

@@ -14,7 +14,7 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
 ## Local Contracts
 
 - **Language:** Go 1.26, module `dnp3-go`, `cmd/` + `internal/` layout as in `src/iec60870-5`
-- **Library:** `github.com/dscsystems/go-dnp3` v0.8.1 (GPLv3+, pure Go) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-dnp3` v0.8.2 (GPLv3+, pure Go) — **pin the version**,
   the API is pre-1.0 and the SKILL.md in that repo says so explicitly. JSON-SCADA is GPL-3.0, so
   the copyleft is not a problem; note it rather than re-litigating it.
   - Used beyond the basics: device attributes (group 0) on the server, `multidrop.Bus` everywhere.
