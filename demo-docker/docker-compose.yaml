@@ -1,7 +1,7 @@
 # {json:scada} Demo - (c) 2020-2026 - Ricardo L. Olsen
 
 # ACCESS VIA WEB BROWSER AT http://127.0.0.1/
-# Server must have tcp ports 80, 102, 8080, 3000, 5678, 6688, 20000, 27017, 5432, 2404, 4840, 10001 free!
+# Server must have tcp ports 80, 102, 8080, 3000, 5678, 6001, 6688, 20000, 27017, 5432, 2404, 4840, 10001 free!
 # Must be online to connect to IEC60870-5-104 live demo server at 207.180.242.96:2404.
 #
 # BEFORE THE FIRST RUN: create the .env file holding a unique random JWT secret,
@@ -374,6 +374,42 @@ services:
     networks:
       - jsdemo_net
     
+  # MCP server for AI assistants (Model Context Protocol, streamable HTTP), at
+  # http://127.0.0.1:6001/mcp on the host. Read tools and tag commands are always on.
+  # The configuration and process management tools are enabled only when
+  # JS_MCPJSDB_ADMIN_USERNAME and JS_MCPJSDB_ADMIN_PASSWORD (an AdminUI admin user)
+  # are set in .env. Host/Origin are checked against JS_MCPJSDB_ALLOWED_HOSTS
+  # (DNS rebinding protection), so add the host name when publishing it elsewhere.
+  mcp_server:
+    image: node:22-alpine
+    container_name: jsdemo_mcp_server
+    command: sh -c "cd /src/mcp-json-scada-db && sleep 50 && node dist/mcp-server.js"
+    restart: unless-stopped
+    environment:
+      - JS_CONFIG_FILE=/conf/json-scada.json
+      - JS_MCPJSDB_TRANSPORT=http
+      - JS_MCPJSDB_IP_BIND=0.0.0.0
+      - JS_MCPJSDB_HTTP_PORT=6001
+      - JS_MCPJSDB_ALLOWED_HOSTS=${JS_MCPJSDB_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
+      - JS_MCPJSDB_ADMIN_URL=http://server_realtime:8080
+      - JS_MCPJSDB_ADMIN_USERNAME=${JS_MCPJSDB_ADMIN_USERNAME:-}
+      - JS_MCPJSDB_ADMIN_PASSWORD=${JS_MCPJSDB_ADMIN_PASSWORD:-}
+      - JS_MCPJSDB_SRC_DIR=/src
+    ports:
+      - "${JS_BIND_ADDR:-127.0.0.1}:6001:6001"
+    expose:
+      - "6001"
+    volumes:
+      # driver READMEs under src/ are served by the driver documentation tools
+      - ../src:/src:ro
+      - ./conf:/conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+      - server_realtime
+    networks:
+      - jsdemo_net
+
   # calculation process
   calculations:
     <<: *go-driver

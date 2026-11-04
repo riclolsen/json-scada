@@ -15,7 +15,7 @@ Model Context Protocol (MCP) server that gives AI assistants (Claude, Cline, Cur
 - **Package manager:** npm
 - **Build:** `npm run build` (TypeScript -> JS in `dist/`)
 - **SDK:** MCP TypeScript SDK v2 (`@modelcontextprotocol/server` + `@modelcontextprotocol/node`), protocol revision 2026-07-28 with legacy (2025-era) fallback
-- **Transports:** stdio via `serveStdio(factory)`; HTTP (`--http` / `JS_MCPJSDB_TRANSPORT=http`, `JS_MCPJSDB_IP_BIND`, `JS_MCPJSDB_HTTP_PORT`) via stateless `createMcpHandler(factory)` + `toNodeHandler` on plain `node:http`, with localhost Host/Origin guards when bound to loopback
+- **Transports:** stdio via `serveStdio(factory)`; HTTP (`--http` / `JS_MCPJSDB_TRANSPORT=http`, `JS_MCPJSDB_IP_BIND`, `JS_MCPJSDB_HTTP_PORT`) via stateless `createMcpHandler(factory)` + `toNodeHandler` on plain `node:http`, with Host/Origin guards (`JS_MCPJSDB_ALLOWED_HOSTS` list on any bind address, else localhost when bound to loopback)
 - `buildServer()` in `src/mcp-server.ts` is the single factory for both transports and both protocol eras; register tools/resources there
 - All environment variables use the `JS_MCPJSDB_` prefix (`package.json` `config.envPrefix`); never read generic names like `PORT`/`BIND`
 - Tool `inputSchema` must be a `z.object({...})` (zod >= 4.2), not a raw shape

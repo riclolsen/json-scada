@@ -14,6 +14,7 @@ It includes
 - DNP3 Server (port 20000) and a DNP3 Client polling it.
 - IEC 61850 MMS Server (port 102) and ICCP (TASE.2) Server (docker network only).
 - MQTT Sparkplug B client, Telegraf listener, n8n integration.
+- MCP server for AI assistants (port 6001).
 - Calculations processor.
 - Change stream realtime data processor.
 - A Node/Express webserver app for user interface.
@@ -68,6 +69,14 @@ Node-RED and Metabase are reached through the web UI, after logging in:
 - Metabase: http://127.0.0.1/metabase/, Metabase login user="json@scada.com" and
   password="jsonscada123".
 
+The MCP server for AI assistants listens at http://127.0.0.1:6001/mcp (streamable HTTP).
+Its read tools and the `send_command` tool are always available. To also enable the
+configuration and process management tools, add the login of an AdminUI admin user to
+the _.env_ file and recreate the container:
+
+    JS_MCPJSDB_ADMIN_USERNAME=admin
+    JS_MCPJSDB_ADMIN_PASSWORD=jsonscada
+
 This demo will connect to the online demo using IEC60870-5-104.
 
 Online demo: http://vmi233205.contaboserver.net:8080/.
@@ -106,7 +115,8 @@ control how exposed it is.
   `127.0.0.1` by default, so the demo is reachable only from the local machine.
 
 The MongoDB and PostgreSQL are configured for unauthenticated access, and the
-IEC 60870-5-104, DNP3, IEC 61850 and OPC-UA server ports accept any peer. Publishing them
+IEC 60870-5-104, DNP3, IEC 61850 and OPC-UA server ports accept any peer, as does the
+MCP server, which has no authentication of its own and can send commands. Publishing them
 on a reachable interface (`JS_BIND_ADDR=0.0.0.0`) hands the whole database and
 the control of the simulated field devices to anyone who can reach the host.
 For an installation that is not a local demo, put the web server behind TLS,

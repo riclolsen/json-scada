@@ -21,7 +21,7 @@ Built on the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`). It implemen
 
 - **stdio**: each connection uses the protocol era the client opens with.
 - **HTTP**: stateless. Every request is handled on its own, with no `Mcp-Session-Id`. Older clients get stateless responses, and GET/DELETE session requests return `405`.
-- When bound to a loopback address, HTTP requests whose `Host`/`Origin` is not localhost are rejected with `403` (DNS rebinding protection).
+- DNS rebinding protection: HTTP requests whose `Host`/`Origin` hostname is not in `JS_MCPJSDB_ALLOWED_HOSTS` are rejected. When that variable is unset, requests must use a localhost name if the server is bound to a loopback address, and are not checked on any other bind address.
 
 ## Configuration
 
@@ -32,6 +32,7 @@ The server expects a MongoDB connection string. You can configure this via envir
 - `JS_MCPJSDB_TRANSPORT`: Set to `http` to run as an HTTP streamable server (defaults to `stdio`).
 - `JS_MCPJSDB_HTTP_PORT`: HTTP port if running in HTTP mode (defaults to `6001`).
 - `JS_MCPJSDB_IP_BIND`: Binding address if running in HTTP mode (defaults to `127.0.0.1`), use `0.0.0.0` to allow external connections from any host (use with caution, insecure).
+- `JS_MCPJSDB_ALLOWED_HOSTS`: Comma-separated hostnames (no ports, IPv6 in brackets, e.g. `localhost,127.0.0.1,[::1]`) accepted in the HTTP `Host` and `Origin` headers, on any bind address. Set it when binding `0.0.0.0` behind a port published only on the loopback (as in a container). Unset by default.
 
 - `JS_MCPJSDB_ADMIN_USERNAME` / `JS_MCPJSDB_ADMIN_PASSWORD`: Credentials of an AdminUI user with an `isAdmin` role. When both are set, the configuration and process management tools are registered (see below). Unset by default.
 - `JS_MCPJSDB_ADMIN_URL`: Base URL of the AdminUI server (`server_realtime_auth`) used by those tools (defaults to `http://127.0.0.1:8080`).
