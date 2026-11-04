@@ -101,10 +101,10 @@ RUN echo "shared_preload_libraries = 'timescaledb'" >> /etc/postgresql/*/main/po
 RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql
 
 # ==============================================================================
-# MONGODB 8
+# MONGODB 9
 # ==============================================================================
-RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.2.gpg \
-    && echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.2.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.2 multiverse" > /etc/apt/sources.list.d/mongodb-org-8.2.list \
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-9.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-9.gpg \
+    && echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-9.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/9.0 multiverse" > /etc/apt/sources.list.d/mongodb-org-9.0.list \
     && apt update \
     && apt install -y mongodb-org \
     && rm -rf /var/lib/apt/lists/*

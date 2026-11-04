@@ -71,8 +71,6 @@ function LoadConfig(confFileArg, logLevelArg, instArg) {
 // prepare mongo connection options
 function getMongoConnectionOptions(configObj) {
   let connOptions = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     appname:
       AppDefs.NAME +
       ' Version:' +

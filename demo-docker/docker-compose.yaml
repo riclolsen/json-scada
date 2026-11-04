@@ -35,7 +35,7 @@ services:
 
   # must create a mongodb instance or cluster with a replica set
   jsdemo_mongorsn1:
-    image: mongo:8.2
+    image: mongo:9.0
     container_name: jsdemo_mongors1
     hostname: jsdemo_mongorsn1
     restart: unless-stopped
