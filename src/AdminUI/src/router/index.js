@@ -12,6 +12,7 @@ import EventsViewerNewPage from '../components/EventsViewerNewPage.vue'
 import GrafanaPage from '../components/GrafanaPage.vue'
 import ApolloPage from '../components/ApolloPage.vue'
 import NodeRedPage from '../components/NodeRedPage.vue'
+import N8nPage from '../components/N8nPage.vue'
 import MetabasePage from '../components/MetabasePage.vue'
 import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
 import LogViewerPage from '../components/LogViewerPage.vue' 
@@ -62,6 +63,7 @@ const routes = [
   { path: '/metabase', component: MetabasePage },
   { path: '/apollo', component: ApolloPage },
   { path: '/nodered', component: NodeRedPage },
+  { path: '/n8n', component: N8nPage },
   { path: '/custom-developments', component: CustomDevelopmentsPage },
   { path: '/svg-edit', component: SVGEditPage },
 ]

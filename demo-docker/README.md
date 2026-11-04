@@ -62,13 +62,16 @@ Open http://127.0.0.1/ on a browser (Chrome, Safari or Firefox).
 
 Login credentials are user="admin" and password="jsonscada".
 
-Node-RED and Metabase are reached through the web UI, after logging in:
+Node-RED, n8n and Metabase are reached through the web UI, after logging in:
 
 - Node-RED editor: http://127.0.0.1/nodered/ (admin users only). The
   `node-red-contrib-jsonscada` palette is preinstalled; in a flow, point the jsonscada
   server config node at host `jsdemo_nodered_driver`, port `51931`.
 - Metabase: http://127.0.0.1/metabase/, Metabase login user="json@scada.com" and
   password="jsonscada123".
+- n8n editor: http://127.0.0.1/n8n/ (admin users only); create the n8n owner account on
+  first use. n8n webhooks stay on port 5678 (`http://n8n:5678/webhook/...` inside the
+  docker network).
 
 The MCP server for AI assistants listens at http://127.0.0.1:6001/mcp (streamable HTTP).
 Its read tools and the `send_command` tool are always available. To also enable the

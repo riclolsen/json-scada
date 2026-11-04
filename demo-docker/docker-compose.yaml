@@ -303,6 +303,10 @@ services:
       - N8N_SECURE_COOKIE=false
       - N8N_PORT=5678
       - GENERIC_TIMEZONE=UTC
+      # editor reached through the web UI at http://127.0.0.1/n8n/ (JSON-SCADA admin login,
+      # then the n8n login); n8n still serves from its root, N8N_PATH only sets its links
+      - N8N_PATH=/n8n/
+      - N8N_EDITOR_BASE_URL=http://127.0.0.1/n8n/
     ports:
       - "${JS_BIND_ADDR:-127.0.0.1}:5678:5678"
     volumes:
@@ -347,6 +351,7 @@ services:
       - JS_LOGIO_SERVER=http://dozzle:6688
       - JS_METABASE_SERVER=http://metabase:3000
       - NODERED_SERVER=http://nodered:1880/nodered/
+      - JS_N8N_SERVER=http://n8n:5678/
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
@@ -366,6 +371,7 @@ services:
       - dozzle
       - nodered
       - metabase
+      - n8n
     # exports the HTTP port to the main host
     ports:
       - "${JS_BIND_ADDR:-127.0.0.1}:8080:8080"

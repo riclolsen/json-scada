@@ -111,6 +111,7 @@ const pageTitle = computed(() => {
     '/grafana': 'dashboard.grafana',
     '/metabase': 'dashboard.metabase',
     '/nodered': 'dashboard.nodered',
+    '/n8n': 'dashboard.n8n',
     '/apollo': 'dashboard.apollo',
     '/custom-developments': 'dashboard.customDevelopments',
     '/svg-edit': 'dashboard.svgedit',

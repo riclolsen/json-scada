@@ -38,6 +38,7 @@
     "grafana": "格拉法纳",
     "metabase": "元数据库",
     "nodered": "Node-RED",
+    "n8n": "n8n",
     "customDevelopments": "定制开发",
     "open": "打开",
     "svgedit": "SVG编辑器"

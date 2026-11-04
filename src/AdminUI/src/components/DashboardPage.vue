@@ -9,7 +9,7 @@
         md="4"
       >
         <v-card
-          v-if="!(shortcut.titleKey === 'dashboard.admin' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.logViewer' && !isAdmin()) && !(shortcut.titleKey === 'dashboard.svgedit' && !isAdmin() && !(shortcut.titleKey === 'dashboard.nodered' && !isAdmin()))"
+          v-if="!(adminOnlyShortcuts.includes(shortcut.titleKey) && !isAdmin())"
           density="compact"
           :color="shortcut.color"
           hover
@@ -54,7 +54,17 @@
     PenTool,
     Code,
     Workflow,
+    Zap,
   } from 'lucide-vue-next'
+
+  // shortcuts shown to admin users only
+  const adminOnlyShortcuts = [
+    'dashboard.admin',
+    'dashboard.logViewer',
+    'dashboard.svgedit',
+    'dashboard.nodered',
+    'dashboard.n8n',
+  ]
 
   // Lifecycle hooks
   onMounted(async () => {
@@ -130,6 +140,14 @@
       color: 'warning',
       route: '/nodered',
       page: '/#/nodered',
+      target: '_blank',
+    },
+    {
+      titleKey: 'dashboard.n8n',
+      icon: Zap,
+      color: 'warning',
+      route: '/n8n',
+      page: '/#/n8n',
       target: '_blank',
     },
     {

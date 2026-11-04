@@ -38,6 +38,7 @@
     "grafana": "グラファナ",
     "metabase": "メタベース",
     "nodered": "NodeRed",
+    "n8n": "n8n",
     "customDevelopments": "カスタム開発",
     "open": "開ける",
     "svgedit": "SVGエディター"

@@ -21,7 +21,8 @@ module.exports = function (
   logioServer,
   metabaseServer,
   noderedProxy,
-  supervisorProxy
+  supervisorProxy,
+  n8nProxy
 ) {
   app.use(function (req, res, next) {
     res.header(
@@ -76,6 +77,19 @@ module.exports = function (
       next()
     },
     noderedProxy
+  )
+
+  // reverse proxy for the n8n editor, restricted to admin users (workflows can run
+  // code on the n8n host); n8n keeps its own login on top of this one.
+  // websocket upgrades are proxied on the http server (see attachN8nUpgrade)
+  app.use(
+    '/n8n',
+    [authJwt.verifyToken, authJwt.isAdmin],
+    function (req, _, next) {
+      authController.addXWebAuthUser(req)
+      next()
+    },
+    n8nProxy
   )
 
   // reverse proxy for log.io on Windows
