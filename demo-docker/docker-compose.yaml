@@ -129,6 +129,8 @@ services:
     # runtime files and is created owned by the grafana user, so no host chown is needed
     volumes:
       - grafana_data:/var/lib/grafana
+      # points the seeded PostgreSQL data source at the timescaledb service
+      - ./conf/grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     environment: 
       - GF_SERVER_DOMAIN=grafana
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/
@@ -343,6 +345,8 @@ services:
       - JS_HTTP_PORT=8080
       - JS_GRAFANA_SERVER=http://grafana:3000
       - JS_LOGIO_SERVER=http://dozzle:6688
+      - JS_METABASE_SERVER=http://metabase:3000
+      - NODERED_SERVER=http://nodered:1880/nodered/
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
@@ -360,6 +364,8 @@ services:
       - jsdemo_mongorsn1
       - grafana
       - dozzle
+      - nodered
+      - metabase
     # exports the HTTP port to the main host
     ports:
       - "${JS_BIND_ADDR:-127.0.0.1}:8080:8080"
@@ -418,51 +424,92 @@ services:
     networks:
       - jsdemo_net
 
-#  # Node-RED integration (opt-in). To enable: set the NODE-RED instance
-#  # (protocolDriverInstances) enabled=true in the seed, then uncomment both services.
-#  # The driver builds itself on first start; Node-RED loads node-red-contrib-jsonscada.
-#  nodered_driver:
-#    image: node:22-alpine
-#    container_name: jsdemo_nodered_driver
-#    command: sh -c "cd /node-red-driver && npm install && npm run build && sleep 40 && node dist/main.js 1 1 /conf/json-scada.json"
-#    restart: unless-stopped
-#    volumes:
-#      - ../src/node-red-driver:/node-red-driver
-#      - ./conf:/conf
-#      - ./log:/log
-#    links:
-#      - jsdemo_mongorsn1
-#    networks:
-#      - jsdemo_net
-#
-#  nodered:
-#    image: nodered/node-red:latest
-#    container_name: jsdemo_nodered
-#    restart: unless-stopped
-#    ports:
-#      - "${JS_BIND_ADDR:-127.0.0.1}:1880:1880"
-#    environment:
-#      # install the palette into the mounted data dir on first boot
-#      - NODE_RED_ENABLE_PROJECTS=false
-#    volumes:
-#      - ./nodered_data:/data
-#    links:
-#      - nodered_driver
-#    networks:
-#      - jsdemo_net
+  # NODE-RED integration driver: WebSocket JSON server (port 51931 on the docker network)
+  # that Node-RED flows connect to with the node-red-contrib-jsonscada palette.
+  # Seeded instance NODE-RED 1, connection NODERED1. Built by ../compile-docker.
+  nodered_driver:
+    image: node:22-alpine
+    container_name: jsdemo_nodered_driver
+    command: sh -c "cd /node-red-driver && sleep 50 && node dist/main.js 1 1 /conf/json-scada.json"
+    restart: unless-stopped
+    expose:
+      - "51931"
+    volumes:
+      - ../src/node-red-driver:/node-red-driver
+      - ./conf:/conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
 
-#  # Metabase for dashboards (can connect to MONGODB and POSTGRESQL)
-#  metabase:
-#    image: metabase/metabase:latest
-#    container_name: jsdemo_metabase
-#    restart: unless-stopped
-#    ports:
-#      - "${JS_BIND_ADDR:-127.0.0.1}:3001:3000"
-#    links:
-#      - jsdemo_mongorsn1
-#      - timescaledb
-#    networks:
-#      - jsdemo_net
+  # Node-RED runtime with the node-red-contrib-jsonscada palette, installed into the data
+  # volume on first start. The editor is served on /nodered/ and reached through the web UI
+  # at http://127.0.0.1/nodered (login required, admin only), so its port is not published.
+  # In a flow, point the jsonscada server config node at jsdemo_nodered_driver:51931.
+  # The flows credential secret is generated into the data volume on first start
+  # (set JS_NODERED_CRED_SECRET in .env to override it).
+  nodered:
+    image: nodered/node-red:latest
+    container_name: jsdemo_nodered
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        cd /data
+        [ -f node_modules/node-red-contrib-jsonscada/package.json ] || npm install --no-audit --no-fund node-red-contrib-jsonscada
+        if [ -z "$$JS_NODERED_CRED_SECRET" ]; then
+          [ -s .cred_secret ] || ( umask 077 && head -c 48 /dev/urandom | od -An -tx1 | tr -d ' \n' > .cred_secret )
+          export JS_NODERED_CRED_SECRET=$$(cat .cred_secret)
+        fi
+        cd /usr/src/node-red
+        exec node node_modules/node-red/red.js --settings /data/settings.js
+    environment:
+      - JS_NODERED_USERDIR=/data
+      - JS_NODERED_HOST=0.0.0.0
+      - JS_NODERED_PORT=1880
+      - JS_NODERED_CRED_SECRET=${JS_NODERED_CRED_SECRET:-}
+      - TZ=UTC
+    expose:
+      - "1880"
+    volumes:
+      - nodered_data:/data
+      # JSON-SCADA settings (editor on /nodered/), at the path the image healthcheck reads
+      - ../conf-templates/node-red-settings.js:/data/settings.js:ro
+    links:
+      - nodered_driver
+    networks:
+      - jsdemo_net
+
+  # Metabase for dashboards (can connect to MongoDB and PostgreSQL). Its application
+  # database is metabaseappdb on the TimescaleDB server (seeded from sql_data).
+  # Reached through the web UI at http://127.0.0.1/metabase/ (JSON-SCADA login required),
+  # then Metabase login json@scada.com / jsonscada123. MB_SITE_URL sets the page base path,
+  # so the UI works only under /metabase/ and the port is not published.
+  metabase:
+    image: metabase/metabase:latest
+    container_name: jsdemo_metabase
+    restart: unless-stopped
+    environment:
+      - MB_DB_TYPE=postgres
+      - MB_DB_DBNAME=metabaseappdb
+      - MB_DB_PORT=5432
+      - MB_DB_USER=postgres
+      - MB_DB_PASS=
+      - MB_DB_HOST=timescaledb
+      - MB_SITE_URL=http://127.0.0.1/metabase/
+      - MB_CHECK_FOR_UPDATES=false
+      - MB_ANON_TRACKING_ENABLED=false
+    expose:
+      - "3000"
+    depends_on:
+      - timescaledb
+    links:
+      - jsdemo_mongorsn1
+      - timescaledb
+    networks:
+      - jsdemo_net
 
   nginx:
     image: nginx:latest
@@ -510,3 +557,4 @@ networks:
 volumes:
   grafana_data:
   n8n_data:
+  nodered_data:

@@ -6,7 +6,8 @@ It includes
 
 - MongoDB Community as the core database server.
 - PostgreSQL/TimescaleDB for time series historian.
-- Grafana for dashboards.
+- Grafana and Metabase for dashboards.
+- Node-RED with the JSON-SCADA palette, linked to the NODE-RED driver.
 - IEC 60870-5-104 Client that connects to the online demo for data acquisition.
 - IEC 60870-5-104 Server listening on the localhost (port 2404).
 - OPC-UA Client connected to public demo servers, and OPC-UA Server (port 4840).
@@ -58,6 +59,14 @@ Wait until images are pulled, the databases are seeded and the protocol communic
 Open http://127.0.0.1/ on a browser (Chrome, Safari or Firefox).
 
 Login credentials are user="admin" and password="jsonscada".
+
+Node-RED and Metabase are reached through the web UI, after logging in:
+
+- Node-RED editor: http://127.0.0.1/nodered/ (admin users only). The
+  `node-red-contrib-jsonscada` palette is preinstalled; in a flow, point the jsonscada
+  server config node at host `jsdemo_nodered_driver`, port `51931`.
+- Metabase: http://127.0.0.1/metabase/, Metabase login user="json@scada.com" and
+  password="jsonscada123".
 
 This demo will connect to the online demo using IEC60870-5-104.
 
