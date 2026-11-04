@@ -11,7 +11,7 @@ It includes
 - IEC 60870-5-104 Client that connects to the online demo for data acquisition.
 - IEC 60870-5-104 Server listening on the localhost (port 2404).
 - OPC-UA Client connected to public demo servers, and OPC-UA Server (port 4840).
-- DNP3 Server (port 20000) and a DNP3 Client polling it.
+- DNP3 Server (port 20000). A DNP3 Client service is included but disabled (compose profile `dnp3client`).
 - IEC 61850 MMS Server (port 102) and ICCP (TASE.2) Server (docker network only).
 - MQTT Sparkplug B client, Telegraf listener, n8n integration.
 - MCP server for AI assistants (port 6001).

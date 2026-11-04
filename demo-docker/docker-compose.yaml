@@ -427,11 +427,15 @@ services:
     expose:
       - "20000"
 
-  # DNP3 CLIENT, demo config polls the DNP3 server above (jsdemo_dnp3server:20000)
+  # DNP3 CLIENT, not started by default: its instance is disabled in the demo database
+  # and it is not meant to poll the DNP3 server above. Enable the DNP3 driver instance
+  # and point DNP3DEMO at a real outstation, then: docker compose --profile dnp3client up -d
   dnp3client:
     <<: *go-driver
     container_name: jsdemo_dnp3client
     command: sh -c "sleep 70 && ./dnp3-client 1 1"
+    profiles:
+      - dnp3client
 
   telegraf_listener:
     image: node:22-alpine
