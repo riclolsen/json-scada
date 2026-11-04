@@ -31,6 +31,7 @@ export function registerAuditTools(server: McpServer, mgr: ConnectionManager) {
   server.registerTool(
     'get_user_actions',
     {
+      title: 'Get User Actions',
       description:
         'Read the audit log (userActions): configuration changes, commands, sign-ins and ' +
         'service actions made by users, the AdminUI and this MCP server. Newest first.',
@@ -83,6 +84,7 @@ export function registerSystemTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'get_system_settings',
     {
+      title: 'Get System Settings',
       description:
         'Get the global process management settings: autoManageServices (create/update/remove ' +
         'OS services with driver instances), autoRestartOnConnectionChange, and whether process ' +
@@ -102,6 +104,7 @@ export function registerSystemTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'update_system_settings',
     {
+      title: 'Update System Settings',
       description:
         'Change global process management settings. Only the given fields change.',
       inputSchema: z.object({
@@ -126,6 +129,7 @@ export function registerSystemTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'restart_all_protocol_drivers',
     {
+      title: 'Restart All Protocol Drivers',
       description:
         'Restart every protocol driver service on the AdminUI server node (runs the ' +
         'installation restart_protocols script). Data acquisition and commands are interrupted ' +
@@ -145,6 +149,7 @@ export function registerSystemTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'restart_all_processes',
     {
+      title: 'Restart All Processes',
       description:
         'Restart all JSON-SCADA services on the AdminUI server node, including the realtime ' +
         'data server, data processors and drivers (runs the installation restart script). ' +

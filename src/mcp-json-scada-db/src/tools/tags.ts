@@ -115,6 +115,7 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'create_tag',
     {
+      title: 'Create Tag',
       description:
         'Create a tag (point) in realtimeData. The point key (_id) is assigned automatically ' +
         'unless pointKey is given. For acquired points set origin=supervised plus ' +
@@ -145,6 +146,7 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'update_tag',
     {
+      title: 'Update Tag',
       description:
         'Change configuration fields of an existing tag (description, groups, limits, protocol ' +
         'addressing, ...). Only the given fields change. Live value fields cannot be changed here.',
@@ -178,6 +180,7 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'delete_tag',
     {
+      title: 'Delete Tag',
       description:
         'Delete a tag (point) from realtimeData. Its history and events are kept.',
       inputSchema: z.object({ tag: z.string() }),

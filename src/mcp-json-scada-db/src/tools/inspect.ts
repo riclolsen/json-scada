@@ -29,6 +29,8 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
   server.registerTool(
     'describe_collection',
     {
+      title: 'Describe Collection',
+      annotations: { readOnlyHint: true },
       description:
         'Get estimated document count and sample documents from a collection',
       inputSchema: z.object({
@@ -57,7 +59,11 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
 
   server.registerTool(
     'list_database_info',
-    { description: 'List all collections and their estimated document counts' },
+    {
+      title: 'List Database Info',
+      annotations: { readOnlyHint: true },
+      description: 'List all collections and their estimated document counts',
+    },
     async () => {
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
 
@@ -85,6 +91,8 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
   server.registerTool(
     'get_collection_fields',
     {
+      title: 'Get Collection Fields',
+      annotations: { readOnlyHint: true },
       description: 'Inspect a collection to find all unique top-level fields',
       inputSchema: z.object({
         collection: z.string().describe('The name of the collection to inspect'),
@@ -113,7 +121,11 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
 
   server.registerTool(
     'get_database_schema',
-    { description: 'Get the known schema for the JSON-SCADA database' },
+    {
+      title: 'Get Database Schema',
+      annotations: { readOnlyHint: true },
+      description: 'Get the known schema for the JSON-SCADA database',
+    },
     async () => {
       const schema = {
         realtimeData: {

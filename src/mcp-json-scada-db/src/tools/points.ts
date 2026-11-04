@@ -45,6 +45,8 @@ export function registerPointsTools(server: McpServer, mgr: ConnectionManager) {
   server.registerTool(
     'search_points',
     {
+      title: 'Search Points',
+      annotations: { readOnlyHint: true },
       description:
         'Search for database points (tags) by tag/description regex and other filters. ' +
         'Returns a compact summary of each matching point plus the total match count. ' +
@@ -116,6 +118,8 @@ export function registerPointsTools(server: McpServer, mgr: ConnectionManager) {
   server.registerTool(
     'get_point',
     {
+      title: 'Get Point',
+      annotations: { readOnlyHint: true },
       description:
         'Get the full document of a specific point by tag name or numeric point key',
       inputSchema: z.object({

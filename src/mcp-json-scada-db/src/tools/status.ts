@@ -58,6 +58,8 @@ export function registerStatusTools(server: McpServer, mgr: ConnectionManager) {
   server.registerTool(
     'get_system_status',
     {
+      title: 'Get System Status',
+      annotations: { readOnlyHint: true },
       description:
         'Get a summary of system health: process instances, protocol driver instances ' +
         'and protocol connections. An instance is alive when its keep-alive is under 30 s old; ' +

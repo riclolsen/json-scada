@@ -26,7 +26,7 @@ Model Context Protocol (MCP) server that gives AI assistants (Claude, Cline, Cur
 - Admin tools never write MongoDB config collections directly; validation, protocol defaults, restart scheduling, NSSM/supervisord control and `userActions` auditing stay owned by `server_realtime_auth`
 - Updates read the current document, merge only the given fields and send the full document back (the API's update handlers expect it). Never send back driver-maintained runtime fields (`activeNodeName`, `activeNodeKeepAliveTimeTag`, `softwareVersion`, `stats`) or tag live-value fields
 - Create flows (create empty, then update) delete the placeholder if the update fails
-- Delete/stop/restart tools carry `destructiveHint: true`; read tools carry `readOnlyHint: true`
+- Every tool has a human-readable `title` and `annotations`: read tools carry `readOnlyHint: true`; delete/stop/restart tools carry `destructiveHint: true`; `send_command` (acts on field equipment) carries `destructiveHint: true` and `openWorldHint: true`
 - `jsonscada/drivers.ts` holds the protocol driver name list (mirrors the AdminUI `ProtocolDriverInstancesTab` list) and each driver's README path under `src/`; keep both in sync when drivers are added
 
 ## Work Guidance

@@ -29,6 +29,8 @@ export function registerCommandsTools(
   server.registerTool(
     'send_command',
     {
+      title: 'Send Command',
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
       description:
         'Send a command to a command point (origin=command). Queues the command for ' +
         'dispatch by the protocol driver and optionally waits for delivery confirmation.',
