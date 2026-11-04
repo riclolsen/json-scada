@@ -190,6 +190,10 @@ Configuration and behaviour match the Node.js drivers except for the following.
     missing, exit when the instance is disabled, and check that every 30 seconds.
 15. **Request statistics.** The server's `exceptions` also counts exceptions the library sends on
     its own (an unsupported function code, a quantity out of range), which are logged at level 1.
+16. **Auto-created digital tags** get `stateTextTrue`/`eventTextTrue` `TRUE` and
+    `stateTextFalse`/`eventTextFalse` `FALSE`, as the other Go client drivers do. The Node.js
+    driver left the state texts empty, so the data processor stored an empty `valueString` and
+    displays showed no value.
 
 The Node.js server already took part in redundancy, and so does this one, unlike the other Go
 server drivers.

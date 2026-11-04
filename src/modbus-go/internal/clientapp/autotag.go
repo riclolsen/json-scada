@@ -177,8 +177,14 @@ func AutoCreateTags(ctx context.Context, cfg Config, store TagStore) error {
 	return nil
 }
 
-// TagDoc is the realtimeData document an auto-created tag gets.
+// TagDoc is the realtimeData document an auto-created tag gets. Digital tags
+// get the state and event texts TRUE and FALSE, as in the other Go client
+// drivers, so their value is shown; other types get empty texts.
 func TagDoc(key float64, tag string, connNumber float64, connName, objectAddress, asdu string, commonAddress float64, typ string) bson.D {
+	textTrue, textFalse := "", ""
+	if typ == "digital" {
+		textTrue, textFalse = "TRUE", "FALSE"
+	}
 	return bson.D{
 		{Key: "_id", Value: key},
 		{Key: "tag", Value: tag},
@@ -209,8 +215,10 @@ func TagDoc(key float64, tag string, connNumber float64, connName, objectAddress
 		{Key: "alarmDisabled", Value: false},
 		{Key: "hiLimit", Value: nil},
 		{Key: "loLimit", Value: nil},
-		{Key: "stateTextFalse", Value: ""},
-		{Key: "stateTextTrue", Value: ""},
+		{Key: "stateTextFalse", Value: textFalse},
+		{Key: "stateTextTrue", Value: textTrue},
+		{Key: "eventTextFalse", Value: textFalse},
+		{Key: "eventTextTrue", Value: textTrue},
 		{Key: "unit", Value: ""},
 		{Key: "priority", Value: 0.0},
 	}

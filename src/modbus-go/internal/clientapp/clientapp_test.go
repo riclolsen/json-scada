@@ -89,7 +89,43 @@ func TestParseTopic(t *testing.T) {
 
 func TestTagDocShape(t *testing.T) {
 	d := TagDoc(5, "T", 3, "C", "hr:1", "int16", 1, "analog")
-	if d[0].Key != "_id" || d[1].Key != "tag" || len(d) != 33 {
+	if d[0].Key != "_id" || d[1].Key != "tag" || len(d) != 35 {
 		t.Fatalf("doc %v", d)
+	}
+}
+
+func TestTagDocStateTexts(t *testing.T) {
+	texts := func(d bson.D) map[string]any {
+		m := map[string]any{}
+		for _, e := range d {
+			switch e.Key {
+			case "stateTextTrue", "stateTextFalse", "eventTextTrue", "eventTextFalse":
+				m[e.Key] = e.Value
+			}
+		}
+		return m
+	}
+	cases := []struct {
+		typ                 string
+		wantTrue, wantFalse string
+	}{
+		{"digital", "TRUE", "FALSE"},
+		{"analog", "", ""},
+		{"string", "", ""},
+	}
+	for _, c := range cases {
+		got := texts(TagDoc(5, "T", 3, "C", "co:1", "bool", 1, c.typ))
+		want := map[string]any{
+			"stateTextTrue": c.wantTrue, "stateTextFalse": c.wantFalse,
+			"eventTextTrue": c.wantTrue, "eventTextFalse": c.wantFalse,
+		}
+		if len(got) != 4 {
+			t.Fatalf("%s: texts %v", c.typ, got)
+		}
+		for k, v := range want {
+			if got[k] != v {
+				t.Errorf("%s: %s = %v, want %q", c.typ, k, got[k], v)
+			}
+		}
 	}
 }

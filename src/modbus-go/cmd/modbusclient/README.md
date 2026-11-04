@@ -296,7 +296,8 @@ TAG_NAME|<area>:<offset>:<type[_byteorder]>[count]
 
 New tags get the next free `_id` (the highest `_id` plus one), unit id 1, `origin: "supervised"`,
 `invalid: true`, `group1` set to the connection name, `description` `<connection>~<tag>`, and type
-`digital` (bit areas and `bool`), `string`, or `analog`. Digital tags are events. A descriptor
+`digital` (bit areas and `bool`), `string`, or `analog`. Digital tags are events and get the state
+and event texts `TRUE` and `FALSE`. A descriptor
 that cannot be parsed is logged at level 1 and skipped.
 
 ## Statistics
