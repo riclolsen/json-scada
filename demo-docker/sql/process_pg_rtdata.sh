@@ -3,7 +3,8 @@
 # process sql files in a postgresql database then removes the files
 
 # set defaults
-psqlPath=${PSQL_PATH:-"/usr/bin"}
+# psql binary: $PSQL_PATH/psql when PSQL_PATH is set, else psql from PATH
+psql=${PSQL_PATH:+$PSQL_PATH/}psql
 dbHost=${PGHOST:-"127.0.0.1"}
 dbPort=${PGPORT:-5432}
 dbName=${PGDATABASE:-"json_scada"}
@@ -31,7 +32,7 @@ while [ 1 ]; do
   if [ "$file" != "pg_rtdata_*.sql" ]; then
 
 # process sql file into the database
-    res=`$psqlPath/psql -h $dbHost -U "$dbUser" -d $dbName -p $dbPort < "$file" `
+    res=`"$psql" -h $dbHost -U "$dbUser" -d $dbName -p $dbPort < "$file" `
 
     if [ "$?" = "0" ]; then
 
@@ -43,7 +44,6 @@ while [ 1 ]; do
   done
 
   sleep 2
-  echo "$file"
 
 done
 

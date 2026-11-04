@@ -88,7 +88,6 @@ services:
     command: /bin/sh /sql/process_pg_hist.sh
     restart: unless-stopped
     environment:
-      - PSQL_PATH=/usr/local/bin
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
@@ -109,7 +108,6 @@ services:
     command: /bin/sh /sql/process_pg_rtdata.sh
     restart: unless-stopped
     environment:
-      - PSQL_PATH=/usr/local/bin
       - PGPORT=5432
       - PGHOST=jsdemo_timescaledb
       - PGDATABASE=json_scada
@@ -126,13 +124,11 @@ services:
   grafana:
     image: grafana/grafana-oss:latest
     container_name: jsdemo_grafana
-    # you may need to set the docker user:group to be able to write grafana folder 
-    # set UID and GID variables 
-    # or change default user and  group ids
-    #user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
-    volumes: 
-      - ./grafana_data:/var/lib/grafana
+    # Grafana settings live in PostgreSQL (grafanaappdb); the named volume holds only local
+    # runtime files and is created owned by the grafana user, so no host chown is needed
+    volumes:
+      - grafana_data:/var/lib/grafana
     environment: 
       - GF_SERVER_DOMAIN=grafana
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8080/grafana/
@@ -510,3 +506,6 @@ services:
 networks:
   jsdemo_net:
     driver: bridge
+
+volumes:
+  grafana_data:
