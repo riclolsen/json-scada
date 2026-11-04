@@ -113,7 +113,7 @@ transport.
 
 | Collection | Use |
 | --- | --- |
-| `protocolDriverInstances` | Read: instance settings, log level, allowed nodes. |
+| `protocolDriverInstances` | Read: instance settings, log level, allowed nodes. Written: `activeNodeName` and `activeNodeKeepAliveTimeTag`, every 5 seconds. |
 | `protocolConnections` | Read: connection settings. Written: the `stats` sub-document. |
 | `realtimeData` | Read: tags destined for the connections, via a change stream. Written: `protocolDestinations`, when automatic destinations are created. |
 | `commandsQueue` | Written: commands received from a master. |
@@ -133,7 +133,9 @@ A document in `protocolDriverInstances`:
   "protocolDriverInstanceNumber": 1,
   "enabled": true,
   "logLevel": 1,
-  "nodeNames": ["node1"]
+  "nodeNames": ["node1"],
+  "activeNodeName": "",
+  "activeNodeKeepAliveTimeTag": null
 }
 ```
 
@@ -144,6 +146,7 @@ A document in `protocolDriverInstances`:
 | `enabled` | The driver stops with an error unless the instance exists and is `true`. |
 | `logLevel` | Log level, unless one is given on the command line. |
 | `nodeNames` | Nodes allowed to run the instance. If the list is not empty and this node's `nodeName` is not in it, the driver stops with an error. An empty or absent list allows every node. |
+| `activeNodeName`, `activeNodeKeepAliveTimeTag` | Written by the driver every 5 seconds: the node running it and the time. Health checks use them to tell the driver is alive. There is no redundancy election, so with several nodes running the instance they show whichever wrote last. Do not edit. |
 
 ### Connection
 
@@ -618,7 +621,7 @@ refusal each time.
 
 ## Statistics
 
-Every 5 seconds the driver writes a `stats` sub-document into each connection document:
+Every 5 seconds the driver refreshes the keep-alive on its instance document (see [Driver instance](#driver-instance)) and writes a `stats` sub-document into each connection document:
 
 | Field | Meaning |
 | --- | --- |

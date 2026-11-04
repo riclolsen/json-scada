@@ -63,7 +63,7 @@ The server exposes the following tools to the MCP client:
 - `send_command`: Write a value to a command point. Respects `commandBlocked`, records the action in `userActions` and can wait for delivery confirmation from the protocol driver.
 - `get_history`: Get historical values for a point in a time range (from the `hist` collection).
 - `get_soe_events`: Get Sequence of Events records with regex/group/time filters.
-- `get_system_status`: Summary of process instances, protocol driver instances and protocol connections with keep-alive based liveness.
+- `get_system_status`: Summary of process instances, protocol driver instances and protocol connections. Liveness comes from the instance keep-alive (under 30 s old); a driver instance with a stale keep-alive still counts as alive when one of its connections has fresh `stats` (server drivers without redundancy may not write a keep-alive). `aliveSource` (`keepAlive`, `connectionStats` or `null`) says which signal decided, and each connection carries `statsFresh`.
 - `list_collections`: View all available database collections.
 - `query_collection`: Run a custom read-only query (MongoDB Extended JSON filter, projection and sort) on any collection. Credential fields are redacted.
 - `describe_collection`: Get estimated document counts and sample documents.

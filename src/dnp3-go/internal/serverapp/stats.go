@@ -33,8 +33,33 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-// writeStats refreshes the statistics of every connection.
+// writeKeepAlive stamps the instance document with this node and the current
+// time, so health checks (the MCP server's get_system_status, the AdminUI) can
+// tell the driver is running. The server has no redundancy election, so this
+// is informational only: with several nodes running the instance the last
+// writer wins, and nothing reads it to decide who is active (deviation D28).
+func (e *Engine) writeKeepAlive(ctx context.Context, db *mongo.Database) {
+	updCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	_, err := db.Collection(jsmongo.ProtocolDriverInstancesCollectionName).UpdateOne(updCtx,
+		bson.M{
+			"protocolDriver":               ProtocolDriverName,
+			"protocolDriverInstanceNumber": e.instanceNumber,
+		},
+		bson.M{"$set": bson.M{
+			"activeNodeName":             e.cfg.NodeName,
+			"activeNodeKeepAliveTimeTag": jsmongo.Now(),
+		}})
+	if err != nil {
+		jslog.Log(jslog.LevelDetailed, "Failed to write the instance keep-alive: %v", err)
+	}
+}
+
+// writeStats refreshes the instance keep-alive and the statistics of every
+// connection.
 func (e *Engine) writeStats(ctx context.Context, db *mongo.Database) {
+	e.writeKeepAlive(ctx, db)
+
 	coll := db.Collection(jsmongo.ProtocolConnectionsCollectionName)
 	var entries []jsstats.Entry
 
