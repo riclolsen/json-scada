@@ -122,7 +122,7 @@ services:
       - jsdemo_net
 
   grafana:
-    image: grafana/grafana-oss:latest
+    image: grafana/grafana:latest
     container_name: jsdemo_grafana
     restart: unless-stopped
     # Grafana settings live in PostgreSQL (grafanaappdb); the named volume holds only local
@@ -304,7 +304,7 @@ services:
     ports:
       - "${JS_BIND_ADDR:-127.0.0.1}:5678:5678"
     volumes:
-      - ./n8n_data:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
     networks:
       - jsdemo_net
 
@@ -509,3 +509,4 @@ networks:
 
 volumes:
   grafana_data:
+  n8n_data:

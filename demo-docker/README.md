@@ -55,7 +55,7 @@ The stack refuses to start while `JS_JWT_SECRET` is undefined. See the
 
 Wait until images are pulled, the databases are seeded and the protocol communication begins.
 
-Open http://127.0.0.1/login/login.html on a browser (Chrome, Safari or Firefox).
+Open http://127.0.0.1/ on a browser (Chrome, Safari or Firefox).
 
 Login credentials are user="admin" and password="jsonscada".
 
