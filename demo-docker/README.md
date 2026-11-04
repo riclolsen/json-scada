@@ -8,14 +8,17 @@ It includes
 - PostgreSQL/TimescaleDB for time series historian.
 - Grafana for dashboards.
 - IEC 60870-5-104 Client that connects to the online demo for data acquisition.
-- IEC 60870-5-104 Server listening on the localhost.
-- DNP3 Client (available but unused).
+- IEC 60870-5-104 Server listening on the localhost (port 2404).
+- OPC-UA Client connected to public demo servers, and OPC-UA Server (port 4840).
+- DNP3 Server (port 20000) and a DNP3 Client polling it.
+- IEC 61850 MMS Server (port 102) and ICCP (TASE.2) Server (docker network only).
+- MQTT Sparkplug B client, Telegraf listener, n8n integration.
 - Calculations processor.
 - Change stream realtime data processor.
 - A Node/Express webserver app for user interface.
 - Role based access control and admin management UI.
 
-To run this demo, a docker runtime is needed with docker-compose command available. Git is also needed to extract the repository.
+To run this demo, a docker runtime is needed with the docker compose command available. Git is also needed to extract the repository.
 
 It can run on any Linux x64 or Windows 10 x64 (use Docker/WSL2 on Windows 10 version 2004 for best performance on this platform).
 
@@ -23,12 +26,13 @@ Clone the whole repository on the host computer.
 
     git clone https://github.com/riclolsen/json-scada.git  --config core.autocrlf=input
 
-Go to the compile-docker folder to create binaries.
+Go to the compile-docker folder to create the binaries and install the Node.js modules.
 
     cd json-scada/compile-docker
-    docker-compose up
+    docker compose up
 
-Wait until the compilation process finishes.
+Wait until the compilation process finishes. The protocol drivers and the calculations
+process are Go static binaries published to `demo-docker/bin`, run on a plain Alpine image.
 
 Go to the demo-docker folder and create the environment file. This generates a
 random JWT signing secret that is unique to your installation.
@@ -42,7 +46,7 @@ On Windows, use PowerShell instead.
 
 Then run the system.
 
-    docker-compose -f docker-compose.yaml up
+    docker compose -f docker-compose.yaml up
 
 The stack refuses to start while `JS_JWT_SECRET` is undefined. See the
 [Security Notes](#security-notes) below.
@@ -71,6 +75,9 @@ Suggestions of free IEC60870-5-104 clients
 - http://the-vinci.com/vinci-software.
 - https://www.mz-automation.de/communication-protocols/iec-60870-5-104-test-tool/
 
+It also provides a DNP3 server port (127.0.0.1:20000, local address 2, remote address 1) and an
+IEC 61850 MMS server port (127.0.0.1:102).
+
 ## Security Notes
 
 This demo is meant to run on a trusted machine. Two settings in the `.env` file
@@ -90,7 +97,7 @@ control how exposed it is.
   `127.0.0.1` by default, so the demo is reachable only from the local machine.
 
 The MongoDB and PostgreSQL are configured for unauthenticated access, and the
-IEC 60870-5-104, DNP3 and OPC-UA server ports accept any peer. Publishing them
+IEC 60870-5-104, DNP3, IEC 61850 and OPC-UA server ports accept any peer. Publishing them
 on a reachable interface (`JS_BIND_ADDR=0.0.0.0`) hands the whole database and
 the control of the simulated field devices to anyone who can reach the host.
 For an installation that is not a local demo, put the web server behind TLS,

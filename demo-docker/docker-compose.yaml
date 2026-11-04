@@ -1,7 +1,7 @@
-# {json:scada} Demo - (c) 2020-2025 - Ricardo L. Olsen 
+# {json:scada} Demo - (c) 2020-2026 - Ricardo L. Olsen
 
 # ACCESS VIA WEB BROWSER AT http://127.0.0.1/
-# Server must have tcp ports 80, 8080, 3000, 20000, 27017, 5432, 2404, 4840, 10001 free!
+# Server must have tcp ports 80, 102, 8080, 3000, 5678, 6688, 20000, 27017, 5432, 2404, 4840, 10001 free!
 # Must be online to connect to IEC60870-5-104 live demo server at 207.180.242.96:2404.
 #
 # BEFORE THE FIRST RUN: create the .env file holding a unique random JWT secret,
@@ -9,6 +9,25 @@
 #     ./generate-env.sh          (Linux/macOS)
 #     .\generate-env.ps1         (Windows PowerShell)
 # Published ports are bound to JS_BIND_ADDR (127.0.0.1 by default).
+#
+# BEFORE THE FIRST RUN: build the binaries and Node.js modules with ../compile-docker:
+#     cd ../compile-docker && docker compose up
+# The Go drivers are static binaries in ./bin, run on a plain Alpine image (x-go-driver below).
+
+# common settings for the Go drivers and processes, run from ./bin so that the default
+# config path ../conf/json-scada.json resolves to the mounted ./conf folder
+x-go-driver: &go-driver
+  image: alpine:3
+  restart: unless-stopped
+  working_dir: /jsonscada_bin
+  volumes:
+    - ./conf:/conf
+    - ./bin:/jsonscada_bin
+    - ./log:/log
+  links:
+    - jsdemo_mongorsn1
+  networks:
+    - jsdemo_net
 
 services:
 
@@ -150,53 +169,45 @@ services:
   
   # IEC60870-5-104 CLIENT, will connect to a demo server
   iec104client:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
+    <<: *go-driver
     container_name: jsdemo_iec104client
-    command: sh -c "sleep 60 && /jsonscada_bin/iec104client"
-    restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
-      - ./log:/log
-    links:
-      - jsdemo_mongorsn1
-    networks:
-      - jsdemo_net
+    command: sh -c "sleep 60 && ./iec104client 1 1"
 
-  # OPC-UA CLIENT
+  # OPC-UA CLIENT (Go), connects to public OPC-UA demo servers
   opcua_client:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
+    <<: *go-driver
     container_name: jsdemo_opcua_client
-    command: sh -c "sleep 60 && /jsonscada_bin/OPC-UA-Client"
-    restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
-      - ./log:/log
-    links:
-      - jsdemo_mongorsn1
-    networks:
-      - jsdemo_net
+    command: sh -c "sleep 60 && ./opcua-client 1 1"
 
   # IEC60870-5-104 SERVER, demo config accepts connection on 127.0.0.1:2404 (originator address 1)
   iec104server:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
-    container_name:  jsdemo_iec104server
-    command: sh -c "sleep 60 && /jsonscada_bin/iec104server"
-    restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
-      - ./log:/log
-    links:
-      - jsdemo_mongorsn1
+    <<: *go-driver
+    container_name: jsdemo_iec104server
+    command: sh -c "sleep 60 && ./iec104server 1 1"
     # exports the iec 104 server port to the host
     ports:
       - "${JS_BIND_ADDR:-127.0.0.1}:2404:2404"
     expose:
       - "2404"
-    networks:
-      - jsdemo_net
+
+  # IEC 61850 MMS SERVER, demo config accepts connections on 127.0.0.1:102
+  iec61850server:
+    <<: *go-driver
+    container_name: jsdemo_iec61850server
+    command: sh -c "sleep 60 && ./iec61850_server 1 1"
+    ports:
+      - "${JS_BIND_ADDR:-127.0.0.1}:102:102"
+    expose:
+      - "102"
+
+  # ICCP (TASE.2) SERVER, listens on port 102 inside the docker network only
+  # (host port 102 is taken by the IEC 61850 server)
+  iccp_server:
+    <<: *go-driver
+    container_name: jsdemo_iccp_server
+    command: sh -c "sleep 60 && ./iccp-server 1 1"
+    expose:
+      - "102"
 
   # process incoming data 
   cs_data_processor:
@@ -270,7 +281,7 @@ services:
   n8n-client:
     image: node:22-alpine
     container_name: jsdemo_n8n-client
-    command:  sh -c "cd /n8n-client && npm install --no-audit --no-fund && sleep 60 && node index.js"
+    command:  sh -c "cd /n8n-client && sleep 60 && node index.js"
     restart: unless-stopped
     expose:
       - "51930"
@@ -363,40 +374,26 @@ services:
     
   # calculation process
   calculations:
-    image: node:22-alpine
+    <<: *go-driver
     container_name: jsdemo_calculations
-    command:  sh -c "sleep 50 && cd /jsonscada_bin/ && ./calculations"
-    restart: unless-stopped
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
-      - ./log:/log
-    links:
-      - jsdemo_mongorsn1
-    networks:
-      - jsdemo_net
+    command: sh -c "sleep 50 && ./calculations 1 1 2"
 
   # DNP3 SERVER, demo config accepts connection on 127.0.0.1:20000 (local address 2, remote address 1)
   dnp3server:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
-    container_name:  jsdemo_dnp3server
-    command: sh -c "sleep 60 && /jsonscada_bin/Dnp3Server"
-    restart: unless-stopped
-    environment:
-      - LD_LIBRARY_PATH=/jsonscada_bin
-    volumes:
-      - ./conf:/conf
-      - ./bin:/jsonscada_bin
-      - ./log:/log
-    links:
-      - jsdemo_mongorsn1
+    <<: *go-driver
+    container_name: jsdemo_dnp3server
+    command: sh -c "sleep 60 && ./dnp3-server 1 1"
     # exports the DNP3 server port to the host
     ports:
       - "${JS_BIND_ADDR:-127.0.0.1}:20000:20000"
     expose:
       - "20000"
-    networks:
-      - jsdemo_net
+
+  # DNP3 CLIENT, demo config polls the DNP3 server above (jsdemo_dnp3server:20000)
+  dnp3client:
+    <<: *go-driver
+    container_name: jsdemo_dnp3client
+    command: sh -c "sleep 70 && ./dnp3-client 1 1"
 
   telegraf_listener:
     image: node:22-alpine
