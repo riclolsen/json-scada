@@ -13,6 +13,7 @@ It includes
 - OPC-UA Client connected to public demo servers, and OPC-UA Server (port 4840).
 - DNP3 Server (port 20000). A DNP3 Client service is included but disabled (compose profile `dnp3client`).
 - IEC 61850 MMS Server (port 102) and ICCP (TASE.2) Server (docker network only).
+- Modbus TCP Server (port 502), and a Modbus Client for it (instance disabled by default).
 - MQTT Sparkplug B client, Telegraf listener, n8n integration.
 - MCP server for AI assistants (port 6001).
 - Calculations processor.
@@ -96,6 +97,20 @@ Suggestions of free IEC60870-5-104 clients
 It also provides a DNP3 server port (127.0.0.1:20000, local address 2, remote address 1) and an
 IEC 61850 MMS server port (127.0.0.1:102).
 
+The Modbus TCP server (127.0.0.1:502, unit id 1) serves the line KAW2 TL1 KPR 230kV of the
+IEC 60870-5-104 demo:
+
+| Address | Type | Point |
+|---|---|---|
+| `hr:0`, `hr:2`, `hr:4`, `hr:6` | float32, ABCD | Voltage AB, active power, reactive power, current B |
+| `di:0` to `di:3` | bool | Breaker 52-16, switches 89-104, 89-106, 89-108 |
+| `co:0` | bool, write | Breaker 52-16 command, relayed to the IEC 60870-5-104 demo |
+
+Addresses are 0-based (`hr:0` is Modicon 40001). The demo also has a Modbus client connection
+(MODBUSDEMO) that polls this server into the `MBDEMO-*` tags, but its MODBUS driver instance is
+disabled in the demo database: enable it in the AdminUI (Protocol Driver Instances) to start
+polling.
+
 ## Security Notes
 
 This demo is meant to run on a trusted machine. Two settings in the `.env` file
@@ -115,7 +130,7 @@ control how exposed it is.
   `127.0.0.1` by default, so the demo is reachable only from the local machine.
 
 The MongoDB and PostgreSQL are configured for unauthenticated access, and the
-IEC 60870-5-104, DNP3, IEC 61850 and OPC-UA server ports accept any peer, as does the
+IEC 60870-5-104, DNP3, IEC 61850, Modbus and OPC-UA server ports accept any peer, as does the
 MCP server, which has no authentication of its own and can send commands. Publishing them
 on a reachable interface (`JS_BIND_ADDR=0.0.0.0`) hands the whole database and
 the control of the simulated field devices to anyone who can reach the host.

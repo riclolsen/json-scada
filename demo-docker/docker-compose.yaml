@@ -1,7 +1,7 @@
 # {json:scada} Demo - (c) 2020-2026 - Ricardo L. Olsen
 
 # ACCESS VIA WEB BROWSER AT http://127.0.0.1/
-# Server must have tcp ports 80, 102, 8080, 3000, 5678, 6001, 6688, 20000, 27017, 5432, 2404, 4840, 10001 free!
+# Server must have tcp ports 80, 102, 502, 8080, 3000, 5678, 6001, 6688, 20000, 27017, 5432, 2404, 4840, 10001 free!
 # Must be online to connect to IEC60870-5-104 live demo server at 207.180.242.96:2404.
 #
 # BEFORE THE FIRST RUN: create the .env file holding a unique random JWT secret,
@@ -436,6 +436,29 @@ services:
     command: sh -c "sleep 70 && ./dnp3-client 1 1"
     profiles:
       - dnp3client
+
+  # MODBUS TCP SERVER (connection MODBUSSRV 3101), port 502, unit id 1. Serves line KAW2 TL1 KPR
+  # 230kV from the IEC 104 demo: hr:0..7 float32 (voltage AB, MW, MVAr, current B),
+  # di:0..3 (breaker 52-16, switches 89-104/106/108); a write to coil co:0 commands the breaker
+  modbusserver:
+    <<: *go-driver
+    container_name: jsdemo_modbusserver
+    hostname: jsdemo_modbusserver
+    command: sh -c "sleep 60 && ./modbus-server 1 1"
+    ports:
+      - "${JS_BIND_ADDR:-127.0.0.1}:502:502"
+    expose:
+      - "502"
+
+  # MODBUS TCP CLIENT (connection MODBUSDEMO 3001), polls the Modbus server above every second
+  # into the MBDEMO-* tags (group MODBUSDEMO); tag MBDEMO-KAW2KPR-1XCBR5216----K writes coil co:0.
+  # Its MODBUS driver instance is disabled in the demo database: the driver exits at start and
+  # the container restarts it, so it begins polling about a minute after the instance is enabled
+  # in the AdminUI.
+  modbusclient:
+    <<: *go-driver
+    container_name: jsdemo_modbusclient
+    command: sh -c "sleep 70 && ./modbus-client 1 1"
 
   telegraf_listener:
     image: node:22-alpine
