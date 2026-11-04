@@ -120,10 +120,15 @@ module.exports = function (
   )
 
   // Entry point of the AdminUI log viewer: log.io on windows, where it is part of
-  // the installation, the supervisor web interface on linux and docker, where the
-  // processes are run by supervisord and log.io is not installed.
+  // the installation, Dozzle (served on /log-io) when it is the log server, as in
+  // the docker compose demo, which has no supervisord, otherwise the supervisor web
+  // interface on linux and in the docker image, where supervisord runs the processes.
   app.get('/log-viewer-ui', (req, res) => {
-    res.redirect(process.platform === 'win32' ? '/log-io' : '/supervisor/')
+    res.redirect(
+      process.platform === 'win32' || logioServer.indexOf('//dozzle') !== -1
+        ? '/log-io/'
+        : '/supervisor/'
+    )
   })
 
   app.use('/static', express.static('../log-io/ui/build/static'))
