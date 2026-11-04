@@ -59,7 +59,8 @@
 //     OnActivate and OnDeactivate; one that keeps acquiring on both nodes
 //     (the OPC-UA and IEC 60870-5 clients, by design) leaves them nil.
 //
-// Servers do not arbitrate at all and never construct a Controller.
+// Servers do not arbitrate and never construct a Controller, except the
+// modbus-go server, which keeps the arbitration of the Node.js driver it replaces.
 package jsredundancy
 
 import (

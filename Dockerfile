@@ -319,6 +319,12 @@ RUN cd src/dnp3-go && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
 
+# Build Modbus client and server in Go (services modbusclient/modbusserver)
+RUN cd src/modbus-go && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-client ./cmd/modbusclient && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-server ./cmd/modbusserver
+
 # Copy ICCP client and server to bin
 RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} && \
     cd src/iccp/iccp-server && \
@@ -347,7 +353,6 @@ RUN cd src/cs_data_processor && npm install \
     && cd ../demo_simul && npm install \
     && cd ../updateUser && npm install \
     && cd ../alarm_beep && npm install \
-    && cd ../modbus && npm install && npm run build \
     && cd ../node-red-driver && npm install && npm run build \
     && cd ../n8n-client && npm install \
     && cd ../carbone-reports && npm install \

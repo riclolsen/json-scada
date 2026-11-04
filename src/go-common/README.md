@@ -111,7 +111,8 @@ by the local clock) and now uses this one. What changed for it:
 `MissingInstanceActive` is the one thing not unified. The C++ lineage defaults to *active* when there
 is no instance document at all, so a single-node system with an incomplete configuration still runs;
 the C# lineage stays inactive. That is a bootstrap policy, not the takeover rule, and flipping it
-would silently stop a misconfigured single-node deployment from acquiring. Only `dnp3-go` sets it.
+would silently stop a misconfigured single-node deployment from acquiring. `dnp3-go` and
+`modbus-go` (both drivers, as the Node.js Modbus drivers did) set it.
 
 ### Fixed: stalls must be consecutive
 
@@ -141,6 +142,8 @@ from its own connection loop; a commands-only driver supplies neither.
 |---|---|---|---|
 | `dnp3-go` client | yes | yes (callbacks) | `clientapp/commands.go:103`, `clientapp/engine.go:123` |
 | `dnp3-go` server | — | — | no arbitration |
+| `modbus-go` client | yes | yes (callbacks) | `clientapp/commands.go`, `clientapp/app.go` |
+| `modbus-go` server | — | yes (callbacks) | `serverapp/app.go`; the only server that arbitrates, as its Node.js original did |
 | `iec60870-5` clients | yes | yes (polled in `supervise`) | `cliapp/engine.go:386`, `cmd/iec104client/main.go:226` |
 | `iec60870-5` servers | — | — | no arbitration |
 | `OPC-UA-Client-Go` | yes | **no** (deviation D9) | `mongo_commands.go:97`, `redundancy.go` |

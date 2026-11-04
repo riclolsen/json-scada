@@ -11,6 +11,9 @@ and RTU-encapsulated-in-TCP/TLS, with arbitrary byte orders for multi-register v
 ## Ownership
 
 - This folder owns both driver implementations and the shared Modbus protocol core.
+- The services (`modbusclient`, `modbusserver`) and the AdminUI process manager run the Go
+  replacement in [src/modbus-go](../modbus-go/AGENTS.md). This package is kept as the behavioural
+  reference; a behaviour change here must be mirrored there (or listed as a difference in its README).
 
 ## Local Contracts
 

@@ -11,4 +11,5 @@ use (
 	./iec60870-5
 	./iec61850/iec61850_client
 	./iec61850/iec61850_server
+	./modbus-go
 )

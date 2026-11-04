@@ -139,6 +139,13 @@ go mod tidy
 go build -ldflags="-s -w" -o %BINPATH%\dnp3-client.exe .\cmd\dnp3client
 go build -ldflags="-s -w" -o %BINPATH%\dnp3-server.exe .\cmd\dnp3server
 
+rem Go implementation of the Modbus client and server drivers, replacing the
+rem Node.js drivers in src\modbus (services modbusclient/modbusserver).
+cd %SRCPATH%\modbus-go
+go mod tidy
+go build -ldflags="-s -w" -o %BINPATH%\modbus-client.exe .\cmd\modbusclient
+go build -ldflags="-s -w" -o %BINPATH%\modbus-server.exe .\cmd\modbusserver
+
 cd %SRCPATH%\iec60870-5
 go mod tidy
 go build -ldflags="-s -w" -o %BINPATH%\iec104client.exe .\cmd\iec104client
@@ -247,10 +254,6 @@ call %NPM% install
 
 cd %SRCPATH%\OPC-UA-Server
 call %NPM% install
-
-cd %SRCPATH%\modbus
-call %NPM% install
-call %NPM% run build
 
 cd %SRCPATH%\node-red-driver
 call %NPM% install

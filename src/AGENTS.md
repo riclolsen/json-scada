@@ -45,6 +45,8 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - [iccp](iccp/AGENTS.md) — ICCP TASE2 client/server protocol drivers (Go)
 - [mcp-json-scada-db](mcp-json-scada-db/AGENTS.md) — MCP server for AI access to data, commands, configuration and driver processes (TypeScript)
 - [dnp3-go](dnp3-go/AGENTS.md) — DNP3 client/server on go-dnp3 (Go, drop-in alternative)
+- [modbus-go](modbus-go/AGENTS.md) — Modbus client/server on go-modbus (Go, drop-in replacement; the services run it)
+- [modbus](modbus/AGENTS.md) — Modbus client/server (Node.js, behavioural reference for modbus-go)
 - [mqtt-sparkplug](mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug-B pub/sub client (Node.js)
 - [server_realtime_auth](server_realtime_auth/AGENTS.md) — Realtime WebSocket data server with JWT auth (Node.js)
 - [calculations](calculations/AGENTS.md) — Compiled cyclic calculations engine (Go)
