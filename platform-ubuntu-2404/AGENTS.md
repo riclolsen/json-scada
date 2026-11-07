@@ -19,6 +19,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on Ubu
 - **Grafana config:** `grafana.ini`, `grafana_server.ini`
 - **Metabase config:** `metabase.ini`
 - **MCP server config:** `mcp_server.ini`
+- **CIM-EMS driver:** `cim_ems.ini` (`autostart=false`) runs `src/cim-ems/.venv/bin/python -m cim_ems`; the venv comes from `platform-linux/build.sh` and needs `python3-venv`. x86_64 only (no pypowsybl ARM64 wheel)
 - **SVG editor tool:** `inkscape-plus-sage.sh`
 - **Telegraf config:** `telegraf.ini`, `telegraf-input-*.conf`, `telegraf-output-json-scada.conf`
 
@@ -29,7 +30,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on Ubu
 - `.conf` files reference `conf-templates/` structure but with platform-appropriate paths
 - Keep Ubuntu 24.04 and 26.04 configs in sync — differences are minimal (package versions)
 - `json_scada_http_open.conf` provides an open (no auth) HTTP variant for development
-- ARM64 support is built in — no separate config needed
+- ARM64 support is built in — no separate config needed, except that the CIM-EMS driver is not installed on ARM64
 
 ## Verification
 

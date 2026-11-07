@@ -552,7 +552,7 @@ Environment: Python 3.14.9, pypowsybl 1.16.1, pandapower 3.5.6, pymongo 4.19.0, 
 | Item | Result | Verdict |
 |---|---|---|
 | Install | pypowsybl, pandapower, pymongo install in a plain venv; pandapower CIM import also needs `lxml` and `xmltodict` | go |
-| Wheels | pypowsybl 1.16.1: Linux x86_64, Windows x64, macOS (cp313, cp314). **No Linux ARM64 wheel.** pandapower is pure Python | ARM64 unsupported for now (Docker and installers x86_64 only) |
+| Wheels | pypowsybl 1.16.1: Linux x86_64 (manylinux_2_27), Windows x64, macOS x86_64 and arm64, CPython 3.10 to 3.14. **No Linux ARM64 wheel.** pandapower is pure Python | ARM64 unsupported for now (Docker and installers x86_64 only) |
 | License | pypowsybl MPL-2.0; pandapower declares none in PyPI metadata, check its repository license file before packaging | verify |
 | Import | `create_micro_grid_be_network` converges (3 iterations). Default CGMES import is **bus-branch**; node-breaker needs the import parameter set explicitly. MicroGrid raw files are not shipped in the wheel | go, take raw files from ENTSO-E |
 | Switches and topology | On the node-breaker test network, `update_switches` plus bus-view recalculation works (opening one breaker changed the bus-view bus count) and LF reconverged | go |
@@ -642,7 +642,7 @@ Implemented: `cache.py`, `cycle.py`, `results.py`, `publish.py`, `bindings/store
 | Restart recovery without stale overwrites | partly: run ids are time-based and the publisher refuses non-increasing ids per kind; points written by a previous process are reused. A restart test with a clock step back is not written |
 | Displays from generated SVG | partly: `diagrams/sld.py` converts PowSyBl single-line diagrams into svg-scada markup (switch open/closed drawings from the bound point state, feeder P/Q/I `get` text from LF result tags, busbar V/angle tooltips); `tools/gen_displays.py` writes one SVG per voltage level. Tested on the four-substations network (XML and every label parse, bound tags exist) and on Svedala (99 displays in 2 s, 8 MB, all 1,470 switches bound from proposed bindings). Files are named `cim_<voltage level name>_<id prefix>.svg`. Not yet opened in the JSON-SCADA viewer; operator layout overrides and screen list `CIM` group not done |
 | Admin UI pages (connection fields, models, bindings, run history) | not started; only the driver name lists were registered |
-| Docker/compile-docker/installer packaging | not started |
+| Docker/compile-docker/installer packaging | Linux done: `install.sh` (venv, x86_64 only), `platform-linux/build.sh`, Ubuntu/RHEL installer packages, `cim_ems.ini` (autostart=false) in the four Linux platform folders, root `Dockerfile` (amd64). Verified in an `ubuntu:24.04` container (Python 3.12: unit tests pass, supervisor starts the driver as `jsonscada`). Windows: `install.bat` only (no bundled Python, no NSSM service). `demo-docker`/`compile-docker` unchanged: the demo stack does not run the driver |
 
 Design points settled in code:
 

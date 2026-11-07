@@ -7,6 +7,8 @@ import logging
 import sys
 import time
 
+from pymongo.errors import PyMongoError
+
 from . import mongo
 from .bindings import store as bstore
 from .cache import PointCache
@@ -19,6 +21,7 @@ from .redundancy import DRIVER_NAME, Redundancy
 LOG_LEVELS = {0: logging.ERROR, 1: logging.INFO, 2: logging.INFO, 3: logging.DEBUG}
 MIN_RUN_INTERVAL = 1.0           # debounce for topology-triggered runs, seconds
 RELOAD_CHECK_SECONDS = 10.0
+MONGO_RETRY_SECONDS = 10
 
 
 def build_cycle(db, conn: dict, node: str, red: Redundancy, log) -> tuple[StudyCycle, PointCache] | None:
@@ -54,8 +57,14 @@ def main(argv: list[str]) -> int:
     logging.basicConfig(level=LOG_LEVELS.get(log_level, logging.INFO), format="%(asctime)s %(levelname)s %(message)s")
     log = logging.getLogger(DRIVER_NAME)
     cfg = load_main_config(config_file)
-    db = mongo.connect(cfg)
-    mongo.ensure_indexes(db)
+    while True:      # wait for MongoDB like the other drivers instead of exiting with a traceback
+        try:
+            db = mongo.connect(cfg)
+            mongo.ensure_indexes(db)
+            break
+        except PyMongoError as e:
+            log.error("MongoDB not available (%s), retrying in %d s", str(e).split(",")[0], MONGO_RETRY_SECONDS)
+            time.sleep(MONGO_RETRY_SECONDS)
 
     red = Redundancy(db, cfg.node_name, instance)
     doc = red.instance_doc()

@@ -363,6 +363,17 @@ RUN mkdir -p /app/json-scada/nodered-runtime \
     && test -f /app/json-scada/nodered-runtime/node_modules/node-red/red.js
 
 # ==============================================================================
+# CIM-EMS DRIVER (Python)
+# ==============================================================================
+# Virtual environment in src/cim-ems/.venv with the pinned pypowsybl and
+# pandapower. amd64 only: pypowsybl publishes no Linux ARM64 wheel, so arm64
+# images ship without the driver (its supervisor program stays stopped).
+RUN apt update && apt install -y python3-venv && rm -rf /var/lib/apt/lists/* \
+    && if [ "${TARGETARCH:-$(dpkg --print-architecture)}" = "amd64" ]; then \
+         src/cim-ems/install.sh && test -x src/cim-ems/.venv/bin/python && rm -rf /root/.cache/pip; \
+       else echo "CIM-EMS skipped: no pypowsybl wheel for ${TARGETARCH}"; fi
+
+# ==============================================================================
 # DATABASE INITIALIZATION AND CONFIGURATION
 # ==============================================================================
 # Set database environment variables
@@ -380,6 +391,7 @@ COPY ./platform-ubuntu-2404/telegraf-input-mongodb.conf /etc/telegraf/telegraf.d
 COPY ./platform-ubuntu-2404/telegraf-output-json-scada.conf /etc/telegraf/telegraf.d/telegraf-output-json-scada.conf
 
 COPY ./platform-ubuntu-2404/calculations.ini /etc/supervisor/conf.d/calculations.ini
+COPY ./platform-ubuntu-2404/cim_ems.ini /etc/supervisor/conf.d/cim_ems.ini
 COPY ./platform-ubuntu-2404/config_server_excel.ini /etc/supervisor/conf.d/config_server_excel.ini
 COPY ./platform-ubuntu-2404/cs_custom_processor.ini /etc/supervisor/conf.d/cs_custom_processor.ini
 COPY ./platform-ubuntu-2404/cs_data_processor.ini /etc/supervisor/conf.d/cs_data_processor.ini

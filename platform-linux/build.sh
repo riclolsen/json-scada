@@ -214,6 +214,9 @@ cd ../inputs/file
 npm install
 npm run build
 
+# CIM-EMS driver (Python): virtual environment in src/cim-ems/.venv, x86_64 only (skipped elsewhere)
+(cd ../../../cim-ems && ./install.sh)
+
 export NODE_OPTIONS=--max-old-space-size=10000
 export ASTRO_TELEMETRY_DISABLED=1
 

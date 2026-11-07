@@ -2,7 +2,7 @@
 name = "cim-ems"
 version = "0.1.0"
 description = "JSON-SCADA CIM/CGMES EMS driver (model exchange, load flow, state estimation, contingency analysis)"
-requires-python = ">=3.13"
+requires-python = ">=3.10,<3.15"
 license = "GPL-3.0-or-later"
 dependencies = [
   "pypowsybl==1.16.1",
@@ -15,8 +15,8 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest", "mongomock"]
 
-[tool.setuptools]
-packages = ["cim_ems", "cim_ems.models"]
+[tool.setuptools.packages.find]
+include = ["cim_ems*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

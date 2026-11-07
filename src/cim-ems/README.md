@@ -1,12 +1,27 @@
 # CIM-EMS driver
 
 Python protocol driver (`CIM-EMS`) that brings CIM/CGMES model exchange and EMS network analysis to JSON-SCADA.
-Status: load flow cycle with result publication works end to end (phases 1 to 3 core). The design is in `CIM_EMS_PLAN.md`.
+Status: load flow, state estimation and contingency analysis run in the driver cycle and publish results (phases 1
+to 5 core, tested on public models). The design and progress are in `CIM_EMS_PLAN.md`.
+
+## Installation
+
+Linux x86_64 and Windows x64 only: pypowsybl publishes no Linux ARM64 wheel. Python 3.10 to 3.14.
+
+```bash
+./install.sh      # Linux: creates .venv here with the pinned dependencies (skips on non-x86_64)
+install.bat       # Windows: same, Python from the py launcher or PATH
+```
+
+`platform-linux/build.sh` runs `install.sh`, the Ubuntu and RHEL installers add the Python packages
+(`python3-venv`; RHEL 9 `python3.12`) and copy `cim_ems.ini`, and the Docker image builds the environment on
+amd64. The supervisor program `cim_ems` is `autostart=false`: enable it after a model and bindings are in place.
+The Windows installer does not bundle Python or register a service for the driver yet.
 
 ## Offline model check
 
 ```
-pip install -e .[test]
+.venv/bin/python -m pip install -e .[test]   # development: editable install with the test tools
 python tools/import_model.py model.zip --round-trip
 python -m pytest
 ```

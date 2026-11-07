@@ -29,7 +29,7 @@ sudo chmod +x *.sh
 # Update and install base packages
 sudo apt update
 sudo apt -y upgrade
-sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev
+sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev python3-venv
 sudo apt -y install dotnet-sdk-10.0 
 
 # Docker and container tools

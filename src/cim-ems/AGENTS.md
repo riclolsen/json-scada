@@ -16,8 +16,12 @@ once its content has moved into this README and `docs/schema.md`.
 
 ## Local Contracts
 
-- **Language:** Python 3.13 or 3.14, versions pinned in `pyproject.toml`; Linux x86_64 and Windows x64 only
+- **Language:** Python 3.10 to 3.14, versions pinned in `pyproject.toml`; Linux x86_64 and Windows x64 only
   (no pypowsybl ARM64 wheel)
+- **Packaging:** `install.sh` / `install.bat` create `.venv` here (`pip install .`); `install.sh` exits 0 with a notice on
+  non-x86_64. Callers: `platform-linux/build.sh`, root `Dockerfile` (amd64). Supervisor program `cim_ems`
+  (`platform-*/cim_ems.ini`, `autostart=false`) runs `.venv/bin/python -m cim_ems 1 1 <conf>/json-scada.json`.
+  New subpackages are picked up by `[tool.setuptools.packages.find]`
 - **CGMES version:** 2.4.15 (CIM16) only; export with `iidm.export.cgmes.cim-version=16`. CGMES 3.0 is opt-in later
 - **CLI:** `python -m cim_ems <instance> <logLevel> <configFile>`, like the other drivers
 - **Files:**
@@ -63,6 +67,7 @@ once its content has moved into this README and `docs/schema.md`.
 
 ## Verification
 
+- `./install.sh` in a clean `ubuntu:24.04` container (Python 3.12) followed by `pytest tests/unit` checks packaging
 - `python -m pytest` from this folder, in a venv with the pinned dependencies (uses `mongomock`; `tests/conftest.py` patches its bulk API for current pymongo)
 - `CIM_EMS_TEST_MONGO=mongodb://127.0.0.1:27018 python -m pytest` runs the same tests on a real MongoDB (needed for the partial unique index), e.g. `docker run -d --rm -p 127.0.0.1:27018:27017 mongo:7`
 - `CIM_EMS_TEST_MONGO_RS="mongodb://127.0.0.1:27019/?directConnection=true"` enables the change-stream and end-to-end tests (driver process, `cs_data_processor`, failover); start `mongo:7 --replSet rs0 --bind_ip_all` and run `replSetInitiate` with host `127.0.0.1:27017`

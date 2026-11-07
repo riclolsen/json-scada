@@ -28,7 +28,7 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-10-$(arch)-r
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel python3 python3-pip
 sudo dnf -y install curl --allowerasing
 sudo dnf -y install policycoreutils-python-utils setools-console audit
 
