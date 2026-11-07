@@ -271,4 +271,8 @@ cd %SRCPATH%\svgedit
 call %NPM% install
 call %NPM% run build
 
+rem CIM-EMS: installs the Python package into platform-windows\python-runtime (or a .venv without it)
+cd %SRCPATH%\cim-ems
+call install.bat
+
 cd %JSPATH%\platform-windows

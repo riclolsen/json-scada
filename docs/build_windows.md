@@ -92,9 +92,21 @@ Create and fill up the "platform-windows" folders
     mkdir nodejs-runtime
     mkdir nodered-runtime
     mkdir postgresql-runtime
+    mkdir python-runtime
     mkdir telegraf-runtime
 
 Fill up the folders with the respective runtimes (grab from another JSON-SCADA installation or download from the internet).
+
+`python-runtime` is the `tools` folder of the NuGet [python](https://www.nuget.org/packages/python) package, version 3.14.x (the CIM-EMS engines have no Python 3.15 wheels yet). It is a relocatable Python with pip:
+
+    mkdir %TEMP%\pyrt
+    cd %TEMP%\pyrt
+    curl -L -o python.zip https://www.nuget.org/api/v2/package/python/3.14.10
+    tar -xf python.zip
+    xcopy /e /i /y tools \json-scada\platform-windows\python-runtime
+    cd \json-scada\platform-windows
+
+Then run `\json-scada\src\cim-ems\install.bat` (`build.bat` also calls it): it installs the CIM-EMS driver and its pinned dependencies into `python-runtime`, which the installer ships as is (about 600 MB).
 
 Add the following files to \json-scada\platform-windows:
 

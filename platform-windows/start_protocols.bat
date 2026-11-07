@@ -17,6 +17,7 @@ rem net start JSON_SCADA_iccpclient
 net start JSON_SCADA_mqttsparkplugclient
 rem net start JSON_SCADA_plc4xclient
 rem net start JSON_SCADA_plc4jclient
+rem net start JSON_SCADA_cim_ems
 net start JSON_SCADA_telegraf_listener
 net start JSON_SCADA_telegraf_runtime
 net start JSON_SCADA_nodered_driver

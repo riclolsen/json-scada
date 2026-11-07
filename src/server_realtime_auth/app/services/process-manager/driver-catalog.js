@@ -37,6 +37,8 @@ function normPath(p) {
 }
 
 // exe: a native executable under {bin}. node: a node script (cmd becomes {node}).
+// python: `python -m <module>` with the interpreter from paths.pythonPath(venv),
+// run from `cwd`.
 const CATALOG = {
   'IEC60870-5-104': {
     key: 'iec104client',
@@ -177,6 +179,16 @@ const CATALOG = {
     passConfPath: true,
     defaultStartMode: 'manual',
   },
+  'CIM-EMS': {
+    // supervisor program cim_ems (platform-*/cim_ems.ini), JSON_SCADA_cim_ems service
+    key: 'cim_ems',
+    type: 'python',
+    module: 'cim_ems',
+    venv: '{src}/cim-ems/.venv',
+    cwd: '{src}/cim-ems',
+    passConfPath: true,
+    defaultStartMode: 'manual',
+  },
   MODBUS: {
     key: 'modbusclient',
     type: 'exe',
@@ -288,6 +300,9 @@ function buildServiceSpec(instanceDoc) {
   if (entry.type === 'node') {
     cmd = paths.nodePath()
     args.push(normPath(paths.expandPlaceholders(entry.script)))
+  } else if (entry.type === 'python') {
+    cmd = paths.pythonPath(entry.venv)
+    args.push('-m', entry.module)
   } else {
     cmd = paths.expandPlaceholders(entry.exe)
     if (process.platform === 'win32' && !cmd.toLowerCase().endsWith('.exe'))
@@ -319,7 +334,7 @@ function buildServiceSpec(instanceDoc) {
     cmd,
     args,
     env,
-    cwd: paths.binDir(),
+    cwd: entry.cwd ? normPath(paths.expandPlaceholders(entry.cwd)) : paths.binDir(),
     logFile: require('path').join(paths.logDir(), baseName + '.log'),
     defaultStartMode: entry.defaultStartMode || 'manual',
   }

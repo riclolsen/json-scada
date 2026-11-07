@@ -246,6 +246,16 @@
     },
     {
       "source": "node1",
+      "stream": "cim_ems",
+      "config": {
+        "path": "/json-scada/log/cim_ems.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "telegraf_listener",
       "config": {
         "path": "/json-scada/log/telegraf_listener.log",

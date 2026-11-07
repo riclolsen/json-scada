@@ -71,6 +71,26 @@ function nodePath() {
   return 'node'
 }
 
+// Python interpreter for a python driver: the component virtual environment
+// (install.sh / install.bat without a bundled runtime), else on Windows the
+// bundled platform-windows\python-runtime (install.bat installs the component
+// into it), else python3/python from PATH.
+function pythonPath(venvDir) {
+  const venv = venvDir ? expandPlaceholders(venvDir) : ''
+  if (process.platform === 'win32') {
+    const candidates = []
+    if (venv) candidates.push(path.join(venv, 'Scripts', 'python.exe'))
+    candidates.push(
+      path.join(installRoot(), 'platform-windows', 'python-runtime', 'python.exe')
+    )
+    for (const c of candidates) if (fs.existsSync(c)) return c
+    return 'python'
+  }
+  if (venv && fs.existsSync(path.join(venv, 'bin', 'python')))
+    return path.join(venv, 'bin', 'python')
+  return 'python3'
+}
+
 // nssm.exe resolution order: env override, platform-windows dir, bin dir, PATH.
 function nssmPath() {
   if (process.env.JS_NSSM_PATH && process.env.JS_NSSM_PATH.trim() !== '')
@@ -111,6 +131,7 @@ module.exports = {
   confDir,
   confFile,
   nodePath,
+  pythonPath,
   nssmPath,
   managedSupervisorDir,
   expandPlaceholders,

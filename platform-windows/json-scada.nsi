@@ -233,6 +233,7 @@ SetRegView 64
   CreateDirectory "$INSTDIR\platform-windows\mongodb-conf"
   CreateDirectory "$INSTDIR\platform-windows\mongodb-runtime"
   CreateDirectory "$INSTDIR\platform-windows\nodejs-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\python-runtime"
   CreateDirectory "$INSTDIR\platform-windows\inkscape-runtime"
   CreateDirectory "$INSTDIR\platform-windows\postgresql-data"
   CreateDirectory "$INSTDIR\platform-windows\postgresql-runtime"
@@ -304,6 +305,12 @@ SetRegView 64
   
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
+
+  ; Python 3.14 (NuGet "python" package) with the CIM-EMS package and its pinned dependencies installed by
+  ; build.bat (src\cim-ems\install.bat). Replaced as a whole so removed packages do not linger.
+  RMDir /r "$INSTDIR\platform-windows\python-runtime"
+  SetOutPath $INSTDIR\platform-windows\python-runtime
+  File /a /r /x __pycache__ "..\platform-windows\python-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\telegraf-runtime
   File /a "..\platform-windows\telegraf-runtime\telegraf.exe"
@@ -447,6 +454,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\telegraf-listener
   File /a /r "..\src\telegraf-listener\*.*"
+
+  SetOutPath $INSTDIR\src\cim-ems
+  File /a /r /x .venv /x __pycache__ /x spike /x data /x build /x *.egg-info /x *_plan.md "..\src\cim-ems\*.*"
 
   SetOutPath $INSTDIR\src\mqtt-sparkplug
   File /a "..\src\mqtt-sparkplug\*.js"

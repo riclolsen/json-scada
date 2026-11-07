@@ -448,7 +448,8 @@ first-class citizen, wire it into (grep for an existing name like `"N8N"` or
    ```js
    MY_PROTOCOL: {
      key: 'myprotocol',            // service base name: JSON_SCADA_myprotocol
-     type: 'node',                 // or 'exe' with exe: '{bin}/mydriver'
+     type: 'node',                 // or 'exe' with exe: '{bin}/mydriver', or 'python' with
+                                   // module + venv + cwd (see the CIM-EMS entry)
      script: '{src}/my-driver/index.js',
      passConfPath: true,
      defaultStartMode: 'manual',

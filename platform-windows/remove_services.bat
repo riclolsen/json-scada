@@ -49,6 +49,7 @@ rem nssm remove JSON_SCADA_i104m confirm
 rem nssm remove JSON_SCADA_plctags confirm
 rem nssm remove JSON_SCADA_plc4xclient confirm
 nssm remove JSON_SCADA_plc4jclient confirm
+nssm remove JSON_SCADA_cim_ems confirm
 nssm remove JSON_SCADA_telegraf_runtime confirm
 nssm remove JSON_SCADA_telegraf_listener confirm
 nssm remove JSON_SCADA_nodered_driver confirm

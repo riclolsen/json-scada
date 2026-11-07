@@ -10,13 +10,17 @@ Linux x86_64 and Windows x64 only: pypowsybl publishes no Linux ARM64 wheel. Pyt
 
 ```bash
 ./install.sh      # Linux: creates .venv here with the pinned dependencies (skips on non-x86_64)
-install.bat       # Windows: same, Python from the py launcher or PATH
+install.bat       # Windows: installs into platform-windows\python-runtime, else creates .venv (py launcher or PATH)
 ```
 
 `platform-linux/build.sh` runs `install.sh`, the Ubuntu and RHEL installers add the Python packages
 (`python3-venv`; RHEL 9 `python3.12`) and copy `cim_ems.ini`, and the Docker image builds the environment on
 amd64. The supervisor program `cim_ems` is `autostart=false`: enable it after a model and bindings are in place.
-The Windows installer does not bundle Python or register a service for the driver yet.
+On Windows the installer ships `platform-windows\python-runtime` (Python 3.14 with this package installed by
+`build.bat`, see `docs/build_windows.md`) and registers the service `JSON_SCADA_cim_ems` with manual start; set it
+to automatic once a model and bindings are in place. The Admin UI process manager starts and stops the driver like
+the others (instances above 1 get `cim_ems_<n>` / `JSON_SCADA_cim_ems_<n>`); it uses `.venv` when present, else the
+bundled runtime.
 
 ## Offline model check
 
