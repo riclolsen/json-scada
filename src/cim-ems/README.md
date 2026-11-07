@@ -32,8 +32,10 @@ compares solved values. Exit code 1 means the model is rejected.
 
 ## Running the driver
 
-Register an instance and a connection (Admin UI support for the connection fields is still to do), import and
-activate a model, save approved bindings, then start the driver like the others.
+Register an instance and a connection in the Admin UI (driver `CIM-EMS`; the connection dialog has a CIM-EMS
+section for the model, cycle, load flow, publication, estimation and contingency settings), import and activate a
+model, save approved bindings, then start the driver like the others. Model upload, binding review and run
+history have no Admin UI page yet: use the tools below.
 
 Bindings are proposed by name matching, reviewed as CSV and saved as a revision:
 

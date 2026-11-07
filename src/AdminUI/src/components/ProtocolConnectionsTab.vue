@@ -129,7 +129,9 @@
 
         <v-switch
           v-if="
-            !['TELEGRAF-LISTENER'].includes(editedConnection.protocolDriver)
+            !['TELEGRAF-LISTENER', 'CIM-EMS'].includes(
+              editedConnection.protocolDriver
+            )
           "
           v-model="editedConnection.commandsEnabled"
           inset
@@ -169,6 +171,7 @@
             'IEC60870-5-101_SERVER',
             'IEC60870-5-104',
             'N8N',
+            'CIM-EMS',
           ].includes(editedConnection.protocolDriver)
         "
         ></v-switch>
@@ -473,6 +476,192 @@
                   </v-col>
                 </v-row>
               </template>
+            </v-list-item>
+
+            <v-list-item
+              v-if="
+                editedConnection.protocolDriver === 'CIM-EMS' &&
+                editedConnection.loadFlowParameters &&
+                editedConnection.publishFilter &&
+                editedConnection.estimatorParameters
+              "
+            >
+              <v-card variant="outlined" class="pa-3">
+                <v-card-title class="text-subtitle-1 pa-0 mb-2">
+                  {{ $t('admin.protocolConnections.cimEms.title') }}
+                </v-card-title>
+                <v-row dense>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      :label="$t('admin.protocolConnections.cimEms.modelId')"
+                      v-model="editedConnection.cimModelId"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" sm="3">
+                    <v-text-field
+                      type="number"
+                      min="1"
+                      :label="$t('admin.protocolConnections.cimEms.modelRevision')"
+                      v-model="editedConnection.cimModelRevision"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" sm="3">
+                    <v-text-field
+                      type="number"
+                      min="1"
+                      :label="$t('admin.protocolConnections.cimEms.bindingRevision')"
+                      v-model="editedConnection.cimBindingRevision"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col
+                    cols="6"
+                    sm="3"
+                    v-for="f in cimTimingFields"
+                    :key="f.key"
+                  >
+                    <v-text-field
+                      type="number"
+                      :min="f.min"
+                      :label="$t('admin.protocolConnections.cimEms.' + f.label)"
+                      v-model.number="editedConnection[f.key]"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+
+                <div class="text-subtitle-2 mt-4">
+                  {{ $t('admin.protocolConnections.cimEms.loadFlow') }}
+                </div>
+                <v-row dense>
+                  <v-col cols="12" sm="6">
+                    <v-select
+                      :items="cimBalanceTypeItems"
+                      :label="$t('admin.protocolConnections.cimEms.balanceType')"
+                      v-model="editedConnection.loadFlowParameters.balanceType"
+                      hide-details="auto"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-select
+                      :items="cimVoltageInitModeItems"
+                      :label="$t('admin.protocolConnections.cimEms.voltageInitMode')"
+                      v-model="editedConnection.loadFlowParameters.voltageInitMode"
+                      hide-details="auto"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-switch
+                      inset
+                      color="primary"
+                      hide-details
+                      :label="$t('admin.protocolConnections.cimEms.distributedSlack')"
+                      v-model="editedConnection.loadFlowParameters.distributedSlack"
+                    ></v-switch>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-switch
+                      inset
+                      color="primary"
+                      hide-details
+                      :label="$t('admin.protocolConnections.cimEms.transformerVoltageControl')"
+                      v-model="
+                        editedConnection.loadFlowParameters.transformerVoltageControlOn
+                      "
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+
+                <div class="text-subtitle-2 mt-4">
+                  {{ $t('admin.protocolConnections.cimEms.publish') }}
+                </div>
+                <v-row dense>
+                  <v-col
+                    cols="12"
+                    sm="4"
+                    v-for="k in ['busVoltages', 'branchFlows', 'branchLoading']"
+                    :key="k"
+                  >
+                    <v-switch
+                      inset
+                      color="primary"
+                      hide-details
+                      :label="$t('admin.protocolConnections.cimEms.' + k)"
+                      v-model="editedConnection.publishFilter[k]"
+                    ></v-switch>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      type="number"
+                      min="0"
+                      :label="$t('admin.protocolConnections.cimEms.minNominalKv')"
+                      v-model.number="editedConnection.publishFilter.minNominalKv"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+
+                <v-row dense class="mt-4">
+                  <v-col cols="12" sm="6">
+                    <v-switch
+                      inset
+                      color="primary"
+                      hide-details
+                      :label="$t('admin.protocolConnections.cimEms.runStateEstimation')"
+                      v-model="editedConnection.runStateEstimation"
+                    ></v-switch>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      type="number"
+                      min="1"
+                      :disabled="!editedConnection.runStateEstimation"
+                      :label="$t('admin.protocolConnections.cimEms.badDataThreshold')"
+                      v-model.number="
+                        editedConnection.estimatorParameters.badDataThreshold
+                      "
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+
+                <v-row dense class="mt-4">
+                  <v-col cols="12" sm="6">
+                    <v-switch
+                      inset
+                      color="primary"
+                      hide-details
+                      :label="$t('admin.protocolConnections.cimEms.runContingency')"
+                      v-model="editedConnection.runContingency"
+                    ></v-switch>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      :disabled="!editedConnection.runContingency"
+                      :label="$t('admin.protocolConnections.cimEms.contingencyListId')"
+                      v-model="editedConnection.contingencyListId"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col
+                    cols="6"
+                    sm="3"
+                    v-for="f in cimContingencyFields"
+                    :key="f.key"
+                  >
+                    <v-text-field
+                      type="number"
+                      :min="f.min"
+                      :disabled="!editedConnection.runContingency"
+                      :label="$t('admin.protocolConnections.cimEms.' + f.label)"
+                      v-model.number="editedConnection[f.key]"
+                      hide-details="auto"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-card>
             </v-list-item>
 
             <v-list-item
@@ -4110,7 +4299,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useI18n } from 'vue-i18n'
 
   const { t } = useI18n()
@@ -4295,6 +4484,69 @@
     'NODE-RED',
     'N8N',
   ]
+
+  // CIM-EMS connection fields (driver: src/cim-ems, defaults: updateProtocolConnection)
+  const cimTimingFields = [
+    { key: 'cycleSeconds', label: 'cycleSeconds', min: 1 },
+    { key: 'resultMaxAgeSeconds', label: 'resultMaxAgeSeconds', min: 1 },
+    { key: 'switchHoldSeconds', label: 'switchHoldSeconds', min: 0 },
+    { key: 'snapshotMaxSkewSeconds', label: 'snapshotMaxSkewSeconds', min: 0 },
+  ]
+  const cimContingencyFields = [
+    { key: 'contingencyIntervalSeconds', label: 'contingencyIntervalSeconds', min: 0 },
+    { key: 'contingencyMinGapSeconds', label: 'contingencyMinGapSeconds', min: 0 },
+    { key: 'contingencyMinKv', label: 'contingencyMinKv', min: 0 },
+    { key: 'contingencyPublishLimit', label: 'contingencyPublishLimit', min: 0 },
+    { key: 'contingencyThreads', label: 'contingencyThreads', min: 1 },
+  ]
+  const cimBalanceTypeItems = [
+    'PROPORTIONAL_TO_GENERATION_P_MAX',
+    'PROPORTIONAL_TO_GENERATION_P',
+    'PROPORTIONAL_TO_GENERATION_REMAINING_MARGIN',
+    'PROPORTIONAL_TO_GENERATION_PARTICIPATION_FACTOR',
+    'PROPORTIONAL_TO_LOAD',
+    'PROPORTIONAL_TO_CONFORM_LOAD',
+  ]
+  const cimVoltageInitModeItems = ['UNIFORM_VALUES', 'PREVIOUS_VALUES', 'DC_VALUES']
+
+  // Fill the nested CIM-EMS objects (copies, so cancelling the dialog leaves the list row untouched)
+  watch(
+    () => [editedConnection.value?.protocolDriver, editedConnection.value?._id],
+    () => {
+      const c = editedConnection.value
+      if (!c || c.protocolDriver !== 'CIM-EMS') return
+      c.loadFlowParameters = {
+        distributedSlack: true,
+        balanceType: 'PROPORTIONAL_TO_GENERATION_P_MAX',
+        voltageInitMode: 'UNIFORM_VALUES',
+        transformerVoltageControlOn: false,
+        ...(c.loadFlowParameters || {}),
+      }
+      c.publishFilter = {
+        busVoltages: true,
+        branchFlows: true,
+        branchLoading: true,
+        minNominalKv: 0,
+        ...(c.publishFilter || {}),
+      }
+      c.estimatorParameters = { badDataThreshold: 4, ...(c.estimatorParameters || {}) }
+      if (c.cimModelId === undefined) c.cimModelId = ''
+      if (c.contingencyListId === undefined) c.contingencyListId = 'AUTO_N1'
+      const d = {
+        cycleSeconds: 60,
+        resultMaxAgeSeconds: 180,
+        switchHoldSeconds: 300,
+        snapshotMaxSkewSeconds: 10,
+        contingencyIntervalSeconds: 300,
+        contingencyMinGapSeconds: 10,
+        contingencyMinKv: 0,
+        contingencyPublishLimit: 200,
+        contingencyThreads: 1,
+      }
+      for (const k in d) if (c[k] === undefined || c[k] === null) c[k] = d[k]
+    },
+    { immediate: true }
+  )
 
   // Modbus byte orders: named aliases plus any explicit byte permutation.
   // The combobox accepts free text, so e.g. 'BADCFEHG' can be typed directly.

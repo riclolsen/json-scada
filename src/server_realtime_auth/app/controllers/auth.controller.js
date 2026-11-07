@@ -1034,6 +1034,53 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
+  // CIM-EMS specific: defaults equal what the driver assumes for a missing field
+  if (['CIM-EMS'].includes(req?.body?.protocolDriver)) {
+    const num = (k, d, min = 0) => {
+      const v = Number(req.body[k])
+      req.body[k] = k in req.body && req.body[k] !== '' && Number.isFinite(v) ? Math.max(min, v) : d
+    }
+    if (!('cimModelId' in req.body)) req.body.cimModelId = ''
+    // empty revision fields mean "active model revision" and "latest binding revision"
+    for (const k of ['cimModelRevision', 'cimBindingRevision']) {
+      const v = Number(req.body[k])
+      req.body[k] = req.body[k] === '' || req.body[k] == null || !Number.isFinite(v) || v < 1 ? null : Math.floor(v)
+    }
+    num('cycleSeconds', 60.0, 1)
+    num('resultMaxAgeSeconds', 180.0, 1)
+    num('switchHoldSeconds', 300.0)
+    num('snapshotMaxSkewSeconds', 10.0)
+    req.body.loadFlowParameters = {
+      distributedSlack: true,
+      balanceType: 'PROPORTIONAL_TO_GENERATION_P_MAX',
+      voltageInitMode: 'UNIFORM_VALUES',
+      transformerVoltageControlOn: false,
+      ...(req.body.loadFlowParameters || {}),
+    }
+    req.body.publishFilter = {
+      busVoltages: true,
+      branchFlows: true,
+      branchLoading: true,
+      minNominalKv: 0.0,
+      ...(req.body.publishFilter || {}),
+    }
+    req.body.publishFilter.minNominalKv = Math.max(0, Number(req.body.publishFilter.minNominalKv) || 0)
+    if (!('runStateEstimation' in req.body)) req.body.runStateEstimation = false
+    req.body.estimatorParameters = { badDataThreshold: 4.0, ...(req.body.estimatorParameters || {}) }
+    req.body.estimatorParameters.badDataThreshold = Math.max(1, Number(req.body.estimatorParameters.badDataThreshold) || 4.0)
+    if (!('runContingency' in req.body)) req.body.runContingency = false
+    if (!req.body.contingencyListId) req.body.contingencyListId = 'AUTO_N1'
+    num('contingencyIntervalSeconds', 300.0)
+    num('contingencyMinGapSeconds', 10.0)
+    num('contingencyMinKv', 0.0)
+    num('contingencyPublishLimit', 200.0)
+    num('contingencyThreads', 1.0, 1)
+    req.body.contingencyPublishLimit = Math.floor(req.body.contingencyPublishLimit)
+    req.body.contingencyThreads = Math.floor(req.body.contingencyThreads)
+    if (!('autoCreateTags' in req.body)) req.body.autoCreateTags = true
+    req.body.commandsEnabled = false // the driver sends no commands
+  }
+
   try {
     // findOneAndUpdate returns the pre-update document (used to detect instance moves)
     const oldConn = await ProtocolConnection.findOneAndUpdate(
