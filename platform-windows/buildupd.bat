@@ -86,20 +86,6 @@ rem rmdir bin /S /Q
 rem dotnet restore -p:Platform="Any CPU"
 rem dotnet publish --no-self-contained --runtime win-x64 -p:PublishReadyToRun=true -c Release -p:Platform="Any CPU" -o %BINPATH% OPC-UA-Client.csproj
 
-rem C++ DNP3 client driver. Its native dependencies - OpenSSL, opendnp3 and
-rem mongo-cxx-driver - are a one-time build: run src\dnp3\build-windows-deps.bat
-rem once. This section is skipped while those dependencies are absent, so
-rem build.bat keeps working on machines that have not set them up.
-rem Pass "server" to build-windows.bat below to build Dnp3Server as well.
-rem cd %SRCPATH%\dnp3
-rem if exist opendnp3\build\cpp\lib\Release\opendnp3.lib (
-rem   call build-windows.bat
-rem ) else (
-rem   echo run src\dnp3\build-windows-deps.bat first.
-rem    call build-windows-deps.bat
-rem    call build-windows.bat
-rem )
-
 go env -w GO111MODULE=auto
 set GOBIN=c:\json-scada\bin
 cd %SRCPATH%\calculations

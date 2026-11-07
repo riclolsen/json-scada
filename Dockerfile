@@ -231,36 +231,6 @@ WORKDIR /app/json-scada
 #RUN cd src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ && rm -rf obj bin || true
 #RUN cd src/libiec61850 && rm -rf .install || true
 
-## Build mongo-cxx-driver
-#RUN cd src/mongo-cxx-driver/mongo-cxx-driver && \
-#    rm -rf build && \
-#    mkdir -p build && \
-#    cd build && \
-#    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake || true && \
-#    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF && \
-#    cmake --build . --config Release && \
-#    cmake --build . --target install --config Release || true#
-
-## Build OpenDNP3
-#RUN cd src/dnp3/opendnp3 && \
-#    rm -rf build && \
-#    mkdir -p build && \
-#    cd build && \
-#    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && \
-#    make && \
-#    cp cpp/lib/libopendnp3.so /app/json-scada/bin/ || true
-
-## Build DNP3 Server
-#RUN cd src/dnp3/Dnp3Server/ && \
-#    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt || true && \
-#    sed -i '/sasl2/a  snappy' ./CMakeLists.txt || true && \
-#    rm -rf build && \
-#    mkdir -p build && \
-#    cd build && \
-#    cmake .. && \
-#    make && \
-#    cp Dnp3Server /app/json-scada/bin/ || true
-
 # ==============================================================================
 # BUILD GO PROJECTS
 # ==============================================================================

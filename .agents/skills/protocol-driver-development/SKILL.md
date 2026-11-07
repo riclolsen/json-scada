@@ -1,6 +1,6 @@
 ---
 name: protocol-driver-development
-description: Create new protocol drivers (communication drivers) for the JSON-SCADA platform. Covers the MongoDB-centric driver architecture, the protocolDriverInstances / protocolConnections / realtimeData / commandsQueue collections and all their parameters, client (data acquisition) vs server (data distribution) driver patterns, redundancy management, command handling, auto-tag creation, and system integration (AdminUI, process manager catalog, demo seeds, platform services). Includes code snippets for Node.js, C#/.NET, Go, C++ and Java. Use when the user asks to create, scaffold, port, or extend a protocol driver, connect a new protocol/fieldbus/API to JSON-SCADA (e.g. Modbus, DNP3, IEC 60870, IEC 61850, OPC, MQTT, BACnet, REST, or any custom protocol), or asks how drivers talk to the JSON-SCADA database.
+description: Create new protocol drivers (communication drivers) for the JSON-SCADA platform. Covers the MongoDB-centric driver architecture, the protocolDriverInstances / protocolConnections / realtimeData / commandsQueue collections and all their parameters, client (data acquisition) vs server (data distribution) driver patterns, redundancy management, command handling, auto-tag creation, and system integration (AdminUI, process manager catalog, demo seeds, platform services). Includes code snippets for Node.js, C#/.NET, Go and Java. Use when the user asks to create, scaffold, port, or extend a protocol driver, connect a new protocol/fieldbus/API to JSON-SCADA (e.g. Modbus, DNP3, IEC 60870, IEC 61850, OPC, MQTT, BACnet, REST, or any custom protocol), or asks how drivers talk to the JSON-SCADA database.
 ---
 
 # JSON-SCADA Protocol Driver Development
@@ -9,7 +9,7 @@ description: Create new protocol drivers (communication drivers) for the JSON-SC
 
 A JSON-SCADA **protocol driver** is a standalone OS process that bridges the central
 MongoDB database and external devices/systems. The platform is *unopinionated about
-language*: drivers exist in Node.js, C#/.NET, Go, C++ and Java. All of them follow the
+language*: drivers exist in Node.js, C#/.NET, Go and Java. All of them follow the
 same contract:
 
 1. Read the main config file `conf/json-scada.json` (MongoDB URI, database name, node name).
@@ -255,7 +255,7 @@ protocol data type, `origin: "supervised"` (or create command twins with
 `topics`/browse-path filters from the connection doc, and `NoRemoteCommands`-style guards
 where applicable. Complete implementations to copy:
 `src/OPC-UA-Client/` (`autoCreateTags*` parameters), `src/lib60870.netcore/*/TagsCreation.cs`,
-`src/dnp3/Dnp3ClientCpp/main.cpp`, `src/n8n-client/tags-creation.js`.
+`src/dnp3-go/internal/clientapp/`, `src/n8n-client/tags-creation.js`.
 
 ## Language Snippets
 
@@ -397,12 +397,6 @@ for cs.Next(context.TODO()) {
 Use goroutines per connection, `context.Context` for cancellation, and `bson` struct tags
 for configs. Full redundancy loop examples: `src/calculations/main.go`, `src/mongofw/`.
 
-### C++ (see src/dnp3/Dnp3ClientCpp — mongocxx driver + opendnp3)
-
-Uses `mongocxx` with `bsoncxx::builder::basic` documents; same filters/updates as above,
-a `std::thread` for redundancy, and a change-stream loop (`collection.watch()`) for
-commands. Build wiring for the mongo-cxx dependency: `src/mongo-cxx-driver-lib`.
-
 ### Java (see src/plc4j-client — Maven + Apache PLC4X)
 
 Uses `org.mongodb:mongodb-driver-sync`; same document shapes. Note the Maven shade plugin
@@ -414,7 +408,7 @@ must keep `ServicesResourceTransformer` so PLC4X driver discovery works in the f
 |---|---|---|---|
 | IEC 60870-5-104 client/server | `src/lib60870.netcore/iec104client`, `iec104server` | C# | Canonical client & server patterns, TagsCreation/TagsDestinations, SBO |
 | IEC 60870-5-101/103 (Go) | `src/iec60870-5/` | Go | Go rewrite of IEC drivers |
-| DNP3 client | `src/dnp3/Dnp3ClientCpp` | C++ | autoCreateTags, TLS, mongocxx |
+| DNP3 client/server | `src/dnp3-go/cmd/dnp3client`, `dnp3server` | Go | autoCreateTags, TLS |
 | OPC-UA client | `src/OPC-UA-Client` | C# | Subscriptions, browsing/auto-tag, certs |
 | OPC-UA server | `src/OPC-UA-Server` | Node.js | node-opcua, group1/topics filtering |
 | OPC-DA client/server | `src/OPC-DA-Client`, `src/OPC-DA-Server` | C# | Legacy COM interop |

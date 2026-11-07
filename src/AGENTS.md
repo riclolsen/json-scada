@@ -99,6 +99,4 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 
 | Component | Type | Purpose |
 |---|---|---|
-| mongo-cxx-driver | Git submodule | MongoDB C++ driver source |
-| mongo-cxx-driver-lib | Prebuilt | MongoDB C++ driver prebuilt libs |
 | custom-developments | Templates | AI-assisted custom app templates |

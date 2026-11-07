@@ -16,7 +16,7 @@ Windows platform packaging, installation, and runtime management for JSON-SCADA.
 - **Runtime dirs:** `*-runtime/` directories contain pre-downloaded binaries for MongoDB, PostgreSQL, Node.js, Grafana, Metabase, Inkscape, Nginx/PHP, Telegraf, JDK, Ruby, browser, etc.
 - **Service scripts:** `create_services.bat`, `remove_services.bat`, `start_services.bat`, `stop_services.bat`, `restart_services.bat`
 - **Protocol scripts:** `start_protocols.bat`, `stop_protocols.bat`, `restart_protocols.bat`
-- **Build:** `build.bat`, `buildupd.bat`, `build_msys2.sh`
+- **Build:** `build.bat`, `buildupd.bat`
 - **Config:** `conf/` subdirectory mirrors `conf-templates/` for deployed configs
 - **Credentials:** PSCP (`pscp.exe`) for secure file transfer
 - **Tools:** `wget.exe`, `tar.exe`, `nssm.exe`, `ffmpeg.exe`, `sounder.exe`, `json-extractor.bat`
