@@ -49,3 +49,48 @@ def test_microgrid_round_trip_within_tolerance():
     res = round_trip(import_cgmes(MICRO), boundary_package=MICRO)
     assert res["ok"], res["problems"]
     assert validate(import_cgmes(MICRO)).counts["three_windings_transformers"] == 1
+
+
+RELICAP = {r: DATA / f"relicap_{r}.zip" for r in
+           ("Belgovia", "Britheim", "Galia", "Nordheim", "Portheim", "Svedala", "Espheim", "DC-Espheim-Svedala", "DC-Nordheim-Galia")}
+relicap = pytest.mark.skipif(not RELICAP["Galia"].exists(), reason="run tools/fetch_test_models.py --relicap")
+
+
+@relicap
+@pytest.mark.parametrize("region", ["Belgovia", "Galia", "Portheim", "Svedala", "Espheim", "DC-Nordheim-Galia"])
+def test_relicap_regions_validate_and_round_trip_exactly(region):
+    pkg = RELICAP[region]
+    net = import_cgmes(pkg)
+    rep = validate(net)
+    assert rep.ok, rep.errors
+    res = round_trip(net, boundary_package=pkg)
+    assert res["ok"], res["problems"]
+    assert res["max_dp_mw"] < 1e-6 and res["max_dq_mvar"] < 1e-6
+
+
+@relicap
+def test_relicap_node_breaker_sizes():
+    rep = validate(import_cgmes(RELICAP["Svedala"]))
+    assert rep.counts["switches"] == 1470 and rep.counts["voltage_levels"] == 99
+    assert rep.islands == 6   # six synchronous components, only the main one is calculated
+
+
+@relicap
+def test_relicap_vsc_hvdc_in_ac_side_flags_and_loses_reactive_setpoint():
+    pkg = RELICAP["Britheim"]
+    net = import_cgmes(pkg)
+    rep = validate(net)
+    assert any("VSC" in u for u in rep.unsupported)
+    assert not round_trip(net, boundary_package=pkg)["ok"]
+
+
+@relicap
+def test_relicap_lcc_only_network_is_not_calculated_and_explained():
+    rep = validate(import_cgmes(RELICAP["DC-Espheim-Svedala"]))
+    assert not rep.ok and any("LCC" in u for u in rep.unsupported)
+
+
+@relicap
+def test_relicap_nordheim_has_nothing_to_calculate():
+    rep = validate(import_cgmes(RELICAP["Nordheim"]))
+    assert not rep.ok and any("no network component" in e for e in rep.errors)

@@ -34,7 +34,7 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/synthetic.py` — synthetic tags and switching events for tests and demos
   - `tools/replay.py` — replays switching events through snapshot and topology (`--synthetic N` for a smoke run)
   - `tools/import_model.py` — offline import, validation report and optional round trip
-  - `tools/fetch_test_models.py` — downloads public CGMES 2.4.15 conformity models into the gitignored `tests/data/conformity/`
+  - `tools/fetch_test_models.py` — downloads public CGMES 2.4.15 conformity models (and with `--relicap` the CGMES 3.0 ReliCapGrid regions, common data merged into EQ) into the gitignored `tests/data/conformity/`
   - `tools/model_admin.py` — import, list, activate, rollback against MongoDB
 - Switch values are never aged (a stable breaker has an old timestamp); invalid ones are held for `max_hold_seconds`, never assumed closed
 - Results go through `sourceDataUpdate` of supervised points; the driver never writes `soeData` or alarms
@@ -44,7 +44,8 @@ once its content has moved into this README and `docs/schema.md`.
 ## Work Guidance
 
 - Follow the phases and exit criteria in `CIM_EMS_PLAN.md`; record new engine findings in its section 20
-- Public models (SmallGrid NodeBreaker, MicroGrid BaseCase) are fetched, never committed; `tests/integration/` skips without them. Their boundary set must be re-attached on round trip
+- Round-trip re-import turns off `convert-sv-injections` (exporter SvInjection becomes a nodeless load on node-breaker models)
+- Public models (SmallGrid NodeBreaker, MicroGrid BaseCase, ReliCapGrid regions) are fetched, never committed; `tests/integration/` skips without them. Their boundary set must be re-attached on round trip
 - Fixtures: the Eurostag tutorial network round-trips exactly; IEEE 14 and MicroGrid BE are not valid
   round-trip fixtures (nominal-voltage mismatch, missing boundary set); HVDC/VSC networks lose the VSC reactive setpoint
 

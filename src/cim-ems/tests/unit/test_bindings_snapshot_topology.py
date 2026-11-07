@@ -48,7 +48,7 @@ def test_proposal_matches_exact_names_and_never_approves(net):
 def test_proposal_reports_unmatched_and_ambiguous(net):
     tags = synthetic.switch_tags(net)
     removed = tags.pop(0)
-    dup = dict(tags[0], tag=tags[0]["tag"] + "_COPY", _id=9999.0)   # same label twice -> ambiguous
+    dup = dict(tags[0], tag=tags[0]["tag"].swapcase(), _id=9999.0)   # same name in other case: a real tie -> ambiguous
     prop = propose_switches(net, tags + [dup])
     assert len(prop.ambiguous) == 1
     assert removed["tag"] not in {b.tag for b in prop.bindings}
@@ -56,6 +56,14 @@ def test_proposal_reports_unmatched_and_ambiguous(net):
     assert len(prop.unmatched) >= 1
     owner = next(sid for sid, p in switch_parts(net).items() if p[2] == removed["tag"].split(";")[-1])
     assert owner in prop.unmatched and owner not in {b.element_id for b in prop.bindings}
+
+
+def test_exact_name_beats_tag_with_extra_suffix(net):
+    tags = synthetic.switch_tags(net)
+    tags.append(dict(tags[0], tag=tags[0]["tag"] + "_COPY", _id=9999.0))
+    prop = propose_switches(net, tags)
+    assert not prop.ambiguous
+    assert next(b for b in prop.bindings if b.tag == tags[0]["tag"]).confidence == 1.0
 
 
 def test_proposal_ignores_analog_tags(net):

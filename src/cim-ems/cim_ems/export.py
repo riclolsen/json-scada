@@ -43,7 +43,9 @@ def round_trip(net: pn.Network, tol_mw: float = 0.5, boundary_package: str | Pat
         export_cgmes(net, f)
         if boundary_package is not None:
             _add_boundary(f, Path(boundary_package))
-        net2 = import_cgmes(f)
+        # The exporter writes SvInjection records for slack mismatch. The importer turns them into nodeless loads,
+        # which fails on node-breaker models, so they are not converted when re-importing for the comparison.
+        net2 = import_cgmes(f, {"iidm.import.cgmes.convert-sv-injections": "false"})
     lf.run_ac(net)
     lf.run_ac(net2)
 

@@ -77,12 +77,17 @@ def part_regex(part: str) -> re.Pattern | None:
     return re.compile(r"(?<![a-z0-9])" + r"[^a-z0-9]*".join(map(re.escape, runs)) + r"(?![a-z0-9])")
 
 
-def _best(label: str, tags: list[tuple[set[str], str, dict]]) -> tuple[dict | None, float, float]:
-    """Dice score on tokens. A tag that contains every label part as a whole word, in order, scores 1.0, others
-    are capped at 0.95 of their Dice score, so "bbs1" outranks "bbs2" although they share most tokens."""
+def _best(label: str, tags: list[tuple[set[str], str, set[str], dict]]) -> tuple[dict | None, float, float]:
+    """Dice score on tokens, with an order-aware boost.
+
+    - A tag holding every label part as a whole word, in order, and nothing else scores 1.0.
+    - The same with extra tokens in the tag scores 0.85 minus 0.005 per extra token (floor 0.80), so "FT63_G1-S"
+      does not tie with "FT63_G1-S(1)" while a tag carrying a harmless suffix still passes the threshold.
+    - Anything else is capped at 0.85 of its Dice score, so "bbs1" outranks "bbs2" although they share most tokens.
+    """
     lt = tokens(label)
     parts = [r for r in map(part_regex, label.split(" ")) if r]
-    def score(tt: set[str], flat: str) -> float:
+    def score(tt: set[str], flat: str, own: set[str]) -> float:
         pos, ordered = 0, True
         for r in parts:
             m = r.search(flat, pos)
@@ -90,8 +95,11 @@ def _best(label: str, tags: list[tuple[set[str], str, dict]]) -> tuple[dict | No
                 ordered = False
                 break
             pos = m.end()
-        return 1.0 if ordered else dice(lt, tt) * 0.95
-    scored = sorted(((score(tt, flat), t) for tt, flat, t in tags), key=lambda x: -x[0])
+        if not ordered:
+            return dice(lt, tt) * 0.85
+        extra = len(own - lt)
+        return 1.0 if extra == 0 else max(0.80, 0.85 - 0.005 * extra)
+    scored = sorted(((score(tt, flat, own), t) for tt, flat, own, t in tags), key=lambda x: -x[0])
     if not scored:
         return None, 0.0, 0.0
     top = scored[0][0]
@@ -101,7 +109,7 @@ def _best(label: str, tags: list[tuple[set[str], str, dict]]) -> tuple[dict | No
 
 def propose_switches(net: pn.Network, tags: list[dict]) -> Proposal:
     """`tags`: realtimeData-like dicts with `tag`, `description`, `type`, `_id`. Only digital tags are used."""
-    digital = [(tokens(f"{t['tag']} {t.get('description', '')}"), ascii_lower(t["tag"]), t)
+    digital = [(tokens(f"{t['tag']} {t.get('description', '')}"), ascii_lower(t["tag"]), tokens(t["tag"]), t)
                for t in tags if t.get("type", "digital") == "digital"]
     prop = Proposal()
     best = []

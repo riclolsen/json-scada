@@ -22,7 +22,7 @@ python tools/fetch_test_models.py
 python tools/import_model.py tests/data/conformity/smallgrid_nodebreaker.zip --round-trip
 ```
 
-Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid conformity models distributed with PowSyBl. They are not committed.
+Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid conformity models distributed with PowSyBl. With `--relicap` it also builds one CGMES 3.0 package per region of ENTSO-E ReliCapGrid (Svedala: 1,470 switches; Espheim: 1,296). They are not committed.
 
 ## Replay
 

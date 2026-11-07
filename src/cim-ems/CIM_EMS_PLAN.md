@@ -602,3 +602,29 @@ Implemented in `cim_ems/bindings`, `snapshot.py`, `topology.py`, `synthetic.py`,
 | Change stream cache from `realtimeData` | not done (next) |
 
 Still to do for the phase 2 exit gate: the live `realtimeData` cache (change stream with full resync), replay from historian data, and a run on the user model with real tags.
+
+## 22. ReliCapGrid results (2026-11-07)
+
+Source: ENTSO-E ReliCapGrid, branch `cgmes-3.0_ncp-2.5_tc-2.1` (CGMES 3.0, Network Code profiles, nine fictional realms). Fetched with `tools/fetch_test_models.py --relicap`, one package per region with all boundary files. This exercises the opt-in CGMES 3.0 path; the default stays 2.4.15.
+
+| Region | Result |
+|---|---|
+| Belgovia | 16 voltage levels, 20 switches, one 3-winding transformer, one SVC. Converges (6 iterations), exact round trip |
+| Galia | 12 voltage levels, 15 switches. Converges, exact round trip |
+| Portheim | 3 voltage levels, 52 switches. Converges, exact round trip |
+| Svedala | 99 voltage levels, 1,470 switches, 73 loads, 6 synchronous components. Import about 1 s, converges (28 iterations); only the main component is calculated. 433 switches are open in the base state. Exact round trip |
+| Espheim | 129 voltage levels, 1,296 switches, 104 loads. Converges (5 iterations). Exact round trip |
+| DC-Nordheim-Galia | 4 VSC converters, 2 HVDC lines. Converges, round trip exact |
+| Britheim | VSC HVDC link, 2 components. Converges; round trip loses 59.8 Mvar (VSC reactive setpoint, as in phase 0) and is correctly reported as failed |
+| DC-Espheim-Svedala | classic (LCC) HVDC only: load flow returns NO_CALCULATION; reported as unsupported |
+| Nordheim | imports but has no calculable component; reported as an error instead of crashing |
+| Jotunheim | no equipment (EQ) file in the folder; not a stand-alone model |
+
+Findings:
+
+- **Common data file:** pypowsybl 1.16.1 cannot import a region when BaseVoltage and region definitions live in a separate CoreEquipment-EU "common data" file; it reports `VoltageLevel not found` or `nominalVoltage not found for BaseVoltage`. Merging those objects into each EQ file (done by the fetch tool) makes the import work. A model exchange partner who delivers this layout needs the same preprocessing; the validation report should explain the symptom when the driver meets it.
+- **SvInjection on re-import:** the exporter writes an SvInjection for the slack mismatch. The importer converts it into a load without a node, which fails on node-breaker models (`Load ...: node is not set`). The round trip now re-imports with `iidm.import.cgmes.convert-sv-injections=false`. For real imports of models whose SV contains SvInjections on node-breaker networks, check this parameter; converting them would change the load flow.
+- **Extra switches on re-import:** the re-imported network can contain a few extra switches (Espheim 1,298 against 1,296, Svedala 1,515 against 1,470). Flows are identical; the cause is not yet explained.
+- **Switch names:** Svedala names like `FT63_G1-S` and `FT63_G1-S(1)` need exact-over-suffix ranking in the matcher; Espheim has distinct switches with identical names, which stay ambiguous on purpose (21 of 1,296). Real tag lists will need their own review.
+- **Islands:** a model with several synchronous components solves only the main one; the report shows the island count but results for the others are missing until a slack is defined there.
+- **Scale:** the largest models (about 1,300 to 1,500 switches, about 130 voltage levels) import in about 1 s and solve in tens of milliseconds, comparable to SmallGrid.

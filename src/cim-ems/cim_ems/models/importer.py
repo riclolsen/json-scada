@@ -18,7 +18,7 @@ IMPORT_PARAMETERS = {
 APPROXIMATED = {
     "hvdc_lines": "HVDC line: reactive setpoint of VSC converters is not preserved by CGMES 2.4.15 export",
     "vsc_converter_stations": "VSC converter station: reactive setpoint lost on CGMES round trip",
-    "lcc_converter_stations": "LCC converter station: not supported by the state estimator",
+    "lcc_converter_stations": "LCC converter station (classic HVDC): not solved by the AC load flow, no calculation when it connects the only generation",
     "dangling_lines": "Dangling line (boundary): requires boundary set or equivalent injection",
     "three_windings_transformers": "3-winding transformer: not supported by the pandapower estimator path",
 }
@@ -107,6 +107,9 @@ def validate(net: pn.Network, run_load_flow: bool = True) -> ValidationReport:
 
     if run_load_flow and r.ok:
         results = lf.run_ac(net)
+        if not results:
+            r.errors.append("no network component can be calculated (no buses or no slack candidate)")
+            return r
         main = results[0]
         r.load_flow = {
             "status": str(main.status.name),

@@ -56,3 +56,29 @@ def test_replay_invalid_then_recovered_keeps_topology_and_flags():
     assert rows[0]["open"] == 1
     assert rows[1]["open"] == 1 and "topologyUncertain" in rows[1]["flags"]
     assert rows[2]["open"] == 0 and not rows[2]["flags"]
+
+
+RELICAP_SVEDALA = Path(__file__).resolve().parents[1] / "data/conformity/relicap_Svedala.zip"
+RELICAP_ESPHEIM = Path(__file__).resolve().parents[1] / "data/conformity/relicap_Espheim.zip"
+
+
+@pytest.mark.skipif(not RELICAP_SVEDALA.exists(), reason="run tools/fetch_test_models.py --relicap")
+def test_relicap_svedala_prefix_names_are_resolved():
+    # "FT63_G1-S" and "FT63_G1-S(1)" are both in the model: the exact name must win for each.
+    net = import_cgmes(RELICAP_SVEDALA)
+    prop = propose_switches(net, synthetic.switch_tags(net))
+    assert len(prop.bindings) == 1470 and not prop.unmatched and not prop.ambiguous
+
+
+@pytest.mark.skipif(not RELICAP_ESPHEIM.exists(), reason="run tools/fetch_test_models.py --relicap")
+def test_relicap_espheim_duplicate_names_are_ambiguous_not_guessed():
+    from collections import Counter
+
+    from cim_ems.bindings.proposal import switch_labels
+
+    net = import_cgmes(RELICAP_ESPHEIM)
+    labels = switch_labels(net)
+    dup = {s for s, l in labels.items() if Counter(labels.values())[l] > 1}
+    prop = propose_switches(net, synthetic.switch_tags(net))
+    assert dup and set(prop.ambiguous) == dup
+    assert not {b.element_id for b in prop.bindings} & dup
