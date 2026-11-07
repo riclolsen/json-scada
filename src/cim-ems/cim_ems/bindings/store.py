@@ -40,3 +40,26 @@ def load_revision(db: Database, model_id: str, revision: int, approved_only: boo
         if b.approved or not approved_only:
             out.append(b)
     return out
+
+
+def cim_ems_connections(db: Database) -> set[float]:
+    return {float(c["protocolConnectionNumber"]) for c in
+            db["protocolConnections"].find({"protocolDriver": "CIM-EMS"}, {"protocolConnectionNumber": 1})}
+
+
+def candidate_tags(db: Database) -> list[dict]:
+    """Supervised tags that may feed the studies: never points published by a CIM-EMS connection."""
+    own = list(cim_ems_connections(db))
+    q = {"origin": "supervised", "type": {"$in": ["analog", "digital"]},
+         "protocolSourceConnectionNumber": {"$nin": own}}
+    return list(db["realtimeData"].find(q, {"_id": 1, "tag": 1, "description": 1, "type": 1, "unit": 1}))
+
+
+def drop_own_points(db: Database, bindings: list[Binding]) -> tuple[list[Binding], list[Binding]]:
+    """Split off bindings whose tag is a CIM-EMS result point (estimates must never feed the estimator)."""
+    own = list(cim_ems_connections(db))
+    if not own or not bindings:
+        return bindings, []
+    bad = {d["tag"] for d in db["realtimeData"].find(
+        {"tag": {"$in": [b.tag for b in bindings]}, "protocolSourceConnectionNumber": {"$in": own}}, {"tag": 1})}
+    return [b for b in bindings if b.tag not in bad], [b for b in bindings if b.tag in bad]

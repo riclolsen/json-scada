@@ -669,7 +669,9 @@ Test gate: 2e-3 pu and 0.1 deg. The transfer rejects (raises `UnsupportedForEsti
 
 Estimator results on Svedala with synthetic noise (643 measurements, voltage sigma 0.2 percent, power sigma 0.5 MVA): converges in about 1.4 s, chi-square test passes, voltage error below 3e-3 pu. A 60 MW error on one flow is the measurement removed as bad data. Voltage-only measurement sets are reported as not observable. The default bad data threshold is 4 sigma, because 3 sigma flagged a clean value with 643 measurements. The residual is the plain standardized one, not covariance-weighted. Observability is only the pandapower measurement count check, not a topological observability analysis.
 
-Phase 4 remaining: analog binding proposal and approval (bindings can be written by hand or CSV today), estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
+Analog binding proposals (`propose_analogs`, `tools/bindings_admin.py`): on synthetic tags no wrong binding on Galia, Svedala, SmallGrid and Espheim; 14, 14, 58 and 108 label keys left ambiguous (parallel circuits with the same name, tie lines without substation). An end-to-end test estimates Galia from name-matched, approved bindings. CGMES measurement objects (`Analog`) are not in any public model, so their import still waits on the user model. Bindings to CIM-EMS result points are refused at save and ignored by the driver.
+
+Phase 4 remaining: estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
 
 ## 25. Phase 5 progress: contingency analysis core (2026-11-07)
 

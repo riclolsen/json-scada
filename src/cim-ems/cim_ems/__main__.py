@@ -34,6 +34,10 @@ def build_cycle(db, conn: dict, node: str, red: Redundancy, log) -> tuple[StudyC
             return None
     rev = conn.get("cimBindingRevision") or bstore.latest_revision(db, conn["cimModelId"])
     bindings = bstore.load_revision(db, conn["cimModelId"], rev) if rev else []
+    bindings, own = bstore.drop_own_points(db, bindings)
+    if own:
+        log.warning("%s: %d binding(s) refer to CIM-EMS result points and are ignored, e.g. %s",
+                    conn["name"], len(own), own[0].tag)
     conn = {**conn, "cimBindingRevision": rev}
     net = mstore.load_network(db, model)
     tags = [b.tag for b in bindings]

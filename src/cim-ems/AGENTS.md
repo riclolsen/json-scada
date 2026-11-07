@@ -43,6 +43,7 @@ once its content has moved into this README and `docs/schema.md`.
   - `tools/replay.py` — replays switching events through snapshot and topology (`--synthetic N` for a smoke run)
   - `tools/import_model.py` — offline import, validation report and optional round trip
   - `tools/fetch_test_models.py` — downloads public CGMES 2.4.15 conformity models (and with `--relicap` the CGMES 3.0 ReliCapGrid regions, common data merged into EQ) into the gitignored `tests/data/conformity/`
+  - `tools/bindings_admin.py` — propose (switch and analog name matching), save a reviewed CSV as a binding revision, export a revision
   - `tools/model_admin.py` — import, list, activate, rollback against MongoDB
 - Switch values are never aged (a stable breaker has an old timestamp); invalid ones are held for `max_hold_seconds`, never assumed closed
 - Results go through `sourceDataUpdate` of supervised points; the driver never writes `soeData` or alarms

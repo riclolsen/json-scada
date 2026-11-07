@@ -221,15 +221,18 @@ class StudyCycle:
         return self._transfer, self._transfer_error
 
     def _resolve_buses(self, measurements) -> list[est_adapter.Measurement]:
-        """Measurement elements may be bus ids or busbar section ids; the estimator wants calculated bus ids."""
-        try:
-            bbs = self.net.get_busbar_sections()["bus_id"]
-        except Exception:
-            bbs = {}
+        """Voltage measurements may name a calculated bus, a bus-breaker view bus or a busbar section; the estimator
+        wants calculated bus ids."""
+        bbs: dict[str, str] = {}
+        for getter in (self.net.get_bus_breaker_view_buses, self.net.get_busbar_sections):
+            try:
+                bbs.update({k: v for k, v in getter()["bus_id"].items() if v})
+            except Exception:
+                pass
         out = []
         for m in measurements:
             eid = m.element_id
-            if m.quantity == "V" and eid in bbs and bbs[eid]:
+            if m.quantity == "V" and eid in bbs:
                 eid = bbs[eid]
             out.append(est_adapter.Measurement(eid, m.quantity, m.side, m.value, m.sigma, tag=m.element_id))
         return out

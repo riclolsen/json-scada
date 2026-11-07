@@ -163,3 +163,38 @@ def test_user_list_with_unknown_element_and_double_outage():
     ca = run["summary"]["contingency"]
     assert ca["status"] == "done" and ca["contingencies"] == 3 and ca["unsupported"] == 1
     assert value(db, "EMS;CA;bad;STATUS")["valueAtSource"] == 4.0
+
+
+@needs
+def test_estimate_from_name_matched_bindings():
+    """Synthetic SCADA tags -> analog proposals -> approval -> estimate. Voltages are bound to busbar sections."""
+    from cim_ems import synthetic
+    from cim_ems.bindings.proposal import propose_analogs
+
+    cyc, db, _ = build()
+    net = cyc.net
+    tags, truth = synthetic.analog_tags(net)
+    prop = propose_analogs(net, tags)
+    rng = np.random.default_rng(7)
+    bbs = {**net.get_bus_breaker_view_buses()["bus_id"].to_dict(), **net.get_busbar_sections()["bus_id"].to_dict()}
+    buses = net.get_buses()
+    branches = {**{i: r for i, r in net.get_lines().iterrows()},
+                **{i: r for i, r in net.get_2_windings_transformers().iterrows()}}
+    now = datetime.now(timezone.utc)
+    points = {}
+    used = []
+    for b in prop.bindings:
+        if b.quantity == "V" and not bbs[b.element_id]:
+            continue          # busbar section out of service: the cycle drops such a measurement
+        b.approved = True
+        used.append(b)
+        true = buses.loc[bbs[b.element_id], "v_mag"] if b.quantity == "V" else \
+            branches[b.element_id][f"{b.quantity.lower()}{b.side}"]
+        points[b.tag] = PointState(float(true + rng.normal(0, b.sigma)), time_tag=now, time_tag_at_source=now)
+    assert sum(b.quantity == "V" for b in prop.bindings) > 0
+    cyc2 = StudyCycle(db, {"protocolConnectionNumber": 9001, "name": "EMS", "runStateEstimation": True},
+                      {"modelId": "m", "revision": 1}, net, used, FakeCache(points), cyc.publisher, cyc.red, "a")
+    run = cyc2.run_once()
+    est = run["summary"]["estimation"]
+    assert est["status"] == "converged", est
+    assert est["measurements"] >= len(used) - 4

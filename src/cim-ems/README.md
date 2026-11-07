@@ -18,7 +18,24 @@ compares solved values. Exit code 1 means the model is rejected.
 ## Running the driver
 
 Register an instance and a connection (Admin UI support for the connection fields is still to do), import and
-activate a model, save approved bindings, then start the driver like the others:
+activate a model, save approved bindings, then start the driver like the others.
+
+Bindings are proposed by name matching, reviewed as CSV and saved as a revision:
+
+```bash
+python tools/bindings_admin.py propose model.zip --out bindings.csv --report report.json   # tags from MongoDB
+python tools/bindings_admin.py save <modelId> bindings.csv                                  # after setting approved
+python tools/bindings_admin.py export <modelId> --out current.csv
+```
+
+Switch tags are matched to `<substation> <voltage level> <switch>`. Analog tags are matched by quantity (from the
+unit kV/MW/Mvar, else the last P/Q/V/MW/MVAR/KV word of the tag, else the description) to
+`<substation> <branch>` for each branch end (`<substation> <voltage level> <branch>` when both ends are in one
+substation) and to `<substation> <voltage level>` for voltages, bound to the first busbar section of the voltage
+level (or its first bus in a bus-breaker model). Elements with identical labels, such as parallel circuits with the
+same name, are reported as ambiguous and never guessed. Points published by a CIM-EMS connection are never
+candidates, `save` refuses them and the driver ignores them.
+
 
 ```
 python -m cim_ems <instance> <logLevel> <path to json-scada.json>
