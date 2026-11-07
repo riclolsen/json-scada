@@ -15,6 +15,15 @@ The tool imports a CGMES 2.4.15 package (node-breaker topology kept), prints a J
 unsupported classes, islands, base case load flow) and, with `--round-trip`, exports and re-imports the model and
 compares solved values. Exit code 1 means the model is rejected.
 
+## Public test models
+
+```
+python tools/fetch_test_models.py
+python tools/import_model.py tests/data/conformity/smallgrid_nodebreaker.zip --round-trip
+```
+
+Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid conformity models distributed with PowSyBl. They are not committed.
+
 ## Model revisions
 
 ```

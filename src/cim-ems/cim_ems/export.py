@@ -1,7 +1,9 @@
 """CGMES 2.4.15 export and the round-trip check."""
 from __future__ import annotations
 
+import re
 import tempfile
+import zipfile
 from pathlib import Path
 
 import pypowsybl.loadflow as lf
@@ -19,7 +21,18 @@ def export_cgmes(net: pn.Network, path: str | Path, profiles: str = "EQ,SSH,SV,T
     net.save(str(path), format="CGMES", parameters={**EXPORT_PARAMETERS, "iidm.export.cgmes.profiles": profiles})
 
 
-def round_trip(net: pn.Network, tol_mw: float = 0.5, tol_pu_v: float = 0.001) -> dict:
+BOUNDARY_FILE = re.compile(r"(_BD[_.]|boundary)", re.IGNORECASE)
+
+
+def _add_boundary(exported: Path, source_package: Path) -> None:
+    """Copy the boundary set (EQ_BD, TP_BD) of the source package into the exported zip."""
+    with zipfile.ZipFile(source_package) as src, zipfile.ZipFile(exported, "a", zipfile.ZIP_DEFLATED) as dst:
+        for name in src.namelist():
+            if BOUNDARY_FILE.search(name) and name not in dst.namelist():
+                dst.writestr(name, src.read(name))
+
+
+def round_trip(net: pn.Network, tol_mw: float = 0.5, boundary_package: str | Path | None = None) -> dict:
     """Export, re-import, solve, and compare identity, topology and solved values.
 
     The plan compares solved values, never XML bytes. Q mismatches are reported
@@ -28,6 +41,8 @@ def round_trip(net: pn.Network, tol_mw: float = 0.5, tol_pu_v: float = 0.001) ->
     with tempfile.TemporaryDirectory() as tmp:
         f = Path(tmp) / "rt.zip"
         export_cgmes(net, f)
+        if boundary_package is not None:
+            _add_boundary(f, Path(boundary_package))
         net2 = import_cgmes(f)
     lf.run_ac(net)
     lf.run_ac(net2)

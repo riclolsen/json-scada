@@ -29,6 +29,7 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/redundancy.py` — active-node arbitration; `still_active()` must be checked right before every publication
   - `cim_ems/models/store.py` — immutable revisions, explicit activation, rollback, rebuild from the stored package
   - `tools/import_model.py` — offline import, validation report and optional round trip
+  - `tools/fetch_test_models.py` — downloads public CGMES 2.4.15 conformity models into the gitignored `tests/data/conformity/`
   - `tools/model_admin.py` — import, list, activate, rollback against MongoDB
 - Results go through `sourceDataUpdate` of supervised points; the driver never writes `soeData` or alarms
 - The estimator network is built from the solved pypowsybl network, not from pandapower's CIM import
@@ -37,6 +38,7 @@ once its content has moved into this README and `docs/schema.md`.
 ## Work Guidance
 
 - Follow the phases and exit criteria in `CIM_EMS_PLAN.md`; record new engine findings in its section 20
+- Public models (SmallGrid NodeBreaker, MicroGrid BaseCase) are fetched, never committed; `tests/integration/` skips without them. Their boundary set must be re-attached on round trip
 - Fixtures: the Eurostag tutorial network round-trips exactly; IEEE 14 and MicroGrid BE are not valid
   round-trip fixtures (nominal-voltage mismatch, missing boundary set); HVDC/VSC networks lose the VSC reactive setpoint
 

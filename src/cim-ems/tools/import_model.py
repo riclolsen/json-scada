@@ -24,7 +24,7 @@ def main() -> int:
     report = validate(net, run_load_flow=not a.no_loadflow).as_dict()
     out = {"sha256": sha256_file(a.package), "validation": report}
     if a.round_trip:
-        out["roundTrip"] = round_trip(net)
+        out["roundTrip"] = round_trip(net, boundary_package=a.package)
     print(json.dumps(out, indent=2))
     return 0 if report["ok"] else 1
 

@@ -575,4 +575,13 @@ CGMES version check (2026-11-07): this pypowsybl exports both `cim-version=16` (
 
 Round-trip fixtures (phase 1): the Eurostag tutorial network round-trips with differences near 1e-12 MW and Mvar. IEEE 14 does not, because pypowsybl's test case has lines between voltage levels of different nominal voltage, which CGMES cannot express. MicroGrid BE exports but cannot be re-imported without its boundary set (`nominalVoltage not found for BaseVoltage`), so boundary datasets are mandatory input for models with boundary lines.
 
-Still open from phase 0 (to close during phase 1, they need the user model): CGMES measurement import, node-breaker CGMES import of a real package, unsupported-feature inventory of the user model, and the questions in section 19.
+Public conformity models (2026-11-07, `tools/fetch_test_models.py`, from powsybl-core test resources, CGMES 2.4.15 with boundary sets):
+
+| Model | Result |
+|---|---|
+| SmallGrid NodeBreaker | 105 substations, 115 voltage levels, 173 lines, 10 transformers, 1,107 switches (369 breakers), 19 generators, 103 loads. Import about 1 s, base case load flow converges in 4 iterations (about 14 ms), single synchronous component, 588 operational limits. Round trip with the boundary files re-attached: differences 0.0 MW and Mvar. Opening one breaker re-solves in about 8 ms; 19 of 20 random single-breaker outages converge. SLD in about 40 ms (19 kB SVG), NAD in about 100 ms (229 kB SVG) |
+| MicroGrid BaseCase (assembled) | 10 dangling lines and one 3-winding transformer flagged; load flow converges in 7 iterations; round trip within 0.16 MW and 0.02 Mvar |
+
+Consequences: the round-trip check must re-attach the boundary set of the source package (done in `cim_ems/export.py`); neither conformity model contains CGMES Analog/Discrete objects (the pypowsybl `measurements` and `discreteMeasurements` extensions are empty), so binding proposals from CGMES measurements stay untested until the user model is available and name matching is the only proposal method testable on public data. The small-network load flow figures say nothing about the user model size: benchmark there.
+
+Still open from phase 0 (to close during phase 1, they need the user model): CGMES measurement import on a model that contains measurements, unsupported-feature inventory of the user model, and the questions in section 19.
