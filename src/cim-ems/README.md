@@ -1,0 +1,21 @@
+# CIM-EMS driver
+
+Python protocol driver (`CIM-EMS`) that brings CIM/CGMES model exchange and EMS network analysis to JSON-SCADA.
+Status: phase 1 in progress (offline model exchange). The design is in `CIM_EMS_PLAN.md`.
+
+## Offline model check
+
+```
+pip install -e .[test]
+python tools/import_model.py model.zip --round-trip
+python -m pytest
+```
+
+The tool imports a CGMES 2.4.15 package (node-breaker topology kept), prints a JSON validation report (counts,
+unsupported classes, islands, base case load flow) and, with `--round-trip`, exports and re-imports the model and
+compares solved values. Exit code 1 means the model is rejected.
+
+## Third-party engines
+
+- pypowsybl (MPL-2.0): CGMES import/export, load flow, diagrams
+- pandapower: state estimation (check its license file before packaging)

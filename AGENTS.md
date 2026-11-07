@@ -114,6 +114,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/telegraf-listener/](src/telegraf-listener/AGENTS.md) — Telegraf listener (Node.js)
 - [src/plc4j-client/](src/plc4j-client/AGENTS.md) — Various PLC protocols client via PLC4X (Java)
 - [src/camera-onvif/](src/camera-onvif/AGENTS.md) — ONVIF camera (Node.js)
+- [src/cim-ems/](src/cim-ems/AGENTS.md) — CIM/CGMES EMS driver (Python)
 - Plus tools & utilities detailed in [src/AGENTS.md](src/AGENTS.md) (Node.js, Go, C#, C, Python, PHP)
 
 

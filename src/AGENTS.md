@@ -61,6 +61,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - [iec61850/iec61850_server](iec61850/iec61850_server/AGENTS.md) — IEC 61850 MMS server driver (Go, drop-in alternative, no native library)
 - [telegraf-listener](telegraf-listener/AGENTS.md) — Telegraf UDP JSON listener (Node.js)
 - [camera-onvif](camera-onvif/AGENTS.md) — ONVIF camera control and streaming (Node.js)
+- [cim-ems](cim-ems/AGENTS.md) — CIM/CGMES EMS driver: model exchange, load flow, state estimation, contingency analysis (Python)
 
 ### Protocol Drivers (no AGENTS.md, use parent doc)
 

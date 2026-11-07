@@ -573,4 +573,6 @@ Decisions taken from the results:
 
 CGMES version check (2026-11-07): this pypowsybl exports both `cim-version=16` (CIM16 namespace) and `100` (CIM100 namespace) with EQ, SSH, SV and TP; both re-import with identical equipment counts and a converged load flow on the four-substations test network.
 
+Round-trip fixtures (phase 1): the Eurostag tutorial network round-trips with differences near 1e-12 MW and Mvar. IEEE 14 does not, because pypowsybl's test case has lines between voltage levels of different nominal voltage, which CGMES cannot express. MicroGrid BE exports but cannot be re-imported without its boundary set (`nominalVoltage not found for BaseVoltage`), so boundary datasets are mandatory input for models with boundary lines.
+
 Still open from phase 0 (to close during phase 1, they need the user model): CGMES measurement import, node-breaker CGMES import of a real package, unsupported-feature inventory of the user model, and the questions in section 19.
