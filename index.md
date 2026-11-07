@@ -7,14 +7,14 @@
 
 A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB database server.
 
-![](https://img.shields.io/badge/nodejs-20-green 'Node.js 20+')
+![](https://img.shields.io/badge/nodejs-24-green 'Node.js 24+')
 ![](https://img.shields.io/badge/golang-1.26-green 'Go 1.26+')
 ![](https://img.shields.io/badge/dotnet-8.0-green 'Dotnet 8.0')
 
-![](https://img.shields.io/badge/mongodb-6.0-green 'MongoDB 6.0+')
-![](https://img.shields.io/badge/postgresql-16-green 'PostgreSQL 16+')
+![](https://img.shields.io/badge/mongodb-8.0-green 'MongoDB 8.0+')
+![](https://img.shields.io/badge/postgresql-18-green 'PostgreSQL 18+')
 ![](https://img.shields.io/badge/timescaledb-2.0-green 'TimescaleDB 2.0')
-![](https://img.shields.io/badge/grafana-11-green 'Grafana 11+')
+![](https://img.shields.io/badge/grafana-13-green 'Grafana 13+')
 
 ![](https://img.shields.io/badge/linux-x86--64-green 'Linux x86-64')
 ![](https://img.shields.io/badge/linux-ARM-green 'Linux ARM-64')
@@ -66,11 +66,11 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Various high-quality protocol drivers.
 - Integration with MQTT brokers (compatibility with Sparkplug B).
 - Live point configuration updates.
-- Inkscape-based and web-base SVG synoptic display editors.
+- Inkscape-based and web-based SVG synoptic display editors.
 - PostgreSQL/TimescaleDB historian integrated with Grafana for easy creation of dashboards.
 - Easy development of custom applications with modern stacks like MEAN/MERN, etc. Extensive use of JSON from bottom up.
 - Leverage a huge ecosystem of MongoDB/PostgreSQL tools, community, services, etc.
-- Easy AI-helped custom app development using templates/API for tools like WindSurf/Cline/Cursor/Copilot/etc.
+- Easy AI-assisted custom app development using templates/API for tools like WindSurf/Cline/Cursor/Copilot/etc.
 
 ## Use cases
 
@@ -104,21 +104,26 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [Docker Image](docs/docker_image.md)
 - [Docker Compose Demo](demo-docker/README.md)
 - [Schema Documentation](docs/schema.md)
+- [Developer Guide](docs/DEVELOPER_GUIDE.md)
+- [Windows Build Instructions](docs/build_windows.md)
 - [Config File](conf/README.md)
 - [SVG Synoptic Display Editor](src/svg-display-editor/README.md)
-- [IEC61850 Client Driver (GO)](src/iec61850/iec61850_client/README.md)
+- [IEC61850 Client Driver (Go)](src/iec61850/iec61850_client/README.md)
 - [IEC61850 Server Driver (Go)](src/iec61850/iec61850_server/README.md)
 - [IEC60870-5-104 Server Driver (Go)](src/iec60870-5/cmd/iec104server/README.md)
 - [IEC60870-5-104 Client Driver (Go)](src/iec60870-5/cmd/iec104client/README.md)
 - [IEC60870-5-101 Server Driver (Go)](src/iec60870-5/cmd/iec101server/README.md)
 - [IEC60870-5-101 Client Driver (Go)](src/iec60870-5/cmd/iec101client/README.md)
+- [IEC60870-5-103 Client Driver (Go)](src/iec60870-5/cmd/iec103client/README.md)
 - [ICCP TASE2 Client Driver](src/iccp/iccp-client/README.md)
 - [ICCP TASE2 Server Driver](src/iccp/iccp-server/README.md)
 - [DNP3 Client Driver (Go)](src/dnp3-go/cmd/dnp3client/README.md)
 - [DNP3 Server Driver (Go)](src/dnp3-go/cmd/dnp3server/README.md)
 - [Telegraf Listener Driver](src/telegraf-listener/README.md)
 - [Node-RED Integration Driver (bidirectional)](src/node-red-driver/README.md)
+- [Node-RED Integration Guide](docs/nodered-integration.md)
 - [N8N Integration Driver (bidirectional)](src/n8n-client/README.md)
+- [n8n Integration Guide](docs/n8n-integration.md)
 - [MQTT Sparkplug-B Client Driver](src/mqtt-sparkplug/README.md)
 - [OPC-UA Client Driver (Go)](src/OPC-UA-Client-Go/README.md)
 - [OPC-UA Server Driver](src/OPC-UA-Server/README.md)
@@ -134,6 +139,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [Realtime Data Server](src/server_realtime_auth/README.md)
 - [Report Generators](docs/report_generators.md)
 - [Deep Wiki](https://deepwiki.com/riclolsen/json-scada)
+
 ## Protocols Roadmap
 
 - [x] IEC 60870-5-104 Server TCP/TLS
@@ -187,7 +193,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Windows Installer
 - [x] Docker Image
 - [x] Docker Compose Demo (docker-compose.yaml scripts)
-- [x] Install Script for RedHat/Rocky/Alma 9/10 Linux x86-64 and arm64
+- [x] Install Script for Red Hat/Rocky/Alma 9/10 Linux x86-64 and arm64
 - [x] Install Script for Ubuntu 24.04/26.04 Linux x86-64 and arm64
 - [x] Online Demo
 - [x] Supervisor (Linux process manager) examples
@@ -201,7 +207,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] n8n Integration (bidirectional driver + n8n-nodes-jsonscada)
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] Open PLC Integration
-- [x] Example templates/API for fast AI-helped custom app developments
+- [x] Example templates/API for fast AI-assisted custom app developments
 
 ## Enterprise Services (available on request)
 

@@ -11,12 +11,12 @@
 
 - C# Dotnet Core - https://dotnet.microsoft.com
 - Go - https://golang.org
-- NodeJS - https://nodejs.org
+- Node.js - https://nodejs.org
 - ExpressJS - https://expressjs.com
 
 ## Protocol libraries
   
-- Lib60870 By MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de
+- Lib60870 by MZ Automation - https://github.com/mz-automation/lib60870, https://www.mz-automation.de
 - Libiec61850 - https://github.com/mz-automation/libiec61850
 - Opendnp3 - https://www.automatak.com/opendnp3/
 - Libplctag - https://github.com/libplctag/libplctag
@@ -36,7 +36,7 @@
 - JQuery - http://jquery.com
 - Shortcut - http://www.openjs.com/scripts/events/keyboard_shortcuts
 - Core JS - http://www.sitepoint.com
-- Modernzr - http://www.modernizr.com
+- Modernizr - http://www.modernizr.com
 - Flot - http://www.flotcharts.org
 - Snap SVG - http://snapsvg.io
 - Chroma.js - https://github.com/gka/chroma.js
@@ -59,7 +59,7 @@
 
     {json:scada} 
     
-    © 2008-2023 - Ricardo L. Olsen 
+    © 2008-2026 - Ricardo L. Olsen 
     (https://www.linkedin.com/in/ricardo-olsen/)
 
     This program is free software: you can redistribute it and/or modify

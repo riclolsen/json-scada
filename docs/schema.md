@@ -31,7 +31,7 @@ Collections, validation and indexes are created by [mongo_seed/b_create-db.js](.
 
 Writes that violate a validator on the strict/error collections are rejected by MongoDB, so new required fields must also be added to the validators in `b_create-db.js`.
 
-Please notice that all numeric fields from the schema is recorded as BSON Doubles (64 bit floating point). However, some numeric fields are expected to contain only integer values. When numbers are updated by the Mongo Shell manually, all numeric data is converted to BSON Doubles by default. Some languages like Node.js can cause values to be stored as integers or doubles depending on the current value. It is important that values are always stored as BSON Doubles as otherwise problems may be encountered by protocol drivers, specially those programmed in C#/DotNet Core.
+Please notice that all numeric fields in the schema are recorded as BSON Doubles (64-bit floating point). However, some numeric fields are expected to contain only integer values. When numbers are updated manually by the Mongo Shell, all numeric data is converted to BSON Doubles by default. Some languages like Node.js can cause values to be stored as integers or doubles depending on the current value. It is important that values are always stored as BSON Doubles, otherwise problems may be encountered by protocol drivers, especially those programmed in C#/.NET Core.
 
 All string parameters are UTF-8 encoded.
 
@@ -190,7 +190,7 @@ Example document.
 * _**_protocolSourcePublishingInterval_**_ [Double] - Publishing interval. See protocol documentation. **Optional parameter**.
 * _**_protocolSourceDiscardOldest_**_ [Boolean] - Discard oldest data when queue is full. See protocol documentation. **Optional parameter**.
 * _**_protocolSourceAccessLevel_**_ [Double] - Access level. See protocol documentation. **Optional parameter**.
-* _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or empty array when not point is not to be distributed. See protocol documentation. **Mandatory parameter**.
+* _**_protocolDestinations_**_ [Array of Objects] - List of protocol destinations for server protocol connections. Can be null or an empty array when the point is not distributed. See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinationConnectionNumber_**_ [Double] - Indicates the protocol connection that will monitor updates to the point. Should contain only integer values. **Mandatory parameter**.
 * _**_protocolDestinationCommonAddress_**_ [Double or String] - Protocol common address (device address). See protocol documentation. **Mandatory parameter**.
 * _**_protocolDestinationObjectAddress_**_ [Double or String] -  Protocol object address. See protocol documentation. **Mandatory parameter**.
@@ -257,7 +257,7 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 ### Fields that can be configured and altered by the operators.
 
 * _**_hiLimit_**_ [Double] - High limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
-* _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm. Use null,Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
+* _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
 * _**_hihihiLimit_**_ [Double] - High-high-high limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
 * _**_loLimit_**_ [Double] - Low limit for out-of-range alarm. Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
 * _**_loloLimit_**_ [Double] - Low-low limit for out-of-range alarm. Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
@@ -288,7 +288,7 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.
 * _**_timeTagAlertState_**_ [Date] - Time of last Grafana alert state update. **Optional parameter**.
 * _**_timeTagAtSource_**_ [Date] - Timestamp from the source. **Mandatory parameter**.
-* _**_timeTagAtSourceOk_**_ [Boolean] - When true, the source timestamp is * considered ok. **Mandatory parameter**.
+* _**_timeTagAtSourceOk_**_ [Boolean] - When true, the source timestamp is considered ok. **Mandatory parameter**.
 * _**_updatesCnt_**_ [Double] - Count of updates. **Mandatory parameter**.
 * _**_sourceDataUpdate_**_ [Object] - Information updated by protocol driver or calculation process.
 
@@ -563,7 +563,7 @@ MongoDB schemas can be extended without affecting the JSON-SCADA standard proces
 All JSON-SCADA collections and fields are named with an initial lower case letter.
 So, extended collections and properties should avoid this reserved convention.
 
-Is is recommended that custom collections and extended fields/properties be named with an initial upper case letter and also should be used a prefix that can identify the company and/or application.
+It is recommended that custom collections and extended fields/properties be named with an initial upper case letter and also should be used a prefix that can identify the company and/or application.
 
 # PostgreSQL/TimescaleDB Schema
 
@@ -599,7 +599,7 @@ Rows are queued by _cs_data_processor_ as SQL files and loaded by `sql/process_p
 
 ## Realtime Data Table
 
-This table is updated with all fields and values changed from the realtimeData collection from the MongoDB database. It is a helper for apps that can use only the PostgreSQL historian. The internal structure of the realtimeData collection is reflected in the _json_data_ field that has _jsonb_ type (PostgreSQL binary JSON), so when this internal schema change it will be automatically updated here without changing the PostgreSQL table schema. The application should select the the data fields it needs from this JSON object structure. This table only has the latest snapshots for tags, it does not grow with time, so it does not need to be converted to be managed by TimescaleDB.
+This table is updated with all fields and values changed from the realtimeData collection from the MongoDB database. It is a helper for apps that can use only the PostgreSQL historian. The internal structure of the realtimeData collection is reflected in the _json_data_ field that has _jsonb_ type (PostgreSQL binary JSON), so when this internal schema changes it is automatically updated here without changing the PostgreSQL table schema. The application should select the data fields it needs from this JSON object structure. This table only has the latest snapshots for tags, it does not grow with time, so it does not need to be converted to be managed by TimescaleDB.
 
     CREATE TABLE realtime_data (
         tag text not null,
