@@ -39,6 +39,18 @@ bindings (`V` on a bus or busbar section in kV, `P`/`Q` on a line or transformer
 are listed in the run record (`cimRuns`, `summary.estimation.badData`). The network transfer is checked against
 the load flow once per topology and refused beyond 2e-3 pu or 0.1 degrees.
 
+Contingency analysis is off by default. With `runContingency: true` the pypowsybl AC security analysis runs after a
+converged load flow on the list `contingencyListId` (`AUTO_N1` for every in-service line and two-winding
+transformer from `contingencyMinKv`, or a `cimContingencyLists` document
+`{"listId": "L1", "contingencies": [{"id": "c1", "name": "Line 1", "elements": ["<mRID>", ...]}]}`).
+It runs when the topology changed (at least `contingencyMinGapSeconds`, default 10, after the last run) or every
+`contingencyIntervalSeconds` (default 300); other cycles are skipped and counted, and the last results are
+republished so their points do not expire. Points: `<connection>;CA;<contingency id>;STATUS|VIOL|WORST` for the first
+`contingencyPublishLimit` (200) entries, `<connection>;CA;SYSTEM;VIOL|WORST|INSECURE|COUNT`, and
+`<connection>;SYS;CA;STATUS|SKIPPED|DURATION`. STATUS: 0 secure, 1 violation, 2 islanding, 3 diverged, 4 unsupported.
+Violations already present in the base case are not counted. Full results go to the `cimArtifacts` GridFS bucket
+(`ca_<runId>.json`, referenced by `summary.contingency.artifactId` in `cimRuns`).
+
 ## Public test models
 
 ```

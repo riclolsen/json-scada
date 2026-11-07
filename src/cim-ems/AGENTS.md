@@ -37,6 +37,7 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/snapshot.py` — snapshot policy: switch/tap/analog rules, hold of last valid state, rejection, skew and age
   - `cim_ems/topology.py` — applies a snapshot to the network, island counts, deterministic topology hash
   - `cim_ems/synthetic.py` — synthetic tags and switching events for tests and demos
+  - `cim_ems/contingency.py` — pypowsybl AC security analysis, classification (secure/violation/islanding/diverged/unsupported), CA result values; runs synchronously in the study cycle with a topology-change/interval skip policy
   - `cim_ems/estimation/` — pandapower network transfer from a solved pypowsybl net (`transfer.py`), WLS estimator adapter with bad data removal (`adapter.py`), synthetic measurements (`synthetic.py`); used by the study cycle when the connection sets `runStateEstimation`; SE status points share the SYS publication with the load flow ones (one monotonic run guard per kind)
   - `cim_ems/diagrams/` — PowSyBl single-line diagram to svg-scada markup; `tools/gen_displays.py` generates one SVG per voltage level (switch tags from approved bindings, result tags named as `publish.tag_name`)
   - `tools/replay.py` — replays switching events through snapshot and topology (`--synthetic N` for a smoke run)

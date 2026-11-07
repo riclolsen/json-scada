@@ -671,3 +671,16 @@ Estimator results on Svedala with synthetic noise (643 measurements, voltage sig
 
 Phase 4 remaining: analog binding proposal and approval (bindings can be written by hand or CSV today), estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
 
+## 25. Phase 5 progress: contingency analysis core (2026-11-07)
+
+Implemented: `contingency.py` and its use in `StudyCycle` (connection options `runContingency`, `contingencyListId`, `contingencyIntervalSeconds`, `contingencyMinGapSeconds`, `contingencyMinKv`, `contingencyPublishLimit`; see the README). Tests: constructed cases on the Eurostag network (violation with 210 percent loading, islanding with lost load, secure generator outage, unknown or empty element lists as unsupported, pre-existing base case violation not blamed on the outage) and cycle tests on Galia (N-1 points, GridFS result, skip with points kept alive, missing list reported without stopping the load flow, user list with a double outage).
+
+Deviations from section 9.3:
+
+- The analysis runs synchronously inside the cycle, so a long analysis delays the next load flow. The skip policy is by topology change and interval, not "previous run still running". A worker process would be needed for large lists.
+- The base case is the load flow of the snapshot, not the state estimate.
+- `diverged` is implemented (non-converged post-contingency) but has no constructed test case yet.
+- Islanding means loads or generators lost besides the outage itself.
+
+Phase 5 remaining: timing on the user model, a diverged test case, automatic N-1 beyond branches, estimate-based base case.
+

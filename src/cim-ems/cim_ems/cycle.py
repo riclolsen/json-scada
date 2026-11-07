@@ -13,7 +13,8 @@ from pymongo.database import Database
 
 from .bindings.model import Binding
 from .cache import PointCache
-from .mongo import RUNS
+from . import contingency as ca
+from .mongo import CONTINGENCY_LISTS, RUNS, artifacts
 from .publish import ResultPublisher
 from .redundancy import Redundancy
 from .estimation import adapter as est_adapter
@@ -67,6 +68,14 @@ class StudyCycle:
         self.se_rn_max = float(self.se_cfg.get("badDataThreshold", 4.0))
         self._transfer, self._transfer_hash, self._transfer_error = None, None, ""
         self.last_se_success = 0.0
+        self.run_ca = bool(connection.get("runContingency", False))
+        self.ca_list_id = connection.get("contingencyListId", "AUTO_N1")
+        self.ca_interval = float(connection.get("contingencyIntervalSeconds", 300))
+        self.ca_min_gap = float(connection.get("contingencyMinGapSeconds", 10))
+        self.ca_min_kv = float(connection.get("contingencyMinKv", 0))
+        self.ca_publish_limit = int(connection.get("contingencyPublishLimit", 200))
+        self._ca_hash, self._ca_last, self._ca_skipped, self.last_ca_success = None, 0.0, 0, 0.0
+        self._ca_values: list[ResultValue] = []
         self.parameters_hash = hashlib.sha256(json.dumps(self.params_cfg, sort_keys=True).encode()).hexdigest()[:8]
 
     def next_run_id(self) -> int:
@@ -80,6 +89,7 @@ class StudyCycle:
         snap = self.builder.build(self.cache.points(), now)
         status, summary, published, topo_hash = "failed", {}, False, ""
         self._se_pending: list[ResultValue] = []
+        self._ca_pending: list[ResultValue] = []
         sys_vals: dict[str, float] = {}
         try:
             if snap.rejected:
@@ -105,6 +115,8 @@ class StudyCycle:
                             self.last_success = time.monotonic()
                         if self.run_se:
                             summary["estimation"] = self._estimate(run_id, snap, topo_hash)
+                        if self.run_ca:
+                            summary["contingency"] = self._contingency(run_id, snap, topo_hash)
                     else:
                         status = "diverged"
         except Exception as e:                                        # never let a study kill the driver loop
@@ -112,7 +124,7 @@ class StudyCycle:
             status, summary["error"] = "failed", str(e)[:300]
         if self.run_se and "estimation" not in summary:
             summary["estimation"] = self._se_failed(run_id, snap, "no-load-flow", "no converged load flow")
-        self.publisher.publish(run_id, snap.time, self._sys(status, sys_vals, t0, snap) + self._se_pending)
+        self.publisher.publish(run_id, snap.time, self._sys(status, sys_vals, t0, snap) + self._se_pending + self._ca_pending)
         if not published and time.monotonic() - self.last_success > self.result_max_age:
             self.publisher.invalidate("LF")
         summary.update(flags=sorted(snap.flags), reasons=snap.reasons[:20])
@@ -128,6 +140,54 @@ class StudyCycle:
         self.db[RUNS].insert_one(doc)
         log.info("run %d %s hash=%s %d ms published=%s", run_id, status, topo_hash, doc["durationMs"], published)
         return doc
+
+    def _ca_sys(self, status: str, duration_ms: float = 0.0, **extra) -> list[ResultValue]:
+        vals = {"STATUS": float({"done": 0, "skipped": 1, "failed": 2, "no-load-flow": 3}[status]),
+                "SKIPPED": float(self._ca_skipped), "DURATION": duration_ms, **extra}
+        units = {"STATUS": "", "SKIPPED": "", "DURATION": "ms"}
+        return [ResultValue("SYS", "CA", "CA", 0, q, v, units[q]) for q, v in vals.items()]
+
+    def _contingency(self, run_id, snap, topo_hash) -> dict:
+        """Run the analysis when the topology changed (after a minimum gap) or the interval elapsed; else skip."""
+        now = time.monotonic()
+        due = (topo_hash != self._ca_hash and now - self._ca_last >= self.ca_min_gap) or \
+              now - self._ca_last >= self.ca_interval
+        if not due:
+            self._ca_skipped += 1
+            self._ca_pending = self._ca_sys("skipped")
+            if self._ca_values:      # keep the last results alive: their points expire after resultMaxAgeSeconds
+                if self.publisher.publish(run_id, snap.time, self._ca_values):
+                    self.last_ca_success = time.monotonic()
+            return {"status": "skipped"}
+        try:
+            if self.ca_list_id == "AUTO_N1":
+                cons = ca.auto_n1(self.net, self.ca_min_kv)
+            else:
+                doc = self.db[CONTINGENCY_LISTS].find_one({"listId": self.ca_list_id})
+                if doc is None:
+                    raise ValueError(f"contingency list {self.ca_list_id} not found")
+                cons = ca.from_document(doc)
+            res = ca.analyse(self.net, cons, self.params)
+        except Exception as e:
+            log.exception("contingency analysis failed")
+            self._ca_pending = self._ca_sys("failed")
+            if time.monotonic() - self.last_ca_success > self.result_max_age:
+                self.publisher.invalidate("CA")
+            return {"status": "failed", "error": str(e)[:300]}
+        self._ca_hash, self._ca_last = topo_hash, time.monotonic()
+        self._ca_values = ca.to_result_values(res, self.ca_publish_limit)
+        n = self.publisher.publish(run_id, snap.time, self._ca_values)
+        if n:
+            self.last_ca_success = time.monotonic()
+        self._ca_pending = self._ca_sys("done", res.duration_ms)
+        fs = artifacts(self.db)
+        artifact = fs.put(json.dumps(ca.to_document(res), default=str).encode(), filename=f"ca_{run_id}.json",
+                          kind="contingency-result", runId=run_id)
+        insecure = [o.id for o in res.outcomes if o.status in ("violation", "islanding", "diverged")]
+        return {"status": "done", "published": n > 0, "contingencies": len(res.outcomes), "insecure": insecure[:50],
+                "unsupported": sum(o.status == "unsupported" for o in res.outcomes),
+                "baseViolations": len(res.base_violations), "durationMs": round(res.duration_ms),
+                "artifactId": str(artifact)}
 
     def _se_failed(self, run_id, snap, status, reason) -> dict:
         self._se_pending = self._se_sys(status)

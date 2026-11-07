@@ -106,3 +106,60 @@ def test_estimation_off_by_default_publishes_nothing():
     run = cyc.run_once()
     assert "estimation" not in run["summary"]
     assert db["realtimeData"].count_documents({"tag": {"$regex": "^EMS;(SE|SYS;SE)"}}) == 0
+
+
+def _ca_cycle(**conn):
+    cyc, db, ms = build(runse=False)
+    cyc.run_ca = True
+    cyc.ca_list_id = conn.get("list", "AUTO_N1")
+    cyc.ca_min_kv = 100
+    return cyc, db
+
+
+@needs
+def test_cycle_runs_n1_publishes_ca_points_and_artifact():
+    cyc, db = _ca_cycle()
+    run = cyc.run_once()
+    ca = run["summary"]["contingency"]
+    assert ca["status"] == "done" and ca["published"] and ca["contingencies"] > 0
+    assert value(db, "EMS;SYS;CA;STATUS")["valueAtSource"] == 0.0
+    assert db["realtimeData"].count_documents({"tag": {"$regex": "^EMS;CA;.*;STATUS$"}}) == ca["contingencies"] + 0
+    assert value(db, "EMS;CA;SYSTEM;COUNT")["valueAtSource"] == ca["contingencies"]
+    import gridfs
+    import json as js
+    fs = gridfs.GridFS(db, collection="cimArtifacts")
+    doc = js.loads(fs.find_one({"filename": f"ca_{run['runId']}.json"}).read())
+    assert len(doc["outcomes"]) == ca["contingencies"]
+
+
+@needs
+def test_second_cycle_skips_but_keeps_points_alive():
+    cyc, db = _ca_cycle()
+    cyc.run_once()
+    first = value(db, "EMS;CA;SYSTEM;COUNT")["timeTag"]
+    run = cyc.run_once()
+    assert run["summary"]["contingency"]["status"] == "skipped"
+    assert value(db, "EMS;SYS;CA;SKIPPED")["valueAtSource"] == 1.0
+    assert value(db, "EMS;CA;SYSTEM;COUNT")["timeTag"] > first
+
+
+@needs
+def test_missing_list_is_reported_not_fatal():
+    cyc, db = _ca_cycle(list="NOPE")
+    run = cyc.run_once()
+    assert run["status"] == "converged"
+    assert run["summary"]["contingency"]["status"] == "failed"
+    assert value(db, "EMS;SYS;CA;STATUS")["valueAtSource"] == 2.0
+
+
+@needs
+def test_user_list_with_unknown_element_and_double_outage():
+    cyc, db = _ca_cycle(list="L1")
+    lines = list(cyc.net.get_lines().index)[:2]
+    db["cimContingencyLists"].insert_one({"listId": "L1", "contingencies": [
+        {"id": "ok", "elements": [lines[0]]}, {"id": "bad", "elements": ["NOPE"]},
+        {"id": "dbl", "name": "two lines", "elements": lines}]})
+    run = cyc.run_once()
+    ca = run["summary"]["contingency"]
+    assert ca["status"] == "done" and ca["contingencies"] == 3 and ca["unsupported"] == 1
+    assert value(db, "EMS;CA;bad;STATUS")["valueAtSource"] == 4.0
