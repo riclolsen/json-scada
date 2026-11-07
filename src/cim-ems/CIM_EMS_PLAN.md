@@ -640,7 +640,7 @@ Implemented: `cache.py`, `cycle.py`, `results.py`, `publish.py`, `bindings/store
 | Alarms and historian path | alarms verified with the real `cs_data_processor`: a high limit set on a result point raises `alarmRange = 1` and the processed `value`, quality and time tags are written. Historian output not checked |
 | Failover with exactly one publisher | done: two nodes, only the active one publishes; after killing it the standby takes over (keep-alive timeout shortened to 4 s in the test) and runs never interleave afterwards |
 | Restart recovery without stale overwrites | partly: run ids are time-based and the publisher refuses non-increasing ids per kind; points written by a previous process are reused. A restart test with a clock step back is not written |
-| Displays from generated SVG | not started |
+| Displays from generated SVG | partly: `diagrams/sld.py` converts PowSyBl single-line diagrams into svg-scada markup (switch open/closed drawings from the bound point state, feeder P/Q/I `get` text from LF result tags, busbar V/angle tooltips); `tools/gen_displays.py` writes one SVG per voltage level. Tested on the four-substations network (XML and every label parse, bound tags exist). Not yet opened in the JSON-SCADA viewer; operator layout overrides and screen list `CIM` group not done |
 | Admin UI pages (connection fields, models, bindings, run history) | not started; only the driver name lists were registered |
 | Docker/compile-docker/installer packaging | not started |
 

@@ -37,6 +37,7 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/snapshot.py` — snapshot policy: switch/tap/analog rules, hold of last valid state, rejection, skew and age
   - `cim_ems/topology.py` — applies a snapshot to the network, island counts, deterministic topology hash
   - `cim_ems/synthetic.py` — synthetic tags and switching events for tests and demos
+  - `cim_ems/diagrams/` — PowSyBl single-line diagram to svg-scada markup; `tools/gen_displays.py` generates one SVG per voltage level (switch tags from approved bindings, result tags named as `publish.tag_name`)
   - `tools/replay.py` — replays switching events through snapshot and topology (`--synthetic N` for a smoke run)
   - `tools/import_model.py` — offline import, validation report and optional round trip
   - `tools/fetch_test_models.py` — downloads public CGMES 2.4.15 conformity models (and with `--relicap` the CGMES 3.0 ReliCapGrid regions, common data merged into EQ) into the gitignored `tests/data/conformity/`

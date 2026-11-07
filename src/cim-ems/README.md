@@ -45,6 +45,7 @@ Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid con
 ```
 python tools/replay.py tests/data/conformity/smallgrid_nodebreaker.zip --synthetic 10
 python tools/replay.py model.zip bindings.csv events.csv
+python tools/gen_displays.py model.zip bindings.csv --connection CIM-EMS1 --out ../../svg/cim
 ```
 
 Generates (or reads) switching events, applies the snapshot policy and topology processor, and prints the topology
