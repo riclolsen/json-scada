@@ -1,6 +1,6 @@
 # CIM-EMS Driver: Implementation Plan
 
-Status: phase 0 done (section 20); phase 1 code done (model store, redundancy, CLI), exit gate waits for the user model; phase 2 core done on public data (section 21); branch `cim-ems`. This file is the single source of truth for the implementation until the component has its own README and AGENTS.md. It is working material: do not link it from committed docs, and delete it (as was done for the IEC 61850 server plan) once its content has moved into the component docs.
+Status: phase 0 done (section 20); phase 1 code done, exit gate waits for the user model; phase 2 and phase 3 cores done on public data (sections 21 to 23); branch `cim-ems`. This file is the single source of truth for the implementation until the component has its own README and AGENTS.md. It is working material: do not link it from committed docs, and delete it (as was done for the IEC 61850 server plan) once its content has moved into the component docs.
 
 ## 1. Goal
 
@@ -628,3 +628,26 @@ Findings:
 - **Switch names:** Svedala names like `FT63_G1-S` and `FT63_G1-S(1)` need exact-over-suffix ranking in the matcher; Espheim has distinct switches with identical names, which stay ambiguous on purpose (21 of 1,296). Real tag lists will need their own review.
 - **Islands:** a model with several synchronous components solves only the main one; the report shows the island count but results for the others are missing until a slack is defined there.
 - **Scale:** the largest models (about 1,300 to 1,500 switches, about 130 voltage levels) import in about 1 s and solve in tens of milliseconds, comparable to SmallGrid.
+
+## 23. Phase 3 progress (2026-11-07)
+
+Implemented: `cache.py`, `cycle.py`, `results.py`, `publish.py`, `bindings/store.py`, the driver loop in `__main__.py`.
+
+| Phase 3 exit item | Status |
+|---|---|
+| Cyclic load flow with result points, `autoCreateTags`, monotonic runs | done. Verified with the real driver process on a MongoDB replica set |
+| Live follow of a breaker in SCADA data | done: changing a bound tag triggers a `topology` run within about a second; the result point of the opened line is published as invalid (not calculated) |
+| Alarms and historian path | alarms verified with the real `cs_data_processor`: a high limit set on a result point raises `alarmRange = 1` and the processed `value`, quality and time tags are written. Historian output not checked |
+| Failover with exactly one publisher | done: two nodes, only the active one publishes; after killing it the standby takes over (keep-alive timeout shortened to 4 s in the test) and runs never interleave afterwards |
+| Restart recovery without stale overwrites | partly: run ids are time-based and the publisher refuses non-increasing ids per kind; points written by a previous process are reused. A restart test with a clock step back is not written |
+| Displays from generated SVG | not started |
+| Admin UI pages (connection fields, models, bindings, run history) | not started; only the driver name lists were registered |
+| Docker/compile-docker/installer packaging | not started |
+
+Design points settled in code:
+
+- The first run after start is labelled `start`, topology-triggered runs `topology` (debounced to one per second), timer runs `cycle`.
+- `invalidDetectTimeout` of every result point equals `resultMaxAgeSeconds` and all points are rewritten each run, so a stopped driver makes the data processor mark its results invalid without extra logic. The driver also calls `invalidate` for load flow points when no run succeeded within that time.
+- `SYS` points (STATUS code 0 converged, 1 diverged, 2 rejected snapshot, 3 unsupported, 4 failed; CONVERGED; ITER; DURATION in ms; UNCERTAIN for held/transient switch states) are published after every run.
+- Results for de-energized or disconnected ends are "not calculated" (invalid at source), never stale numbers.
+- Only load flow is wired. State estimation and contingency analysis (phases 4 and 5) will use the same cycle and publisher.

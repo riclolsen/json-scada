@@ -1,11 +1,12 @@
 """Active-node arbitration, as in docs/DEVELOPER_GUIDE.md (protocolDriverInstances keep-alive)."""
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 
 from pymongo.database import Database
 
-KEEPALIVE_TIMEOUT = timedelta(seconds=30)
+KEEPALIVE_TIMEOUT = timedelta(seconds=float(os.environ.get("CIM_EMS_KEEPALIVE_TIMEOUT", 30)))
 DRIVER_NAME = "CIM-EMS"
 
 

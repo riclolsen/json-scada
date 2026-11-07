@@ -23,6 +23,7 @@ class PointState:
     invalid: bool = False
     transient: bool = False
     substituted: bool = False
+    frozen: bool = False
     time_tag: datetime | None = None
     time_tag_at_source: datetime | None = None
     time_tag_at_source_ok: bool = False
@@ -135,7 +136,7 @@ class SnapshotBuilder:
                 continue
             p = points.get(b.tag)
             t = _aware(p.time) if p else None
-            if p is None or p.invalid or p.value is None or t is None:
+            if p is None or p.invalid or p.frozen or p.value is None or t is None:
                 snap.reasons.append(f"{b.tag}: analog dropped (invalid or missing)")
                 continue
             if (now - t).total_seconds() > b.max_age_seconds:

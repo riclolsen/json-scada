@@ -1,7 +1,7 @@
 # CIM-EMS driver
 
 Python protocol driver (`CIM-EMS`) that brings CIM/CGMES model exchange and EMS network analysis to JSON-SCADA.
-Status: phase 1 in progress (offline model exchange). The design is in `CIM_EMS_PLAN.md`.
+Status: load flow cycle with result publication works end to end (phases 1 to 3 core). The design is in `CIM_EMS_PLAN.md`.
 
 ## Offline model check
 
@@ -14,6 +14,22 @@ python -m pytest
 The tool imports a CGMES 2.4.15 package (node-breaker topology kept), prints a JSON validation report (counts,
 unsupported classes, islands, base case load flow) and, with `--round-trip`, exports and re-imports the model and
 compares solved values. Exit code 1 means the model is rejected.
+
+## Running the driver
+
+Register an instance and a connection (Admin UI support for the connection fields is still to do), import and
+activate a model, save approved bindings, then start the driver like the others:
+
+```
+python -m cim_ems <instance> <logLevel> <path to json-scada.json>
+```
+
+Minimal `protocolConnections` document: `protocolDriver: "CIM-EMS"`, `protocolDriverInstanceNumber`,
+`protocolConnectionNumber`, `name`, `description`, `enabled: true`, `commandsEnabled: false`, `cimModelId`, and
+optionally `cimBindingRevision`, `cycleSeconds` (default 60), `resultMaxAgeSeconds` (default 180),
+`autoCreateTags` (default true), `loadFlowParameters` and `publishFilter` (see the plan, section 4.2).
+Results appear as supervised points `<connection>;LF;<name>;<quantity>[;<side>]`, with the system health points
+`<connection>;SYS;LF;STATUS` and others.
 
 ## Public test models
 

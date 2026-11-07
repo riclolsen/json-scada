@@ -24,7 +24,12 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/config.py` — `json-scada.json` and CLI args
   - `cim_ems/models/importer.py` — pinned import parameters, validation report, unsupported-class list
   - `cim_ems/export.py` — CGMES export and the round-trip check (compares solved values, never XML bytes)
-  - `cim_ems/__main__.py` — driver entry: config, instance check, keep-alive loop (study cycle comes later)
+  - `cim_ems/__main__.py` — driver loop: instance check, keep-alive, one `StudyCycle` per enabled connection, reload on connection change; runs are `start`, `topology` (switch/tap change, debounced 1 s) or `cycle`
+  - `cim_ems/cache.py` — `PointCache`: processed `realtimeData` values of bound tags via change stream opened before the full load, resync on any error or request
+  - `cim_ems/cycle.py` — `StudyCycle.run_once`: snapshot, topology, load flow, publication, `cimRuns` record; failures never stop the loop
+  - `cim_ems/results.py` — load flow result extraction (bus V/VPU/ANG, branch P/Q/I per end, LOAD against the permanent current limit); disconnected ends and NaN become "not calculated"
+  - `cim_ems/publish.py` — result point registry, auto-created supervised points, `sourceDataUpdate` publication, per-kind monotonic run guard, `still_active()` check before every write, `invalidate`
+  - `cim_ems/bindings/store.py` — versioned binding sets in `cimMeasurementBindings`
   - `cim_ems/mongo.py` — collection names, indexes (one active revision per model, TTL on runs), GridFS bucket
   - `cim_ems/redundancy.py` — active-node arbitration; `still_active()` must be checked right before every publication
   - `cim_ems/models/store.py` — immutable revisions, explicit activation, rollback, rebuild from the stored package
@@ -38,6 +43,9 @@ once its content has moved into this README and `docs/schema.md`.
   - `tools/model_admin.py` — import, list, activate, rollback against MongoDB
 - Switch values are never aged (a stable breaker has an old timestamp); invalid ones are held for `max_hold_seconds`, never assumed closed
 - Results go through `sourceDataUpdate` of supervised points; the driver never writes `soeData` or alarms
+- Result points are keyed by (study kind, `<mRID>|<side>|<quantity>`), keys in `connection * 1,000,000 + n`, `invalidDetectTimeout` = `resultMaxAgeSeconds` and every point is rewritten each run, so a dead driver expires its results in the data processor
+- System health points (`SYS`: STATUS, CONVERGED, ITER, DURATION, UNCERTAIN) are published after every run, whatever its outcome
+- `CIM_EMS_KEEPALIVE_TIMEOUT` (seconds, default 30) shortens the failover time for tests
 - The estimator network is built from the solved pypowsybl network, not from pandapower's CIM import
 - Customer models, bindings and telemetry are never committed; tests use public or synthetic cases
 
@@ -51,8 +59,9 @@ once its content has moved into this README and `docs/schema.md`.
 
 ## Verification
 
-- `python -m pytest` from this folder, in a venv with the pinned dependencies (uses `mongomock`)
+- `python -m pytest` from this folder, in a venv with the pinned dependencies (uses `mongomock`; `tests/conftest.py` patches its bulk API for current pymongo)
 - `CIM_EMS_TEST_MONGO=mongodb://127.0.0.1:27018 python -m pytest` runs the same tests on a real MongoDB (needed for the partial unique index), e.g. `docker run -d --rm -p 127.0.0.1:27018:27017 mongo:7`
+- `CIM_EMS_TEST_MONGO_RS="mongodb://127.0.0.1:27019/?directConnection=true"` enables the change-stream and end-to-end tests (driver process, `cs_data_processor`, failover); start `mongo:7 --replSet rs0 --bind_ip_all` and run `replSetInitiate` with host `127.0.0.1:27017`
 
 ## Child DOX Index
 
