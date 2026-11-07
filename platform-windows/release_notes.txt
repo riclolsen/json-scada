@@ -135,10 +135,10 @@ Inkscape+SAGE:
 Notes for version 0.69:
 
 * Modbus client and server drivers rewritten in Go (drop-in replacement: same configuration, services and tags). The Node.js Modbus drivers are no longer installed.
-* DNP3 server driver reports its keep-alive (redundancy status).
+* DNP3 server driver reports its keep-alive.
 * MCP server: tool titles and annotations, MCP SDK 2.4.0. New JS_MCPJSDB_ALLOWED_HOSTS option for the HTTP transport.
 * n8n editor available from the web UI (/n8n, admin users), when n8n runs with N8N_PATH=/n8n/.
-* AdminUI: the Node-RED shortcut is shown to admin users only.
+* AdminUI: the Node-RED shortcut is shown to admin users only (n8n is not bundled with the Windows installer).
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
