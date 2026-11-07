@@ -54,7 +54,7 @@ bindings (`V` on a bus or busbar section in kV, `P`/`Q` on a line or transformer
 `<connection>;SE;<name>;<quantity>[;<side>]` and `<connection>;SYS;SE;STATUS|CONVERGED|BADDATA|MEAS|CHI2`
 (STATUS 0 converged, 1 not observable, 2 not converged, 3 unsupported network, 4 failed, 5 no load flow). Bad data
 are listed in the run record (`cimRuns`, `summary.estimation.badData`). The network transfer is checked against
-the load flow once per topology and refused beyond 2e-3 pu or 0.1 degrees.
+the load flow once per topology and refused beyond 1e-4 pu or 0.01 degrees.
 
 Contingency analysis is off by default. With `runContingency: true` the pypowsybl AC security analysis runs after a
 converged load flow on the list `contingencyListId` (`AUTO_N1` for every in-service line and two-winding

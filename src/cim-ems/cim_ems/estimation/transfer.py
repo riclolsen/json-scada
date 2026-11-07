@@ -29,14 +29,17 @@ class Transfer:
     line_index: dict[str, int]
     trafo_index: dict[str, int]
     slack_bus: str
-    skipped: list[str] = field(default_factory=list)   # elements outside the main component
+    skipped: list[str] = field(default_factory=list)   # lines open at one end (kept as shunts, no flow)
 
 
 def _clean(v, default=0.0):
     return default if v is None or (isinstance(v, float) and math.isnan(v)) else float(v)
 
 
-def to_pandapower(src: pn.Network) -> Transfer:
+def to_pandapower(src: pn.Network, slack_bus: str | None = None) -> Transfer:
+    """`slack_bus`: the load flow's slack bus (`ComponentResult.slack_bus_results[0].id`). The external grid goes
+    there, so the residual slack mismatch of the load flow is absorbed where the load flow left it. Without it, the
+    bus of the largest voltage-regulating generator is used."""
     buses = src.get_buses()
     if buses.empty:
         raise UnsupportedForEstimation("no calculated buses")
@@ -59,13 +62,16 @@ def to_pandapower(src: pn.Network) -> Transfer:
     gens = src.get_generators()
     gens = gens[gens.bus_id.isin(bus_index)]
     slack_candidates = gens[gens.voltage_regulator_on] if gens.voltage_regulator_on.any() else gens
-    if slack_candidates.empty:
+    if slack_candidates.empty and slack_bus not in bus_index:
         raise UnsupportedForEstimation("no generator to hold the slack")
-    slack_gen = slack_candidates.sort_values("max_p", ascending=False).index[0]
-    slack_bus = gens.loc[slack_gen, "bus_id"]
+    if slack_bus in bus_index:
+        slack_gen = None
+    else:
+        slack_gen = slack_candidates.sort_values("max_p", ascending=False).index[0]
+        slack_bus = gens.loc[slack_gen, "bus_id"]
     sb = bus_index[slack_bus]
     pp.create_ext_grid(net, bus=sb, vm_pu=main.loc[slack_bus, "v_mag"] / net.bus.vn_kv[sb],
-                       va_degree=_clean(main.loc[slack_bus, "v_angle"]), name=slack_gen)
+                       va_degree=_clean(main.loc[slack_bus, "v_angle"]), name=slack_gen or slack_bus)
     for gid, g in gens.iterrows():
         if gid == slack_gen:
             continue
@@ -87,7 +93,18 @@ def to_pandapower(src: pn.Network) -> Transfer:
     for lid, r in lines.iterrows():
         if r.bus1_id not in bus_index or r.bus2_id not in bus_index:
             if r.bus1_id in bus_index or r.bus2_id in bus_index:
-                skipped.append(lid)      # open at one end: charging is ignored, the line carries no flow
+                # open at one end: the line is a shunt at the connected end (its own shunt plus the series
+                # impedance in series with the far-end shunt)
+                near, far = ((1, 2) if r.bus1_id in bus_index else (2, 1))
+                ys = 1 / complex(r.r, r.x) if (r.r or r.x) else 0j
+                y_near = complex(_clean(r[f"g{near}"]), _clean(r[f"b{near}"]))
+                y_far = complex(_clean(r[f"g{far}"]), _clean(r[f"b{far}"]))
+                y_eq = y_near + (ys * y_far / (ys + y_far) if ys and (ys + y_far) else 0j)
+                b = bus_index[r[f"bus{near}_id"]]
+                vn = net.bus.vn_kv[b]
+                if y_eq:
+                    pp.create_shunt(net, bus=b, p_mw=y_eq.real * vn**2, q_mvar=-y_eq.imag * vn**2, name=f"{lid}.open")
+                skipped.append(lid)      # not a branch of the estimator network, flows are not estimated
             continue
         vn = net.bus.vn_kv[bus_index[r.bus1_id]]
         if abs(vn - net.bus.vn_kv[bus_index[r.bus2_id]]) > 1e-6 * vn:
@@ -123,10 +140,22 @@ def to_pandapower(src: pn.Network) -> Transfer:
             vn_hv_kv=r.rated_u1 / rho, vn_lv_kv=r.rated_u2, vk_percent=z * 100, vkr_percent=rr / zb * 100,
             pfe_kw=0.0, i0_percent=0.0, shift_degree=SHIFT_SIGN * shift, name=tid)
         trafo_index[tid] = int(net.trafo.index[-1])
-        if gg or bb:   # magnetizing admittance (side 2) as a fixed shunt, the sign of b is free
-            vn2 = net.bus.vn_kv[bus_index[r.bus2_id]]
-            pp.create_shunt(net, bus=bus_index[r.bus2_id], p_mw=gg * vn2**2, q_mvar=-bb * vn2**2, name=f"{tid}.mag")
+        if gg or bb:
+            # IIDM: V1 -> ideal ratio rho*rated_u2/rated_u1 -> magnetizing admittance (side 2 units) -> series
+            # impedance -> V2. As a fixed shunt at bus 1: Q = -b (V1 ratio)^2, so at V1 = vn1 the shunt power is
+            # -b (vn1 ratio)^2. The sign of b is free (CGMES models carry capacitive values too).
+            v_mag = net.bus.vn_kv[bus_index[r.bus1_id]] * rho * r.rated_u2 / r.rated_u1
+            pp.create_shunt(net, bus=bus_index[r.bus1_id], p_mw=gg * v_mag**2, q_mvar=-bb * v_mag**2,
+                            name=f"{tid}.mag")
     return Transfer(net, bus_index, line_index, trafo_index, slack_bus, skipped)
+
+
+def slack_of(results) -> str | None:
+    """Slack bus id of the main component from `pypowsybl.loadflow.run_ac` results."""
+    try:
+        return results[0].slack_bus_results[0].id
+    except (IndexError, AttributeError, TypeError):
+        return None
 
 
 def compare_load_flow(src: pn.Network, tr: Transfer, init: str = "results") -> dict:

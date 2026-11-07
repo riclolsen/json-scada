@@ -660,18 +660,26 @@ Network transfer gate (pandapower load flow started from the pypowsybl solution,
 
 | Model | Max voltage difference (pu) | Max angle difference (deg) |
 |---|---|---|
-| Eurostag tutorial | 2e-8 | 2e-5 |
-| ReliCapGrid Svedala (107 buses) | 8.5e-4 | 0.018 |
-| ReliCapGrid Galia (phase shifting transformers) | 1.2e-3 | 0.066 |
-| ReliCapGrid Espheim | pandapower does not converge | open |
+| Eurostag tutorial | 2e-11 | 6e-8 |
+| ReliCapGrid Svedala (107 buses, 9 lines open at one end) | 9.5e-7 | 3e-5 |
+| ReliCapGrid Galia (phase shifting transformers) | 6e-8 | 4e-6 |
+| ReliCapGrid Espheim (132 buses) | 2.5e-6 | 8e-5 |
+| ReliCapGrid Portheim | 8e-10 | 1.5e-6 |
 
-Test gate: 2e-3 pu and 0.1 deg. The transfer rejects (raises `UnsupportedForEstimation`) three-winding transformers, HVDC lines and lines between buses of different nominal voltage (IEEE 14 and Microgrid BE, Belgovia and Britheim hit these). Open: Espheim mismatch at one 132/33 kV transformer with negative magnetizing susceptance (about 4 Mvar) and the residual 1e-3 pu on Svedala and Galia, probably magnetizing admittance placement and tap step corrections.
+Gate in the cycle and tests: 1e-4 pu and 0.01 deg. Transfer rules that the gate forced:
+
+- The external grid sits at the load flow's slack bus (`slack_of(results)`), which carries the load flow's residual slack mismatch (0.22 MW on Espheim made pandapower diverge when the external grid was elsewhere).
+- Transformer magnetizing admittance is a fixed shunt at bus 1 scaled by the ratio (IIDM puts it after the ideal ratio, in side 2 units); the sign of b is free.
+- A line open at one end becomes the equivalent shunt at its connected end.
+- Ratio and phase tap steps apply rho, alpha (with the pandapower sign reversed) and the r, x, g, b corrections.
+
+The transfer rejects (raises `UnsupportedForEstimation`) three-winding transformers, HVDC lines and lines between buses of different nominal voltage (IEEE 14 and Microgrid BE, Belgovia and Britheim hit these).
 
 Estimator results on Svedala with synthetic noise (643 measurements, voltage sigma 0.2 percent, power sigma 0.5 MVA): converges in about 1.4 s, chi-square test passes, voltage error below 3e-3 pu. A 60 MW error on one flow is the measurement removed as bad data. Voltage-only measurement sets are reported as not observable. The default bad data threshold is 4 sigma, because 3 sigma flagged a clean value with 643 measurements. The residual is the plain standardized one, not covariance-weighted. Observability is only the pandapower measurement count check, not a topological observability analysis.
 
 Analog binding proposals (`propose_analogs`, `tools/bindings_admin.py`): on synthetic tags no wrong binding on Galia, Svedala, SmallGrid and Espheim; 14, 14, 58 and 108 label keys left ambiguous (parallel circuits with the same name, tie lines without substation). An end-to-end test estimates Galia from name-matched, approved bindings. CGMES measurement objects (`Analog`) are not in any public model, so their import still waits on the user model. Bindings to CIM-EMS result points are refused at save and ignored by the driver.
 
-Phase 4 remaining: estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
+Phase 4 remaining: three-winding transformers and HVDC in the transfer, estimator engineering cases with correct verdicts, replay with real telemetry.
 
 ## 25. Phase 5 progress: contingency analysis core (2026-11-07)
 

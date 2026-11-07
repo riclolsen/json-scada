@@ -28,7 +28,7 @@ log = logging.getLogger("CIM-EMS.cycle")
 STATUS_CODES = {"converged": 0, "diverged": 1, "rejected-snapshot": 2, "unsupported": 3, "failed": 4}
 # estimation status: 0 converged, 1 not observable, 2 did not converge, 3 unsupported network, 4 failed, 5 no load flow
 SE_CODES = {"converged": 0, "not-observable": 1, "diverged": 2, "unsupported": 3, "failed": 4, "no-load-flow": 5}
-TRANSFER_GATE_PU, TRANSFER_GATE_DEG = 2e-3, 0.1
+TRANSFER_GATE_PU, TRANSFER_GATE_DEG = 1e-4, 0.01
 
 
 def lf_parameters(cfg: dict) -> lf.Parameters:
@@ -114,7 +114,7 @@ class StudyCycle:
                         if published:
                             self.last_success = time.monotonic()
                         if self.run_se:
-                            summary["estimation"] = self._estimate(run_id, snap, topo_hash)
+                            summary["estimation"] = self._estimate(run_id, snap, topo_hash, est_transfer.slack_of(results))
                         if self.run_ca:
                             summary["contingency"] = self._contingency(run_id, snap, topo_hash)
                     else:
@@ -201,19 +201,19 @@ class StudyCycle:
         units = {"STATUS": "", "CONVERGED": "", "BADDATA": "", "MEAS": "", "CHI2": ""}
         return [ResultValue("SYS", "SE", "SE", 0, q, v, units[q]) for q, v in vals.items()]
 
-    def _transfer_for(self, topo_hash: str):
+    def _transfer_for(self, topo_hash: str, slack: str | None = None):
         """pandapower network for the current topology; checked against the load flow once per topology."""
         if self._transfer_hash == topo_hash:
             return self._transfer, self._transfer_error
         self._transfer, self._transfer_hash, self._transfer_error = None, topo_hash, ""
         try:
-            tr = est_transfer.to_pandapower(self.net)
+            tr = est_transfer.to_pandapower(self.net, slack)
             cmp = est_transfer.compare_load_flow(self.net, tr)
             if cmp["max_dv_pu"] > TRANSFER_GATE_PU or cmp["max_dangle_deg"] > TRANSFER_GATE_DEG:
                 self._transfer_error = (f"engine comparison failed: {cmp['max_dv_pu']:.4f} pu, "
                                         f"{cmp['max_dangle_deg']:.3f} deg")
             else:
-                self._transfer = est_transfer.to_pandapower(self.net)   # fresh copy, the comparison solved the first
+                self._transfer = est_transfer.to_pandapower(self.net, slack)   # fresh copy, the comparison solved the first
         except est_transfer.UnsupportedForEstimation as e:
             self._transfer_error = str(e)
         except Exception as e:
@@ -237,8 +237,8 @@ class StudyCycle:
             out.append(est_adapter.Measurement(eid, m.quantity, m.side, m.value, m.sigma, tag=m.element_id))
         return out
 
-    def _estimate(self, run_id, snap, topo_hash) -> dict:
-        tr, err = self._transfer_for(topo_hash)
+    def _estimate(self, run_id, snap, topo_hash, slack=None) -> dict:
+        tr, err = self._transfer_for(topo_hash, slack)
         if tr is None:
             return self._se_failed(run_id, snap, "unsupported", err)
         ms = self._resolve_buses(snap.measurements)

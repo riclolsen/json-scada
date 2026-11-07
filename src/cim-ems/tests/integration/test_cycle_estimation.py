@@ -32,8 +32,7 @@ class FakeCache:
 
 def build(runse=True, drop=lambda m: False, bad=None):
     net = import_cgmes(GALIA)
-    lf.run_ac(net)
-    tr = T.to_pandapower(net)
+    tr = T.to_pandapower(net, T.slack_of(lf.run_ac(net)))
     ms = [m for m in S.from_load_flow(net, tr, np.random.default_rng(5)) if not drop(m)]
     if bad:
         for m in ms:
