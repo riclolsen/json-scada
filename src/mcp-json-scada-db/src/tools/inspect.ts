@@ -19,7 +19,9 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { ConnectionManager } from '../jsonscada/connection-manager.js'
 import {
+  confidentialResult,
   errorResult,
+  isConfidentialCollection,
   notConnectedResult,
   redactSensitiveArray,
   textResult,
@@ -39,6 +41,7 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
     },
     async ({ collection }: any) => {
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
+      if (isConfidentialCollection(collection)) return confidentialResult(collection)
 
       try {
         // estimatedDocumentCount uses collection metadata, avoiding a full
@@ -100,6 +103,7 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
     },
     async ({ collection }: any) => {
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
+      if (isConfidentialCollection(collection)) return confidentialResult(collection)
 
       try {
         const sample = await mgr.db.collection(collection).find().limit(100).toArray()

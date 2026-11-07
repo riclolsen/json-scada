@@ -299,6 +299,13 @@ let pool = null
       res.setHeader('Content-type', 'application/json')
       res.send("{ error: 'Parameter [name] empty or not specified' }")
     }
+    // CIM-EMS models and study results are confidential: they are served only
+    // by the cimEms/artifact route, which checks the engineering right.
+    if (bucketName.trim().toLowerCase().startsWith('cimartifacts')) {
+      res.setHeader('Content-type', 'application/json')
+      res.send("{ error: 'File not found' }")
+      return
+    }
     try {
       let gfs = new GridFSBucket(db, { bucketName: bucketName })
       let f = await gfs.find({ filename: filename }).toArray()

@@ -34,8 +34,28 @@ compares solved values. Exit code 1 means the model is rejected.
 
 Register an instance and a connection in the Admin UI (driver `CIM-EMS`; the connection dialog has a CIM-EMS
 section for the model, cycle, load flow, publication, estimation and contingency settings), import and activate a
-model, save approved bindings, then start the driver like the others. Model upload, binding review and run
-history have no Admin UI page yet: use the tools below.
+model, save approved bindings, then start the driver like the others.
+
+## Admin UI
+
+The **CIM-EMS** tab of the Admin page has four views:
+
+- **Models**: upload a CGMES 2.4.15 zip as a new revision of a model ID, read its validation report (errors,
+  warnings, unsupported classes, base case load flow), activate a revision, roll back, download the stored package.
+- **Bindings**: show a binding revision, propose bindings from the current supervised tags, approve, edit (tag,
+  sigma) or delete entries, and save the list as a new binding revision. Coverage chips show approved/total per kind.
+- **Runs**: the latest `cimRuns` with load flow, estimation (bad data with normalized residuals) and contingency
+  outcome (insecure contingencies, result download); **Run now** requests an immediate study for a connection.
+- **Requests**: the `cimStudyRequests` queue with results and errors.
+
+Every view needs an Admin role. Upload, activation, rollback, binding proposals and saves, and artifact downloads
+also need a role with **CIM-EMS Engineering** (`cimEngineering`, off by default, set it in the Roles tab). Every
+request and download is written to the user actions log. The web server only stores the upload and queues the
+request; the active CIM-EMS driver node validates, imports and saves, so the instance must be running.
+Activating a revision or saving bindings rebuilds the affected connections at once. Model packages and study
+results are never served by `/GetFile`.
+
+The command line tools below do the same against MongoDB directly.
 
 Bindings are proposed by name matching, reviewed as CSV and saved as a revision:
 

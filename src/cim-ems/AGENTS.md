@@ -12,7 +12,11 @@ once its content has moved into this README and `docs/schema.md`.
 - cim-ems owns the Python package `cim_ems`, its tools, tests and the throwaway phase 0 `spike/` scripts
 - Engines: `pypowsybl` (CGMES, load flow, security analysis, diagrams), `pandapower` (state estimator adapter)
 - Collections `cimModels`, `cimMeasurementBindings`, `cimRuns`, `cimContingencyLists`, `cimStudyRequests` and the
-  `cimArtifacts` GridFS bucket belong to this driver (documented in the plan, to move to `docs/schema.md`)
+  `cimArtifacts` GridFS bucket belong to this driver; indexes in `cim_ems/mongo.py` and `mongo_seed/b_create-db.js`
+  (keep both in step), collection table in `docs/schema.md`
+- The Admin UI page (`src/AdminUI/src/components/CimEmsTab.vue`) and its backend
+  (`src/server_realtime_auth/app/controllers/cimEms.controller.js`) only queue `cimStudyRequests`; this driver
+  executes them (`cim_ems/api.py`)
 
 ## Local Contracts
 
@@ -28,7 +32,8 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/config.py` — `json-scada.json` and CLI args
   - `cim_ems/models/importer.py` — pinned import parameters, validation report, unsupported-class list
   - `cim_ems/export.py` — CGMES export and the round-trip check (compares solved values, never XML bytes)
-  - `cim_ems/__main__.py` — driver loop: instance check, keep-alive, one `StudyCycle` per enabled connection, reload on connection change; runs are `start`, `topology` (switch/tap change, debounced 1 s) or `cycle`
+  - `cim_ems/__main__.py` — driver loop: instance check, keep-alive, one `StudyCycle` per enabled connection, reload on connection change; runs are `start`, `topology` (switch/tap change, debounced 1 s), `request` or `cycle`
+  - `cim_ems/api.py` — study requests on the active node: atomic claim (`pending` → `running`), `import`, `activate`, `rollback`, `proposeBindings`, `saveBindings`, `rerun`; result in `result` or `error`; `running` older than 1 h is failed as interrupted. Activation and binding saves rebuild the affected cycles. Requests run synchronously in the loop (an import blocks the studies while it runs)
   - `cim_ems/cache.py` — `PointCache`: processed `realtimeData` values of bound tags via change stream opened before the full load, resync on any error or request
   - `cim_ems/cycle.py` — `StudyCycle.run_once`: snapshot, topology, load flow, publication, `cimRuns` record; failures never stop the loop
   - `cim_ems/results.py` — load flow result extraction (bus V/VPU/ANG, branch P/Q/I per end, LOAD against the permanent current limit); disconnected ends and NaN become "not calculated"
@@ -56,6 +61,7 @@ once its content has moved into this README and `docs/schema.md`.
 - `CIM_EMS_KEEPALIVE_TIMEOUT` (seconds, default 30) shortens the failover time for tests
 - The estimator network is built from the solved pypowsybl network, not from pandapower's CIM import
 - Customer models, bindings and telemetry are never committed; tests use public or synthetic cases
+- Request contents are re-checked here (validation, own-point refusal, binding fields) even though the backend checks rights
 
 ## Work Guidance
 

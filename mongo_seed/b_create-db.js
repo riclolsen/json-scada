@@ -738,3 +738,24 @@ db.createCollection("userActions");
 db.userActions.createIndex({ timeTag: 1 }, { name: "actionsTimeTagIndex" });
 // use this to make records expire after a number of seconds
 // db.userActions.createIndex( { timeTag: 1 }, { expireAfterSeconds: 2592000 } )
+
+// CIM-EMS driver collections (src/cim-ems, also created by the driver at startup).
+// The GridFS bucket cimArtifacts (cimArtifacts.files/.chunks) is created on first use.
+db.createCollection("cimModels");
+db.cimModels.createIndex({ modelId: 1, revision: 1 }, { name: "cimModelsIndex", unique: true });
+db.cimModels.createIndex(
+  { modelId: 1 },
+  { name: "cimModelsActiveIndex", unique: true, partialFilterExpression: { status: "active" } }
+);
+db.createCollection("cimMeasurementBindings");
+db.cimMeasurementBindings.createIndex(
+  { modelId: 1, bindingRevision: 1, cimMeasurementMrid: 1 },
+  { name: "cimBindingsIndex" }
+);
+db.createCollection("cimRuns");
+db.cimRuns.createIndex({ connectionNumber: 1, kind: 1, runId: 1 }, { name: "cimRunsIndex" });
+db.cimRuns.createIndex({ createdAt: 1 }, { name: "cimRunsTtl", expireAfterSeconds: 604800 });
+db.createCollection("cimContingencyLists");
+db.cimContingencyLists.createIndex({ listId: 1 }, { name: "cimContingencyListsIndex", unique: true });
+db.createCollection("cimStudyRequests");
+db.cimStudyRequests.createIndex({ status: 1, createdAt: 1 }, { name: "cimStudyRequestsIndex" });

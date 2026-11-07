@@ -28,6 +28,10 @@
         <v-tab :value="7"
           ><v-icon>mdi-cog</v-icon> {{ $t('admin.tabs.systemSettings') }}</v-tab
         >
+        <v-tab :value="8" @click="fetchCimEms"
+          ><v-icon>mdi-transmission-tower</v-icon>
+          {{ $t('admin.tabs.cimEms') }}</v-tab
+        >
       </v-tabs>
 
       <v-card-text class="ma-0 pa-0">
@@ -61,6 +65,10 @@
           <v-window-item :value="7">
             <system-settings-tab ref="systemSettingsTabRef" />
           </v-window-item>
+
+          <v-window-item :value="8">
+            <cim-ems-tab ref="cimEmsTabRef" />
+          </v-window-item>
         </v-window>
       </v-card-text>
     </v-card>
@@ -76,6 +84,7 @@
   import TagsTab from './TagsTab.vue'
   import UserActionsTab from './UserActions.vue'
   import SystemSettingsTab from './SystemSettingsTab.vue'
+  import CimEmsTab from './CimEmsTab.vue'
 
   const userManagementTabRef = ref(null)
   const rolesManagementTabRef = ref(null)
@@ -84,6 +93,7 @@
   const userActionsTabRef = ref(null)
   const systemSettingsTabRef = ref(null)
   const tagsTabRef = ref(null)
+  const cimEmsTabRef = ref(null)
   const activeTab = ref(1)
 
   const fetchUsersAndRoles = async () => {
@@ -111,6 +121,10 @@
   const fetchUserActions = async () => {
     if (userActionsTabRef?.value?.fetchUserActions)
       await userActionsTabRef.value.fetchUserActions()
+  }
+
+  const fetchCimEms = async () => {
+    if (cimEmsTabRef?.value?.fetchModels) await cimEmsTabRef.value.fetchModels()
   }
 
   const fetchTags = async () => {

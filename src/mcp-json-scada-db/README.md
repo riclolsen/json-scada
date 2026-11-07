@@ -65,7 +65,7 @@ The server exposes the following tools to the MCP client:
 - `get_soe_events`: Get Sequence of Events records with regex/group/time filters.
 - `get_system_status`: Summary of process instances, protocol driver instances and protocol connections. Liveness comes from the instance keep-alive (under 30 s old); a driver instance with a stale keep-alive still counts as alive when one of its connections has fresh `stats` (server drivers without redundancy may not write a keep-alive). `aliveSource` (`keepAlive`, `connectionStats` or `null`) says which signal decided, and each connection carries `statsFresh`.
 - `list_collections`: View all available database collections.
-- `query_collection`: Run a custom read-only query (MongoDB Extended JSON filter, projection and sort) on any collection. Credential fields are redacted.
+- `query_collection`: Run a custom read-only query (MongoDB Extended JSON filter, projection and sort) on any collection. Credential fields are redacted; CIM-EMS model, binding, run and artifact collections are refused.
 - `describe_collection`: Get estimated document counts and sample documents.
 - `list_database_info`: High-level summary of the database.
 - `get_collection_fields`: Inspect unique fields in a collection.

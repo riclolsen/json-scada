@@ -9,7 +9,7 @@ import time
 
 from pymongo.errors import PyMongoError
 
-from . import mongo
+from . import api, mongo
 from .bindings import store as bstore
 from .cache import PointCache
 from .config import load_main_config, parse_args
@@ -21,6 +21,7 @@ from .redundancy import DRIVER_NAME, Redundancy
 LOG_LEVELS = {0: logging.ERROR, 1: logging.INFO, 2: logging.INFO, 3: logging.DEBUG}
 MIN_RUN_INTERVAL = 1.0           # debounce for topology-triggered runs, seconds
 RELOAD_CHECK_SECONDS = 10.0
+REQUEST_CHECK_SECONDS = 2.0     # polling of cimStudyRequests on the active node
 MONGO_RETRY_SECONDS = 10
 
 
@@ -78,12 +79,24 @@ def main(argv: list[str]) -> int:
             {"protocolDriver": DRIVER_NAME, "protocolDriverInstanceNumber": instance, "enabled": True}))
 
     running: dict[int, dict] = {}     # connection number -> {conn, cycle, cache, next_due, last_run}
-    was_active, last_reload = False, 0.0
+    was_active, last_reload, last_requests = False, 0.0, 0.0
     while True:
         active = red.tick()
         if active != was_active:
             log.info("node %s is now %s", cfg.node_name, "ACTIVE" if active else "inactive")
             was_active = active
+
+        fx = api.Effects()
+        if active and time.monotonic() - last_requests > REQUEST_CHECK_SECONDS:
+            last_requests = time.monotonic()
+            try:
+                fx = api.process_pending(db, cfg.node_name)
+            except PyMongoError as e:
+                log.error("study requests: %s", e)
+            if fx.reload_models:     # new active model or binding revision: rebuild the affected cycles now
+                for num in [n for n, r in running.items() if r["conn"].get("cimModelId") in fx.reload_models]:
+                    running.pop(num)["cache"].stop()
+                last_reload = 0.0
 
         if time.monotonic() - last_reload > RELOAD_CHECK_SECONDS:
             last_reload = time.monotonic()
@@ -108,10 +121,12 @@ def main(argv: list[str]) -> int:
                     continue
                 first = not r.get("started")
                 triggered = r["cache"].trigger.is_set() and now - r["last_run"] >= MIN_RUN_INTERVAL
-                if first or triggered or now >= r["next_due"]:
+                requested = int(r["conn"]["protocolConnectionNumber"]) in fx.rerun
+                if first or triggered or requested or now >= r["next_due"]:
                     r["cache"].trigger.clear()
                     r["started"] = True
-                    r["cycle"].run_once("start" if first else "topology" if triggered else "cycle")
+                    r["cycle"].run_once("start" if first else "topology" if triggered else
+                                        "request" if requested else "cycle")
                     r["last_run"] = time.monotonic()
                     r["next_due"] = r["last_run"] + float(r["conn"].get("cycleSeconds", 60))
         time.sleep(0.5)

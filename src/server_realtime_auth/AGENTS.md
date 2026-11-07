@@ -30,6 +30,7 @@ Core realtime data server for JSON-SCADA. Handles client connections, JWT authen
     - `middlewares/` — Express middleware (auth, etc.)
     - `config/` — submodule configuration
 - **Config:** INI file via Supervisor or environment variables
+- **CIM-EMS:** `app/controllers/cimEms.controller.js`, routes `/Invoke/auth/cimEms/*` (list models, bindings, runs, requests; `uploadModel`, `request`, `artifact`). All need `isAdmin`; model, binding and artifact actions also need a role with `cimEngineering` (`authJwt.isCimEngineer` / `hasCimEngineering`). The server only stores uploads/binding sets in the `cimArtifacts` GridFS bucket and queues `cimStudyRequests`; the CIM-EMS driver executes them (`src/cim-ems/cim_ems/api.py`), so request shapes change together. Every request and download is logged as a `cimEms:<type>` user action. `/GetFile` refuses the `cimArtifacts` bucket
 - **API consumers:** the `/Invoke/auth/*` admin routes (sign-in cookie `x-access-token`, `{ error }` responses, driver instance/connection/tag CRUD, process management, system settings, restart scripts) are also called by `src/mcp-json-scada-db` (`jsonscada/admin-api.ts` and the admin tools); keep request/response shapes compatible or update the MCP tools with them
 
 ## Work Guidance

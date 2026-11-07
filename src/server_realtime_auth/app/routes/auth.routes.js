@@ -1,6 +1,7 @@
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/auth.controller')
 const processController = require('../controllers/processManagement.controller')
+const cimEmsController = require('../controllers/cimEms.controller')
 
 module.exports = function (app, accessPoint) {
   app.use(function (req, res, next) {
@@ -220,5 +221,42 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/updateSystemSettings',
     [authJwt.isAdmin],
     processController.updateSystemSettings
+  )
+
+  // CIM-EMS: model revisions, bindings, runs and study requests
+  app.get(
+    accessPoint + 'auth/cimEms/listModels',
+    [authJwt.isAdmin],
+    cimEmsController.listModels
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/listBindings',
+    [authJwt.isAdmin],
+    cimEmsController.listBindings
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/listRuns',
+    [authJwt.isAdmin],
+    cimEmsController.listRuns
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/listRequests',
+    [authJwt.isAdmin],
+    cimEmsController.listRequests
+  )
+  app.post(
+    accessPoint + 'auth/cimEms/uploadModel',
+    [authJwt.isAdmin, authJwt.isCimEngineer],
+    cimEmsController.uploadModel
+  )
+  app.post(
+    accessPoint + 'auth/cimEms/request',
+    [authJwt.isAdmin],
+    cimEmsController.createRequest
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/artifact',
+    [authJwt.isAdmin, authJwt.isCimEngineer],
+    cimEmsController.downloadArtifact
   )
 }

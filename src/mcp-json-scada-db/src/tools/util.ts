@@ -24,6 +24,27 @@ const SENSITIVE_FIELDS = [
   'privateKeyPassphrase',
 ]
 
+// CIM-EMS network models, bindings and study results are critical infrastructure
+// information: the MCP server exposes only the CIM-EMS driver status and result
+// points (realtimeData), never these collections or the cimArtifacts bucket.
+const CONFIDENTIAL_COLLECTIONS = [
+  'cimModels',
+  'cimMeasurementBindings',
+  'cimRuns',
+  'cimContingencyLists',
+  'cimStudyRequests',
+]
+
+export function isConfidentialCollection(name: string): boolean {
+  const n = String(name || '').trim()
+  return (
+    CONFIDENTIAL_COLLECTIONS.includes(n) || n.toLowerCase().startsWith('cimartifacts')
+  )
+}
+
+export const confidentialResult = (name: string) =>
+  textResult(`Collection '${name}' is confidential and not available through MCP.`, true)
+
 export function textResult(text: string, isError = false) {
   return {
     content: [{ type: 'text' as const, text }],

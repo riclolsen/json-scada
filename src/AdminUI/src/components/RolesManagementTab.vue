@@ -232,6 +232,18 @@
           "
         >
         </v-checkbox>
+
+        <v-checkbox
+          dense
+          v-model="newRole.cimEngineering"
+          class="mb-n4"
+          :label="
+            $t('admin.rolesManagement.cimEngineering') +
+            ' - ' +
+            $t('admin.rolesManagement.cimEngineeringHint')
+          "
+        >
+        </v-checkbox>
       </v-card-text>
       <v-card-actions>
         <v-chip v-if="error" color="red darken-1">{{
@@ -347,6 +359,7 @@
     ackEvents: true,
     ackAlarms: true,
     disableAlarms: true,
+    cimEngineering: false,
     maxSessionDays: 3,
   }
 
