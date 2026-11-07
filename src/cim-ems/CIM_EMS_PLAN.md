@@ -654,7 +654,7 @@ Design points settled in code:
 
 ## 24. Phase 4 progress: state estimation core (2026-11-07)
 
-Implemented: `estimation/transfer.py` (option B: pandapower net from the solved pypowsybl net), `estimation/adapter.py` (WLS estimate, residuals, chi-square test, bad data removal by largest normalized residual), `estimation/synthetic.py` (noisy measurements from a load flow). Wired into `StudyCycle` (connection option `runStateEstimation`): after each converged load flow the snapshot's analog measurements are estimated, `SE` result points and `SYS;SE` status points are published, bad data go into the run record. The transfer is checked against the load flow once per topology (gate 2e-3 pu, 0.1 deg) and refused otherwise. Tested on Galia with synthetic telemetry (`tests/integration/test_cycle_estimation.py`).
+Implemented: `estimation/transfer.py` (option B: pandapower net from the solved pypowsybl net), `estimation/adapter.py` (WLS estimate, residuals, chi-square test, bad data removal by largest normalized residual), `estimation/synthetic.py` (noisy measurements from a load flow). Wired into `StudyCycle` (connection option `runStateEstimation`): after each converged load flow the snapshot's analog measurements are estimated, `SE` result points and `SYS;SE` status points are published, bad data go into the run record. The transfer is checked against the load flow once per topology (gate 1e-4 pu, 0.01 deg) and refused otherwise. Tested on Galia with synthetic telemetry (`tests/integration/test_cycle_estimation.py`).
 
 Network transfer gate (pandapower load flow started from the pypowsybl solution, compared bus by bus):
 
