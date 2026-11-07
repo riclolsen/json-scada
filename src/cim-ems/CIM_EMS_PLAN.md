@@ -30,7 +30,7 @@ Add CIM/CGMES model exchange and EMS network analysis to JSON-SCADA as a standar
 | Primary engine | PowSyBl through `pypowsybl`: CGMES import/export, load flow (OpenLoadFlow), security analysis, diagrams |
 | State estimator | Second engine, pandapower WLS estimator, behind an adapter; final choice confirmed in phase 4 qualification |
 | Language | Python 3 (pypowsybl and pandapower are Python-first); `pymongo` for MongoDB |
-| CGMES version | One version first, chosen from the intended exchange partners (default assumption: CGMES 2.4.15; 3.0 as soon as a partner needs it) |
+| CGMES version | **CGMES 2.4.15 (CIM16)** for import and export, the version best supported by PowSyBl (mature importer and exporter, ENTSO-E conformity cases) and the only one pandapower's CIM converter handles (its converter classes are CIM16). CGMES 3.0 (CIM100) is a connection option (`cgmesVersion`), exported with `iidm.export.cgmes.cim-version=100`, validated in phase 6 against an actual partner need |
 | Analysis scope | Balanced, positive-sequence AC, transmission/sub-transmission |
 | Diagrams | Generated from PowSyBl diagram output, converted to JSON-SCADA `inkscape:label` markup |
 | Contingencies | User-defined contingency lists first; automatic N-1 later |
@@ -90,6 +90,7 @@ Standard fields plus CIM-EMS fields. Example (strict JSON):
   "enabled": true,
   "commandsEnabled": false,
   "autoCreateTags": true,
+  "cgmesVersion": "2.4.15",
   "cimModelId": "TSO_2026_11",
   "cimModelRevision": 3,
   "cimBindingRevision": 5,
@@ -538,7 +539,7 @@ Reused: driver shell, redundancy, bindings, snapshot and topology, publication, 
 
 ## 19. Open questions
 
-1. Which CGMES version and boundary set do the exchange partners require?
+1. ~~CGMES version~~: decided, 2.4.15 (CIM16), see section 2. Still open: which boundary set do the exchange partners require, and does any partner need CGMES 3.0?
 2. Expected network size (buses, switches, contingencies) and target cycle times for LF, SE and CA?
 3. Which representative user model and telemetry period can be used for qualification?
 4. Is the SE result needed for downstream exchange (IGM/SV export to a TSO or RSC) in the first release?
@@ -569,5 +570,7 @@ Decisions taken from the results:
 - The SE network transfer is option B (build the pandapower net from the solved pypowsybl network through an explicit mapping), not the pandapower CIM import: option A drops the slack and fails on 3-winding transformers. Keep option A only as a cross-check in `compare_engines.py`.
 - The validation report must list HVDC and VSC converters, 3-winding transformers and similar classes as `approximate` or `unsupported` per engine.
 - Phase 1 targets Python 3.13 or 3.14 on Linux x86_64 and Windows x64. ARM64 waits for a pypowsybl wheel; revisit at phase 6.
+
+CGMES version check (2026-11-07): this pypowsybl exports both `cim-version=16` (CIM16 namespace) and `100` (CIM100 namespace) with EQ, SSH, SV and TP; both re-import with identical equipment counts and a converged load flow on the four-substations test network.
 
 Still open from phase 0 (to close during phase 1, they need the user model): CGMES measurement import, node-breaker CGMES import of a real package, unsupported-feature inventory of the user model, and the questions in section 19.
