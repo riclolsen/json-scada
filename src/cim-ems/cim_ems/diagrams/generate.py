@@ -37,11 +37,13 @@ def generate_all(net: pn.Network, connection: str, bindings: list[Binding], valu
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     reports = []
-    for vl in net.get_voltage_levels().index:
+    vls = net.get_voltage_levels()
+    for vl in vls.index:
         if only and vl not in only:
             continue
         svg, rep = convert(net, vl, sref, rref, bref)
-        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in vl)
+        label = f"{vls.loc[vl, 'name'] or ''}_{vl[:8]}"
+        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in label)
         (out / f"cim_{safe}.svg").write_text(svg, encoding="utf-8")
         reports.append(rep)
     return reports
