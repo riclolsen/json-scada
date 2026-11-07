@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass, field
 
 import pandapower as pp
+import pandas as pd
 import pandapower.estimation as est
 from scipy.stats import chi2
 
@@ -53,25 +54,28 @@ class EstimationResult:
     degrees_of_freedom: int = 0
 
 
-def _add(net: pp.pandapowerNet, tr: Transfer, m: Measurement) -> bool:
-    """Create the pandapower measurement. Returns False when the element is not in the transferred network."""
+def _row(net: pp.pandapowerNet, tr: Transfer, m: Measurement) -> tuple | None:
+    """pandapower measurement row (type, element type, element, value, std, side), None when the element is not in
+    the transferred network."""
     if m.quantity == "V" and m.element_id in tr.bus_index:
         b = tr.bus_index[m.element_id]
-        vn = net.bus.vn_kv[b]
-        pp.create_measurement(net, "v", "bus", m.value / vn, m.sigma / vn, b)
-        return True
+        vn = float(net.bus.vn_kv.at[b])
+        return "v", "bus", b, m.value / vn, m.sigma / vn, None
     kind = {"P": "p", "Q": "q"}.get(m.quantity)
     if kind is None:
-        return False
+        return None
     if m.element_id in tr.line_index:
-        pp.create_measurement(net, kind, "line", m.value, m.sigma, tr.line_index[m.element_id],
-                              side="from" if m.side == 1 else "to")
-        return True
+        return kind, "line", tr.line_index[m.element_id], m.value, m.sigma, "from" if m.side == 1 else "to"
     if m.element_id in tr.trafo_index:
-        pp.create_measurement(net, kind, "trafo", m.value, m.sigma, tr.trafo_index[m.element_id],
-                              side="hv" if m.side == 1 else "lv")
-        return True
-    return False
+        return kind, "trafo", tr.trafo_index[m.element_id], m.value, m.sigma, "hv" if m.side == 1 else "lv"
+    return None
+
+
+def _set_measurements(net: pp.pandapowerNet, rows: list[tuple]) -> None:
+    """Replace the measurement table in one step (create_measurement per row costs seconds for 1000 rows)."""
+    cols = ["name", "measurement_type", "element_type", "element", "value", "std_dev", "side"]
+    df = pd.DataFrame([(None, *r) for r in rows], columns=cols)
+    net.measurement = df.astype(net.measurement.dtypes.to_dict())
 
 
 def _estimated(net: pp.pandapowerNet, tr: Transfer, m: Measurement) -> float | None:
@@ -98,10 +102,12 @@ def estimate(tr: Transfer, measurements: list[Measurement], remove_bad_data: boo
     t0 = time.perf_counter()
     active = list(measurements)
     dropped: list[Residual] = []
+    rows = {id(m): _row(tr.net, tr, m) for m in active}
+    active = [m for m in active if rows[id(m)] is not None]
     for _ in range(max_removals + 1):
         net = copy.deepcopy(tr.net)
-        net.measurement = net.measurement.iloc[0:0]
-        kept = [m for m in active if _add(net, tr, m)]
+        kept = list(active)
+        _set_measurements(net, [rows[id(m)] for m in kept])
         if not kept:
             return EstimationResult(False, False, "no usable measurements", duration_ms=(time.perf_counter() - t0) * 1e3)
         try:

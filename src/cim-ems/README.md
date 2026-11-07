@@ -63,7 +63,8 @@ transformer from `contingencyMinKv`, or a `cimContingencyLists` document
 It runs when the topology changed (at least `contingencyMinGapSeconds`, default 10, after the last run) or every
 `contingencyIntervalSeconds` (default 300); other cycles are skipped and counted, and the last results are
 republished so their points do not expire. Points: `<connection>;CA;<contingency id>;STATUS|VIOL|WORST` for the first
-`contingencyPublishLimit` (200) entries, `<connection>;CA;SYSTEM;VIOL|WORST|INSECURE|COUNT`, and
+`contingencyPublishLimit` (200) entries (`contingencyThreads`, default 1, sets the OpenLoadFlow thread count;
+more threads are faster but not bit-reproducible near limits), `<connection>;CA;SYSTEM;VIOL|WORST|INSECURE|COUNT`, and
 `<connection>;SYS;CA;STATUS|SKIPPED|DURATION`. STATUS: 0 secure, 1 violation, 2 islanding, 3 diverged, 4 unsupported.
 Violations already present in the base case are not counted. Full results go to the `cimArtifacts` GridFS bucket
 (`ca_<runId>.json`, referenced by `summary.contingency.artifactId` in `cimRuns`).

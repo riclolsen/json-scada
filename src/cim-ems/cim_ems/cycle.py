@@ -74,6 +74,7 @@ class StudyCycle:
         self.ca_min_gap = float(connection.get("contingencyMinGapSeconds", 10))
         self.ca_min_kv = float(connection.get("contingencyMinKv", 0))
         self.ca_publish_limit = int(connection.get("contingencyPublishLimit", 200))
+        self.ca_threads = int(connection.get("contingencyThreads", 0)) or None
         self._ca_hash, self._ca_last, self._ca_skipped, self.last_ca_success = None, 0.0, 0, 0.0
         self._ca_values: list[ResultValue] = []
         self.parameters_hash = hashlib.sha256(json.dumps(self.params_cfg, sort_keys=True).encode()).hexdigest()[:8]
@@ -167,7 +168,7 @@ class StudyCycle:
                 if doc is None:
                     raise ValueError(f"contingency list {self.ca_list_id} not found")
                 cons = ca.from_document(doc)
-            res = ca.analyse(self.net, cons, self.params)
+            res = ca.analyse(self.net, cons, self.params, self.ca_threads)
         except Exception as e:
             log.exception("contingency analysis failed")
             self._ca_pending = self._ca_sys("failed")

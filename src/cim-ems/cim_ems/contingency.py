@@ -8,6 +8,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
+import pandas as pd
 import pypowsybl.loadflow as lf
 import pypowsybl.network as pn
 import pypowsybl.security as sa
@@ -67,14 +68,29 @@ def permanent_limits(net: pn.Network) -> dict[tuple[str, str], float]:
     return {(r.element_id, r.side): r.value for r in lim.itertuples()}
 
 
-def _violations(df, cid: str) -> list[dict]:
-    if df is None or not len(df) or cid not in df.index.get_level_values(0):
-        return []
-    out = []
-    for (c, subject), r in df.loc[[cid]].reset_index().set_index(["contingency_id", "subject_id"]).iterrows():
-        out.append({"subject": subject, "type": r["limit_type"], "side": r.get("side", "") or "",
-                    "limit": _num(r["limit"]), "value": _num(r["value"])})
+def _violations_by_contingency(df) -> dict[str, list[dict]]:
+    out: dict[str, list[dict]] = {}
+    if df is None or not len(df):
+        return out
+    flat = df.reset_index()
+    for r in flat.itertuples(index=False):
+        out.setdefault(r.contingency_id, []).append({
+            "subject": r.subject_id, "type": r.limit_type, "side": getattr(r, "side", "") or "",
+            "limit": _num(r.limit), "value": _num(r.value)})
     return out
+
+
+def _worst_loading(branch_results, perm: dict[tuple[str, str], float]) -> dict[str, float]:
+    """Max current loading in percent of the permanent limit per contingency id (vectorized)."""
+    if branch_results is None or not len(branch_results) or not perm:
+        return {}
+    br = branch_results.reset_index()[["contingency_id", "branch_id", "i1", "i2"]]
+    lim = pd.Series(perm)
+    l1 = br["branch_id"].map(lambda b: lim.get((b, "ONE")))
+    l2 = br["branch_id"].map(lambda b: lim.get((b, "TWO")))
+    load = pd.concat([100.0 * br["i1"] / l1.astype(float), 100.0 * br["i2"] / l2.astype(float)], axis=1).max(axis=1)
+    worst = load.groupby(br["contingency_id"]).max().dropna()
+    return {k: float(v) for k, v in worst.items()}
 
 
 def _key(v: dict) -> tuple:
@@ -82,7 +98,10 @@ def _key(v: dict) -> tuple:
 
 
 def analyse(net: pn.Network, contingencies: list[Contingency], lf_params: lf.Parameters | None = None,
-            ) -> CaResult:
+            threads: int | None = None) -> CaResult:
+    """`threads`: OpenLoadFlow security analysis `threadCount`, default 1. More threads are faster (IEEE 300 N-1:
+    2.4 s with 1, 0.8 s with 4) but post-contingency currents then differ by up to about 1 A, which flips the
+    classification of branches sitting at their limit; one thread gives reproducible results."""
     t0 = time.perf_counter()
     known = set(net.get_identifiables().index)
     outcomes: dict[str, Outcome] = {}
@@ -104,28 +123,23 @@ def analyse(net: pn.Network, contingencies: list[Contingency], lf_params: lf.Par
                 analysis.add_multiple_elements_contingency(c.elements, c.id)
         branch_ids = list(net.get_lines().index) + list(net.get_2_windings_transformers().index)
         analysis.add_monitored_elements(branch_ids=branch_ids)
-        params = sa.Parameters(load_flow_parameters=lf_params) if lf_params is not None else None
-        res = analysis.run_ac(net, parameters=params) if params else analysis.run_ac(net)
+        kw = {"provider_parameters": {"threadCount": str(threads or 1)}}
+        if lf_params is not None:
+            kw["load_flow_parameters"] = lf_params
+        res = analysis.run_ac(net, parameters=sa.Parameters(**kw))
         base_status = res.pre_contingency_result.status.name
-        viol = res.limit_violations
-        base = _violations(viol, "")
+        viol = _violations_by_contingency(res.limit_violations)
+        base = viol.get("", [])
         base_keys = {_key(v) for v in base}
-        perm = permanent_limits(net)
-        br = res.branch_results
+        worst_by = _worst_loading(res.branch_results, permanent_limits(net))
         for c in valid:
             post = res.post_contingency_results.get(c.id)
             if post is None or post.status.name != "CONVERGED":
                 outcomes[c.id] = Outcome(c.id, c.name, "diverged")
                 continue
-            new = [v for v in _violations(viol, c.id) if _key(v) not in base_keys]
+            new = [v for v in viol.get(c.id, []) if _key(v) not in base_keys]
             lost = [e for e in post.disconnected_elements if e not in c.elements]
-            worst = None
-            if len(br) and c.id in br.index.get_level_values(0):
-                for (_, _, bid), r in br.loc[[c.id]].reset_index().set_index(["contingency_id", "operator_strategy_id", "branch_id"]).iterrows():
-                    for side, tag in ((1, "ONE"), (2, "TWO")):
-                        lim, cur = perm.get((bid, tag)), _num(r[f"i{side}"])
-                        if lim and cur is not None:
-                            worst = max(worst or 0.0, 100.0 * cur / lim)
+            worst = worst_by.get(c.id)
             status = "islanding" if lost else ("violation" if new else "secure")
             outcomes[c.id] = Outcome(c.id, c.name, status, new, worst, lost)
     ordered = [outcomes[c.id] for c in contingencies]

@@ -694,3 +694,20 @@ Deviations from section 9.3:
 
 Phase 5 remaining: timing on the user model, a diverged test case, automatic N-1 beyond branches, estimate-based base case.
 
+## 26. Performance on public models (2026-11-07)
+
+Python 3.14, pypowsybl 1.16.1, pandapower 3.5.6, Linux x86_64, one process. SE measurements are synthetic (every bus voltage and both ends of every branch); CA is `AUTO_N1`.
+
+| Model | Buses | Branches | LF | LF extract | SE transfer + gate | SE (measurements) | CA N-1, 1 thread (contingencies) |
+|---|---|---|---|---|---|---|---|
+| Svedala | 112 | 150 | 21 ms | 65 ms | 395 ms | 170 ms (643) | 1817 ms (134) |
+| Espheim | 132 | 208 | 6 ms | 79 ms | 420 ms | 161 ms (964) | 1606 ms (208) |
+| SmallGrid | 115 | 183 | 6 ms | 70 ms | 403 ms | 299 ms (847) | 2350 ms (183) |
+| IEEE 300 | 300 | 411 | 15 ms | 146 ms | unsupported | unsupported | 2404 ms (411) |
+
+- The SE transfer runs once per topology (cached by topology hash); the estimate runs every cycle.
+- Bulk creation of pandapower elements and of the measurement table cut the transfer from about 1.7 s and the estimate from 1.4 to 6.4 s to the values above.
+- CA post-processing is vectorized (it was 11 s of the first 13.8 s IEEE 300 run). `contingencyThreads` (default 1) passes OpenLoadFlow `threadCount`: 4 threads take IEEE 300 to 0.8 s, but post-contingency currents then differ by up to about 1 A, which flipped 11 of 208 Espheim classifications for a branch sitting at its 500 A limit. One thread is reproducible.
+- `WORST` includes overloads already present in the base case; `VIOL` does not.
+- Still needed: the same table on the user model and target hardware (plan section 19, question 2).
+
