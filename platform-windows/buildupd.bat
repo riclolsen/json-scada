@@ -114,6 +114,12 @@ go mod tidy
 go build -ldflags="-s -w" -o %BINPATH%\dnp3-client.exe .\cmd\dnp3client
 go build -ldflags="-s -w" -o %BINPATH%\dnp3-server.exe .\cmd\dnp3server
 
+cd %SRCPATH%\modbus-go
+go get -u ./...
+go mod tidy
+go build -ldflags="-s -w" -o %BINPATH%\modbus-client.exe .\cmd\modbusclient
+go build -ldflags="-s -w" -o %BINPATH%\modbus-server.exe .\cmd\modbusserver
+
 rem cd %SRCPATH%\i104m
 rem go get -u ./...
 rem go mod tidy 
@@ -213,10 +219,6 @@ call %NPM% update
 cd %SRCPATH%\OPC-UA-Server
 call %NPM% i --package-lock-only
 call %NPM% update
-cd %SRCPATH%\modbus
-call %NPM% i --package-lock-only
-call %NPM% update
-call %NPM% run build
 cd %SRCPATH%\node-red-driver
 call %NPM% i --package-lock-only
 call %NPM% update

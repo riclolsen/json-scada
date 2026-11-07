@@ -1,0 +1,27 @@
+# JSON-SCADA historian data source for the docker demo.
+# Overrides the seeded record (same uid) on every Grafana start: the seed in
+# sql_data/grafanaappdb.sql points to 127.0.0.1:5432, which is right for the
+# all-in-one image but not inside the Grafana container, where PostgreSQL is the
+# timescaledb service. User grafana is the read-only role from sql_data/create_tables.sql.
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL-JSON_SCADA
+    uid: f4dfcd5e-956e-4186-b0ed-abc6496b08b0
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: timescaledb:5432
+    user: grafana
+    isDefault: true
+    editable: true
+    jsonData:
+      database: json_scada
+      sslmode: disable
+      postgresVersion: 1800
+      timescaledb: true
+      connMaxLifetime: 14400
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+    secureJsonData:
+      password: JSGrafana

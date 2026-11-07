@@ -1,181 +1,107 @@
-# {json:scada} Docker Compilation for Linux x64 or Aarch64(ARM64) - (c) 2020-2025 - Ricardo L. Olsen 
+# {json:scada} Docker Compilation for Linux x64 or Aarch64(ARM64) - (c) 2020-2026 - Ricardo L. Olsen
 # Requires Internet connection!
+#
+# Builds the binaries and Node.js dependencies used by ../demo-docker/docker-compose.yaml.
+# Binaries are published to ../demo-docker/bin for the architecture of the build host.
+#
+#     docker compose up
+#
+# The service set mirrors the build stages of the project root Dockerfile.
 
 services:
 
-  dotnet_compile:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
-    container_name: js_dotnet_compile
-    command: sh -c "apt-get update && 
-                    apt-get -y install build-essential cmake sasl2-bin libsasl2-dev libssl-dev libzstd-dev libsnappy-dev libsqlite3-dev &&
-                    cd /src/lib60870.netcore/lib60870.netcore/lib60870/ &&
-                    dotnet build --self-contained -c Release -o /publish_bin/ &&
-                    cd /src/lib60870.netcore/iec101client/ &&
-                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/lib60870.netcore/iec101server/ &&
-                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/lib60870.netcore/iec104client/ &&
-                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/lib60870.netcore/iec104server/ &&
-                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/lib60870.netcore/lib60870.netcore/ &&
-                    rm -rf obj bin &&
-                    cd /src/OPC-UA-Client/ &&
-                    rm -rf obj bin && dotnet clean &&
-                    dotnet publish --self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/libiec61850 &&
-                    rm -rf build &&
-                    mkdir -p build &&
-                    cd build &&
-                    cmake .. &&
-                    make &&
-                    cp src/libiec61850.so src/libiec61850.so.* /publish_bin/ &&
-                    cd ../dotnet/core/2.0/IEC61850.NET.core.2.0 &&
-                    dotnet publish --no-self-contained -c Release &&
-                    cd /src/iec61850_client &&
-                    dotnet publish --no-self-contained -p:PublishReadyToRun=true -c Release -o /publish_bin/ &&
-                    rm -rf obj bin &&
-                    cd /src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ &&
-                    rm -rf obj bin &&
-                    cd /src/libiec61850 &&
-                    rm -rf .install &&
-                    cd /src/mongo-cxx-driver/mongo-cxx-driver &&
-                    rm -rf build &&
-                    mkdir -p build &&
-                    cd build &&
-                    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake &&
-                    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF &&
-                    cmake --build . --config Release &&
-                    cmake --build . --target install --config Release &&
-                    cd /src/dnp3/opendnp3 &&
-                    rm -rf build &&
-                    mkdir -p build &&
-                    cd build &&
-                    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. &&
-                    make &&
-                    cp cpp/lib/libopendnp3.so /publish_bin &&
-                    cd /src/dnp3/Dnp3Server/ &&
-                    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt &&
-                    sed -i '/sasl2/a  snappy' ./CMakeLists.txt &&
-                    rm -rf build &&
-                    mkdir -p build && 
-                    cd build &&
-                    cmake .. &&
-                    make &&
-                    cp Dnp3Server /publish_bin"
+  # Go drivers and processes: calculations, cs_data_processor (Go), IEC 60870-5-101/103/104,
+  # IEC 61850 client/server, OPC-UA client, DNP3 client/server, Modbus client/server. Also copies the prebuilt
+  # ICCP client/server binaries. Builds use the src/go.work workspace (shared go-common module).
+  # CGO is disabled so the binaries are static and run on any Linux base image.
+  go_compile:
+    image: golang:1.27-alpine
+    container_name: js_go_compile
+    working_dir: /src
+    command: sh -c "set -e &&
+                    ARCH=$$(go env GOARCH) &&
+                    cd /src/calculations && go build -ldflags='-s -w' -o /publish_bin/calculations &&
+                    cd /src/cs_data_processor-go && go build -ldflags='-s -w' -o /publish_bin/cs_data_processor &&
+                    cd /src/iec60870-5 &&
+                    go build -ldflags='-s -w' -o /publish_bin/iec104client ./cmd/iec104client &&
+                    go build -ldflags='-s -w' -o /publish_bin/iec104server ./cmd/iec104server &&
+                    go build -ldflags='-s -w' -o /publish_bin/iec101client ./cmd/iec101client &&
+                    go build -ldflags='-s -w' -o /publish_bin/iec101server ./cmd/iec101server &&
+                    go build -ldflags='-s -w' -o /publish_bin/iec103client ./cmd/iec103client &&
+                    cd /src/iec61850/iec61850_client && go build -ldflags='-s -w' -o /publish_bin/iec61850_client &&
+                    cd /src/iec61850/iec61850_server && go build -ldflags='-s -w' -o /publish_bin/iec61850_server &&
+                    cd /src/OPC-UA-Client-Go && go build -ldflags='-s -w' -o /publish_bin/opcua-client &&
+                    cd /src/dnp3-go &&
+                    go build -ldflags='-s -w' -o /publish_bin/dnp3-client ./cmd/dnp3client &&
+                    go build -ldflags='-s -w' -o /publish_bin/dnp3-server ./cmd/dnp3server &&
+                    cd /src/modbus-go &&
+                    go build -ldflags='-s -w' -o /publish_bin/modbus-client ./cmd/modbusclient &&
+                    go build -ldflags='-s -w' -o /publish_bin/modbus-server ./cmd/modbusserver &&
+                    cp /src/iccp/iccp-client/iccp-client-linux-$${ARCH} /publish_bin/iccp-client &&
+                    cp /src/iccp/iccp-server/iccp-server-linux-$${ARCH} /publish_bin/iccp-server &&
+                    chmod +x /publish_bin/* &&
+                    echo 'Go build finished.'"
     environment:
-      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+      - CGO_ENABLED=0
+      - GOFLAGS=-buildvcs=false
+      - GOTOOLCHAIN=auto
     volumes:
-      - ../src/iec61850_client:/src/iec61850_client
-      - ../src/libiec61850:/src/libiec61850
-      - ../src/lib60870.netcore:/src/lib60870.netcore
-      - ../src/OPC-UA-Client:/src/OPC-UA-Client
-      # - ../src/libplctag:/src/libplctag
-      - ../src/mongo-cxx-driver:/src/mongo-cxx-driver
-      - ../src/dnp3:/src/dnp3
+      - ../src:/src
       - ../demo-docker/bin:/publish_bin
+      - go_mod_cache:/go/pkg/mod
 
-  # NOTICE Dnp3Client and OPC-DA-Client are Windows-only, so it can only run in docker/linux using Wine.
-  dotnet_compile_win:
-    image: mcr.microsoft.com/dotnet/sdk:6.0
-    container_name: js_dotnet_compile_win
-    command: sh -c "cd /src/OPC-DA-Client/ &&
-                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -f net6.0-windows -c Release -o /publish_bin_win/ OPC-DA-Client.csproj &&
-                    rm -rf obj bin &&
-                    cd /src/dnp3/Dnp3Client/ &&
-                    dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=false -c Release -o /publish_bin_win/ Dnp3Client.csproj &&
-                    rm -rf obj bin &&
-                    cp Dependencies/OpenSSL/*.dll /publish_bin_win/ "
-    environment:
-      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+  # PLC4J client (Java), the PLC4X protocol driver (Modbus, S7, EtherNet/IP, ...).
+  plc4j_compile:
+    image: maven:3-eclipse-temurin-21
+    container_name: js_plc4j_compile
+    command: sh -c "set -e &&
+                    cd /src/plc4j-client &&
+                    mvn -B -ntp -DskipTests package &&
+                    cp target/plc4j-client.jar plc4j-client.sh /publish_bin/ &&
+                    chmod +x /publish_bin/plc4j-client.sh &&
+                    echo 'PLC4J build finished.'"
     volumes:
-      - ../demo-docker/bin_win:/publish_bin_win
-      - ../src/dnp3:/src/dnp3
-      - ./Dnp3Client.csproj:/src/dnp3/Dnp3Client/Dnp3Client.csproj
-      - ../src/OPC-DA-Client:/src/OPC-DA-Client
-      - ./OPC-DA-Client.csproj:/src/OPC-DA-Client/OPC-DA-Client.csproj
-      - ../src/opcdaaehda-client-solution-net:/src/opcdaaehda-client-solution-net
-
-  calculations_compile:
-    image: golang:alpine
-    container_name: js_calculations_compile
-    command: sh -c "apk update &&
-                    apk add --no-cache libpcap-dev &&
-                    apk add --no-cache git && 
-                    go env -w GO111MODULE=auto &&
-                    cd /go/src/calculations/ && 
-                    go mod tidy && 
-                    go build && 
-                    cp calculations /publish_bin/"
-    volumes:
-      - ../src/calculations:/go/src/calculations
+      - ../src/plc4j-client:/src/plc4j-client
       - ../demo-docker/bin:/publish_bin
+      - maven_repo:/root/.m2
 
-  i104m_compile:
-    image: golang:alpine
-    container_name: js_i104m_compile
-    command: sh -c "apk update &&
-                    apk add --no-cache libpcap-dev &&
-                    apk add --no-cache git && 
-                    go env -w GO111MODULE=auto &&
-                    cd /go/src/i104m/ &&
-                    go mod tidy && 
-                    go build && 
-                    cp i104m /publish_bin/"
-    volumes:
-      - ../src/i104m:/go/src/i104m
-      - ../demo-docker/bin:/publish_bin
-
-  plc4x_compile:
-    image: golang:alpine
-    container_name: js_pcl4x_compile
-    command: sh -c "apk update &&
-                    apk add --no-cache git libpcap-dev gcc musl-dev && 
-                    go env -w GO111MODULE=auto CGO_ENABLED=1 &&
-                    cd /go/src/plc4x-client/ &&
-                    go mod tidy && 
-                    CGO_ENABLED=1 go build && 
-                    cp plc4x-client /publish_bin/"
-    volumes:
-      - ../src/plc4x-client:/go/src/plc4x-client
-      - ../demo-docker/bin:/publish_bin
-
+  # Node.js modules and web UI builds (same set as the project root Dockerfile).
   nodejs_update:
     image: node:22-alpine
     container_name: js_nodejs_update
-    command:  sh -c "apk add --update npm && npm install -g npm && 
-                     cd /cs_data_processor && npm install && chmod -R 777 node_modules &&
-                     cd /cs_custom_processor && npm install && npm run build && chmod -R 777 node_modules &&
-                     cd /config_server_for_excel && npm install && chmod -R 777 node_modules &&
-                     cd /server_realtime_auth && npm install && chmod -R 777 node_modules &&
-                     cd /alarm_beep && npm install && chmod -R 777 node_modules &&
-                     cd /oshmi2json && npm install && chmod -R 777 node_modules &&
-                     cd /telegraf-listener && npm install && chmod -R 777 node_modules &&
-                     cd /OPC-UA-Server && npm install && chmod -R 777 node_modules &&
-                     cd /mqtt-sparkplug && npm install && chmod -R 777 node_modules &&
-                     cd /AdminUI && npm install && npm run build && chmod -R 777 node_modules &&
-                     cd /svgedit && npm install && npm run build && chmod -R 777 node_modules &&
-                     cd /custom-developments/basic_bargraph && npm install && npx astro telemetry disable && npm run build &&
-                     cd /custom-developments/advanced_dashboard && npm install && npm run build &&
-                     cd /custom-developments/transformer_with_command && npm install && npm run build"
+    command:  sh -c "set -e && npm install -g npm &&
+                     cd /src/cs_data_processor && npm install &&
+                     cd /src/cs_custom_processor && npm install && npm run build &&
+                     cd /src/config_server_for_excel && npm install &&
+                     cd /src/grafana_alert2event && npm install &&
+                     cd /src/demo_simul && npm install &&
+                     cd /src/updateUser && npm install &&
+                     cd /src/alarm_beep && npm install &&
+                     cd /src/node-red-driver && npm install && npm run build &&
+                     cd /src/n8n-client && npm install &&
+                     cd /src/carbone-reports && npm install &&
+                     cd /src/backup-mongo && npm install &&
+                     cd /src/mongofw && npm install &&
+                     cd /src/mongowr && npm install &&
+                     cd /src/server_realtime_auth && npm install &&
+                     cd /src/camera-onvif && npm install &&
+                     cd /src/oshmi2json && npm install &&
+                     cd /src/telegraf-listener && npm install &&
+                     cd /src/OPC-UA-Server && npm install &&
+                     cd /src/mqtt-sparkplug && npm install &&
+                     cd /src/mcp-json-scada-db && npm install && npm run build &&
+                     cd /src/AdminUI && npm install && npm run build &&
+                     cd /src/svgedit && npm install && npm run build &&
+                     cd /src/custom-developments/basic_bargraph && npm install && npx astro telemetry disable && npm run build &&
+                     cd /src/custom-developments/advanced_dashboard && npm install && npm run build &&
+                     cd /src/custom-developments/transformer_with_command && npm install && npm run build &&
+                     chmod -R a+rwX /src/*/node_modules /src/custom-developments/*/node_modules &&
+                     echo 'Node.js build finished.'"
     environment:
       - NODE_OPTIONS=--max-old-space-size=10000
     volumes:
-      - ../src/cs_data_processor:/cs_data_processor
-      - ../src/cs_custom_processor:/cs_custom_processor
-      - ../src/config_server_for_excel:/config_server_for_excel
-      - ../src/server_realtime_auth:/server_realtime_auth
-      - ../src/alarm_beep:/alarm_beep
-      - ../src/oshmi2json:/oshmi2json
-      - ../src/telegraf-listener:/telegraf-listener
-      - ../src/OPC-UA-Server:/OPC-UA-Server
-      - ../src/mqtt-sparkplug:/mqtt-sparkplug
-      - ../src/AdminUI:/AdminUI
-      - ../src/svgedit:/svgedit
-      - ../src/custom-developments/:/custom-developments
+      - ../src:/src
 
+volumes:
+  go_mod_cache:
+  maven_repo:

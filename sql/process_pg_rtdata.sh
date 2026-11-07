@@ -43,7 +43,6 @@ while [ 1 ]; do
   done
 
   sleep 2
-  echo "$file"
 
 done
 

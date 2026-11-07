@@ -83,6 +83,7 @@ export function registerConnectionReadTools(
   server.registerTool(
     'get_protocol_connection',
     {
+      title: 'Get Protocol Connection',
       description:
         'Get the full configuration of a protocol connection (secrets redacted), including ' +
         'driver-specific fields and statistics.',
@@ -114,6 +115,7 @@ export function registerConnectionTools(server: McpServer, api: AdminApiClient) 
   server.registerTool(
     'get_protocol_connection_template',
     {
+      title: 'Get Protocol Connection Template',
       description:
         'Return a new protocol connection document with every field at its default value and ' +
         'the next free protocolConnectionNumber. Nothing is created.',
@@ -133,6 +135,7 @@ export function registerConnectionTools(server: McpServer, api: AdminApiClient) 
   server.registerTool(
     'create_protocol_connection',
     {
+      title: 'Create Protocol Connection',
       description:
         'Create a protocol connection served by a driver instance. The system assigns the ' +
         'protocolConnectionNumber (used by tags in protocolSourceConnectionNumber) and fills ' +
@@ -201,6 +204,7 @@ export function registerConnectionTools(server: McpServer, api: AdminApiClient) 
   server.registerTool(
     'update_protocol_connection',
     {
+      title: 'Update Protocol Connection',
       description:
         'Change fields of an existing protocol connection. Only the given fields change. ' +
         'Changing protocolDriverInstanceNumber moves the connection to another driver instance. ' +
@@ -242,6 +246,7 @@ export function registerConnectionTools(server: McpServer, api: AdminApiClient) 
   server.registerTool(
     'delete_protocol_connection',
     {
+      title: 'Delete Protocol Connection',
       description:
         'Delete a protocol connection. With deleteTags=true, all tags whose ' +
         'protocolSourceConnectionNumber is this connection are deleted too (irreversible).',

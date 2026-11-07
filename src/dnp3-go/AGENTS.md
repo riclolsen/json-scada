@@ -96,7 +96,7 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
 
 - The C++ drivers are the specification. Before changing behaviour, check what `src/dnp3` does.
   Quirks are reproduced on purpose and marked `parity:` in comments; intentional differences are
-  numbered D1..D27 in `README.md` — add to that list rather than diverging silently.
+  numbered D1..D28 in `README.md` — add to that list rather than diverging silently.
 - Only `sourceDataUpdate` is written for client data; never the tag `value`, alarms or history.
 - All numbers written to MongoDB must be Go `float64` so they land as BSON doubles. The `stats`
   counters are the exception: they are `int64`, as in the C++ drivers.

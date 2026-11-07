@@ -4,7 +4,7 @@
 
 * Windows 10/11 (Home, Pro, Enterprise or IoT) or Server 2019+ x86-64 bits (installer available).
 
-* Most modern Linux x86-64 bits. Recommend Redhat 9.4 or equivalent such as Rocky, Alma or Oracle Linux (installer script).
+* Most modern Linux x86-64 bits. Recommend Red Hat 9/10 or equivalent such as Rocky, Alma or Oracle Linux (installer script).
 
 * Linux ARM 64 bits.
 
@@ -107,7 +107,7 @@ Execute commands below for scripted installation:
     # firstly create a user named "jsonscada" that can do "sudo". Login as "jsonscada".
 
     sudo adduser jsonscada
-    sudo usermod -aG wheel jsonscada
+    sudo usermod -aG sudo jsonscada
     sudo usermod -aG docker jsonscada
     sudo passwd jsonscada
     sudo su - jsonscada
@@ -117,7 +117,7 @@ Execute commands below for scripted installation:
 
     # next, clone the json-scada repo
 
-    sudo apt install git
+    sudo apt install -y git
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
     cd json-scada/platform-ubuntu-2404
@@ -136,7 +136,7 @@ To install JSON-SCADA manually, it is required to install all the requirements f
 
 ### 1. MongoDB Server
 
-Versions 7.x.x or 8.x.x - Lower versions are not tested or supported. Newer versions can work but were not tested.
+Versions 8.x.x - Lower versions are not tested or supported. The Docker image uses 9.x; newer versions can work but were not tested.
 
 * https://www.mongodb.com/try/download/community
 * https://docs.mongodb.com/manual/installation/
@@ -147,20 +147,20 @@ The _Replica Set_ feature must be enabled, even when just one server is used bec
 
 MongoDB supports many architectures, it is very flexible. You can deploy on just one server, on the classic 3 member replica set or on a big sharded cluster (with MongoS and config servers).
 
-For not trusted or open to Internet networks it is important to use TLS for MongoDB connections. Consult the MongoDB docs to learn how to config connections using certificates. Configure "c:\json-scada\conf\json-scada.json" accordingly. Mongodb user auth is optional.
+On untrusted networks or networks open to the Internet it is important to use TLS for MongoDB connections. Consult the MongoDB docs to learn how to configure connections using certificates. Configure "c:\json-scada\conf\json-scada.json" accordingly. MongoDB user auth is optional.
 
 * https://docs.mongodb.com/manual/tutorial/configure-ssl/
 * https://www.mongodb.com/docs/manual/core/authentication/
 
 ### 2. PostgreSQL / TimescaleDB
 
-PostgreSQL version 16 - 18. TimescaleDB version 2.x.x. Previous versions can work but are not recommended. Newer versions can work but were not tested.
+PostgreSQL version 18. TimescaleDB version 2.x.x. Previous versions can work but are not recommended. Newer versions can work but were not tested.
 
 * https://www.timescale.com/products
 * https://docs.timescale.com/latest/getting-started/installation
 * https://www.postgresql.org/download/
 
-For not trusted or open to Internet networks it is important to secure PostgreSQL connections. Consult the PostgreSQL docs to learn how to config connections using certificates.
+On untrusted networks or networks open to the Internet it is important to secure PostgreSQL connections. Consult the PostgreSQL docs to learn how to configure connections using certificates.
 
 * https://www.postgresql.org/docs/18/ssl-tcp.html
 
@@ -171,7 +171,7 @@ Replication to a Standby server is recommended for high availability.
 
 ### 3. Grafana
 
-Grafana version 11.x.x, 12.x.x or 13.x.x, OSS or Enterprise editions. Previous versions may work but are not recommended.
+Grafana version 13.x.x, OSS or Enterprise editions. Previous versions may work but are not recommended.
 
 * https://grafana.com/grafana/download
 * https://grafana.com/docs/grafana/latest/installation/
@@ -180,7 +180,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 ### 4. Node.js
 
-* Node.js version 22.x.x or later. Previous versions may work, but are not tested or supported.
+* Node.js version 24.x.x or later. Previous versions may work, but are not tested or supported.
 * https://nodejs.org/en/
 
 ### 5. Golang
@@ -196,7 +196,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 ### 7. Other recommended software tools
 
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
-* Open SSL Light 1.1.1m (for Windows) - https://slproweb.com/download/Win64OpenSSL_Light-1_1_1m.msi.
+* OpenSSL 3.x (for Windows) - https://slproweb.com/products/Win32OpenSSL.html.
 * NSSM (for Windows) - https://nssm.cc/
 * Visual Studio Community (for Windows) - https://visualstudio.microsoft.com/vs/community/
 * Supervisor (for Linux) - http://supervisord.org/installing.html
@@ -239,9 +239,9 @@ Initiate the Postgresql database.
 
 Processes can be distributed on distinct servers, each server must have a different node name.
 
-Multiple JSON-SCADA systems can run on the same server, for this each one must have a distinct MongoDB and PostgreSQL database and a separate folder structure. Also a distinct listen HTTP ports must be configured.
+Multiple JSON-SCADA systems can run on the same server; each one must have distinct MongoDB and PostgreSQL databases, a separate folder structure and distinct HTTP listen ports.
 
-It is recommended to run JSON-SCADA processes as services or daemons. On Linux it is recommended the _Supervisor_ tool to manage processes. On Windows it is recommend to convert processes on Windows services using the NSSM tool.
+It is recommended to run JSON-SCADA processes as services or daemons. On Linux, use the _Supervisor_ tool to manage processes. On Windows, convert processes into Windows services with the NSSM tool.
 
 ### Supervisor Configuration (Linux)
 
@@ -249,160 +249,33 @@ Install supervisor for your OS
 
 * http://supervisord.org/installing.html
 
-Configure the _/etc/supervisord.conf_ file to manage JSON-SCADA processes.
+The platform installers already install supervisor and copy the program definitions:
 
+* Ubuntu: `platform-ubuntu-*/supervisord.conf` -> `/etc/supervisor/supervisord.conf`,
+  and `platform-ubuntu-*/*.ini` -> `/etc/supervisor/conf.d/`.
+* RHEL: `platform-rhel*/supervisord.conf` -> `/etc/supervisord.conf`, and
+  `platform-rhel*/*.ini` -> `/etc/supervisord.d/`.
 
-    ; Sample supervisor config file.
-    ;
-    ; For more information on the config file, please see:
-    ; http://supervisord.org/configuration.html
-    ;
+For a manual installation, do the same with the directory for your distribution
+(`platform-rhel9`, `platform-rhel10`, `platform-ubuntu-2404` or `platform-ubuntu-2604`):
 
-    [inet_http_server]         ; inet (TCP) server disabled by default
-    port=127.0.0.1:9000        ; ip_address:port specifier, *:port for all iface
-    username=jsonscada         ; default is no username (open server)
-    password=secret            ; default is no password (open server)
+    sudo apt install -y supervisor          # or: sudo dnf install -y supervisor
+    sudo cp platform-ubuntu-2404/supervisord.conf /etc/supervisor/supervisord.conf
+    sudo cp platform-ubuntu-2404/*.ini /etc/supervisor/conf.d/
 
-    [supervisord]
-    logfile=/tmp/supervisord.log ; main log file; default $CWD/supervisord.log
-    logfile_maxbytes=50MB        ; max main logfile bytes b4 rotation; default 50MB
-    logfile_backups=10           ; # of main logfile backups; 0 means none, default 10
-    loglevel=info                ; log level; default info; others: debug,warn,trace
-    pidfile=/tmp/supervisord.pid ; supervisord pidfile; default supervisord.pid
-    nodaemon=false               ; start in foreground if true; default false
-    silent=false                 ; no logs to stdout if true; default false
-    minfds=1024                  ; min. avail startup file descriptors; default 1024
-    minprocs=200                 ; min. avail process descriptors;default 200
+    # or, on RHEL-compatible systems:
+    sudo cp platform-rhel9/supervisord.conf /etc/supervisord.conf
+    sudo cp platform-rhel9/*.ini /etc/supervisord.d/
 
-    ; The rpcinterface:supervisor section must remain in the config file for
-    ; RPC (supervisorctl/web interface) to work.  Additional interfaces may be
-    ; added by defining them in separate [rpcinterface:x] sections.
+Adjust the `/home/jsonscada/json-scada` paths and the `user=` line in the `.ini` files
+if you installed elsewhere. Programs that ship with `autostart=false` stay stopped until
+you start them.
 
-    [rpcinterface:supervisor]
-    supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+Execute the supervisor daemon:
 
-    ; The supervisorctl section configures how supervisorctl will connect to
-    ; supervisord.  configure it match the settings in either the unix_http_server
-    ; or inet_http_server section.
+    sudo supervisord -c /etc/supervisor/supervisord.conf   # RHEL: -c /etc/supervisord.conf
 
-    [supervisorctl]
-    serverurl=unix:///tmp/supervisor.sock ; use a unix:// URL  for a unix socket
-    ;serverurl=http://127.0.0.1:9001 ; use an http:// url to specify an inet socket
-    ;username=user               ; should be same as in [*_http_server] if set
-    ;password=123                ; should be same as in [*_http_server] if set
-    ;prompt=mysupervisor         ; cmd line prompt (default "supervisor")
-    ;history_file=~/.sc_history  ; use readline history if available
-
-    [program:server_realtime_auth]
-    command=/usr/bin/node /home/jsuser/json-scada/src/server_realtime_auth/index.js
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/src/server_realtime_auth/    ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/server_realtime_auth.log    ; stdout log path, NONE for none;
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/server_realtime_auth.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-    [program:cs_data_processor]
-    command=/usr/bin/node /home/jsuser/json-scada/src/cs_data_processor/cs_data_processor.js
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/src/cs_data_processor/    ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/cs_data_processor.log    ; stdout log path, NONE for none;
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/cs_data_processor.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-    [program:calculations]
-    command=/home/jsuser/json-scada/bin/calculations
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/calculations.log    ; stdout log path, NONE for none;
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/calculations.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-    [program:iec104client]
-    command=/home/jsuser/json-scada/bin/iec104client 1 1
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/iec104client.log    ; stdout log path, NONE for none; 
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/iec104client.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-    [program:iec104server]
-    command=/home/jsuser/json-scada/bin/iec104server 1 1
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/bin/    ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/iec104server.log    ; stdout log path, NONE for none;
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/iec104server.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-    [program:pg_hist]
-    command=/home/jsuser/json-scada/sql/process_pg_hist.sh
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/sql/   ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/pg_hist.log    ; stdout log path, NONE for none;
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/pg_hist.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-    [program:pg_rtdata]
-    command=/home/jsuser/json-scada/sql/process_pg_rtdata.sh
-    ;process_name=%(program_name)s ; process_name expr (default %(program_name)s)
-    numprocs=1                     ; number of processes copies to start (def 1)
-    directory=/home/jsuser/json-scada/sql/    ; directory to cwd to before exec (def no cwd)
-    user=jsuser                    ; setuid to this UNIX account to run the program
-    stdout_logfile=/home/jsuser/json-scada/log/pg_rtdata.log    ; stdout log path, NONE for none;
-    stdout_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stdout_logfile_backups=0       ; # of stdout logfile backups (0 means none, default 10)
-    stdout_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-    stderr_logfile=/home/jsuser/json-scada/log/pg_rtdata.err    ; stderr log path, NONE for none;
-    stderr_logfile_maxbytes=1MB    ; max # logfile bytes b4 rotation (default 50MB)
-    stderr_logfile_backups=0       ; # of stderr logfile backups (0 means none, default 10)
-    stderr_capture_maxbytes=1MB    ; number of bytes in 'capturemode' (default 0)
-
-Execute the supervisor daemon
-
-    supervisord -c /etc/supervisord.conf
-
-Use the manager tool to start, stop and monitor the system
+Use the manager tool to start, stop and monitor the system:
 
     supervisorctl
         start all

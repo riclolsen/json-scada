@@ -101,10 +101,10 @@ RUN echo "shared_preload_libraries = 'timescaledb'" >> /etc/postgresql/*/main/po
 RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql
 
 # ==============================================================================
-# MONGODB 8
+# MONGODB 9
 # ==============================================================================
-RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.2.gpg \
-    && echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.2.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.2 multiverse" > /etc/apt/sources.list.d/mongodb-org-8.2.list \
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-9.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-9.gpg \
+    && echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-9.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/9.0 multiverse" > /etc/apt/sources.list.d/mongodb-org-9.0.list \
     && apt update \
     && apt install -y mongodb-org \
     && rm -rf /var/lib/apt/lists/*
@@ -319,6 +319,12 @@ RUN cd src/dnp3-go && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-client ./cmd/dnp3client && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/dnp3-server ./cmd/dnp3server
 
+# Build Modbus client and server in Go (services modbusclient/modbusserver)
+RUN cd src/modbus-go && \
+    go mod tidy && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-client ./cmd/modbusclient && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-server ./cmd/modbusserver
+
 # Copy ICCP client and server to bin
 RUN ARCH=${TARGETARCH:-$(dpkg --print-architecture)} && \
     cd src/iccp/iccp-server && \
@@ -347,7 +353,6 @@ RUN cd src/cs_data_processor && npm install \
     && cd ../demo_simul && npm install \
     && cd ../updateUser && npm install \
     && cd ../alarm_beep && npm install \
-    && cd ../modbus && npm install && npm run build \
     && cd ../node-red-driver && npm install && npm run build \
     && cd ../n8n-client && npm install \
     && cd ../carbone-reports && npm install \

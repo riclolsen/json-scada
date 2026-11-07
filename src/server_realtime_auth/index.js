@@ -26,6 +26,8 @@ const METABASE_SERVER =
   process.env.JS_METABASE_SERVER || 'http://127.0.0.1:3001'
 const NODERED_SERVER =
   process.env.NODERED_SERVER || 'http://127.0.0.1:1880/nodered/'
+// n8n editor, proxied on /n8n: n8n must run with N8N_PATH=/n8n/
+const N8N_SERVER = process.env.JS_N8N_SERVER || 'http://127.0.0.1:5678/'
 // supervisord web interface: the log viewer of the linux and docker runtimes
 const SUPERVISOR_SERVER =
   process.env.JS_SUPERVISOR_SERVER || 'http://admin:jsonscada@127.0.0.1:9000'
@@ -51,6 +53,8 @@ const UserActionsQueue = require('./userActionsQueue')
 const {
   createNoderedProxy,
   attachNoderedUpgrade,
+  createN8nProxy,
+  attachN8nUpgrade,
   createLogioProxy,
   attachLogioUpgrade,
   createSupervisorProxy,
@@ -153,6 +157,9 @@ let pool = null
   // reverse proxy for the node-red editor (mounted on /nodered, ws upgrade below)
   const noderedProxy = createNoderedProxy(NODERED_SERVER)
 
+  // reverse proxy for the n8n editor (mounted on /n8n, ws upgrade below)
+  const n8nProxy = createN8nProxy(N8N_SERVER)
+
   // reverse proxy for the log.io ui socket.io (mounted on /socket.io, ws upgrade below)
   const logioProxy = createLogioProxy(LOGIO_SERVER)
 
@@ -200,6 +207,7 @@ let pool = null
 
   // websocket upgrades do not pass through the express middlewares, proxy them here
   attachNoderedUpgrade(httpServer, noderedProxy)
+  attachN8nUpgrade(httpServer, n8nProxy)
   attachLogioUpgrade(httpServer, logioProxy)
 
   // if env variables defined use them, if not set local defaults
@@ -248,7 +256,8 @@ let pool = null
     LOGIO_SERVER,
     METABASE_SERVER,
     noderedProxy,
-    supervisorProxy
+    supervisorProxy,
+    n8nProxy
   )
 
   async function queryJSON(req, res) {

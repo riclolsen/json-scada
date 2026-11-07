@@ -83,7 +83,7 @@ import { STORAGE_KEY } from './i18n'
 
 const THEME_STORAGE_KEY = 'user-theme'
 
-const version = ref('v0.68-alpha')
+const version = ref('v0.69-alpha')
 const router = useRouter()
 const route = useRoute()
 const vuetifyTheme = useTheme()
@@ -111,6 +111,7 @@ const pageTitle = computed(() => {
     '/grafana': 'dashboard.grafana',
     '/metabase': 'dashboard.metabase',
     '/nodered': 'dashboard.nodered',
+    '/n8n': 'dashboard.n8n',
     '/apollo': 'dashboard.apollo',
     '/custom-developments': 'dashboard.customDevelopments',
     '/svg-edit': 'dashboard.svgedit',

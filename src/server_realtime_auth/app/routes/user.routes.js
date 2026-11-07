@@ -21,7 +21,8 @@ module.exports = function (
   logioServer,
   metabaseServer,
   noderedProxy,
-  supervisorProxy
+  supervisorProxy,
+  n8nProxy
 ) {
   app.use(function (req, res, next) {
     res.header(
@@ -78,6 +79,19 @@ module.exports = function (
     noderedProxy
   )
 
+  // reverse proxy for the n8n editor, restricted to admin users (workflows can run
+  // code on the n8n host); n8n keeps its own login on top of this one.
+  // websocket upgrades are proxied on the http server (see attachN8nUpgrade)
+  app.use(
+    '/n8n',
+    [authJwt.verifyToken, authJwt.isAdmin],
+    function (req, _, next) {
+      authController.addXWebAuthUser(req)
+      next()
+    },
+    n8nProxy
+  )
+
   // reverse proxy for log.io on Windows
   // for docker it will be used Dozzle
   // this handles the http requests (including the socket.io polling transport), the
@@ -120,10 +134,15 @@ module.exports = function (
   )
 
   // Entry point of the AdminUI log viewer: log.io on windows, where it is part of
-  // the installation, the supervisor web interface on linux and docker, where the
-  // processes are run by supervisord and log.io is not installed.
+  // the installation, Dozzle (served on /log-io) when it is the log server, as in
+  // the docker compose demo, which has no supervisord, otherwise the supervisor web
+  // interface on linux and in the docker image, where supervisord runs the processes.
   app.get('/log-viewer-ui', (req, res) => {
-    res.redirect(process.platform === 'win32' ? '/log-io' : '/supervisor/')
+    res.redirect(
+      process.platform === 'win32' || logioServer.indexOf('//dozzle') !== -1
+        ? '/log-io/'
+        : '/supervisor/'
+    )
   })
 
   app.use('/static', express.static('../log-io/ui/build/static'))

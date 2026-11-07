@@ -38,13 +38,13 @@ If you encounter secure connection problems, please report your findings.
 * **_tlsAllowChainErrors_** - Allows for certificate chain errors. **Optional parameter**.
 * **_tlsInsecure_** - Relax other security checks. **Optional parameter**.
 
-For a local unsecured connection to a database server just the three first parameters are required. **Do not open unsecured MongoDB servers to the outside network!**
+For a local unsecured connection to a database server just the first three parameters are required. **Do not open unsecured MongoDB servers to the outside network!**
 
 To use MongoDB authorization, specify the database user and password in the connection string. This may be enough for protected networks. To connect to the database server using the MongoDB Compass tool it may be necessary to add "authSource=json_scada_db_name" to the end of the connection string.
 
 To encrypt connections to the database with TLS it is necessary to create and specify certificates in the config file that can be accepted by the MongoDB server. This is important for connections over the Internet and untrusted networks.
 
-MongoDB servers can be Community, Enterprise or Atlas Cloud, all on 6.0 or later version. Other servers are not tested or supported.
+MongoDB servers can be Community, Enterprise or Atlas Cloud, all on 8.0 or later version. Other servers are not tested or supported.
 
 The hostname(s) used in the connection string must match the hostnames for the MongoDB replica set members. The hostname must be available via DNS or be present in the server's _/etc/hosts_ file. A replica set is mandatory for the change streams to work and must be created with at least one member. A three member replica set is highly recommended for redundancy and high availability.
 

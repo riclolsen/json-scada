@@ -15,7 +15,7 @@ Model Context Protocol (MCP) server that gives AI assistants (Claude, Cline, Cur
 - **Package manager:** npm
 - **Build:** `npm run build` (TypeScript -> JS in `dist/`)
 - **SDK:** MCP TypeScript SDK v2 (`@modelcontextprotocol/server` + `@modelcontextprotocol/node`), protocol revision 2026-07-28 with legacy (2025-era) fallback
-- **Transports:** stdio via `serveStdio(factory)`; HTTP (`--http` / `JS_MCPJSDB_TRANSPORT=http`, `JS_MCPJSDB_IP_BIND`, `JS_MCPJSDB_HTTP_PORT`) via stateless `createMcpHandler(factory)` + `toNodeHandler` on plain `node:http`, with localhost Host/Origin guards when bound to loopback
+- **Transports:** stdio via `serveStdio(factory)`; HTTP (`--http` / `JS_MCPJSDB_TRANSPORT=http`, `JS_MCPJSDB_IP_BIND`, `JS_MCPJSDB_HTTP_PORT`) via stateless `createMcpHandler(factory)` + `toNodeHandler` on plain `node:http`, with Host/Origin guards (`JS_MCPJSDB_ALLOWED_HOSTS` list on any bind address, else localhost when bound to loopback)
 - `buildServer()` in `src/mcp-server.ts` is the single factory for both transports and both protocol eras; register tools/resources there
 - All environment variables use the `JS_MCPJSDB_` prefix (`package.json` `config.envPrefix`); never read generic names like `PORT`/`BIND`
 - Tool `inputSchema` must be a `z.object({...})` (zod >= 4.2), not a raw shape
@@ -26,7 +26,7 @@ Model Context Protocol (MCP) server that gives AI assistants (Claude, Cline, Cur
 - Admin tools never write MongoDB config collections directly; validation, protocol defaults, restart scheduling, NSSM/supervisord control and `userActions` auditing stay owned by `server_realtime_auth`
 - Updates read the current document, merge only the given fields and send the full document back (the API's update handlers expect it). Never send back driver-maintained runtime fields (`activeNodeName`, `activeNodeKeepAliveTimeTag`, `softwareVersion`, `stats`) or tag live-value fields
 - Create flows (create empty, then update) delete the placeholder if the update fails
-- Delete/stop/restart tools carry `destructiveHint: true`; read tools carry `readOnlyHint: true`
+- Every tool has a human-readable `title` and `annotations`: read tools carry `readOnlyHint: true`; delete/stop/restart tools carry `destructiveHint: true`; `send_command` (acts on field equipment) carries `destructiveHint: true` and `openWorldHint: true`
 - `jsonscada/drivers.ts` holds the protocol driver name list (mirrors the AdminUI `ProtocolDriverInstancesTab` list) and each driver's README path under `src/`; keep both in sync when drivers are added
 
 ## Work Guidance

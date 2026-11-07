@@ -104,8 +104,8 @@ Add the following files to \json-scada\platform-windows:
     OpcWatch.exe
     vc_redist.x64.exe
     aspnetcore-runtime-8.0.23-win-x64.exe (or newer as in the json-scada.nsi file)
-    dotnet-runtime-8.0.23-win-x64.exe (or newer as in the json-scada.nsi file)
-    dotnet-runtime-10.0.2-win-x64.exe (or newer as in the json-scada.nsi file)
+    dotnet-runtime-8.0.31-win-x64.exe (or newer as in the json-scada.nsi file)
+    dotnet-runtime-10.0.12-win-x64.exe (or newer as in the json-scada.nsi file)
     OPC Core Components Redistributable (x64) 3.00.108.msi (or newer as in the json-scada.nsi file)
 
 Build the installer

@@ -1603,14 +1603,17 @@ CREATE TABLE public.playlist (
     name character varying(255) NOT NULL,
     "interval" character varying(255) NOT NULL,
     org_id bigint NOT NULL,
-    uid character varying(80) DEFAULT 0 NOT NULL
+    uid character varying(80) DEFAULT 0 NOT NULL,
+    created_at bigint DEFAULT 0 NOT NULL,
+    updated_at bigint DEFAULT 0 NOT NULL
 );
+-- created_at/updated_at: read by the Grafana 13 unified-storage playlist migration, which
+-- exits at startup without them (13.0.x has no SQL migration creating them). Newer Grafana
+-- adds them again with its own "Add playlist column created_at/updated_at" migrations,
+-- recorded as done in migration_log (ids 488, 489) so that its ADD COLUMN is skipped.
 
 
 ALTER TABLE public.playlist OWNER TO postgres;
--- COMMENT FOR GRAFANA 13.2.0
--- ALTER TABLE public.playlist ADD COLUMN IF NOT EXISTS created_at timestamp with time zone;
--- ALTER TABLE public.playlist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone;
 
 --
 -- TOC entry 238 (class 1259 OID 20491)
@@ -3949,6 +3952,8 @@ COPY public.migration_log (id, migration_id, sql, success, error, "timestamp") F
 485	Add unique index for folder.uid and folder.org_id	CREATE UNIQUE INDEX "UQE_folder_uid_org_id" ON "folder" ("uid","org_id");	t		2024-05-15 15:35:16
 486	Update folder title length	ALTER TABLE "folder" ALTER "title" TYPE VARCHAR(189);	t		2024-05-15 15:35:16
 487	Add unique index for folder.title and folder.parent_uid	CREATE UNIQUE INDEX "UQE_folder_title_parent_uid" ON "folder" ("title","parent_uid");	t		2024-05-15 15:35:16
+488	Add playlist column created_at	alter table "playlist" ADD COLUMN "created_at" BIGINT NOT NULL DEFAULT 0 	t		2026-11-04 00:00:00
+489	Add playlist column updated_at	alter table "playlist" ADD COLUMN "updated_at" BIGINT NOT NULL DEFAULT 0 	t		2026-11-04 00:00:00
 \.
 
 
@@ -4521,7 +4526,7 @@ SELECT pg_catalog.setval('public.login_attempt_id_seq1', 1, false);
 -- Name: migration_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migration_log_id_seq', 487, true);
+SELECT pg_catalog.setval('public.migration_log_id_seq', 489, true);
 
 
 --

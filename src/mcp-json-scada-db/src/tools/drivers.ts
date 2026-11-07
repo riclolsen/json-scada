@@ -103,6 +103,7 @@ export function registerDriverDocTools(server: McpServer) {
   server.registerTool(
     'list_protocol_drivers',
     {
+      title: 'List Protocol Drivers',
       description:
         'List the protocol driver names supported by JSON-SCADA (values for protocolDriver ' +
         'in driver instances and connections), with client/server role.',
@@ -121,6 +122,7 @@ export function registerDriverDocTools(server: McpServer) {
   server.registerTool(
     'get_protocol_driver_documentation',
     {
+      title: 'Get Protocol Driver Documentation',
       description:
         'Return the README of a protocol driver, documenting its connection settings ' +
         '(protocolConnections fields), tag addressing (protocolSource* fields) and command handling. ' +
@@ -151,6 +153,7 @@ export function registerDriverTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'list_driver_processes',
     {
+      title: 'List Driver Processes',
       description:
         'List all protocol driver instances with their configuration and OS service (process) ' +
         'state: installed, state (running/stopped/...), startMode, manageable, restartPending.',
@@ -186,6 +189,7 @@ export function registerDriverTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'create_driver_instance',
     {
+      title: 'Create Driver Instance',
       description:
         'Create a protocol driver instance (one OS process of a driver). When automatic ' +
         'service management is on, the OS service is created too. Connections are then ' +
@@ -237,6 +241,7 @@ export function registerDriverTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'update_driver_instance',
     {
+      title: 'Update Driver Instance',
       description:
         'Change settings of an existing protocol driver instance (enabled, logLevel, nodeNames, ' +
         'process management). Only the given fields change. The OS service is reconciled ' +
@@ -274,6 +279,7 @@ export function registerDriverTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'delete_driver_instance',
     {
+      title: 'Delete Driver Instance',
       description:
         'Delete a protocol driver instance. Its OS service is stopped and removed when ' +
         'automatic service management is on. Connections of the instance are NOT deleted ' +
@@ -305,6 +311,7 @@ export function registerDriverTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'control_driver_process',
     {
+      title: 'Control Driver Process',
       description:
         'Start, stop or restart the OS service (process) of a protocol driver instance. ' +
         'Stopping a driver interrupts data acquisition and commands for all its connections.',
@@ -335,6 +342,7 @@ export function registerDriverTools(server: McpServer, api: AdminApiClient) {
   server.registerTool(
     'sync_driver_services',
     {
+      title: 'Sync Driver Services',
       description:
         'Reconcile OS services with the configured driver instances: create missing services ' +
         'and update changed ones. With removeOrphans, also remove services of instances that ' +

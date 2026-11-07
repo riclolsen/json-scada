@@ -29,6 +29,8 @@ const Log = require('./simple-logger')
 
 const NODERED_MOUNT_PATH = '/nodered'
 const NODERED_DEFAULT_SERVER = 'http://127.0.0.1:1880/nodered/'
+const N8N_MOUNT_PATH = '/n8n'
+const N8N_DEFAULT_SERVER = 'http://127.0.0.1:5678/'
 const LOGIO_MOUNT_PATH = '/log-io'
 const LOGIO_DEFAULT_SERVER = 'http://127.0.0.1:6688'
 const SUPERVISOR_MOUNT_PATH = '/supervisor'
@@ -83,28 +85,26 @@ function checkUpgradeToken(req) {
   }
 }
 
-// Reverse proxy for the Node-RED editor mounted on /nodered.
-// Node-RED serves itself under a prefix of its own (httpAdminRoot, '/nodered/' by default),
-// so the path of the target url replaces the mount path on the forwarded request.
-// Websocket upgrades (<httpAdminRoot>/comms) are handled by attachNoderedUpgrade.
-function createNoderedProxy(noderedServer) {
+// Reverse proxy for a web app that serves itself under a path prefix of its own,
+// mounted on mountPath. The path of the target url replaces the mount path on the
+// forwarded request (nothing to rewrite when both are the same).
+// Websocket upgrades are handled by attachProxyUpgrade, to keep them authenticated.
+function createPrefixedProxy(label, mountPath, server, defaultServer) {
   let target
   try {
-    target = new URL(noderedServer)
+    target = new URL(server)
   } catch (err) {
     Log.log(
-      'Invalid Node-RED server url: ' +
-        noderedServer +
-        ', using ' +
-        NODERED_DEFAULT_SERVER
+      'Invalid ' + label + ' server url: ' + server + ', using ' + defaultServer
     )
-    target = new URL(NODERED_DEFAULT_SERVER)
+    target = new URL(defaultServer)
   }
 
   const basePath = target.pathname.replace(/\/+$/, '')
   Log.log(
-    'Node-RED reverse proxy on ' +
-      NODERED_MOUNT_PATH +
+    label +
+      ' reverse proxy on ' +
+      mountPath +
       ' -> ' +
       target.origin +
       basePath +
@@ -115,26 +115,47 @@ function createNoderedProxy(noderedServer) {
     createProxyMiddleware({
       target: target.origin,
       changeOrigin: true,
-      ws: false, // upgrades are handled by attachNoderedUpgrade, to keep them authenticated
-      pathFilter: mountPathFilter(NODERED_MOUNT_PATH),
-      ...(basePath === NODERED_MOUNT_PATH
+      ws: false, // upgrades are handled by attachProxyUpgrade, to keep them authenticated
+      pathFilter: mountPathFilter(mountPath),
+      ...(basePath === mountPath
         ? {}
-        : { pathRewrite: { ['^' + NODERED_MOUNT_PATH]: basePath } }),
+        : { pathRewrite: { ['^' + mountPath]: basePath } }),
       on: {
         // the json/urlencoded body parsers run before this proxy, restore the consumed body
         proxyReq: fixRequestBody,
         error: (err, req, resOrSocket) => {
-          Log.log('Node-RED proxy error: ' + err.message)
+          Log.log(label + ' proxy error: ' + err.message)
           if (typeof resOrSocket?.writeHead === 'function') {
             if (!resOrSocket.headersSent) {
               resOrSocket.writeHead(502, { 'Content-Type': 'text/plain' })
-              resOrSocket.end('Node-RED server not available')
+              resOrSocket.end(label + ' server not available')
             }
           } else resOrSocket?.destroy?.()
         },
       },
     })
   )
+}
+
+// Reverse proxy for the Node-RED editor mounted on /nodered.
+// Node-RED serves itself under httpAdminRoot ('/nodered/' by default).
+// Websocket upgrades (<httpAdminRoot>/comms) are handled by attachNoderedUpgrade.
+function createNoderedProxy(noderedServer) {
+  return createPrefixedProxy(
+    'Node-RED',
+    NODERED_MOUNT_PATH,
+    noderedServer,
+    NODERED_DEFAULT_SERVER
+  )
+}
+
+// Reverse proxy for the n8n editor mounted on /n8n.
+// n8n serves everything from its root (/, /static, /rest, /rest/push) and uses N8N_PATH
+// only for the links of its pages, so it must run with N8N_PATH=/n8n/ and the mount
+// path is stripped (target url without a path, the default). Websocket upgrades (push
+// channel, /n8n/rest/push) are handled by attachN8nUpgrade.
+function createN8nProxy(n8nServer) {
+  return createPrefixedProxy('n8n', N8N_MOUNT_PATH, n8nServer, N8N_DEFAULT_SERVER)
 }
 
 // Reverse proxy for the websocket transport of the log.io ui, mounted on /log-io.
@@ -307,6 +328,11 @@ function attachNoderedUpgrade(httpServer, noderedProxy) {
   attachProxyUpgrade(httpServer, noderedProxy, NODERED_MOUNT_PATH, 'Node-RED')
 }
 
+// Websocket upgrades of the n8n editor push channel (/n8n/rest/push).
+function attachN8nUpgrade(httpServer, n8nProxy) {
+  attachProxyUpgrade(httpServer, n8nProxy, N8N_MOUNT_PATH, 'n8n')
+}
+
 // Websocket upgrades of the log.io ui (/log-io/socket.io).
 function attachLogioUpgrade(httpServer, logioProxy) {
   attachProxyUpgrade(httpServer, logioProxy, LOGIO_MOUNT_PATH, 'Log.io')
@@ -315,6 +341,8 @@ function attachLogioUpgrade(httpServer, logioProxy) {
 module.exports = {
   NODERED_MOUNT_PATH,
   NODERED_DEFAULT_SERVER,
+  N8N_MOUNT_PATH,
+  N8N_DEFAULT_SERVER,
   LOGIO_MOUNT_PATH,
   LOGIO_DEFAULT_SERVER,
   SUPERVISOR_MOUNT_PATH,
@@ -324,6 +352,8 @@ module.exports = {
   withMountedUrl,
   createNoderedProxy,
   attachNoderedUpgrade,
+  createN8nProxy,
+  attachN8nUpgrade,
   createLogioProxy,
   attachLogioUpgrade,
 }

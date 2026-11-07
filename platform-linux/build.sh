@@ -118,6 +118,13 @@ go mod tidy
 go build -ldflags="-s -w" -o ../../bin/dnp3-client ./cmd/dnp3client
 go build -ldflags="-s -w" -o ../../bin/dnp3-server ./cmd/dnp3server
 
+# Go implementation of the Modbus client and server drivers, replacing the
+# former Node.js drivers in src/modbus (services modbusclient/modbusserver).
+cd ../modbus-go
+go mod tidy
+go build -ldflags="-s -w" -o ../../bin/modbus-client ./cmd/modbusclient
+go build -ldflags="-s -w" -o ../../bin/modbus-server ./cmd/modbusserver
+
 cd ../iec60870-5
 go mod tidy
 go build -o ../../bin/iec104client ./cmd/iec104client
@@ -201,9 +208,6 @@ cd ../mqtt-sparkplug
 npm install
 cd ../OPC-UA-Server
 npm install
-cd ../modbus
-npm install
-npm run build
 cd ../node-red-driver
 npm install
 npm run build

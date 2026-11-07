@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Project documentation: installation guides, architecture descriptions, schema documentation, developer guides, and report generator docs.
+Project documentation: installation guides, architecture descriptions, schema documentation, developer guides, integration guides, and report generator docs.
 
 ## Ownership
 
@@ -17,8 +17,11 @@ Project documentation: installation guides, architecture descriptions, schema do
 - Key documents:
   - `install.md` — installation guide (primary)
   - `docker_image.md` — Docker deployment
+  - `build_windows.md` — Windows build toolchain and installer build
   - `schema.md` — MongoDB/PostgreSQL schema documentation
-  - `DEVELOPER_GUIDE.md` — development guide
+  - `DEVELOPER_GUIDE.md` — protocol driver development guide
+  - `nodered-integration.md` — Node-RED integration guide
+  - `n8n-integration.md` — n8n integration guide
   - `report_generators.md` — report generation docs
   - `JSON-SCADA_Arquitecture.txt` — PlantUML architecture diagram
   - `JSON-SCADA_ARCHITECTURE.drawio` — Draw.io architecture diagram

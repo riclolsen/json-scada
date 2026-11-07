@@ -258,16 +258,16 @@ nssm set JSON_SCADA_opcuaserver AppRotateBytes 10000000
 nssm set JSON_SCADA_opcuaserver Start SERVICE_AUTO_START
 
 REM service for MODBUS Client (change Start to SERVICE_AUTO_START to enable)
-nssm install JSON_SCADA_modbusclient "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\modbus\dist\client\main.js" 1 1 "c:\json-scada\conf\json-scada.json"
-nssm set JSON_SCADA_modbusclient AppDirectory "C:\json-scada\src\modbus"
+nssm install JSON_SCADA_modbusclient "C:\json-scada\bin\modbus-client.exe" 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_modbusclient AppDirectory "C:\json-scada\bin"
 nssm set JSON_SCADA_modbusclient AppStdout C:\json-scada\log\modbusclient.log
 nssm set JSON_SCADA_modbusclient AppRotateOnline 1
 nssm set JSON_SCADA_modbusclient AppRotateBytes 10000000
 nssm set JSON_SCADA_modbusclient Start SERVICE_DEMAND_START
 
 REM service for MODBUS Server (change Start to SERVICE_AUTO_START to enable)
-nssm install JSON_SCADA_modbusserver "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\modbus\dist\server\main.js" 1 1 "c:\json-scada\conf\json-scada.json"
-nssm set JSON_SCADA_modbusserver AppDirectory "C:\json-scada\src\modbus"
+nssm install JSON_SCADA_modbusserver "C:\json-scada\bin\modbus-server.exe" 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_modbusserver AppDirectory "C:\json-scada\bin"
 nssm set JSON_SCADA_modbusserver AppStdout C:\json-scada\log\modbusserver.log
 nssm set JSON_SCADA_modbusserver AppRotateOnline 1
 nssm set JSON_SCADA_modbusserver AppRotateBytes 10000000

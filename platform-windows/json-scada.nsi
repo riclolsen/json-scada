@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.68"
-!define VERSION_ "0.68.0.0"
+!define VERSION "v.0.69"
+!define VERSION_ "0.69.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -465,16 +465,6 @@ SetRegView 64
   File /a /x *_plan.md "..\src\OPC-UA-Server\*.md"
   SetOutPath $INSTDIR\src\OPC-UA-Server\node_modules
   File /a /r "..\src\OPC-UA-Server\node_modules\*.*"
-
-  SetOutPath $INSTDIR\src\modbus
-  File /a "..\src\modbus\*.json"
-  File /a  /x *_plan.md "..\src\modbus\*.md"
-  SetOutPath $INSTDIR\src\modbus\node_modules
-  File /a /r "..\src\modbus\node_modules\*.*"
-  SetOutPath $INSTDIR\src\modbus\src
-  File /a /r "..\src\modbus\src\*.*"
-  SetOutPath $INSTDIR\src\modbus\dist
-  File /a /r "..\src\modbus\dist\*.*"
 
   SetOutPath $INSTDIR\src\n8n-client
   File /a "..\src\n8n-client\*.js"

@@ -121,6 +121,20 @@ n8n is **fair-code** licensed; JSON-SCADA does not bundle it. Install it on your
 
 Keep n8n's port (5678) firewalled; expose it via SSH tunnel or a reverse proxy.
 
+### Open the n8n editor from the web UI
+
+`server_realtime_auth` proxies the n8n editor on `/n8n`, and the AdminUI dashboard has an
+**n8n** shortcut (admin users only) that shows it at `/#/n8n`. The route requires a
+JSON-SCADA admin login, and n8n keeps its own login on top of it.
+
+- Run n8n with `N8N_PATH=/n8n/` and `N8N_EDITOR_BASE_URL=http(s)://<server>/n8n/`. n8n still
+  serves everything (pages, `/rest`, the `/rest/push` websocket, `/webhook`) from its root:
+  `N8N_PATH` only sets the links in its pages, and the proxy strips `/n8n`. Webhook URLs
+  therefore stay `http://<n8n host>:5678/webhook/<path>`.
+- Point `server_realtime_auth` at n8n with `JS_N8N_SERVER` (default `http://127.0.0.1:5678/`).
+- With `N8N_PATH` set, the editor no longer works when opened on port 5678 directly; use
+  `/n8n/` through the web server.
+
 ## 6. Try it with the demo stack
 
 ```bash
@@ -128,7 +142,9 @@ cd demo-docker
 docker compose up -d
 ```
 
-Services `n8n` (port 5678) and `n8n-client` start alongside the demo. Enable the demo
+Services `n8n` (port 5678, webhooks) and `n8n-client` start alongside the demo. Open the
+n8n editor at http://127.0.0.1/n8n/ (or the dashboard **n8n** shortcut) and create the n8n
+owner account on first use. Enable the demo
 **N8N1** connection in the AdminUI (it ships disabled), point its `endpointURLs` at your
 n8n webhook, and import an example workflow from
 [examples](https://github.com/json-scada/n8n-nodes-jsonscada/tree/main/examples).

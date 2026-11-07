@@ -19,6 +19,8 @@ import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import {
   toNodeHandler,
+  hostHeaderValidation,
+  originValidation,
   localhostHostValidation,
   localhostOriginValidation,
 } from "@modelcontextprotocol/node";
@@ -141,13 +143,24 @@ async function main() {
         onerror: (error) => console.error("HTTP request error:", error),
       });
 
-      // DNS rebinding protection when bound to loopback only
+      // DNS rebinding protection: Host/Origin must be in ALLOWED_HOSTS when it is set
+      // (any bind address, e.g. 0.0.0.0 in a container published on the host loopback),
+      // otherwise localhost when bound to loopback, otherwise no check
+      const allowedHosts = (process.env[ENV_PREFIX + "ALLOWED_HOSTS"] || "")
+        .split(",")
+        .map((h) => h.trim())
+        .filter((h) => h !== "");
       const loopback = ["127.0.0.1", "localhost", "::1"].includes(bind);
-      const validateHost = localhostHostValidation();
-      const validateOrigin = localhostOriginValidation();
+      const guarded = allowedHosts.length > 0 || loopback;
+      const validateHost = allowedHosts.length
+        ? hostHeaderValidation(allowedHosts)
+        : localhostHostValidation();
+      const validateOrigin = allowedHosts.length
+        ? originValidation(allowedHosts)
+        : localhostOriginValidation();
 
       const httpServer = createServer(async (req, res) => {
-        if (loopback && (!validateHost(req, res) || !validateOrigin(req, res)))
+        if (guarded && (!validateHost(req, res) || !validateOrigin(req, res)))
           return;
         await mcpHandler(req, res);
       });

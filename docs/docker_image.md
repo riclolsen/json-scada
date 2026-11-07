@@ -12,6 +12,7 @@ It includes
 - IEC 60870-5-104 Client that connects to the online demo for data acquisition.
 - IEC 60870-5-104 Server listening on the localhost.
 - DNP3 Server.
+- Modbus client and server (Go).
 - OPC UA Server.
 - OPC UA Client.
 - MQTT Sparkplug B.

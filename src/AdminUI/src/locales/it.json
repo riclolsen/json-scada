@@ -38,6 +38,7 @@
     "grafana": "Grafana",
     "metabase": "Metabase",
     "nodered": "NodeRed",
+    "n8n": "n8n",
     "customDevelopments": "Sviluppi personalizzati",
     "open": "Aprire",
     "svgedit": "Editor SVG"

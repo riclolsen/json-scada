@@ -29,6 +29,8 @@ export function registerHistoryTools(server: McpServer, mgr: ConnectionManager) 
   server.registerTool(
     'get_history',
     {
+      title: 'Get History',
+      annotations: { readOnlyHint: true },
       description:
         'Get historical values for a point from the hist collection, newest first',
       inputSchema: z.object({
@@ -71,6 +73,8 @@ export function registerHistoryTools(server: McpServer, mgr: ConnectionManager) 
   server.registerTool(
     'get_soe_events',
     {
+      title: 'Get SOE Events',
+      annotations: { readOnlyHint: true },
       description:
         'Get Sequence of Events (SOE) records for digital points, newest first',
       inputSchema: z.object({

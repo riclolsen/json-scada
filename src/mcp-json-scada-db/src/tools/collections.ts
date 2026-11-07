@@ -42,7 +42,11 @@ export function registerCollectionsTools(
 ) {
   server.registerTool(
     'list_collections',
-    { description: 'List all collections in the database' },
+    {
+      title: 'List Collections',
+      annotations: { readOnlyHint: true },
+      description: 'List all collections in the database',
+    },
     async () => {
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
       try {
@@ -63,6 +67,8 @@ export function registerCollectionsTools(
   server.registerTool(
     'query_collection',
     {
+      title: 'Query Collection',
+      annotations: { readOnlyHint: true },
       description:
         'Run a read-only query on any collection. The query, projection and sort are ' +
         'MongoDB Extended JSON strings, so operators like {"$gte": {"$date": "..."}} are supported.',

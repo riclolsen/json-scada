@@ -20,7 +20,7 @@ This guide will walk you through the architecture, common patterns, and language
 
 ## Core Architecture Concepts
 
-Understanding the core architectural concepts of JSON SCADA is essential before diving into driver development. Drivers are standalone processes that interact with the central MongoDB database for most oftheir operations.
+Understanding the core architectural concepts of JSON SCADA is essential before diving into driver development. Drivers are standalone processes that interact with the central MongoDB database for most of their operations.
 
 ### Main Configuration File (`json-scada.json`)
 
@@ -69,7 +69,7 @@ To link a tag to your driver for **data acquisition**:
 
 *   `protocolSourceConnectionNumber` (Double): Must match the `protocolConnectionNumber` of one of the connections your driver instance is configured to handle.
 *   `protocolSourceObjectAddress` (String/Double): A string that your driver understands as the unique address or identifier of the data point within the external device/protocol (e.g., an OPC-UA NodeId, a Modbus register address, an MQTT topic, a DNP3 point index).
-*   `protocolSourceASDU` (String): Type of Application Service Data Unit. A string indicating the data type or format as understood by your protocol (e.g., "UINT16", "FLOAT32", "DIGITAL_INPUT", "JSON"). This helps your driver interpret the data correctly.
+*   `protocolSourceASDU` (String/Double): Type of Application Service Data Unit. A value indicating the data type or format as understood by your protocol (e.g., "UINT16", "FLOAT32", "DIGITAL_INPUT", "JSON"). This helps your driver interpret the data correctly.
 *   `protocolSourceCommonAddress` (String/Double): Used to identify groups of objects that can have the same `protocolSourceObjectAddress` (e.g., DNP3 can have repeated addresses for binary inputs (group 1) and analog inputs (group 30).
 *   `protocolSourceCommandUseSBO` (Boolean): Used to flag commands that require the Select-Before-Operate procedure.
 *   `protocolSourceCommandDuration` (Double): Used to specify additional command options like duration of pulse.
@@ -171,7 +171,7 @@ When developing a protocol driver in C#, you'll typically use the official Mongo
 
 *   A typical C# driver is a console application.
 *   Solution file (`.sln`)
-*   Project file (`.csproj`) targeting a .NET version compatible with other JSON SCADA components (e.g., .NET 6, .NET 8).
+*   Project file (`.csproj`) targeting a .NET version compatible with other JSON SCADA components (currently .NET 8, `net8.0`).
 *   `Program.cs`: Main entry point.
 *   Separate `.cs` files for different concerns (e.g., `MongoLogic.cs`, `ProtocolHandler.cs`, `ConfigClasses.cs`).
 

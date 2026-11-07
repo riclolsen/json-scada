@@ -38,6 +38,7 @@
     "grafana": "Графана",
     "metabase": "Метабаза",
     "nodered": "NodeRed",
+    "n8n": "n8n",
     "customDevelopments": "Индивидуальные разработки",
     "open": "Открыть",
     "svgedit": "Редактор SVG"

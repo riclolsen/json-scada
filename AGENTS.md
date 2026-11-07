@@ -90,6 +90,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/AdminUI/](src/AdminUI/AGENTS.md) — Vue.js web admin interface SPA
 - [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, driver processes)
 - [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in alternative)
+- [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
 - [src/server_realtime_auth/](src/server_realtime_auth/AGENTS.md) — Realtime WebSocket server (Node.js)
 - [src/calculations/](src/calculations/AGENTS.md) — Calculations engine (Go)
@@ -149,7 +150,7 @@ Docker Compose setup for full JSON-SCADA demo stack.
 
 ### Others
 
-- `compile-docker/` — Docker compilation projects (.NET)
+- `compile-docker/` — Docker Compose build of the demo binaries (Go drivers, PLC4J) and Node.js modules into `demo-docker/bin` and `src/`; keep its service set in step with the root `Dockerfile` build stages and `demo-docker/docker-compose.yaml` (see [compile-docker/README.md](compile-docker/README.md))
 - `README.md` — authoritative project front page; `index.md` is generated from it by `node docs/sync-index.mjs` (never edit `index.md` by hand). After changing either file or any heading they link to, run `node docs/sync-index.mjs --check` (fails on a stale `index.md` or a broken link/anchor)
 - `Dockerfile` — Main Docker image build
 - `supervisord.conf` — Process manager config
