@@ -10,7 +10,7 @@ Compiled cyclic calculations engine written in Go. Executes user-defined calcula
 
 ## Local Contracts
 
-- **Language:** Go 1.21+
+- **Language:** Go 1.26+
 - **Single file:** `calculations.go` (single main package)
 - **Dependency management:** `go.mod` / `go.sum`
 - **Build output:** `calculations.exe`

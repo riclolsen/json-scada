@@ -143,11 +143,20 @@ When no parameter is given, the legacy default `ws://localhost:9001` is used.
 
 The provided nginx configuration templates ([conf-templates/nginx_http.conf](../../conf-templates/nginx_http.conf)) proxy `/camNNN` paths to the corresponding local JSMpeg WebSocket ports (`/cam001` → port 9001, `/cam002` → port 9002, ...), so the camera stream can be reached through the main web server with `camera.html?CameraName=CAM001&camId=001`.
 
+## Run
+
+Requires Node.js and `ffmpeg` (see `JS_ONVIF_FFMPEG_PATH` below).
+
+    cd src/camera-onvif
+    npm install
+    node index.js [instance number] [log level] [config file]
+
+The optional arguments default to instance `1`, log level `1` and
+`../../conf/json-scada.json`.
+
 ## Environment Variables
 
 - _**JS_CONFIG_FILE**_ - Path to the _json-scada.json_ config file.
 - _**JS_ONVIF_INSTANCE**_ - Instance number (when not passed as first command line argument).
 - _**JS_ONVIF_LOGLEVEL**_ - Log level (when not passed as second command line argument).
 - _**JS_ONVIF_FFMPEG_PATH**_ - Path of the ffmpeg executable. When not defined, the driver uses `ffmpeg.exe`/`ffmpeg` from its own folder if present, else `ffmpeg` from the PATH.
-
-Command line arguments (all optional): `node index.js <instance> <log level> <config file path>`.

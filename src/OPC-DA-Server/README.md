@@ -91,7 +91,7 @@ OPC-DA clients browse and subscribe using these item IDs.
 | Windows 10/11 or Server 2016+ | DCOM requires Windows |
 | .NET Framework 4.8 | Installed on all modern Windows |
 | Visual Studio 2022 | For building the plugin DLL |
-| MongoDB 6.0+ (replica set) | Change streams require a replica set |
+| MongoDB 8.0+ (replica set) | Change streams require a replica set |
 | Technosoftware OpcNetDaServer.exe | From the ClassicServerSolutions distribution |
 
 ## Directory Layout

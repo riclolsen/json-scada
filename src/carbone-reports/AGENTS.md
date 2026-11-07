@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Node.js service for generating PDF/XLSX reports using the Carbone report engine. Creates templated SCADA reports from MongoDB data.
+Node.js example report generator using the Carbone report engine. Reads the point list from MongoDB and renders an ODS template into an ODS file.
 
 ## Ownership
 
-- carbone-reports owns the Carbone report generation integration
+- carbone-reports owns the Carbone report generation example
 
 ## Local Contracts
 
@@ -17,15 +17,17 @@ Node.js service for generating PDF/XLSX reports using the Carbone report engine.
   - `app-defs.js` — application definitions
   - `load-config.js` — configuration loader
   - `simple-logger.js` — logging utility
-  - `point_list_template.ods` — template file for point list reports
-- **Config:** INI file via Supervisor or environment variables
+  - `point_list_template.ods` — Carbone template
+- **Config:** JSON-SCADA config file (`JS_CONFIG_FILE`)
+- **Output:** `point_list.ods`
 
 ## Work Guidance
 
-- Uses Carbone.js templating engine to merge MongoDB data with ODS templates
-- Generates PDF, XLSX, or other document formats
-- Report templates define layout and data binding
+- Uses Carbone.js templating to merge MongoDB data with the ODS template
+- The example reads `_id`, `tag` and `value` from every `realtimeData` point
+- Carbone can render other formats, but this example writes ODS only
+- It is a one-shot program, not a long-running service
 
 ## Verification
 
-- Verify report generation with sample data and templates
+- `npm install` then `node index.js`; confirm `point_list.ods` is created and opens

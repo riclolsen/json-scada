@@ -1,8 +1,17 @@
 ## Realtime HTTP/JSON Data Server (with user authentication/RBAC/JWT)
 
-This NodeJS/Express module can serve JSON-SCADA realtime data for the web-based interface.
+This Node.js/Express module serves JSON-SCADA realtime data, the Admin UI API
+(`/Invoke`), and the GraphQL endpoint for the web-based interface.
 
-It can also serve the HTML files from the src/AdminUI/dist folder.
+It can also serve the HTML files from the `src/AdminUI/dist` folder.
+
+The server reads `../../conf/json-scada.json` (override with `JS_CONFIG_FILE`)
+and listens on `127.0.0.1:8080` by default. Set `JS_IP_BIND` and `JS_HTTP_PORT`
+to change the bind address and port.
+
+    cd src/server_realtime_auth
+    npm install
+    node index.js
 
 It is possible to route access Grafana on "/grafana" path by adjusting the _JS_GRAFANA_SERVER_ environment variable.
 

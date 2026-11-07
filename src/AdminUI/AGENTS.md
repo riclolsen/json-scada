@@ -11,12 +11,12 @@ Vue.js single-page application (SPA) for the JSON-SCADA web administration inter
 
 ## Local Contracts
 
-- **Framework:** Vue 3 with Vite build tool
+- **Framework:** Vue 3 + Vuetify 4 with Vite build tool
 - **Package manager:** npm (see `package-lock.json`)
-- **Linting:** ESLint (`.eslintrc.js`) + Prettier (`.prettierrc.json`)
+- **Linting:** ESLint (`npm run lint`) + Prettier (`.prettierrc.json`)
 - **Browser targets:** defined in `.browserslistrc`
-- **Build output:** `dist/` directory
-- **Dev server:** `npx vite` for local development
+- **Build output:** `dist/` directory, served by Nginx (see `conf-templates/nginx_*.conf`)
+- **Dev server:** `npm run dev` (Vite, http://localhost:3000)
 - **Production build:** `npm run build`
 - All API calls go through the realtime data server (JWT auth)
 - Vue component naming: PascalCase. Single-file components with `<script setup>` preferred
@@ -33,4 +33,4 @@ Vue.js single-page application (SPA) for the JSON-SCADA web administration inter
 
 - `npm install` — install dependencies
 - `npm run build` — production build must succeed with no errors
-- `npx eslint src/` — lint check
+- `npm run lint` — lint check

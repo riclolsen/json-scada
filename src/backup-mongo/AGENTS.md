@@ -1,27 +1,28 @@
-# DOX: src/backup-mongo — MongoDB Backup Utility
+# DOX: src/backup-mongo — MongoDB Configuration Export Utility
 
 ## Purpose
 
-Node.js utility for automated MongoDB backup of JSON-SCADA databases. Configurable backup schedules and retention policies.
+Node.js command-line utility that exports the JSON-SCADA configuration collections to mongo shell scripts (`users`, `realtimeData`, `protocolConnections`, plus an update-only script for operator-editable point fields). It is not a full backup tool.
 
 ## Ownership
 
-- backup-mongo owns the MongoDB backup automation
+- backup-mongo owns the configuration export scripts
 
 ## Local Contracts
 
 - **Language:** Node.js
 - **Main entry:** `backup-mongo.js`
 - **Pattern:** standard Node.js app (`app-defs.js`, `load-config.js`, `simple-logger.js`)
-- **Config:** INI file via Supervisor or environment variables
+- **Config:** JSON-SCADA config file (`../../conf/json-scada.json` or `JS_CONFIG_FILE`)
+- **Output:** `output/` in the current working directory
 
 ## Work Guidance
 
-- Uses `mongodump` under the hood for consistent backups
-- Configurable backup directory, schedule, and retention
-- Supports backup of specific databases and collections
-- Can be run as a scheduled task or on-demand
+- Generates `*_insert.js` scripts with `insertOne` per document and `realtimeData_update.js` with the operator-editable fields only
+- Uses the MongoDB Node.js driver directly (no `mongodump`)
+- Reads whole collections into memory; run during low activity and protect the output (it contains password hashes)
+- Full database backups are out of scope; use `mongodump`/`mongorestore` for those
 
 ## Verification
 
-- Test backup and restore with sample MongoDB data
+- Run against a test database and restore the generated scripts with `mongosh`

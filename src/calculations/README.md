@@ -103,14 +103,14 @@ The available formulas are listed below.
 
 ## Compilation
 
-This module should be compiled with the Golang compiler.
+This module should be compiled with the Golang compiler (Go 1.26 or later).
 
-```
-go get go.mongodb.org/mongo-driver/bson go.mongodb.org/mongo-driver/mongo go.mongodb.org/mongo-driver/mongo/options
-go build
-```
+    cd src/calculations
+    go build -o ../../bin/calculations
 
-The executable must be copied or symlinked to run from the json-scada-dir/bin/ to be able to load the config file from the ../conf/ folder.
+The executable must be in the `bin/` directory of the installation (or a symlink
+there) so that, by default, it finds the config file at `../conf/json-scada.json`.
+Alternatively pass the config file path as the fourth argument.
 
 The organization of the project files should resemble the structure below.
 

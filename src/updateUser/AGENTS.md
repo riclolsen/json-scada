@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Node.js command-line utility for managing JSON-SCADA user accounts: create, update, delete users and roles in MongoDB.
+Node.js command-line utility for JSON-SCADA user accounts: creates a user or resets an existing user's password (bcrypt hash) and email. Roles are not assigned by this tool; an administrator does that in the Admin UI.
 
 ## Ownership
 
@@ -13,17 +13,16 @@ Node.js command-line utility for managing JSON-SCADA user accounts: create, upda
 - **Language:** Node.js
 - **Main entry:** `updateUser.js`
 - **Pattern:** standard Node.js app (`app-defs.js`, `load-config.js`, `simple-logger.js`)
-- **Config:** INI file via Supervisor or environment variables
+- **Config:** JSON-SCADA config file (`../../conf/json-scada.json` or `JS_CONFIG_FILE`)
 - **Execution:** Command-line only (not a service)
 
 ## Work Guidance
 
-- Used during initial setup and ongoing user administration
-- Operates directly on the MongoDB users collection
-- Supports password hashing and role assignment
-- Can be run as a standalone CLI tool
+- Usage: `node updateUser.js username password [email] [config file name]`
+- Creates the user with an empty `roles` array when missing; updates password (and email when given) otherwise
+- Operates directly on the `users` collection
+- Reports that an administrator must assign a role before the new user can log in
 
 ## Verification
 
-- Test user creation, update, and deletion operations
-- Verify changes appear in MongoDB users collection
+- Create a user, verify the bcrypt hash in `users`, then assign a role and log in

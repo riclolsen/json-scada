@@ -19,7 +19,7 @@
 
 module.exports = {
   NAME: 'ALARM_BEEP',
-  ENV_PREFIX: 'JS_DEMO_SIMUL_',
+  ENV_PREFIX: 'JS_ALARM_BEEP_',
   MSG: '{json:scada} - Alarm Beep',
   VERSION: '0.1.2',
 }
