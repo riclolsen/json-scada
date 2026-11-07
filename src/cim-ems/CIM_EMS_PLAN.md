@@ -1,6 +1,6 @@
 # CIM-EMS Driver: Implementation Plan
 
-Status: phase 0 done (section 20), phase 1 in progress (model store, redundancy, CLI done; binding-independent items remain: Admin UI, user-model exit gate), branch `cim-ems`. This file is the single source of truth for the implementation until the component has its own README and AGENTS.md. It is working material: do not link it from committed docs, and delete it (as was done for the IEC 61850 server plan) once its content has moved into the component docs.
+Status: phase 0 done (section 20); phase 1 code done (model store, redundancy, CLI), exit gate waits for the user model; phase 2 core done on public data (section 21); branch `cim-ems`. This file is the single source of truth for the implementation until the component has its own README and AGENTS.md. It is working material: do not link it from committed docs, and delete it (as was done for the IEC 61850 server plan) once its content has moved into the component docs.
 
 ## 1. Goal
 
@@ -585,3 +585,20 @@ Public conformity models (2026-11-07, `tools/fetch_test_models.py`, from powsybl
 Consequences: the round-trip check must re-attach the boundary set of the source package (done in `cim_ems/export.py`); neither conformity model contains CGMES Analog/Discrete objects (the pypowsybl `measurements` and `discreteMeasurements` extensions are empty), so binding proposals from CGMES measurements stay untested until the user model is available and name matching is the only proposal method testable on public data. The small-network load flow figures say nothing about the user model size: benchmark there.
 
 Still open from phase 0 (to close during phase 1, they need the user model): CGMES measurement import on a model that contains measurements, unsupported-feature inventory of the user model, and the questions in section 19.
+
+## 21. Phase 2 progress (2026-11-07)
+
+Implemented in `cim_ems/bindings`, `snapshot.py`, `topology.py`, `synthetic.py`, `tools/replay.py`; tested on SmallGrid NodeBreaker (1,107 switches).
+
+| Item | Status |
+|---|---|
+| Binding model and CSV review format | done |
+| Name-match proposals for switches | done. Exact synthetic tags match 1,107 of 1,107 uniquely. Needed whole-word, in-order matching (plain token overlap confused `BREAKER132` with `BREAKER339`, and `bbs1` with `bbs2`) and global best-score assignment (a switch whose own tag is missing no longer takes a neighbour's tag) |
+| Tap and analog proposals | not done: no public model has measurement objects; tap proposals follow the same matcher once tap tags exist in a real tag list |
+| Snapshot policy | done: valid, transient (hold, flag), invalid (hold up to `max_hold_seconds`, then reject), no history (model state, flag), analog age, invalidity, skew against the newest-biased median, sign, substituted flag |
+| Topology processor | done: switch and tap updates, bus and island counts, deterministic hash that returns to its original value after reverting switches |
+| Replay | done: deterministic hash sequence for the same events; load flow status per step |
+| Coverage report | per voltage level in `Proposal.coverage`; Admin UI view is phase 3 |
+| Change stream cache from `realtimeData` | not done (next) |
+
+Still to do for the phase 2 exit gate: the live `realtimeData` cache (change stream with full resync), replay from historian data, and a run on the user model with real tags.

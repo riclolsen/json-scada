@@ -24,6 +24,17 @@ python tools/import_model.py tests/data/conformity/smallgrid_nodebreaker.zip --r
 
 Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid conformity models distributed with PowSyBl. They are not committed.
 
+## Replay
+
+```
+python tools/replay.py tests/data/conformity/smallgrid_nodebreaker.zip --synthetic 10
+python tools/replay.py model.zip bindings.csv events.csv
+```
+
+Generates (or reads) switching events, applies the snapshot policy and topology processor, and prints the topology
+hash, bus and island counts and load flow status after each event. `bindings.csv` is the review format of
+`cim_ems.bindings`: proposals come with `approved=false` and a confidence; only approved bindings are used.
+
 ## Model revisions
 
 ```

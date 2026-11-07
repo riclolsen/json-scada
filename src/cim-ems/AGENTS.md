@@ -28,9 +28,15 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/mongo.py` — collection names, indexes (one active revision per model, TTL on runs), GridFS bucket
   - `cim_ems/redundancy.py` — active-node arbitration; `still_active()` must be checked right before every publication
   - `cim_ems/models/store.py` — immutable revisions, explicit activation, rollback, rebuild from the stored package
+  - `cim_ems/bindings/` — `Binding` model with CSV review format; `proposal.py` name-matching proposals (never approved automatically; best score wins a tag, weaker claimants stay unmatched)
+  - `cim_ems/snapshot.py` — snapshot policy: switch/tap/analog rules, hold of last valid state, rejection, skew and age
+  - `cim_ems/topology.py` — applies a snapshot to the network, island counts, deterministic topology hash
+  - `cim_ems/synthetic.py` — synthetic tags and switching events for tests and demos
+  - `tools/replay.py` — replays switching events through snapshot and topology (`--synthetic N` for a smoke run)
   - `tools/import_model.py` — offline import, validation report and optional round trip
   - `tools/fetch_test_models.py` — downloads public CGMES 2.4.15 conformity models into the gitignored `tests/data/conformity/`
   - `tools/model_admin.py` — import, list, activate, rollback against MongoDB
+- Switch values are never aged (a stable breaker has an old timestamp); invalid ones are held for `max_hold_seconds`, never assumed closed
 - Results go through `sourceDataUpdate` of supervised points; the driver never writes `soeData` or alarms
 - The estimator network is built from the solved pypowsybl network, not from pandapower's CIM import
 - Customer models, bindings and telemetry are never committed; tests use public or synthetic cases

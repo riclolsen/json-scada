@@ -68,7 +68,7 @@ def _tables(net: pn.Network) -> dict[str, "object"]:
         "loads": net.get_loads(),
         "shunt_compensators": net.get_shunt_compensators(),
         "static_var_compensators": net.get_static_var_compensators(),
-        "dangling_lines": net.get_dangling_lines(),
+        "dangling_lines": net.get_boundary_lines(),
         "hvdc_lines": net.get_hvdc_lines(),
         "vsc_converter_stations": net.get_vsc_converter_stations(),
         "lcc_converter_stations": net.get_lcc_converter_stations(),
