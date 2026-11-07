@@ -651,3 +651,23 @@ Design points settled in code:
 - `SYS` points (STATUS code 0 converged, 1 diverged, 2 rejected snapshot, 3 unsupported, 4 failed; CONVERGED; ITER; DURATION in ms; UNCERTAIN for held/transient switch states) are published after every run.
 - Results for de-energized or disconnected ends are "not calculated" (invalid at source), never stale numbers.
 - Only load flow is wired. State estimation and contingency analysis (phases 4 and 5) will use the same cycle and publisher.
+
+## 24. Phase 4 progress: state estimation core (2026-11-07)
+
+Implemented: `estimation/transfer.py` (option B: pandapower net from the solved pypowsybl net), `estimation/adapter.py` (WLS estimate, residuals, chi-square test, bad data removal by largest normalized residual), `estimation/synthetic.py` (noisy measurements from a load flow). Not yet wired into the driver cycle, bindings of analog measurements or result publication.
+
+Network transfer gate (pandapower load flow started from the pypowsybl solution, compared bus by bus):
+
+| Model | Max voltage difference (pu) | Max angle difference (deg) |
+|---|---|---|
+| Eurostag tutorial | 2e-8 | 2e-5 |
+| ReliCapGrid Svedala (107 buses) | 8.5e-4 | 0.018 |
+| ReliCapGrid Galia (phase shifting transformers) | 1.2e-3 | 0.066 |
+| ReliCapGrid Espheim | pandapower does not converge | open |
+
+Test gate: 2e-3 pu and 0.1 deg. The transfer rejects (raises `UnsupportedForEstimation`) three-winding transformers, HVDC lines and lines between buses of different nominal voltage (IEEE 14 and Microgrid BE, Belgovia and Britheim hit these). Open: Espheim mismatch at one 132/33 kV transformer with negative magnetizing susceptance (about 4 Mvar) and the residual 1e-3 pu on Svedala and Galia, probably magnetizing admittance placement and tap step corrections.
+
+Estimator results on Svedala with synthetic noise (643 measurements, voltage sigma 0.2 percent, power sigma 0.5 MVA): converges in about 1.4 s, chi-square test passes, voltage error below 3e-3 pu. A 60 MW error on one flow is the measurement removed as bad data. Voltage-only measurement sets are reported as not observable. The default bad data threshold is 4 sigma, because 3 sigma flagged a clean value with 643 measurements. The residual is the plain standardized one, not covariance-weighted. Observability is only the pandapower measurement count check, not a topological observability analysis.
+
+Phase 4 remaining: analog bindings (proposal and approval), measurement building from the snapshot, driver cycle and `SE` result points, estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
+
