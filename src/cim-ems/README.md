@@ -15,6 +15,16 @@ The tool imports a CGMES 2.4.15 package (node-breaker topology kept), prints a J
 unsupported classes, islands, base case load flow) and, with `--round-trip`, exports and re-imports the model and
 compares solved values. Exit code 1 means the model is rejected.
 
+## Model revisions
+
+```
+python tools/model_admin.py import model.zip TSO_MODEL
+python tools/model_admin.py activate TSO_MODEL 1
+python tools/model_admin.py rollback TSO_MODEL
+```
+
+Imports are immutable revisions with the original package kept in GridFS. A rejected revision cannot be activated.
+
 ## Third-party engines
 
 - pypowsybl (MPL-2.0): CGMES import/export, load flow, diagrams

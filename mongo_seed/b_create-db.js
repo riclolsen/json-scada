@@ -33,6 +33,7 @@ var protocolDriverNames = [
   "INFLUXDB_INJECTOR",
   "INFLUXDB_CLIENT",
   "ONVIF",
+  "CIM-EMS",
   "NODE-RED",
   "N8N",
   "UNDEFINED",

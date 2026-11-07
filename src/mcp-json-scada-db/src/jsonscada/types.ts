@@ -64,6 +64,7 @@ export type ProtocolDriverName =
   | 'INFLUXDB_INJECTOR'
   | 'INFLUXDB_CLIENT'
   | 'ONVIF'
+  | 'CIM-EMS'
   | 'UNDEFINED'
 
 export type ProcessName =

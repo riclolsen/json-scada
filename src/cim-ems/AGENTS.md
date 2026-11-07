@@ -24,7 +24,12 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/config.py` — `json-scada.json` and CLI args
   - `cim_ems/models/importer.py` — pinned import parameters, validation report, unsupported-class list
   - `cim_ems/export.py` — CGMES export and the round-trip check (compares solved values, never XML bytes)
+  - `cim_ems/__main__.py` — driver entry: config, instance check, keep-alive loop (study cycle comes later)
+  - `cim_ems/mongo.py` — collection names, indexes (one active revision per model, TTL on runs), GridFS bucket
+  - `cim_ems/redundancy.py` — active-node arbitration; `still_active()` must be checked right before every publication
+  - `cim_ems/models/store.py` — immutable revisions, explicit activation, rollback, rebuild from the stored package
   - `tools/import_model.py` — offline import, validation report and optional round trip
+  - `tools/model_admin.py` — import, list, activate, rollback against MongoDB
 - Results go through `sourceDataUpdate` of supervised points; the driver never writes `soeData` or alarms
 - The estimator network is built from the solved pypowsybl network, not from pandapower's CIM import
 - Customer models, bindings and telemetry are never committed; tests use public or synthetic cases
@@ -37,7 +42,8 @@ once its content has moved into this README and `docs/schema.md`.
 
 ## Verification
 
-- `python -m pytest` from this folder, in a venv with the pinned dependencies
+- `python -m pytest` from this folder, in a venv with the pinned dependencies (uses `mongomock`)
+- `CIM_EMS_TEST_MONGO=mongodb://127.0.0.1:27018 python -m pytest` runs the same tests on a real MongoDB (needed for the partial unique index), e.g. `docker run -d --rm -p 127.0.0.1:27018:27017 mongo:7`
 
 ## Child DOX Index
 

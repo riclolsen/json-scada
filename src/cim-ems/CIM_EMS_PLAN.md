@@ -1,6 +1,6 @@
 # CIM-EMS Driver: Implementation Plan
 
-Status: phase 0 done (section 20), branch `cim-ems`. This file is the single source of truth for the implementation until the component has its own README and AGENTS.md. It is working material: do not link it from committed docs, and delete it (as was done for the IEC 61850 server plan) once its content has moved into the component docs.
+Status: phase 0 done (section 20), phase 1 in progress (model store, redundancy, CLI done; binding-independent items remain: Admin UI, user-model exit gate), branch `cim-ems`. This file is the single source of truth for the implementation until the component has its own README and AGENTS.md. It is working material: do not link it from committed docs, and delete it (as was done for the IEC 61850 server plan) once its content has moved into the component docs.
 
 ## 1. Goal
 
