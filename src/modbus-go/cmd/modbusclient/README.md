@@ -1,8 +1,8 @@
 # MODBUS Client Driver (Go)
 
 Polls Modbus devices, updates {json:scada} tags and sends commands from the `commandsQueue`
-to the devices. It registers as protocol driver **`MODBUS`**, the same name as the Node.js
-driver it replaces, and reads the same configuration documents.
+to the devices. It registers as protocol driver **`MODBUS`**, the same name as the former
+Node.js driver it replaces, and reads the same configuration documents.
 
 The binary is `bin/modbus-client` (`bin\modbus-client.exe` on Windows). The service keeps its
 old name: `modbusclient` under Supervisor and `JSON_SCADA_modbusclient` on Windows.

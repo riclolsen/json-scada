@@ -2,7 +2,7 @@
 
 Serves {json:scada} tags to third-party Modbus masters and relays their writes back into
 {json:scada} as commands. It registers as protocol driver **`MODBUS_SERVER`**, the same name as
-the Node.js driver it replaces, and reads the same configuration documents.
+the former Node.js driver it replaces, and reads the same configuration documents.
 
 The binary is `bin/modbus-server` (`bin\modbus-server.exe` on Windows). The service keeps its
 old name: `modbusserver` under Supervisor and `JSON_SCADA_modbusserver` on Windows.

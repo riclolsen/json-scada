@@ -3,14 +3,15 @@
 ## Purpose
 
 Go Modbus master and slave drivers for JSON-SCADA, built on `github.com/otfabric/go-modbus`.
-Drop-in replacements for the Node.js drivers in `src/modbus`: same `protocolDriver` names
-(`MODBUS`, `MODBUS_SERVER`), same configuration documents and defaults, same CLI and
-environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), same service names.
+Drop-in replacements for the former Node.js drivers in `src/modbus` (sources removed in 0.69):
+same `protocolDriver` names (`MODBUS`, `MODBUS_SERVER`), same configuration documents and
+defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), same service names.
 
 ## Ownership
 
 - modbus-go owns the Go implementation of both Modbus drivers
-- `src/modbus` (Node.js) remains the behavioural reference; behaviour is matched to it
+- The Node.js sources this implementation was matched against are gone; `README.md` keeps the
+  numbered behavioural differences for reference
 
 ## Local Contracts
 
@@ -36,17 +37,18 @@ environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), same service names.
   (and `modbus-server` from `./cmd/modbusserver`)
 - **Documentation:**
   - `cmd/modbusclient/README.md` and `cmd/modbusserver/README.md` are the standalone operator
-    references; never defer to `src/modbus` docs.
+    references; the Node.js sources and their docs are no longer in the repository.
   - `README.md` keeps what both share (transports, types, byte orders, addressing, logging),
-    build, architecture, the numbered differences from the Node.js drivers, migration and testing.
+    build, architecture, the numbered differences from the former Node.js drivers, migration
+    and testing.
   - Every key `config.go` reads must be in the driver README (`TestReadmeDocumentsEveryConfigKey`).
     A changed default, statistic, command result or log line is a README change in the same commit.
 
 ## Work Guidance
 
-- The Node.js drivers are the specification. Intentional differences are numbered in
-  `README.md` ("Differences from the Node.js drivers"); add to that list rather than diverging
-  silently.
+- The former Node.js drivers are the behavioural specification. Intentional differences are
+  numbered in `README.md` ("Differences from the Node.js drivers"); add to that list rather
+  than diverging silently.
 - Read configuration with the `drv` helpers (`Num`, `Str`, `Bool`, `StrArr`, `ToNum`, `JSNumber`,
   `AnyString`) so missing, `null`, `""` and wrong-typed values behave as in JavaScript.
 - Client data goes only to `sourceDataUpdate`; numbers written to MongoDB are `float64`, except

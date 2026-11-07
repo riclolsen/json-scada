@@ -1,10 +1,10 @@
 # Modbus Client and Server Drivers (Go)
 
 Go drivers for Modbus in {json:scada}, built on
-[go-modbus](https://github.com/otfabric/go-modbus) (MIT). They replace the Node.js drivers in
-`src/modbus` and keep their configuration: the same protocol driver names, the same
-`protocolConnections` and `realtimeData` fields and defaults, the same command-line arguments
-and environment variables, and the same service names.
+[go-modbus](https://github.com/otfabric/go-modbus) (MIT). They replace the former Node.js
+drivers in `src/modbus` (sources removed in 0.69) and keep their configuration: the same
+protocol driver names, the same `protocolConnections` and `realtimeData` fields and defaults,
+the same command-line arguments and environment variables, and the same service names.
 
 | Driver | Protocol driver | Binary | Service (Supervisor / Windows) | Reference |
 |---|---|---|---|---|
@@ -13,7 +13,7 @@ and environment variables, and the same service names.
 
 The driver READMEs are the operator references: configuration, tags, behaviour, statistics
 and troubleshooting. This page covers what both share, how they are built, and how they
-differ from the Node.js drivers.
+differ from the former Node.js drivers.
 
 ## Transports
 
@@ -153,7 +153,7 @@ The code:
 
 ## Differences from the Node.js drivers
 
-Configuration and behaviour match the Node.js drivers except for the following.
+Configuration and behaviour match the former Node.js drivers except for the following.
 
 1. **Commands and redundancy.** The client executes commands only on the active node and while
    the connection runs; a command for a link that is down is acknowledged `connection down`.
@@ -226,8 +226,9 @@ Things to check after switching:
   (difference 4).
 - A server mapping that relied on FC22 masks that keep the bit (difference 12).
 
-The Node.js drivers stay in `src/modbus` and can be put back by pointing the services at
-`node /home/jsonscada/json-scada/src/modbus/dist/client/main.js` (or `server/main.js`) again.
+The Node.js drivers were removed from the repository in 0.69; the Go binaries above are the
+only Modbus drivers shipped. Existing installations keep their configuration and service
+names, so no rollback path to `src/modbus` remains.
 
 ## Testing
 

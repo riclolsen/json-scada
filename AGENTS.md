@@ -91,7 +91,6 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, driver processes)
 - [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in alternative)
 - [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
-- [src/modbus/](src/modbus/AGENTS.md) — Modbus client/server (Node.js, behavioural reference)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
 - [src/server_realtime_auth/](src/server_realtime_auth/AGENTS.md) — Realtime WebSocket server (Node.js)
 - [src/calculations/](src/calculations/AGENTS.md) — Calculations engine (Go)
