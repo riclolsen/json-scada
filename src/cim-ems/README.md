@@ -31,6 +31,14 @@ optionally `cimBindingRevision`, `cycleSeconds` (default 60), `resultMaxAgeSecon
 Results appear as supervised points `<connection>;LF;<name>;<quantity>[;<side>]`, with the system health points
 `<connection>;SYS;LF;STATUS` and others.
 
+State estimation is off by default. With `runStateEstimation: true` (and `estimatorParameters.badDataThreshold`,
+default 4) every converged load flow is followed by a weighted least squares estimate from the approved analog
+bindings (`V` on a bus or busbar section in kV, `P`/`Q` on a line or transformer end in MW/Mvar). Results are
+`<connection>;SE;<name>;<quantity>[;<side>]` and `<connection>;SYS;SE;STATUS|CONVERGED|BADDATA|MEAS|CHI2`
+(STATUS 0 converged, 1 not observable, 2 not converged, 3 unsupported network, 4 failed, 5 no load flow). Bad data
+are listed in the run record (`cimRuns`, `summary.estimation.badData`). The network transfer is checked against
+the load flow once per topology and refused beyond 2e-3 pu or 0.1 degrees.
+
 ## Public test models
 
 ```

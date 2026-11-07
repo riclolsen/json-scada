@@ -82,3 +82,38 @@ def extract_loadflow(net: pn.Network, flt: dict | None = None, kind: str = "LF")
                 if flt["branchLoading"] and (loads or (eid, "ONE") in perm or (eid, "TWO") in perm):
                     out.append(ResultValue(kind, eid, br["name"] or "", 0, "LOAD", max(loads) if loads else None, "%", g1, g2))
     return out
+
+
+def extract_estimation(net: pn.Network, res, flt: dict | None = None) -> list[ResultValue]:
+    """Result values (kind SE) of a converged estimate: bus V/VPU/ANG and branch P/Q per end."""
+    flt = {**DEFAULT_FILTER, **(flt or {})}
+    vls = net.get_voltage_levels()[["name", "substation_id", "nominal_v"]]
+    subs = net.get_substations()["name"]
+    buses = net.get_buses()
+    out: list[ResultValue] = []
+
+    def groups(vl_id):
+        v = vls.loc[vl_id]
+        return (subs.get(v.substation_id) or v.substation_id or "", v["name"] or vl_id)
+
+    if flt["busVoltages"]:
+        for bid, vpu in res.bus_v_pu.items():
+            b = buses.loc[bid]
+            nominal = vls.loc[b.voltage_level_id, "nominal_v"]
+            if nominal < flt["minNominalKv"]:
+                continue
+            g1, g2 = groups(b.voltage_level_id)
+            name = b.get("name", "") or ""
+            out += [ResultValue("SE", bid, name, 0, "V", _num(vpu * nominal), "kV", g1, g2),
+                    ResultValue("SE", bid, name, 0, "VPU", _num(vpu), "pu", g1, g2),
+                    ResultValue("SE", bid, name, 0, "ANG", _num(res.bus_angle_deg[bid]), "deg", g1, g2)]
+    if flt["branchFlows"]:
+        branches = {**{i: r for i, r in net.get_lines().iterrows()},
+                    **{i: r for i, r in net.get_2_windings_transformers().iterrows()}}
+        for (eid, side, q), v in res.branch_flows.items():
+            br = branches[eid]
+            if vls.loc[br.voltage_level1_id, "nominal_v"] < flt["minNominalKv"]:
+                continue
+            g1, g2 = groups(br.voltage_level1_id)
+            out.append(ResultValue("SE", eid, br["name"] or "", side, q, _num(v), "MW" if q == "P" else "Mvar", g1, g2))
+    return out

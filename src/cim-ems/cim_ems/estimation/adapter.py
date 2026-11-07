@@ -44,6 +44,8 @@ class EstimationResult:
     bus_v_pu: dict[str, float] = field(default_factory=dict)
     bus_angle_deg: dict[str, float] = field(default_factory=dict)
     residuals: list[Residual] = field(default_factory=list)
+    branch_flows: dict[tuple[str, int, str], float] = field(default_factory=dict)   # (id, side, P|Q) -> value
+    measurements_used: int = 0
     bad_data: list[Residual] = field(default_factory=list)   # removed by the largest normalized residual loop
     chi2_statistic: float = float("nan")
     chi2_threshold: float = float("nan")
@@ -125,8 +127,15 @@ def estimate(tr: Transfer, measurements: list[Measurement], remove_bad_data: boo
         dof = max(len(kept) - n_state, 0)
         stat = float(sum(r.normalized**2 for r in res))
         thr = float(chi2.ppf(1 - alpha, dof)) if dof else float("nan")
+        flows = {}
+        for eid, i in tr.line_index.items():
+            for side, (pc, qc) in ((1, ("p_from_mw", "q_from_mvar")), (2, ("p_to_mw", "q_to_mvar"))):
+                flows[(eid, side, "P")], flows[(eid, side, "Q")] = float(net.res_line_est[pc][i]), float(net.res_line_est[qc][i])
+        for eid, i in tr.trafo_index.items():
+            for side, (pc, qc) in ((1, ("p_hv_mw", "q_hv_mvar")), (2, ("p_lv_mw", "q_lv_mvar"))):
+                flows[(eid, side, "P")], flows[(eid, side, "Q")] = float(net.res_trafo_est[pc][i]), float(net.res_trafo_est[qc][i])
         return EstimationResult(
-            True, True, "", iterations=0, duration_ms=(time.perf_counter() - t0) * 1e3,
+            True, True, "", iterations=0, branch_flows=flows, measurements_used=len(kept), duration_ms=(time.perf_counter() - t0) * 1e3,
             bus_v_pu={bid: float(net.res_bus_est.vm_pu[i]) for bid, i in tr.bus_index.items()},
             bus_angle_deg={bid: float(net.res_bus_est.va_degree[i]) for bid, i in tr.bus_index.items()},
             residuals=res, bad_data=dropped, chi2_statistic=stat, chi2_threshold=thr,

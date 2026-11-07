@@ -654,7 +654,7 @@ Design points settled in code:
 
 ## 24. Phase 4 progress: state estimation core (2026-11-07)
 
-Implemented: `estimation/transfer.py` (option B: pandapower net from the solved pypowsybl net), `estimation/adapter.py` (WLS estimate, residuals, chi-square test, bad data removal by largest normalized residual), `estimation/synthetic.py` (noisy measurements from a load flow). Not yet wired into the driver cycle, bindings of analog measurements or result publication.
+Implemented: `estimation/transfer.py` (option B: pandapower net from the solved pypowsybl net), `estimation/adapter.py` (WLS estimate, residuals, chi-square test, bad data removal by largest normalized residual), `estimation/synthetic.py` (noisy measurements from a load flow). Wired into `StudyCycle` (connection option `runStateEstimation`): after each converged load flow the snapshot's analog measurements are estimated, `SE` result points and `SYS;SE` status points are published, bad data go into the run record. The transfer is checked against the load flow once per topology (gate 2e-3 pu, 0.1 deg) and refused otherwise. Tested on Galia with synthetic telemetry (`tests/integration/test_cycle_estimation.py`).
 
 Network transfer gate (pandapower load flow started from the pypowsybl solution, compared bus by bus):
 
@@ -669,5 +669,5 @@ Test gate: 2e-3 pu and 0.1 deg. The transfer rejects (raises `UnsupportedForEsti
 
 Estimator results on Svedala with synthetic noise (643 measurements, voltage sigma 0.2 percent, power sigma 0.5 MVA): converges in about 1.4 s, chi-square test passes, voltage error below 3e-3 pu. A 60 MW error on one flow is the measurement removed as bad data. Voltage-only measurement sets are reported as not observable. The default bad data threshold is 4 sigma, because 3 sigma flagged a clean value with 643 measurements. The residual is the plain standardized one, not covariance-weighted. Observability is only the pandapower measurement count check, not a topological observability analysis.
 
-Phase 4 remaining: analog bindings (proposal and approval), measurement building from the snapshot, driver cycle and `SE` result points, estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
+Phase 4 remaining: analog binding proposal and approval (bindings can be written by hand or CSV today), estimator engineering cases with correct verdicts, replay with real telemetry, Espheim transfer.
 
