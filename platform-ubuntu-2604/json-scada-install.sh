@@ -20,7 +20,7 @@ JS_USERNAME=jsonscada
 ARCHITECTURE="amd64"
 case $(uname -m) in
     x86_64) ARCHITECTURE="amd64" ;;
-    arm)    ARCHITECTURE="arm64";;
+    aarch64|arm64)    ARCHITECTURE="arm64";;
 esac
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'

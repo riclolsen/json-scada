@@ -8,13 +8,13 @@
 ARG1=${1:-linux-x64}
 case $(uname -m) in
     x86_64) ARG1="linux-x64" ;;
-    arm)    ARG1="linux-arm64";;
+    aarch64|arm64)    ARG1="linux-arm64";;
 esac
 
 ARCHITECTURE="amd64"
 case $(uname -m) in
     x86_64) ARCHITECTURE="amd64" ;;
-    arm)    ARCHITECTURE="arm64";;
+    aarch64|arm64)    ARCHITECTURE="arm64";;
 esac
 
 cd ..

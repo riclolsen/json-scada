@@ -11,7 +11,8 @@ Automated installation and configuration scripts for deploying JSON-SCADA on Ubu
 
 ## Local Contracts
 
-- **Installer:** `json-scada-install.sh` — full automated installation script
+- **Installer:** `json-scada-install.sh` — full automated installation script; it runs under `sh` (dash), so keep it POSIX
+- **Kernel lock (MongoDB):** MongoDB does not start on kernel 6.19+. The installer first installs the GA kernel (`linux-generic`), purges the HWE metapackages, `apt-mark hold`s the GA metapackages and pins `linux-*-hwe-24.04`/`linux-hwe-*` to -1 in `/etc/apt/preferences.d/json-scada-kernel`. If the running kernel is 6.19+, it purges all installed kernel packages of 6.19+ (only when an older `linux-image` is present), runs `update-grub`, asks for a reboot and exits; the user re-runs the installer after the reboot
 - **Process manager:** Supervisor (`supervisord.conf`) — manages all JSON-SCADA processes
 - **INI files:** One `.ini` file per service (e.g., `iec104server.ini`, `mqtt-sparkplug.ini`, `calculations.ini`, etc.)
 - **Nginx configs:** `nginx.conf`, `json_scada_http.conf`, `json_scada_https.conf`, `json_scada_http_open.conf`, `fastcgi.conf`
