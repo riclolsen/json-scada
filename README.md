@@ -37,7 +37,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 
 ## Mission Statement
 
-To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.0 platform built by leveraging mainstream open-source IT tools.
+To provide an easy to use, fully-featured, scalable, and portable SCADA/EMS/IIoT-I4.0 platform built by leveraging mainstream open-source IT tools.
 
 ## Screenshots
 
@@ -59,6 +59,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
+- CIM/CGMES EMS package with load flow, import/export models, state estimator, contingency analysis, diagram generation, etc.
 - Extensibility of the core data model (MongoDB: NoSQL/schema-less).
 - HTML5 Web interface. UTF-8/I18N. Mobile access. Web-based configuration management.
 - Role-based access control (RBAC).
@@ -208,6 +209,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] Open PLC Integration
 - [x] Example templates/API for fast AI-assisted custom app developments
+- [x] CIM/CGMES EMS
 
 ## Enterprise Services (available on request)
 
