@@ -51,6 +51,36 @@ def sha256_file(path: str | Path) -> str:
     return h.hexdigest()
 
 
+CIM_NAMESPACES = {
+    b"http://iec.ch/TC57/2013/CIM-schema-cim16#": "2.4.15",
+    b"http://iec.ch/TC57/CIM100#": "3.0",
+}
+
+
+def detect_cgmes_version(path: str | Path) -> str:
+    """CGMES version from the CIM namespace of the package files ("unknown" when none is found)."""
+    import zipfile
+
+    def sniff(head: bytes) -> str | None:
+        for ns, version in CIM_NAMESPACES.items():
+            if ns in head:
+                return version
+        return None
+
+    path = Path(path)
+    if zipfile.is_zipfile(path):
+        with zipfile.ZipFile(path) as z:
+            for name in z.namelist():
+                if name.lower().endswith(".xml"):
+                    with z.open(name) as f:
+                        version = sniff(f.read(4096))
+                    if version:
+                        return version
+        return "unknown"
+    with open(path, "rb") as f:
+        return sniff(f.read(4096)) or "unknown"
+
+
 def import_cgmes(path: str | Path, extra: dict | None = None) -> pn.Network:
     params = {**IMPORT_PARAMETERS, **(extra or {})}
     return pn.load(str(path), parameters=params)

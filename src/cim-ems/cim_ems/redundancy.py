@@ -39,7 +39,8 @@ class Redundancy:
     def tick(self, now: datetime | None = None) -> bool:
         now = now or utcnow()
         doc = self.instance_doc()
-        if doc is None or not doc.get("enabled", False) or self.node not in doc.get("nodeNames", []):
+        nodes = (doc or {}).get("nodeNames") or []   # empty list: any node, as in the other drivers
+        if doc is None or not doc.get("enabled", False) or (nodes and self.node not in nodes):
             self.is_active = False
             return False
         # Atomic take-over: succeeds only if still free, ours, or stale.

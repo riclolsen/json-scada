@@ -3,7 +3,9 @@
 Conventions (see .agents/skills/svg-scada/SKILL.md and src/svg-display-editor/README.md):
 - Switches: the closed and open drawings are shown or hidden from the digital state of the bound point
   (1 = off, 2 = on, 0 invalid, 3 transit, +128 bad quality). `closed_value` of the binding says whether closed is on or off.
-- Feeder power/current labels: `get` bindings to the published load flow result points, with a failed-quality colour.
+- Feeder power/current labels: `get` bindings to the published load flow result points, with a failed-quality colour;
+  labels without a result point (generators, loads) are removed instead of showing the static base-case value.
+- Labels show element names (`SldParameters(use_name=True)`); bindings use the ids from the diagram metadata.
 - Busbars: tooltips with the bus voltage and angle.
 Tag references that start with a digit are written as point keys, because the viewer reads them as keys.
 """
@@ -115,14 +117,14 @@ def convert(
     result_ref(equipment_id, side, quantity) -> TagRef or None   (load flow result points)
     bus_ref(bus_id, quantity) -> TagRef or None                  (quantity V or ANG)
     """
-    diagram = net.get_single_line_diagram(voltage_level_id)
+    diagram = net.get_single_line_diagram(voltage_level_id, pn.SldParameters(use_name=True))
     meta = json.loads(diagram.metadata)
     root = ET.fromstring(diagram.svg)
     rep = Report(voltage_level_id)
     by_id = {e.get("id"): e for e in root.iter() if e.get("id")}
 
     for node in meta["nodes"]:
-        if node["componentType"] not in ("BREAKER", "DISCONNECTOR", "LOAD_BREAK_SWITCH"):
+        if node.get("componentType") not in ("BREAKER", "DISCONNECTOR", "LOAD_BREAK_SWITCH"):
             continue
         g = by_id.get(node["id"])
         eid = node.get("equipmentId")
@@ -149,7 +151,11 @@ def convert(
         side = SIDES.get(info.get("side", ""), 1 if info.get("side") is None else 0)
         ref = result_ref(info["equipmentId"], side, q)
         text = next((t for t in g if t.tag == f"{{{SVG}}}text"), None)
-        if ref is None or text is None:
+        if ref is None:          # no result point (generator, load): a static number would look live
+            for child in list(g):
+                g.remove(child)
+            continue
+        if text is None:
             continue
         text.set(LABEL, _value_labels(ref.text()))
         text.text = None
@@ -161,7 +167,7 @@ def convert(
     if bus_ref is not None:
         busbars = net.get_busbar_sections()
         for node in meta["nodes"]:
-            if node["componentType"] != "BUSBAR_SECTION":
+            if node.get("componentType") != "BUSBAR_SECTION":
                 continue
             eid = node.get("equipmentId")
             g = by_id.get(node["id"])

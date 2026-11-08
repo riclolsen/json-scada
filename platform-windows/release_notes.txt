@@ -59,6 +59,7 @@ Acknowledgements:
   Python - https://www.python.org/
   PowSyBl / pypowsybl - https://www.powsybl.org/, https://github.com/powsybl/pypowsybl
   pandapower - https://www.pandapower.org/
+  ENTSO-E ReliCapGrid (Svedala demo model by Svenska kraftnät, CC BY-SA 4.0) - https://github.com/entsoe/ReliCapGrid
   Some icons from - http://keyamoon.com/icomoon and http://raphaeljs.com/icons
   CSS Loaders from Luke Haas - https://projects.lukehaas.me/css-loaders/
   
@@ -143,6 +144,7 @@ Notes for version 0.69:
 * n8n editor available from the web UI (/n8n, admin users), when n8n runs with N8N_PATH=/n8n/.
 * AdminUI: the Node-RED shortcut is shown to admin users only (n8n is not bundled with the Windows installer).
 * New CIM-EMS driver: CGMES 2.4.15 network models, load flow, state estimation and contingency analysis with results as ordinary points. Ships with a Python 3.14 runtime (platform-windows\python-runtime); the JSON_SCADA_cim_ems service is installed with manual start. Admin tab CIM-EMS for models, bindings and runs (needs the new role right CIM-EMS Engineering).
+* CIM-EMS demo: the Svedala network of ENTSO-E ReliCapGrid (CGMES 3.0, 58 substations) with live load flow, state estimation and N-1, a field simulator (service JSON_SCADA_cim_ems_demo_field, manual start) and displays svedala-overview and svedala_<substation>. Start JSON_SCADA_cim_ems and JSON_SCADA_cim_ems_demo_field to see it live.
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 

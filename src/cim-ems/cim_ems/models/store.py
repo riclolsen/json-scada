@@ -7,9 +7,8 @@ from pathlib import Path
 import pypowsybl
 from pymongo.database import Database
 
-from .. import CGMES_VERSION
 from ..mongo import MODELS, artifacts
-from .importer import IMPORT_PARAMETERS, ValidationReport, sha256_file
+from .importer import IMPORT_PARAMETERS, ValidationReport, detect_cgmes_version, sha256_file
 
 PROFILES = ["EQ", "SSH", "TP", "SV"]
 
@@ -43,7 +42,7 @@ def register_import(
         "modelId": model_id,
         "revision": revision,
         "status": "validated" if report.ok else "rejected",
-        "cgmesVersion": CGMES_VERSION,
+        "cgmesVersion": detect_cgmes_version(package),
         "profiles": PROFILES,
         "boundaryRef": boundary_ref,
         "sourceArtifactId": source_id,

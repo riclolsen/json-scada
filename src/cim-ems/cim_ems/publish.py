@@ -144,6 +144,11 @@ class ResultPublisher:
         ids = [k for (kk, _), (k, _) in self.keys.items() if kk == kind]
         if not ids:
             return 0
-        self.col.update_many({"_id": {"$in": ids}}, {"$set": {"sourceDataUpdate.invalidAtSource": True,
-                                                               "sourceDataUpdate.timeTag": now}})
+        self.col.update_many({"_id": {"$in": ids}, "sourceDataUpdate": {"$ne": None}},
+                             {"$set": {"sourceDataUpdate.invalidAtSource": True, "sourceDataUpdate.timeTag": now}})
+        # never published (new or seeded point): a null subdocument cannot take dotted fields
+        self.col.update_many({"_id": {"$in": ids}, "sourceDataUpdate": None}, {"$set": {"sourceDataUpdate": {
+            "valueAtSource": 0.0, "valueStringAtSource": "0", "invalidAtSource": True, "transientAtSource": False,
+            "timeTagAtSource": now, "timeTagAtSourceOk": False, "timeTag": now,
+            "originator": f"CIM-EMS|{self.number}|invalidate", "asduAtSource": "analog"}}})
         return len(ids)

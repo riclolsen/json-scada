@@ -30,7 +30,7 @@ python tools/import_model.py model.zip --round-trip
 python -m pytest
 ```
 
-The tool imports a CGMES 2.4.15 package (node-breaker topology kept), prints a JSON validation report (counts,
+The tool imports a CGMES package (2.4.15; 3.0 is detected from the namespace and recorded as `cgmesVersion`) (node-breaker topology kept), prints a JSON validation report (counts,
 unsupported classes, islands, base case load flow) and, with `--round-trip`, exports and re-imports the model and
 compares solved values. Exit code 1 means the model is rejected.
 
@@ -40,11 +40,56 @@ Register an instance and a connection in the Admin UI (driver `CIM-EMS`; the con
 section for the model, cycle, load flow, publication, estimation and contingency settings), import and activate a
 model, save approved bindings, then start the driver like the others.
 
+## Svedala demo
+
+The demo database (Docker demo, Linux x86_64 and Windows installers) holds a ready-to-run case built from the
+Svedala region of ENTSO-E [ReliCapGrid](https://github.com/entsoe/ReliCapGrid) (58 substations, 1,470 switches,
+CGMES 3.0):
+
+- model `SVEDALA` revision 1 (active; the original package is in the `cimArtifacts` bucket) and an approved binding
+  revision with 1,470 switch and 698 measurement bindings;
+- connection `SVEDALA_EMS` (number 90, driver `CIM-EMS` instance 1): load flow and state estimation every 30 s, N-1
+  of the branches from 100 kV every 5 minutes or on a topology change; its result points are already in the seed;
+- connection `SVEDALA_FIELD` (number 91, driver `UNDEFINED`): the field points (switch states, V/P/Q
+  measurements, 439 breaker commands), written by the simulator below;
+- displays `svedala-overview.svg` (network-area diagram: live MW at the branch ends, kV at the buses, links to the
+  substations) and one `svedala_<substation>.svg` single-line diagram per substation.
+
+Run the driver and the field simulator (both manual start; Docker demo: services `cim_ems` and
+`cim_ems_demo_field`, Linux supervisor programs `cim_ems` and `cim_ems_demo_field`, Windows services
+`JSON_SCADA_cim_ems` and `JSON_SCADA_cim_ems_demo_field`):
+
+```
+.venv/bin/python -m cim_ems 1 1 ../../conf/json-scada.json
+.venv/bin/python -m cim_ems.demo_field ../../conf/json-scada.json [--period 5]
+```
+
+The simulator solves its own copy of the network under a slow load curve with noise, writes the measurements and
+switch states like a protocol driver, and executes breaker commands sent to the `SVEDALA_FIELD` points (1 closes,
+0 opens). `demo_simul` leaves the points of `CIM-EMS` and `UNDEFINED` connections alone.
+
+The seed and the displays are generated, never edited by hand:
+
+```
+python tools/fetch_test_models.py --relicap      # relicap_Svedala.zip into tests/data/conformity
+.venv/bin/python -m pip install .[test]          # mongomock
+python tools/build_demo.py                       # demo-docker/mongo_seed/files/demo_cim_*.json and svg/svedala*.svg
+```
+
+The build runs the driver code (import, validation, activation, binding revision, one study cycle) in an in-memory
+database and writes the result with fixed dates and ids, so an unchanged package gives unchanged files. It also
+replaces the Svedala lines of `demo_instances.json` and `demo_connections*.json`.
+
+Attribution: the model is ReliCapGrid by ENTSO-E, Svedala region by Svenska kraftnät, licensed under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Changes: the common data is merged into the EQ
+profile. The seed files and the displays derived from it are shared under the same license; every display carries
+this attribution.
+
 ## Admin UI
 
 The **CIM-EMS** tab of the Admin page has four views:
 
-- **Models**: upload a CGMES 2.4.15 zip as a new revision of a model ID, read its validation report (errors,
+- **Models**: upload a CGMES zip (2.4.15, or 3.0 such as ReliCapGrid) as a new revision of a model ID, read its validation report (errors,
   warnings, unsupported classes, base case load flow), activate a revision, roll back, download the stored package.
 - **Bindings**: show a binding revision, propose bindings from the current supervised tags, approve, edit (tag,
   sigma) or delete entries, and save the list as a new binding revision. Coverage chips show approved/total per kind.
@@ -117,7 +162,7 @@ python tools/fetch_test_models.py
 python tools/import_model.py tests/data/conformity/smallgrid_nodebreaker.zip --round-trip
 ```
 
-Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid conformity models distributed with PowSyBl. With `--relicap` it also builds one CGMES 3.0 package per region of ENTSO-E ReliCapGrid (Svedala: 1,470 switches; Espheim: 1,296). They are not committed.
+Downloads the ENTSO-E SmallGrid (node-breaker, 1,107 switches) and MicroGrid conformity models distributed with PowSyBl. With `--relicap` it also builds one CGMES 3.0 package per region of ENTSO-E ReliCapGrid (Svedala: 1,470 switches; Espheim: 1,296). They are not committed as test data; the Svedala package is part of the demo seed (see [Svedala demo](#svedala-demo)).
 
 ## Replay
 

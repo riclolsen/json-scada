@@ -19,7 +19,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on Ubu
 - **Grafana config:** `grafana.ini`, `grafana_server.ini`
 - **Metabase config:** `metabase.ini`
 - **MCP server config:** `mcp_server.ini`
-- **CIM-EMS driver:** `cim_ems.ini` (`autostart=false`) runs `src/cim-ems/.venv/bin/python -m cim_ems`; the venv comes from `platform-linux/build.sh` and needs `python3-venv`. x86_64 only (no pypowsybl ARM64 wheel)
+- **CIM-EMS driver:** `cim_ems.ini` (`autostart=false`) runs `src/cim-ems/.venv/bin/python -m cim_ems`; the venv comes from `platform-linux/build.sh` and needs `python3-venv`. x86_64 only (no pypowsybl ARM64 wheel). `cim_ems_demo_field.ini` (`autostart=false`) runs the Svedala demo field simulator `-m cim_ems.demo_field`; the installer imports the Svedala demo seed (`demo_cim_*.json`). The root `Dockerfile` copies both programs
 - **SVG editor tool:** `inkscape-plus-sage.sh`
 - **Telegraf config:** `telegraf.ini`, `telegraf-input-*.conf`, `telegraf-output-json-scada.conf`
 

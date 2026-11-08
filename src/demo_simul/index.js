@@ -82,11 +82,33 @@ const POINT_PROJECTION = {
   stateTextFalse: 1,
 }
 
+// Connections whose points another writer owns: CIM-EMS results and UNDEFINED
+// connections (fed by an external simulator such as the Svedala demo field).
+const FOREIGN_DRIVERS = ['CIM-EMS', 'UNDEFINED']
+let foreignConnections = []
+
+async function loadForeignConnections(db) {
+  const conns = await db
+    .collection(jsConfig.ProtocolConnectionsCollectionName)
+    .find(
+      { protocolDriver: { $in: FOREIGN_DRIVERS } },
+      { projection: { protocolConnectionNumber: 1 } }
+    )
+    .toArray()
+  foreignConnections = conns.map((c) => c.protocolConnectionNumber)
+  return foreignConnections
+}
+
 async function loadModel(db) {
+  await loadForeignConnections(db)
   const docs = await db
     .collection(jsConfig.RealtimeDataCollectionName)
     .find(
-      { origin: 'supervised', type: { $in: ['analog', 'digital'] } },
+      {
+        origin: 'supervised',
+        type: { $in: ['analog', 'digital'] },
+        protocolSourceConnectionNumber: { $nin: foreignConnections },
+      },
       { projection: POINT_PROJECTION }
     )
     .toArray()
@@ -195,6 +217,7 @@ async function simulationStep() {
 // --------------------------------------------------------------- commands
 
 async function handleCommand(db, cmdDoc) {
+  if (foreignConnections.includes(cmdDoc.protocolSourceConnectionNumber)) return
   Log.log('Command - ' + cmdDoc.tag + ' = ' + cmdDoc.value)
 
   const cmdPoint = await db
@@ -278,18 +301,27 @@ async function housekeeping() {
       if (String(err.message).indexOf('ECONNREFUSED') > -1) clientMongo = null
     })
 
-  // revalidate points that went invalid (e.g. after a restart)
+  // revalidate points that went invalid (e.g. after a restart), never the
+  // points of foreign connections (an invalid CIM-EMS result means "not calculated")
+  await loadForeignConnections(db).catch((err) => Log.log(err.message))
   await db
     .collection(jsConfig.RealtimeDataCollectionName)
-    .updateMany({ origin: 'supervised', invalid: true }, [
+    .updateMany(
       {
-        $set: {
-          invalid: false,
-          timeTag: '$$NOW',
-          'sourceDataUpdate.timeTag': '$$NOW',
-        },
+        origin: 'supervised',
+        invalid: true,
+        protocolSourceConnectionNumber: { $nin: foreignConnections },
       },
-    ])
+      [
+        {
+          $set: {
+            invalid: false,
+            timeTag: '$$NOW',
+            'sourceDataUpdate.timeTag': '$$NOW',
+          },
+        },
+      ]
+    )
     .catch((err) => {
       Log.log(err.message)
       if (String(err.message).indexOf('ECONNREFUSED') > -1) clientMongo = null

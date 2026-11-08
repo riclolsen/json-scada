@@ -62,3 +62,19 @@ def test_config(tmp_path):
         load_main_config(str(p))
     assert parse_args(["2", "3", "x.json"]) == (2, 3, "x.json")
     assert parse_args([]) == (1, 1, "../conf/json-scada.json")
+
+
+def test_detect_cgmes_version(tmp_path):
+    import zipfile
+
+    from cim_ems.models.importer import detect_cgmes_version
+
+    for ns, expected in (
+        ("http://iec.ch/TC57/CIM100#", "3.0"),
+        ("http://iec.ch/TC57/2013/CIM-schema-cim16#", "2.4.15"),
+        ("http://example.com/other#", "unknown"),
+    ):
+        f = tmp_path / f"{expected}.zip"
+        with zipfile.ZipFile(f, "w") as z:
+            z.writestr("x_EQ.xml", f'<rdf:RDF xmlns:cim="{ns}"></rdf:RDF>')
+        assert detect_cgmes_version(f) == expected

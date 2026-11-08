@@ -132,3 +132,22 @@ def test_invalidate_marks_kind_only(publisher, db):
     lf_pt = db.realtimeData.find_one({"protocolSourceCommonAddress": "LF"})["sourceDataUpdate"]
     se_pt = db.realtimeData.find_one({"protocolSourceCommonAddress": "SE"})["sourceDataUpdate"]
     assert lf_pt["invalidAtSource"] is True and se_pt["invalidAtSource"] is False
+
+
+def test_invalidate_never_published_points(publisher, db):
+    publisher.ensure_points([rv(kind="SE", value=2.0)])          # created, sourceDataUpdate still null
+    assert publisher.invalidate("SE") == 1
+    upd = db.realtimeData.find_one({"protocolSourceCommonAddress": "SE"})["sourceDataUpdate"]
+    assert upd["invalidAtSource"] is True and upd["timeTag"] is not None
+
+
+def test_lf_parameters_from_connection_defaults():
+    import pypowsybl.loadflow as lf
+
+    from cim_ems.cycle import lf_parameters
+
+    p = lf_parameters({"distributedSlack": True, "balanceType": "PROPORTIONAL_TO_GENERATION_P_MAX",
+                       "voltageInitMode": "UNIFORM_VALUES", "transformerVoltageControlOn": False})
+    assert p.balance_type == lf.BalanceType.PROPORTIONAL_TO_GENERATION_P_MAX
+    assert p.voltage_init_mode == lf.VoltageInitMode.UNIFORM_VALUES and p.distributed_slack
+    assert lf_parameters({"balanceType": "NOT_A_TYPE"}).balance_type == lf.Parameters().balance_type

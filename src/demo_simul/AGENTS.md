@@ -11,6 +11,10 @@ supervisory commands and generates protection events.
 - demo_simul owns the demo process simulation (values, switching, faults)
 - it does NOT own calculated points (`origin: 'calculated'`) — those belong to
   the `calculations` driver — nor manual points (`origin: 'manual'`)
+- it does NOT touch points or commands of `CIM-EMS` and `UNDEFINED` connections
+  (`FOREIGN_DRIVERS` in `index.js`): CIM-EMS results (invalid means "not
+  calculated", never revalidate) and externally simulated points (Svedala demo
+  field, `cim_ems.demo_field`)
 
 ## Local Contracts
 

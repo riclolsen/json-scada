@@ -557,6 +557,8 @@ SetRegView 64
 
   SetOutPath $INSTDIR\svg
   File /a "..\conf-templates\*.svg"
+  ; Svedala CIM-EMS demo displays (ReliCapGrid model, CC BY-SA 4.0)
+  File /a "..\svg\svedala*.svg"
 
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\php.ini"

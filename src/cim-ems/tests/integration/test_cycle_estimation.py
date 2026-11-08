@@ -132,6 +132,20 @@ def test_cycle_runs_n1_publishes_ca_points_and_artifact():
 
 
 @needs
+def test_old_contingency_artifacts_are_pruned():
+    import gridfs
+    from datetime import timedelta
+    cyc, db = _ca_cycle()
+    fs = gridfs.GridFS(db, collection="cimArtifacts")
+    old = fs.put(b"{}", filename="ca_0.json", kind="contingency-result", connectionNumber=cyc.number)
+    keep = fs.put(b"{}", filename="model.zip", kind="cgmes-package")
+    db["cimArtifacts.files"].update_many({}, {"$set": {"uploadDate": datetime.now(timezone.utc) - timedelta(days=8)}})
+    cyc.run_once()
+    assert not fs.exists(old) and fs.exists(keep)
+    assert db["cimArtifacts.files"].count_documents({"kind": "contingency-result"}) == 1
+
+
+@needs
 def test_second_cycle_skips_but_keeps_points_alive():
     cyc, db = _ca_cycle()
     cyc.run_once()

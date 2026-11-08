@@ -24,6 +24,10 @@ station, 5 of module/bay, then the IEC 61850-like point code — together with
 into **buses** (station + nominal voltage read from `group2`) and transformer
 windings into **transformer elements**.
 
+Points of `CIM-EMS` and `UNDEFINED` connections are left alone (not simulated, not revalidated, their commands
+not answered): they belong to the CIM-EMS driver and to external simulators such as the Svedala demo field
+simulator (`python -m cim_ems.demo_field`, see `src/cim-ems/README.md`).
+
 Everything is anchored on `valueDefault`, so the simulation always looks like
 the seeded demo database, only alive and self-consistent:
 

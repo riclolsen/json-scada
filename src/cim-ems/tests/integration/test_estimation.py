@@ -77,3 +77,14 @@ def test_voltage_only_is_not_observable():
     ms = [m for m in S.from_load_flow(net, tr) if m.quantity == "V"]
     res = A.estimate(tr, ms)
     assert not res.converged and not res.observable
+
+
+def test_success_without_results_is_not_observable(monkeypatch):
+    net = pn.create_eurostag_tutorial_example1_network()
+    lf.run_ac(net)
+    tr = T.to_pandapower(net)
+    ms = S.from_load_flow(net, tr, np.random.default_rng(3))
+    # pandapower can return True with a singular gain matrix and leave the result tables partial
+    monkeypatch.setattr(A.est, "estimate", lambda n, **kw: True)
+    res = A.estimate(tr, ms)
+    assert not res.converged and not res.observable and "incomplete" in res.message

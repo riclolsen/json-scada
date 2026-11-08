@@ -111,3 +111,8 @@ def test_disabled_or_foreign_node_never_active(db):
     assert not Redundancy(db, "z", 1).tick()
     db["protocolDriverInstances"].update_one({}, {"$set": {"enabled": False}})
     assert not Redundancy(db, "a", 1).tick()
+
+
+def test_empty_node_names_allow_any_node(db):
+    _instance(db, nodes=())
+    assert Redundancy(db, "z", 1).tick()

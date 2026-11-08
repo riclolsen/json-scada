@@ -392,6 +392,7 @@ COPY ./platform-ubuntu-2404/telegraf-output-json-scada.conf /etc/telegraf/telegr
 
 COPY ./platform-ubuntu-2404/calculations.ini /etc/supervisor/conf.d/calculations.ini
 COPY ./platform-ubuntu-2404/cim_ems.ini /etc/supervisor/conf.d/cim_ems.ini
+COPY ./platform-ubuntu-2404/cim_ems_demo_field.ini /etc/supervisor/conf.d/cim_ems_demo_field.ini
 COPY ./platform-ubuntu-2404/config_server_excel.ini /etc/supervisor/conf.d/config_server_excel.ini
 COPY ./platform-ubuntu-2404/cs_custom_processor.ini /etc/supervisor/conf.d/cs_custom_processor.ini
 COPY ./platform-ubuntu-2404/cs_data_processor.ini /etc/supervisor/conf.d/cs_data_processor.ini

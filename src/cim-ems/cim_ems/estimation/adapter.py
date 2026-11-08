@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import math
 import time
 from dataclasses import dataclass, field
 
@@ -120,9 +121,16 @@ def estimate(tr: Transfer, measurements: list[Measurement], remove_bad_data: boo
             return EstimationResult(False, True, "estimator did not converge", bad_data=dropped,
                                     duration_ms=(time.perf_counter() - t0) * 1e3)
         res = []
-        for i, m in enumerate(kept):
-            e = _estimated(net, tr, m)
-            res.append(Residual(i, m, e, (m.value - e) / m.sigma))
+        try:
+            for i, m in enumerate(kept):
+                e = _estimated(net, tr, m)
+                res.append(Residual(i, m, e, (m.value - e) / m.sigma))
+            complete = all(math.isfinite(r.normalized) for r in res)
+        except (KeyError, IndexError):
+            complete = False
+        if not complete:   # pandapower may report success with a singular gain matrix and partial result tables
+            return EstimationResult(False, False, "estimator result incomplete (singular gain matrix, not observable)",
+                                    bad_data=dropped, duration_ms=(time.perf_counter() - t0) * 1e3)
         worst = max(res, key=lambda r: abs(r.normalized))
         if remove_bad_data and abs(worst.normalized) > rn_max_threshold and len(dropped) < max_removals:
             worst.bad = True

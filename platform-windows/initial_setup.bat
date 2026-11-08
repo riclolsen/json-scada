@@ -29,4 +29,10 @@ mongodb-runtime\bin\mongoimport --db json_scada --collection realtimeData --type
 mongodb-runtime\bin\mongoimport --db json_scada --collection processInstances --type json --file ..\mongo_seed_demo\demo_process_instances.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection users --type json --file ..\mongo_seed_demo\demo_users.json 
 mongodb-runtime\bin\mongoimport --db json_scada --collection roles --type json --file ..\mongo_seed_demo\demo_roles.json 
+rem Svedala CIM-EMS demo (ReliCapGrid model, CC BY-SA 4.0): model, bindings, field and result points
+mongodb-runtime\bin\mongoimport --db json_scada --collection realtimeData --type json --file ..\mongo_seed_demo\demo_cim_data.json 
+mongodb-runtime\bin\mongoimport --db json_scada --collection cimModels --type json --file ..\mongo_seed_demo\demo_cim_models.json 
+mongodb-runtime\bin\mongoimport --db json_scada --collection cimMeasurementBindings --type json --file ..\mongo_seed_demo\demo_cim_bindings.json 
+mongodb-runtime\bin\mongoimport --db json_scada --collection cimArtifacts.files --type json --file ..\mongo_seed_demo\demo_cim_artifacts_files.json 
+mongodb-runtime\bin\mongoimport --db json_scada --collection cimArtifacts.chunks --type json --file ..\mongo_seed_demo\demo_cim_artifacts_chunks.json 
 mongodb-runtime\bin\mongo json_scada --eval "db.realtimeData.updateMany({_id:{$gt:0}},{$set:{dbId:'demo'}})"

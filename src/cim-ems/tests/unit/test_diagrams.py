@@ -45,3 +45,16 @@ def test_generate_four_substations(tmp_path):
                         if t and t.startswith("SW."):
                             assert t in tags
     assert n > 0
+
+
+def test_names_shown_and_unbound_values_removed(tmp_path):
+    net = pn.create_four_substations_node_breaker_network()
+    lf.run_ac(net)
+    generate_all(net, "CIM1", [], extract_loadflow(net), tmp_path, only=["S1VL2"])
+    root = ET.parse(next(tmp_path.glob("*.svg"))).getroot()
+    texts = ["".join(t.itertext()) for t in root.iter("{http://www.w3.org/2000/svg}text")]
+    gen_names = set(net.get_generators().name.dropna()) | set(net.get_loads().name.dropna())
+    assert any(t in gen_names for t in texts) or any("S1VL2" in t for t in texts)
+    # generator and load feeder values have no result point: no static numbers left
+    static = [t for t in texts if t.strip().lstrip("-").replace(".", "").isdigit()]
+    assert static == []

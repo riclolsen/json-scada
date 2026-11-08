@@ -5,7 +5,7 @@ import hashlib
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from importlib.metadata import version
 
 import pypowsybl.loadflow as lf
@@ -14,7 +14,7 @@ from pymongo.database import Database
 from .bindings.model import Binding
 from .cache import PointCache
 from . import contingency as ca
-from .mongo import CONTINGENCY_LISTS, RUNS, artifacts
+from .mongo import ARTIFACT_BUCKET, CONTINGENCY_LISTS, RUNS, RUNS_TTL_SECONDS, artifacts
 from .publish import ResultPublisher
 from .redundancy import Redundancy
 from .estimation import adapter as est_adapter
@@ -37,9 +37,9 @@ def lf_parameters(cfg: dict) -> lf.Parameters:
     if "distributedSlack" in p:
         kw["distributed_slack"] = bool(p["distributedSlack"])
     if p.get("balanceType") in lf.BalanceType.__members__:
-        kw["balance_type"] = lf.BalanceType[p["balanceType"]]
+        kw["balance_type"] = getattr(lf.BalanceType, p["balanceType"])   # pybind enum: no subscript
     if p.get("voltageInitMode") in lf.VoltageInitMode.__members__:
-        kw["voltage_init_mode"] = lf.VoltageInitMode[p["voltageInitMode"]]
+        kw["voltage_init_mode"] = getattr(lf.VoltageInitMode, p["voltageInitMode"])
     if "transformerVoltageControlOn" in p:
         kw["transformer_voltage_control_on"] = bool(p["transformerVoltageControlOn"])
     return lf.Parameters(**kw)
@@ -183,12 +183,24 @@ class StudyCycle:
         self._ca_pending = self._ca_sys("done", res.duration_ms)
         fs = artifacts(self.db)
         artifact = fs.put(json.dumps(ca.to_document(res), default=str).encode(), filename=f"ca_{run_id}.json",
-                          kind="contingency-result", runId=run_id)
+                          kind="contingency-result", runId=run_id, connectionNumber=self.number)
+        self._prune_ca_artifacts(fs)
         insecure = [o.id for o in res.outcomes if o.status in ("violation", "islanding", "diverged")]
         return {"status": "done", "published": n > 0, "contingencies": len(res.outcomes), "insecure": insecure[:50],
                 "unsupported": sum(o.status == "unsupported" for o in res.outcomes),
                 "baseViolations": len(res.base_violations), "durationMs": round(res.duration_ms),
                 "artifactId": str(artifact)}
+
+    def _prune_ca_artifacts(self, fs) -> None:
+        """Contingency result files live as long as the run records (cimRuns TTL); GridFS has no TTL of its own."""
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=RUNS_TTL_SECONDS)
+        try:
+            for d in self.db[f"{ARTIFACT_BUCKET}.files"].find(
+                    {"kind": "contingency-result", "connectionNumber": self.number, "uploadDate": {"$lt": cutoff}},
+                    {"_id": 1}).limit(100):
+                fs.delete(d["_id"])
+        except Exception as e:
+            log.warning("contingency artifact cleanup failed: %s", e)
 
     def _se_failed(self, run_id, snap, status, reason) -> dict:
         self._se_pending = self._se_sys(status)
