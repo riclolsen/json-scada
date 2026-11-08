@@ -306,9 +306,9 @@ SetRegView 64
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
-  ; Python 3.14 (NuGet "python" package) with the CIM-EMS package and its pinned dependencies installed by
+  ; Python 3.13 with the CIM-EMS package and its pinned dependencies installed by
   ; build.bat (src\cim-ems\install.bat). Replaced as a whole so removed packages do not linger.
-  RMDir /r "$INSTDIR\platform-windows\python-runtime"
+  ;RMDir /r "$INSTDIR\platform-windows\python-runtime"
   SetOutPath $INSTDIR\platform-windows\python-runtime
   File /a /r /x __pycache__ "..\platform-windows\python-runtime\*.*"
 
@@ -685,11 +685,6 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_alarm_beep"`
   ClearErrors
 
-  ;ExecWait `"${SC}" stop "JSON_SCADA_shell_api"`
-  ;Sleep 50
-  ;ExecWait `"${SC}" delete "JSON_SCADA_shell_api"`
-  ;ClearErrors
-
   ExecWait `"${SC}" stop "JSON_SCADA_php"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_php"`
@@ -699,16 +694,6 @@ Section "Uninstall"
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_nginx"`
   ClearErrors
-
-  ;ExecWait `"${SC}" stop "JSON_SCADA_i104m"`
-  ;Sleep 50
-  ;ExecWait `"${SC}" delete "JSON_SCADA_i104m"`
-  ;ClearErrors
-
-  ; ExecWait `"${SC}" stop "JSON_SCADA_plctags"`
-  ; Sleep 50
-  ; ExecWait `"${SC}" delete "JSON_SCADA_plctags"`
-  ; ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_iec101client"`
   Sleep 50
@@ -903,6 +888,16 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_onvif"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_onvif"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_cim_ems"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_cim_ems"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_cim_ems_demo_field"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_cim_ems_demo_field"`
   ClearErrors
 
   ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'

@@ -147,6 +147,7 @@ To quickly run the system after installed, open the JSON-SCADA desktop folder an
 * On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
 * Default login credentials: username=admin password=jsonscada.
 * Metabase credentials: username=json@scada.com password=jsonscada123.
+* To enable CIM_EMS service: install python dependencies by executing C:\json-scada\src\cim-ems\install.bat.
 
 Requirements and recommendations:
 
