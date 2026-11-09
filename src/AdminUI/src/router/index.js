@@ -17,6 +17,7 @@ import MetabasePage from '../components/MetabasePage.vue'
 import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
 import LogViewerPage from '../components/LogViewerPage.vue' 
 import CustomDevelopmentsPage from '../components/CustomDevelopmentsPage.vue'
+import CimEmsPage from '../components/CimEmsPage.vue'
 import SVGEditPage from '../components/SVGEditPage.vue'
 
 const routes = [
@@ -59,6 +60,7 @@ const routes = [
   { path: '/log-viewer', component: LogViewerPage },
   { path: '/about', component: AboutPage },
   { path: '/admin', component: AdminPage },
+  { path: '/cim-ems', component: CimEmsPage },
   { path: '/grafana', component: GrafanaPage },
   { path: '/metabase', component: MetabasePage },
   { path: '/apollo', component: ApolloPage },

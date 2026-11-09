@@ -41,6 +41,7 @@
     "n8n": "n8n",
     "customDevelopments": "定制开发",
     "open": "打开",
+    "cimEms": "CIM-EMS",
     "svgedit": "SVG编辑器"
   },
   "tabularViewer": {
@@ -200,8 +201,7 @@
       "systemSettings": "系统",
       "logs": "日志",
       "userActions": "用户操作",
-      "tags": "标签",
-      "cimEms": "CIM-EMS"
+      "tags": "标签"
     },
     "userManagement": {
       "title": "用户管理",

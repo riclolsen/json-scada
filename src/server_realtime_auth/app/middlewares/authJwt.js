@@ -102,6 +102,26 @@ isAdmin = async (req, res, next) => {
   }
 }
 
+// any signed-in, existing user (no specific right required)
+isUser = async (req, res, next) => {
+  const tok = checkToken(req)
+  if (tok === false) {
+    res.status(403).send({ message: 'Require sign-in!' })
+    return
+  }
+  try {
+    const user = await User.findOne({ username: tok.username }).exec()
+    if (user) {
+      next()
+      return
+    }
+    res.status(403).send({ message: 'Require sign-in!' })
+  } catch (err) {
+    Log.log(err)
+    res.status(500).send({ message: err })
+  }
+}
+
 // check and decoded token
 checkToken = (req) => {
   let res = false
@@ -258,6 +278,7 @@ const authJwt = {
   checkToken,
   hasRight,
   isAdmin,
+  isUser,
   canSendCommands,
   canSendCommandTo,
   hasCimEngineering,

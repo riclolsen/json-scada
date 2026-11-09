@@ -22,7 +22,7 @@ Vue.js single-page application (SPA) for the JSON-SCADA web administration inter
 - Vue component naming: PascalCase. Single-file components with `<script setup>` preferred
 - Styles: scoped CSS. Global styles in `src/` root
 - Locales: `src/locales/*.json` (13 files) carry the same keys; add every new key to all of them
-- `components/CimEmsTab.vue` (Admin tab 8) is the CIM-EMS page; it talks only to `/Invoke/auth/cimEms/*` (see `src/server_realtime_auth/AGENTS.md`) and waits for driver-executed requests by polling `listRequests`
+- `components/CimEmsPage.vue` (route `/cim-ems`, dashboard card, open to any signed-in user) hosts `components/CimEmsTab.vue`, the CIM-EMS UI; it talks only to `/Invoke/auth/cimEms/*` (see `src/server_realtime_auth/AGENTS.md`) and waits for driver-executed requests by polling `listRequests`
 
 ## Work Guidance
 

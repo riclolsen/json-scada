@@ -224,39 +224,40 @@ module.exports = function (app, accessPoint) {
   )
 
   // CIM-EMS: model revisions, bindings, runs and study requests
+  // (any signed-in user; engineering actions check the cimEngineering right)
   app.get(
     accessPoint + 'auth/cimEms/listModels',
-    [authJwt.isAdmin],
+    [authJwt.isUser],
     cimEmsController.listModels
   )
   app.get(
     accessPoint + 'auth/cimEms/listBindings',
-    [authJwt.isAdmin],
+    [authJwt.isUser],
     cimEmsController.listBindings
   )
   app.get(
     accessPoint + 'auth/cimEms/listRuns',
-    [authJwt.isAdmin],
+    [authJwt.isUser],
     cimEmsController.listRuns
   )
   app.get(
     accessPoint + 'auth/cimEms/listRequests',
-    [authJwt.isAdmin],
+    [authJwt.isUser],
     cimEmsController.listRequests
   )
   app.post(
     accessPoint + 'auth/cimEms/uploadModel',
-    [authJwt.isAdmin, authJwt.isCimEngineer],
+    [authJwt.isCimEngineer],
     cimEmsController.uploadModel
   )
   app.post(
     accessPoint + 'auth/cimEms/request',
-    [authJwt.isAdmin],
+    [authJwt.isUser],
     cimEmsController.createRequest
   )
   app.get(
     accessPoint + 'auth/cimEms/artifact',
-    [authJwt.isAdmin, authJwt.isCimEngineer],
+    [authJwt.isCimEngineer],
     cimEmsController.downloadArtifact
   )
 }

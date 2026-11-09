@@ -41,6 +41,7 @@
     "n8n": "n8n",
     "customDevelopments": "دودیز پرمختګونه",
     "open": "خلاص",
+    "cimEms": "CIM-EMS",
     "svgedit": "د SVG مدیر"
   },
   "tabularViewer": {
@@ -200,8 +201,7 @@
       "systemSettings": "سیسټم",
       "logs": "لوګو",
       "userActions": "د کارونکي کړنې",
-      "tags": "ټګونه",
-      "cimEms": "CIM-EMS"
+      "tags": "ټګونه"
     },
     "userManagement": {
       "title": "د کارن مدیریت",

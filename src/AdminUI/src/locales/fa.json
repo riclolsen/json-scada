@@ -41,6 +41,7 @@
     "n8n": "n8n",
     "customDevelopments": "توسعه های سفارشی",
     "open": "باز کنید",
+    "cimEms": "CIM-EMS",
     "svgedit": "ویرایشگر SVG"
   },
   "tabularViewer": {
@@ -200,8 +201,7 @@
       "systemSettings": "سیستم",
       "logs": "سیاههها",
       "userActions": "اقدامات کاربر",
-      "tags": "برچسب ها",
-      "cimEms": "CIM-EMS"
+      "tags": "برچسب ها"
     },
     "userManagement": {
       "title": "مدیریت کاربر",

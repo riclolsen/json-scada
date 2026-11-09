@@ -108,6 +108,7 @@ const pageTitle = computed(() => {
     '/log-viewer': 'dashboard.logViewer',
     '/about': 'dashboard.about',
     '/admin': 'dashboard.admin',
+    '/cim-ems': 'dashboard.cimEms',
     '/grafana': 'dashboard.grafana',
     '/metabase': 'dashboard.metabase',
     '/nodered': 'dashboard.nodered',

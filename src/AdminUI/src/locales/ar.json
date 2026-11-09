@@ -41,6 +41,7 @@
     "n8n": "n8n",
     "customDevelopments": "التطورات المخصصة",
     "open": "يفتح",
+    "cimEms": "CIM-EMS",
     "svgedit": "محرر SVG"
   },
   "tabularViewer": {
@@ -200,8 +201,7 @@
       "systemSettings": "نظام",
       "logs": "السجلات",
       "userActions": "إجراءات المستخدم",
-      "tags": "العلامات",
-      "cimEms": "CIM-EMS"
+      "tags": "العلامات"
     },
     "userManagement": {
       "title": "إدارة المستخدمين",

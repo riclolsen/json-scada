@@ -41,6 +41,7 @@
     "n8n": "n8n",
     "customDevelopments": "カスタム開発",
     "open": "開ける",
+    "cimEms": "CIM-EMS",
     "svgedit": "SVGエディター"
   },
   "tabularViewer": {
@@ -200,8 +201,7 @@
       "systemSettings": "システム",
       "logs": "ログ",
       "userActions": "ユーザーアクション",
-      "tags": "タグ",
-      "cimEms": "CIM-EMS"
+      "tags": "タグ"
     },
     "userManagement": {
       "title": "ユーザー管理",

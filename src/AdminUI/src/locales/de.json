@@ -41,6 +41,7 @@
     "n8n": "n8n",
     "customDevelopments": "Kundenspezifische Entwicklungen",
     "open": "Offen",
+    "cimEms": "CIM-EMS",
     "svgedit": "SVG-Editor"
   },
   "tabularViewer": {
@@ -200,8 +201,7 @@
       "systemSettings": "System",
       "logs": "Protokolle",
       "userActions": "Benutzeraktionen",
-      "tags": "Schlagwörter",
-      "cimEms": "CIM-EMS"
+      "tags": "Schlagwörter"
     },
     "userManagement": {
       "title": "Benutzerverwaltung",
