@@ -117,3 +117,41 @@ def extract_estimation(net: pn.Network, res, flt: dict | None = None) -> list[Re
             g1, g2 = groups(br.voltage_level1_id)
             out.append(ResultValue("SE", eid, br["name"] or "", side, q, _num(v), "MW" if q == "P" else "Mvar", g1, g2))
     return out
+
+
+def _sum(df, *cols) -> float:
+    if df is None or not len(df):
+        return 0.0
+    total = 0.0
+    for c in cols:
+        if c in df:
+            v = df[c].sum(skipna=True)
+            total += float(v) if v == v else 0.0
+    return total
+
+
+def system_totals(net: pn.Network) -> dict:
+    """Active/reactive balance of a solved network (MW, Mvar), for the run record.
+
+    pypowsybl uses the load sign convention: generators show negative p when producing. `otherInjectionsMW` is the
+    net injection of HVDC converters, batteries, dangling lines (boundary exchange) and static var compensators;
+    `lossesMW` is the balance (generation - load + other injections) and `branchLossesMW` the sum over lines and
+    transformers of the power entering at their ends.
+    """
+    gens, loads = net.get_generators(), net.get_loads()
+    generation = -_sum(gens, "p")
+    load = _sum(loads, "p")
+    other = -sum(_sum(df, "p") for df in (net.get_vsc_converter_stations(), net.get_lcc_converter_stations(),
+                                          net.get_batteries(), net.get_dangling_lines(),
+                                          net.get_static_var_compensators()))
+    branch = _sum(net.get_lines(), "p1", "p2") + _sum(net.get_2_windings_transformers(), "p1", "p2") + \
+        _sum(net.get_3_windings_transformers(), "p1", "p2", "p3")
+    losses = generation - load + other
+
+    def r(v: float) -> float:
+        return round(v, 3)
+
+    return {"generationMW": r(generation), "generationMvar": r(-_sum(gens, "q")), "loadMW": r(load),
+            "loadMvar": r(_sum(loads, "q")), "shuntMvar": r(-_sum(net.get_shunt_compensators(), "q")),
+            "otherInjectionsMW": r(other), "lossesMW": r(losses), "branchLossesMW": r(branch),
+            "lossesPct": r(100.0 * losses / generation) if generation > 0 else None}

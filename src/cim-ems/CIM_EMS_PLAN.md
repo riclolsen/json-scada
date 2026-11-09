@@ -500,7 +500,7 @@ A rejected snapshot produces a `cimRuns` entry with `rejected-snapshot` and the 
 | Architecture diagrams in `docs/` | Add the CIM-EMS driver |
 | `src/AdminUI` | Driver name lists, connection fields, model/binding/run pages, i18n strings |
 | `src/server_realtime_auth` | Backend endpoints for model upload, binding review, study requests, artifact download, with role checks |
-| `src/mcp-json-scada-db` | `CIM-EMS` in `ProtocolDriverName` (`src/jsonscada/types.ts`) and driver catalog (`src/jsonscada/drivers.ts`); no model content exposed |
+| `src/mcp-json-scada-db` | `CIM-EMS` in `ProtocolDriverName` and the driver catalog; `cim_ems_*` tools: result points and status from MongoDB, models/bindings/runs/requests through the Admin UI API with its role checks; never model packages or exports |
 | `mongo_seed/` | Collections and indexes for `cimModels`, `cimMeasurementBindings`, `cimRuns`, `cimContingencyLists`, `cimStudyRequests`, GridFS bucket |
 | `Dockerfile`, `compile-docker/`, `demo-docker/` | Python stage, service, demo connection with MicroGrid model |
 | `platform-*` | Installers and supervisor/Windows service definitions (phase 6) |
@@ -515,7 +515,7 @@ Reused: driver shell, redundancy, bindings, snapshot and topology, publication, 
 - Network models and study results are treated as critical infrastructure information.
 - Upload, activation, binding approval and export require dedicated Admin UI rights; every such action is written to the existing user actions log.
 - Artifacts are not served without authentication; exports are downloadable only by authorized roles.
-- The MCP server exposes driver status and result points only, never model packages or exports.
+- The MCP server reads driver status and result points directly; models, bindings, runs, study requests and result artifacts only through the Admin UI API with the same rights (an Admin role, CIM-EMS Engineering for changes and artifacts) and audit trail, and it can be switched off (`JS_MCPJSDB_CIM_EMS_TOOLS=false`). Model packages and exports are never returned.
 - No customer model, binding list or telemetry is committed to the repository; tests use public cases.
 
 ## 17. Packaging and licensing

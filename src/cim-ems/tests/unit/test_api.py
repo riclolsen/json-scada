@@ -141,3 +141,33 @@ def test_requests_run_oldest_first(db):
     _request(db, "rerun", {"connectionNumber": 1}, t - timedelta(seconds=5))
     first = api.claim(db, "n1")
     assert first["params"]["connectionNumber"] == 1
+
+
+def test_list_elements_catalog(db, package):
+    from cim_ems.bindings.proposal import analog_labels, switch_labels
+    from cim_ems.models import store as mstore
+
+    _upload(db, package)
+    api.process_pending(db, "n1")
+    _request(db, "listElements", {"modelId": "M1"})
+    api.process_pending(db, "n1")
+    r = _req(db, "listElements")
+    assert r["status"] == "done", r.get("error")
+    res = r["result"]
+    entries = json.loads(mongo.artifacts(db).get(api._oid(res["artifactId"])).read())
+    assert res["entries"] == len(entries) and res["modelRevision"] == 1
+    net = mstore.load_network(db, db[mongo.MODELS].find_one({"modelId": "M1"}))
+    sw = {e["element_id"]: e for e in entries if e["kind"] == "switch"}
+    assert sw and {k: e["label"] for k, e in sw.items()} == switch_labels(net)
+    an = {(e["element_id"], e["side"], e["quantity"]): e for e in entries if e["kind"] == "analog"}
+    assert {k: e["label"] for k, e in an.items()} == analog_labels(net)
+    branch_end = next(e for e in an.values() if e["side"] == 1)
+    assert branch_end["elementType"] in ("line", "transformer") and branch_end["otherEnd"]["substation"] is not None
+    assert all(e["unit"] in ("kV", "MW", "Mvar") for e in an.values())
+    taps = [e for e in entries if e["kind"] == "tap"]
+    assert all(e["tapRange"][0] <= e["tap"] <= e["tapRange"][1] for e in taps)
+
+    for _ in range(api.CATALOG_KEEP + 2):     # older catalogs of the model are pruned
+        _request(db, "listElements", {"modelId": "M1"})
+        api.process_pending(db, "n1")
+    assert db["cimArtifacts.files"].count_documents({"kind": "element-catalog", "modelId": "M1"}) == api.CATALOG_KEEP

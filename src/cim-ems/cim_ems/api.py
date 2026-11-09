@@ -4,7 +4,8 @@ Request document: {type, params, status, createdAt, createdBy}. The driver claim
 (`pending` -> `running`), executes it and sets `done` with a `result` or `failed` with an `error`.
 
 Types: `import` (uploaded package in the artifact bucket), `activate`, `rollback`, `proposeBindings`,
-`saveBindings` (binding list in the artifact bucket) and `rerun`. The backend checks the user rights; the
+`listElements` (element catalog for binding review), `saveBindings` (binding list in the artifact bucket) and
+`rerun`. The backend checks the user rights; the
 driver re-checks the contents (validation, own-point refusal) because it owns the model and binding rules.
 """
 from __future__ import annotations
@@ -23,12 +24,13 @@ from pymongo.database import Database
 
 from .bindings import store as bstore
 from .bindings.model import Binding
-from .mongo import MODELS, STUDY_REQUESTS, artifacts
+from .mongo import ARTIFACT_BUCKET, MODELS, STUDY_REQUESTS, artifacts
 from .models import store as mstore
 
 log = logging.getLogger("CIM-EMS")
 
 STALE_SECONDS = 3600          # a request left `running` this long belonged to a node that died
+CATALOG_KEEP = 5              # element catalogs kept per model (each listElements request writes one)
 LIST_LIMIT = 500              # unmatched/ambiguous ids kept in a request result
 
 
@@ -105,10 +107,8 @@ def do_rollback(db: Database, req: dict, fx: Effects) -> dict:
     return {"modelId": mid, "activeRevision": doc["revision"]}
 
 
-def do_propose(db: Database, req: dict, fx: Effects) -> dict:
-    from .bindings.proposal import propose_analogs, propose_switches
-
-    p = req["params"]
+def _review_model(db: Database, p: dict) -> tuple[str, dict]:
+    """The revision given in the params, else the active one, else the newest usable one."""
     mid = _model_id(p)
     if p.get("revision"):
         model = db[MODELS].find_one({"modelId": mid, "revision": int(p["revision"])})
@@ -117,6 +117,13 @@ def do_propose(db: Database, req: dict, fx: Effects) -> dict:
             {"modelId": mid, "status": {"$ne": "rejected"}}, sort=[("revision", -1)])
     if model is None:
         raise RequestError(f"{mid}: no usable model revision")
+    return mid, model
+
+
+def do_propose(db: Database, req: dict, fx: Effects) -> dict:
+    from .bindings.proposal import propose_analogs, propose_switches
+
+    mid, model = _review_model(db, req["params"])
     net = mstore.load_network(db, model)
     tags = bstore.candidate_tags(db)
     sw, an = propose_switches(net, tags), propose_analogs(net, tags)
@@ -132,6 +139,26 @@ def do_propose(db: Database, req: dict, fx: Effects) -> dict:
         "unmatched": (sw.unmatched + an.unmatched)[:LIST_LIMIT],
         "ambiguous": (sw.ambiguous + an.ambiguous)[:LIST_LIMIT],
     }
+
+
+def do_list_elements(db: Database, req: dict, fx: Effects) -> dict:
+    """Element catalog of a model revision as a JSON artifact (see `bindings.catalog`)."""
+    from .bindings.catalog import element_catalog
+
+    mid, model = _review_model(db, req["params"])
+    entries = element_catalog(mstore.load_network(db, model))
+    art = _put_json(db, entries, f"elements_{mid}_{model['revision']}.json", kind="element-catalog",
+                    modelId=mid, requestId=req["_id"])
+    fs = artifacts(db)
+    old = db[f"{ARTIFACT_BUCKET}.files"].find({"kind": "element-catalog", "modelId": mid}, {"_id": 1}) \
+        .sort("uploadDate", -1).skip(CATALOG_KEEP)
+    for d in list(old):
+        fs.delete(d["_id"])
+    per_kind: dict[str, int] = {}
+    for e in entries:
+        per_kind[e["kind"]] = per_kind.get(e["kind"], 0) + 1
+    return {"modelId": mid, "modelRevision": model["revision"], "artifactId": str(art), "entries": len(entries),
+            "perKind": per_kind, "substations": len({e["substation"] for e in entries})}
 
 
 def do_save_bindings(db: Database, req: dict, fx: Effects) -> dict:
@@ -173,6 +200,7 @@ HANDLERS = {
     "activate": do_activate,
     "rollback": do_rollback,
     "proposeBindings": do_propose,
+    "listElements": do_list_elements,
     "saveBindings": do_save_bindings,
     "rerun": do_rerun,
 }

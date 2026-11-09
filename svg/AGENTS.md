@@ -8,6 +8,7 @@ SVG files used for SCADA synoptic displays. These SVGs contain inline JSON metad
 
 - svg owns all SVG display files
 - SVG SCADA markup conventions are defined by the `svg-scada` skill, committed in two identical copies: `.agents/skills/svg-scada/SKILL.md` (repo root) and `svg/.agents/skills/svg-scada/SKILL.md`
+- `src/mcp-json-scada-db` (`tools/displays.ts`, `parseDisplay`) reads these displays for AI assistants and extracts bound tags by the skill's markup rules; a markup change that adds or moves tag references must update that parser too
 
 ## Local Contracts
 
@@ -33,5 +34,6 @@ SVG files used for SCADA synoptic displays. These SVGs contain inline JSON metad
 - Validate SVG XML syntax
 - Verify JSON in `inkscape:label` parses correctly
 - After editing the `svg-scada` skill, apply the same change to both copies and confirm `diff .agents/skills/svg-scada/SKILL.md svg/.agents/skills/svg-scada/SKILL.md` is empty; every inline JSON example in it must parse (multi-object label examples as a `[...]` array)
+- Bound-tag check of a display: MCP `get_display` (or `save_display` with `dryRun`) lists `missingTags` and labels with invalid JSON
 - Check point IDs against the demo seed (`demo-docker/mongo_seed/files/demo_data.json`, `demo_cim_data.json`) or the target database
 - Test rendering in the JSON-SCADA web interface

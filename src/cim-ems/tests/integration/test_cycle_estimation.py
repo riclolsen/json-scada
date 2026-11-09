@@ -87,6 +87,31 @@ def test_cycle_reports_bad_data_in_run_record():
     assert est["status"] == "converged"
     assert any(b["element"] == victim.element_id and b["quantity"] == "P" for b in est["badData"])
     assert value(db2, "EMS;SYS;SE;BADDATA")["valueAtSource"] >= 1
+    hit = next(b for b in est["badData"] if b["element"] == victim.element_id and b["quantity"] == "P")
+    assert hit["tag"].startswith("A.") and "normalizedAtRemoval" in hit
+    truth = next(m for m in ms if m.tag == victim.tag)   # the final estimate, without the bad value, is near the truth
+    assert abs(hit["estimated"] - truth.value) < 10 and abs(hit["measured"] - hit["estimated"]) > 60
+
+
+@needs
+def test_cycle_stores_residual_report_and_totals():
+    import gridfs
+    import json as js
+    cyc, db, ms = build()
+    run = cyc.run_once()
+    t = run["summary"]["totals"]
+    assert t["generationMW"] > 0 and t["loadMW"] > 0 and t["lossesMW"] >= 0
+    assert abs(t["generationMW"] - t["loadMW"] + t["otherInjectionsMW"] - t["lossesMW"]) < 1e-2
+    est = run["summary"]["estimation"]
+    assert len(est["largestResiduals"]) == 10 and est["chi2Ratio"] is not None
+    assert all(r["tag"].startswith("A.") for r in est["largestResiduals"])
+    fs = gridfs.GridFS(db, collection="cimArtifacts")
+    doc = js.loads(fs.get(__import__("bson").ObjectId(est["residualsArtifactId"])).read())
+    assert doc["runId"] == run["runId"] and len(doc["measurements"]) == est["measurements"] + len(est["badData"])
+    v = next(r for r in doc["measurements"] if r["quantity"] == "V")
+    assert v["tag"] and v["estimated"] is not None and v["sigma"] > 0
+    cyc.run_once()       # one report per connection: the previous one is replaced
+    assert db["cimArtifacts.files"].count_documents({"kind": "se-residuals", "connectionNumber": cyc.number}) == 1
 
 
 @needs

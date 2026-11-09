@@ -19,7 +19,7 @@ from .publish import ResultPublisher
 from .redundancy import Redundancy
 from .estimation import adapter as est_adapter
 from .estimation import transfer as est_transfer
-from .results import ResultValue, extract_estimation, extract_loadflow
+from .results import ResultValue, extract_estimation, extract_loadflow, system_totals
 from .snapshot import SnapshotBuilder, SnapshotPolicy
 from .topology import apply_snapshot
 
@@ -28,6 +28,7 @@ log = logging.getLogger("CIM-EMS.cycle")
 STATUS_CODES = {"converged": 0, "diverged": 1, "rejected-snapshot": 2, "unsupported": 3, "failed": 4}
 # estimation status: 0 converged, 1 not observable, 2 did not converge, 3 unsupported network, 4 failed, 5 no load flow
 SE_CODES = {"converged": 0, "not-observable": 1, "diverged": 2, "unsupported": 3, "failed": 4, "no-load-flow": 5}
+RESIDUALS_IN_SUMMARY = 10    # largest normalized residuals kept in the run record; the full list is an artifact
 TRANSFER_GATE_PU, TRANSFER_GATE_DEG = 1e-4, 0.01
 
 
@@ -67,6 +68,7 @@ class StudyCycle:
         self.se_cfg = connection.get("estimatorParameters") or {}
         self.se_rn_max = float(self.se_cfg.get("badDataThreshold", 4.0))
         self._transfer, self._transfer_hash, self._transfer_error = None, None, ""
+        self._bus_kv: dict[str, float] | None = None
         self.last_se_success = 0.0
         self.run_ca = bool(connection.get("runContingency", False))
         self.ca_list_id = connection.get("contingencyListId", "AUTO_N1")
@@ -109,6 +111,10 @@ class StudyCycle:
                     sys_vals["ITER"] = float(main.iteration_count)
                     if main.status.name == "CONVERGED":
                         status = "converged"
+                        try:
+                            summary["totals"] = system_totals(self.net)
+                        except Exception as e:                   # informative only, never fails the run
+                            log.warning("system totals failed: %s", e)
                         values = extract_loadflow(self.net, self.publish_filter)
                         n = self.publisher.publish(run_id, snap.time, values)
                         published = n > 0
@@ -235,7 +241,8 @@ class StudyCycle:
 
     def _resolve_buses(self, measurements) -> list[est_adapter.Measurement]:
         """Voltage measurements may name a calculated bus, a bus-breaker view bus or a busbar section; the estimator
-        wants calculated bus ids."""
+        wants calculated bus ids. `tag` carries the JSON-SCADA tag; `self._se_source` maps each estimator measurement
+        back to the bound element."""
         bbs: dict[str, str] = {}
         for getter in (self.net.get_bus_breaker_view_buses, self.net.get_busbar_sections):
             try:
@@ -243,12 +250,67 @@ class StudyCycle:
             except Exception:
                 pass
         out = []
+        self._se_source: dict[int, object] = {}
         for m in measurements:
             eid = m.element_id
             if m.quantity == "V" and eid in bbs:
                 eid = bbs[eid]
-            out.append(est_adapter.Measurement(eid, m.quantity, m.side, m.value, m.sigma, tag=m.element_id))
+            em = est_adapter.Measurement(eid, m.quantity, m.side, m.value, m.sigma, tag=m.tag)
+            self._se_source[id(em)] = m
+            out.append(em)
         return out
+
+    def _final_estimate(self, res, m) -> float | None:
+        """Value of a measured quantity in the final estimate (bad data rows: the estimate without them)."""
+        if m.quantity in ("P", "Q"):
+            return res.branch_flows.get((m.element_id, m.side, m.quantity))
+        if m.quantity == "V" and m.element_id in res.bus_v_pu:
+            if self._bus_kv is None:
+                buses = self.net.get_buses()
+                vls = self.net.get_voltage_levels()["nominal_v"]
+                self._bus_kv = {b: float(vls[r.voltage_level_id]) for b, r in buses.iterrows()}
+            kv = self._bus_kv.get(m.element_id)
+            return res.bus_v_pu[m.element_id] * kv if kv else None
+        return None
+
+    def _residual_row(self, r, bad: bool, res=None) -> dict:
+        """Kept measurements: residual against the final estimate. Bad data: the final estimate (computed without
+        the measurement) replaces the one of the removal iteration, which the bad value itself distorted."""
+        m = r.measurement
+        src = self._se_source.get(id(m))
+        element = src.element_id if src is not None else m.element_id
+        est = r.estimated if r.estimated is not None and r.estimated == r.estimated else None
+        norm = r.normalized if r.normalized == r.normalized else None
+        extra = {}
+        if bad and res is not None:
+            final = self._final_estimate(res, m)
+            if final is not None and final == final:
+                extra = {"normalizedAtRemoval": round(norm, 3) if norm is not None else None}
+                est, norm = final, (m.value - final) / m.sigma
+        return {"tag": m.tag, "element": element, **({"bus": m.element_id} if element != m.element_id else {}),
+                "quantity": m.quantity, "side": m.side, "measured": round(m.value, 4),
+                "estimated": round(est, 4) if est is not None else None, "sigma": m.sigma,
+                "normalized": round(norm, 3) if norm is not None else None, "bad": bad, **extra,
+                **({"substituted": True} if src is not None and getattr(src, "substituted", False) else {})}
+
+    def _store_residuals(self, run_id: int, snap, res, rows: list[dict]) -> str | None:
+        """Latest residual report of this connection (one file, replaced every estimate)."""
+        try:
+            fs = artifacts(self.db)
+            doc = {"runId": run_id, "connectionNumber": self.number, "snapshotTime": snap.time,
+                   "chi2Statistic": res.chi2_statistic, "chi2Threshold": res.chi2_threshold,
+                   "chi2Passed": res.chi2_passed, "degreesOfFreedom": res.degrees_of_freedom,
+                   "badDataThreshold": self.se_rn_max, "measurements": rows,
+                   "snapshotReasons": [x for x in snap.reasons if "analog" in x]}
+            art = fs.put(json.dumps(doc, default=str).encode(), filename=f"se_residuals_{self.number}.json",
+                         kind="se-residuals", runId=run_id, connectionNumber=self.number)
+            for d in self.db[f"{ARTIFACT_BUCKET}.files"].find(
+                    {"kind": "se-residuals", "connectionNumber": self.number, "_id": {"$ne": art}}, {"_id": 1}):
+                fs.delete(d["_id"])
+            return str(art)
+        except Exception as e:
+            log.warning("residual report not stored: %s", e)
+            return None
 
     def _estimate(self, run_id, snap, topo_hash, slack=None) -> dict:
         tr, err = self._transfer_for(topo_hash, slack)
@@ -269,11 +331,19 @@ class StudyCycle:
         n = self.publisher.publish(run_id, snap.time, values)
         if n:
             self.last_se_success = time.monotonic()
+        rows = [self._residual_row(r, False) for r in res.residuals] + \
+            [self._residual_row(d, True, res) for d in res.bad_data]
+        largest = sorted((x for x in rows if not x["bad"] and x["normalized"] is not None),
+                         key=lambda x: -abs(x["normalized"]))[:RESIDUALS_IN_SUMMARY]
         return {"status": "converged", "published": n > 0, "measurements": res.measurements_used,
                 "degreesOfFreedom": res.degrees_of_freedom, "chi2Passed": res.chi2_passed,
-                "badData": [{"element": d.measurement.element_id, "quantity": d.measurement.quantity,
-                             "side": d.measurement.side, "normalized": round(d.normalized, 2)}
-                            for d in res.bad_data[:20]],
+                "chi2Ratio": round(res.chi2_statistic / thr, 4) if thr == thr and thr else None,
+                "badData": [{k: x[k] for k in ("element", "tag", "quantity", "side", "measured", "estimated",
+                                               "normalized", "normalizedAtRemoval") if k in x}
+                            for x in rows if x["bad"]][:20],
+                "largestResiduals": [{k: x[k] for k in ("element", "tag", "quantity", "side", "measured",
+                                                        "estimated", "normalized")} for x in largest],
+                "residualsArtifactId": self._store_residuals(run_id, snap, res, rows),
                 "durationMs": round(res.duration_ms)}
 
     def _sys(self, status, sys_vals, t0, snap) -> list[ResultValue]:

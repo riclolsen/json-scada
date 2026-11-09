@@ -16,7 +16,9 @@ once its content has moved into this README and `docs/schema.md`.
   (keep both in step), collection table in `docs/schema.md`
 - The Admin UI page (`src/AdminUI/src/components/CimEmsTab.vue`) and its backend
   (`src/server_realtime_auth/app/controllers/cimEms.controller.js`) only queue `cimStudyRequests`; this driver
-  executes them (`cim_ems/api.py`)
+  executes them (`cim_ems/api.py`). The MCP server (`src/mcp-json-scada-db`, `cim_ems_*` tools) goes through the
+  same backend and decodes the result points and run records: keep `jsonscada/cim-ems.ts` there (status codes, point
+  addressing) and its run/request field use in step with `cycle.py`, `contingency.py`, `publish.py` and `api.py`
 
 ## Local Contracts
 
@@ -43,17 +45,18 @@ once its content has moved into this README and `docs/schema.md`.
   - `cim_ems/models/importer.py` — pinned import parameters, validation report, unsupported-class list
   - `cim_ems/export.py` — CGMES export and the round-trip check (compares solved values, never XML bytes)
   - `cim_ems/__main__.py` — driver loop: instance check, keep-alive, one `StudyCycle` per enabled connection, reload on connection change; runs are `start`, `topology` (switch/tap change, debounced 1 s), `request` or `cycle`
-  - `cim_ems/api.py` — study requests on the active node: atomic claim (`pending` → `running`), `import`, `activate`, `rollback`, `proposeBindings`, `saveBindings`, `rerun`; result in `result` or `error`; `running` older than 1 h is failed as interrupted. Activation and binding saves rebuild the affected cycles. Requests run synchronously in the loop (an import blocks the studies while it runs)
+  - `cim_ems/api.py` — study requests on the active node: atomic claim (`pending` → `running`), `import`, `activate`, `rollback`, `proposeBindings`, `listElements` (element catalog artifact, 5 newest kept per model), `saveBindings`, `rerun`; result in `result` or `error`; `running` older than 1 h is failed as interrupted. Activation and binding saves rebuild the affected cycles. Requests run synchronously in the loop (an import blocks the studies while it runs)
   - `cim_ems/cache.py` — `PointCache`: processed `realtimeData` values of bound tags via change stream opened before the full load, resync on any error or request
-  - `cim_ems/cycle.py` — `StudyCycle.run_once`: snapshot, topology, load flow, publication, `cimRuns` record; failures never stop the loop
-  - `cim_ems/results.py` — load flow result extraction (bus V/VPU/ANG, branch P/Q/I per end, LOAD against the permanent current limit); disconnected ends and NaN become "not calculated"
+  - `cim_ems/cycle.py` — `StudyCycle.run_once`: snapshot, topology, load flow, publication, `cimRuns` record (`summary.totals` system balance; `summary.estimation` with `chi2Ratio`, `badData` and `largestResiduals` carrying the SCADA tag, measured and final estimated values); failures never stop the loop. Every estimate replaces the connection's residual report artifact (`kind: "se-residuals"`, one per connection: every used and removed measurement with tag, measured, estimated, sigma, normalized residual, plus the analog snapshot drop reasons). Bad data rows use the final estimate (without the bad value); `normalizedAtRemoval` keeps the removal-time residual
+  - `cim_ems/results.py` — load flow result extraction (bus V/VPU/ANG, branch P/Q/I per end, LOAD against the permanent current limit); disconnected ends and NaN become "not calculated"; `system_totals` (generation, load, other injections, balance losses, branch losses; pypowsybl load sign convention)
   - `cim_ems/publish.py` — result point registry, auto-created supervised points, `sourceDataUpdate` publication, per-kind monotonic run guard, `still_active()` check before every write, `invalidate`
   - `cim_ems/bindings/store.py` — versioned binding sets in `cimMeasurementBindings`
   - `cim_ems/mongo.py` — collection names, indexes (one active revision per model, TTL on runs), GridFS bucket
   - `cim_ems/redundancy.py` — active-node arbitration; `still_active()` must be checked right before every publication; an empty `nodeNames` allows any node (as in the other drivers)
   - `cim_ems/models/store.py` — immutable revisions, explicit activation, rollback, rebuild from the stored package
+  - `cim_ems/bindings/catalog.py` — element catalog: every bindable slot (switch, tap changer, P/Q per branch end, V per voltage level) with names, nominal kV, far end and the matcher label (same slots and labels as `proposal.py`; keep both in step)
   - `cim_ems/bindings/` — `Binding` model with CSV review format; `proposal.py` name-matching proposals (never approved automatically; best score wins a tag, weaker claimants stay unmatched)
-  - `cim_ems/snapshot.py` — snapshot policy: switch/tap/analog rules, hold of last valid state, rejection, skew and age
+  - `cim_ems/snapshot.py` — snapshot policy (measurements carry their binding tag): switch/tap/analog rules, hold of last valid state, rejection, skew and age
   - `cim_ems/topology.py` — applies a snapshot to the network, island counts, deterministic topology hash
   - `cim_ems/synthetic.py` — synthetic tags and switching events for tests and demos
   - `cim_ems/demo.py` — Svedala demo constants (model `SVEDALA`, connections 90 `SVEDALA_EMS` / 91 `SVEDALA_FIELD`), field point naming and keys, approved bindings, true measurement values, field point template

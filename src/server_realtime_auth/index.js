@@ -1114,7 +1114,10 @@ let pool = null
                         .findOne(findPoint)
 
                       let alarmDisableNew = {}
-                      if (userRights?.disableAlarms)
+                      if (
+                        userRights?.disableAlarms &&
+                        node.Value._Properties?.alarmDisabled !== undefined
+                      )
                         if (
                           prevData?.alarmDisabled !==
                           node.Value._Properties?.alarmDisabled
@@ -1125,7 +1128,10 @@ let pool = null
                           }
 
                       let annotationNew = {}
-                      if (userRights?.enterAnnotations)
+                      if (
+                        userRights?.enterAnnotations &&
+                        node.Value._Properties?.annotation !== undefined
+                      )
                         if (
                           prevData?.annotation !==
                           node.Value._Properties?.annotation
@@ -1135,25 +1141,35 @@ let pool = null
                           }
 
                       let loLimitNew = {}
-                      if (userRights?.enterLimits)
+                      // absent fields are left unchanged; a null limit (an
+                      // Infinity serialized as JSON) means no limit
+                      const props = node.Value._Properties || {}
+                      const limitOf = (v, inf) =>
+                        v === null ? inf : Number(v)
+                      if (userRights?.enterLimits && props.loLimit !== undefined)
                         if (
-                          prevData?.loLimit !== node.Value._Properties?.loLimit
+                          prevData?.loLimit !== limitOf(props.loLimit, -Infinity)
                         )
                           loLimitNew = {
-                            loLimit: new Double(node.Value._Properties.loLimit),
+                            loLimit: new Double(
+                              limitOf(props.loLimit, -Infinity)
+                            ),
                           }
 
                       let hiLimitNew = {}
-                      if (userRights?.enterLimits)
+                      if (userRights?.enterLimits && props.hiLimit !== undefined)
                         if (
-                          prevData?.hiLimit !== node.Value._Properties?.hiLimit
+                          prevData?.hiLimit !== limitOf(props.hiLimit, Infinity)
                         )
                           hiLimitNew = {
-                            hiLimit: new Double(node.Value._Properties.hiLimit),
+                            hiLimit: new Double(limitOf(props.hiLimit, Infinity)),
                           }
 
                       let hysteresisNew = {}
-                      if (userRights?.enterLimits)
+                      if (
+                        userRights?.enterLimits &&
+                        props.hysteresis !== undefined
+                      )
                         if (
                           prevData?.hysteresis !==
                           node.Value._Properties?.hysteresis
@@ -1170,7 +1186,7 @@ let pool = null
                       // hihihiLimit: node.Value._Properties.hiLimit,
 
                       let notesNew = {}
-                      if (userRights?.enterNotes)
+                      if (userRights?.enterNotes && props.notes !== undefined)
                         if (prevData?.notes !== node.Value._Properties?.notes)
                           notesNew = {
                             notes: node.Value._Properties.notes,
@@ -1270,7 +1286,9 @@ let pool = null
                                 : prevData?.eventTextTrue
                           else
                             eventText =
-                              valueNew.value.toFixed(2) + ' ' + prevData?.unit
+                              Number(valueNew.value).toFixed(2) +
+                              ' ' +
+                              prevData?.unit
                           db.collection(COLL_SOE).insertOne({
                             tag: prevData.tag,
                             pointKey: prevData._id,

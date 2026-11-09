@@ -47,6 +47,7 @@ class Measurement:
     value: float
     sigma: float
     substituted: bool = False
+    tag: str = ""                 # JSON-SCADA tag of the bound point
 
 
 @dataclass
@@ -150,6 +151,6 @@ class SnapshotBuilder:
                     snap.reasons.append(f"{b.tag}: analog dropped (time skew)")
                     continue
                 snap.measurements.append(Measurement(b.element_id, b.quantity, b.side, p.value * b.sign,
-                                                     b.sigma, p.substituted))
+                                                     b.sigma, p.substituted, b.tag))
                 if p.substituted:
                     snap.flags.add("substituted")

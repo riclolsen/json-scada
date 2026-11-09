@@ -104,7 +104,7 @@ request; the active CIM-EMS driver node validates, imports and saves, so the ins
 Activating a revision or saving bindings rebuilds the affected connections at once. Model packages and study
 results are never served by `/GetFile`.
 
-The command line tools below do the same against MongoDB directly.
+The MCP server ([`cim_ems_*` tools](../mcp-json-scada-db/README.md#cim-ems-tools)) uses the same backend and rights; for AI-assisted binding it also queues `listElements` requests, which store an element catalog (every switch, tap changer and P/Q/V slot with names, nominal kV and the matcher label) as a `cimArtifacts` file. The command line tools below do the same against MongoDB directly.
 
 Bindings are proposed by name matching, reviewed as CSV and saved as a revision:
 
@@ -139,7 +139,11 @@ default 4) every converged load flow is followed by a weighted least squares est
 bindings (`V` on a bus or busbar section in kV, `P`/`Q` on a line or transformer end in MW/Mvar). Results are
 `<connection>;SE;<name>;<quantity>[;<side>]` and `<connection>;SYS;SE;STATUS|CONVERGED|BADDATA|MEAS|CHI2`
 (STATUS 0 converged, 1 not observable, 2 not converged, 3 unsupported network, 4 failed, 5 no load flow). Bad data
-are listed in the run record (`cimRuns`, `summary.estimation.badData`). The network transfer is checked against
+and the largest residuals are listed with their tags in the run record (`cimRuns`, `summary.estimation.badData` and
+`largestResiduals`; a removed measurement is compared with the final estimate made without it). The full residual
+report of the latest estimate (every measurement: tag, measured, estimated, sigma, normalized residual, and the
+analogs dropped from the snapshot) is a `cimArtifacts` file (`kind: "se-residuals"`, one per connection). Every
+converged run also records the system balance in `summary.totals` (generation, load, losses in MW). The network transfer is checked against
 the load flow once per topology and refused beyond 1e-4 pu or 0.01 degrees.
 
 Contingency analysis is off by default. With `runContingency: true` the pypowsybl AC security analysis runs after a

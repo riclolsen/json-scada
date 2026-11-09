@@ -9,7 +9,12 @@ This is a Model Context Protocol (MCP) server that provides access to a {json:sc
 - **Database Exploration**: List collections, inspect schemas, and perform custom MongoDB queries.
 - **Command Dispatch**: Send commands to control points (requires command origin).
 - **System Inspection**: Monitor process instances and driver statuses, and read the audit log.
-- **Configuration & Process Management** (optional, see below): create/update/delete protocol driver instances, protocol connections and tags; start/stop/restart driver services; change process management settings.
+- **Health Diagnosis**: whole-system and per-connection checks (MongoDB, processes, drivers, point quality, command and event queues, process logs) with plain-language findings.
+- **Logs**: list, tail, filter and search the process log files.
+- **Displays**: read SCADA SVG displays with their bound points and live values; with the admin tools, validate and save displays.
+- **Operator Actions** (admin tools): acknowledge alarms and events, set annotations, alarm inhibition, limits, notes and substituted values.
+- **CIM-EMS network analysis**: decoded load flow, state estimation and contingency results with limit checks; with the admin tools, model import/activation, binding review and study runs.
+- **Configuration & Process Management** (optional, see below): create/update/delete protocol driver instances, protocol connections and tags; start/stop/restart driver services; change process management settings; users and roles; project export/import.
 
 ## Redundancy
 
@@ -36,7 +41,10 @@ The server expects a MongoDB connection string. You can configure this via envir
 
 - `JS_MCPJSDB_ADMIN_USERNAME` / `JS_MCPJSDB_ADMIN_PASSWORD`: Credentials of an AdminUI user with an `isAdmin` role. When both are set, the configuration and process management tools are registered (see below). Unset by default.
 - `JS_MCPJSDB_ADMIN_URL`: Base URL of the AdminUI server (`server_realtime_auth`) used by those tools (defaults to `http://127.0.0.1:8080`).
+- `JS_MCPJSDB_CIM_EMS_TOOLS`: Set to `false` to leave out the CIM-EMS model, binding, run and request tools (for example when network model details must not reach the AI provider). The CIM-EMS status and result tools stay available.
 - `JS_MCPJSDB_SRC_DIR`: Installation `src` folder used to read driver documentation (defaults to the parent folder of this package).
+- `JS_MCPJSDB_SVG_DIR`: Folder of the SCADA displays read by `list_displays` / `get_display` (defaults to the `svg` folder next to `src`). `save_display` writes through the AdminUI API, which always uses the installation `svg` folder.
+- `JS_MCPJSDB_LOG_DIR`: Folder of the process log files (defaults to the `log` folder next to `src`, where supervisor and the Windows services write `<process>.log`).
 
 ### Command Line Arguments
 
@@ -76,6 +84,21 @@ The server exposes the following tools to the MCP client:
 - `get_protocol_connection`: Full configuration of one protocol connection (secrets redacted).
 - `get_user_actions`: Audit log (`userActions`) filtered by user, action, tag and time.
 
+Health and logs:
+
+- `diagnose_system`: Overall health with `findings`: MongoDB (version, uptime, replica set members and lag, oplog window, database and disk usage), processes and driver instances alive, per-connection point quality (invalid, alarmed, alarm-disabled, substituted, frozen, last update), undelivered or rejected commands, unacknowledged events and recent error lines per log file.
+- `diagnose_connection`: One connection: configuration (secrets redacted), driver instance liveness, statistics age, point quality with samples of invalid and least recently updated points, the last commands with delivery/ack results, warnings/errors of the driver log (`<service>.log`, e.g. `iec104client.log`, `iec104client_2.log` for instance 2) and other logs mentioning the connection name.
+- `list_logs`: Log files with size and age; `scanErrors` counts recent error lines.
+- `read_log`: Tail of one log, filtered by regex, level (`error`, `warn`) and time.
+- `search_logs`: Regex/level search across all current logs.
+
+Logs are read only from `JS_MCPJSDB_LOG_DIR` (file names cannot leave it).
+
+Displays:
+
+- `list_displays`: SVG displays with size, modification time and number of bound elements and points.
+- `get_display`: One display described for interpretation: static texts with positions, every dynamic element with its animations (`get`, `color`, `bar`, `popup`, `clone`, `set` macros, ...) and bound tags, the bound points with live value, unit, quality, alarm, substitution and annotation, and broken bindings (missing tags, labels with invalid JSON).
+
 ### Configuration and Process Management Tools
 
 These tools are registered only when `JS_MCPJSDB_ADMIN_USERNAME` and `JS_MCPJSDB_ADMIN_PASSWORD` are set. They call the AdminUI backend API (`server_realtime_auth`, `/Invoke/auth/*`) as that user instead of writing MongoDB directly, so they get the same validation, protocol defaults, automatic driver restarts, OS service handling (NSSM on Windows, supervisord on Linux) and audit trail as the AdminUI. `server_realtime_auth` must be running and reachable at `JS_MCPJSDB_ADMIN_URL`.
@@ -86,6 +109,12 @@ Use a dedicated admin account, since these tools can stop data acquisition and c
 - Protocol connections: `get_protocol_connection_template`, `create_protocol_connection`, `update_protocol_connection`, `delete_protocol_connection` (optionally deleting its tags).
 - Tags: `create_tag`, `update_tag` (including rename), `delete_tag`. Live value fields are never written; use `send_command` to act on the field.
 - System: `get_system_settings`, `update_system_settings`, `restart_all_protocol_drivers`, `restart_all_processes`.
+- Displays: `save_display` creates or overwrites (`overwrite: true`) an SVG display after checking that it is a complete SVG, that every SCADA label is valid JSON (refused otherwise) and which bound tags do not exist (warnings); `dryRun` runs the checks only.
+- Operator actions, through the realtime Web API (`/Invoke/`, as the HMI): `acknowledge_alarms_events` (one tag or all: acknowledge alarms, acknowledge or remove events, silence the beep; returns counts before and after) and `set_point_properties` (annotation, alarm inhibition, analog limits and hysteresis, notes, substituted value; only the given fields change). The account's role rights (`ackAlarms`, `ackEvents`, `enterAnnotations`, `disableAlarms`, `enterLimits`, `enterNotes`, `substituteValues`, the union over its roles) apply, and `group1List` limits acknowledgements; the server ignores a change the role does not allow, so the tool re-reads the point and reports `applied` and `notApplied`.
+- Users and roles: `list_users_and_roles` (password hashes never returned), `save_user` (create/update, password reset, exact role list), `delete_user`, `save_role` (rights, group/display filters, session length), `delete_role`. The admin user and role are protected.
+- Project: `export_project` saves the AdminUI project zip to a folder on the MCP host; `import_project` (`confirm: true`) uploads one and runs the platform import script, which replaces tags, connections, driver and process instances, users and roles and copies the displays.
+
+Non-driver processes (`cs_data_processor`, `calculations`, the realtime server, historians) can only be restarted all together (`restart_all_processes`): the AdminUI process manager starts, stops and configures protocol driver services only.
 
 Updates change only the given fields. Fields maintained by running drivers (redundancy keep-alive, `stats`) are never sent back, so an update cannot trigger a redundancy failover.
 
@@ -95,6 +124,29 @@ Example (Windows service):
 nssm set JSON_SCADA_mcp_server AppEnvironmentExtra JS_MCPJSDB_TRANSPORT=http JS_MCPJSDB_IP_BIND=127.0.0.1 JS_MCPJSDB_HTTP_PORT=6001 JS_MCPJSDB_ADMIN_USERNAME=mcp-admin JS_MCPJSDB_ADMIN_PASSWORD=<password>
 ```
 
+### CIM-EMS Tools
+
+Control and interpretation of the [CIM-EMS driver](../cim-ems/README.md) (load flow, state estimation and contingency analysis on a CGMES model).
+
+Always registered (read the driver status and the result points it publishes in `realtimeData`):
+
+- `cim_ems_status`: Start here. Driver instances (alive), CIM-EMS connections and their study settings, last load flow / estimation / contingency status decoded from the `SYS` points, a limit check of the load flow results (branch loading above `loadingLimitPct`, bus voltages outside `vpuMin`..`vpuMax`) and plain-language findings.
+- `cim_ems_get_results`: Results of one connection grouped per element: buses (V, VPU, ANG), branches (LOAD, P/Q/I per end and LOSS = P1 + P2) for `LF` or `SE`, one row per contingency for `CA`; filters by substation, voltage level and element, `violationsOnly` sorted by severity, `compareWith` (SE against LF or the reverse, sorted by the largest difference), total branch losses and a glossary of the quantities.
+- `cim_ems_get_guide`: How to judge the results (also the resource `json-scada://cim-ems/guide`): what each study computes, status meanings, sign and unit conventions, voltage and loading judgement, normalized residuals and the chi-square test, typical causes of bad data, contingency outcomes.
+
+With the admin tools (through the AdminUI `cimEms/*` routes, so with the same rights and audit trail as the Admin UI **CIM-EMS** tab: an Admin role for all, **CIM-EMS Engineering** for changes and result files):
+
+- Inspection: `cim_ems_list_models` (revisions, validation report), `cim_ems_list_bindings` (revisions, coverage, filtered entries), `cim_ems_list_runs` (load flow with system totals, estimation chi-square, bad data and largest residuals with tags, insecure contingencies per run), `cim_ems_list_requests`, `cim_ems_get_request`.
+- Interpretation:
+  - `cim_ems_get_estimation_report`: every measurement of the latest estimate with tag, element name, measured, estimated, sigma and normalized residual; hints for typical binding errors (sign, kW/MW scale, phase/line voltage, element open in model or field); bias/RMS per quantity, the substations where residuals concentrate, the chi-square test and the measurements dropped before the estimate, with plain-language findings.
+  - `cim_ems_get_contingency_result`: every contingency with its violations (element names, loading %) and `mostViolatedElements`, the elements overloaded by the most outages.
+  - `cim_ems_run_statistics`: behaviour over the latest runs (up to 1000): convergence rate, durations, topology changes, frequent snapshot problems, generation/load/losses range, estimator chi-square pass rate and chronic bad data, contingencies most often insecure.
+- Binding assistance (matching field tags to CIM objects): `cim_ems_list_model_elements` lists every model value a point can feed (switches, tap changers, P/Q per line or transformer end, V per busbar) with names, substation, voltage level, nominal kV, far end, the automatic matcher's label and its current/proposed binding, filtered by status (`unbound`, `unapproved`, `bound`); `cim_ems_candidate_tags` lists the supervised field points with unit, groups, live value, inferred quantity and current bindings. An assistant matches them substation by substation and saves with `cim_ems_save_bindings` (`upsert` with `approved: true`, `dryRun` first, `elementsArtifactId` to check the model slots).
+- Control: `cim_ems_run_now` (immediate study, returns the new run), `cim_ems_import_model` (CGMES zip from a path on the MCP server host), `cim_ems_activate_model`, `cim_ems_rollback_model`, `cim_ems_propose_bindings`, `cim_ems_get_binding_proposal`, `cim_ems_save_bindings` (from the current revision, a proposal or empty; approve rules, removals, upserts; checks every entry against its point: tag exists, analog/digital type, unit against the quantity, not a CIM-EMS result point, one model value per tag; errors on approved entries block the save unless `force`; `dryRun` shows the checks and differences first).
+
+Changes are study requests executed by the active CIM-EMS driver node: the tools wait up to `waitSeconds` and return the request outcome, or `pending` when the driver is not running (start it with `control_driver_process`, driver `CIM-EMS`). Connection settings (cycle, estimation, contingency list) are changed with `update_protocol_connection`. Model packages are never returned, and the generic collection tools still refuse the CIM-EMS collections.
+
 ### Registered Resources
 
 - `json-scada://schema`: Provides a detailed text summary of the database structure and key collections.
+- `json-scada://cim-ems/guide`: How to interpret CIM-EMS results (same text as `cim_ems_get_guide`).

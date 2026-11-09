@@ -25,8 +25,10 @@ const SENSITIVE_FIELDS = [
 ]
 
 // CIM-EMS network models, bindings and study results are critical infrastructure
-// information: the MCP server exposes only the CIM-EMS driver status and result
-// points (realtimeData), never these collections or the cimArtifacts bucket.
+// information: the generic collection tools never read these collections or the
+// cimArtifacts bucket. CIM-EMS data is served only by the dedicated cim_ems_*
+// tools: result points (realtimeData) directly, models/bindings/runs/requests
+// through the AdminUI API with the rights of the MCP admin account.
 const CONFIDENTIAL_COLLECTIONS = [
   'cimModels',
   'cimMeasurementBindings',

@@ -43,11 +43,13 @@ const ZIP_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9 ._()-]{0,250}\.zip$/i
 const MAX_BINDINGS = 200000
 
 // Request types the driver executes, and whether they need cimEngineering.
-// `import` is created by uploadModel only.
+// `import` is created by uploadModel only; `listElements` (element catalog for
+// binding review) is used by the MCP server.
 const REQUEST_TYPES = {
   activate: true,
   rollback: true,
   proposeBindings: true,
+  listElements: true,
   saveBindings: true,
   rerun: false,
 }
@@ -285,7 +287,11 @@ exports.createRequest = async (req, res) => {
       const modelId = String(req.body?.modelId || '')
       if (!MODEL_ID_RE.test(modelId)) return fail(res, 400, 'Invalid modelId!')
       params.modelId = modelId
-      if (type === 'activate' || type === 'proposeBindings') {
+      if (
+        type === 'activate' ||
+        type === 'proposeBindings' ||
+        type === 'listElements'
+      ) {
         const rev = positiveInt(req.body?.revision)
         if (type === 'activate' && !rev)
           return fail(res, 400, 'Invalid revision!')

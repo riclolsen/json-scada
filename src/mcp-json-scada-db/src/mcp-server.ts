@@ -38,6 +38,15 @@ import {
 } from "./tools/connections.js";
 import { registerTagTools } from "./tools/tags.js";
 import { registerAuditTools, registerSystemTools } from "./tools/system.js";
+import { registerCimEmsReadTools } from "./tools/cim-ems.js";
+import { registerCimEmsAdminTools } from "./tools/cim-ems-admin.js";
+import { CIM_EMS_GUIDE } from "./jsonscada/cim-ems.js";
+import { registerDisplayAdminTools, registerDisplayReadTools } from "./tools/displays.js";
+import { registerLogTools } from "./tools/logs.js";
+import { registerHealthTools } from "./tools/health.js";
+import { registerOperatorTools } from "./tools/operator.js";
+import { registerUserTools } from "./tools/users.js";
+import { registerProjectTools } from "./tools/project.js";
 import { AdminApiClient } from "./jsonscada/admin-api.js";
 import { ConnectionManager } from "./jsonscada/connection-manager.js";
 import { Log } from "./jsonscada/index.js";
@@ -51,6 +60,11 @@ const mgr = new ConnectionManager();
 // Configuration and process management tools go through the AdminUI backend
 // API; they are only offered when admin credentials are configured.
 const adminApi = new AdminApiClient();
+
+// CIM-EMS model/binding/run/request tools (AdminUI API) can be turned off on
+// their own, e.g. when network model details must not reach the AI provider.
+const cimEmsAdminTools =
+  (process.env[ENV_PREFIX + "CIM_EMS_TOOLS"] || "").toLowerCase() !== "false";
 
 // Builds a fully configured MCP server instance. A factory is needed because
 // the SDK serves each stdio connection / HTTP request from its own instance.
@@ -70,13 +84,33 @@ function buildServer(): McpServer {
   registerDriverDocTools(server);
   registerConnectionReadTools(server, mgr);
   registerAuditTools(server, mgr);
+  registerCimEmsReadTools(server, mgr);
+  registerDisplayReadTools(server, mgr);
+  registerLogTools(server);
+  registerHealthTools(server, mgr);
 
   if (adminApi.enabled) {
     registerDriverTools(server, adminApi);
     registerConnectionTools(server, adminApi);
     registerTagTools(server, adminApi);
     registerSystemTools(server, adminApi);
+    registerDisplayAdminTools(server, adminApi, mgr);
+    registerOperatorTools(server, adminApi, mgr);
+    registerUserTools(server, adminApi);
+    registerProjectTools(server, adminApi);
+    if (cimEmsAdminTools) registerCimEmsAdminTools(server, adminApi, mgr);
   }
+
+  // Resource: how to interpret CIM-EMS results (also the cim_ems_get_guide tool)
+  server.registerResource(
+    "cim-ems-guide",
+    "json-scada://cim-ems/guide",
+    {
+      description: "How to interpret CIM-EMS load flow, state estimation and contingency results",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: CIM_EMS_GUIDE }] })
+  );
 
   // Resource: Schema
   server.registerResource(
