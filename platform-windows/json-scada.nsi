@@ -434,8 +434,8 @@ SetRegView 64
   File /a /r "..\src\mcp-json-scada-db\src\*.*"
   SetOutPath $INSTDIR\src\mcp-json-scada-db\dist
   File /a /r "..\src\mcp-json-scada-db\dist\*.*"
-  ;SetOutPath $INSTDIR\src\mcp-json-scada-db\node_modules
-  ;File /a /r "..\src\mcp-json-scada-db\node_modules\*.*"
+  SetOutPath $INSTDIR\src\mcp-json-scada-db\node_modules
+  File /a /r "..\src\mcp-json-scada-db\node_modules\*.*"
   SetOutPath $INSTDIR\src\mcp-json-scada-db\examples
   File /a /r "..\src\mcp-json-scada-db\examples\*.*"
 

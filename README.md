@@ -133,6 +133,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [Modbus Client Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/modbusclient/README.md)
 - [Modbus Server Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/modbusserver/README.md)
 - [CIM-EMS Driver (CGMES 2.4.15 models, load flow, state estimation, contingency analysis; Python)](https://github.com/riclolsen/json-scada/blob/master/src/cim-ems/README.md)
+- [MCP Server (AI query, commands, configuration, operation, diagnosis)](https://github.com/riclolsen/json-scada/blob/master/src/mcp-json-scada-db/README.md)
 - [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
 - [Change Stream Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_data_processor/README.md)
 - [Custom Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_custom_processor/README.md)
