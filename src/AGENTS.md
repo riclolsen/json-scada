@@ -22,7 +22,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - Prefer `str_replace` over `write_file` for targeted edits in existing files
 - Load `svg-scada` skill when editing SVG SCADA files
 - Use `gravity_index` before recommending/integrating third-party services
-- Connection-oriented drivers publish `protocolConnections.stats.isConnected` (Boolean) and keep `activeNodeKeepAliveTimeTag` advancing, including drivers without redundancy; contract in `docs/DEVELOPER_GUIDE.md` (`protocolConnections`, Redundancy Management) and `docs/schema.md` (Communication status tags). Each driver's AGENTS.md states what "connected" means for it
+- Connection-oriented drivers publish `protocolConnections.stats.isConnected` (Boolean) and keep `activeNodeKeepAliveTimeTag` advancing, including drivers without redundancy; contract in `docs/DEVELOPER_GUIDE.md` (`protocolConnections`, Redundancy Management) and `docs/schema.md` (Communication status tags). Each driver's AGENTS.md states what "connected" means for it. Connection documents are created with `stats: null`, and MongoDB rejects a dotted `$set` of `stats.*` on a null element (write error 28), so a driver writing those paths must replace the null with an empty document and retry
 
 ## Work Guidance
 
@@ -61,6 +61,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - [iec61850/iec61850_client](iec61850/iec61850_client/AGENTS.md) — IEC 61850 MMS client driver (Go, drop-in alternative, no native library)
 - [iec61850/iec61850_server](iec61850/iec61850_server/AGENTS.md) — IEC 61850 MMS server driver (Go, drop-in alternative, no native library)
 - [telegraf-listener](telegraf-listener/AGENTS.md) — Telegraf UDP JSON listener (Node.js)
+- [plc4j-client](plc4j-client/AGENTS.md) — Multi-protocol PLC client on Apache PLC4X/PLC4J: Modbus, S7, ADS, OPC UA, KNXnet/IP, EtherNet/IP (Java)
 - [camera-onvif](camera-onvif/AGENTS.md) — ONVIF camera control and streaming (Node.js)
 - [cim-ems](cim-ems/AGENTS.md) — CIM/CGMES EMS driver: model exchange, load flow, state estimation, contingency analysis (Python)
 

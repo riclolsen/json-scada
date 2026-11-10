@@ -324,13 +324,29 @@ namespace ServerPlugin
                         .Set("activeNodeKeepAliveTimeTag", now)
                         .Set("softwareVersion", DriverVersion));
                 int clients = Volatile.Read(ref clientCount_);
-                statusDb_.GetCollection<BsonDocument>("protocolConnections").UpdateOne(
-                    Builders<BsonDocument>.Filter.Eq("protocolConnectionNumber", connection_.protocolConnectionNumber),
-                    Builders<BsonDocument>.Update
-                        .Set("stats.nodeName", jsConfig_.nodeName)
-                        .Set("stats.timeTag", now)
-                        .Set("stats.isConnected", clients > 0)
-                        .Set("stats.clients", clients));
+                var connections = statusDb_.GetCollection<BsonDocument>("protocolConnections");
+                var connFilter = Builders<BsonDocument>.Filter.Eq(
+                    "protocolConnectionNumber", connection_.protocolConnectionNumber);
+                var statsUpdate = Builders<BsonDocument>.Update
+                    .Set("stats.nodeName", jsConfig_.nodeName)
+                    .Set("stats.timeTag", now)
+                    .Set("stats.isConnected", clients > 0)
+                    .Set("stats.clients", clients);
+                try
+                {
+                    connections.UpdateOne(connFilter, statsUpdate);
+                }
+                catch (MongoWriteException)
+                {
+                    // Connections are documented (and created by the Admin UI) with
+                    // "stats: null", and MongoDB cannot create fields under a null
+                    // element, so replace that null with an empty document and write
+                    // the stats again. A failing retry falls through to the log below.
+                    connections.UpdateOne(
+                        connFilter & Builders<BsonDocument>.Filter.Eq("stats", BsonNull.Value),
+                        Builders<BsonDocument>.Update.Set("stats", new BsonDocument()));
+                    connections.UpdateOne(connFilter, statsUpdate);
+                }
             }
             catch (Exception ex)
             {
