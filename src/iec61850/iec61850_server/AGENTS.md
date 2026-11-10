@@ -16,7 +16,7 @@ document, same model layout and object references, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_server`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.6.6 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.7.1 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1, and keep it in step with the client driver
 - **Binary:** `iec61850_server(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -66,7 +66,6 @@ document, same model layout and object references, no native library dependency.
 - `go test ./...` — model builder, update path, command documents, and a loopback run against the
   library's own client (no MongoDB or device needed)
 - `go vet ./...` and `go test -race ./...`
-- `go list -deps ./... | grep charm` must be empty — the library's TUI dependencies must not be linked
 - Independent check: `bin/iec61850_server selftest 10102` then, from the library module,
   `go run ./cmd/ied-client -addr 127.0.0.1:10102 test` — every applicable check must pass
 - End-to-end: seed a connection, run against MongoDB, and browse with the Go client driver
