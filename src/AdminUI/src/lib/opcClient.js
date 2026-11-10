@@ -244,6 +244,8 @@ function normalizePoint(element, cfg) {
     valueRaw: body,
     // only when requested (readPoints jsonKeys); null when the point has none
     valueJson: prop.valueJson,
+    // raw valueString as stored (valueStr above is formatted for display)
+    valueString: prop.valueString,
   }
 }
 

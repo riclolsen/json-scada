@@ -114,7 +114,7 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
   exec_once: execute a script one time only after the screen is loaded and parsed.
   exec_on_update: execute a script every time data is updated.
 
-  Use “$V('TAG')” to obtain point values inside the script, and “$J('TAG', '$.path')” for members of a point's structured value (see section 10).
+  Use “$V('TAG')” to obtain point values inside the script, “$J('TAG', '$.path')” for members of a point's structured value (see section 10) and “$S('TAG', '$.selector')” for parts of its text value (see section 11).
 
   The function $W.Animate and thisobj can be used to animate objects in scripts, example
 
@@ -171,7 +171,7 @@ The data processor keeps system tags with the health of every protocol driver in
 
 Drivers such as MQTT/Sparkplug B, OPC UA, Node-RED and N8N store a tag's structured value (object or array) as JSON text in its `valueJson` field (a `json` or `string` tag without one uses its string value). The integrated Display Viewer (AdminUI) reads members of it; the legacy `display.html` viewer does not support this markup.
 
-- **Tag reference:** write `!JSON <TAG> <PATH>` wherever a tag goes: `get`, `color` list tags, `bar`, `opac`, `rotate`, `slider`, `text`, trend `open` (realtime samples only, no history), `#arc`/`#radar`/Vega tag lists. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
+- **Tag reference:** write `!JSON <TAG> <PATH>` wherever a tag goes: `get`, `color` list tags, `bar`, `opac`, `rotate`, `slider`, `text`, trend `open` (realtime samples only: the history is the tag's), `#arc`/`#radar`/Vega tag lists. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
 - **Path** (starts with `$`, which alone means the whole value):
   - `.name` member; `['name']` member whose name has `.`, `[`, `]` or spaces
   - `[0]` array element, `[-1]` the last one
@@ -184,6 +184,29 @@ Drivers such as MQTT/Sparkplug B, OPC UA, Node-RED and N8N store a tag's structu
   - Pump LED: `{"attr":"color","tag":"!JSON MQTT.plant $.pumps[name=P1].on","list":[{"data":"1","param":"red|","tag":"!JSON MQTT.plant $.pumps[name=P1].on"},{"data":"2","param":"lime|","tag":"!JSON MQTT.plant $.pumps[name=P1].on"},{"data":"f","param":"gray|","tag":"!JSON MQTT.plant $.pumps[name=P1].on"}]}`
   - Member with a dot in its name: `{"attr":"bar","tag":"!JSON MQTT.plant $['motor.temp']","min":0,"max":100}`
 - **Scripts and `!EVAL`:** `$J('TAG')` returns the whole parsed value and `$J('TAG', '$.path')` one member (`undefined` when absent); `$W.getJson` is the same function. Example tooltip line: `"Pumps: !EVAL $J('MQTT.plant', '$.pumps.length') !END"`.
+
+### 11. Text Values (valueString)
+
+Every tag has a `valueString`: the text value written by its driver (status words, `key=value` lists, CSV lines, messages; for analogs and digitals usually the number or the state text). The integrated Display Viewer (AdminUI) can take parts of it; the legacy `display.html` viewer does not support this markup.
+
+- **Tag reference:** write `!STR <TAG> <SELECTOR>` wherever a tag goes (same places as `!JSON`, section 10). `!STR <TAG>` alone is the whole text. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
+- **Selector:** starts with `$` (the whole text), followed by operations applied left to right. It is parsed, never run as code:
+  - `.split(sep)`, `.split(sep, limit)`: list of parts (`sep` is `'text'` or `/regex/`)
+  - `[n]`: element `n` of a list (or character of a text); `[-1]` is the last
+  - `.match(/regex/)`: `[0]` is the whole match, `[1]`... the groups; with flag `g`, every match
+  - `.kv('key')`: the value of `key` in `key=value;key=value` text (`.kv('key', '|', ':')` for other separators)
+  - `.trim()`, `.upper()`, `.lower()`, `.slice(start, end)`, `.replace(find, with)`, `.join(sep)`, `.length`
+  - `.num()`: the leading number of the text (missing when it is not numeric)
+  - `.is('text')`, `.has('text')`: true when the text equals / contains `text`
+- **Quoting:** use single quotes in the selector (the label JSON already uses double quotes). A regex backslash is doubled in the label JSON: `/T=([-\\d.]+)/`.
+- **Value types:** `.is()` / `.has()` give booleans that behave like a digital (`"1"`/`"2"` colors, `OFF|ON` text); `.num()` and `.length` give numbers (analog); other results are text, shown with `%s` (or an empty format). Compare text with `.is()` rather than color limits. Quality, alarm and annotation come from the tag. A part not found keeps the last value found and shows as failed (`"f"`).
+- **Examples** (tag `PLC1.status` holding `mode=AUTO;sp=42.5;state=RUN`; tag `LINE1.csv` holding `12.5,7,Pump 2,ON`):
+  - Mode text (tspan `%s`): `{"attr":"get","tag":"!STR PLC1.status $.kv('mode')","align":"Left","type":"Good"}`
+  - Set point bar: `{"attr":"bar","tag":"!STR PLC1.status $.kv('sp').num()","min":0,"max":100}`
+  - Running LED: `{"attr":"color","tag":"!STR PLC1.status $.kv('state').is('RUN')","list":[{"data":"1","param":"red|","tag":"!STR PLC1.status $.kv('state').is('RUN')"},{"data":"2","param":"lime|","tag":"!STR PLC1.status $.kv('state').is('RUN')"},{"data":"f","param":"gray|","tag":"!STR PLC1.status $.kv('state').is('RUN')"}]}`
+  - Third CSV field: `{"attr":"get","tag":"!STR LINE1.csv $.split(',')[2].trim()","align":"Left","type":"Good"}`
+  - Number after `T=`: `{"attr":"get","tag":"!STR PLC1.status $.match(/T=([-\\d.]+)/)[1].num()","align":"Left","type":"Good"}`
+- **Scripts and `!EVAL`:** `$S('TAG')` returns the whole text and `$S('TAG', "$.kv('mode')")` the selector result (`undefined` when absent); `$W.getStr` is the same function.
 
 ---
 

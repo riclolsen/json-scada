@@ -207,7 +207,7 @@ Example document.
 * _**_frozen_**_ [Boolean] - When true, value is considered frozen (not changing). **Mandatory parameter**.
 * _**_value_**_ [Double] - Current value as a number. **Mandatory parameter**.
 * _**_valueJson_**_ [String] - Current value as JSON (structured value: object or array). SVG displays read its members with `!JSON <tag> <path>` markup (svg-scada skill, "Structured Values"). **Optional parameter**.
-* _**_valueString_**_ [String] - Current value as a string. **Mandatory parameter**.
+* _**_valueString_**_ [String] - Current value as a string. SVG displays take parts of it with `!STR <tag> <selector>` markup (svg-scada skill, "Text Values"). **Mandatory parameter**.
 * _**_timeTag_**_ [Date] - Last update time. **Mandatory parameter**.
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.
 * _**_timeTagAlertState_**_ [Date] - Time of last Grafana alert state update. **Optional parameter**.

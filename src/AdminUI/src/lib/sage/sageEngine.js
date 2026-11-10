@@ -23,6 +23,7 @@ import { PreviewOverlay } from './sagePreview'
 import { PinnedAnnotationsPanel } from './sagePinned'
 import { AlarmBoxPanel } from './sageAlarmBox'
 import { parseJsonRef, compileJsonPath, walkJson, parseValueJson, scanScriptTagRefs, JSON_PREFIX } from './sageJson'
+import { parseStrRef, compileStrSelector, applyStr, STR_PREFIX } from './sageStr'
 
 // "security card" badge shape (port of websage.js produzEtiq) shown next to a
 // point that carries an annotation or has alarms inhibited.
@@ -101,6 +102,8 @@ export class SageEngine {
     this.jsonKeys = new Set() // points whose valueJson is requested (subset of queryKeys)
     this.jsonRefs = new Map() // '!JSON <tag> <path>' -> parsed ref (+ last good value)
     this.jsonPaths = new Map() // $J path cache: path -> compiled segments
+    this.strRefs = new Map() // '!STR <tag> <selector>' -> parsed ref (+ last good value)
+    this.strSels = new Map() // $S selector cache: selector -> compiled ops
     this.valueByKey = new Map()
     this.keyByTag = new Map()
     this.zoom = {
@@ -148,6 +151,7 @@ export class SageEngine {
     this._T = proxy((st) => (st ? st.alarmTime : ''))
     this._$V = (t) => this.getValue(t)
     this._$J = (t, path) => this.getJson(t, path)
+    this._$S = (t, sel) => this.getStr(t, sel)
     this._scriptApi = {
       V: this._V,
       F: this._F,
@@ -156,6 +160,7 @@ export class SageEngine {
       getValue: this._$V,
       getFlags: (t) => this.getFlags(t),
       getJson: this._$J,
+      getStr: this._$S,
       valorTagueado: (t, o) => this.valorTagueado(t, o),
       Animate: (obj, type, attrs) => animateEl(obj, type, attrs),
       RemoveAnimate: (obj) => removeAnimateEl(obj),
@@ -165,8 +170,11 @@ export class SageEngine {
   // Names and values in scope for screen expressions and scripts.
   scriptScope(el) {
     return {
-      names: ['thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', '$V', '$J'],
-      args: [el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi, this._$V, this._$J],
+      names: ['thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', '$V', '$J', '$S'],
+      args: [
+        el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi,
+        this._$V, this._$J, this._$S,
+      ],
     }
   }
 
@@ -207,6 +215,7 @@ export class SageEngine {
   scanScriptRefs(src) {
     for (const t of scanScriptTagRefs(src, 'J')) this.registerJsonTag(t)
     for (const t of scanScriptTagRefs(src, 'V')) this.collectPoint(t)
+    for (const t of scanScriptTagRefs(src, 'S')) this.collectPoint(t)
   }
 
   jsonRef(s) {
@@ -218,19 +227,24 @@ export class SageEngine {
     return ref
   }
 
-  // Display state of a `!JSON <tag> <path>` reference, derived from the parent
-  // point: booleans behave as digitals (true = on: value 0, state bits 0x02),
-  // numbers/strings as analogs (objects/arrays as their JSON text). Quality,
-  // alarm, annotation and manual bits come from the parent. A missing member
-  // keeps the last value found, flagged failed. Undefined if the parent point is
-  // unknown or the reference is malformed.
+  // Display state of a `!JSON <tag> <path>` reference (see memberState).
+  // Undefined if the parent point is unknown or the reference is malformed.
   jsonState(s) {
     const ref = this.jsonRef(String(s).trim())
     if (!ref) return undefined
     const parent = this.getState(ref.tag)
     if (!parent) return undefined
-    const inherited = parent.flags & ~(0x03 | 0x20)
     const v = parent.json === undefined ? undefined : walkJson(parent.json, ref.segs)
+    return { ...this.memberState(parent, ref, v), json: v }
+  }
+
+  // Display state of a member `v` taken from a parent point's valueJson or
+  // valueString: booleans behave as digitals (true = on: value 0, state bits
+  // 0x02), numbers/strings as analogs (objects/arrays as their JSON text).
+  // Quality, alarm, annotation and manual bits come from the parent. A missing
+  // member (undefined/null) keeps the last value found (ref.last), flagged failed.
+  memberState(parent, ref, v) {
+    const inherited = parent.flags & ~(0x03 | 0x20)
     let found
     if (typeof v === 'boolean') found = { value: v ? 0 : 1, base: v ? 0x02 : 0x01, valueStr: String(v) }
     else if (typeof v === 'number') found = { value: v, base: 0x20, valueStr: String(v) }
@@ -244,11 +258,51 @@ export class SageEngine {
       ref.last = found
       flags = found.base | inherited
     } else {
-      // historical replay has no valueJson: never show the live last value there
+      // never show a live last value during historical replay
       found = (!this.timeMachine && ref.last) || { value: 0, base: 0x20, valueStr: '' }
       flags = found.base | inherited | 0x80
     }
-    return { ...parent, value: found.value, valueStr: found.valueStr, flags, json: v }
+    return { ...parent, value: found.value, valueStr: found.valueStr, flags }
+  }
+
+  // --- valueString access -----------------------------------------------------
+  strRef(s) {
+    let ref = this.strRefs.get(s)
+    if (ref === undefined) {
+      ref = parseStrRef(s)
+      this.strRefs.set(s, ref)
+    }
+    return ref
+  }
+
+  // Display state of a `!STR <tag> <selector>` reference (see memberState).
+  // Undefined if the parent point is unknown or the reference is malformed.
+  strState(s) {
+    const ref = this.strRef(String(s).trim())
+    if (!ref) return undefined
+    const parent = this.getState(ref.tag)
+    if (!parent) return undefined
+    const v = typeof parent.valueString === 'string' ? applyStr(parent.valueString, ref.ops) : undefined
+    return this.memberState(parent, ref, typeof v === 'number' && isNaN(v) ? undefined : v)
+  }
+
+  // $S(tag[, selector]) for scripts and !EVAL: a point's raw valueString, or the
+  // selector result (e.g. "$.split(';')[1]"); undefined when absent. A point
+  // not yet read is requested from the next refresh on.
+  getStr(tag, sel) {
+    if (tag === undefined || tag === null) return undefined
+    const t = String(tag).trim()
+    if (!this.queryKeys.has(t)) this.collectPoint(t)
+    const st = this.getState(t)
+    if (!st || typeof st.valueString !== 'string') return undefined
+    if (sel === undefined || sel === null || String(sel).trim() === '' || String(sel).trim() === '$') return st.valueString
+    const p = String(sel)
+    let ops = this.strSels.get(p)
+    if (ops === undefined) {
+      ops = compileStrSelector(p)
+      this.strSels.set(p, ops)
+    }
+    return ops ? applyStr(st.valueString, ops) : undefined
   }
 
   // $J(tag[, path]) for scripts and !EVAL: the parsed valueJson of a point (or
@@ -307,6 +361,7 @@ export class SageEngine {
     this.queryKeys.clear()
     this.jsonKeys.clear()
     this.jsonRefs.clear()
+    this.strRefs.clear()
     // Reset to pass 0 so this screen's first refresh does a FULL read (askInfo):
     // group1/group2(bay)/descr/stateText/limits only come back on the full read.
     // Without this, switching screens (engine reused) left pass>0, so new points
@@ -523,7 +578,8 @@ export class SageEngine {
       if (o.attr === 'clone' && Array.isArray(o.map)) el._cloneMap = o.map
     }
     // points read by $J('TAG') / $V('TAG') in this label's expressions/scripts
-    if (label.indexOf('$J') >= 0 || label.indexOf('$V') >= 0) this.scanScriptRefs(this.resolveCloneTag(el, label))
+    if (label.indexOf('$J') >= 0 || label.indexOf('$V') >= 0 || label.indexOf('$S') >= 0)
+      this.scanScriptRefs(this.resolveCloneTag(el, label))
     for (const tagObj of vec) {
       tagObj.parent = el
       if (tagObj.tag !== undefined) tagObj.tag = this.resolveCloneTag(el, tagObj.tag)
@@ -595,9 +651,9 @@ export class SageEngine {
     } else {
       tagObj.formatoC = tc
       // single analog reading: hovering it previews the point's trend chart
-      // (not for a valueJson member: the trend would be the parent point's)
+      // (not for a valueJson/valueString member: the trend would be the parent point's)
       const tag = tagObj.tag
-      if (!parseJsonRef(tag))
+      if (!parseJsonRef(tag) && !parseStrRef(tag))
         this.preview.attach(
         el,
         () => {
@@ -905,6 +961,12 @@ export class SageEngine {
       if (ref) this.registerJsonTag(ref.tag)
       return
     }
+    if (s.indexOf(STR_PREFIX) === 0) {
+      // valueString member: read the parent point (valueString comes on every read)
+      const ref = this.strRef(s)
+      if (ref) this.collectPoint(ref.tag)
+      return
+    }
     if (s.charAt(0) === '!') {
       // special code referencing a trailing point
       const m = s.match(/^!(?:SLIM|ILIM|TAG|DCR|STON|STOFF|STVAL|ALR|ALM|TMP)\s*(.+)$/)
@@ -1142,6 +1204,10 @@ export class SageEngine {
       const ref = this.jsonRef(s)
       return ref ? this.resolveKey(ref.tag) : undefined
     }
+    if (s.indexOf(STR_PREFIX) === 0) {
+      const ref = this.strRef(s)
+      return ref ? this.resolveKey(ref.tag) : undefined
+    }
     return isNaN(t) ? undefined : t
   }
 
@@ -1150,6 +1216,7 @@ export class SageEngine {
     if (!isNaN(t)) return this.valueByKey.get(t)
     const s = String(tag).trim()
     if (s.indexOf(JSON_PREFIX) === 0) return this.jsonState(s)
+    if (s.indexOf(STR_PREFIX) === 0) return this.strState(s)
     if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s))
     return undefined
   }
@@ -1179,9 +1246,10 @@ export class SageEngine {
     if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s)).value
     if (s.charAt(0) === '#' || s.charAt(0) === '%') return RETNOK
 
-    // !JSON <tag> <path> : member of the point's valueJson
-    if (s.indexOf(JSON_PREFIX) === 0) {
-      const st = this.jsonState(s)
+    // !JSON <tag> <path> / !STR <tag> <selector> : member of the point's
+    // valueJson / valueString
+    if (s.indexOf(JSON_PREFIX) === 0 || s.indexOf(STR_PREFIX) === 0) {
+      const st = s.indexOf(JSON_PREFIX) === 0 ? this.jsonState(s) : this.strState(s)
       if (!st) {
         this.markInvalid(obj)
         return RETNOK
@@ -1384,6 +1452,8 @@ export class SageEngine {
       // the historian keeps no valueJson: !JSON members show failed in replay
       st.json = undefined
       st.jsonRaw = undefined
+      // valueString is replayed only for points whose history holds text
+      st.valueString = undefined
     })
     try {
       const snap = await opc.readHistorySnapshot(tags, date)
@@ -1405,6 +1475,7 @@ export class SageEngine {
           st.value = isNaN(num) ? 0 : num
           st.flags = 0x20 | qflag
           st.valueStr = String(s.value)
+          if (typeof s.value === 'string') st.valueString = s.value
         }
       }
       this.onStatus('')
@@ -1452,6 +1523,8 @@ export class SageEngine {
           json = parseValueJson(raw)
         }
       }
+      // raw valueString (for !STR / $S) comes on every read, value-only included
+      const valueString = typeof p.valueString === 'string' ? p.valueString : undefined
       if (prev && !full) {
         // value-only update: keep static fields, refresh dynamic ones. The
         // annotation/alarm-inhibited bits only come back on the full (askInfo)
@@ -1460,10 +1533,12 @@ export class SageEngine {
         prev.flags = flags | (prev.flags & (0x200 | 0x400))
         prev.jsonRaw = jsonRaw
         prev.json = json
+        prev.valueString = valueString
       } else {
         this.valueByKey.set(p.key, {
           jsonRaw,
           json,
+          valueString,
           value,
           valueStr: p.valueStr,
           flags,
@@ -1613,7 +1688,8 @@ export class SageEngine {
   }
 
   async fillPlotHistory(b) {
-    if (parseJsonRef(b.tag)) return // the historian keeps no valueJson: realtime samples only
+    // members of valueJson / valueString: realtime samples only (the history is the parent's)
+    if (parseJsonRef(b.tag) || parseStrRef(b.tag)) return
     let tag = b.tag
     const k = parseInt(tag)
     if (!isNaN(k) && this.valueByKey.has(k)) tag = this.valueByKey.get(k).tag
