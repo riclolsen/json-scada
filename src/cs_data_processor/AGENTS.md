@@ -21,6 +21,8 @@ Node.js service that processes MongoDB Change Stream events for alarm detection,
   - `simple-logger.js` — logging utility
   - `redundancy.js` — high-availability support
   - `metrics.js` — latency instrumentation (histograms, counters, HTTP endpoint)
+  - `commstatus.js` — communication status tags (`_System.Driver/Conn/Comm.*`); port of `../cs_data_processor-go/commstatus.go`, keep tag names, keys, fields, BSON number types (`Double`) and timing identical; contract in `docs/schema.md` (Communication status tags)
+  - `commstatus.test.js` — `node:test` suite mirroring `commstatus_test.go`
 - **Config:** INI file via Supervisor or environment variables
 
 ## Work Guidance
@@ -38,6 +40,7 @@ Node.js service that processes MongoDB Change Stream events for alarm detection,
 
 - `npm install` — dependencies install cleanly
 - `node --check cs_data_processor.js && node --check metrics.js`
+- `npm test` — communication status tag logic (expected values shared with the Go tests)
 - Verify Change Stream processing with active protocol drivers producing data
 - Check alarm detection with known test data
 - Latency: start with `JS_CSDATAPROC_METRICS_PORT` set and read

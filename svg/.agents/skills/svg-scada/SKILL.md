@@ -153,6 +153,19 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
 
 - All fields are required to ensure proper parsing and functionality.
 
+### 9. Communication Status Monitoring
+
+The data processor keeps system tags with the health of every protocol driver instance and connection (names and points in `docs/schema.md`, "Communication status tags"). Bind them like any other tag; characters outside `A-Z a-z 0-9 _ -` in a connection or driver name become `_` (connection `KAW 2` → `_System.Conn.KAW_2.Status`).
+
+- **Connection LED** (digital, on = Online, off = Offline, failed = unknown): `{"attr":"color","tag":"_System.Conn.KAW2.Status","list":[{"data":"2","param":"lime|","tag":"%n"},{"data":"1","param":"red|","tag":"%n"},{"data":"f","param":"gray|","tag":"%n"}]}`
+- **Driver running** (digital, on = Running): same color markup on `_System.Driver.DNP3.1.Alive`.
+- **Link state** (digital, failed when the driver does not report it): `_System.Conn.KAW2.LinkUp`, format `Link Down|Link Up|n/a`.
+- **Health % of valid tags** (analog): `{"attr":"get","tag":"_System.Conn.KAW2.Health","align":"Right","type":"Good"}` with tspan `%3.0f` (put the `%` unit in a separate static text), or a bar `{"attr":"bar","tag":"_System.Conn.KAW2.Health","min":0,"max":100}`.
+- **Overview badge** (analog): `_System.Comm.ConnectionsDown` with a color list `[{"data":"0","param":"lime|","tag":"%n"},{"data":"99999","param":"red|","tag":"%n"}]`.
+- **One faceplate per connection:** build the row once in a `<g>` with `{"attr":"clone","map":["%n=_System.Conn.KAW2.Status","%m=_System.Conn.KAW2.Health"]}` and copy it, changing only the map.
+- `ActiveNode` and `Version` are string tags: the display `get` shows numbers, so show them in the point info popup or the tabular viewer, not as display text.
+- Bind only connections and driver instances that exist: the tags are created about 5 s after the configuration entry and removed with it, so a display bound to a missing one renders it as failed.
+
 ---
 
 ## 💻 AI Implementation Example: Accurate Escaped Output

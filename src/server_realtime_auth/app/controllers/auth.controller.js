@@ -97,9 +97,52 @@ exports.listUserActions = async (req, res) => {
   }
 }
 
+// Communication status tags (_System.Driver/Conn/Comm.*) are maintained by
+// cs_data_processor (see docs/schema.md, Communication status tags). It owns
+// their identity and naming: a hand change of those fields is overwritten, a
+// deletion recreated, and a hand-made tag with one of their names blocks the
+// generator. Other fields (priority, limits, alarm settings...) stay editable.
+const commStatusTagPrefixes = ['_System.Driver.', '_System.Conn.', '_System.Comm.']
+const commStatusOwnedFields = [
+  'tag',
+  'type',
+  'origin',
+  'commStatus',
+  'group1',
+  'group2',
+  'group3',
+  'description',
+  'ungroupedDescription',
+]
+const commStatusTagError =
+  'Communication status tags are maintained by the data processor: they cannot be created or deleted, and their name, type, origin, groups and descriptions cannot be changed.'
+function isCommStatusTagName(name) {
+  return (
+    typeof name === 'string' &&
+    commStatusTagPrefixes.some((p) => name.trim().startsWith(p))
+  )
+}
+async function findCommStatusTag(_id) {
+  const doc = await Tag.findOne({ _id: _id })
+    .select(commStatusOwnedFields.join(' '))
+    .lean()
+  return doc && doc.commStatus ? doc : null
+}
+// true when an update would change a field the generator owns
+function changesCommStatusOwnedField(stored, body) {
+  return commStatusOwnedFields.some(
+    (k) =>
+      k in body && JSON.stringify(body[k]) !== JSON.stringify(stored[k] ?? null)
+  )
+}
+
 exports.createTag = async (req, res) => {
   Log.log('createTag')
   try {
+    if (isCommStatusTagName(req.body?.tag) || req.body?.commStatus) {
+      res.status(200).send({ error: commStatusTagError })
+      return
+    }
     if (req.body?._id && req.body?._id != 0) {
       req.body._id = Math.trunc(parseFloat(req.body._id))
       const existingTag = await Tag.findOne({ _id: req.body._id })
@@ -151,6 +194,15 @@ exports.updateTag = async (req, res) => {
     if ('_id' in req.body) {
       let _id = req.body._id
       delete req.body._id
+      const csTag = await findCommStatusTag(_id)
+      if (
+        csTag
+          ? changesCommStatusOwnedField(csTag, req.body)
+          : isCommStatusTagName(req.body.tag) || 'commStatus' in req.body
+      ) {
+        res.status(200).send({ error: commStatusTagError })
+        return
+      }
 
       let IsNumberVal = function (value) {
         if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(value)) return true
@@ -182,6 +234,10 @@ exports.deleteTag = async (req, res) => {
     registerUserAction(req, 'deleteTag')
 
     if ('_id' in req.body) {
+      if (await findCommStatusTag(req.body._id)) {
+        res.status(200).send({ error: commStatusTagError })
+        return
+      }
       await Tag.findOneAndDelete({ _id: req.body._id })
       res.status(200).send({ error: false })
     } else res.status(200).send({ error: 'No _id in delete request.' })

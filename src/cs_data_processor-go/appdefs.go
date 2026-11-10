@@ -30,7 +30,7 @@ const (
 	// AppMsg is the banner printed at startup.
 	AppMsg = "{json:scada} - Change Stream Data Processor (Go)"
 	// AppVersion of this implementation.
-	AppVersion = "0.1.8-go.1"
+	AppVersion = "0.1.8-go.2"
 	// AppImplementation identifies this build in the latency metrics so the
 	// Node.js and Go numbers can be told apart when compared side by side.
 	AppImplementation = "go"

@@ -104,6 +104,16 @@ Only one of the two implementations may run for a given instance number: they
 would both process the same change stream and share the same
 `processInstances` entry.
 
+## Communication Status Tags
+
+Instance 1, while active, maintains `_System.Driver.*`, `_System.Conn.*` and
+`_System.Comm.*` tags with the health of every protocol driver instance and
+connection, for SVG displays and viewers (`commstatus.js`, same logic and tag
+documents as `../cs_data_processor-go/commstatus.go`). Turn it off with
+`commStatusTags: false` in the _processInstances_ entry. Tag names and points:
+[Schema Documentation](../../docs/schema.md#communication-status-tags).
+Unit tests: `npm test`.
+
 ## Process Instance Collection
 
 A _processInstance_ entry will be created with defaults if one is not found. It can be used to configure some parameters and limit nodes allowed to run instances.

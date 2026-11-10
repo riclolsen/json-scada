@@ -25,6 +25,7 @@ version, tuned for lower change-stream processing latency.
   - `writers.go` — batching writers (realtimeData, hist + SQL files, soeData)
   - `metrics.go`, `hrtime*.go` — latency instrumentation
   - `redundancy.go`, `maintenance.go`, `specialtags.go`
+  - `commstatus.go` — communication status tags (`_System.Driver.*`, `_System.Conn.*`, `_System.Comm.*`); port of the same logic in `../cs_data_processor/commstatus.js` — change both together, contract in `docs/schema.md` (Communication status tags)
   - `rawdoc.go`, `jsutil.go` — raw BSON access and JavaScript-compatible rendering
   - `config.go` — config file and env vars
   - `tools/compare-latency.js` — compares two metrics snapshots
@@ -43,6 +44,12 @@ version, tuned for lower change-stream processing latency.
   size **or** linger, whichever comes first.
 - Per-point ordering is guaranteed by hashing `fullDocument._id` to a worker
   inbox. Any new dispatch must preserve that.
+- Communication status tags: only instance 1 on the active node writes them,
+  always through `sourceDataUpdate` (never `$set` of value fields), and
+  identifies them by the `commStatus` field, never by tag name. Liveness uses
+  the unchanged-reading count, not the local clock (the first reading alone
+  uses a 30 s grace). Tag names, points or keys are a display contract:
+  changing them breaks SVG bindings, so update `docs/schema.md` with them.
 - Wall-clock stages (`sourceToRecv`, `endToEnd`) must stay on `time.Now()`;
   in-process stages must use `hrNow()`.
 
@@ -53,6 +60,14 @@ version, tuned for lower change-stream processing latency.
   and the conversion for digital/analog/double-point/bitstring/beep/SOE/
   dead-band/standby/backfill cases.
 - `gofmt -l .` must print nothing.
+- Communication status tags end to end: a throwaway replica-set `mongod`
+  seeded with two driver instances (one with an advancing keep-alive) and
+  connections, run the binary with a temp config; check creation, rename on
+  connection rename, removal on connection delete, `Alive` false ~25 s after
+  the keep-alive stops, SOE entries for `Status`/`Alive`, and invalidation
+  with `commStatusTags: false`. Parity: seed two databases identically, run
+  one implementation against each, and compare the `commStatus` tag documents
+  (raw BSON types, without time fields) and `soeData` — they must be equal.
 - End-to-end parity: run both implementations against the same single-node
   replica set with a race-free load (one update round every few hundred ms,
   so `updateLookup` never races the processor), then diff the resulting

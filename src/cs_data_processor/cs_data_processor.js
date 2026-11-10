@@ -23,6 +23,7 @@ const AppDefs = require('./app-defs')
 const Log = require('./simple-logger')
 const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
+const CommStatus = require('./commstatus')
 const {
   M: Metrics,
   Stage,
@@ -142,6 +143,13 @@ const pipeline = [
     queue_soe: 0, // SOE entries are written one by one, not queued
   }))
   startMetricsReporter(jsConfig)
+
+  // communication status tags (_System.Driver/Conn/Comm.*), instance 1 only
+  CommStatus.Start(jsConfig, () =>
+    clientMongo && MongoStatus.HintMongoIsConnected
+      ? clientMongo.db(jsConfig.mongoDatabaseName)
+      : null
+  )
 
   // mark as frozen unchanged analog values greater than 1 after timeout
   setInterval(async function () {
