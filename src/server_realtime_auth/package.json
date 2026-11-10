@@ -19,7 +19,7 @@
     "jsonwebtoken": "^9.0.3",
     "ldapts": "^9.0.0",
     "mongodb": "^7.6.0",
-    "mongoose": "^9.9.3",
+    "mongoose": "^9.11.4",
     "pg": "^8.23.0",
     "queue-fifo": "^0.2.6"
   },
