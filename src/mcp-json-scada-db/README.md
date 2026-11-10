@@ -13,6 +13,7 @@ This is a Model Context Protocol (MCP) server that provides access to a {json:sc
 - **Logs**: list, tail, filter and search the process log files.
 - **Displays**: read SCADA SVG displays with their bound points and live values; serve the svg-scada markup skill for authoring displays; with the admin tools, validate and save displays.
 - **Operator Actions** (admin tools): acknowledge alarms and events, set annotations, alarm inhibition, limits, notes and substituted values.
+- **Calculated Tags**: guide and formula catalog of the compiled calculations engine, design checks with a value preview, an audit of all calculated points; with the admin tools, checked creation and changes.
 - **CIM-EMS network analysis**: decoded load flow, state estimation and contingency results with limit checks; with the admin tools, model import/activation, binding review and study runs.
 - **Configuration & Process Management** (optional, see below): create/update/delete protocol driver instances, protocol connections and tags; start/stop/restart driver services; change process management settings; users and roles; project export/import.
 
@@ -109,7 +110,7 @@ Use a dedicated admin account, since these tools can stop data acquisition and c
 
 - Driver instances and processes: `list_driver_processes`, `create_driver_instance`, `update_driver_instance`, `delete_driver_instance`, `control_driver_process` (start/stop/restart), `sync_driver_services`.
 - Protocol connections: `get_protocol_connection_template`, `create_protocol_connection`, `update_protocol_connection`, `delete_protocol_connection` (optionally deleting its tags).
-- Tags: `create_tag`, `update_tag` (including rename), `delete_tag`. Live value fields are never written; use `send_command` to act on the field.
+- Tags: `create_tag`, `update_tag` (including rename), `delete_tag`. Live value fields are never written; use `send_command` to act on the field. Calculated tags: `save_calculated_tag` (see Calculated Tags Tools).
 - System: `get_system_settings`, `update_system_settings`, `restart_all_protocol_drivers`, `restart_all_processes`.
 - Displays: `save_display` creates or overwrites (`overwrite: true`) an SVG display after checking that it is a complete SVG, that every SCADA label is valid JSON (refused otherwise) and which bound tags do not exist (warnings); `dryRun` runs the checks only.
 - Operator actions, through the realtime Web API (`/Invoke/`, as the HMI): `acknowledge_alarms_events` (one tag or all: acknowledge alarms, acknowledge or remove events, silence the beep; returns counts before and after) and `set_point_properties` (annotation, alarm inhibition, analog limits and hysteresis, notes, substituted value; only the given fields change). The account's role rights (`ackAlarms`, `ackEvents`, `enterAnnotations`, `disableAlarms`, `enterLimits`, `enterNotes`, `substituteValues`, the union over its roles) apply, and `group1List` limits acknowledgements; the server ignores a change the role does not allow, so the tool re-reads the point and reports `applied` and `notApplied`.
@@ -126,6 +127,20 @@ Example (Windows service):
 ```
 nssm set JSON_SCADA_mcp_server AppEnvironmentExtra JS_MCPJSDB_TRANSPORT=http JS_MCPJSDB_IP_BIND=127.0.0.1 JS_MCPJSDB_HTTP_PORT=6001 JS_MCPJSDB_ADMIN_USERNAME=mcp-admin JS_MCPJSDB_ADMIN_PASSWORD=<password>
 ```
+
+### Calculated Tags Tools
+
+Calculated points of the compiled [calculations engine](../calculations/README.md) (v0.2.0 or later) (`origin: "calculated"`, a `formula` code and its `parcels`, the input point keys in formula order). The engine has no expression language: each formula code is a compiled function with a fixed parcel order, so these tools carry the formula catalog and check designs against it.
+
+Always registered:
+
+- `get_calculations_guide`: How to create calculated tags (also the resource `json-scada://calculations/guide`): how the engine works (cycle, only `origin: "calculated"` points, reloaded every 30 s so no restart is needed; results go through the data processor, which applies `kconv1`/`kconv2`), the point fields, pitfalls, and every formula code with its expression, parcel count and order, result type and quality rule. With `formula`, one entry.
+- `check_calculated_tag`: Checks a design (`formula` + `parcels` as tag names or point keys) or an existing tag: formula implemented, parcel count (a count that does not fit means the point is never computed), parcels exist (a missing parcel makes the result invalid), origin `calculated` (other origins are ignored), self references and loops through chains of calculated points, result type against the point type, and the calculations process status. Previews the engine output and the stored value from the current parcel values; for an existing tag, compares it with the stored value.
+- `audit_calculated_tags`: Every calculated point (formula > 0 or origin `calculated`) with problems: unknown codes, wrong parcel counts, missing parcels, loops, formulas on non-calculated points (ignored by the engine), points never updated; plus formula usage, chain depth and the process status.
+
+With the admin tools:
+
+- `save_calculated_tag`: Creates a calculated tag, or changes the formula, parcels and other fields of an existing one, after the same checks; a design the engine cannot compute is refused. Sets `origin: "calculated"`, stores the parcels as point keys and picks the point type from the formula when none is given. `dryRun` only checks. The engine picks up the change within 30 s; nothing is restarted.
 
 ### CIM-EMS Tools
 
@@ -152,6 +167,7 @@ Changes are study requests executed by the active CIM-EMS driver node: the tools
 ### Registered Resources
 
 - `json-scada://schema`: Provides a detailed text summary of the database structure and key collections.
+- `json-scada://calculations/guide`: How to create calculated tags, with the formula catalog (same text as `get_calculations_guide`).
 - `json-scada://cim-ems/guide`: How to interpret CIM-EMS results (same text as `cim_ems_get_guide`).
 - `json-scada://skills/svg-scada`: The svg-scada skill (same text as `get_svg_scada_skill`).
 

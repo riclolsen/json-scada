@@ -94,7 +94,7 @@ function normalizeAddresses(doc: Record<string, any>) {
   return doc
 }
 
-function buildDoc(args: Record<string, any>) {
+export function buildDoc(args: Record<string, any>) {
   const { fields, ...named } = args
   const doc: Record<string, any> = { ...(fields || {}) }
   for (const [k, v] of Object.entries(named)) if (v !== undefined) doc[k] = v
@@ -102,7 +102,7 @@ function buildDoc(args: Record<string, any>) {
   return normalizeAddresses(doc)
 }
 
-async function findTag(api: AdminApiClient, tag: string) {
+export async function findTag(api: AdminApiClient, tag: string) {
   const r = await api.call('listTags', {
     filter: { tag },
     page: 1,

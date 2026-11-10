@@ -48,6 +48,11 @@ import { registerHealthTools } from "./tools/health.js";
 import { registerOperatorTools } from "./tools/operator.js";
 import { registerUserTools } from "./tools/users.js";
 import { registerProjectTools } from "./tools/project.js";
+import {
+  registerCalculationsAdminTools,
+  registerCalculationsReadTools,
+} from "./tools/calculations.js";
+import { CALCULATIONS_GUIDE } from "./jsonscada/calculations.js";
 import { AdminApiClient } from "./jsonscada/admin-api.js";
 import { ConnectionManager } from "./jsonscada/connection-manager.js";
 import { Log } from "./jsonscada/index.js";
@@ -90,6 +95,7 @@ function buildServer(): McpServer {
   registerLogTools(server);
   registerSkillTools(server);
   registerHealthTools(server, mgr);
+  registerCalculationsReadTools(server, mgr);
 
   if (adminApi.enabled) {
     registerDriverTools(server, adminApi);
@@ -100,6 +106,7 @@ function buildServer(): McpServer {
     registerOperatorTools(server, adminApi, mgr);
     registerUserTools(server, adminApi);
     registerProjectTools(server, adminApi);
+    registerCalculationsAdminTools(server, adminApi, mgr);
     if (cimEmsAdminTools) registerCimEmsAdminTools(server, adminApi, mgr);
   }
 
@@ -112,6 +119,17 @@ function buildServer(): McpServer {
       mimeType: "text/markdown",
     },
     async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: CIM_EMS_GUIDE }] })
+  );
+
+  // Resource: how to create calculated tags (also the get_calculations_guide tool)
+  server.registerResource(
+    "calculations-guide",
+    "json-scada://calculations/guide",
+    {
+      description: "How to create calculated tags with the compiled calculations engine, with the formula catalog",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: CALCULATIONS_GUIDE }] })
   );
 
   // Resource: Schema

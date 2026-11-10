@@ -88,7 +88,7 @@ When the user requests a durable behavior change, record it here or in the relev
 All protocol drivers, web UI, data processors, and tools. Contains its own child index covering 25+ components with individual AGENTS.md files:
 
 - [src/AdminUI/](src/AdminUI/AGENTS.md) — Vue.js web admin interface SPA
-- [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, operation, health/log diagnosis, displays, CIM-EMS control)
+- [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, operation, health/log diagnosis, displays, calculated tags, CIM-EMS control)
 - [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in alternative)
 - [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
