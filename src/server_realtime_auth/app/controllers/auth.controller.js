@@ -2222,6 +2222,149 @@ exports.restartProcesses = async (req, res) => {
   }
 }
 
+// Displays shipped with the distribution (KAW2/KIK3/KNH2/KOR1 examples and the
+// generated Svedala CIM-EMS demo); user displays never match
+const DEMO_DISPLAY_RE =
+  /^(kaw2|kik3|knh2|kor1|kor1-PergolaGrid|svedala-overview|svedala_[A-Za-z0-9_-]+)\.svg$/i
+// CIM-EMS collections (models, bindings, runs, lists, requests) and artifacts bucket
+const CIM_COLLECTIONS = [
+  'cimModels',
+  'cimMeasurementBindings',
+  'cimRuns',
+  'cimContingencyLists',
+  'cimStudyRequests',
+  'cimArtifacts.files',
+  'cimArtifacts.chunks',
+]
+// Tags kept by a prune: reserved keys, system and communication status tags
+// (the latter are removed by cs_data_processor with their connections)
+const PRUNE_TAG_FILTER = {
+  _id: { $nin: [-1, -2] },
+  origin: { $ne: 'system' },
+  commStatus: { $exists: false },
+  tag: { $not: /^_System\./ },
+}
+
+// Removes the demo/example configuration so a system can start clean: every
+// protocol connection, every non-system tag, all CIM-EMS models/bindings/runs/
+// requests/artifacts and the shipped example displays. Driver instances, process
+// instances, users, roles and system settings stay. Dry run unless confirm: true.
+exports.pruneConfiguration = async (req, res) => {
+  try {
+    const b = req.body || {}
+    const execute = b.confirm === true
+    const want = (k) => b[k] !== false
+    const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
+    const out = { error: false, dryRun: !execute, warnings: [] }
+
+    let conns = []
+    if (want('connections')) {
+      conns = await ProtocolConnection.find(
+        {},
+        { protocolConnectionNumber: 1, name: 1, protocolDriver: 1, protocolDriverInstanceNumber: 1 }
+      )
+        .lean()
+        .exec()
+      out.connections = {
+        count: conns.length,
+        names: conns.map((c) => c.name),
+      }
+    }
+    if (want('tags'))
+      out.tags = { count: await Tag.countDocuments(PRUNE_TAG_FILTER) }
+    const mdb = db.mongoose.connection.db
+    if (want('cimModels')) {
+      out.cimModels = {}
+      for (const c of CIM_COLLECTIONS)
+        out.cimModels[c] = await mdb.collection(c).countDocuments({})
+      out.cimModels.modelIds = await mdb.collection('cimModels').distinct('_id')
+    }
+    let displays = []
+    if (want('displays')) {
+      try {
+        displays = fs
+          .readdirSync(svgDir)
+          .filter((f) => DEMO_DISPLAY_RE.test(f))
+          .sort()
+      } catch (e) {
+        out.warnings.push('Cannot read the svg folder: ' + e.message)
+      }
+      out.displays = { count: displays.length, files: displays }
+      if (displays.length && fs.existsSync(path.join(svgDir, 'screen_list.js')))
+        out.warnings.push(
+          'svg/screen_list.js exists: remove the pruned displays from it (or delete it to list every display).'
+        )
+    }
+
+    if (!execute) {
+      res.status(200).send(out)
+      return
+    }
+    registerUserAction(req, 'pruneConfiguration')
+
+    if (out.tags)
+      out.tags.deleted = (await Tag.deleteMany(PRUNE_TAG_FILTER)).deletedCount
+    if (out.connections) {
+      out.connections.deleted = (
+        await ProtocolConnection.deleteMany({
+          _id: { $in: conns.map((c) => c._id) },
+        })
+      ).deletedCount
+      // the tags of the connections, when tags were not pruned as a whole
+      if (!out.tags)
+        out.connections.tagsDeleted = (
+          await Tag.deleteMany({
+            protocolSourceConnectionNumber: {
+              $in: conns.map((c) => c.protocolConnectionNumber),
+            },
+            origin: { $ne: 'system' },
+            commStatus: { $exists: false },
+          })
+        ).deletedCount
+      const seen = new Set()
+      out.connections.restarts = []
+      for (const c of conns) {
+        const key = c.protocolDriver + '#' + c.protocolDriverInstanceNumber
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.connections.restarts.push({
+          protocolDriver: c.protocolDriver,
+          protocolDriverInstanceNumber: c.protocolDriverInstanceNumber,
+          ...(await scheduleConnectionRestart(
+            c.protocolDriver,
+            c.protocolDriverInstanceNumber,
+            null
+          )),
+        })
+      }
+    }
+    if (out.cimModels) {
+      out.cimModels.deleted = {}
+      for (const c of CIM_COLLECTIONS)
+        out.cimModels.deleted[c] = (
+          await mdb.collection(c).deleteMany({})
+        ).deletedCount
+    }
+    if (out.displays) {
+      out.displays.deleted = []
+      for (const f of displays) {
+        const p = path.resolve(svgDir, path.basename(f))
+        if (!p.startsWith(svgDir + path.sep)) continue
+        try {
+          fs.unlinkSync(p)
+          out.displays.deleted.push(f)
+        } catch (e) {
+          out.warnings.push('Cannot delete display ' + f + ': ' + e.message)
+        }
+      }
+    }
+    res.status(200).send(out)
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err.message || String(err) })
+  }
+}
+
 // placeholder for future use (sanitize database, fill up missing properties, change data types, etc.)
 exports.sanitizeDatabase = async function (req, res) {
   res.status(200).send({ error: false })

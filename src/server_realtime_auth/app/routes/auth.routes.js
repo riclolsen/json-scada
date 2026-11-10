@@ -181,6 +181,11 @@ module.exports = function (app, accessPoint) {
     controller.restartProcesses
   )
   app.post(
+    accessPoint + 'auth/pruneConfiguration',
+    [authJwt.isAdmin],
+    controller.pruneConfiguration
+  )
+  app.post(
     accessPoint + 'auth/sanitizeDatabase',
     [authJwt.isAdmin],
     controller.sanitizeDatabase

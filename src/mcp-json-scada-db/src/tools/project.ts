@@ -97,4 +97,40 @@ export function registerProjectTools(server: McpServer, api: AdminApiClient) {
       }
     }
   )
+
+  server.registerTool(
+    'prune_configuration',
+    {
+      title: 'Prune Demo Configuration',
+      description:
+        'Remove the demo/example configuration so the system starts clean (AdminUI API pruneConfiguration): ' +
+        'every protocol connection (affected driver instances are scheduled for restart), every non-system tag ' +
+        '(realtimeData except reserved keys, origin "system", communication status and _System.* tags), all ' +
+        'CIM-EMS models, binding sets, runs, contingency lists, study requests and artifacts, and the example ' +
+        'displays shipped in the svg folder (kaw2, kik3, knh2, kor1*, svedala*; user displays stay). Driver ' +
+        'instances, process instances, users, roles and system settings are kept; history and SOE records are ' +
+        'not deleted. Each part can be skipped with false. Without confirm=true only reports what would be ' +
+        'removed. Not reversible: export_project first.',
+      inputSchema: z.object({
+        connections: z.boolean().optional().default(true).describe('Delete all protocol connections'),
+        tags: z.boolean().optional().default(true).describe('Delete all non-system tags (false: only the tags of the pruned connections)'),
+        cimModels: z.boolean().optional().default(true).describe('Delete all CIM-EMS models, bindings, runs, requests and artifacts'),
+        displays: z.boolean().optional().default(true).describe('Delete the shipped example displays'),
+        confirm: z.boolean().optional().default(false).describe('Execute; otherwise dry run'),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: true },
+    },
+    async ({ connections, tags, cimModels, displays, confirm }) => {
+      try {
+        const r = await api.call('pruneConfiguration', { connections, tags, cimModels, displays, confirm })
+        if (r && typeof r === 'object') {
+          delete r.error
+          if (r.dryRun) r.note = 'Dry run: nothing was removed. Pass confirm=true to prune (export_project first).'
+        }
+        return jsonResult(r)
+      } catch (e) {
+        return errorResult('Error pruning the configuration', e)
+      }
+    }
+  )
 }
