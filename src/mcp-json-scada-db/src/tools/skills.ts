@@ -110,7 +110,8 @@ export function registerSkillTools(server: McpServer) {
         'Return the svg-scada skill: the rules for SCADA display markup in SVG files (SCADAvis/OSHMI/JSON-SCADA). ' +
         'Bindings are HTML-escaped JSON in inkscape:label with an "attr" animation type (get, color, bar, opacity, ' +
         'rotate, slider, tooltips, popup/open, clone faceplates, set macros such as #arc/#vega, script) and tag ' +
-        'references. Read it before creating or editing a display (save_display) or when interpreting unusual ' +
+        'references, including "!JSON <tag> <path>" / $J() for members of a tag\'s structured valueJson (section ' +
+        '"Structured Values"). Read it before creating or editing a display (save_display) or when interpreting unusual ' +
         'markup in get_display. Without section it returns the whole skill (outline: true gives only the ' +
         'headings); with section, only the matching heading and its subsections.',
       inputSchema: z.object({
@@ -188,8 +189,9 @@ export function registerSkillTools(server: McpServer) {
         file ? `Display file: ${file}` : '',
         '',
         'Follow the svg-scada skill below. Use search_points / get_display to find existing tags and their ' +
-          'types (bind only tags that exist), keep every inkscape:label valid HTML-escaped JSON, and check the ' +
-          'result with save_display dryRun before saving.',
+          'types (bind only tags that exist; for a "!JSON <tag> <path>" member, read the tag\'s valueJson with ' +
+          'get_point to write the path), keep every inkscape:label valid HTML-escaped JSON, and check the ' +
+          'result with save_display dryRun before saving (no missingTags or jsonRefIssues).',
       ].filter((l, i) => l || i > 1)
       return {
         messages: [

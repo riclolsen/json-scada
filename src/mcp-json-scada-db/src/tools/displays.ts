@@ -27,6 +27,7 @@ import type { McpServer } from '@modelcontextprotocol/server'
 import { AdminApiClient } from '../jsonscada/admin-api.js'
 import { ConnectionManager } from '../jsonscada/connection-manager.js'
 import { srcDir } from '../jsonscada/drivers.js'
+import { parseJsonRef, pointJson, walkJson } from '../jsonscada/json-path.js'
 import { errorResult, jsonResult, textResult } from './util.js'
 
 const DISPLAY_NAME = z
@@ -72,19 +73,27 @@ function position(a: Record<string, string>): { x: number; y: number } | null {
 }
 
 // placeholders filled by a parent clone (%n, @1), macros (#...) and special
-// tags (!ALM..., !ILIM%n ...) are not database tags
+// tags (!ALM..., !ILIM%n ...) are not database tags (a `!JSON <tag> <path>`
+// member is reduced to its tag first)
 const PLACEHOLDER = /^[#!]|%\w|@\d/
 // set macros whose src is a tag list (others take element ids, scripts or names)
 const SET_TAG_MACROS = /^#(arc|vega\w*|radar|spider|gauge)$/i
 const POPUP_ACTIONS = /^(block|notrace)$|:/i
 
 // Tags referenced by one SCADA label object (see the svg-scada skill)
-function tagsOf(o: any): { tags: string[]; placeholders: string[] } {
+function tagsOf(o: any): { tags: string[]; placeholders: string[]; jsonRefs: string[] } {
   const tags = new Set<string>()
   const ph = new Set<string>()
+  const refs = new Set<string>()
   const add = (t: unknown) => {
-    const v = String(t ?? '').trim()
+    let v = String(t ?? '').trim()
     if (!v) return
+    // `!JSON <tag> <path>` reads a member of the tag's valueJson
+    const json = parseJsonRef(v)
+    if (json) {
+      refs.add(v)
+      v = json.tag
+    }
     if (PLACEHOLDER.test(v)) {
       if (/%\w|@\d/.test(v)) ph.add(v)
       return
@@ -92,12 +101,14 @@ function tagsOf(o: any): { tags: string[]; placeholders: string[] } {
     tags.add(v)
   }
   const scan = (s: unknown) => {
-    for (const m of String(s ?? '').matchAll(/\$V\(\s*['"]([^'"]+)['"]/g)) add(m[1])
+    for (const m of String(s ?? '').matchAll(/\$[VJ]\(\s*['"]([^'"]+)['"]/g)) add(m[1])
   }
-  if (!o || typeof o !== 'object') return { tags: [], placeholders: [] }
+  if (!o || typeof o !== 'object') return { tags: [], placeholders: [], jsonRefs: [] }
   add(o.tag)
+  scan(o.tag) // !EVAL expressions
   for (const it of Array.isArray(o.list) ? o.list : []) {
     add(it?.tag)
+    scan(it?.tag)
     scan(it?.param)
   }
   if (o.attr === 'set' && typeof o.src === 'string' && SET_TAG_MACROS.test(String(o.tag || '')))
@@ -106,7 +117,36 @@ function tagsOf(o: any): { tags: string[]; placeholders: string[] } {
   if (o.attr === 'popup' && typeof o.src === 'string' && !POPUP_ACTIONS.test(o.src.trim())) add(o.src)
   if (o.attr === 'clone') for (const m of Array.isArray(o.map) ? o.map : []) add(String(m).split('=')[1])
   for (const p of Array.isArray(o.param) ? o.param : [o.param]) scan(p)
-  return { tags: [...tags], placeholders: [...ph] }
+  return { tags: [...tags], placeholders: [...ph], jsonRefs: [...refs] }
+}
+
+const MAX_MEMBER_TEXT = 300
+
+// The `!JSON <tag> <path>` references of a display resolved against the bound
+// points (as the Display Viewer reads them). A ref whose tag is a clone
+// placeholder (%n) is reported without a value; `error` flags a bad path or a
+// tag without any structured value.
+function jsonMembers(d: ParsedDisplay, points: Map<string, any> | null): Record<string, unknown>[] {
+  const refs = [...new Set(d.bindings.flatMap((b) => b.animations.flatMap((a) => a.jsonRefs ?? [])))]
+  return refs.map((ref) => {
+    const r = parseJsonRef(ref)!
+    const out: Record<string, unknown> = { ref, tag: r.tag, path: r.path }
+    if (!r.segs) return { ...out, error: 'invalid path syntax' }
+    if (PLACEHOLDER.test(r.tag)) return { ...out, placeholder: true }
+    if (!points) return out
+    const p = points.get(r.tag)
+    if (!p) return { ...out, error: 'tag not found' }
+    const doc = pointJson(p)
+    if (doc === undefined) return { ...out, error: 'tag has no valueJson' }
+    const v = walkJson(doc, r.segs)
+    if (v === undefined || v === null) return { ...out, found: false, invalid: !!p.invalid }
+    let value = v
+    if (typeof v === 'object') {
+      const txt = JSON.stringify(v)
+      value = txt.length > MAX_MEMBER_TEXT ? txt.slice(0, MAX_MEMBER_TEXT) + '…' : v
+    }
+    return { ...out, found: true, value, invalid: !!p.invalid }
+  })
 }
 
 export interface ParsedDisplay {
@@ -120,7 +160,14 @@ export interface ParsedDisplay {
     element: string
     position: { x: number; y: number } | null
     text?: string
-    animations: { attr: string; tags: string[]; placeholders?: string[]; options: Record<string, unknown> }[]
+    animations: {
+      attr: string
+      tags: string[]
+      placeholders?: string[]
+      /** `!JSON <tag> <path>` valueJson member references */
+      jsonRefs?: string[]
+      options: Record<string, unknown>
+    }[]
   }[]
   invalidLabels: { id: string; label: string; error: string }[]
 }
@@ -169,12 +216,13 @@ export function parseDisplay(svg: string): ParsedDisplay {
         position: position(a),
         ...(text ? { text } : {}),
         animations: objs.map((o) => {
-          const { tags, placeholders } = tagsOf(o)
+          const { tags, placeholders, jsonRefs } = tagsOf(o)
           const { attr, tag, list, ...options } = o || {}
           return {
             attr: String(attr || ''),
             tags,
             ...(placeholders.length ? { placeholders } : {}),
+            ...(jsonRefs.length ? { jsonRefs } : {}),
             options: { ...(tag && PLACEHOLDER.test(String(tag)) ? { tag } : {}), ...trimOptions(options) },
           }
         }),
@@ -205,7 +253,7 @@ async function pointsByTag(mgr: ConnectionManager, tags: string[]) {
       projection: {
         _id: 1, tag: 1, description: 1, type: 1, origin: 1, value: 1, valueString: 1, unit: 1, invalid: 1,
         alarmed: 1, alarmDisabled: 1, substituted: 1, annotation: 1, timeTag: 1, group1: 1,
-        protocolSourceConnectionNumber: 1,
+        protocolSourceConnectionNumber: 1, valueJson: 1,
       },
     })
     .toArray()
@@ -273,7 +321,8 @@ export function registerDisplayReadTools(server: McpServer, mgr: ConnectionManag
         'value, color = color by value/state, bar, rotate, slider, open/popup, tooltips, set/script macros) and ' +
         'bound points. With includeValues (default), each bound point comes with its live value, unit, quality ' +
         '(invalid), alarm and substitution state and description, so the display can be read as an operator ' +
-        'sees it. Reports broken bindings (tags missing from the database) and labels with invalid JSON.',
+        'sees it, and every "!JSON <tag> <path>" reference (member of a tag\'s structured valueJson) with its ' +
+        'current member value. Reports broken bindings (tags missing from the database) and labels with invalid JSON.',
       inputSchema: z.object({
         file: DISPLAY_NAME,
         includeValues: z.boolean().optional().default(true),
@@ -312,6 +361,7 @@ export function registerDisplayReadTools(server: McpServer, mgr: ConnectionManag
           }
         }
         const values = includeValues ? tags.map(pointInfo) : undefined
+        const members = jsonMembers(d, includeValues ? points : null)
         const summary = {
           boundElements: d.bindings.length,
           boundTags: tags.length,
@@ -335,9 +385,14 @@ export function registerDisplayReadTools(server: McpServer, mgr: ConnectionManag
           ...(includeTexts ? { texts: d.texts.slice(0, 500) } : {}),
           elements: d.bindings.slice(0, maxElements),
           ...(values ? { points: values } : {}),
+          ...(members.length ? { jsonMembers: members } : {}),
           note:
             'Positions are in SVG user units (top-left origin) from x/y and translate() only; nested group ' +
-            'transforms are not applied. Placeholders (%n, @1) are filled by a parent clone/faceplate.',
+            'transforms are not applied. Placeholders (%n, @1) are filled by a parent clone/faceplate.' +
+            (members.length
+              ? ' jsonMembers: "!JSON <tag> <path>" references to a member of the tag\'s valueJson (shown only ' +
+                'by the AdminUI Display Viewer; svg-scada skill "Structured Values"); found: false shows as failed.'
+              : ''),
         })
       } catch (e) {
         return errorResult(`Error reading display ${file}`, e)
@@ -354,7 +409,8 @@ export function registerDisplayAdminTools(server: McpServer, api: AdminApiClient
       description:
         'Create or overwrite a SCADA display (SVG) in the svg folder through the AdminUI API. The content is ' +
         'checked first: it must be an <svg> document, every SCADA label must be valid JSON (HTML-escaped in ' +
-        'inkscape:label; read get_svg_scada_skill for the markup rules) and bound tags should exist (reported as warnings). ' +
+        'inkscape:label; read get_svg_scada_skill for the markup rules) and bound tags should exist (reported as warnings; ' +
+        '"!JSON <tag> <path>" references with a bad path or a tag without valueJson are reported as jsonRefIssues). ' +
         'With dryRun only the checks run. Overwriting replaces the file for every operator.',
       inputSchema: z.object({
         file: DISPLAY_NAME,
@@ -382,6 +438,10 @@ export function registerDisplayAdminTools(server: McpServer, api: AdminApiClient
         } catch {
           exists = false
         }
+        // !JSON references: bad paths and tags without a structured value (warnings)
+        const jsonIssues = jsonMembers(d, mgr.status.HintMongoIsConnected ? points : null).filter(
+          (m) => m['error'] && m['error'] !== 'tag not found'
+        )
         const check = {
           file,
           exists,
@@ -389,6 +449,7 @@ export function registerDisplayAdminTools(server: McpServer, api: AdminApiClient
           boundTags: tags.length,
           invalidLabels: d.invalidLabels.slice(0, 20),
           missingTags: missing.slice(0, 100),
+          ...(jsonIssues.length ? { jsonRefIssues: jsonIssues.slice(0, 50) } : {}),
         }
         if (d.invalidLabels.length)
           return textResult(JSON.stringify({ saved: false, reason: 'labels with invalid JSON', ...check }, null, 2), true)

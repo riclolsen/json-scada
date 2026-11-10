@@ -206,7 +206,7 @@ Example document.
 * _**_transient_**_ [Boolean] - Flags a transient value. **Mandatory parameter**.
 * _**_frozen_**_ [Boolean] - When true, value is considered frozen (not changing). **Mandatory parameter**.
 * _**_value_**_ [Double] - Current value as a number. **Mandatory parameter**.
-* _**_valueJson_**_ [String] - Current value as JSON. **Optional parameter**.
+* _**_valueJson_**_ [String] - Current value as JSON (structured value: object or array). SVG displays read its members with `!JSON <tag> <path>` markup (svg-scada skill, "Structured Values"). **Optional parameter**.
 * _**_valueString_**_ [String] - Current value as a string. **Mandatory parameter**.
 * _**_timeTag_**_ [Date] - Last update time. **Mandatory parameter**.
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.

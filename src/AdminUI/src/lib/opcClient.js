@@ -242,6 +242,8 @@ function normalizePoint(element, cfg) {
     beepType: prop.beepType,
     beepGroup1List: prop.beepGroup1List,
     valueRaw: body,
+    // only when requested (readPoints jsonKeys); null when the point has none
+    valueJson: prop.valueJson,
   }
 }
 
@@ -296,7 +298,9 @@ export async function readFiltered({ station, bay, onlyAlarms }, cfg) {
 
 // --- read specific points (info dialog, beep status) -------------------------
 
-export async function readPoints(keysOrTags, askInfo, cfg) {
+// `jsonKeys` (optional Set of keys/tags as strings): points whose valueJson is
+// also returned (`_ValueJson` node flag, a JSON-SCADA extension).
+export async function readPoints(keysOrTags, askInfo, cfg, jsonKeys) {
   if (!Array.isArray(keysOrTags) || keysOrTags.length === 0) return []
   const handle = newHandle()
   const nodesToRead = keysOrTags.map((el) => {
@@ -308,6 +312,7 @@ export async function readPoints(keysOrTags, askInfo, cfg) {
         Namespace: OpcNamespaceMongodb,
       },
       AttributeId: askInfo ? OpcAttributeId.Description : OpcAttributeId.Value,
+      ...(jsonKeys && jsonKeys.has(String(el)) ? { _ValueJson: true } : {}),
     }
   })
   const req = {

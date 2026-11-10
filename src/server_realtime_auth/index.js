@@ -1470,6 +1470,15 @@ let pool = null
                 },
               }
 
+          // JSON-SCADA extension: a NodesToRead entry with `_ValueJson: true`
+          // also gets the point's valueJson in `_Properties` (display viewer)
+          if (
+            projection &&
+            Array.isArray(req.body.Body?.NodesToRead) &&
+            req.body.Body.NodesToRead.some((n) => n?._ValueJson === true)
+          )
+            projection.projection.valueJson = 1
+
           // optimize query for better performance
           // there is a cost to query empty $in lists!
           let findTags = {
@@ -1679,6 +1688,9 @@ let pool = null
                           type: pointInfo.type,
                         }
                       }
+                      if (node._ValueJson === true)
+                        Result._Properties.valueJson =
+                          pointInfo.valueJson ?? null
                       if (
                         pointInfo.type === 'string' ||
                         pointInfo.type === 'json'
