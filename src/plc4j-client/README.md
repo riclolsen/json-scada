@@ -5,11 +5,11 @@ A generic PLC client driver for JSON-SCADA. Based on the Apache PLC4X/PLC4J proj
     https://github.com/apache/plc4x
     https://plc4x.apache.org/users/protocols/modbus.html
 
-**This driver registers in MongoDB as `protocolDriver: "PLC4X"`** — it is an alternative Java implementation of the same driver provided by the Go `plc4x-client`. It uses exactly the same MongoDB configuration (instances, connections, tags). IMPORTANT: only ONE of the two executables (Go `plc4x-client` or Java `plc4j-client`) may run for a given instance number — running both would make them dispute the active role and double-poll devices. To use both side by side, assign them distinct instance numbers.
+**This driver registers in MongoDB as `protocolDriver: "PLC4X"`** and is the PLC4X driver shipped with JSON-SCADA. It uses the same MongoDB configuration (instances, connections, tags) as the retired Go `plc4x-client`, so existing PLC4X configurations keep working unchanged. If you still run that old Go binary, only ONE executable may serve a given instance number — running both would make them dispute the active role and double-poll devices; give them distinct instance numbers instead.
 
 This driver is built on **Apache PLC4X 1.0.0** and supports the protocols provided by that release: Modbus (TCP/RTU/ASCII), S7 (including s7-light), ADS, OPC UA, KNXnet/IP, EtherNet/IP (and Logix), plus the `simulated` driver for testing. The PLC4J drivers for S7 and EtherNet/IP are more mature than their Go counterparts. Only Modbus TCP was tested with real equipment. Any help with testing other protocols is welcome.
 
-Note: BACnet/IP and C-Bus are **not** available here, as those two drivers were not published in the PLC4X 1.0.0 release (they stop at 0.13.1) and cannot be mixed into a 1.0.0 build. They can be re-enabled in `pom.xml` if a 1.0.x release includes them.
+Note: BACnet/IP and C-Bus are **not** available here. Those two drivers were last published for PLC4X 0.13.1 and are absent from the whole 1.x line (including the 1.1.0 development builds), and 0.13.1 artifacts cannot be mixed into a 1.x build because the SPI was restructured. They can be re-enabled in `pom.xml` if a later release ships them again.
 
 Discovery and Subscription features are currently not supported by this driver.
 
@@ -24,6 +24,12 @@ Discovery and Subscription features are currently not supported by this driver.
     mvn package
 
 This produces the self-contained `target/plc4j-client.jar`. Copy it to the JSON-SCADA `bin` folder together with the launcher script (`plc4j-client.bat` on Windows, `plc4j-client.sh` on Linux).
+
+To build against the Apache PLC4X development line (currently 1.1.0-SNAPSHOT, fetched from the ASF snapshot repository) instead of the pinned release:
+
+    mvn -Pplc4x-dev package
+
+The default build stays on the latest PLC4X release so that JSON-SCADA builds are reproducible; snapshots are rebuilt upstream without notice. Any other version can be selected with `mvn -Dplc4x.version=<version> package`.
 
 ## Configure a driver instance
 

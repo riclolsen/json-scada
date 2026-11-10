@@ -41,9 +41,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
-    <!-- Latest published PLC4J code. Apache PLC4X does not currently publish
-         -SNAPSHOT artifacts to a reachable repository (repository.apache.org is
-         being decommissioned), so the newest release is the latest available. -->
+    <!-- Latest PLC4X release. To build against the PLC4X development line
+         instead, use the "plc4x-dev" profile at the end of this file
+         (mvn -Pplc4x-dev package) or pass -Dplc4x.version=<version>. -->
     <plc4x.version>1.0.0</plc4x.version>
     <mongodb.version>5.2.1</mongodb.version>
     <logback.version>1.5.6</logback.version>
@@ -173,4 +173,29 @@
       </plugin>
     </plugins>
   </build>
+
+  <!-- Optional: build against the Apache PLC4X development line (currently
+       1.1.0-SNAPSHOT) instead of the release, with "mvn -Pplc4x-dev package".
+       Snapshots are rebuilt upstream without notice, so the default build stays
+       on the release to keep JSON-SCADA builds reproducible. -->
+  <profiles>
+    <profile>
+      <id>plc4x-dev</id>
+      <properties>
+        <plc4x.version>1.1.0-SNAPSHOT</plc4x.version>
+      </properties>
+      <repositories>
+        <repository>
+          <id>apache-snapshots</id>
+          <url>https://repository.apache.org/content/groups/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
 </project>
