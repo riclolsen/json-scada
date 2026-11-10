@@ -53,6 +53,8 @@ import {
   registerCalculationsReadTools,
 } from "./tools/calculations.js";
 import { CALCULATIONS_GUIDE } from "./jsonscada/calculations.js";
+import { registerSystemTagTools } from "./tools/system-tags.js";
+import { SYSTEM_TAGS_GUIDE } from "./jsonscada/system-tags.js";
 import { AdminApiClient } from "./jsonscada/admin-api.js";
 import { ConnectionManager } from "./jsonscada/connection-manager.js";
 import { Log } from "./jsonscada/index.js";
@@ -96,6 +98,7 @@ function buildServer(): McpServer {
   registerSkillTools(server);
   registerHealthTools(server, mgr);
   registerCalculationsReadTools(server, mgr);
+  registerSystemTagTools(server, mgr);
 
   if (adminApi.enabled) {
     registerDriverTools(server, adminApi);
@@ -130,6 +133,17 @@ function buildServer(): McpServer {
       mimeType: "text/markdown",
     },
     async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: CALCULATIONS_GUIDE }] })
+  );
+
+  // Resource: the _System.* tags of the data processor (also get_system_tags_guide)
+  server.registerResource(
+    "system-tags-guide",
+    "json-scada://system-tags/guide",
+    {
+      description: "The _System.* tags maintained by the data processor: meaning, use, editable fields, troubleshooting",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: SYSTEM_TAGS_GUIDE }] })
   );
 
   // Resource: Schema

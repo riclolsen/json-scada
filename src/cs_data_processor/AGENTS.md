@@ -21,7 +21,7 @@ Node.js service that processes MongoDB Change Stream events for alarm detection,
   - `simple-logger.js` — logging utility
   - `redundancy.js` — high-availability support
   - `metrics.js` — latency instrumentation (histograms, counters, HTTP endpoint)
-  - `commstatus.js` — communication status tags (`_System.Driver/Conn/Comm.*`); port of `../cs_data_processor-go/commstatus.go`, keep tag names, keys, fields, BSON number types (`Double`) and timing identical; contract in `docs/schema.md` (Communication status tags)
+  - `commstatus.js` — communication status tags (`_System.Driver/Conn/Comm.*`); port of `../cs_data_processor-go/commstatus.go`, keep tag names, keys, fields, BSON number types (`Double`) and timing identical; the connection name comes from `protocolConnections.name`; contract in `docs/schema.md` (Communication status tags); the MCP server (`src/mcp-json-scada-db/src/jsonscada/system-tags.ts`) mirrors the names, points, keys and owned fields to explain and check these tags, so change it together
   - `commstatus.test.js` — `node:test` suite mirroring `commstatus_test.go`
 - **Config:** INI file via Supervisor or environment variables
 

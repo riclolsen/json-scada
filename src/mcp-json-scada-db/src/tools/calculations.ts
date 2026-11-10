@@ -36,6 +36,7 @@ import {
 } from '../jsonscada/calculations.js'
 import { aliveInfo } from './status.js'
 import { buildDoc, findTag } from './tags.js'
+import { RESERVED_NAME_MESSAGE, isSystemTagName } from '../jsonscada/system-tags.js'
 import { errorResult, jsonResult, notConnectedResult, textResult } from './util.js'
 
 const POINT_PROJECTION = {
@@ -510,6 +511,7 @@ export function registerCalculationsAdminTools(
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
       try {
         const name = tag.trim()
+        if (isSystemTagName(name)) return textResult(RESERVED_NAME_MESSAGE, true)
         const existing = await findTag(api, name)
         if (existing && existing.origin !== 'calculated')
           return textResult(

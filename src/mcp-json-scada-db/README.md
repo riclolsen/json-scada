@@ -13,6 +13,7 @@ This is a Model Context Protocol (MCP) server that provides access to a {json:sc
 - **Logs**: list, tail, filter and search the process log files.
 - **Displays**: read SCADA SVG displays with their bound points and live values; serve the svg-scada markup skill for authoring displays; with the admin tools, validate and save displays.
 - **Operator Actions** (admin tools): acknowledge alarms and events, set annotations, alarm inhibition, limits, notes and substituted values.
+- **System Tags**: guide to the `_System.*` tags maintained by the data processor (alarm beep, communication status of every driver and connection) and a check that explains offline connections and finds missing, orphaned or misplaced system tags.
 - **Calculated Tags**: guide and formula catalog of the compiled calculations engine, design checks with a value preview, an audit of all calculated points; with the admin tools, checked creation and changes.
 - **CIM-EMS network analysis**: decoded load flow, state estimation and contingency results with limit checks; with the admin tools, model import/activation, binding review and study runs.
 - **Configuration & Process Management** (optional, see below): create/update/delete protocol driver instances, protocol connections and tags; start/stop/restart driver services; change process management settings; users and roles; project export/import.
@@ -110,7 +111,7 @@ Use a dedicated admin account, since these tools can stop data acquisition and c
 
 - Driver instances and processes: `list_driver_processes`, `create_driver_instance`, `update_driver_instance`, `delete_driver_instance`, `control_driver_process` (start/stop/restart), `sync_driver_services`.
 - Protocol connections: `get_protocol_connection_template`, `create_protocol_connection`, `update_protocol_connection`, `delete_protocol_connection` (optionally deleting its tags).
-- Tags: `create_tag`, `update_tag` (including rename), `delete_tag`. Live value fields are never written; use `send_command` to act on the field. Calculated tags: `save_calculated_tag` (see Calculated Tags Tools).
+- Tags: `create_tag`, `update_tag` (including rename), `delete_tag`. Live value fields are never written; use `send_command` to act on the field. Calculated tags: `save_calculated_tag` (see Calculated Tags Tools). Names beginning with `_System.` are refused, and `_System.*` tags cannot be deleted or have their name, type, origin, groups or descriptions changed (see System Tags Tools).
 - System: `get_system_settings`, `update_system_settings`, `restart_all_protocol_drivers`, `restart_all_processes`.
 - Displays: `save_display` creates or overwrites (`overwrite: true`) an SVG display after checking that it is a complete SVG, that every SCADA label is valid JSON (refused otherwise) and which bound tags do not exist (warnings); `dryRun` runs the checks only.
 - Operator actions, through the realtime Web API (`/Invoke/`, as the HMI): `acknowledge_alarms_events` (one tag or all: acknowledge alarms, acknowledge or remove events, silence the beep; returns counts before and after) and `set_point_properties` (annotation, alarm inhibition, analog limits and hysteresis, notes, substituted value; only the given fields change). The account's role rights (`ackAlarms`, `ackEvents`, `enterAnnotations`, `disableAlarms`, `enterLimits`, `enterNotes`, `substituteValues`, the union over its roles) apply, and `group1List` limits acknowledgements; the server ignores a change the role does not allow, so the tool re-reads the point and reports `applied` and `notApplied`.
@@ -127,6 +128,13 @@ Example (Windows service):
 ```
 nssm set JSON_SCADA_mcp_server AppEnvironmentExtra JS_MCPJSDB_TRANSPORT=http JS_MCPJSDB_IP_BIND=127.0.0.1 JS_MCPJSDB_HTTP_PORT=6001 JS_MCPJSDB_ADMIN_USERNAME=mcp-admin JS_MCPJSDB_ADMIN_PASSWORD=<password>
 ```
+
+### System Tags Tools
+
+The data processor maintains tags whose names begin with `_System.`: the alarm beep and the digital update counter (keys -1, -2) and the [communication status tags](../../docs/schema.md#communication-status-tags) of every protocol driver instance and connection (`_System.Driver.*`, `_System.Conn.*`, `_System.Comm.*`). Always registered:
+
+- `get_system_tags_guide`: What these tags are and how to deal with them (also the resource `json-scada://system-tags/guide`): every tag and point with its meaning, the lifecycle (created, renamed and removed with their driver instance or connection), which fields can be changed, the `commStatusTags` / `commStatusMirrorStats` switches (set with mongosh; no tool writes them), use in displays and alarms, and troubleshooting.
+- `check_system_tags`: The tags next to the configuration: the data processor that maintains them and its switches, the alarm beep, the summaries, and per driver instance and connection the generated tags with their values. Explains why each connection is Offline (disabled, driver stopped, link down, all tags invalid), and reports missing, orphaned and outdated generated tags, user tags in the `_System.` name space and connection names that collide once sanitized. Filters: `connection` (name or number), `driver`, `onlyProblems`.
 
 ### Calculated Tags Tools
 
@@ -167,6 +175,7 @@ Changes are study requests executed by the active CIM-EMS driver node: the tools
 ### Registered Resources
 
 - `json-scada://schema`: Provides a detailed text summary of the database structure and key collections.
+- `json-scada://system-tags/guide`: The `_System.*` tags of the data processor (same text as `get_system_tags_guide`).
 - `json-scada://calculations/guide`: How to create calculated tags, with the formula catalog (same text as `get_calculations_guide`).
 - `json-scada://cim-ems/guide`: How to interpret CIM-EMS results (same text as `cim_ems_get_guide`).
 - `json-scada://skills/svg-scada`: The svg-scada skill (same text as `get_svg_scada_skill`).

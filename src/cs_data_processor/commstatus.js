@@ -437,7 +437,7 @@ class CommStatus {
         {
           projection: {
             protocolConnectionNumber: 1,
-            protocolConnectionName: 1,
+            name: 1,
             protocolDriver: 1,
             protocolDriverInstanceNumber: 1,
             enabled: 1,
@@ -450,7 +450,7 @@ class CommStatus {
       const c = {
         id: idString(d._id),
         number: num(d.protocolConnectionNumber),
-        name: str(d.protocolConnectionName),
+        name: str(d.name),
         driver: str(d.protocolDriver),
         instNumber: num(d.protocolDriverInstanceNumber),
         enabled: bool(d.enabled, true),

@@ -25,7 +25,7 @@ version, tuned for lower change-stream processing latency.
   - `writers.go` — batching writers (realtimeData, hist + SQL files, soeData)
   - `metrics.go`, `hrtime*.go` — latency instrumentation
   - `redundancy.go`, `maintenance.go`, `specialtags.go`
-  - `commstatus.go` — communication status tags (`_System.Driver.*`, `_System.Conn.*`, `_System.Comm.*`); port of the same logic in `../cs_data_processor/commstatus.js` — change both together, contract in `docs/schema.md` (Communication status tags)
+  - `commstatus.go` — communication status tags (`_System.Driver.*`, `_System.Conn.*`, `_System.Comm.*`); port of the same logic in `../cs_data_processor/commstatus.js` — change both together; the connection name comes from `protocolConnections.name`; contract in `docs/schema.md` (Communication status tags); the MCP server (`src/mcp-json-scada-db/src/jsonscada/system-tags.ts`) mirrors the names, points, keys and owned fields to explain and check these tags, so change it together
   - `rawdoc.go`, `jsutil.go` — raw BSON access and JavaScript-compatible rendering
   - `config.go` — config file and env vars
   - `tools/compare-latency.js` — compares two metrics snapshots
