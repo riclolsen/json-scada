@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/riclolsen/tase2/tase2"
@@ -34,11 +35,19 @@ const (
 	LogLevelDebug    = 3
 )
 
-var currentLogLevel = LogLevelNormal
+// logLevel is read from library goroutines (log handlers, report callbacks),
+// so it is atomic.
+var logLevel atomic.Int32
+
+func init() { logLevel.Store(LogLevelNormal) }
+
+func currentLogLevel() int { return int(logLevel.Load()) }
+
+func setLogLevel(level int) { logLevel.Store(int32(level)) }
 
 // LogMsg logs a message at the given level if the current log level allows it.
 func LogMsg(level int, format string, v ...interface{}) {
-	if level <= currentLogLevel {
+	if level <= currentLogLevel() {
 		logLine(time.Now(), fmt.Sprintf(format, v...))
 	}
 }
@@ -75,7 +84,7 @@ func tase2LogHandler(label string) func(tase2.LogRecord) {
 		case tase2.LogLevelInfo:
 			level = LogLevelDetailed
 		}
-		if level <= currentLogLevel {
+		if level <= currentLogLevel() {
 			logLine(r.Time, formatTASE2LogRecord(label, r))
 		}
 	}

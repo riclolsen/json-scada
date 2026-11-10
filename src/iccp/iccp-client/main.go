@@ -79,8 +79,8 @@ func main() {
 	log.Println("Usage: iccp-client [instance number] [log level] [config file name]")
 
 	cfg, instanceNumber, instLogLevel := readConfigFile()
-	currentLogLevel = instLogLevel
-	configureTASE2Logging(currentLogLevel)
+	setLogLevel(instLogLevel)
+	configureTASE2Logging(currentLogLevel())
 	maxTPDUSizeParam := readTuningInt(EnvPrefix+"MAX_TPDU_SIZE_PARAM", cfg.ICCPMaxTPDUSizeParam, 16)
 	if maxTPDUSizeParam < 7 || maxTPDUSizeParam > 16 {
 		LogMsg(LogLevelMin, "Config - Invalid max TPDU size parameter %d, using 16", maxTPDUSizeParam)
@@ -89,7 +89,7 @@ func main() {
 
 	LogMsg(LogLevelMin, "Config - %s Version %s", DriverMsg, DriverVersion)
 	LogMsg(LogLevelMin, "Config - Instance: %d", instanceNumber)
-	LogMsg(LogLevelMin, "Config - Log level: %d", currentLogLevel)
+	LogMsg(LogLevelMin, "Config - Log level: %d", currentLogLevel())
 	LogMsg(LogLevelMin, "Config - Max TPDU size parameter: %d", maxTPDUSizeParam)
 
 	// Channel for data updates to MongoDB writer

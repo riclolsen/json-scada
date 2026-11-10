@@ -230,7 +230,7 @@ func logServerEvent(connName string, ev tase2.ServerEvent) {
 			level = LogLevelDetailed
 		}
 	}
-	if level > currentLogLevel {
+	if level > currentLogLevel() {
 		return
 	}
 	msg := "ICCP - " + connName + " event " + ev.Kind.String() + " peer " + ev.Peer.RemoteAddr

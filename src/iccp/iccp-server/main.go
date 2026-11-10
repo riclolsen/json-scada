@@ -119,8 +119,8 @@ func main() {
 	log.Println("Usage: iccp-server [instance number] [log level] [config file name]")
 
 	cfg, instanceNumber, instLogLevel := readConfigFile()
-	currentLogLevel = instLogLevel
-	configureTASE2Logging(currentLogLevel)
+	setLogLevel(instLogLevel)
+	configureTASE2Logging(currentLogLevel())
 	getNameListMaxPerResponse := readTuningInt(EnvPrefix+"GETNAMELIST_MAX_PER_RESPONSE", cfg.ICCPGetNameListMaxPerResponse, 1000)
 	getNameListMaxBytes := readTuningInt(EnvPrefix+"GETNAMELIST_MAX_BYTES", cfg.ICCPGetNameListMaxBytes, 60000)
 	maxTPDUSizeParam := readTuningInt(EnvPrefix+"MAX_TPDU_SIZE_PARAM", cfg.ICCPMaxTPDUSizeParam, 16)
@@ -133,7 +133,7 @@ func main() {
 
 	LogMsg(LogLevelMin, "Config - %s Version %s", DriverMsg, DriverVersion)
 	LogMsg(LogLevelMin, "Config - Instance: %d", instanceNumber)
-	LogMsg(LogLevelMin, "Config - Log level: %d", currentLogLevel)
+	LogMsg(LogLevelMin, "Config - Log level: %d", currentLogLevel())
 	LogMsg(LogLevelMin, "Config - GetNameList max identifiers: %d", getNameListMaxPerResponse)
 	LogMsg(LogLevelMin, "Config - GetNameList max estimated bytes: %d", getNameListMaxBytes)
 	LogMsg(LogLevelMin, "Config - Max TPDU size parameter: %d", maxTPDUSizeParam)
@@ -810,7 +810,7 @@ func watchRealtimeDataChanges(
 			}
 			pendingChangesMu.Unlock()
 
-			if currentLogLevel >= LogLevelDebug {
+			if currentLogLevel() >= LogLevelDebug {
 				LogMsg(LogLevelDebug, "ChangeStream - Buffered %s = %v (invalid=%v) for %d server(s)",
 					tag.Tag, tag.Value, tag.Invalid, len(servers))
 			}
@@ -839,7 +839,7 @@ func flushPendingChanges() {
 	for _, srvMap := range old {
 		totalUpdates += len(srvMap)
 	}
-	if totalUpdates > 0 && currentLogLevel >= LogLevelDetailed {
+	if totalUpdates > 0 && currentLogLevel() >= LogLevelDetailed {
 		LogMsg(LogLevelDetailed, "ChangeStream - Flushing %d pending updates across %d servers",
 			totalUpdates, len(old))
 	}
@@ -848,7 +848,7 @@ func flushPendingChanges() {
 	// acquire server-level locks and perform MMS I/O) doesn't block the
 	// change-stream consumer.
 	for srv, srvMap := range old {
-		if currentLogLevel >= LogLevelDebug && len(srvMap) > 0 {
+		if currentLogLevel() >= LogLevelDebug && len(srvMap) > 0 {
 			LogMsg(LogLevelDebug, "ChangeStream - Flushing %d updates to server %p", len(srvMap), srv)
 		}
 		for _, upd := range srvMap {
