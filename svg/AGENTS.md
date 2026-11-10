@@ -8,7 +8,7 @@ SVG files used for SCADA synoptic displays. These SVGs contain inline JSON metad
 
 - svg owns all SVG display files
 - SVG SCADA markup conventions are defined by the `svg-scada` skill, committed in two identical copies: `.agents/skills/svg-scada/SKILL.md` (repo root) and `svg/.agents/skills/svg-scada/SKILL.md`
-- `src/mcp-json-scada-db` (`tools/displays.ts`, `parseDisplay`) reads these displays for AI assistants and extracts bound tags by the skill's markup rules; a markup change that adds or moves tag references must update that parser too
+- `src/mcp-json-scada-db` (`tools/displays.ts`, `parseDisplay`) reads these displays for AI assistants and extracts bound tags by the skill's markup rules; a markup change that adds or moves tag references must update that parser too; it also serves the skill itself to MCP clients (`get_svg_scada_skill`, read from these files at request time, so keep both copies installed)
 
 ## Local Contracts
 

@@ -43,6 +43,7 @@ import { registerCimEmsAdminTools } from "./tools/cim-ems-admin.js";
 import { CIM_EMS_GUIDE } from "./jsonscada/cim-ems.js";
 import { registerDisplayAdminTools, registerDisplayReadTools } from "./tools/displays.js";
 import { registerLogTools } from "./tools/logs.js";
+import { registerSkillTools } from "./tools/skills.js";
 import { registerHealthTools } from "./tools/health.js";
 import { registerOperatorTools } from "./tools/operator.js";
 import { registerUserTools } from "./tools/users.js";
@@ -87,6 +88,7 @@ function buildServer(): McpServer {
   registerCimEmsReadTools(server, mgr);
   registerDisplayReadTools(server, mgr);
   registerLogTools(server);
+  registerSkillTools(server);
   registerHealthTools(server, mgr);
 
   if (adminApi.enabled) {

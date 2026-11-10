@@ -354,7 +354,7 @@ export function registerDisplayAdminTools(server: McpServer, api: AdminApiClient
       description:
         'Create or overwrite a SCADA display (SVG) in the svg folder through the AdminUI API. The content is ' +
         'checked first: it must be an <svg> document, every SCADA label must be valid JSON (HTML-escaped in ' +
-        'inkscape:label, see the svg-scada markup rules) and bound tags should exist (reported as warnings). ' +
+        'inkscape:label; read get_svg_scada_skill for the markup rules) and bound tags should exist (reported as warnings). ' +
         'With dryRun only the checks run. Overwriting replaces the file for every operator.',
       inputSchema: z.object({
         file: DISPLAY_NAME,

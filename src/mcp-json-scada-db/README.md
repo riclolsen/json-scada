@@ -11,7 +11,7 @@ This is a Model Context Protocol (MCP) server that provides access to a {json:sc
 - **System Inspection**: Monitor process instances and driver statuses, and read the audit log.
 - **Health Diagnosis**: whole-system and per-connection checks (MongoDB, processes, drivers, point quality, command and event queues, process logs) with plain-language findings.
 - **Logs**: list, tail, filter and search the process log files.
-- **Displays**: read SCADA SVG displays with their bound points and live values; with the admin tools, validate and save displays.
+- **Displays**: read SCADA SVG displays with their bound points and live values; serve the svg-scada markup skill for authoring displays; with the admin tools, validate and save displays.
 - **Operator Actions** (admin tools): acknowledge alarms and events, set annotations, alarm inhibition, limits, notes and substituted values.
 - **CIM-EMS network analysis**: decoded load flow, state estimation and contingency results with limit checks; with the admin tools, model import/activation, binding review and study runs.
 - **Configuration & Process Management** (optional, see below): create/update/delete protocol driver instances, protocol connections and tags; start/stop/restart driver services; change process management settings; users and roles; project export/import.
@@ -44,6 +44,7 @@ The server expects a MongoDB connection string. You can configure this via envir
 - `JS_MCPJSDB_CIM_EMS_TOOLS`: Set to `false` to leave out the CIM-EMS model, binding, run and request tools (for example when network model details must not reach the AI provider). The CIM-EMS status and result tools stay available.
 - `JS_MCPJSDB_SRC_DIR`: Installation `src` folder used to read driver documentation (defaults to the parent folder of this package).
 - `JS_MCPJSDB_SVG_DIR`: Folder of the SCADA displays read by `list_displays` / `get_display` (defaults to the `svg` folder next to `src`). `save_display` writes through the AdminUI API, which always uses the installation `svg` folder.
+- `JS_MCPJSDB_SVG_SKILL`: Path of the svg-scada skill served by `get_svg_scada_skill` (defaults to `<svg dir>/.agents/skills/svg-scada/SKILL.md`, then `.agents/skills/svg-scada/SKILL.md` in the installation folder).
 - `JS_MCPJSDB_LOG_DIR`: Folder of the process log files (defaults to the `log` folder next to `src`, where supervisor and the Windows services write `<process>.log`).
 
 ### Command Line Arguments
@@ -98,6 +99,7 @@ Displays:
 
 - `list_displays`: SVG displays with size, modification time and number of bound elements and points.
 - `get_display`: One display described for interpretation: static texts with positions, every dynamic element with its animations (`get`, `color`, `bar`, `popup`, `clone`, `set` macros, ...) and bound tags, the bound points with live value, unit, quality, alarm, substitution and annotation, and broken bindings (missing tags, labels with invalid JSON).
+- `get_svg_scada_skill`: The svg-scada skill, the markup rules for SCADA displays (HTML-escaped JSON in `inkscape:label`, animation types, clone faceplates, `set` macros, scripts, examples), so clients without repository skills can author displays. `outline: true` lists the headings; `section` returns one heading and its subsections (e.g. `"Color"`, `"Script"`). Read at request time, so skill edits apply without a rebuild.
 
 ### Configuration and Process Management Tools
 
@@ -150,3 +152,8 @@ Changes are study requests executed by the active CIM-EMS driver node: the tools
 
 - `json-scada://schema`: Provides a detailed text summary of the database structure and key collections.
 - `json-scada://cim-ems/guide`: How to interpret CIM-EMS results (same text as `cim_ems_get_guide`).
+- `json-scada://skills/svg-scada`: The svg-scada skill (same text as `get_svg_scada_skill`).
+
+### Registered Prompts
+
+- `svg-scada-display` (`task`, optional `file`): starts a display creation/editing task with the svg-scada skill loaded and the steps to bind only existing tags and check with `save_display` `dryRun`.
