@@ -37,7 +37,7 @@ Both are described below.
 | `jsmongo` | Connect/ping, collection names, permissive BSON accessors |
 | `jsmodel` | `protocolDriverInstances` document, node-allowed check |
 | `jstls` | Certificate/version/cipher plumbing for IEC 62351-3 and equivalents |
-| `jsstats` | The `protocolConnections` statistics update shape and stamping |
+| `jsstats` | The `protocolConnections` statistics update shape and stamping; `Entry.IsConnected` (set with `jsstats.Bool`) writes `stats.isConnected` |
 | `jsrtdata` | The acquired-value queue and the `sourceDataUpdate` document |
 | `jscommands` | The `commandsQueue` pipeline, field extraction, expiry and ack/cancel writeback |
 | `jstags` | The auto-created tag defaults and the `_id` partition per connection |

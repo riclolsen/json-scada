@@ -23,6 +23,7 @@ ICCP (IEC 60870-6 / TASE.2) client and server protocol drivers for JSON-SCADA, w
 - Uses MongoDB Go driver for database access
 - `iccp-client` and `iccp-server` are intentionally commented out of `src/go.work`; build and test them standalone with `GOWORK=off`
 - Each module resolves the library through `replace github.com/riclolsen/tase2 => ../tase2`, so `tase2/` must be checked out at a compatible revision (currently `v0.4.3`)
+- **Connection stats:** `stats.isConnected` — client: written true on association and every stats tick, false on connect failure and after disconnect (`updateConnectionStats`); server: at least one association open (`statsDocument`)
 
 ## Work Guidance
 

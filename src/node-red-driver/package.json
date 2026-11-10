@@ -1,6 +1,6 @@
 {
   "name": "node-red-driver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "{json:scada} - Node-RED bidirectional integration driver (NODE-RED). Hosts a WebSocket JSON server for Node-RED flows.",
   "type": "module",
   "main": "dist/main.js",

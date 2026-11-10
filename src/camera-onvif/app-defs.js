@@ -21,5 +21,5 @@ module.exports = {
   NAME: 'ONVIF',
   ENV_PREFIX: 'JS_ONVIF_',
   MSG: '{json:scada} - Camera ONVIF',
-  VERSION: '0.2.0',
+  VERSION: '0.2.1',
 }

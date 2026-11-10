@@ -24,6 +24,7 @@
 - **Config:** INI file via Supervisor or environment variables
 - **Build:** `dotnet build`
 - **Commands (`rtCommand`/`rtCommandNoAck`):** `protocolSourceCommonAddress` is a `BsonValue` (string branch name from `server_realtime_auth`, or double for numeric addressing); a strict `BsonDouble` serializer throws on strings and kills the command change stream. Commands older than 10 s (`TotalSeconds` vs UTC now) or without `timeTag` are marked `cancelReason: "expired"`
+- **Connection stats:** `Redundancy.cs` writes `stats.isConnected` = DA server session `IsConnected` for every connection (false while there is no session object)
 
 ## Work Guidance
 

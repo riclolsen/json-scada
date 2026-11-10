@@ -165,6 +165,12 @@ const deadBandCache = new Map() // last-sent analog values for dead-band
       Stats.lastWebhookError = Pusher.stats.lastError
       Stats.queueSizes = Pusher.queueSizes()
     }
+    // link state for the communication status tags: the last webhook POST
+    // to n8n succeeded; before any POST, the inbound listener is up
+    Stats.isConnected =
+      Pusher && Pusher.stats.lastOk !== null
+        ? Pusher.stats.lastOk
+        : listenerServer !== null
     Stats.nodeName = configObj.nodeName
     Stats.timeTag = new Date()
     try {

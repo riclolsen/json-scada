@@ -23,6 +23,7 @@ Node.js protocol driver for ONVIF-compatible IP cameras and plain RTSP sources. 
   - `ffmpeg.exe` — FFmpeg bundled for Windows (Linux uses PATH; override with `JS_ONVIF_FFMPEG_PATH`)
   - `snapshots/` — runtime output folder for periodic snapshots (`<connection name>.jpg`)
 - **Config:** `conf/json-scada.json` + `protocolDriverInstances`/`protocolConnections` collections (see README.md for all connection parameters)
+- **Connection stats:** `stats.isConnected` = stream running (`conn.stream !== null`); the stream is torn down on any camera failure
 
 ## Work Guidance
 

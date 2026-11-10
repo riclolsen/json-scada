@@ -25,6 +25,7 @@ package main
 import (
 	"context"
 
+	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
@@ -61,7 +62,14 @@ func initRedundancy(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850C
 func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg jsconfig.Config, conns []*Iec61850Connection) {
 	var entries []jsstats.Entry
 	for _, conn := range conns {
-		if conn.Client() == nil {
+		cli := conn.Client()
+		if cli == nil {
+			// no association: publish the link as down, keep the stored
+			// report EntryIDs untouched
+			entries = append(entries, jsstats.Entry{
+				ConnectionNumber: conn.ProtocolConnectionNumber,
+				IsConnected:      jsstats.Bool(false),
+			})
 			continue
 		}
 		ids := bson.M{}
@@ -71,6 +79,7 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 		entries = append(entries, jsstats.Entry{
 			ConnectionNumber: conn.ProtocolConnectionNumber,
 			Extra:            bson.M{"lastReportIds": ids},
+			IsConnected:      jsstats.Bool(cli.State() == mms.StateConnected),
 		})
 	}
 	jsstats.Writer{

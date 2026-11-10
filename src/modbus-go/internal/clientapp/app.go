@@ -28,7 +28,7 @@ import (
 var App = drv.AppDefs{
 	Name:      "MODBUS",
 	EnvPrefix: "JS_MODBUS_",
-	Version:   "0.2.0",
+	Version:   "0.2.1",
 	Msg:       "{json:scada} - Modbus Client Driver (Go)",
 }
 
@@ -137,6 +137,7 @@ func Main(argv []string) int {
 			for _, c := range conns {
 				entries = append(entries, jsstats.Entry{
 					ConnectionNumber: c.Cfg.ProtocolConnectionNumber, Stats: c.Stats().BSON(), Label: c.Cfg.Name,
+					IsConnected: jsstats.Bool(c.Stats().Status == "connected"),
 				})
 			}
 			statsWriter.Write(ctx, db.Collection(jsmongo.ProtocolConnectionsCollectionName), entries)

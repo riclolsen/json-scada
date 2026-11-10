@@ -38,7 +38,7 @@ import (
 const (
 	CopyrightMessage   = "{json:scada} OPC-UA Client Driver (Go) - Copyright 2020-2026 Ricardo L. Olsen"
 	ProtocolDriverName = "OPC-UA"
-	DriverVersion      = "0.2.0"
+	DriverVersion      = "0.2.1"
 	LibraryVersion     = "gopcua v0.9.1"
 )
 

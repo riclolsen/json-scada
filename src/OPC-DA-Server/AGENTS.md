@@ -25,6 +25,7 @@ Windows-only OPC DA (Data Access) server plugin for JSON-SCADA. Exposes JSON-SCA
 - **Registration:** `register.bat`, `unregister.bat` — COM registration for OPC DA
 - **Run:** `run.bat` — starts the server
 - **Dependency:** Technosoftware.DaAeHdaClient COM libraries (in `packages/`)
+- **Keep-alive and stats:** no redundancy arbitration; `ClassicNodeManager` counts DA clients (`OnClientConnect`/`OnClientDisconnect`) and a 5 s timer (`PublishStatus`) updates the instance keep-alive and the connection's `stats.isConnected` (clients > 0) and `stats.clients`
 
 ## Work Guidance
 

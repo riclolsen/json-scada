@@ -43,6 +43,7 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
     and testing.
   - Every key `config.go` reads must be in the driver README (`TestReadmeDocumentsEveryConfigKey`).
     A changed default, statistic, command result or log line is a README change in the same commit.
+- **Connection stats:** `stats.isConnected` (via `jsstats.Entry.IsConnected`) — client: `Stats().Status == "connected"`; server: at least one client attached
 
 ## Work Guidance
 

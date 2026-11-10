@@ -59,6 +59,7 @@ Key fields:
 *   `name` (String): A user-friendly name for the connection (e.g., "PLC_AREA_51").
 *   `enabled` (Boolean): If `true`, this connection should be actively managed by the driver.
 *   `commandsEnabled` (Boolean): If `true`, the driver should process commands for tags associated with this connection.
+*   `stats` (Object): Written by the driver, not configured. At least `nodeName` (String), `timeTag` (Date) and `isConnected` (Boolean); any other numeric counters are optional. `isConnected` is true while a client has a protocol session to at least one endpoint, or a server has at least one peer attached. The data processor turns it into the `_System.Conn.<name>.LinkUp` tag and folds it into `_System.Conn.<name>.Status` (see [Communication status tags](schema.md#communication-status-tags)); when a driver does not write it, the link state shows as unknown.
 *   **Protocol-Specific Fields:** Additional fields required by your specific protocol (e.g., `endpointURL`, `ipAddress`, `port`, etc.). These are defined and used by your driver. See if existing fields can be used by your driver, it may be necessary to create new fields.
 
 ### `realtimeData` Collection (Tags)
@@ -135,6 +136,8 @@ Regardless of the programming language, most protocol drivers will follow a simi
     *   **Become Active:** If `activeNodeName` is empty, or if `activeNodeName` is different from the current `nodeName` and `activeNodeKeepAliveTimeTag` is older than a defined timeout (e.g., 30-60 seconds), the current instance should attempt to become active. It does this by updating its instance document, setting `activeNodeName` to its own `nodeName` and `activeNodeKeepAliveTimeTag` to the current time.
     *   **Maintain Active Status:** If the current instance is already the `activeNodeName`, it should periodically update `activeNodeKeepAliveTimeTag` to the current time to signal it's still alive.
     *   **Remain Inactive:** If another node is active and its `activeNodeKeepAliveTimeTag` is recent, the current instance remains inactive. Depending on the `keepProtocolRunningWhileInactive` flag (usually false), it might close its protocol connections.
+    *   **Drivers without redundancy** (servers that serve on every node) must still update `activeNodeKeepAliveTimeTag` every few seconds: the data processor judges a driver stopped when its keep-alive stops advancing.
+    *   **Connection stats:** in the same cycle, on the active node only (so a standby never reports a link as down), update each connection's `stats.nodeName`, `stats.timeTag` and `stats.isConnected`. Use dotted `$set` paths (`stats.isConnected`) when other code also writes into `stats`. Go drivers get this from `go-common/jsstats` (`Entry.IsConnected`).
 
 3.  **Main Data Acquisition Loop (when active):**
     *   This is the core loop where the driver interacts with external devices.

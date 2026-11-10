@@ -106,6 +106,7 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 		},
 	}.Write(ctx, collConns, []jsstats.Entry{{
 		ConnectionNumber: g.conn.ProtocolConnectionNumber,
+		IsConnected:      jsstats.Bool(g.OpenConnections() > 0),
 		Stats: bson.M{
 			"isRunning":       g.Serving(),
 			"openConnections": g.OpenConnections(),

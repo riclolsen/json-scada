@@ -56,6 +56,7 @@ async function main(): Promise<void> {
   let db: Db | null = null
   let connection: ConnectionDoc | null = null
   let active: ActiveSet | null = null
+  let lastStatsAt = 0
   let redundancyStarted = false
 
   // eslint-disable-next-line no-constant-condition
@@ -134,6 +135,31 @@ async function main(): Promise<void> {
     } else if (!isActive && active !== null) {
       Log.log('Redundancy - Node inactive, tearing down WS server')
       active = await teardown(active)
+    }
+
+    // connection stats every 5 s on the active node: stats.isConnected is true
+    // while at least one Node-RED client is authenticated (communication
+    // status tags read it)
+    if (active !== null && db && connection && Date.now() - lastStatsAt >= 5000) {
+      lastStatsAt = Date.now()
+      let authed = false
+      for (const c of active.wsServer.getClients()) if (c.authed) authed = true
+      try {
+        await db
+          .collection(config.ProtocolConnectionsCollectionName)
+          .updateOne(
+            { protocolConnectionNumber: connection.protocolConnectionNumber },
+            {
+              $set: {
+                'stats.nodeName': config.nodeName,
+                'stats.timeTag': new Date(),
+                'stats.isConnected': authed,
+              },
+            }
+          )
+      } catch (e) {
+        Log.log('MongoDB - Error updating connection stats: ' + e)
+      }
     }
 
     await sleep(1000)

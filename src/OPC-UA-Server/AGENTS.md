@@ -20,6 +20,7 @@ Node.js OPC UA server that exposes JSON-SCADA real-time data as OPC UA variables
   - `test-history.js` — self-test for HistoryRead (in-process server+client, mock backend, no DB)
   - `HISTORICAL_ACCESS_PLAN.md` — design/plan for the HA feature
 - **Config:** INI file via Supervisor or environment variables
+- **Keep-alive and stats:** no redundancy arbitration, so a 5 s loop in `index.js` updates the instance `activeNodeKeepAliveTimeTag`/`activeNodeName`/`softwareVersion` and each connection's `stats.isConnected` (at least one client session) and `stats.sessions`; with the same instance on several nodes all write
 
 ## Work Guidance
 

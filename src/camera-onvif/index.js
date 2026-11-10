@@ -334,6 +334,9 @@ const csCmdPipeline = [
       const stats = {
         nodeName: jsConfig.nodeName,
         streamRunning: conn.stream !== null,
+        // the stream is torn down on any camera failure, so a running stream
+        // is the link state (communication status tags read isConnected)
+        isConnected: conn.stream !== null,
         wsClients: conn.stream?.wsServer?.clients?.size || 0,
         ffmpegRestarts: conn.runtime.ffmpegRestarts,
         lastSnapshotTime: conn.runtime.lastSnapshotTime,

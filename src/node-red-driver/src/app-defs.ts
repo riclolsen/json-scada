@@ -20,7 +20,7 @@ export const AppDefs = {
   ENV_PREFIX: 'JS_NODERED_',
   AUTOTAG_PREFIX: 'NODERED',
   MSG: '{json:scada} - Node-RED Integration Driver',
-  VERSION: '0.1.0',
+  VERSION: '0.1.1',
   // WebSocket JSON protocol version advertised in helloAck; the contrib package
   // checks this and refuses to run against an incompatible driver.
   PROTOCOL_VERSION: 1,

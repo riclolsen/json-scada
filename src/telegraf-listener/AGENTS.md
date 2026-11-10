@@ -14,6 +14,7 @@ Node.js UDP listener that receives JSON messages from a Telegraf `socket_writer`
 - **Main entry:** `index.js` — simple single-file application
 - **Config:** connection and instance in MongoDB; `conf/json-scada.json` for the database connection
 - **Arguments/env:** instance, log level and config file arguments; `JS_TELEGRAF_LISTENER_*` environment variables
+- **Connection stats:** on each active redundancy cycle `stats.isConnected` = a datagram accepted within the last 60 s (`ConnectedWindowMs`)
 
 ## Work Guidance
 

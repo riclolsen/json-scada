@@ -22,5 +22,5 @@ const (
 	DriverName    = "ICCP_SERVER"
 	EnvPrefix     = "JS_ICCPSERVER_"
 	DriverMsg     = "{json:scada} - ICCP/TASE.2 Server"
-	DriverVersion = "0.1.0"
+	DriverVersion = "0.1.1"
 )

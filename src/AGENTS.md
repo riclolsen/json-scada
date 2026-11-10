@@ -22,6 +22,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - Prefer `str_replace` over `write_file` for targeted edits in existing files
 - Load `svg-scada` skill when editing SVG SCADA files
 - Use `gravity_index` before recommending/integrating third-party services
+- Connection-oriented drivers publish `protocolConnections.stats.isConnected` (Boolean) and keep `activeNodeKeepAliveTimeTag` advancing, including drivers without redundancy; contract in `docs/DEVELOPER_GUIDE.md` (`protocolConnections`, Redundancy Management) and `docs/schema.md` (Communication status tags). Each driver's AGENTS.md states what "connected" means for it
 
 ## Work Guidance
 

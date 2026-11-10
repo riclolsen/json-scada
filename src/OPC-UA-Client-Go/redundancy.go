@@ -29,6 +29,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gopcua/opcua"
 	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
@@ -66,13 +67,15 @@ func initRedundancy(ctx context.Context, cfg jsconfig.Config, conns []*OPCUAConn
 // updateConnectionStats publishes a heartbeat on each connection document.
 //
 // parity: the C# driver writes only nodeName and timeTag here, for every
-// connection whose client object exists. Do not add counters without
-// changing the C# driver too.
+// connection whose client object exists. isConnected (the session state)
+// is the only addition, for the data processor's communication status tags.
 func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg jsconfig.Config, conns []*OPCUAConnection) {
 	entries := make([]jsstats.Entry, 0, len(conns))
 	for _, conn := range conns {
+		cli := conn.Client()
 		entries = append(entries, jsstats.Entry{
 			ConnectionNumber: conn.ProtocolConnectionNumber,
+			IsConnected:      jsstats.Bool(cli != nil && cli.State() == opcua.Connected),
 		})
 	}
 	jsstats.Writer{

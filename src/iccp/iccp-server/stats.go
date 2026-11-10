@@ -136,6 +136,7 @@ func statsDocument(nodeName string, now time.Time, s *connStats, clients []clien
 		"nodeName":                nodeName,
 		"timeTag":                 now,
 		"clientConnections":       len(clients),
+		"isConnected":             len(clients) > 0,
 		"clients":                 clientDocs,
 		"associations":            int64(s.associations),
 		"requests":                requests,

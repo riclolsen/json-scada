@@ -44,6 +44,7 @@ public class MongoWriter implements Runnable {
   public volatile List<ProtocolConnection> protocolConns;
   public volatile MongoCollection<Document> rtDataColl;
   public volatile MongoCollection<Document> instancesColl;
+  public volatile MongoCollection<Document> connectionsColl;
   public volatile ObjectId instanceId;
 
   private final ConfigData cfg;
@@ -67,6 +68,7 @@ public class MongoWriter implements Runnable {
         List<ProtocolConnection> conns = configInstance(mongo);
         this.protocolConns = conns;
         this.instancesColl = mongo.instances;
+        this.connectionsColl = mongo.connections;
         this.rtDataColl = mongo.rtData;
 
         // start the commands change-stream watcher for this Mongo session

@@ -24,6 +24,7 @@ Java-based generic PLC client driver using the Apache PLC4X/PLC4J library. Regis
 - **Dependency management:** Maven (`pom.xml`), fat jar via maven-shade-plugin
 - **Build:** `mvn package` → `target/plc4j-client.jar` (copied to `bin/` with launcher scripts)
 - **Config:** `conf/json-scada.json` + MongoDB collections (protocolDriverInstances, protocolConnections, realtimeData, commandsQueue)
+- **Connection stats:** `Plc4jClient.updateConnectionStats` writes `stats.nodeName`, `stats.timeTag` and `stats.isConnected` = `PlcConnection.isConnected()` each main-loop pass on the active node
 
 ## Work Guidance
 

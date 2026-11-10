@@ -151,9 +151,12 @@ namespace OPCDAClientDriver
                                 // update statistics for connections
                                 foreach (OPCDA_connection srv in OPCDAconns)
                                 {
-                                    if (!(srv.connection is null))
                                     {
-                                        // var stats = srv.connection.GetStatistics();
+                                        // stats.isConnected: the DA server session is up
+                                        // (read by the data processor's communication
+                                        // status tags); written as false while there is
+                                        // no session object
+                                        bool isConnected = !(srv.connection is null) && srv.connection.IsConnected;
                                         var filt =
                                             new BsonDocument(new BsonDocument("protocolConnectionNumber",
                                                 srv.protocolConnectionNumber));
@@ -162,6 +165,7 @@ namespace OPCDAClientDriver
                                                 {"stats", new BsonDocument{
                                                 { "nodeName", JSConfig.nodeName },
                                                 { "timeTag", BsonDateTime.Create(DateTime.Now) },
+                                                { "isConnected", isConnected },
                                                 }},
                                                 });
                                         var res = collconns.UpdateOneAsync(filt, upd);

@@ -57,6 +57,52 @@ process.on('unhandledRejection', (reason) =>
   let clientMongo = null
   let servers = [] // OPC-UA server instances, tracked across (re)connections for shutdown
 
+  // Every 5 s: the instance keep-alive and each connection's
+  // stats.isConnected (at least one client session open), read by the data
+  // processor's communication status tags. This driver runs no redundancy
+  // arbitration (every node serves), so when several nodes run the same
+  // instance they all write and activeNodeName shows the last one.
+  setInterval(async () => {
+    if (!clientMongo) return
+    try {
+      const db = clientMongo.db(jsConfig.mongoDatabaseName)
+      const now = new Date()
+      await db
+        .collection(jsConfig.ProtocolDriverInstancesCollectionName)
+        .updateOne(
+          {
+            protocolDriver: AppDefs.NAME,
+            protocolDriverInstanceNumber: jsConfig.Instance,
+          },
+          {
+            $set: {
+              activeNodeName: jsConfig.nodeName,
+              activeNodeKeepAliveTimeTag: now,
+              softwareVersion: AppDefs.VERSION,
+            },
+          }
+        )
+      for (const server of servers) {
+        if (server._connNumber === undefined) continue
+        await db
+          .collection(jsConfig.ProtocolConnectionsCollectionName)
+          .updateOne(
+            { protocolConnectionNumber: server._connNumber },
+            {
+              $set: {
+                'stats.nodeName': jsConfig.nodeName,
+                'stats.timeTag': now,
+                'stats.isConnected': (server.currentSessionCount || 0) > 0,
+                'stats.sessions': server.currentSessionCount || 0,
+              },
+            }
+          )
+      }
+    } catch (err) {
+      Log.log('MongoDB - Error updating keep-alive/stats: ' + err)
+    }
+  }, 5000)
+
   // gracefully shut down and forget all running OPC-UA servers
   const shutdownServers = async () => {
     if (servers.length === 0) return
@@ -387,6 +433,7 @@ process.on('unhandledRejection', (reason) =>
             })
             server._metrics = {}
             server._name = connection.name
+            server._connNumber = connection.protocolConnectionNumber
             servers.push(server)
 
             await server.initialize()

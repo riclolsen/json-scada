@@ -35,6 +35,7 @@ MongoDB semantics, no native library dependency.
   - `tlsconf.go` — TLS configuration
 - **Build:** `go build -ldflags="-s -w" -o ../../../bin/iec61850_client`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
+- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = association `mms.StateConnected`; a connection without a client gets `isConnected: false` only, leaving the stored `lastReportIds` untouched
 
 ## Work Guidance
 

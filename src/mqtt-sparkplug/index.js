@@ -184,6 +184,36 @@ let LastNodeRebirth = 0
     processMongoUpdates(clientMongo, rtCollection, jsConfig, MongoStatus)
   }, 500)
 
+  // connection stats: stats.isConnected tells whether the broker session is
+  // up (read by the data processor's communication status tags). Written by
+  // the active node only, so a standby never reports the link as down.
+  setInterval(async function () {
+    if (
+      !clientMongo ||
+      !MongoStatus.HintMongoIsConnected ||
+      !connection ||
+      !Redundancy.ProcessStateIsActive()
+    )
+      return
+    try {
+      await clientMongo
+        .db(jsConfig.mongoDatabaseName)
+        .collection(jsConfig.ProtocolConnectionsCollectionName)
+        .updateOne(
+          { protocolConnectionNumber: connection.protocolConnectionNumber },
+          {
+            $set: {
+              'stats.nodeName': jsConfig.nodeName,
+              'stats.timeTag': new Date(),
+              'stats.isConnected': !!SparkplugClientObj?.handle?.connected,
+            },
+          }
+        )
+    } catch (err) {
+      Log.log('MongoDB - Error updating connection stats: ' + err)
+    }
+  }, 5000)
+
   Log.log('MongoDB - Connecting to MongoDB server...', Log.levelMin)
 
   while (true) {

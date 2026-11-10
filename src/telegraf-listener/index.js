@@ -21,7 +21,7 @@
 
 const APP_NAME = 'TELEGRAF-LISTENER'
 const APP_MSG = '{json:scada} - Telegraf UDP JSON Client Driver'
-const VERSION = '0.1.4'
+const VERSION = '0.1.5'
 let ProcessActive = false // for redundancy control
 let jsConfigFile = '../../conf/json-scada.json'
 let UdpBindPort = process.env.JS_TELEGRAF_LISTENER_BIND_PORT || 51920
@@ -52,6 +52,10 @@ var inst = null
 if (args.length > 0) inst = parseInt(args[0])
 const Instance = inst || process.env.JS_TELEGRAF_LISTENER_INSTANCE || 1
 let ConnectionNumber = 0
+// time of the last accepted datagram; a listener counts as connected while
+// data keeps arriving (stats.isConnected, for communication status tags)
+let LastMessageTime = 0
+const ConnectedWindowMs = 60000
 let AutoCreateTags = true
 const AutoKeyMultiplier = 100000 // should be more than estimated maximum points on a connection
 let AutoKeyId = 0
@@ -112,6 +116,7 @@ serverUdpSocket.on('message', (msg, rinfo) => {
       )
     return
   }
+  LastMessageTime = Date.now()
 
   let data = {}
 
@@ -672,6 +677,20 @@ if (
                       },
                     }
                   )
+                if (ConnectionNumber)
+                  await db
+                    .collection(ProtocolConnectionsCollectionName)
+                    .updateOne(
+                      { protocolConnectionNumber: ConnectionNumber },
+                      {
+                        $set: {
+                          'stats.nodeName': jsConfig.nodeName,
+                          'stats.timeTag': new Date(),
+                          'stats.isConnected':
+                            Date.now() - LastMessageTime < ConnectedWindowMs,
+                        },
+                      }
+                    )
               }
             } catch (err) {
               console.log('Redundancy - Error: ' + (err?.message || err))

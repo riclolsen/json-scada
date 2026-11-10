@@ -49,6 +49,7 @@ MongoDB semantics, no .NET runtime dependency.
   `platform-ubuntu-*`), the `JSON_SCADA_opcuagoclient` NSSM service (`platform-windows`), and the
   `opcuago` variant of the `OPC-UA` entry in
   `src/server_realtime_auth/app/services/process-manager/driver-catalog.js`
+- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = session state `opcua.Connected` for every connection; the C# parity heartbeat (`nodeName`, `timeTag`) is otherwise unchanged
 
 ## Work Guidance
 

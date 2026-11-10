@@ -36,6 +36,7 @@ document, same model layout and object references, no native library dependency.
   - `selftest.go` — synthetic model, no MongoDB (← `SelfTest.cs`)
 - **Build:** `go build -ldflags="-s -w" -o ../../../bin/iec61850_server`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
+- **Connection stats:** `stats.isConnected` = at least one MMS client association open (`OpenConnections() > 0`)
 
 ## Work Guidance
 

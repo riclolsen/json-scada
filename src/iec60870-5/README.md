@@ -149,6 +149,15 @@ Replicated intentionally from the C# drivers:
 
 Deliberately different from the C# drivers:
 
+- Every connection publishes `stats.isConnected` for the data processor's
+  communication status tags: the 101/103 clients with the link-layer state
+  (next to `linkLayerState`), the 104 client with the session state, the
+  104 server on each connection event. The 101/104 servers also run
+  `srvapp.Engine.RunStatusLoop`, which every 5 s advances the instance
+  `activeNodeKeepAliveTimeTag` and sets `stats.isConnected` from
+  `HasSession` (the C# servers never updated the keep-alive, so the driver
+  looked stopped). With the same server instance on several nodes all write.
+
 - The client MongoDB writer (shared by the 101, 103 and 104 clients) blocks on
   its queues instead of polling them every 100 ms, so a decoded value or command
   ack is written immediately (about 1 ms added, against 50 ms on average and up
