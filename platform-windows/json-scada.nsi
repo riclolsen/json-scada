@@ -272,9 +272,9 @@ SetRegView 64
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\OpcWatch.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe"
+  ;File /a "..\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe"
   File /a "..\platform-windows\dotnet-runtime-8.0.31-win-x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-10.0.12-win-x64.exe"
+  ;File /a "..\platform-windows\dotnet-runtime-10.0.12-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -293,9 +293,9 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe" /install /passive /quiet'
+  ;ExecWait '"$INSTDIR\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe" /install /passive /quiet'
   ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.31-win-x64.exe" /install /passive /quiet'
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-10.0.12-win-x64.exe" /install /passive /quiet'
+  ;ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-10.0.12-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
