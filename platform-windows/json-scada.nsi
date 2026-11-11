@@ -6,7 +6,7 @@
 
 SetCompress Auto
 SetCompressor lzma ; do not use /SOLID, it fails to build!
-SetCompressorDictSize 64
+SetCompressorDictSize 128
 SetDatablockOptimize On
 
 Unicode True
@@ -310,7 +310,7 @@ SetRegView 64
   ; build.bat (src\cim-ems\install.bat). Replaced as a whole so removed packages do not linger.
   ;RMDir /r "$INSTDIR\platform-windows\python-runtime"
   SetOutPath $INSTDIR\platform-windows\python-runtime
-  File /a /r /x __pycache__ "..\platform-windows\python-runtime\*.*"
+  File /a /r /x tests /x __pycache__ "..\platform-windows\python-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\telegraf-runtime
   File /a "..\platform-windows\telegraf-runtime\telegraf.exe"
@@ -320,13 +320,13 @@ SetRegView 64
   File /a /r "..\docs\*.*"
   
   SetOutPath $INSTDIR\platform-windows\jdk-runtime
-  File /a /r "..\platform-windows\jdk-runtime\*.*"
+  File /a /r /x jmods "..\platform-windows\jdk-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\metabase-runtime
   File /a "..\platform-windows\metabase-runtime\metabase.jar"
 
   SetOutPath $INSTDIR\platform-windows\grafana-runtime
-  File /a /r /x "docs" "..\platform-windows\grafana-runtime\*.*"
+  File /a /r /x *.map /x "docs" "..\platform-windows\grafana-runtime\*.*"
 
   SetOutPath $INSTDIR\mongo_seed_demo
   File /a /r "..\demo-docker\mongo_seed\files\*.*"
@@ -347,7 +347,7 @@ SetRegView 64
   File /a /r "..\platform-windows\mongodb-conf\*.*"
 
   SetOutPath $INSTDIR\platform-windows\postgresql-runtime
-  File /a /r /x *.pdb /x "pgAdmin 4" "..\platform-windows\postgresql-runtime\*.*"
+  File /a /r /x doc /x include /x StackBuilder /x *.pdb /x "pgAdmin 4" "..\platform-windows\postgresql-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\dbx-runtime
   File /a /r "..\platform-windows\dbx-runtime\*.*"
@@ -387,7 +387,7 @@ SetRegView 64
   File /a /r "..\src\svgedit\dist\editor\*.*"
   
   SetOutPath $INSTDIR\src\camera-onvif
-  File /a /r "..\src\camera-onvif\*.*"
+  File /a /r /x ffmpeg.exe /x *.bak /x snapshot.jpg	 "..\src\camera-onvif\*.*"
   File /a "..\platform-windows\ffmpeg.exe"
 
   SetOutPath $INSTDIR\src\demo_simul
