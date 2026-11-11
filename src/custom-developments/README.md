@@ -45,16 +45,29 @@ Use the example templates to create your own custom developments.
         timeEnd: any
     ): Promise<SoeData[]> 
 
-    // Issue a command for a tag
+    // Issue a command for a tag (origin "command"); returns { ok, error, commandHandle }
     scadaOpcApi.issueCommand(
         commandTag: string,
         value: number
-    ): Promise<string>
+    ): Promise<CommandResult>
+
+    // Track the command acknowledgement with the handle from issueCommand
+    // (poll until OpcStatusCodes.Good or OpcStatusCodes.Bad)
+    scadaOpcApi.getCommandAckStatus(
+        commandTag: string,
+        commandHandle: string
+    ): Promise<OpcStatusCode>
 
     // Write the given extended properties of a tag
     scadaOpcApi.writeTagProperties(
         tag: string,
         properties: ExtendedProperties
+    ): Promise<boolean>
+
+    // Acknowledge alarms/events of a tag (OpcAcknowledge bit mask)
+    scadaOpcApi.ackAlarmsEvents(
+        tag: string,
+        action: number
     ): Promise<boolean>
     ```
 
@@ -64,10 +77,10 @@ Use the example templates to create your own custom developments.
     npm run build
     ```
 
-7. Restart the realtime server to create a new route for the project.
+7. For a new project, restart the realtime server once to create its route (routes are created at startup; a rebuilt project only needs a page reload).
 
     ```bash
-    sudo supervisorctl restart JSON_SCADA_server_realtime_auth
+    sudo supervisorctl restart server_realtime_auth
     ```
 
     ```cmd
@@ -77,6 +90,8 @@ Use the example templates to create your own custom developments.
 8. Access the app in your browser under 'Custom Developments', reload the page to see the changes.
 
 9. Do changes to the code and repeat steps 6 and 8 to see the results.
+
+AI assistants connected to the [MCP server](../mcp-json-scada-db/README.md) get this workflow, the rules and the full `scadaOpcApi` reference from `get_custom_development_guide` (or the `custom-development` prompt), and can check apps (build state, route, referenced tags, command targets) with `check_custom_developments`.
 
 ## Example 1: Basic Bar Graph
 

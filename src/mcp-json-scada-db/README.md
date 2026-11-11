@@ -14,6 +14,7 @@ This is a Model Context Protocol (MCP) server that provides access to a {json:sc
 - **Displays**: read SCADA SVG displays with their bound points and live values; serve the svg-scada markup skill for authoring displays; with the admin tools, validate and save displays.
 - **Operator Actions** (admin tools): acknowledge alarms and events, set annotations, alarm inhibition, limits, notes and substituted values.
 - **System Tags**: guide to the `_System.*` tags maintained by the data processor (alarm beep, communication status of every driver and connection) and a check that explains offline connections and finds missing, orphaned or misplaced system tags.
+- **Custom Developments**: guide, `scadaOpcApi` reference and a prompt for building custom web apps from the templates, and a check of the apps (build, route, referenced tags, command targets).
 - **Calculated Tags**: guide and formula catalog of the compiled calculations engine, design checks with a value preview, an audit of all calculated points; with the admin tools, checked creation and changes.
 - **CIM-EMS network analysis**: decoded load flow, state estimation and contingency results with limit checks; with the admin tools, model import/activation, binding review and study runs.
 - **Configuration & Process Management** (optional, see below): create/update/delete protocol driver instances, protocol connections and tags; start/stop/restart driver services; change process management settings; users and roles; project export/import.
@@ -47,6 +48,7 @@ The server expects a MongoDB connection string. You can configure this via envir
 - `JS_MCPJSDB_SRC_DIR`: Installation `src` folder used to read driver documentation (defaults to the parent folder of this package).
 - `JS_MCPJSDB_SVG_DIR`: Folder of the SCADA displays read by `list_displays` / `get_display` (defaults to the `svg` folder next to `src`). `save_display` writes through the AdminUI API, which always uses the installation `svg` folder.
 - `JS_MCPJSDB_SVG_SKILL`: Path of the svg-scada skill served by `get_svg_scada_skill` (defaults to `<svg dir>/.agents/skills/svg-scada/SKILL.md`, then `.agents/skills/svg-scada/SKILL.md` in the installation folder).
+- `JS_MCPJSDB_CUSTOM_DEV_DIR`: Folder of the custom developments read by `check_custom_developments` and the API reference (defaults to the `custom-developments` folder next to this package).
 - `JS_MCPJSDB_LOG_DIR`: Folder of the process log files (defaults to the `log` folder next to `src`, where supervisor and the Windows services write `<process>.log`).
 
 ### Command Line Arguments
@@ -136,6 +138,14 @@ The data processor maintains tags whose names begin with `_System.`: the alarm b
 - `get_system_tags_guide`: What these tags are and how to deal with them (also the resource `json-scada://system-tags/guide`): every tag and point with its meaning, the lifecycle (created, renamed and removed with their driver instance or connection), which fields can be changed, the `commStatusTags` / `commStatusMirrorStats` switches (set with mongosh; no tool writes them), use in displays and alarms, and troubleshooting.
 - `check_system_tags`: The tags next to the configuration: the data processor that maintains them and its switches, the alarm beep, the summaries, and per driver instance and connection the generated tags with their values. Explains why each connection is Offline (disabled, driver stopped, link down, all tags invalid), and reports missing, orphaned and outdated generated tags, user tags in the `_System.` name space and connection names that collide once sanitized. Filters: `connection` (name or number), `driver`, `onlyProblems`.
 
+### Custom Developments Tools
+
+[Custom developments](../custom-developments/README.md) are web apps served under `/custom-developments/<folder>/`, built from the Astro + React templates and reading data through `src/lib/scadaOpcApi.ts`. Always registered; files are only read, from `JS_MCPJSDB_CUSTOM_DEV_DIR` (default the `custom-developments` folder next to this package):
+
+- `get_custom_development_guide`: How serving and routing work (routes created when `server_realtime_auth` starts; the folder name is the URL), the templates and what each shows, the workflow (copy a template, find tags, write components, build, restart the realtime server once, open), and the rules for data, polling, quality, commands and properties (also the resource `json-scada://custom-developments/guide`). With `api: true`, also the reference of every `scadaOpcApi` function with its documentation, the data types, quality codes and acknowledge actions, read from the installed library.
+- `check_custom_developments`: Every app with its URL, whether it is served and built, a build older than its sources, missing dependencies, the Astro base path, the template package name, and an API library that differs from the templates' copy. With `name`, the tags its code references (resolved in `realtimeData`), command calls on tags that are not command points, and tag-like names that do not exist.
+- Prompt `custom-development` (`task`, optional `name`, `template`): starts a development task with the guide and the API reference loaded.
+
 ### Calculated Tags Tools
 
 Calculated points of the compiled [calculations engine](../calculations/README.md) (v0.2.0 or later) (`origin: "calculated"`, a `formula` code and its `parcels`, the input point keys in formula order). The engine has no expression language: each formula code is a compiled function with a fixed parcel order, so these tools carry the formula catalog and check designs against it.
@@ -175,6 +185,7 @@ Changes are study requests executed by the active CIM-EMS driver node: the tools
 ### Registered Resources
 
 - `json-scada://schema`: Provides a detailed text summary of the database structure and key collections.
+- `json-scada://custom-developments/guide`: How to develop custom developments (same text as `get_custom_development_guide`).
 - `json-scada://system-tags/guide`: The `_System.*` tags of the data processor (same text as `get_system_tags_guide`).
 - `json-scada://calculations/guide`: How to create calculated tags, with the formula catalog (same text as `get_calculations_guide`).
 - `json-scada://cim-ems/guide`: How to interpret CIM-EMS results (same text as `cim_ems_get_guide`).
@@ -182,4 +193,5 @@ Changes are study requests executed by the active CIM-EMS driver node: the tools
 
 ### Registered Prompts
 
+- `custom-development` (`task`, optional `name`, `template`): starts a custom development task with the development guide and the `scadaOpcApi` reference loaded.
 - `svg-scada-display` (`task`, optional `file`): starts a display creation/editing task with the svg-scada skill loaded and the steps to bind only existing tags and check with `save_display` `dryRun`.

@@ -44,7 +44,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 
 - [AdminUI](AdminUI/AGENTS.md) — Vue.js web admin interface (SPA)
 - [iccp](iccp/AGENTS.md) — ICCP TASE2 client/server protocol drivers (Go)
-- [mcp-json-scada-db](mcp-json-scada-db/AGENTS.md) — MCP server for AI access to data, commands, configuration, operation, health/log diagnosis, displays, calculated and system tags and CIM-EMS control (TypeScript)
+- [mcp-json-scada-db](mcp-json-scada-db/AGENTS.md) — MCP server for AI access to data, commands, configuration, operation, health/log diagnosis, displays, calculated and system tags, custom developments and CIM-EMS control (TypeScript)
 - [dnp3-go](dnp3-go/AGENTS.md) — DNP3 client/server on go-dnp3 (Go, drop-in alternative)
 - [modbus-go](modbus-go/AGENTS.md) — Modbus client/server on go-modbus (Go, drop-in replacement; the services run it)
 - [mqtt-sparkplug](mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug-B pub/sub client (Node.js)
@@ -63,6 +63,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - [telegraf-listener](telegraf-listener/AGENTS.md) — Telegraf UDP JSON listener (Node.js)
 - [plc4j-client](plc4j-client/AGENTS.md) — Multi-protocol PLC client on Apache PLC4X/PLC4J: Modbus, S7, ADS, OPC UA, KNXnet/IP, EtherNet/IP (Java)
 - [camera-onvif](camera-onvif/AGENTS.md) — ONVIF camera control and streaming (Node.js)
+- [custom-developments](custom-developments/AGENTS.md) — Custom web apps served under /custom-developments and their Astro + React templates
 - [cim-ems](cim-ems/AGENTS.md) — CIM/CGMES EMS driver: model exchange, load flow, state estimation, contingency analysis (Python)
 
 ### Protocol Drivers (no AGENTS.md, use parent doc)
@@ -102,4 +103,3 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 
 | Component | Type | Purpose |
 |---|---|---|
-| custom-developments | Templates | AI-assisted custom app templates |

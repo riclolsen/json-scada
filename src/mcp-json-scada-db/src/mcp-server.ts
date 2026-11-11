@@ -55,6 +55,8 @@ import {
 import { CALCULATIONS_GUIDE } from "./jsonscada/calculations.js";
 import { registerSystemTagTools } from "./tools/system-tags.js";
 import { SYSTEM_TAGS_GUIDE } from "./jsonscada/system-tags.js";
+import { registerCustomDevTools } from "./tools/custom-dev.js";
+import { CUSTOM_DEV_GUIDE } from "./jsonscada/custom-dev.js";
 import { AdminApiClient } from "./jsonscada/admin-api.js";
 import { ConnectionManager } from "./jsonscada/connection-manager.js";
 import { Log } from "./jsonscada/index.js";
@@ -99,6 +101,7 @@ function buildServer(): McpServer {
   registerHealthTools(server, mgr);
   registerCalculationsReadTools(server, mgr);
   registerSystemTagTools(server, mgr);
+  registerCustomDevTools(server, mgr);
 
   if (adminApi.enabled) {
     registerDriverTools(server, adminApi);
@@ -144,6 +147,17 @@ function buildServer(): McpServer {
       mimeType: "text/markdown",
     },
     async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: SYSTEM_TAGS_GUIDE }] })
+  );
+
+  // Resource: how to develop custom developments (also get_custom_development_guide)
+  server.registerResource(
+    "custom-development-guide",
+    "json-scada://custom-developments/guide",
+    {
+      description: "How to develop custom web apps served under /custom-developments (templates, workflow, rules)",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: CUSTOM_DEV_GUIDE }] })
   );
 
   // Resource: Schema
