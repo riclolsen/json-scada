@@ -191,6 +191,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] PostgreSQL/TimescaleDB Historian
 - [x] Grafana Integration
 - [x] Metabase Integration (via PostgreSQL/MongoDB connectors)
+- [x] Apollo GraphQL Client
 - [x] One-way realtime replication (over eth diode/tap device) w/ point db sync and historical backfill
 - [x] Windows Installer
 - [x] Docker Image
