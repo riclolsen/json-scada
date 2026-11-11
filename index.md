@@ -5,7 +5,7 @@
 
 # {json:scada}
 
-A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB database server.
+A portable and scalable SCADA/EMS/IIoT-I4.0 platform centered on the MongoDB database server.
 
 ![](https://img.shields.io/badge/nodejs-24-green 'Node.js 24+')
 ![](https://img.shields.io/badge/golang-1.26-green 'Go 1.26+')
