@@ -146,6 +146,7 @@ Notes for version 0.70:
 * Improved ICCP client and server drivers.
 * PLC4J driver updated to the latest available lib.
 * Access to structured JSON values in the Display Viewer.
+* General optimizations of latency on protocol data updates, drivers changes and mongod.conf new settings.
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
