@@ -259,14 +259,20 @@ func (e *Engine) RunRealtimeStream() {
 			jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - Start listening for realtime data updates via changestream...")
 			// observe updates and replaces, avoid updates with sourceDataUpdate
 			// field (those are handled by cs_data_processor), require
-			// protocolDestinations not null (same filter as the C# driver)
+			// protocolDestinations not null (same filter as the C# driver).
+			// Split in two stages with the same result: the first does not
+			// reference fullDocument, so the server applies it before the
+			// updateLookup and skips the document read for raw driver writes.
 			pipeline := mongo.Pipeline{
 				{{Key: "$match", Value: bson.M{"$or": bson.A{
 					bson.M{"$and": bson.A{
-						bson.M{"fullDocument.protocolDestinations": bson.M{"$ne": nil}},
 						bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
 						bson.M{"operationType": "update"},
 					}},
+					bson.M{"operationType": "replace"},
+				}}}},
+				{{Key: "$match", Value: bson.M{"$or": bson.A{
+					bson.M{"fullDocument.protocolDestinations": bson.M{"$ne": nil}},
 					bson.M{"operationType": "replace"},
 				}}}},
 			}

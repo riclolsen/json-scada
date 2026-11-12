@@ -714,11 +714,18 @@ func watchRealtimeDataChanges(
 	}()
 
 	for {
-		// Build change stream pipeline
+		// Build change stream pipeline. Updates that carry sourceDataUpdate
+		// are raw protocol driver writes: the value fields served here are
+		// still the previous ones, and cs_data_processor writes the converted
+		// value right after. Excluding them in this first stage (which does
+		// not reference fullDocument) lets the server skip their updateLookup.
 		pipeline := mongo.Pipeline{
 			{{Key: "$match", Value: bson.M{
 				"$or": bson.A{
-					bson.M{"operationType": "update"},
+					bson.M{"$and": bson.A{
+						bson.M{"operationType": "update"},
+						bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
+					}},
 					bson.M{"operationType": "replace"},
 				},
 			}}},

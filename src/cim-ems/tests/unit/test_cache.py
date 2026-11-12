@@ -82,3 +82,44 @@ def test_change_stream_follows_updates_and_recovers_by_resync():
     finally:
         c.stop()
         client.drop_database("cim_ems_cache")
+
+
+def _wait(cond, seconds=10):
+    deadline = time.time() + seconds
+    while time.time() < deadline and not cond():
+        time.sleep(0.05)
+    return cond()
+
+
+@pytest.mark.skipif(not os.environ.get("CIM_EMS_TEST_MONGO_RS"), reason="needs a MongoDB replica set")
+def test_change_stream_skips_raw_writes_and_follows_points_created_later():
+    import pymongo
+
+    client = pymongo.MongoClient(os.environ["CIM_EMS_TEST_MONGO_RS"])
+    client.drop_database("cim_ems_cache2")
+    db = client["cim_ems_cache2"]
+    db.realtimeData.insert_many([{"_id": 1.0, "tag": "P1", "value": 5.0}, {"_id": 3.0, "tag": "OTHER", "value": 0.0}])
+    c = PointCache(db, ["P1", "LATE"])
+    c.start()
+    try:
+        assert c.ready.wait(10)
+        events = c.stats["events"]
+        # a raw protocol driver write is not the processed value: never applied
+        db.realtimeData.update_one({"tag": "P1"}, {"$set": {"value": 99.0, "sourceDataUpdate": {"valueAtSource": 99.0}}})
+        db.realtimeData.update_one({"tag": "P1"}, {"$set": {"value": 6.0}})
+        assert _wait(lambda: c.points()["P1"].value == 6.0)
+        assert c.stats["events"] == events + 1
+        # a bound point created after the start: the insert is seen and its later updates are followed
+        db.realtimeData.insert_one({"_id": 4.0, "tag": "LATE", "value": 1.0})
+        assert _wait(lambda: "LATE" in c.points())
+        db.realtimeData.update_one({"tag": "LATE"}, {"$set": {"value": 2.0}})
+        assert _wait(lambda: c.points()["LATE"].value == 2.0)
+        # a point renamed to a bound tag
+        db.realtimeData.delete_one({"tag": "LATE"})
+        db.realtimeData.update_one({"tag": "OTHER"}, {"$set": {"tag": "LATE", "value": 3.0}})
+        assert _wait(lambda: c.points()["LATE"].value == 3.0)
+        db.realtimeData.update_one({"tag": "LATE"}, {"$set": {"value": 4.0}})
+        assert _wait(lambda: c.points()["LATE"].value == 4.0)
+    finally:
+        c.stop()
+        client.drop_database("cim_ems_cache2")

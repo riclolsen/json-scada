@@ -52,10 +52,10 @@ let LastNodeRebirth = 0
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
   Log.levelCurrent = jsConfig.LogLevel
+  // The $match does not reference fullDocument, so the server applies it
+  // before the updateLookup and skips the document read for raw driver writes
+  // (sourceDataUpdate) and the special points; $project goes after it.
   const csPipeline = [
-    {
-      $project: { documentKey: false },
-    },
     {
       $match: {
         $or: [
@@ -66,22 +66,16 @@ let LastNodeRebirth = 0
                   $exists: false,
                 },
               },
-              {
-                'fullDocument._id': {
-                  $ne: -2,
-                },
-              },
-              {
-                'fullDocument._id': {
-                  $ne: -1,
-                },
-              },
+              { 'documentKey._id': { $nin: [-2, -1] } },
               { operationType: 'update' },
             ],
           },
           { operationType: 'replace' },
         ],
       },
+    },
+    {
+      $project: { documentKey: false },
     },
   ]
 
@@ -296,6 +290,7 @@ let LastNodeRebirth = 0
 
               // start listen to changes
               changeStream.on('change', (change) => {
+                if (!change.fullDocument) return // deleted before the lookup
                 // do not queue data changes until device connected and sparkplug birthed
                 if (
                   !SparkplugClientObj?.handle?.connected ||

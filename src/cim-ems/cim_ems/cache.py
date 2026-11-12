@@ -80,8 +80,10 @@ class PointCache:
             self._thread.join(timeout=5)
 
     # --- internals --------------------------------------------------------
-    def full_load(self) -> None:
-        fresh = {d["tag"]: to_state(d) for d in self.col.find({"tag": {"$in": self.tags}}, FIELDS)}
+    def full_load(self) -> set:
+        """Reload every bound point; returns the `_id`s found."""
+        docs = list(self.col.find({"tag": {"$in": self.tags}}, FIELDS))
+        fresh = {d["tag"]: to_state(d) for d in docs}
         with self._lock:
             changed = {t for t in self.trigger_tags if _key(fresh[t]) != _key(self._points[t])} \
                 if self._points and all(t in fresh and t in self._points for t in self.trigger_tags) else self.trigger_tags
@@ -90,6 +92,27 @@ class PointCache:
         if changed:
             self.trigger.set()
         log.info("full load: %d of %d points found", len(fresh), len(self.tags))
+        return {d["_id"] for d in docs}
+
+    def pipeline(self, ids: list) -> list:
+        """Change stream filter of the bound points.
+
+        The first stage does not reference `fullDocument`, so the server applies it before the updateLookup: an
+        update is only looked up when it is a processed value (no `sourceDataUpdate`) of a bound point, or when it
+        changes a `tag` (a point may have been renamed to a bound tag). The raw driver writes and the updates of
+        every other point (most of `realtimeData`) are dropped without reading the document. Inserts and replaces
+        always pass; the second stage keeps the bound tags.
+        """
+        return [
+            {"$match": {"$or": [
+                {"operationType": {"$in": ["insert", "replace"]}},
+                {"operationType": "update",
+                 "updateDescription.updatedFields.sourceDataUpdate": {"$exists": False},
+                 "$or": [{"documentKey._id": {"$in": ids}},
+                         {"updateDescription.updatedFields.tag": {"$exists": True}}]},
+            ]}},
+            {"$match": {"fullDocument.tag": {"$in": self.tags}}},
+        ]
 
     def apply(self, doc: dict) -> None:
         tag = doc.get("tag")
@@ -104,20 +127,25 @@ class PointCache:
             self.trigger.set()
 
     def _run(self) -> None:
-        pipeline = [{"$match": {"operationType": {"$in": ["insert", "update", "replace"]},
-                                "fullDocument.tag": {"$in": self.tags}}}]
         last_full = time.monotonic()
         while not self._stop.is_set():
             try:
-                with self.col.watch(pipeline, full_document="updateLookup", max_await_time_ms=500) as stream:
-                    self.full_load()                      # after the stream is open: no gap
-                    last_full = time.monotonic()
+                ids = [d["_id"] for d in self.col.find({"tag": {"$in": self.tags}}, {"_id": 1})]
+                with self.col.watch(self.pipeline(ids), full_document="updateLookup",
+                                    max_await_time_ms=500) as stream:
                     self._resync.clear()
+                    loaded = self.full_load()             # after the stream is open: no gap
+                    if not loaded <= set(ids):
+                        self._resync.set()                # a point appeared before the stream opened
+                    last_full = time.monotonic()
                     self.ready.set()
                     while not self._stop.is_set() and not self._resync.is_set():
                         ev = stream.try_next()
                         if ev is not None and ev.get("fullDocument"):
                             self.apply(ev["fullDocument"])
+                            if ev.get("operationType") == "insert" or \
+                                    "tag" in (ev.get("updateDescription") or {}).get("updatedFields", {}):
+                                self._resync.set()        # a new bound point: rebuild the _id filter
                         elif ev is None and time.monotonic() - last_full > self.resync_seconds:
                             break                         # periodic safety resync
                     if self._resync.is_set():

@@ -409,31 +409,30 @@ const deadBandCache = new Map() // last-sent analog values for dead-band
       const group1Match = Filters.BuildChangeStreamGroup1Match(
         ParsedFilters.valueRules
       )
+      // The first $match does not reference fullDocument, so the server
+      // applies it before the updateLookup and skips the document read for
+      // raw driver writes; only the group1 narrowing needs the document.
       const csPipeline = [
-        { $project: { documentKey: false } },
         {
           $match: {
-            $and: [
+            $or: [
               {
-                $or: [
+                $and: [
                   {
-                    $and: [
-                      {
-                        'updateDescription.updatedFields.sourceDataUpdate': {
-                          $exists: false,
-                        },
-                      },
-                      { 'fullDocument._id': { $gt: 0 } },
-                      { operationType: 'update' },
-                    ],
+                    'updateDescription.updatedFields.sourceDataUpdate': {
+                      $exists: false,
+                    },
                   },
-                  { operationType: 'replace' },
+                  { 'documentKey._id': { $gt: 0 } },
+                  { operationType: 'update' },
                 ],
               },
-              ...(group1Match ? [group1Match] : []),
+              { operationType: 'replace' },
             ],
           },
         },
+        ...(group1Match ? [{ $match: group1Match }] : []),
+        { $project: { documentKey: false } },
       ]
       changeStream = rtColl.watch(csPipeline, { fullDocument: 'updateLookup' })
       changeStream.on('error', () => {

@@ -230,6 +230,11 @@ func (e *Engine) changeStreamLoop(ctx context.Context) {
 
 // changeStreamPipeline is the C++ server's filter: a supervised tag update that
 // is not itself a sourceDataUpdate write, or any replacement.
+//
+// It is split in two stages with the same result as the single $or. The first
+// does not reference fullDocument, so the server runs it before the
+// updateLookup and skips the document read for the raw driver writes (about
+// half of all realtimeData updates); the second needs the looked-up document.
 func (e *Engine) changeStreamPipeline() mongo.Pipeline {
 	numbers := make(bson.A, 0, len(e.conns))
 	for _, c := range e.conns {
@@ -238,10 +243,15 @@ func (e *Engine) changeStreamPipeline() mongo.Pipeline {
 	return mongo.Pipeline{
 		bson.D{{Key: "$match", Value: bson.M{"$or": bson.A{
 			bson.M{"$and": bson.A{
-				bson.M{"fullDocument.protocolDestinations": bson.M{"$ne": nil}},
-				bson.M{"fullDocument.protocolDestinations.protocolDestinationConnectionNumber": bson.M{"$in": numbers}},
 				bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
 				bson.M{"operationType": "update"},
+			}},
+			bson.M{"operationType": "replace"},
+		}}}},
+		bson.D{{Key: "$match", Value: bson.M{"$or": bson.A{
+			bson.M{"$and": bson.A{
+				bson.M{"fullDocument.protocolDestinations": bson.M{"$ne": nil}},
+				bson.M{"fullDocument.protocolDestinations.protocolDestinationConnectionNumber": bson.M{"$in": numbers}},
 			}},
 			bson.M{"operationType": "replace"},
 		}}}},

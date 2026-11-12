@@ -27,6 +27,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 ## Work Guidance
 
 - Protocol drivers: maintain zero-downtime reconnection, TLS support, config via MongoDB
+- `realtimeData` change streams with `fullDocument: 'updateLookup'`: MongoDB reads the document for every event that passes the stages placed before the lookup, which are only the `$match` conditions that do not reference `fullDocument`. Put those conditions (`operationType`, `updateDescription.updatedFields.sourceDataUpdate` exclusion, `documentKey._id`) in a first `$match` of their own, and the `fullDocument.*` conditions in a later one; never wrap both in one `$or` (that pins everything after the lookup). A `$project` that drops `documentKey` goes last. Consumers of processed values exclude updates carrying `sourceDataUpdate` (raw driver writes, about half of all updates). Check by running `db.realtimeData.explain().aggregate(pipeline)` in mongosh with the `$changeStream` stage (`fullDocument: 'updateLookup'`) first: the conditions must appear in a `$match` before `$_internalChangeStreamAddPostImage`
 - Node.js apps: use the `redundancy.js` module for HA, `simple-logger.js` for logging
 - .NET Core apps: target .NET 8.0+, use `MongoDB.Driver` for DB access
 - Go apps: target Go 1.26+, use `go.mongodb.org/mongo-driver` for DB access

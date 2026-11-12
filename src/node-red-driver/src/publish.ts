@@ -92,8 +92,10 @@ export class Publisher {
     if (!this.collection) return
     // Publish processed values: updates where sourceDataUpdate is NOT among the
     // changed fields (i.e. cs_data_processor's merged value), plus full replaces.
+    // The first $match does not reference fullDocument, so the server applies
+    // it before the updateLookup and skips the document read for raw driver
+    // writes; only the topic filter needs the looked-up document.
     const pipeline: Document[] = [
-      { $project: { documentKey: false } },
       {
         $match: {
           $or: [
@@ -104,9 +106,7 @@ export class Publisher {
                     $exists: false,
                   },
                 },
-                this.csFilterGroup1(),
-                { 'fullDocument._id': { $ne: -1 } },
-                { 'fullDocument._id': { $ne: -2 } },
+                { 'documentKey._id': { $nin: [-1, -2] } },
                 { operationType: 'update' },
               ],
             },
@@ -115,6 +115,12 @@ export class Publisher {
         },
       },
     ]
+    if (this.topics.length > 0) {
+      pipeline.push({
+        $match: { $or: [this.csFilterGroup1(), { operationType: 'replace' }] },
+      })
+    }
+    pipeline.push({ $project: { documentKey: false } })
 
     const cs = this.collection.watch(pipeline, { fullDocument: 'updateLookup' })
     this.changeStream = cs

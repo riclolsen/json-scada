@@ -964,10 +964,11 @@ process.on('unhandledRejection', (reason) =>
               }
             }
 
+            // Two $match stages with the same result as one $or: the first
+            // does not reference fullDocument, so the server applies it
+            // before the updateLookup and skips the document read for raw
+            // driver writes (sourceDataUpdate) and the special points.
             const csPipeline = [
-              {
-                $project: { documentKey: false },
-              },
               {
                 $match: {
                   $or: [
@@ -978,23 +979,21 @@ process.on('unhandledRejection', (reason) =>
                             $exists: false,
                           },
                         },
-                        csFilterGroup1,
-                        {
-                          'fullDocument._id': {
-                            $ne: -2,
-                          },
-                        },
-                        {
-                          'fullDocument._id': {
-                            $ne: -1,
-                          },
-                        },
+                        { 'documentKey._id': { $nin: [-2, -1] } },
                         { operationType: 'update' },
                       ],
                     },
                     { operationType: 'replace' },
                   ],
                 },
+              },
+              {
+                $match: {
+                  $or: [csFilterGroup1, { operationType: 'replace' }],
+                },
+              },
+              {
+                $project: { documentKey: false },
               },
             ]
 
@@ -1021,6 +1020,7 @@ process.on('unhandledRejection', (reason) =>
 
               // start to listen for changes
               changeStream.on('change', (change) => {
+                if (!change.fullDocument) return // deleted before the lookup
                 const v = convertValueVariant(change.fullDocument)
                 for (let i = 0; i < servers.length; i++) {
                   try {

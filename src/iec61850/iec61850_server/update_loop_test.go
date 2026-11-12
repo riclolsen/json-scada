@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -146,7 +148,9 @@ func TestApplyInitialValues(t *testing.T) {
 	}
 }
 
-// The change-stream pipeline keeps the C# filter semantics.
+// The change-stream pipeline keeps the C# filter semantics. The first stage
+// must not reference fullDocument, so the server can apply it before the
+// updateLookup; only the topic filter (a second stage) may.
 func TestChangeStreamPipeline(t *testing.T) {
 	p := csPipeline(nil)
 	if len(p) != 1 {
@@ -155,8 +159,14 @@ func TestChangeStreamPipeline(t *testing.T) {
 	if p[0][0].Key != "$match" {
 		t.Fatalf("first stage = %q, want $match", p[0][0].Key)
 	}
+	if s := fmt.Sprint(p[0][0].Value); strings.Contains(s, "fullDocument") {
+		t.Errorf("first stage references fullDocument: %s", s)
+	}
 	withTopics := csPipeline([]string{"KAW2"})
-	if len(withTopics) != 1 {
+	if len(withTopics) != 2 {
 		t.Fatalf("pipeline stages with topics = %d", len(withTopics))
+	}
+	if s := fmt.Sprint(withTopics[1][0].Value); !strings.Contains(s, "fullDocument.group1") {
+		t.Errorf("second stage does not filter the topics: %s", s)
 	}
 }

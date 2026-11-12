@@ -201,6 +201,12 @@ Values are encoded into in-memory register and coil banks, one set per unit id. 
 loaded at start, kept current from a `realtimeData` change stream, and rebuilt every 5 minutes
 and whenever a tag newly gains a destination on this connection. A read never waits for MongoDB.
 
+The change stream only follows the processed values (`cs_data_processor` writes) of the mapped
+tags, plus any change of `protocolDestinations`, inserts and replaces; MongoDB filters out the
+other updates before reading the document. When a rebuild changes the set of mapped tags, the
+stream reopens right after its last event (logged at level 2: `rt change stream reopened for the
+new tag set`).
+
 The served value is the tag's `value` (or `valueString` for strings) scaled with
 `protocolDestinationKConv1/2` only: `value` already is the engineering value, so the tag's own
 `kconv1/kconv2` is not applied again. A register bit (`hr:N.bB`) sets or clears one bit of the
