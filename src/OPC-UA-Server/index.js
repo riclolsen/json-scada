@@ -84,19 +84,16 @@ process.on('unhandledRejection', (reason) =>
         )
       for (const server of servers) {
         if (server._connNumber === undefined) continue
-        await db
-          .collection(jsConfig.ProtocolConnectionsCollectionName)
-          .updateOne(
-            { protocolConnectionNumber: server._connNumber },
-            {
-              $set: {
-                'stats.nodeName': jsConfig.nodeName,
-                'stats.timeTag': now,
-                'stats.isConnected': (server.currentSessionCount || 0) > 0,
-                'stats.sessions': server.currentSessionCount || 0,
-              },
-            }
-          )
+        await updateConnectionStats(
+          db.collection(jsConfig.ProtocolConnectionsCollectionName),
+          server._connNumber,
+          {
+            nodeName: jsConfig.nodeName,
+            timeTag: now,
+            isConnected: (server.currentSessionCount || 0) > 0,
+            sessions: server.currentSessionCount || 0,
+          }
+        )
       }
     } catch (err) {
       Log.log('MongoDB - Error updating keep-alive/stats: ' + err)
@@ -1096,6 +1093,25 @@ process.on('unhandledRejection', (reason) =>
 })()
 
 // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
+// $set stats.<field> on a connection document. Connection documents are
+// created with stats: null, where a dotted $set fails with error 28
+// (PathNotViable): replace the null with an empty document and retry once.
+async function updateConnectionStats(connsCollection, connNumber, fields) {
+  const set = {}
+  for (const [k, v] of Object.entries(fields)) set['stats.' + k] = v
+  const filter = { protocolConnectionNumber: connNumber }
+  try {
+    return await connsCollection.updateOne(filter, { $set: set })
+  } catch (err) {
+    if (err?.code !== 28) throw err
+    await connsCollection.updateOne(
+      { ...filter, stats: null },
+      { $set: { stats: {} } }
+    )
+    return await connsCollection.updateOne(filter, { $set: set })
+  }
+}
+
 async function getConnections(connsCollection, configObj) {
   let results = await connsCollection
     .find({

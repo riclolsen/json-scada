@@ -678,19 +678,16 @@ if (
                     }
                   )
                 if (ConnectionNumber)
-                  await db
-                    .collection(ProtocolConnectionsCollectionName)
-                    .updateOne(
-                      { protocolConnectionNumber: ConnectionNumber },
-                      {
-                        $set: {
-                          'stats.nodeName': jsConfig.nodeName,
-                          'stats.timeTag': new Date(),
-                          'stats.isConnected':
-                            Date.now() - LastMessageTime < ConnectedWindowMs,
-                        },
-                      }
-                    )
+                  await updateConnectionStats(
+                    db.collection(ProtocolConnectionsCollectionName),
+                    ConnectionNumber,
+                    {
+                      nodeName: jsConfig.nodeName,
+                      timeTag: new Date(),
+                      isConnected:
+                        Date.now() - LastMessageTime < ConnectedWindowMs,
+                    }
+                  )
               }
             } catch (err) {
               console.log('Redundancy - Error: ' + (err?.message || err))
@@ -730,6 +727,25 @@ if (
 // test mongoDB connectivity
 let CheckMongoConnectionTimeout = 10000
 let HintMongoIsConnected = true
+// $set stats.<field> on a connection document. Connection documents are
+// created with stats: null, where a dotted $set fails with error 28
+// (PathNotViable): replace the null with an empty document and retry once.
+async function updateConnectionStats(connsCollection, connNumber, fields) {
+  const set = {}
+  for (const [k, v] of Object.entries(fields)) set['stats.' + k] = v
+  const filter = { protocolConnectionNumber: connNumber }
+  try {
+    return await connsCollection.updateOne(filter, { $set: set })
+  } catch (err) {
+    if (err?.code !== 28) throw err
+    await connsCollection.updateOne(
+      { ...filter, stats: null },
+      { $set: { stats: {} } }
+    )
+    return await connsCollection.updateOne(filter, { $set: set })
+  }
+}
+
 async function checkConnectedMongo(client) {
   if (!client) {
     return false

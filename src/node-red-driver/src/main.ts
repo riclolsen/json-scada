@@ -28,6 +28,7 @@ import Redundancy, { type MongoStatus } from './redundancy.js'
 import TagManager from './tags.js'
 import Ingest from './ingest.js'
 import Publisher from './publish.js'
+import { updateConnectionStats } from './conn-stats.js'
 import CommandsIn from './commands-in.js'
 import CommandsOut from './commands-out.js'
 import { WsServer, type Client, type Handlers } from './ws-server.js'
@@ -145,18 +146,11 @@ async function main(): Promise<void> {
       let authed = false
       for (const c of active.wsServer.getClients()) if (c.authed) authed = true
       try {
-        await db
-          .collection(config.ProtocolConnectionsCollectionName)
-          .updateOne(
-            { protocolConnectionNumber: connection.protocolConnectionNumber },
-            {
-              $set: {
-                'stats.nodeName': config.nodeName,
-                'stats.timeTag': new Date(),
-                'stats.isConnected': authed,
-              },
-            }
-          )
+        await updateConnectionStats(
+          db.collection(config.ProtocolConnectionsCollectionName),
+          connection.protocolConnectionNumber,
+          { nodeName: config.nodeName, timeTag: new Date(), isConnected: authed }
+        )
       } catch (e) {
         Log.log('MongoDB - Error updating connection stats: ' + e)
       }

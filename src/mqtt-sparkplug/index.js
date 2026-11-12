@@ -190,19 +190,17 @@ let LastNodeRebirth = 0
     )
       return
     try {
-      await clientMongo
-        .db(jsConfig.mongoDatabaseName)
-        .collection(jsConfig.ProtocolConnectionsCollectionName)
-        .updateOne(
-          { protocolConnectionNumber: connection.protocolConnectionNumber },
-          {
-            $set: {
-              'stats.nodeName': jsConfig.nodeName,
-              'stats.timeTag': new Date(),
-              'stats.isConnected': !!SparkplugClientObj?.handle?.connected,
-            },
-          }
-        )
+      await updateConnectionStats(
+        clientMongo
+          .db(jsConfig.mongoDatabaseName)
+          .collection(jsConfig.ProtocolConnectionsCollectionName),
+        connection.protocolConnectionNumber,
+        {
+          nodeName: jsConfig.nodeName,
+          timeTag: new Date(),
+          isConnected: !!SparkplugClientObj?.handle?.connected,
+        }
+      )
     } catch (err) {
       Log.log('MongoDB - Error updating connection stats: ' + err)
     }
@@ -496,6 +494,25 @@ let LastNodeRebirth = 0
 })()
 
 // Get BIRTH payload for the edge node
+// $set stats.<field> on a connection document. Connection documents are
+// created with stats: null, where a dotted $set fails with error 28
+// (PathNotViable): replace the null with an empty document and retry once.
+async function updateConnectionStats(connsCollection, connNumber, fields) {
+  const set = {}
+  for (const [k, v] of Object.entries(fields)) set['stats.' + k] = v
+  const filter = { protocolConnectionNumber: connNumber }
+  try {
+    return await connsCollection.updateOne(filter, { $set: set })
+  } catch (err) {
+    if (err?.code !== 28) throw err
+    await connsCollection.updateOne(
+      { ...filter, stats: null },
+      { $set: { stats: {} } }
+    )
+    return await connsCollection.updateOne(filter, { $set: set })
+  }
+}
+
 function getNodeBirthPayload(configObj) {
   const hwVersion = 'Generic Server Hardware'
   const swVersion = 'JSON-SCADA MQTT v' + AppDefs.VERSION

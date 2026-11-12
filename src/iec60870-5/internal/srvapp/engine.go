@@ -185,13 +185,12 @@ func (e *Engine) RunStatusLoop(instanceNumber int, version string) {
 			}
 			for _, c := range e.Conns {
 				connected := c.HasSession != nil && c.HasSession()
-				_, err := db.Collection(jsmongo.ProtocolConnectionsCollectionName).UpdateOne(ctx,
-					bson.M{"protocolConnectionNumber": c.Cfg.ProtocolConnectionNumber},
-					bson.M{"$set": bson.M{
+				err := updateConnectionStats(ctx, db.Collection(jsmongo.ProtocolConnectionsCollectionName),
+					c.Cfg.ProtocolConnectionNumber, bson.M{
 						"stats.nodeName":    e.Cfg.NodeName,
 						"stats.timeTag":     now,
 						"stats.isConnected": connected,
-					}})
+					})
 				if err != nil {
 					jslog.Log(jslog.LevelDetailed, "%s - Error updating stats: %s", c.Cfg.Name, err.Error())
 				}
