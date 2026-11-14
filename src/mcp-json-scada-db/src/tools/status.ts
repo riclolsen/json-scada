@@ -21,9 +21,9 @@ import { errorResult, notConnectedResult, textResult } from './util.js'
 
 // A process/driver instance is considered alive when its keep-alive was
 // refreshed within this window. The same window applies to connection stats.
-const KEEPALIVE_TOLERANCE_MS = 30000
+export const KEEPALIVE_TOLERANCE_MS = 30000
 
-function isFresh(t: unknown, now: number): t is Date {
+export function isFresh(t: unknown, now: number): t is Date {
   return t instanceof Date && now - t.getTime() < KEEPALIVE_TOLERANCE_MS
 }
 
@@ -32,7 +32,7 @@ function isFresh(t: unknown, now: number): t is Date {
 // write it, so for a driver instance with a stale keep-alive the newest
 // stats.timeTag among its connections is used as a fallback. aliveSource says
 // which signal decided: 'keepAlive', 'connectionStats' or null (not alive).
-function aliveInfo(doc: any, now: number, connStatsTime?: Date | null) {
+export function aliveInfo(doc: any, now: number, connStatsTime?: Date | null) {
   const keepAlive: Date | null | undefined = doc.activeNodeKeepAliveTimeTag
   let alive = false
   let aliveSource: 'keepAlive' | 'connectionStats' | null = null

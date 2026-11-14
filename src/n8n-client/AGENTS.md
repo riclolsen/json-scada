@@ -28,6 +28,7 @@ platform in both directions:
 - **Redundancy:** standard `protocolDriverInstances` keep-alive election; only the active
   node streams/pushes/accepts writes.
 - **Key allocation:** auto-created tags use `connectionNumber * 100000 + seq`.
+- **Connection stats:** `stats.isConnected` = the last webhook POST to n8n succeeded (`WebhookPusher.stats.lastOk`); before any POST, the inbound listener is up
 
 ## Work Guidance
 

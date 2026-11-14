@@ -231,6 +231,26 @@ const ProtocolConnection = mongoose.model(
     clsIdServer: { type: String, default: '' },
     prgIdServer: { type: String, default: '' },
     prgIdCurrServer: { type: String, default: '' },
+
+    // CIM-EMS (no schema defaults: set for CIM-EMS connections only, see updateProtocolConnection)
+    cimModelId: { type: String },
+    cimModelRevision: { type: Double },
+    cimBindingRevision: { type: Double },
+    cycleSeconds: { type: Double, min: 1 },
+    resultMaxAgeSeconds: { type: Double, min: 1 },
+    switchHoldSeconds: { type: Double, min: 0 },
+    snapshotMaxSkewSeconds: { type: Double, min: 0 },
+    loadFlowParameters: { type: mongoose.Schema.Types.Mixed },
+    publishFilter: { type: mongoose.Schema.Types.Mixed },
+    runStateEstimation: { type: Boolean },
+    estimatorParameters: { type: mongoose.Schema.Types.Mixed },
+    runContingency: { type: Boolean },
+    contingencyListId: { type: String },
+    contingencyIntervalSeconds: { type: Double, min: 0 },
+    contingencyMinGapSeconds: { type: Double, min: 0 },
+    contingencyMinKv: { type: Double, min: 0 },
+    contingencyPublishLimit: { type: Double, min: 0 },
+    contingencyThreads: { type: Double, min: 0 },
   }),
   'protocolConnections'
 )

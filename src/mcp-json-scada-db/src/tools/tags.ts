@@ -19,6 +19,7 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { AdminApiClient } from '../jsonscada/admin-api.js'
 import { errorResult, jsonResult, textResult } from './util.js'
+import { COMM_OWNED_FIELDS, RESERVED_NAME_MESSAGE, isSystemTagName } from '../jsonscada/system-tags.js'
 
 // Live value/state fields maintained by drivers and data processors; tag
 // configuration tools never write them (use send_command to act on the field).
@@ -94,7 +95,7 @@ function normalizeAddresses(doc: Record<string, any>) {
   return doc
 }
 
-function buildDoc(args: Record<string, any>) {
+export function buildDoc(args: Record<string, any>) {
   const { fields, ...named } = args
   const doc: Record<string, any> = { ...(fields || {}) }
   for (const [k, v] of Object.entries(named)) if (v !== undefined) doc[k] = v
@@ -102,7 +103,7 @@ function buildDoc(args: Record<string, any>) {
   return normalizeAddresses(doc)
 }
 
-async function findTag(api: AdminApiClient, tag: string) {
+export async function findTag(api: AdminApiClient, tag: string) {
   const r = await api.call('listTags', {
     filter: { tag },
     page: 1,
@@ -132,6 +133,7 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
     async ({ pointKey, ...args }) => {
       try {
         const tag = args.tag.trim()
+        if (isSystemTagName(tag)) return textResult(RESERVED_NAME_MESSAGE, true)
         if (await findTag(api, tag))
           return textResult(`Tag '${tag}' already exists.`, true)
         const doc = { ...buildDoc({ ...args, tag }), ...(pointKey ? { _id: pointKey } : {}) }
@@ -161,7 +163,17 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
       try {
         const existing = await findTag(api, tag)
         if (!existing) return textResult(`Tag '${tag}' not found.`, true)
+        if (newTag && newTag.trim() !== tag && isSystemTagName(newTag)) return textResult(RESERVED_NAME_MESSAGE, true)
         const doc = buildDoc(args)
+        if (isSystemTagName(existing.tag)) {
+          const owned = COMM_OWNED_FIELDS.filter((f) => f in doc || (f === 'tag' && newTag))
+          if (owned.length)
+            return textResult(
+              `'${existing.tag}' is maintained by the data processor: ${owned.join(', ')} cannot be changed. ` +
+                'Priority, alarm settings, limits, events and historian settings can (see get_system_tags_guide).',
+              true
+            )
+        }
         if (newTag && newTag.trim() !== tag) {
           if (await findTag(api, newTag.trim()))
             return textResult(`Tag '${newTag}' already exists.`, true)
@@ -190,6 +202,12 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
       try {
         const existing = await findTag(api, tag)
         if (!existing) return textResult(`Tag '${tag}' not found.`, true)
+        if (isSystemTagName(existing.tag))
+          return textResult(
+            `'${existing.tag}' is maintained by the data processor and cannot be deleted; it is removed with its ` +
+              'driver instance or connection (see get_system_tags_guide).',
+            true
+          )
         await api.call('deleteTag', { _id: existing._id })
         return jsonResult({ deleted: { tag, pointKey: existing._id } })
       } catch (e) {

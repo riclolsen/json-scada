@@ -76,6 +76,10 @@ node "{json:scada}" as JSCADA {
     CSProc -[hidden]r- CustomCSProc
   }
 
+  package "Power System Applications" as PSApps {
+    [CIM-EMS\nCGMES model exchange\nLoad Flow · State Estimation\nContingency Analysis] as CIMEMS #E0F2F1;line:00897B
+  }
+
   package "Data Stores" as DataStores {
     database "MongoDB\nrealtime data" as MongoDB1
     database "PostgreSQL\nTimescaleDB\nhistory" as PostgreSQL1
@@ -136,6 +140,10 @@ IT1 -d-> PostgreSQL1
 Processors -d-> MongoDB1
 MongoDB1 -r-> PostgreSQL1 : historian
 
+' ---------------------------------------------------------------- power system applications
+CIMEMS <-d-> MongoDB1 : telemetry in ·\nLF / SE / CA results out\nCGMES models
+NodeJS .r.> CIMEMS : study\nrequests
+
 ' ---------------------------------------------------------------- field protocols
 ServerProtocol1 -u-> MongoDB1
 ClientProtocol1 -u-> MongoDB1
@@ -150,6 +158,7 @@ Telegraf -d-> NetInfra : SNMP · Modbus\nOPC UA · APIs
 legend right
   <back:#E3F2FD>      </back>  {json:scada} services
   <back:#F3E5F5>      </back>  AI & automation
+  <back:#E0F2F1>      </back>  power system analysis
   <back:#FFF3E0>      </back>  databases
   <back:#E8F5E9>      </back>  field / OT
 endlegend

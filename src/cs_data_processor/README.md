@@ -36,13 +36,24 @@ Example pipeline to calculate latency (in ms)
 
 Requires Node.js.
 
+## Run
+
+    cd src/cs_data_processor
+    npm install
+    node cs_data_processor.js [instance number] [log level] [config file]
+
+The optional arguments default to instance `1`, log level `1` and
+`../../conf/json-scada.json`; the equivalent environment variables are
+`JS_CSDATAPROC_INSTANCE`, `JS_CSDATAPROC_LOGLEVEL` and `JS_CONFIG_FILE`.
+Command-line arguments take precedence.
+
 ## Process Command Line Arguments And Environment Variables
 
 This driver has the following command line arguments and equivalent environment variables.
 
 - _**1st arg. - Instance Number**_ [Integer] - Instance number to be executed. **Optional argument, default=1**. Env. variable: **JS_CSDATAPROC_INSTANCE**.
 - _**2nd arg. - Log. Level**_ [Integer] - Log level (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**. Env. variable: **JS_CSDATAPROC_LOGLEVEL**.
-- _**3rd arg. - Config File Path/Name**_ [String] - Path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**. Env. variable: **JS_CONFIG_FILE**.
+- _**3rd arg. - Config File Path/Name**_ [String] - Path/name of the JSON-SCADA config file. **Optional argument, default="../../conf/json-scada.json"**. Env. variable: **JS_CONFIG_FILE**.
 
 Env. variable: **JS_CSDATAPROC_DIVIDE_EXP** [String] - A JSON expression to divide change stream processing, will be part of the pipeline for the change stream. E.g: JS_CSDATAPROC_DIVIDE_EXP={ "fullDocument.\_id": { "$mod": [ 2, 1 ] } } or JS_CSDATAPROC_DIVIDE_EXP={"fullDocument.type":"analog"}. Use this to break change stream processing in multiple processes to reduce peak latency. This method can be paired with sharding for best results.
 Env. variable: **JS_CSDATAPROC_READ_FROM_SECONDARY** [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
@@ -92,6 +103,16 @@ document, so the two can be compared directly:
 Only one of the two implementations may run for a given instance number: they
 would both process the same change stream and share the same
 `processInstances` entry.
+
+## Communication Status Tags
+
+Instance 1, while active, maintains `_System.Driver.*`, `_System.Conn.*` and
+`_System.Comm.*` tags with the health of every protocol driver instance and
+connection, for SVG displays and viewers (`commstatus.js`, same logic and tag
+documents as `../cs_data_processor-go/commstatus.go`). Turn it off with
+`commStatusTags: false` in the _processInstances_ entry. Tag names and points:
+[Schema Documentation](../../docs/schema.md#communication-status-tags).
+Unit tests: `npm test`.
 
 ## Process Instance Collection
 

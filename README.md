@@ -4,7 +4,7 @@
 
 # {json:scada}
 
-A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB database server.
+A portable and scalable SCADA/EMS/IIoT-I4.0 platform centered on the MongoDB database server.
 
 ![](https://img.shields.io/badge/nodejs-24-green 'Node.js 24+')
 ![](https://img.shields.io/badge/golang-1.26-green 'Go 1.26+')
@@ -37,7 +37,7 @@ A portable and scalable SCADA/IIoT-I4.0 platform centered on the MongoDB databas
 
 ## Mission Statement
 
-To provide an easy to use, fully-featured, scalable, and portable SCADA/IIoT-I4.0 platform built by leveraging mainstream open-source IT tools.
+To provide an easy to use, fully-featured, scalable, and portable SCADA/EMS/IIoT-I4.0 platform built by leveraging mainstream open-source IT tools.
 
 ## Screenshots
 
@@ -59,6 +59,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Unlimited tags, servers, and users.
 - Horizontal scalability, from a single computer to big clusters (MongoDB-sharding), Docker containers, VMs, Kubernetes, cloud, or hybrid deployments.
 - Modular distributed architecture. Lightweight redundant data acquisition nodes can connect securely over TLS to the database server. E.g. a Raspberry PI can be a data acquisition node.
+- CIM/CGMES EMS package with load flow, import/export models, state estimator, contingency analysis, diagram generation, etc.
 - Extensibility of the core data model (MongoDB: NoSQL/schema-less).
 - HTML5 Web interface. UTF-8/I18N. Mobile access. Web-based configuration management.
 - Role-based access control (RBAC).
@@ -131,6 +132,8 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [PLC4J Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/plc4j-client/README.md)
 - [Modbus Client Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/modbusclient/README.md)
 - [Modbus Server Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/modbusserver/README.md)
+- [CIM-EMS Driver (CGMES 2.4.15 models, load flow, state estimation, contingency analysis; Python)](https://github.com/riclolsen/json-scada/blob/master/src/cim-ems/README.md)
+- [MCP Server (AI query, commands, configuration, operation, diagnosis)](https://github.com/riclolsen/json-scada/blob/master/src/mcp-json-scada-db/README.md)
 - [Calculations](https://github.com/riclolsen/json-scada/blob/master/src/calculations/README.md)
 - [Change Stream Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_data_processor/README.md)
 - [Custom Data Processor](https://github.com/riclolsen/json-scada/blob/master/src/cs_custom_processor/README.md)
@@ -188,6 +191,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] PostgreSQL/TimescaleDB Historian
 - [x] Grafana Integration
 - [x] Metabase Integration (via PostgreSQL/MongoDB connectors)
+- [x] Apollo GraphQL Client
 - [x] One-way realtime replication (over eth diode/tap device) w/ point db sync and historical backfill
 - [x] Windows Installer
 - [x] Docker Image
@@ -207,6 +211,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [ ] Alerta Integration (https://alerta.io/)
 - [ ] Open PLC Integration
 - [x] Example templates/API for fast AI-assisted custom app developments
+- [x] CIM/CGMES EMS
 
 ## Enterprise Services (available on request)
 

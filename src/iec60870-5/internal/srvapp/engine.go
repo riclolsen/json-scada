@@ -162,6 +162,45 @@ func (e *Engine) MaintainMongo() {
 	}
 }
 
+// RunStatusLoop publishes, every 5 s, the instance keep-alive and each
+// connection's stats.isConnected (a master attached). The server drivers run
+// no redundancy arbitration, so without this the keep-alive never moves and
+// the data processor's communication status tags show them as stopped.
+// When the same instance runs on two nodes both write, and activeNodeName
+// shows the last one. Runs forever; call as goroutine.
+func (e *Engine) RunStatusLoop(instanceNumber int, version string) {
+	for {
+		if db := e.DB(); db != nil && e.IsMongoLive.Load() {
+			now := time.Now()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			_, err := db.Collection(jsmongo.ProtocolDriverInstancesCollectionName).UpdateOne(ctx,
+				bson.M{"protocolDriver": e.DriverName, "protocolDriverInstanceNumber": instanceNumber},
+				bson.M{"$set": bson.M{
+					"activeNodeName":             e.Cfg.NodeName,
+					"activeNodeKeepAliveTimeTag": now,
+					"softwareVersion":            version,
+				}})
+			if err != nil {
+				jslog.Log(jslog.LevelDetailed, "Error updating instance keep-alive: %s", err.Error())
+			}
+			for _, c := range e.Conns {
+				connected := c.HasSession != nil && c.HasSession()
+				err := updateConnectionStats(ctx, db.Collection(jsmongo.ProtocolConnectionsCollectionName),
+					c.Cfg.ProtocolConnectionNumber, bson.M{
+						"stats.nodeName":    e.Cfg.NodeName,
+						"stats.timeTag":     now,
+						"stats.isConnected": connected,
+					})
+				if err != nil {
+					jslog.Log(jslog.LevelDetailed, "%s - Error updating stats: %s", c.Cfg.Name, err.Error())
+				}
+			}
+			cancel()
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
 // RunDequeueLoop drains the per-connection out-queues, assembling
 // multi-object spontaneous ASDUs (port of DequeueIecInfo).
 func (e *Engine) RunDequeueLoop() {
@@ -219,14 +258,20 @@ func (e *Engine) RunRealtimeStream() {
 			jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - Start listening for realtime data updates via changestream...")
 			// observe updates and replaces, avoid updates with sourceDataUpdate
 			// field (those are handled by cs_data_processor), require
-			// protocolDestinations not null (same filter as the C# driver)
+			// protocolDestinations not null (same filter as the C# driver).
+			// Split in two stages with the same result: the first does not
+			// reference fullDocument, so the server applies it before the
+			// updateLookup and skips the document read for raw driver writes.
 			pipeline := mongo.Pipeline{
 				{{Key: "$match", Value: bson.M{"$or": bson.A{
 					bson.M{"$and": bson.A{
-						bson.M{"fullDocument.protocolDestinations": bson.M{"$ne": nil}},
 						bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
 						bson.M{"operationType": "update"},
 					}},
+					bson.M{"operationType": "replace"},
+				}}}},
+				{{Key: "$match", Value: bson.M{"$or": bson.A{
+					bson.M{"fullDocument.protocolDestinations": bson.M{"$ne": nil}},
 					bson.M{"operationType": "replace"},
 				}}}},
 			}

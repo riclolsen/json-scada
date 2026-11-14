@@ -11,6 +11,8 @@ package serverapp
 
 import (
 	"context"
+	"reflect"
+	"sync"
 	"time"
 
 	"modbus-go/internal/drv"
@@ -32,7 +34,11 @@ type Watcher struct {
 	Coll *mongo.Collection
 	PM   *PointMap
 
-	reload chan struct{}
+	reload  chan struct{}
+	restart chan struct{} // the tag set changed: reopen the change stream
+
+	mu  sync.Mutex
+	ids bson.A // _ids of the mapped tags, in _id order
 }
 
 // ExtractTagDoc picks the fields the map needs and this connection's
@@ -83,12 +89,73 @@ func (w *Watcher) FullReload(ctx context.Context) error {
 		}
 	}
 	w.PM.Rebuild(tags)
+	w.setIDs(tags)
 	return nil
+}
+
+// setIDs records the _ids of the mapped tags and, when the set changed, asks
+// the change stream to reopen with the new pre-lookup filter.
+func (w *Watcher) setIDs(tags []TagDoc) {
+	ids := make(bson.A, 0, len(tags))
+	for _, t := range tags {
+		ids = append(ids, t.ID)
+	}
+	w.mu.Lock()
+	changed := !reflect.DeepEqual(w.ids, ids)
+	w.ids = ids
+	w.mu.Unlock()
+	if changed {
+		select {
+		case w.restart <- struct{}{}:
+		default:
+		}
+	}
+}
+
+// pipeline filters the realtimeData change stream.
+//
+// The first stage does not reference fullDocument, so the server applies it
+// before the updateLookup: an update is only looked up when it is a processed
+// value (no sourceDataUpdate) of a mapped tag, or when it changes
+// protocolDestinations (a tag may have been mapped to this connection). The
+// raw driver writes and the updates of every other tag are dropped without
+// reading the document. Inserts and replaces always pass.
+func (w *Watcher) pipeline() mongo.Pipeline {
+	w.mu.Lock()
+	ids := w.ids
+	w.mu.Unlock()
+	if ids == nil {
+		ids = bson.A{}
+	}
+	destinationsChanged := bson.M{"$gt": bson.A{
+		bson.M{"$size": bson.M{"$filter": bson.M{
+			"input": bson.M{"$objectToArray": "$updateDescription.updatedFields"},
+			"cond":  bson.M{"$eq": bson.A{bson.M{"$indexOfCP": bson.A{"$$this.k", "protocolDestinations"}}, 0}},
+		}}},
+		0,
+	}}
+	return mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.M{"$or": bson.A{
+			bson.M{"operationType": bson.M{"$in": bson.A{"insert", "replace"}}},
+			bson.M{"$and": bson.A{
+				bson.M{"operationType": "update"},
+				bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
+				bson.M{"$or": bson.A{
+					bson.M{"documentKey._id": bson.M{"$in": ids}},
+					bson.M{"$expr": destinationsChanged},
+				}},
+			}},
+		}}}},
+		bson.D{{Key: "$match", Value: bson.M{
+			"fullDocument.protocolDestinations.protocolDestinationConnectionNumber": w.Cfg.ProtocolConnectionNumber,
+		}}},
+	}
 }
 
 // Run follows changes until ctx ends; call FullReload first.
 func (w *Watcher) Run(ctx context.Context) {
 	w.reload = make(chan struct{}, 1)
+	w.restart = make(chan struct{}, 1)
 	go w.watch(ctx)
 	t := time.NewTicker(FullReloadPeriod)
 	defer t.Stop()
@@ -106,18 +173,32 @@ func (w *Watcher) Run(ctx context.Context) {
 }
 
 func (w *Watcher) watch(ctx context.Context) {
-	pipeline := mongo.Pipeline{bson.D{{Key: "$match", Value: bson.D{
-		{Key: "operationType", Value: bson.M{"$in": bson.A{"update", "replace", "insert"}}},
-		{Key: "fullDocument.protocolDestinations.protocolDestinationConnectionNumber", Value: w.Cfg.ProtocolConnectionNumber},
-	}}}}
+	// resume is the token of a stream closed to change its filter: the next
+	// one starts right after it, so no change falls in between.
+	var resume bson.Raw
 	for ctx.Err() == nil {
-		cs, err := w.Coll.Watch(ctx, pipeline, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+		opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
+		if resume != nil {
+			opts.SetResumeAfter(resume)
+		}
+		sctx, cancel := context.WithCancel(ctx)
+		cs, err := w.Coll.Watch(sctx, w.pipeline(), opts)
+		resume = nil
+		restarted := false
 		if err != nil {
 			if ctx.Err() == nil {
 				jslog.Log(jslog.LevelBasic, "%s: rt watch failed: %v", w.Cfg.Name, err)
 			}
 		} else {
-			for cs.Next(ctx) {
+			stop := make(chan struct{})
+			go func() {
+				select {
+				case <-w.restart:
+					cancel()
+				case <-stop:
+				}
+			}()
+			for cs.Next(sctx) {
 				var ev struct {
 					FullDocument bson.M `bson:"fullDocument"`
 				}
@@ -125,10 +206,19 @@ func (w *Watcher) watch(ctx context.Context) {
 					w.apply(ev.FullDocument)
 				}
 			}
-			if err := cs.Err(); err != nil && ctx.Err() == nil {
+			close(stop)
+			restarted = sctx.Err() != nil && ctx.Err() == nil
+			if restarted {
+				resume = cs.ResumeToken()
+			} else if err := cs.Err(); err != nil && ctx.Err() == nil {
 				jslog.Log(jslog.LevelBasic, "%s: rt change stream error: %v", w.Cfg.Name, err)
 			}
 			_ = cs.Close(context.Background())
+		}
+		cancel()
+		if restarted {
+			jslog.Log(jslog.LevelDetailed, "%s: rt change stream reopened for the new tag set", w.Cfg.Name)
+			continue
 		}
 		select {
 		case <-ctx.Done():

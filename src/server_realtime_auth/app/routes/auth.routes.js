@@ -1,6 +1,7 @@
 const { authJwt } = require('../middlewares')
 const controller = require('../controllers/auth.controller')
 const processController = require('../controllers/processManagement.controller')
+const cimEmsController = require('../controllers/cimEms.controller')
 
 module.exports = function (app, accessPoint) {
   app.use(function (req, res, next) {
@@ -180,6 +181,11 @@ module.exports = function (app, accessPoint) {
     controller.restartProcesses
   )
   app.post(
+    accessPoint + 'auth/pruneConfiguration',
+    [authJwt.isAdmin],
+    controller.pruneConfiguration
+  )
+  app.post(
     accessPoint + 'auth/sanitizeDatabase',
     [authJwt.isAdmin],
     controller.sanitizeDatabase
@@ -220,5 +226,43 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/updateSystemSettings',
     [authJwt.isAdmin],
     processController.updateSystemSettings
+  )
+
+  // CIM-EMS: model revisions, bindings, runs and study requests
+  // (any signed-in user; engineering actions check the cimEngineering right)
+  app.get(
+    accessPoint + 'auth/cimEms/listModels',
+    [authJwt.isUser],
+    cimEmsController.listModels
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/listBindings',
+    [authJwt.isUser],
+    cimEmsController.listBindings
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/listRuns',
+    [authJwt.isUser],
+    cimEmsController.listRuns
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/listRequests',
+    [authJwt.isUser],
+    cimEmsController.listRequests
+  )
+  app.post(
+    accessPoint + 'auth/cimEms/uploadModel',
+    [authJwt.isCimEngineer],
+    cimEmsController.uploadModel
+  )
+  app.post(
+    accessPoint + 'auth/cimEms/request',
+    [authJwt.isUser],
+    cimEmsController.createRequest
+  )
+  app.get(
+    accessPoint + 'auth/cimEms/artifact',
+    [authJwt.isCimEngineer],
+    cimEmsController.downloadArtifact
   )
 }

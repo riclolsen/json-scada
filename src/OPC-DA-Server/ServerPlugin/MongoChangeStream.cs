@@ -180,10 +180,14 @@ namespace ServerPlugin
         }
 
         // -----------------------------------------------------------------------
-        // Build change-stream pipeline — mirrors OPC-UA-Server csPipeline (lines 701-733)
+        // Build change-stream pipeline — mirrors OPC-UA-Server csPipeline
         // Filters:
         //   - operationType == update  AND NOT sourceDataUpdate field  AND group1 in topics
         //   - OR operationType == replace
+        // Two $match stages with the same result as one $or: the first does not
+        // reference fullDocument, so MongoDB applies it before the updateLookup
+        // and skips the document read for raw driver writes; only the group1
+        // filter needs the looked-up document.
         // -----------------------------------------------------------------------
         private static PipelineDefinition<ChangeStreamDocument<RtDataItem>, ChangeStreamDocument<RtDataItem>>
             BuildPipeline(string[] topics)
@@ -195,21 +199,27 @@ namespace ServerPlugin
                   "] } }"
                 : "{ 'fullDocument.group1': { $exists: true } }";
 
-            string filterStr = $@"{{
+            const string eventFilter = @"{
                 $or: [
-                    {{ $and: [
-                        {{ 'updateDescription.updatedFields.sourceDataUpdate': {{ $exists: false }} }},
-                        {group1Filter},
-                        {{ 'fullDocument._id': {{ $ne: -2 }} }},
-                        {{ 'fullDocument._id': {{ $ne: -1 }} }},
-                        {{ operationType: 'update' }}
-                    ]}},
+                    { $and: [
+                        { 'updateDescription.updatedFields.sourceDataUpdate': { $exists: false } },
+                        { 'documentKey._id': { $nin: [-2, -1] } },
+                        { operationType: 'update' }
+                    ]},
+                    { operationType: 'replace' }
+                ]
+            }";
+
+            string documentFilter = $@"{{
+                $or: [
+                    {group1Filter},
                     {{ operationType: 'replace' }}
                 ]
             }}";
 
             return new EmptyPipelineDefinition<ChangeStreamDocument<RtDataItem>>()
-                .Match(filterStr);
+                .Match(eventFilter)
+                .Match(documentFilter);
         }
 
         private static string EscapeJson(string s)

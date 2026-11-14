@@ -265,17 +265,19 @@ A tag is published to a connection by a **destination**: an entry in the tag's
 `protocolDestinations` array.
 
 ```json
-"protocolDestinations": [
-  {
-    "protocolDestinationConnectionNumber": 2001,
-    "protocolDestinationCommonAddress": 30,
-    "protocolDestinationObjectAddress": 12,
-    "protocolDestinationASDU": 6,
-    "protocolDestinationKConv1": 1,
-    "protocolDestinationKConv2": 0,
-    "protocolDestinationHoursShift": 0
-  }
-]
+{
+  "protocolDestinations": [
+    {
+      "protocolDestinationConnectionNumber": 2001,
+      "protocolDestinationCommonAddress": 30,
+      "protocolDestinationObjectAddress": 12,
+      "protocolDestinationASDU": 6,
+      "protocolDestinationKConv1": 1,
+      "protocolDestinationKConv2": 0,
+      "protocolDestinationHoursShift": 0
+    }
+  ]
+}
 ```
 
 A tag may have several destinations, on the same or on different connections.

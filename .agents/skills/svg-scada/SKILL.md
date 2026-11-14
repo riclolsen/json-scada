@@ -54,6 +54,7 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
 - **Fields:** `"attr":"color"`, `"tag"`, `"list"` as an array of `{"data":"VALUE_LIMIT"}`, `{"param":"COLOR_CODE"}`, `{"tag":"TAG_NAME"}`.
 - **Color Syntax:** `"fill|stroke"`, e.g., `"red|green"`, `"|yellow"` (stroke only), `"black|"` (fill only).
 - **Limit Constants:** `"a"` (alarm), `"f"` (failed), `"1"` (off), `"2"` (on).
+- **List order:** entries are tested in order and the **last** match wins (a digital matches `"1"` when off or on, `"2"` only when on; an analog matches every limit at or below its value), so list digital states as `"1"`, `"2"`, then `"a"`/`"f"`, and analog limits in ascending order.
 - **JSON:** `{"attr":"color", "tag":"TAG_NAME", "list":[{"data":"1", "param":"red|", "tag":"%n"}, {"data":"2", "param":"green|", "tag":"%n"}, {"data":"f", "param":"gray|", "tag":"%n"}]}`. All fields are required to ensure proper parsing and functionality.
 - **Attribute Hack:** Use the prefix `"attrib:"` followed by SVG properties for the "data" field of "list" arrray (e.g., `{"data":"attrib: style=fill:red;text-decoration:underline;"}`) to manipulate SVG properties instead of just colors.
 - Example: `inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-99999&quot;,&quot;param&quot;:&quot;-cor-11|&quot;,&quot;tag&quot;:&quot;%n&quot;},{&quot;data&quot;:&quot;-500&quot;,&quot;param&quot;:&quot;-cor-20|&quot;,&quot;tag&quot;:&quot;%n&quot;},{&quot;data&quot;:&quot;500&quot;,&quot;param&quot;:&quot;-cor-11|&quot;,&quot;tag&quot;:&quot;%n&quot;},{&quot;data&quot;:&quot;c&quot;,&quot;param&quot;:&quot;-cor-41|&quot;,&quot;tag&quot;:&quot;%n&quot;},{&quot;data&quot;:&quot;n&quot;,&quot;param&quot;:&quot;-cor-42|&quot;,&quot;tag&quot;:&quot;%n&quot;},{&quot;data&quot;:&quot;f&quot;,&quot;param&quot;:&quot;-cor-12|&quot;,&quot;tag&quot;:&quot;%n&quot;}]}"`.
@@ -113,7 +114,7 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
   exec_once: execute a script one time only after the screen is loaded and parsed.
   exec_on_update: execute a script every time data is updated.
 
-  Use “$V('TAG')” to obtain point values inside the script.
+  Use “$V('TAG')” to obtain point values inside the script, “$J('TAG', '$.path')” for members of a point's structured value (see section 10) and “$S('TAG', '$.selector')” for parts of its text value (see section 11).
 
   The function $W.Animate and thisobj can be used to animate objects in scripts, example
 
@@ -152,6 +153,60 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
          “HIS#1” to retrieve the historical curve of the first tag in the tag list
 
 - All fields are required to ensure proper parsing and functionality.
+
+### 9. Communication Status Monitoring
+
+The data processor keeps system tags with the health of every protocol driver instance and connection (names and points in `docs/schema.md`, "Communication status tags"). Bind them like any other tag; characters outside `A-Z a-z 0-9 _ -` in a connection or driver name become `_` (connection `KAW 2` → `_System.Conn.KAW_2.Status`).
+
+- **Connection LED** (digital, on = Online, off = Offline, failed = unknown): `{"attr":"color","tag":"_System.Conn.KAW2.Status","list":[{"data":"1","param":"red|","tag":"%n"},{"data":"2","param":"lime|","tag":"%n"},{"data":"f","param":"gray|","tag":"%n"}]}`
+- **Driver running** (digital, on = Running): same color markup on `_System.Driver.DNP3.1.Alive`.
+- **Link state** (digital, failed when the driver does not report it): `_System.Conn.KAW2.LinkUp`, format `Link Down|Link Up|n/a`.
+- **Health % of valid tags** (analog): `{"attr":"get","tag":"_System.Conn.KAW2.Health","align":"Right","type":"Good"}` with tspan `%3.0f` (put the `%` unit in a separate static text), or a bar `{"attr":"bar","tag":"_System.Conn.KAW2.Health","min":0,"max":100}`.
+- **Overview badge** (analog): `_System.Comm.ConnectionsDown` with a color list `[{"data":"0","param":"lime|","tag":"%n"},{"data":"1","param":"red|","tag":"%n"}]`.
+- **One faceplate per connection:** build the row once in a `<g>` with `{"attr":"clone","map":["%n=_System.Conn.KAW2.Status","%m=_System.Conn.KAW2.Health"]}` and copy it, changing only the map.
+- `ActiveNode` and `Version` are string tags: the display `get` shows numbers, so show them in the point info popup or the tabular viewer, not as display text.
+- Bind only connections and driver instances that exist: the tags are created about 5 s after the configuration entry and removed with it, so a display bound to a missing one renders it as failed.
+
+### 10. Structured Values (valueJson)
+
+Drivers such as MQTT/Sparkplug B, OPC UA, Node-RED and N8N store a tag's structured value (object or array) as JSON text in its `valueJson` field (a `json` or `string` tag without one uses its string value). The integrated Display Viewer (AdminUI) reads members of it; the legacy `display.html` viewer does not support this markup.
+
+- **Tag reference:** write `!JSON <TAG> <PATH>` wherever a tag goes: `get`, `color` list tags, `bar`, `opac`, `rotate`, `slider`, `text`, trend `open` (realtime samples only: the history is the tag's), `#arc`/`#radar`/Vega tag lists. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
+- **Path** (starts with `$`, which alone means the whole value):
+  - `.name` member; `['name']` member whose name has `.`, `[`, `]` or spaces
+  - `[0]` array element, `[-1]` the last one
+  - `[field=value]` first array element whose `field` equals `value` (quote values with spaces: `[name='Pump 2']`)
+  - `.length` size of an array or string
+- Use single quotes inside the path: the label JSON already uses double quotes.
+- **Value types:** `true`/`false` behave like a digital (on/off: `"1"`/`"2"` colors, `OFF|ON` text); numbers like an analog; strings show with `%s` (or an empty format); objects and arrays show as JSON text. Quality, alarm and annotation come from the tag. A missing member keeps the last value found and shows as failed (`"f"`).
+- **Examples** (tag `MQTT.plant` holding `{"pumps":[{"name":"P1","speed":1450.5,"on":true}],"motor.temp":61.2}`):
+  - Speed text (tspan `%6.1f`): `{"attr":"get","tag":"!JSON MQTT.plant $.pumps[0].speed","align":"Left","type":"Good"}`
+  - Pump LED: `{"attr":"color","tag":"!JSON MQTT.plant $.pumps[name=P1].on","list":[{"data":"1","param":"red|","tag":"!JSON MQTT.plant $.pumps[name=P1].on"},{"data":"2","param":"lime|","tag":"!JSON MQTT.plant $.pumps[name=P1].on"},{"data":"f","param":"gray|","tag":"!JSON MQTT.plant $.pumps[name=P1].on"}]}`
+  - Member with a dot in its name: `{"attr":"bar","tag":"!JSON MQTT.plant $['motor.temp']","min":0,"max":100}`
+- **Scripts and `!EVAL`:** `$J('TAG')` returns the whole parsed value and `$J('TAG', '$.path')` one member (`undefined` when absent); `$W.getJson` is the same function. Example tooltip line: `"Pumps: !EVAL $J('MQTT.plant', '$.pumps.length') !END"`.
+
+### 11. Text Values (valueString)
+
+Every tag has a `valueString`: the text value written by its driver (status words, `key=value` lists, CSV lines, messages; for analogs and digitals usually the number or the state text). The integrated Display Viewer (AdminUI) can take parts of it; the legacy `display.html` viewer does not support this markup.
+
+- **Tag reference:** write `!STR <TAG> <SELECTOR>` wherever a tag goes (same places as `!JSON`, section 10). `!STR <TAG>` alone is the whole text. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
+- **Selector:** starts with `$` (the whole text), followed by operations applied left to right. It is parsed, never run as code:
+  - `.split(sep)`, `.split(sep, limit)`: list of parts (`sep` is `'text'` or `/regex/`)
+  - `[n]`: element `n` of a list (or character of a text); `[-1]` is the last
+  - `.match(/regex/)`: `[0]` is the whole match, `[1]`... the groups; with flag `g`, every match
+  - `.kv('key')`: the value of `key` in `key=value;key=value` text (`.kv('key', '|', ':')` for other separators)
+  - `.trim()`, `.upper()`, `.lower()`, `.slice(start, end)`, `.replace(find, with)`, `.join(sep)`, `.length`
+  - `.num()`: the leading number of the text (missing when it is not numeric)
+  - `.is('text')`, `.has('text')`: true when the text equals / contains `text`
+- **Quoting:** use single quotes in the selector (the label JSON already uses double quotes). A regex backslash is doubled in the label JSON: `/T=([-\\d.]+)/`.
+- **Value types:** `.is()` / `.has()` give booleans that behave like a digital (`"1"`/`"2"` colors, `OFF|ON` text); `.num()` and `.length` give numbers (analog); other results are text, shown with `%s` (or an empty format). Compare text with `.is()` rather than color limits. Quality, alarm and annotation come from the tag. A part not found keeps the last value found and shows as failed (`"f"`).
+- **Examples** (tag `PLC1.status` holding `mode=AUTO;sp=42.5;state=RUN`; tag `LINE1.csv` holding `12.5,7,Pump 2,ON`):
+  - Mode text (tspan `%s`): `{"attr":"get","tag":"!STR PLC1.status $.kv('mode')","align":"Left","type":"Good"}`
+  - Set point bar: `{"attr":"bar","tag":"!STR PLC1.status $.kv('sp').num()","min":0,"max":100}`
+  - Running LED: `{"attr":"color","tag":"!STR PLC1.status $.kv('state').is('RUN')","list":[{"data":"1","param":"red|","tag":"!STR PLC1.status $.kv('state').is('RUN')"},{"data":"2","param":"lime|","tag":"!STR PLC1.status $.kv('state').is('RUN')"},{"data":"f","param":"gray|","tag":"!STR PLC1.status $.kv('state').is('RUN')"}]}`
+  - Third CSV field: `{"attr":"get","tag":"!STR LINE1.csv $.split(',')[2].trim()","align":"Left","type":"Good"}`
+  - Number after `T=`: `{"attr":"get","tag":"!STR PLC1.status $.match(/T=([-\\d.]+)/)[1].num()","align":"Left","type":"Good"}`
+- **Scripts and `!EVAL`:** `$S('TAG')` returns the whole text and `$S('TAG', "$.kv('mode')")` the selector result (`undefined` when absent); `$W.getStr` is the same function.
 
 ---
 

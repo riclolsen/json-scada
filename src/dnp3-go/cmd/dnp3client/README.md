@@ -241,10 +241,12 @@ Connections that share one physical endpoint must differ in link address; see
 `rangeScans` schedules polls of a fixed range of points, in addition to the class polls:
 
 ```json
-"rangeScans": [
-  { "group": 30, "variation": 0, "startAddress": 0, "stopAddress": 99, "period": 10 },
-  { "group": 1,  "variation": 2, "startAddress": 0, "stopAddress": 63, "period": 5 }
-]
+{
+  "rangeScans": [
+    { "group": 30, "variation": 0, "startAddress": 0, "stopAddress": 99, "period": 10 },
+    { "group": 1,  "variation": 2, "startAddress": 0, "stopAddress": 63, "period": 5 }
+  ]
+}
 ```
 
 | Field | Default | Meaning |

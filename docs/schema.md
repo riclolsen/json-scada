@@ -12,6 +12,7 @@ The JSON-SCADA MongoDB database is comprised of the following collections.
 * _users_ - User accounts. See [_users_ collection](#users-collection).
 * _roles_ - RBAC roles (rights and group filters). See [_roles_ collection](#roles-collection).
 * _userActions_ - Audit log of user actions. See [_userActions_ collection](#useractions-collection).
+* _cimModels_, _cimMeasurementBindings_, _cimRuns_, _cimContingencyLists_, _cimStudyRequests_ and the GridFS bucket _cimArtifacts_ - CIM-EMS network model revisions, binding revisions, study runs, contingency lists, Admin UI study requests and stored packages/results. Written by the _CIM-EMS_ driver; see the [CIM-EMS README](../src/cim-ems/README.md). Model packages and study results are confidential: _cimArtifacts_ is not served by `/GetFile`. Contingency result files (`kind: "contingency-result"`) are deleted by the driver after the _cimRuns_ retention (7 days); element catalogs (`kind: "element-catalog"`, binding review) are kept for the 5 newest per model; the state estimation residual report (`kind: "se-residuals"`) keeps only the latest one per connection.
 * _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`), created on demand by _server_realtime_auth_; not created by the seed script.
 
 Collections, validation and indexes are created by [mongo_seed/b_create-db.js](../mongo_seed/b_create-db.js), which is the authoritative definition when this document and the script differ:
@@ -28,6 +29,11 @@ Collections, validation and indexes are created by [mongo_seed/b_create-db.js](.
 | users | normal | none (mongoose model in _server_realtime_auth_) | `username` (unique, `userNameIndex`) |
 | roles | normal | none (mongoose model) | `name` (unique, `roleNameIndex`) |
 | userActions | normal, no automatic expiry | none (mongoose model) | `timeTag` (`actionsTimeTagIndex`); for expiry replace it with a TTL index, e.g. `{ timeTag: 1 }, { expireAfterSeconds: 2592000 }` |
+| cimModels | normal | none | `modelId + revision` (unique, `cimModelsIndex`); `modelId` unique for `status: "active"` (`cimModelsActiveIndex`) |
+| cimMeasurementBindings | normal | none | `modelId + bindingRevision + cimMeasurementMrid` (`cimBindingsIndex`) |
+| cimRuns | normal, TTL 7 days on `createdAt` (`cimRunsTtl`) | none | `connectionNumber + kind + runId` (`cimRunsIndex`) |
+| cimContingencyLists | normal | none | `listId` (unique) |
+| cimStudyRequests | normal, no automatic expiry | none | `status + createdAt` (`cimStudyRequestsIndex`) |
 
 Writes that violate a validator on the strict/error collections are rejected by MongoDB, so new required fields must also be added to the validators in `b_create-db.js`.
 
@@ -282,8 +288,8 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 * _**_transient_**_ [Boolean] - Flags a transient value. **Mandatory parameter**.
 * _**_frozen_**_ [Boolean] - When true, value is considered frozen (not changing). **Mandatory parameter**.
 * _**_value_**_ [Double] - Current value as a number. **Mandatory parameter**.
-* _**_valueJson_**_ [String] - Current value as JSON. **Optional parameter**.
-* _**_valueString_**_ [String] - Current value as a string. **Mandatory parameter**.
+* _**_valueJson_**_ [String] - Current value as JSON (structured value: object or array). SVG displays read its members with `!JSON <tag> <path>` markup (svg-scada skill, "Structured Values"). **Optional parameter**.
+* _**_valueString_**_ [String] - Current value as a string. SVG displays take parts of it with `!STR <tag> <selector>` markup (svg-scada skill, "Text Values"). **Mandatory parameter**.
 * _**_timeTag_**_ [Date] - Last update time. **Mandatory parameter**.
 * _**_timeTagAlarm_**_ [Date] - Last alarm time (when alarmed). **Mandatory parameter**.
 * _**_timeTagAlertState_**_ [Date] - Time of last Grafana alert state update. **Optional parameter**.
@@ -315,6 +321,18 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 
 * _**_beepType_**_ [Double] - Beep type. **Mandatory parameter**.
 * _**_beepGroup1List_**_ [Array of String] - List of group1 alarmed. **Mandatory parameter**.
+
+### Communication status tags
+
+The _CS_DATA_PROCESSOR_ (both the Node.js and Go implementations; instance 1, active node) maintains tags with the health of every protocol driver instance and protocol connection, so displays, viewers, alarms and the historian can monitor communications like any other point. They have _origin="system"_, keys allocated below -1000, and a `commStatus` field identifying the source. They are created, renamed (when a connection is renamed) and removed (when the instance or connection is removed) automatically. The admin API (`/Invoke/auth/createTag`, `updateTag`, `deleteTag`) refuses to create tags under these name spaces, to delete them, or to change their `tag`, `type`, `origin`, `commStatus`, groups and descriptions; other fields (priority, limits, alarm settings) stay editable. Turn them off with `commStatusTags: false` in the [processInstances entry](#processinstances-entry-for-the-_cs_data_processor_-module).
+
+Tag names (characters outside `A-Z a-z 0-9 _ -` in a name become `_`):
+
+* `_System.Driver.<protocolDriver>.<protocolDriverInstanceNumber>.<Point>` - _group2_ "Drivers". Points: `Alive` (digital Running/Stopped: false after more than 4 consecutive 5 s readings of an unchanged _activeNodeKeepAliveTimeTag_, alarmed), `Enabled` (digital), `ActiveNode` and `Version` (string), `KeepAliveAge` (analog, s, not historized).
+* `_System.Conn.<name>.<Point>` (the connection's `name`) - _group2_ "Connections", _group3_ the connection name. Points: `Status` (digital Online/Offline, alarmed, priority 1: on when the connection and its driver instance are enabled, the instance is alive, `stats.isConnected` is not false and not every tag of the connection is invalid), `Enabled` (digital), `LinkUp` (digital, `stats.isConnected`; invalid when the driver does not report it). Driver contract: every connection-oriented driver writes `protocolConnections.stats.isConnected` [Boolean] — clients: a protocol session to at least one endpoint is up; servers: at least one peer attached; listeners (Telegraf): data received in the last 60 s; n8n: last webhook POST succeeded, `StatsAge` (analog, s, not historized), `ActiveNode` (string), `TagCount`, `InvalidTags` (analog, supervised tags of the connection) and `Health` (analog, % of valid tags). With `commStatusMirrorStats: true`, also `Stats.<field>` for each numeric field of the connection's `stats`.
+* `_System.Comm.DriversDown`, `_System.Comm.ConnectionsDown`, `_System.Comm.ConnectionsTotal` - analog summaries.
+
+* _**_commStatus_**_ [Object] - `{ kind: "driver" | "conn" | "summary", ref: <protocolDriverInstances or protocolConnections _id as hex string>, point: <Point> }`. Only on communication status tags.
 
 ## _commandsQueue_ collection
 
@@ -449,6 +467,8 @@ Example document for the _CS_DATA_PROCESSOR_ module. Currently, this process sup
 * _**_latencyAvg_**_ [Double] - Average latency in ms (only for CS_DATA_PROCESSOR).
 * _**_latencyAvgMinute_**_ [Double] - Average latency on a minute in ms (only for CS_DATA_PROCESSOR).
 * _**_latencyPeak_**_ [Double] - Peak latency (only for CS_DATA_PROCESSOR).
+* _**_commStatusTags_**_ [Boolean] - Optional, default true. False stops maintaining the [communication status tags](#communication-status-tags) and invalidates them (instance 1 only, both CS_DATA_PROCESSOR implementations).
+* _**_commStatusMirrorStats_**_ [Boolean] - Optional, default false. True also mirrors every numeric `stats` field of each protocol connection as a `_System.Conn.<name>.Stats.<field>` tag.
 
 ### _processInstances_ entry for the _CALCULATIONS_ module
 
@@ -542,6 +562,7 @@ RBAC roles (model `app/models/role.model.js`); seed in `mongo_seed/roles.json`. 
 * _**_group1List_**_ [Array of String] - _group1_ values the role can see. Empty = all.
 * _**_group1CommandList_**_ [Array of String] - _group1_ values the role can command.
 * _**_displayList_**_ [Array of String] - Displays the role can open.
+* _**_cimEngineering_**_ [Boolean] - CIM-EMS engineering: upload and activate network models, approve binding revisions, download CIM-EMS artifacts. Checked in addition to _isAdmin_. Default false.
 * _**_maxSessionDays_**_ [Double] - Session (JWT) lifetime in days. Default 3.
 
 ## _userActions_ collection

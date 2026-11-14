@@ -52,10 +52,10 @@ let LastNodeRebirth = 0
 ;(async () => {
   const jsConfig = LoadConfig() // load and parse config file
   Log.levelCurrent = jsConfig.LogLevel
+  // The $match does not reference fullDocument, so the server applies it
+  // before the updateLookup and skips the document read for raw driver writes
+  // (sourceDataUpdate) and the special points; $project goes after it.
   const csPipeline = [
-    {
-      $project: { documentKey: false },
-    },
     {
       $match: {
         $or: [
@@ -66,22 +66,16 @@ let LastNodeRebirth = 0
                   $exists: false,
                 },
               },
-              {
-                'fullDocument._id': {
-                  $ne: -2,
-                },
-              },
-              {
-                'fullDocument._id': {
-                  $ne: -1,
-                },
-              },
+              { 'documentKey._id': { $nin: [-2, -1] } },
               { operationType: 'update' },
             ],
           },
           { operationType: 'replace' },
         ],
       },
+    },
+    {
+      $project: { documentKey: false },
     },
   ]
 
@@ -184,6 +178,34 @@ let LastNodeRebirth = 0
     processMongoUpdates(clientMongo, rtCollection, jsConfig, MongoStatus)
   }, 500)
 
+  // connection stats: stats.isConnected tells whether the broker session is
+  // up (read by the data processor's communication status tags). Written by
+  // the active node only, so a standby never reports the link as down.
+  setInterval(async function () {
+    if (
+      !clientMongo ||
+      !MongoStatus.HintMongoIsConnected ||
+      !connection ||
+      !Redundancy.ProcessStateIsActive()
+    )
+      return
+    try {
+      await updateConnectionStats(
+        clientMongo
+          .db(jsConfig.mongoDatabaseName)
+          .collection(jsConfig.ProtocolConnectionsCollectionName),
+        connection.protocolConnectionNumber,
+        {
+          nodeName: jsConfig.nodeName,
+          timeTag: new Date(),
+          isConnected: !!SparkplugClientObj?.handle?.connected,
+        }
+      )
+    } catch (err) {
+      Log.log('MongoDB - Error updating connection stats: ' + err)
+    }
+  }, 5000)
+
   Log.log('MongoDB - Connecting to MongoDB server...', Log.levelMin)
 
   while (true) {
@@ -266,6 +288,7 @@ let LastNodeRebirth = 0
 
               // start listen to changes
               changeStream.on('change', (change) => {
+                if (!change.fullDocument) return // deleted before the lookup
                 // do not queue data changes until device connected and sparkplug birthed
                 if (
                   !SparkplugClientObj?.handle?.connected ||
@@ -471,6 +494,25 @@ let LastNodeRebirth = 0
 })()
 
 // Get BIRTH payload for the edge node
+// $set stats.<field> on a connection document. Connection documents are
+// created with stats: null, where a dotted $set fails with error 28
+// (PathNotViable): replace the null with an empty document and retry once.
+async function updateConnectionStats(connsCollection, connNumber, fields) {
+  const set = {}
+  for (const [k, v] of Object.entries(fields)) set['stats.' + k] = v
+  const filter = { protocolConnectionNumber: connNumber }
+  try {
+    return await connsCollection.updateOne(filter, { $set: set })
+  } catch (err) {
+    if (err?.code !== 28) throw err
+    await connsCollection.updateOne(
+      { ...filter, stats: null },
+      { $set: { stats: {} } }
+    )
+    return await connsCollection.updateOne(filter, { $set: set })
+  }
+}
+
 function getNodeBirthPayload(configObj) {
   const hwVersion = 'Generic Server Hardware'
   const swVersion = 'JSON-SCADA MQTT v' + AppDefs.VERSION

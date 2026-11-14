@@ -19,7 +19,11 @@
 package org.jsonscada.plc4jclient;
 
 import ch.qos.logback.classic.Level;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.ServiceLoader;
@@ -30,6 +34,7 @@ import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.PlcDriverManager;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +48,7 @@ import org.slf4j.LoggerFactory;
 public final class Plc4jClient {
 
   public static final String SOFTWARE_VERSION =
-      "{json:scada} PLC4J Generic PLC Protocol Driver v.0.1.0 - Copyright 2020-2026 Ricardo L. Olsen";
+      "{json:scada} PLC4J Generic PLC Protocol Driver v.0.1.1 - Copyright 2020-2026 Ricardo L. Olsen";
   public static final String DRIVER_NAME = "PLC4X";
 
   private static final long PING_TIMEOUT_SECONDS = 5;
@@ -93,7 +98,46 @@ public final class Plc4jClient {
           Log.log(pc.name + ": error setting up connection - " + e);
         }
       }
+      updateConnectionStats(writer.connectionsColl, conns, cfgRes.cfg.nodeName);
       RedundancyManager.sleepMs(2000);
+    }
+  }
+
+  /**
+   * Publishes stats.isConnected (PLC connection open) per connection, read by
+   * the data processor's communication status tags. Active node only, as the
+   * caller runs on the active node.
+   */
+  static void updateConnectionStats(
+      MongoCollection<Document> connsColl, List<ProtocolConnection> conns, String nodeName) {
+    if (connsColl == null) {
+      return;
+    }
+    for (ProtocolConnection pc : conns) {
+      PlcConnection c = pc.plcConn;
+      boolean connected = c != null && c.isConnected();
+      Bson filter = Filters.eq("protocolConnectionNumber", pc.protocolConnectionNumber);
+      Bson update = Updates.combine(
+          Updates.set("stats.nodeName", nodeName),
+          Updates.set("stats.timeTag", new Date()),
+          Updates.set("stats.isConnected", connected));
+      try {
+        connsColl.updateOne(filter, update);
+      } catch (MongoWriteException e) {
+        // Connections are documented (and created by the Admin UI) with
+        // "stats: null", and MongoDB cannot create fields under a null element,
+        // so replace that null with an empty document and write the stats again.
+        try {
+          connsColl.updateOne(
+              Filters.and(filter, Filters.eq("stats", null)),
+              Updates.set("stats", new Document()));
+          connsColl.updateOne(filter, update);
+        } catch (Exception retryError) {
+          Log.log(pc.name + ": error updating connection stats - " + retryError);
+        }
+      } catch (Exception e) {
+        Log.log(pc.name + ": error updating connection stats - " + e);
+      }
     }
   }
 

@@ -51,7 +51,15 @@ type Entry struct {
 	// Label names the connection in an error message. The DNP3 drivers
 	// report failures per connection name.
 	Label string
+	// IsConnected, when set, is written as stats.isConnected: a client has a
+	// protocol session to at least one endpoint, a server has at least one
+	// peer attached. Leave nil when the driver cannot tell; the data
+	// processor then shows the link state as unknown.
+	IsConnected *bool
 }
+
+// Bool returns a pointer to b, for Entry.IsConnected.
+func Bool(b bool) *bool { return &b }
 
 // Writer publishes statistics into protocolConnections.
 type Writer struct {
@@ -77,6 +85,9 @@ func (w Writer) Write(ctx context.Context, coll *mongo.Collection, entries []Ent
 		stats := bson.M{"nodeName": w.NodeName, "timeTag": now}
 		for k, v := range e.Stats {
 			stats[k] = v
+		}
+		if e.IsConnected != nil {
+			stats["isConnected"] = *e.IsConnected
 		}
 		set := bson.M{"stats": stats}
 		for k, v := range e.Extra {

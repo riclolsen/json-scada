@@ -121,7 +121,10 @@ export function registerPointsTools(server: McpServer, mgr: ConnectionManager) {
       title: 'Get Point',
       annotations: { readOnlyHint: true },
       description:
-        'Get the full document of a specific point by tag name or numeric point key',
+        'Get the full document of a specific point by tag name or numeric point key. Its valueJson (JSON text, ' +
+        'set by drivers such as MQTT/Sparkplug B or OPC UA) holds the structured value whose members displays ' +
+        'reach with "!JSON <tag> <path>" markup; displays take parts of its valueString text with ' +
+        '"!STR <tag> <selector>".',
       inputSchema: z.object({
         tag: z.string().optional().describe('The tag name of the point'),
         pointKey: z

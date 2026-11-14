@@ -1,0 +1,3 @@
+"""JSON-SCADA CIM-EMS driver."""
+
+CGMES_VERSION = "2.4.15"

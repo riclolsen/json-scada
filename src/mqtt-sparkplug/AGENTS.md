@@ -24,6 +24,7 @@ Node.js MQTT client with Sparkplug B payload support for JSON-SCADA. Bridges MQT
   - `redundancy.js` — high-availability support
 - **Config:** INI file via Supervisor or environment variables
 - **Build:** `npm install` for dependencies
+- **Connection stats:** a 5 s loop in `index.js` (active node only) writes `stats.nodeName`, `stats.timeTag` and `stats.isConnected` = broker session connected, with dotted `$set` paths (`updateConnectionStats`: on error 28, a null `stats` is replaced with an empty document and the update retried)
 
 ## Work Guidance
 

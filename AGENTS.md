@@ -88,7 +88,7 @@ When the user requests a durable behavior change, record it here or in the relev
 All protocol drivers, web UI, data processors, and tools. Contains its own child index covering 25+ components with individual AGENTS.md files:
 
 - [src/AdminUI/](src/AdminUI/AGENTS.md) — Vue.js web admin interface SPA
-- [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, driver processes)
+- [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, operation, health/log diagnosis, displays, calculated and system tags, custom developments, CIM-EMS control)
 - [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in alternative)
 - [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
@@ -114,6 +114,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/telegraf-listener/](src/telegraf-listener/AGENTS.md) — Telegraf listener (Node.js)
 - [src/plc4j-client/](src/plc4j-client/AGENTS.md) — Various PLC protocols client via PLC4X (Java)
 - [src/camera-onvif/](src/camera-onvif/AGENTS.md) — ONVIF camera (Node.js)
+- [src/cim-ems/](src/cim-ems/AGENTS.md) — CIM/CGMES EMS driver (Python)
 - Plus tools & utilities detailed in [src/AGENTS.md](src/AGENTS.md) (Node.js, Go, C#, C, Python, PHP)
 
 

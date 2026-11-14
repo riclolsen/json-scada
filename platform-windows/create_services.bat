@@ -237,6 +237,26 @@ nssm set JSON_SCADA_plc4jclient AppRotateOnline 1
 nssm set JSON_SCADA_plc4jclient AppRotateBytes 10000000
 nssm set JSON_SCADA_plc4jclient Start SERVICE_DEMAND_START
 
+REM service for the CIM-EMS driver (load flow, state estimation, contingency analysis; Python in
+REM platform-windows\python-runtime, see src\cim-ems\install.bat). Change Start to SERVICE_AUTO_START to enable.
+nssm install JSON_SCADA_cim_ems "C:\json-scada\platform-windows\python-runtime\python.exe" -m cim_ems 1 1 "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_cim_ems AppDirectory "C:\json-scada\src\cim-ems"
+nssm set JSON_SCADA_cim_ems AppStdout C:\json-scada\log\cim_ems.log
+nssm set JSON_SCADA_cim_ems AppStderr C:\json-scada\log\cim_ems.log
+nssm set JSON_SCADA_cim_ems AppRotateOnline 1
+nssm set JSON_SCADA_cim_ems AppRotateBytes 10000000
+nssm set JSON_SCADA_cim_ems Start SERVICE_DEMAND_START
+
+REM Svedala CIM-EMS demo: field simulator writing the SVEDALA_FIELD points and executing their breaker commands.
+REM Demo only; start it together with JSON_SCADA_cim_ems to see the demo network live.
+nssm install JSON_SCADA_cim_ems_demo_field "C:\json-scada\platform-windows\python-runtime\python.exe" -m cim_ems.demo_field "c:\json-scada\conf\json-scada.json"
+nssm set JSON_SCADA_cim_ems_demo_field AppDirectory "C:\json-scada\src\cim-ems"
+nssm set JSON_SCADA_cim_ems_demo_field AppStdout C:\json-scada\log\cim_ems_demo_field.log
+nssm set JSON_SCADA_cim_ems_demo_field AppStderr C:\json-scada\log\cim_ems_demo_field.log
+nssm set JSON_SCADA_cim_ems_demo_field AppRotateOnline 1
+nssm set JSON_SCADA_cim_ems_demo_field AppRotateBytes 10000000
+nssm set JSON_SCADA_cim_ems_demo_field Start SERVICE_DEMAND_START
+
 rem nssm install JSON_SCADA_plc4xclient "C:\json-scada\bin\plc4x-client.exe" 1 1
 rem nssm set JSON_SCADA_plc4xclient AppStdout C:\json-scada\log\plc4xclient.log
 rem nssm set JSON_SCADA_plc4xclient AppRotateOnline 1

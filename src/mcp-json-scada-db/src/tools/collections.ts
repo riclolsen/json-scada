@@ -20,7 +20,9 @@ import { BSON } from 'mongodb'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { ConnectionManager } from '../jsonscada/connection-manager.js'
 import {
+  confidentialResult,
   errorResult,
+  isConfidentialCollection,
   notConnectedResult,
   redactSensitiveArray,
   textResult,
@@ -92,6 +94,7 @@ export function registerCollectionsTools(
     },
     async ({ collection, query, projection, sort, limit, offset }: any) => {
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
+      if (isConfidentialCollection(collection)) return confidentialResult(collection)
 
       try {
         const filter = query ? parseEjson(query, 'query') : {}

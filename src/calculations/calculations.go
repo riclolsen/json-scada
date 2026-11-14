@@ -1,7 +1,8 @@
 /*
  * This process calculates point values based of predefined formulas and configured parcels.
  * All data is read from and results are written to the MongoDB server.
- * {json:scada} - Copyright (c) 2020 - 2023 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020 - 2026 - Ricardo L. Olsen
+ * Formulas are defined in formulas.go.
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -24,7 +25,6 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -37,7 +37,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-const softwareVersion string = "0.1.2"
+const softwareVersion string = "0.2.0"
 const processName string = "CALCULATIONS"
 const appMsg string = "{json:scada} - " + processName + " - Version " + softwareVersion
 const appUsage string = "Usage: calculations [instance number] [log level] [period of calculation in seconds] [config file path/name]"
@@ -71,10 +71,30 @@ type pointCalc struct {
 	idParcels []int
 }
 
+func (p *pointCalc) equal(o *pointCalc) bool {
+	if p.calc != o.calc || len(p.idParcels) != len(o.idParcels) {
+		return false
+	}
+	for i := range p.idParcels {
+		if p.idParcels[i] != o.idParcels[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// output last written for a calculated point
+type sourceDataUpdate struct {
+	VALUE     float64 `bson:"valueAtSource"`
+	INVALID   bool    `bson:"invalidAtSource"`
+	TRANSIENT bool    `bson:"transientAtSource"`
+}
+
 type realtimeData struct {
-	ID      int     `bson:"_id"`
-	VALUE   float64 `bson:"value"`
-	INVALID bool    `bson:"invalid"`
+	ID      int               `bson:"_id"`
+	VALUE   float64           `bson:"value"`
+	INVALID bool              `bson:"invalid"`
+	SDU     *sourceDataUpdate `bson:"sourceDataUpdate"`
 }
 
 type realtimeDataForm struct {
@@ -360,66 +380,16 @@ func main() {
 
 	go processRedundancy(cfg)
 
-	calcs := make(map[int]*pointCalc)
-	var nponto int
+	calcs, parcelKeys := loadCalcs(collection, nil)
+	lastLoad := time.Now()
 
 	projection := bson.D{
 		{Key: "_id", Value: 1},
-		{Key: "formula", Value: 1},
-		{Key: "parcels", Value: 1},
-	}
-	cur, err := collection.Find(context.Background(),
-		bson.D{
-			{Key: "formula", Value: bson.D{
-				{Key: "$gt", Value: 0},
-			}},
-		},
-		options.Find().SetProjection(projection),
-	)
-	if err != nil {
-		log.Print("find")
-		log.Fatal(err)
-	}
-	for cur.Next(context.Background()) {
-		elem := &realtimeDataForm{}
-		err := cur.Decode(elem)
-		if err != nil {
-			log.Print("decode")
-			log.Print(err)
-			continue
-		}
-
-		nponto = elem.ID
-		calcs[nponto] = &pointCalc{
-			calc:      elem.FORMULA,
-			idParcels: []int{},
-		}
-		calcs[nponto].calc = elem.FORMULA
-		for _, parcel := range elem.PARCELS {
-			calcs[nponto].idParcels = append(calcs[nponto].idParcels, parcel)
-			if logLevel > 1 {
-				log.Printf("%d %d\n", nponto, parcel)
-			}
-		}
-	}
-
-	// maps for values and flags of all parcels and calculated points
-	vals := make(map[int]float64)
-	invalids := make(map[int]bool)
-
-	// creates the find array for all parcels
-	barr := bson.A{}
-	for pointnum, p := range calcs {
-		barr = append(barr, pointnum)
-		for _, idparc := range p.idParcels {
-			barr = append(barr, idparc)
-		}
-	}
-
-	projection = bson.D{
-		{Key: "_id", Value: 1},
 		{Key: "value", Value: 1},
 		{Key: "invalid", Value: 1},
+		{Key: "sourceDataUpdate.valueAtSource", Value: 1},
+		{Key: "sourceDataUpdate.invalidAtSource", Value: 1},
+		{Key: "sourceDataUpdate.transientAtSource", Value: 1},
 	}
 	for {
 		if !isActive {
@@ -427,21 +397,27 @@ func main() {
 			continue
 		}
 		tbegin := time.Now()
-		after := tbegin.Add(time.Duration(periodOfCalculation) * time.Second)
+		after := tbegin.Add(time.Duration(periodOfCalculation * float64(time.Second)))
 
 		// Check the connection
 		errp := client.Ping(context.TODO(), nil)
 		if errp != nil {
-			log.Printf("%s \n", err)
+			log.Printf("MongoDB ping failed: %s\n", errp)
 			client.Disconnect(context.TODO())
 			client, collection, _ = mongoConnect(cfg)
 		}
 
-		// find all parcel and current calculated values
+		// pick up calculated points created, changed or removed since the last load
+		if time.Since(lastLoad) >= reloadPeriod {
+			calcs, parcelKeys = loadCalcs(collection, calcs)
+			lastLoad = time.Now()
+		}
+
+		// find all parcels and current calculated values
 		cur, err := collection.Find(context.Background(),
 			bson.D{
 				{Key: "_id", Value: bson.D{
-					{Key: "$in", Value: barr},
+					{Key: "$in", Value: parcelKeys},
 				}},
 			},
 			options.Find().SetProjection(projection),
@@ -451,7 +427,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		var cntReads = 0
+		points := make(map[int]*realtimeData, len(parcelKeys))
 		for cur.Next(context.Background()) {
 			elem := &realtimeData{}
 			err := cur.Decode(elem)
@@ -460,709 +436,55 @@ func main() {
 				log.Print(err)
 				continue
 			}
-
-			vals[elem.ID] = elem.VALUE
-			invalids[elem.ID] = elem.INVALID
-			cntReads++
-			// log.Printf("ID %d VAL %f\n", elem.ID, elem.VALUE)
+			points[elem.ID] = elem
 		}
-
-		log.Printf("Read %v points from MongoDB.\n", cntReads)
-
 		cur.Close(context.Background())
+		if logLevel > 0 {
+			log.Printf("Read %v points from MongoDB.\n", len(points))
+		}
 
 		var opers []mongo.WriteModel
 
 		// loop over all calcs
 		for id, p := range calcs {
-
-			ok := false
-			val := 0.0
-			invalid := true
-			transient := false
-			switch p.calc {
-			default:
-				if logLevel > 1 {
-					log.Println("Formula not available ", p.calc)
-				}
-			case 1: // CURRENT
-				if len(p.idParcels) == 3 {
-					if vals[p.idParcels[2]] > 0 {
-						val = 577.35027 * math.Sqrt(vals[p.idParcels[0]]*vals[p.idParcels[0]]+vals[p.idParcels[1]]*vals[p.idParcels[1]]) / vals[p.idParcels[2]]
-					}
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]]
-					ok = true
-				}
-			case 2: // Power Factor P1 / sqrt ((P1 * P1) + (P2 * P2))
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]] / (math.Sqrt(vals[p.idParcels[0]]*vals[p.idParcels[0]] + vals[p.idParcels[1]]*vals[p.idParcels[1]]))
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 3: // Apparent Power
-				if len(p.idParcels) == 2 {
-					val = math.Sqrt(vals[p.idParcels[0]]*vals[p.idParcels[0]] + vals[p.idParcels[1]]*vals[p.idParcels[1]])
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 4: // POSITIVE SUM
-				invalid = false
-				for _, elem := range p.idParcels {
-					val += vals[elem]
-					invalid = invalid || invalids[elem]
-				}
-				ok = true
-			case 5: // SQRT
-				if len(p.idParcels) == 1 {
-					val = math.Sqrt(vals[p.idParcels[0]])
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 6: // AND
-				invalid = false
-				val = 1
-				for _, elem := range p.idParcels {
-					if vals[elem] == 0 {
-						val = 0
-					}
-					invalid = invalid || invalids[elem]
-				}
-				ok = true
-			case 7: // OR
-				invalid = false
-				val = 0
-				for _, elem := range p.idParcels {
-					if vals[elem] != 0 {
-						val = 1
-					}
-					invalid = invalid || invalids[elem]
-				}
-				ok = true
-			case 8: // timer
-				val = float64(time.Now().Unix())
-				invalid = false
-				ok = true
-			case 9: // Apparent Power based on amps and kV
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]] * vals[p.idParcels[1]] * math.Sqrt(3) / 1000
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 10: // NEGATIVE SUM
-				invalid = false
-				for _, elem := range p.idParcels {
-					val -= vals[elem]
-					invalid = invalid || invalids[elem]
-				}
-				ok = true
-			case 11: // P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12+ P13 + P14 + P15 + P16 + P17 + P18 + P19 + P20 + P21 + P22 + P23 + (P24 * 0.72)
-				if len(p.idParcels) == 24 {
-					val = vals[p.idParcels[0]] +
-						vals[p.idParcels[1]] +
-						vals[p.idParcels[2]] +
-						vals[p.idParcels[3]] +
-						vals[p.idParcels[4]] +
-						vals[p.idParcels[5]] +
-						vals[p.idParcels[6]] +
-						vals[p.idParcels[7]] +
-						vals[p.idParcels[8]] +
-						vals[p.idParcels[9]] +
-						vals[p.idParcels[10]] +
-						vals[p.idParcels[11]] +
-						vals[p.idParcels[12]] +
-						vals[p.idParcels[13]] +
-						vals[p.idParcels[14]] +
-						vals[p.idParcels[15]] +
-						vals[p.idParcels[16]] +
-						vals[p.idParcels[17]] +
-						vals[p.idParcels[18]] +
-						vals[p.idParcels[19]] +
-						vals[p.idParcels[20]] +
-						vals[p.idParcels[21]] +
-						vals[p.idParcels[22]] +
-						vals[p.idParcels[23]]*0.72
-					invalid = invalids[p.idParcels[0]] ||
-						invalids[p.idParcels[1]] ||
-						invalids[p.idParcels[2]] ||
-						invalids[p.idParcels[3]] ||
-						invalids[p.idParcels[4]] ||
-						invalids[p.idParcels[5]] ||
-						invalids[p.idParcels[6]] ||
-						invalids[p.idParcels[7]] ||
-						invalids[p.idParcels[8]] ||
-						invalids[p.idParcels[9]] ||
-						invalids[p.idParcels[10]] ||
-						invalids[p.idParcels[11]] ||
-						invalids[p.idParcels[12]] ||
-						invalids[p.idParcels[13]] ||
-						invalids[p.idParcels[14]] ||
-						invalids[p.idParcels[15]] ||
-						invalids[p.idParcels[16]] ||
-						invalids[p.idParcels[17]] ||
-						invalids[p.idParcels[18]] ||
-						invalids[p.idParcels[19]] ||
-						invalids[p.idParcels[20]] ||
-						invalids[p.idParcels[21]] ||
-						invalids[p.idParcels[22]] ||
-						invalids[p.idParcels[23]]
-					ok = true
-				}
-			case 13: // (P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8) -
-				// (P9) + (P10 + P11 + P12) + (P13 * 0.52) +
-				// (P14 + P15) - (P16 + P17) + (P18 + P19 + P20 + P21 + P22) -
-				// (P23 + P24) + (P25 + P26 + P27 + P28 + P29 + P30 + P31 + P32 + P33) +
-				// (P34 * 0.2) - 1
-				if len(p.idParcels) == 34 {
-					val =
-						(vals[p.idParcels[0]] +
-							vals[p.idParcels[1]] +
-							vals[p.idParcels[2]] +
-							vals[p.idParcels[3]] +
-							vals[p.idParcels[4]] +
-							vals[p.idParcels[5]] +
-							vals[p.idParcels[6]] +
-							vals[p.idParcels[7]]) - vals[p.idParcels[8]] +
-							vals[p.idParcels[9]] +
-							vals[p.idParcels[10]] +
-							vals[p.idParcels[11]] +
-							vals[p.idParcels[12]]*0.52 +
-							vals[p.idParcels[13]] +
-							vals[p.idParcels[14]] -
-							(vals[p.idParcels[15]] + vals[p.idParcels[16]]) +
-							vals[p.idParcels[17]] +
-							vals[p.idParcels[18]] +
-							vals[p.idParcels[19]] +
-							vals[p.idParcels[20]] +
-							vals[p.idParcels[21]] - (vals[p.idParcels[22]] + vals[p.idParcels[23]]) +
-							vals[p.idParcels[22]] +
-							vals[p.idParcels[23]] +
-							vals[p.idParcels[24]] +
-							vals[p.idParcels[25]] +
-							vals[p.idParcels[26]] +
-							vals[p.idParcels[27]] +
-							vals[p.idParcels[28]] +
-							vals[p.idParcels[29]] +
-							vals[p.idParcels[30]] +
-							vals[p.idParcels[31]] +
-							vals[p.idParcels[32]] +
-							vals[p.idParcels[33]]*0.2 - 1
-					invalid = invalids[p.idParcels[0]] ||
-						invalids[p.idParcels[1]] ||
-						invalids[p.idParcels[2]] ||
-						invalids[p.idParcels[3]] ||
-						invalids[p.idParcels[4]] ||
-						invalids[p.idParcels[5]] ||
-						invalids[p.idParcels[6]] ||
-						invalids[p.idParcels[7]] ||
-						invalids[p.idParcels[8]] ||
-						invalids[p.idParcels[9]] ||
-						invalids[p.idParcels[10]] ||
-						invalids[p.idParcels[11]] ||
-						invalids[p.idParcels[12]] ||
-						invalids[p.idParcels[13]] ||
-						invalids[p.idParcels[14]] ||
-						invalids[p.idParcels[15]] ||
-						invalids[p.idParcels[16]] ||
-						invalids[p.idParcels[17]] ||
-						invalids[p.idParcels[18]] ||
-						invalids[p.idParcels[19]] ||
-						invalids[p.idParcels[20]] ||
-						invalids[p.idParcels[21]] ||
-						invalids[p.idParcels[22]] ||
-						invalids[p.idParcels[23]] ||
-						invalids[p.idParcels[24]] ||
-						invalids[p.idParcels[25]] ||
-						invalids[p.idParcels[26]] ||
-						invalids[p.idParcels[27]] ||
-						invalids[p.idParcels[28]] ||
-						invalids[p.idParcels[29]] ||
-						invalids[p.idParcels[30]] ||
-						invalids[p.idParcels[31]] ||
-						invalids[p.idParcels[32]] ||
-						invalids[p.idParcels[33]]
-					ok = true
-				}
-			case 14: //	(P1 * 10) / 6
-				if len(p.idParcels) == 1 {
-					val = (vals[p.idParcels[0]] * 10) / 6
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 15: // DIFFERENCE
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 16: // P1 - P2 - P3
-				if len(p.idParcels) == 3 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]]
-					ok = true
-				}
-			case 17: // P1 - P2 - P3 - P4
-				if len(p.idParcels) == 4 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]]
-					ok = true
-				}
-			case 18: // P1 - P2 - P3 - P4 - P5 - P6
-				if len(p.idParcels) == 6 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]]
-					ok = true
-				}
-			case 19: // P1 + P2 - P3
-				if len(p.idParcels) == 3 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]]
-					ok = true
-				}
-			case 20: // P1 + P2 + P3 - P4 - P5 - P6
-				if len(p.idParcels) == 6 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]]
-					ok = true
-				}
-			case 21: // P1 + P2 + P3 + P4 - P5 - P6 - P7 - P8 - P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 22: // P1 + P2 + P3 + P4 + P5 + P6 - P7 - P8 - P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 23: // P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 - P11
-				if len(p.idParcels) == 11 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] + vals[p.idParcels[6]] + vals[p.idParcels[7]] + vals[p.idParcels[8]] + vals[p.idParcels[9]] - vals[p.idParcels[10]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]]
-					ok = true
-				}
-			case 24: // P1 + P2 + P3 - P4 - P5 - P6 - P7 - P8 - P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 26: // RES=P2;if (abs(P1)>1.4) RES=0; if (abs(P1)<=0.5) RES=1
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[1]]
-					if math.Abs(vals[p.idParcels[0]]) > 1.4 {
-						val = 0
-					}
-					if math.Abs(vals[p.idParcels[0]]) <= 0.5 {
-						val = 1
-					}
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-
-			case 50, 51: // DIGITAL/ANALOG CHOICE (pick the first ok value)
-				invalid = invalids[p.idParcels[0]]
-				val = vals[p.idParcels[0]]
-				for _, elem := range p.idParcels {
-					if !invalids[elem] {
-						val = vals[elem]
-						invalid = false
-					}
-				}
-				ok = true
-			case 52: // Any ok? (1 if any parcel is ok)
-				invalid = false
-				val = 0
-				for _, elem := range p.idParcels {
-					if !invalids[elem] {
-						val = 1
-					}
-				}
-				ok = true
-			case 53: // MAX SPAN (difference between max / min parcel values)
-				max := -math.MaxFloat64
-				min := math.MaxFloat64
-				invalid = false
-				val = 0
-				for _, elem := range p.idParcels {
-					if vals[elem] > max {
-						max = vals[elem]
-					}
-					if vals[elem] < min {
-						min = vals[elem]
-					}
-					invalid = invalid || invalids[elem]
-				}
-				val = max - min
-				ok = true
-			case 54: // double point from 2 single OFF / ON = OFF,  ON / OFF = ON, equal values = bad
-				val = vals[p.idParcels[0]]
-				invalid = false
-				transient = false
-				if len(p.idParcels) == 2 {
-					if vals[p.idParcels[0]] == 0 && vals[p.idParcels[1]] != 0 {
-						val = 0
-					}
-					if vals[p.idParcels[0]] != 0 && vals[p.idParcels[1]] == 0 {
-						val = 1
-					}
-					if vals[p.idParcels[0]] == vals[p.idParcels[1]] {
-						transient = true
-						invalid = true
-					}
-					invalid = invalid || invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 55: // DIVISION P1/P2
-				if len(p.idParcels) == 2 {
-					if vals[p.idParcels[1]] == 0 { // avoids division by zero
-						if vals[p.idParcels[0]] == 0 {
-							val = 0
-						} else if vals[p.idParcels[0]] > 0 {
-							val = math.MaxFloat64
-						} else {
-							val = -math.MaxFloat64
-						}
-					} else {
-						val = vals[p.idParcels[0]] / vals[p.idParcels[1]]
-					}
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 200: // P1-P2-P3-P4-P5-P6-P7-P8
-				if len(p.idParcels) == 8 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]]
-					ok = true
-				}
-			case 201: // P1+P2+P3+P4+P5+P6+P7+P8-P9-P10-P11
-				if len(p.idParcels) == 11 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] + vals[p.idParcels[6]] + vals[p.idParcels[7]] - vals[p.idParcels[8]] - vals[p.idParcels[9]] - vals[p.idParcels[10]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]]
-					ok = true
-				}
-			case 202: // ( P1 * 60 ) + P2
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]]*60 + vals[p.idParcels[1]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 203: // Choose from 2 measures P1 !=0 THEN P3 ELSE P2
-				if len(p.idParcels) == 3 {
-					if vals[p.idParcels[0]] != 0 {
-						val = vals[p.idParcels[2]]
-						invalid = invalids[p.idParcels[2]]
-					} else {
-						val = vals[p.idParcels[1]]
-						invalid = invalids[p.idParcels[1]]
-					}
-					ok = true
-				}
-			case 204: // P1/2
-				if len(p.idParcels) == 1 {
-					val = vals[p.idParcels[0]] / 2
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 205: // P1+P2-P3-P4-P5
-				if len(p.idParcels) == 5 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]]
-					ok = true
-				}
-			case 206: // P1-P2-P3-P4-P5-P6-P7-P8-P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 207: // P1+P2-P3-P4-P5-P6
-				if len(p.idParcels) == 6 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]]
-					ok = true
-				}
-			case 208: // P1-P2-P3-P4-P5
-				if len(p.idParcels) == 5 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]]
-					ok = true
-				}
-			case 209: // P1+P2-P3-P4-P5-P6-P7-P8-P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 210: // P1-P2-P3-P4-P5-P6-P7
-				if len(p.idParcels) == 7 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]]
-					ok = true
-				}
-			case 211: // P1+P2+P3+P4+P5-P6-P7-P8-P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 213: // P1+P2+P3-P4
-				if len(p.idParcels) == 4 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]]
-					ok = true
-				}
-			case 214: // P1+P2+P3+P4-P5
-				if len(p.idParcels) == 5 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] - vals[p.idParcels[4]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]]
-					ok = true
-				}
-			case 215: // P1+P2-P3-P4
-				if len(p.idParcels) == 4 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]]
-					ok = true
-				}
-			case 216: // IF P2 <= P1 <= P3 THEN 1 ELSE 0
-				if len(p.idParcels) == 3 {
-					val = 0
-					if vals[p.idParcels[1]] <= vals[p.idParcels[0]] && vals[p.idParcels[0]] <= vals[p.idParcels[2]] {
-						val = 1
-					}
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 217: // P1+P2+P3+P4+P5-P6
-				if len(p.idParcels) == 6 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] - vals[p.idParcels[5]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]]
-					ok = true
-				}
-			case 218: // IF P2 < P1 <= P3 THEN 1 ELSE 0
-				if len(p.idParcels) == 3 {
-					val = 0
-					if vals[p.idParcels[1]] < vals[p.idParcels[0]] && vals[p.idParcels[0]] <= vals[p.idParcels[2]] {
-						val = 1
-					}
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 219: // IF P2 <= P1 < P3 THEN 1 ELSE 0
-				if len(p.idParcels) == 3 {
-					val = 0
-					if vals[p.idParcels[1]] <= vals[p.idParcels[0]] && vals[p.idParcels[0]] < vals[p.idParcels[2]] {
-						val = 1
-					}
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 220: // LT( P1 , P2 )
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]]
-					if vals[p.idParcels[1]] < vals[p.idParcels[0]] {
-						val = vals[p.idParcels[1]]
-					}
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 221: // GT( P1 , P2 )
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]]
-					if vals[p.idParcels[1]] > vals[p.idParcels[0]] {
-						val = vals[p.idParcels[1]]
-					}
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 222: // P1+P2+P3-P4-P5-P6-P7
-				if len(p.idParcels) == 7 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]]
-					ok = true
-				}
-			case 223: // P1+P2+P3-P4-P5-P6-P7-P8
-				if len(p.idParcels) == 8 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]]
-					ok = true
-				}
-			case 224: // P1+P2+P3+P4+P5+P6-P7
-				if len(p.idParcels) == 7 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] - vals[p.idParcels[6]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]]
-					ok = true
-				}
-			case 225: // VBD+0*P1
-				if len(p.idParcels) <= 1 {
-					val = 1
-					invalid = false
-					ok = true
-				}
-			case 226: // P1+P2-P3-P4-P5-P6-P7-P8
-				if len(p.idParcels) == 8 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]]
-					ok = true
-				}
-			case 227: // P1+P2+P3-P4-P5
-				if len(p.idParcels) == 5 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]]
-					ok = true
-				}
-			case 228: // P1+P2+P3-P4-P5-P6-P7-P8-P9-P10-P11-P12
-				if len(p.idParcels) == 12 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]] - vals[p.idParcels[9]] - vals[p.idParcels[10]] - vals[p.idParcels[11]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]] || invalids[p.idParcels[11]]
-					ok = true
-				}
-			case 229: // P1+P2+P3+P4+P5+P6+P7+P8+P9-P10-P11-P12
-				if len(p.idParcels) == 12 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] + vals[p.idParcels[6]] + vals[p.idParcels[7]] + vals[p.idParcels[8]] - vals[p.idParcels[9]] - vals[p.idParcels[10]] - vals[p.idParcels[11]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]] || invalids[p.idParcels[11]]
-					ok = true
-				}
-			case 230: // P1+P2+P3+P4+P5+P6+P7+P8+P9-P10
-				if len(p.idParcels) == 10 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] + vals[p.idParcels[6]] + vals[p.idParcels[7]] + vals[p.idParcels[8]] - vals[p.idParcels[9]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]]
-					ok = true
-				}
-			case 231: // IF P1 > 0 THEN 0 ELSE P1
-				if len(p.idParcels) == 1 {
-					val = vals[p.idParcels[0]]
-					if vals[p.idParcels[0]] > 0 {
-						val = 0
-					}
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 232: // P1+P2+P3+P4+P5-P6-P7-P8
-				if len(p.idParcels) == 8 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]]
-					ok = true
-				}
-			case 233: // P1+P2+P3+P4+P5+P6+P7-P8-P9-P10-P11
-				if len(p.idParcels) == 11 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] + vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]] - vals[p.idParcels[9]] - vals[p.idParcels[10]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]]
-					ok = true
-				}
-			case 500: // P1 | P2 | PN
-				invalid = false
-				val = 0
-				for _, elem := range p.idParcels {
-					if vals[elem] != 0 {
-						val = 1
-					}
-					invalid = invalid || invalids[elem]
-				}
-				ok = true
-			case 680: // P1+P2+P3-P4-P5
-				if len(p.idParcels) == 5 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]]
-					ok = true
-				}
-			case 5000: // P1+P2+P3-P4-0.60*P5+P6
-				if len(p.idParcels) == 6 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] - vals[p.idParcels[3]] - 0.6*vals[p.idParcels[4]] + vals[p.idParcels[5]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]]
-					ok = true
-				}
-			case 5022: // P1+(0.65*P2)
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
-				}
-			case 5041: // P1+P2-P3+P4-P5
-				if len(p.idParcels) == 5 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] + vals[p.idParcels[3]] - vals[p.idParcels[4]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]]
-					ok = true
-				}
-			case 5043: // P1+P2+P3+P4-P5-P6+P7-P8-P9
-				if len(p.idParcels) == 9 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] + vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]]
-					ok = true
-				}
-			case 5172: // -0.72*P1
-				if len(p.idParcels) == 1 {
-					val = -0.72 * vals[p.idParcels[0]]
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 5173: // 0.38*P1
-				if len(p.idParcels) == 1 {
-					val = 0.38 * vals[p.idParcels[0]]
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 5174: // 0.14*P1
-				if len(p.idParcels) == 1 {
-					val = 0.14 * vals[p.idParcels[0]]
-					invalid = invalids[p.idParcels[0]]
-					ok = true
-				}
-			case 5406: // -P1+P2+P3+P4+P5+P6-P7-P8+P9+P10+P11
-				if len(p.idParcels) == 11 {
-					val = -vals[p.idParcels[0]] + vals[p.idParcels[1]] + vals[p.idParcels[2]] + vals[p.idParcels[3]] + vals[p.idParcels[4]] + vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] + vals[p.idParcels[8]] + vals[p.idParcels[9]] + vals[p.idParcels[10]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]]
-					ok = true
-				}
-			case 5711: // -P1-P2-P3-P4
-				if len(p.idParcels) == 4 {
-					val = -vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]]
-					ok = true
-				}
-			case 7374: // P1-P2-P3-P4-P5-P6-P7-P8-P9-P10-P11-P12
-				if len(p.idParcels) == 12 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]] - vals[p.idParcels[8]] - vals[p.idParcels[9]] - vals[p.idParcels[10]] - vals[p.idParcels[11]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]] || invalids[p.idParcels[8]] || invalids[p.idParcels[9]] || invalids[p.idParcels[10]] || invalids[p.idParcels[11]]
-					ok = true
-				}
-			case 8055: // P1+P2-P3-P4-P5-P6-P7-P8
-				if len(p.idParcels) == 8 {
-					val = vals[p.idParcels[0]] + vals[p.idParcels[1]] - vals[p.idParcels[2]] - vals[p.idParcels[3]] - vals[p.idParcels[4]] - vals[p.idParcels[5]] - vals[p.idParcels[6]] - vals[p.idParcels[7]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]] || invalids[p.idParcels[2]] || invalids[p.idParcels[3]] || invalids[p.idParcels[4]] || invalids[p.idParcels[5]] || invalids[p.idParcels[6]] || invalids[p.idParcels[7]]
-					ok = true
-				}
-			case 25673: // P1-P2
-				if len(p.idParcels) == 2 {
-					val = vals[p.idParcels[0]] - vals[p.idParcels[1]]
-					invalid = invalids[p.idParcels[0]] || invalids[p.idParcels[1]]
-					ok = true
+			// parcels missing from the database count as 0, invalid
+			vals := make([]float64, len(p.idParcels))
+			invs := make([]bool, len(p.idParcels))
+			for i, k := range p.idParcels {
+				if pt, ok := points[k]; ok {
+					vals[i], invs[i] = pt.VALUE, pt.INVALID
+				} else {
+					invs[i] = true
 				}
 			}
+			val, invalid, transient, ok := calculate(p.calc, vals, invs)
+			if !ok {
+				continue // not computable, reported by loadCalcs
+			}
 
+			// write only when the output differs from the one last written
+			changed := true
+			if pt, found := points[id]; found && pt.SDU != nil &&
+				pt.SDU.VALUE == val && pt.SDU.INVALID == invalid && pt.SDU.TRANSIENT == transient {
+				changed = false
+			}
 			if logLevel > 2 {
-				var chg string
-				if val == vals[id] && invalid == invalids[id] {
-					chg = "NOT_CHANGED"
-				}
-				log.Printf("Key %d Parcels %+v Result %f Invalid %v %s", id, p.idParcels, val, invalid, chg)
+				log.Printf("Key %d Formula %d Parcels %+v Result %f Invalid %v Transient %v Changed %v",
+					id, p.calc, p.idParcels, val, invalid, transient, changed)
 			}
-
-			// accumulates updates for changed data
-			if ok && (val != vals[id] || invalid != invalids[id]) {
+			if changed {
 				oper := mongo.NewUpdateOneModel()
 				oper.Filter = bson.D{
-					{"_id", id},
+					{Key: "_id", Value: id},
 				}
 				oper.Update = bson.D{{
-					"$set", bson.D{{
-						"sourceDataUpdate",
-						bson.D{
-							{"valueAtSource", val},
-							{"invalidAtSource", invalid},
-							{"transientAtSource", transient},
-							{"timeTag", time.Now()},
+					Key: "$set", Value: bson.D{{
+						Key: "sourceDataUpdate",
+						Value: bson.D{
+							{Key: "valueAtSource", Value: val},
+							{Key: "invalidAtSource", Value: invalid},
+							{Key: "transientAtSource", Value: transient},
+							{Key: "timeTag", Value: time.Now()},
 						},
 					}},
 				}}
@@ -1170,7 +492,7 @@ func main() {
 			}
 		}
 
-		// bulb write the update operations to the MongoDB server
+		// bulk write the update operations to the MongoDB server
 		if len(opers) > 0 {
 			res, err := collection.BulkWrite(
 				context.Background(),
@@ -1180,7 +502,9 @@ func main() {
 				log.Print("bulk")
 				log.Fatal(err)
 			}
-			log.Printf("Count %d Elapsed %s\n", res.MatchedCount, time.Since(tbegin))
+			if logLevel > 0 {
+				log.Printf("Count %d Elapsed %s\n", res.MatchedCount, time.Since(tbegin))
+			}
 		}
 
 		// wait for calculation time period to end
@@ -1188,4 +512,75 @@ func main() {
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+}
+
+// period of reloading the calculated point definitions
+const reloadPeriod = 30 * time.Second
+
+// loadCalcs reads the calculated points (origin "calculated", formula > 0) and
+// returns them with the keys to read each cycle (calculated points and their
+// parcels). Points that cannot be computed are logged and left out. prev is
+// the previous result, used to log only changes.
+func loadCalcs(collection *mongo.Collection, prev map[int]*pointCalc) (map[int]*pointCalc, bson.A) {
+	cur, err := collection.Find(context.Background(),
+		bson.D{
+			{Key: "formula", Value: bson.D{{Key: "$gt", Value: 0}}},
+			{Key: "origin", Value: "calculated"},
+		},
+		options.Find().SetProjection(bson.D{
+			{Key: "_id", Value: 1},
+			{Key: "formula", Value: 1},
+			{Key: "parcels", Value: 1},
+		}),
+	)
+	if err != nil {
+		log.Print("find")
+		log.Fatal(err)
+	}
+	defer cur.Close(context.Background())
+
+	calcs := make(map[int]*pointCalc)
+	for cur.Next(context.Background()) {
+		elem := &realtimeDataForm{}
+		if err := cur.Decode(elem); err != nil {
+			log.Printf("Calculated point %v skipped, cannot decode formula/parcels: %v", cur.Current.Lookup("_id"), err)
+			continue
+		}
+		p := &pointCalc{calc: elem.FORMULA, idParcels: elem.PARCELS}
+		if old, ok := prev[elem.ID]; ok && old.equal(p) {
+			calcs[elem.ID] = old
+			continue
+		}
+		f, found := formulas[elem.FORMULA]
+		switch {
+		case elem.FORMULA >= userFormulaMin:
+			if logLevel > 1 {
+				log.Printf("Key %d formula %d is reserved for user processes, ignored", elem.ID, elem.FORMULA)
+			}
+			continue
+		case !found:
+			log.Printf("Key %d formula %d is not implemented, point skipped", elem.ID, elem.FORMULA)
+			continue
+		case !f.parcelsOK(len(elem.PARCELS)):
+			log.Printf("Key %d formula %d needs %s parcels, has %d, point skipped",
+				elem.ID, elem.FORMULA, f.parcelsText(), len(elem.PARCELS))
+			continue
+		}
+		if logLevel > 1 || prev != nil {
+			log.Printf("Key %d formula %d parcels %v loaded", elem.ID, elem.FORMULA, elem.PARCELS)
+		}
+		calcs[elem.ID] = p
+	}
+	if prev == nil || len(prev) != len(calcs) {
+		log.Printf("%d calculated points loaded", len(calcs))
+	}
+
+	keys := bson.A{}
+	for id, p := range calcs {
+		keys = append(keys, id)
+		for _, k := range p.idParcels {
+			keys = append(keys, k)
+		}
+	}
+	return calcs, keys
 }

@@ -11,7 +11,7 @@ Cross-distribution Linux scripts for building, exporting, and managing JSON-SCAD
 
 ## Local Contracts
 
-- `build.sh` — build all Go/Node.js/.NET components for Linux
+- `build.sh` — build all Go/Node.js/.NET components for Linux; also runs `src/cim-ems/install.sh` (Python venv for the CIM-EMS driver, skipped on non-x86_64)
 - `restart_processes.sh` — restart all JSON-SCADA processes
 - `restart_protocols.sh` — restart protocol driver processes only
 - `export_project.sh` — export project configuration

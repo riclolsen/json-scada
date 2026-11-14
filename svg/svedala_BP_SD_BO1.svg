@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" height="607.7" viewBox="0.00 -69.12 180.00 607.68" width="180.0"><style>/* ----------------------------------------------------------------------- */
+/* File: tautologies.css ------------------------------------------------- */
+.sld-out .sld-arrow-in {visibility: hidden}
+.sld-in .sld-arrow-out {visibility: hidden}
+.sld-closed .sld-sw-open {visibility: hidden}
+.sld-open .sld-sw-closed {visibility: hidden}
+.sld-hidden-node {visibility: hidden}
+.sld-top-feeder .sld-label {dominant-baseline: auto}
+.sld-bottom-feeder .sld-label {dominant-baseline: hanging}
+.sld-active-power .sld-label {dominant-baseline: mathematical}
+.sld-reactive-power .sld-label {dominant-baseline: mathematical}
+.sld-current .sld-label {dominant-baseline: mathematical}
+.sld-current-value .sld-label {dominant-baseline: mathematical}
+.sld-permanent-limit-percentage .sld-label {dominant-baseline: mathematical}
+/* ----------------------------------------------------------------------- */
+/* File: topologicalBaseVoltages.css ------------------------------------- */
+.sld-disconnected {--sld-vl-color: #808080}
+.sld-vl300to500.sld-bus-0 {--sld-vl-color: #FF0000}
+.sld-vl300to500.sld-bus-1 {--sld-vl-color: #7F6C00}
+.sld-vl300to500.sld-bus-2 {--sld-vl-color: #F6B2FF}
+.sld-vl300to500.sld-bus-3 {--sld-vl-color: #996700}
+.sld-vl300to500.sld-bus-4 {--sld-vl-color: #FF85EB}
+.sld-vl300to500.sld-bus-5 {--sld-vl-color: #B25B00}
+.sld-vl300to500.sld-bus-6 {--sld-vl-color: #FF59B5}
+.sld-vl300to500.sld-bus-7 {--sld-vl-color: #CC4400}
+.sld-vl300to500.sld-bus-8 {--sld-vl-color: #FF2C67}
+.sld-vl300to500.sld-bus-9 {--sld-vl-color: #E52600}
+.sld-vl180to300.sld-bus-0 {--sld-vl-color: #218B21}
+.sld-vl180to300.sld-bus-1 {--sld-vl-color: #0D4940}
+.sld-vl180to300.sld-bus-2 {--sld-vl-color: #DFDAB9}
+.sld-vl180to300.sld-bus-3 {--sld-vl-color: #105640}
+.sld-vl180to300.sld-bus-4 {--sld-vl-color: #C2CB92}
+.sld-vl180to300.sld-bus-5 {--sld-vl-color: #14643C}
+.sld-vl180to300.sld-bus-6 {--sld-vl-color: #95B66B}
+.sld-vl180to300.sld-bus-7 {--sld-vl-color: #187036}
+.sld-vl180to300.sld-bus-8 {--sld-vl-color: #5FA046}
+.sld-vl180to300.sld-bus-9 {--sld-vl-color: #1C7E2D}
+.sld-vl120to180.sld-bus-0 {--sld-vl-color: #00AFAE}
+.sld-vl120to180.sld-bus-1 {--sld-vl-color: #000D58}
+.sld-vl120to180.sld-bus-2 {--sld-vl-color: #B8E7B2}
+.sld-vl120to180.sld-bus-3 {--sld-vl-color: #002169}
+.sld-vl120to180.sld-bus-4 {--sld-vl-color: #85D993}
+.sld-vl120to180.sld-bus-5 {--sld-vl-color: #003C7B}
+.sld-vl120to180.sld-bus-6 {--sld-vl-color: #59CB8B}
+.sld-vl120to180.sld-bus-7 {--sld-vl-color: #005C8C}
+.sld-vl120to180.sld-bus-8 {--sld-vl-color: #2CBD94}
+.sld-vl120to180.sld-bus-9 {--sld-vl-color: #00839E}
+.sld-vl70to120.sld-bus-0 {--sld-vl-color: #CC5500}
+.sld-vl70to120.sld-bus-1 {--sld-vl-color: #4A6600}
+.sld-vl70to120.sld-bus-2 {--sld-vl-color: #EFB2DD}
+.sld-vl70to120.sld-bus-3 {--sld-vl-color: #6E7A00}
+.sld-vl70to120.sld-bus-4 {--sld-vl-color: #E685AE}
+.sld-vl70to120.sld-bus-5 {--sld-vl-color: #8E8400}
+.sld-vl70to120.sld-bus-6 {--sld-vl-color: #DD596B}
+.sld-vl70to120.sld-bus-7 {--sld-vl-color: #A37B00}
+.sld-vl70to120.sld-bus-8 {--sld-vl-color: #D4432C}
+.sld-vl70to120.sld-bus-9 {--sld-vl-color: #B76B00}
+.sld-vl50to70.sld-bus-0 {--sld-vl-color: #A020EF}
+.sld-vl50to70.sld-bus-1 {--sld-vl-color: #7F0848}
+.sld-vl50to70.sld-bus-2 {--sld-vl-color: #B7DBFE}
+.sld-vl50to70.sld-bus-3 {--sld-vl-color: #960C6D}
+.sld-vl50to70.sld-bus-4 {--sld-vl-color: #8DA6FE}
+.sld-vl50to70.sld-bus-5 {--sld-vl-color: #AD109A}
+.sld-vl50to70.sld-bus-6 {--sld-vl-color: #6F66FB}
+.sld-vl50to70.sld-bus-7 {--sld-vl-color: #BC14C4}
+.sld-vl50to70.sld-bus-8 {--sld-vl-color: #7F42F6}
+.sld-vl50to70.sld-bus-9 {--sld-vl-color: #B11AD9}
+.sld-vl30to50.sld-bus-0 {--sld-vl-color: #FF8290}
+.sld-vl30to50.sld-bus-1 {--sld-vl-color: #7F6F41}
+.sld-vl30to50.sld-bus-2 {--sld-vl-color: #F6D9FF}
+.sld-vl30to50.sld-bus-3 {--sld-vl-color: #99784E}
+.sld-vl30to50.sld-bus-4 {--sld-vl-color: #FFC3FB}
+.sld-vl30to50.sld-bus-5 {--sld-vl-color: #B27D5B}
+.sld-vl30to50.sld-bus-6 {--sld-vl-color: #FFADE3}
+.sld-vl30to50.sld-bus-7 {--sld-vl-color: #CC7E68}
+.sld-vl30to50.sld-bus-8 {--sld-vl-color: #FF97BF}
+.sld-vl30to50.sld-bus-9 {--sld-vl-color: #E57B75}
+.sld-vl0to30.sld-bus-0 {--sld-vl-color: #AAAE27}
+.sld-vl0to30.sld-bus-1 {--sld-vl-color: #195B0F}
+.sld-vl0to30.sld-bus-2 {--sld-vl-color: #EABABE}
+.sld-vl0to30.sld-bus-3 {--sld-vl-color: #2D6C13}
+.sld-vl0to30.sld-bus-4 {--sld-vl-color: #DDA193}
+.sld-vl0to30.sld-bus-5 {--sld-vl-color: #477D17}
+.sld-vl0to30.sld-bus-6 {--sld-vl-color: #CE9A6E}
+.sld-vl0to30.sld-bus-7 {--sld-vl-color: #648D1C}
+.sld-vl0to30.sld-bus-8 {--sld-vl-color: #BEA04A}
+.sld-vl0to30.sld-bus-9 {--sld-vl-color: #869D22}
+/* ----------------------------------------------------------------------- */
+/* File : highlightLineStates.css ---------------------------------------- */
+.sld-wire.sld-feeder-disconnected {stroke: black}
+.sld-wire.sld-feeder-connected-disconnected {stroke-dasharray: 3,3}
+.sld-wire.sld-feeder-disconnected-connected {stroke: black; stroke-dasharray: 3,3}
+.sld-busbar-section.sld-bus-disconnected {stroke-dasharray: 3,3}
+/* ----------------------------------------------------------------------- */
+/* File : components.css ------------------------------------------------- */
+/* Stroke black */
+.sld-disconnector {stroke-width: 3; stroke: black; fill: none}
+/* Stroke blue */
+.sld-breaker {stroke-width: 2; stroke: blue; fill:white}
+.sld-load-break-switch {stroke: blue; fill: white}
+/* Stroke --sld-vl-color with fallback black */
+.sld-bus-connection {fill: var(--sld-vl-color, black)}
+.sld-cell-shape-flat .sld-bus-connection {visibility: hidden}
+.sld-busbar-section {stroke: var(--sld-vl-color, black); stroke-width: 3; fill: none}
+/* Stroke --sld-vl-color with fallback red */
+.sld-wire {stroke: var(--sld-vl-color, #c80000); fill: none}
+.sld-wire.sld-boundary-line {stroke-width: 2px}
+.sld-wire.sld-tie-line {stroke-width: 2px}
+/* Stroke --sld-vl-color with fallback blue */
+.sld-load {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-battery {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-generator {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-two-wt {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-three-wt {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-winding {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-capacitor {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-inductor {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-pst {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-pst-arrow {stroke: black; fill: none}
+.sld-svc {stroke: var(--sld-vl-color, blue); fill: none}
+.sld-vsc {stroke: var(--sld-vl-color, blue); font-size: 7.43px; fill: none}
+.sld-lcc {stroke: var(--sld-vl-color, blue); font-size: 7.43px; fill: none}
+.sld-ground {stroke: var(--sld-vl-color, blue); fill: none}
+/* Stroke none &amp; fill: --sld-vl-color */
+.sld-node-infos {stroke: none; fill: var(--sld-vl-color, black)}
+/* Stroke none &amp; fill: black */
+.sld-node {stroke: none; fill: black}
+.sld-flash {stroke: none; fill: black}
+.sld-lock {stroke: none; fill: black}
+.sld-unknown {stroke: none; fill: black}
+/* Fonts */
+.sld-label {stroke: none; fill: black; font: 8px serif}
+.sld-bus-legend-info {font: 10px serif}
+.sld-graph-label {font: 12px serif}
+/* Specific */
+.sld-grid {stroke: #003700; stroke-dasharray: 1,10}
+.sld-feeder-info.sld-active-power {fill:black}
+.sld-feeder-info.sld-reactive-power {fill:blue}
+.sld-feeder-info.sld-current {fill:purple}
+.sld-frame {fill: var(--sld-background-color, transparent)}
+/* Stroke maroon for fictitious switch */
+.sld-breaker.sld-fictitious {stroke: maroon}
+.sld-disconnector.sld-fictitious {stroke: maroon}
+.sld-load-break-switch.sld-fictitious {stroke: maroon}
+.sld-busbar-section.sld-fictitious {stroke: var(--sld-vl-color, #c80000); stroke-width: 1}
+/* ground disconnector specific */
+.sld-ground-disconnection-attach {stroke: var(--sld-vl-color, #c80000); fill: none}
+.sld-open .sld-ground-disconnection-ground {stroke: black; fill: none}
+.sld-closed .sld-ground-disconnection-ground {stroke: var(--sld-vl-color, #c80000); fill: none}
+.sld-ground-disconnection .sld-sw-open {stroke: black; fill: none}
+.sld-ground-disconnection .sld-sw-closed {stroke: black; fill: none}
+</style><rect x="0.00" y="-69.12" width="180.00" height="607.68" style="fill:#ffffff;stroke:none" /><rect class="sld-frame" height="100%" width="100%" /><g><g class="sld-voltage-level" id="idf738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL"><g class="sld-busbar-section sld-fictitious sld-vl300to500 sld-bus-0" id="id20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus" transform="translate(65.0,252.0)"><line x1="0" x2="50.0" y1="0" y2="0" /></g><g class="sld-extern-cell sld-cell-direction-bottom" id="idEXTERN_32_0"><g class="sld-wire sld-vl300to500 sld-bus-0" id="_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_45_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20"><polyline points="115.0,282.0,115.0,252.0" /></g><g class="sld-wire sld-vl300to500 sld-bus-0" id="_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_45_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20"><polyline points="115.0,282.0,115.0,362.0" /></g><g class="sld-wire sld-vl300to500 sld-bus-0" id="_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20"><polyline points="115.0,362.0,115.0,418.0" /></g><g class="sld-feeder-info sld-out sld-reactive-power" id="ide8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_95_ARROW_95_REACTIVE" transform="translate(110.0,393.0)">
+                    </g><g class="sld-feeder-info sld-in sld-active-power" id="ide8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_95_ARROW_95_ACTIVE" transform="translate(110.0,373.0)">
+                    </g><g class="sld-bus-connection sld-fictitious sld-vl300to500 sld-bus-0" id="idBUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20" transform="translate(111.0,248.0)"><circle cx="4" cy="4" r="4" /></g><g class="sld-node sld-hidden-node sld-fictitious sld-vl300to500 sld-bus-0" id="idINTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_45_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20" transform="translate(111.0,278.0)"><circle cx="4" cy="4" r="4" /></g><g class="sld-node sld-hidden-node sld-fictitious sld-vl300to500 sld-bus-0" id="idINTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_e8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20" transform="translate(111.0,358.0)"><circle cx="4" cy="4" r="4" /></g><g class="sld-generator sld-bottom-feeder sld-vl300to500 sld-bus-0" id="ide8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20" transform="translate(109.0,418.0)"><circle cx="6" cy="6" r="6" /><path d="M6,6 A 6 40 0 0 0 2,6" /><path d="M6,6 A 6 40 0 0 0 10,6" /><text class="sld-label" id="ide8cef25f_45_c0e1_45_4e8a_45_a55b_45_60a7cad81b20_95_S_95_LABEL" x="-5.0" y="17.0">Injection_SD_BO1</text></g></g><g class="sld-extern-cell sld-cell-direction-top" id="idEXTERN_32_1"><g class="sld-wire sld-vl300to500 sld-bus-0" id="_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_45_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE"><polyline points="65.0,252.0,65.0,222.0" /></g><g class="sld-wire sld-vl300to500 sld-bus-0" id="_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_45_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE"><polyline points="65.0,222.0,65.0,142.0" /></g><g class="sld-wire sld-vl300to500 sld-bus-0" id="_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_INTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE"><polyline points="65.0,142.0,65.0,80.0" /></g><g class="sld-feeder-info sld-out sld-active-power" id="id20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_ARROW_95_ACTIVE" transform="translate(60.0,95.0)"><polygon class="sld-arrow-out" points="5,0 10,10 0,10" /><polygon class="sld-arrow-in" points="0,0 10,0 5,10" /><text class="sld-label" x="15.0" y="5.0" inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-99999&quot;,&quot;param&quot;:&quot;#1a1a1a|&quot;,&quot;tag&quot;:&quot;SVEDALA_EMS;LF;TieLine_SD-BO1;P;1&quot;},{&quot;data&quot;:&quot;f&quot;,&quot;param&quot;:&quot;#9a9a9a|&quot;,&quot;tag&quot;:&quot;SVEDALA_EMS;LF;TieLine_SD-BO1;P;1&quot;}]},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;get&quot;,&quot;tag&quot;:&quot;SVEDALA_EMS;LF;TieLine_SD-BO1;P;1&quot;,&quot;type&quot;:&quot;Good&quot;}"><tspan>%.1f</tspan></text></g><g class="sld-feeder-info sld-in sld-reactive-power" id="id20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_ARROW_95_REACTIVE" transform="translate(60.0,115.0)"><polygon class="sld-arrow-out" points="5,0 10,10 0,10" /><polygon class="sld-arrow-in" points="0,0 10,0 5,10" /><text class="sld-label" x="15.0" y="5.0" inkscape:label="{&quot;attr&quot;:&quot;color&quot;,&quot;list&quot;:[{&quot;data&quot;:&quot;-99999&quot;,&quot;param&quot;:&quot;#1a1a1a|&quot;,&quot;tag&quot;:&quot;SVEDALA_EMS;LF;TieLine_SD-BO1;Q;1&quot;},{&quot;data&quot;:&quot;f&quot;,&quot;param&quot;:&quot;#9a9a9a|&quot;,&quot;tag&quot;:&quot;SVEDALA_EMS;LF;TieLine_SD-BO1;Q;1&quot;}]},{&quot;align&quot;:&quot;Right&quot;,&quot;attr&quot;:&quot;get&quot;,&quot;tag&quot;:&quot;SVEDALA_EMS;LF;TieLine_SD-BO1;Q;1&quot;,&quot;type&quot;:&quot;Good&quot;}"><tspan>%.1f</tspan></text></g><g class="sld-bus-connection sld-fictitious sld-vl300to500 sld-bus-0" id="idBUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE" transform="translate(61.0,248.0)"><circle cx="4" cy="4" r="4" /></g><g class="sld-node sld-hidden-node sld-fictitious sld-vl300to500 sld-bus-0" id="idINTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_BUSCO_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_FictitiousBus_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_45_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE" transform="translate(61.0,218.0)"><circle cx="4" cy="4" r="4" /></g><g class="sld-node sld-hidden-node sld-fictitious sld-vl300to500 sld-bus-0" id="idINTERNAL_95_f738d362_45_c11c_45_4ca2_45_82da_45_a4fa115b3392_95_VL_95_20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE" transform="translate(61.0,138.0)"><circle cx="4" cy="4" r="4" /></g><g class="sld-top-feeder" id="id20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE" transform="translate(65.0,80.0)"><text class="sld-label" id="id20f3f6ca_45_906f_45_4c6c_45_bc12_45_89ffff80b03b_95_ONE_95_N_95_LABEL" x="-5.0" y="-11.0">TieLine_SD-BO1</text></g></g></g></g><g id="svedala_frame"><text x="16.0" y="-40.3" style="font-family:sans-serif;font-size:20.8px;font-weight:bold;fill:#1a1a1a;text-anchor:start"><tspan>Svedala - BP_SD-BO1</tspan></text><text x="16.0" y="-11.5" style="font-family:sans-serif;font-size:16px;font-weight:normal;fill:#0b62a8;text-anchor:start" inkscape:label="{&quot;attr&quot;:&quot;open&quot;,&quot;istag&quot;:0,&quot;src&quot;:&quot;svedala-overview&quot;,&quot;type&quot;:&quot;_self&quot;,&quot;height&quot;:0,&quot;width&quot;:0,&quot;x&quot;:0,&quot;y&quot;:0}"><tspan>&lt;&lt; Network overview</tspan></text><text x="16.0" y="537.2" style="font-family:sans-serif;font-size:1.3870665417057169px;font-weight:normal;fill:#666666;text-anchor:start"><tspan>Model: ENTSO-E ReliCapGrid, Svedala region by Svenska kraftnät, CC BY-SA 4.0 (common data merged into EQ). https://github.com/entsoe/ReliCapGrid - https://creativecommons.org/licenses/by-sa/4.0/</tspan></text></g></svg>

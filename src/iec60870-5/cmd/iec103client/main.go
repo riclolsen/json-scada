@@ -50,7 +50,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-103"
-	driverVersion      = "0.4.0"
+	driverVersion      = "0.4.1"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -343,8 +343,10 @@ func main() {
 		collConns := db.Collection(jsmongo.ProtocolConnectionsCollectionName)
 		for _, c := range conns {
 			state := "ERROR"
+			linkActive := false
 			if cli := c.client(); cli != nil && cli.IsLinkActive() {
 				state = "AVAILABLE"
+				linkActive = true
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			_, _ = collConns.UpdateOne(ctx,
@@ -353,6 +355,7 @@ func main() {
 					"nodeName":       cfg.NodeName,
 					"timeTag":        time.Now(),
 					"linkLayerState": state,
+					"isConnected":    linkActive,
 				}}})
 			cancel()
 		}

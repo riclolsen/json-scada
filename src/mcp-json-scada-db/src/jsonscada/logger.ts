@@ -34,7 +34,8 @@ const Log: ILog = {
   log: function (msg: string, level: number = 1) {
     if (level <= this.levelCurrent) {
       let dt = new Date()
-      console.log(dt.toISOString() + ' - ' + msg)
+      // stderr: stdout carries the MCP stdio protocol stream
+      console.error(dt.toISOString() + ' - ' + msg)
     }
   },
 }

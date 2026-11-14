@@ -97,6 +97,13 @@ Each instance has exactly one connection in `protocolConnections`:
   **chainValidation**, **allowTLSv10..13**, **cipherList**. When cert+key are set the
   server serves `wss://`.
 
+## Connection status
+
+On the active node the driver writes `stats.isConnected` on its connection
+every 5 s: true while at least one Node-RED client is authenticated. The data
+processor shows it as `_System.Conn.<name>.LinkUp` (see
+[docs/schema.md](../../docs/schema.md#communication-status-tags)).
+
 ## Tag addressing
 
 Flows address points with a free-form string. The suggested convention

@@ -24,6 +24,8 @@ net stop JSON_SCADA_iccpclient
 net stop JSON_SCADA_mqttsparkplugclient
 rem net stop JSON_SCADA_plc4xclient
 net stop JSON_SCADA_plc4jclient
+net stop JSON_SCADA_cim_ems
+net stop JSON_SCADA_cim_ems_demo_field
 net stop JSON_SCADA_telegraf_runtime
 net stop JSON_SCADA_telegraf_listener
 net stop JSON_SCADA_nodered_driver

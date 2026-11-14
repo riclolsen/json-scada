@@ -22,7 +22,7 @@ module.exports = {
   ENV_PREFIX: 'JS_N8N_',
   AUTOTAG_PREFIX: 'N8N',
   MSG: '{json:scada} - N8N Integration Driver',
-  VERSION: '0.1.0',
+  VERSION: '0.1.1',
   // outbound payload envelope schema tag
   PAYLOAD_SCHEMA: 'jsonscada-n8n/1',
   // key partition per connection for auto-created tags

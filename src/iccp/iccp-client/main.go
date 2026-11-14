@@ -79,8 +79,8 @@ func main() {
 	log.Println("Usage: iccp-client [instance number] [log level] [config file name]")
 
 	cfg, instanceNumber, instLogLevel := readConfigFile()
-	currentLogLevel = instLogLevel
-	configureTASE2Logging(currentLogLevel)
+	setLogLevel(instLogLevel)
+	configureTASE2Logging(currentLogLevel())
 	maxTPDUSizeParam := readTuningInt(EnvPrefix+"MAX_TPDU_SIZE_PARAM", cfg.ICCPMaxTPDUSizeParam, 16)
 	if maxTPDUSizeParam < 7 || maxTPDUSizeParam > 16 {
 		LogMsg(LogLevelMin, "Config - Invalid max TPDU size parameter %d, using 16", maxTPDUSizeParam)
@@ -89,7 +89,7 @@ func main() {
 
 	LogMsg(LogLevelMin, "Config - %s Version %s", DriverMsg, DriverVersion)
 	LogMsg(LogLevelMin, "Config - Instance: %d", instanceNumber)
-	LogMsg(LogLevelMin, "Config - Log level: %d", currentLogLevel)
+	LogMsg(LogLevelMin, "Config - Log level: %d", currentLogLevel())
 	LogMsg(LogLevelMin, "Config - Max TPDU size parameter: %d", maxTPDUSizeParam)
 
 	// Channel for data updates to MongoDB writer
@@ -252,6 +252,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		LogMsg(LogLevelNormal, "ICCP %s - Connecting to %s:%d (AP: %s)", conn.Name, host, port, remoteAP)
 		if err := ep.Connect(host, port); err != nil {
 			LogMsg(LogLevelMin, "ICCP %s - Connect failed: %v", conn.Name, err)
+			updateConnectionStats(collectionConnections, conn, cfg, false)
 			time.Sleep(10 * time.Second)
 			continue
 		}
@@ -310,7 +311,8 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 
 		pollTicker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 
-		// Stats update ticker
+		// Stats update ticker (published once now, so the link shows up at once)
+		updateConnectionStats(collectionConnections, conn, cfg, true)
 		statsTicker := time.NewTicker(30 * time.Second)
 
 		// Main poll loop
@@ -329,7 +331,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 				performPoll(client, conn, mappings, coveredDomains, dataChan)
 
 			case <-statsTicker.C:
-				updateConnectionStats(collectionConnections, conn, cfg)
+				updateConnectionStats(collectionConnections, conn, cfg, true)
 			}
 		}
 
@@ -345,6 +347,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 			}
 		}
 		client.Close()
+		updateConnectionStats(collectionConnections, conn, cfg, false)
 		LogMsg(LogLevelNormal, "ICCP %s - Disconnected, reconnecting in 10s...", conn.Name)
 		time.Sleep(10 * time.Second)
 	}
@@ -653,7 +656,7 @@ func iccpTimeStampToTime(t time.Time, hoursShift float64) time.Time {
 }
 
 // updateConnectionStats updates the stats field on the protocol connection document.
-func updateConnectionStats(collectionConnections *mongo.Collection, conn protocolConnection, cfg configData) {
+func updateConnectionStats(collectionConnections *mongo.Collection, conn protocolConnection, cfg configData, isConnected bool) {
 	filter := bson.D{
 		{Key: "protocolConnectionNumber", Value: conn.ProtocolConnectionNumber},
 	}
@@ -662,6 +665,7 @@ func updateConnectionStats(collectionConnections *mongo.Collection, conn protoco
 			{Key: "stats", Value: bson.D{
 				{Key: "nodeName", Value: cfg.NodeName},
 				{Key: "timeTag", Value: time.Now()},
+				{Key: "isConnected", Value: isConnected},
 			}},
 		}},
 	}

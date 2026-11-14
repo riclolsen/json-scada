@@ -57,21 +57,31 @@ func changeStreamLoop(ctx context.Context, cfg jsconfig.Config, g *Gateway) {
 }
 
 // csPipeline is the C# BuildCsFilter, expressed as an aggregation pipeline.
+//
+// The filter is split in two stages with the same result as the single $or.
+// The first references only the event (documentKey is fullDocument._id), so
+// the server applies it before the updateLookup and skips the document read
+// for raw driver writes; the topic filter needs the looked-up document.
 func csPipeline(topics []string) mongo.Pipeline {
-	and := bson.A{
-		bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
-		bson.M{"fullDocument._id": bson.M{"$gt": 0}},
-		bson.M{"operationType": "update"},
-	}
-	if len(topics) > 0 {
-		and = append(bson.A{bson.M{"fullDocument.group1": bson.M{"$in": topics}}}, and...)
-	}
-	return mongo.Pipeline{bson.D{{Key: "$match", Value: bson.M{
+	pipeline := mongo.Pipeline{bson.D{{Key: "$match", Value: bson.M{
 		"$or": bson.A{
-			bson.M{"$and": and},
+			bson.M{"$and": bson.A{
+				bson.M{"updateDescription.updatedFields.sourceDataUpdate": bson.M{"$exists": false}},
+				bson.M{"documentKey._id": bson.M{"$gt": 0}},
+				bson.M{"operationType": "update"},
+			}},
 			bson.M{"operationType": "replace"},
 		},
 	}}}}
+	if len(topics) > 0 {
+		pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
+			"$or": bson.A{
+				bson.M{"fullDocument.group1": bson.M{"$in": topics}},
+				bson.M{"operationType": "replace"},
+			},
+		}}})
+	}
+	return pipeline
 }
 
 func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) error {

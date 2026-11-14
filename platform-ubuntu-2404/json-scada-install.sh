@@ -20,24 +20,83 @@ JS_USERNAME=jsonscada
 ARCHITECTURE="amd64"
 case $(uname -m) in
     x86_64) ARCHITECTURE="amd64" ;;
-    arm)    ARCHITECTURE="arm64";;
+    aarch64|arm64)    ARCHITECTURE="arm64";;
 esac
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
 sudo chmod +x *.sh
 
-# MONGODB WONT'T START IF KERNEL IS UPDATED TO 6.19 OR LATER!
-# Hold the current kernel version to prevent automatic updates.
+# MONGODB WON'T START ON KERNEL 6.19 OR LATER!
+# Use the Ubuntu 24.04 GA kernel (6.8), drop the HWE kernel track and lock the kernel.
+# If the running kernel is 6.19 or newer, remove the newer kernels and ask for a reboot.
+
+# Prints 1 if the kernel version given (e.g. 6.19.0-1-generic) is 6.19 or newer.
+kernel_too_new() {
+    KMAJ=$(echo "$1" | cut -d. -f1)
+    KMIN=$(echo "$1" | cut -d. -f2 | sed 's/[^0-9].*//')
+    if [ "$KMAJ" -gt 6 ] || { [ "$KMAJ" -eq 6 ] && [ "$KMIN" -ge 19 ]; }; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+sudo apt update
 sudo apt -y install linux-generic linux-image-generic linux-headers-generic
-sudo apt -y remove linux-generic-hwe-24.04 linux-image-generic-hwe-24.04 linux-headers-generic-hwe-24.04
-#sudo apt-mark hold linux-generic-24.04 \
-#                   linux-image-generic-24.04 \
-#                   linux-headers-generic-24.04
+sudo apt -y purge linux-generic-hwe-24.04 linux-image-generic-hwe-24.04 linux-headers-generic-hwe-24.04 linux-tools-generic-hwe-24.04
+sudo apt-mark hold linux-generic linux-image-generic linux-headers-generic
+# Block the HWE kernel metapackages so they cannot be pulled in again.
+sudo tee /etc/apt/preferences.d/json-scada-kernel <<EOF
+# JSON-SCADA: MongoDB does not start on kernel 6.19 or later, keep the GA kernel.
+Package: linux-*-hwe-24.04 linux-hwe-*
+Pin: version *
+Pin-Priority: -1
+EOF
+
+RUNNING_KERNEL=$(uname -r)
+if [ "$(kernel_too_new "$RUNNING_KERNEL")" = "1" ]; then
+    echo "Running kernel $RUNNING_KERNEL is 6.19 or newer, MongoDB is not compatible with it."
+
+    # Versioned kernel packages (image, modules, headers, tools) of kernels 6.19 or newer.
+    NEW_KERNEL_PKGS=""
+    OLD_KERNEL_FOUND=0
+    for PKG in $(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' 'linux-*' 2>/dev/null | awk '$1 ~ /^.i/ {print $2}'); do
+        PKG_KVER=$(echo "$PKG" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-' | head -n 1)
+        [ -z "$PKG_KVER" ] && continue
+        if [ "$(kernel_too_new "$PKG_KVER")" = "1" ]; then
+            NEW_KERNEL_PKGS="$NEW_KERNEL_PKGS $PKG"
+        elif echo "$PKG" | grep -qE '^linux-image-(unsigned-)?[0-9]'; then
+            OLD_KERNEL_FOUND=1
+        fi
+    done
+
+    if [ "$OLD_KERNEL_FOUND" != "1" ]; then
+        echo "ERROR: no kernel older than 6.19 is installed, cannot remove the newer kernels."
+        echo "Install linux-generic (GA kernel) manually and run this script again."
+        exit 1
+    fi
+
+    echo "Removing kernel packages:$NEW_KERNEL_PKGS"
+    # Allow removing the running kernel (the machine is rebooted right after).
+    echo "linux-base linux-base/removing-running-kernel boolean false" | sudo debconf-set-selections
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get -y purge $NEW_KERNEL_PKGS
+    sudo update-grub
+
+    echo ""
+    echo "An older kernel was installed and locked, kernels 6.19 or newer were removed."
+    echo "A REBOOT IS REQUIRED. After rebooting, run this installation script again."
+    printf "Reboot now? [y/N] "
+    read REBOOT_ANSWER < /dev/tty
+    case "$REBOOT_ANSWER" in
+        y|Y|yes|YES) sudo reboot ;;
+    esac
+    exit 0
+fi
 
 # Update and install base packages
 sudo apt update
 sudo apt -y upgrade
-sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev
+sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev python3-venv
 sudo apt -y install dotnet-sdk-8.0 
 
 # Docker and container tools
@@ -181,6 +240,12 @@ mongoimport --db json_scada --collection realtimeData --type json --file ../demo
 mongoimport --db json_scada --collection processInstances --type json --file ../demo-docker/mongo_seed/files/demo_process_instances.json
 mongoimport --db json_scada --collection users --type json --file ../demo-docker/mongo_seed/files/demo_users.json
 mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json
+# Svedala CIM-EMS demo (ReliCapGrid model, CC BY-SA 4.0): model, bindings, field and result points
+mongoimport --db json_scada --collection realtimeData --type json --file ../demo-docker/mongo_seed/files/demo_cim_data.json
+mongoimport --db json_scada --collection cimModels --type json --file ../demo-docker/mongo_seed/files/demo_cim_models.json
+mongoimport --db json_scada --collection cimMeasurementBindings --type json --file ../demo-docker/mongo_seed/files/demo_cim_bindings.json
+mongoimport --db json_scada --collection cimArtifacts.files --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_files.json
+mongoimport --db json_scada --collection cimArtifacts.chunks --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_chunks.json
 mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 
 # Start Grafana

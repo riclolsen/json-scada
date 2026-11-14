@@ -223,6 +223,44 @@ services:
     networks:
       - jsdemo_net
 
+  # CIM-EMS driver (load flow, state estimation, N-1) on the Svedala demo network (ReliCapGrid model, CC BY-SA 4.0).
+  # amd64 only (no pypowsybl ARM64 wheel). The first start installs the Python dependencies into the cim_ems_venv
+  # volume (a few minutes); the code runs from the mounted source.
+  cim_ems:
+    image: python:3.14-slim
+    platform: linux/amd64
+    container_name: jsdemo_cim_ems
+    command: sh -c "test -f /venv/.ready || (python -m venv --clear /venv && rm -rf /tmp/cim-ems && cp -r /cim-ems /tmp/cim-ems && rm -rf /tmp/cim-ems/.venv /tmp/cim-ems/tests/data && /venv/bin/pip install --quiet /tmp/cim-ems && touch /venv/.ready) && cd /cim-ems && sleep 50 && /venv/bin/python -m cim_ems 1 1 /conf/json-scada.json"
+    restart: unless-stopped
+    volumes:
+      - ../src/cim-ems:/cim-ems:ro
+      - cim_ems_venv:/venv
+      - ./conf:/conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
+  # Svedala demo field simulator: measurements and switch states of the SVEDALA_FIELD points, breaker commands
+  cim_ems_demo_field:
+    image: python:3.14-slim
+    platform: linux/amd64
+    container_name: jsdemo_cim_ems_demo_field
+    command: sh -c "until [ -f /venv/.ready ]; do sleep 5; done; cd /cim-ems && sleep 50 && /venv/bin/python -m cim_ems.demo_field /conf/json-scada.json"
+    restart: unless-stopped
+    depends_on:
+      - cim_ems
+    volumes:
+      - ../src/cim-ems:/cim-ems:ro
+      - cim_ems_venv:/venv
+      - ./conf:/conf
+      - ./log:/log
+    links:
+      - jsdemo_mongorsn1
+    networks:
+      - jsdemo_net
+
   # custom script processor
   cs_custom_processor:
     image: node:22-alpine
@@ -624,6 +662,7 @@ networks:
     driver: bridge
 
 volumes:
+  cim_ems_venv:
   grafana_data:
   n8n_data:
   nodered_data:

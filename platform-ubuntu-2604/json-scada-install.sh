@@ -20,7 +20,7 @@ JS_USERNAME=jsonscada
 ARCHITECTURE="amd64"
 case $(uname -m) in
     x86_64) ARCHITECTURE="amd64" ;;
-    arm)    ARCHITECTURE="arm64";;
+    aarch64|arm64)    ARCHITECTURE="arm64";;
 esac
 
 sudo -u $JS_USERNAME sh -c 'mkdir ../log'
@@ -29,7 +29,7 @@ sudo chmod +x *.sh
 # Update and install base packages
 sudo apt update
 sudo apt -y upgrade
-sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev
+sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev python3-venv
 sudo apt -y install dotnet-sdk-10.0 
 
 # Docker and container tools
@@ -173,6 +173,12 @@ mongoimport --db json_scada --collection realtimeData --type json --file ../demo
 mongoimport --db json_scada --collection processInstances --type json --file ../demo-docker/mongo_seed/files/demo_process_instances.json
 mongoimport --db json_scada --collection users --type json --file ../demo-docker/mongo_seed/files/demo_users.json
 mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json
+# Svedala CIM-EMS demo (ReliCapGrid model, CC BY-SA 4.0): model, bindings, field and result points
+mongoimport --db json_scada --collection realtimeData --type json --file ../demo-docker/mongo_seed/files/demo_cim_data.json
+mongoimport --db json_scada --collection cimModels --type json --file ../demo-docker/mongo_seed/files/demo_cim_models.json
+mongoimport --db json_scada --collection cimMeasurementBindings --type json --file ../demo-docker/mongo_seed/files/demo_cim_bindings.json
+mongoimport --db json_scada --collection cimArtifacts.files --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_files.json
+mongoimport --db json_scada --collection cimArtifacts.chunks --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_chunks.json
 mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 
 # Start Grafana

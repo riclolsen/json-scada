@@ -1,30 +1,59 @@
-# JSON-SCADA Admin UI 
+# JSON-SCADA Admin UI
 
-Built with Vuetify 3.
+Single-page web application for operating and configuring JSON-SCADA: real-time
+data and events, SVG synoptic displays, point and protocol configuration, user
+and role management, and driver process control.
+
+Built with Vue 3, Vuetify 4 and Vite, and served as static files by Nginx from
+`src/AdminUI/dist` (see `conf-templates/nginx_http.conf` and
+`nginx_https.conf`). All API calls go to the realtime web server
+([`src/server_realtime_auth`](../server_realtime_auth/README.md)) through JWT
+authentication.
+
+Requires Node.js (see the repository `README.md` for the supported version) and
+npm.
 
 ## Development Notes
 
-This section covers how to start the development server and build your project for production.
+### Install and run
 
-### Starting the Development Server
+    cd src/AdminUI
+    npm install
+    npm run dev
 
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
+The development server starts with hot-reload and is accessible at
+[http://localhost:3000](http://localhost:3000). The app calls the API with
+same-origin relative URLs (`/Invoke/...`), so to use live data either put the dev
+server behind the same reverse proxy as the realtime server or add a Vite
+`server.proxy` entry that forwards `/Invoke` and the WebSocket endpoint to
+`server_realtime_auth`.
 
-```bash
-npm run dev
-```
+The `dev` script is plain `vite`. If Vuetify's JSON import mapping prints
+warnings during development, add `NODE_OPTIONS='--no-warnings'` to the `dev`
+script (or `NODE_OPTIONS='--disable-warning=5401'` on Node 21.3.0 or later).
 
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
+### Build for production
 
-### Building for Production
+    npm run build
 
-To build your project for production, use:
+The output is written to `dist/`. On a normal installation Nginx serves that
+directory at the site root, so no separate web server or process is needed.
 
-```bash
-npm run build
-```
+    npm run preview    # serve the production build locally for a quick check
+    npm run lint       # ESLint with --fix
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+### Layout
 
-Once the build process is completed, your application will be ready for deployment in a production environment.
+- `src/components/` — reusable Vue components
+- `src/pages/` — route-level pages
+- `src/plugins/` — Vuetify, router, i18n and other plugin setup
+- `src/styles/` — global and shared styles
+- `public/` — static assets, including the display images and the bundled
+  `sage-cepel-displays` set
 
+## Related documentation
+
+- [SVG display editor](../svg-display-editor/README.md)
+- [MongoDB schema](../../docs/schema.md)
+- [GraphQL API](../../.agents/skills/graphql-api-apps/SKILL.md) — client-facing
+  API for dashboards, integrations and scripts

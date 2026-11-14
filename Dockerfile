@@ -231,36 +231,6 @@ WORKDIR /app/json-scada
 #RUN cd src/libiec61850/dotnet/core/2.0/IEC61850.NET.core.2.0/ && rm -rf obj bin || true
 #RUN cd src/libiec61850 && rm -rf .install || true
 
-## Build mongo-cxx-driver
-#RUN cd src/mongo-cxx-driver/mongo-cxx-driver && \
-#    rm -rf build && \
-#    mkdir -p build && \
-#    cd build && \
-#    sed -i '/   $${fetch_args}/d' ../cmake/FetchMongoC.cmake || true && \
-#    cmake .. -DCMAKE_INSTALL_PREFIX=../../../mongo-cxx-driver-lib -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF && \
-#    cmake --build . --config Release && \
-#    cmake --build . --target install --config Release || true#
-
-## Build OpenDNP3
-#RUN cd src/dnp3/opendnp3 && \
-#    rm -rf build && \
-#    mkdir -p build && \
-#    cd build && \
-#    cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON .. && \
-#    make && \
-#    cp cpp/lib/libopendnp3.so /app/json-scada/bin/ || true
-
-## Build DNP3 Server
-#RUN cd src/dnp3/Dnp3Server/ && \
-#    sed -i 's/mongo-cxx-driver-lib\\/lib64\\//mongo-cxx-driver-lib\\/lib\\//g' ./CMakeLists.txt || true && \
-#    sed -i '/sasl2/a  snappy' ./CMakeLists.txt || true && \
-#    rm -rf build && \
-#    mkdir -p build && \
-#    cd build && \
-#    cmake .. && \
-#    make && \
-#    cp Dnp3Server /app/json-scada/bin/ || true
-
 # ==============================================================================
 # BUILD GO PROJECTS
 # ==============================================================================
@@ -393,6 +363,17 @@ RUN mkdir -p /app/json-scada/nodered-runtime \
     && test -f /app/json-scada/nodered-runtime/node_modules/node-red/red.js
 
 # ==============================================================================
+# CIM-EMS DRIVER (Python)
+# ==============================================================================
+# Virtual environment in src/cim-ems/.venv with the pinned pypowsybl and
+# pandapower. amd64 only: pypowsybl publishes no Linux ARM64 wheel, so arm64
+# images ship without the driver (its supervisor program stays stopped).
+RUN apt update && apt install -y python3-venv && rm -rf /var/lib/apt/lists/* \
+    && if [ "${TARGETARCH:-$(dpkg --print-architecture)}" = "amd64" ]; then \
+         src/cim-ems/install.sh && test -x src/cim-ems/.venv/bin/python && rm -rf /root/.cache/pip; \
+       else echo "CIM-EMS skipped: no pypowsybl wheel for ${TARGETARCH}"; fi
+
+# ==============================================================================
 # DATABASE INITIALIZATION AND CONFIGURATION
 # ==============================================================================
 # Set database environment variables
@@ -410,6 +391,8 @@ COPY ./platform-ubuntu-2404/telegraf-input-mongodb.conf /etc/telegraf/telegraf.d
 COPY ./platform-ubuntu-2404/telegraf-output-json-scada.conf /etc/telegraf/telegraf.d/telegraf-output-json-scada.conf
 
 COPY ./platform-ubuntu-2404/calculations.ini /etc/supervisor/conf.d/calculations.ini
+COPY ./platform-ubuntu-2404/cim_ems.ini /etc/supervisor/conf.d/cim_ems.ini
+COPY ./platform-ubuntu-2404/cim_ems_demo_field.ini /etc/supervisor/conf.d/cim_ems_demo_field.ini
 COPY ./platform-ubuntu-2404/config_server_excel.ini /etc/supervisor/conf.d/config_server_excel.ini
 COPY ./platform-ubuntu-2404/cs_custom_processor.ini /etc/supervisor/conf.d/cs_custom_processor.ini
 COPY ./platform-ubuntu-2404/cs_data_processor.ini /etc/supervisor/conf.d/cs_data_processor.ini

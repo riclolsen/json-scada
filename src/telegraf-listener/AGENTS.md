@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Node.js UDP listener that receives data from Telegraf outputs and writes it to MongoDB. Acts as the bridge between Telegraf data collection and the JSON-SCADA real-time database.
+Node.js UDP listener that receives JSON messages from a Telegraf `socket_writer` output and writes them to MongoDB. Acts as the bridge between Telegraf data collection and the JSON-SCADA real-time database.
 
 ## Ownership
 
@@ -12,11 +12,13 @@ Node.js UDP listener that receives data from Telegraf outputs and writes it to M
 
 - **Language:** Node.js
 - **Main entry:** `index.js` — simple single-file application
-- **Config:** INI file via Supervisor or environment variables
+- **Config:** connection and instance in MongoDB; `conf/json-scada.json` for the database connection
+- **Arguments/env:** instance, log level and config file arguments; `JS_TELEGRAF_LISTENER_*` environment variables
+- **Connection stats:** on each active redundancy cycle `stats.isConnected` = a datagram accepted within the last 60 s (`ConnectedWindowMs`)
 
 ## Work Guidance
 
-- Listens for HTTP POST requests from Telegraf output plugins
+- Listens for UDP datagrams from Telegraf output plugins (`socket_writer` with `data_format = "json"`)
 - Parses incoming Telegraf metrics and maps them to JSON-SCADA real-time data format
 - Supports multiple Telegraf input sources (MQTT, Modbus, SNMP, OPC UA, etc.)
 - The correlating Telegraf configs are in platform config dirs (e.g., `telegraf-input-*.conf`, `telegraf-output-json-scada.conf`)
@@ -24,4 +26,4 @@ Node.js UDP listener that receives data from Telegraf outputs and writes it to M
 ## Verification
 
 - `npm install` — dependencies install cleanly
-- Send test Telegraf-formatted data via HTTP and verify it appears in MongoDB
+- Send test Telegraf-formatted datagrams via UDP and verify they appear in MongoDB

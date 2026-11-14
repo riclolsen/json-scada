@@ -34,7 +34,7 @@ namespace ServerPlugin
         // Driver identity
         // -----------------------------------------------------------------------
         public static readonly string ProtocolDriverName    = "OPC-DA_SERVER";
-        public static readonly string DriverVersion         = "0.1.0";
+        public static readonly string DriverVersion         = "0.1.1";
         public static int    ProtocolDriverInstanceNumber   = 1;
         public static int    LogLevelCurrent                = 0;   // 0=none 1=normal 2=detail 3=debug
 
@@ -59,6 +59,12 @@ namespace ServerPlugin
         private static OpcDaConnection     connection_;
         private static IMongoCollection<RtDataItem>    rtCollection_;
         private static IMongoCollection<BsonDocument>  cmdCollection_;
+
+        // Keep-alive and connection stats (communication status tags in the
+        // data processor): DA clients attached, and a 5 s status timer.
+        private static int                 clientCount_;
+        private static IMongoDatabase      statusDb_;
+        private static Timer               statusTimer_;
 
         // Cancellation for background threads
         private static CancellationTokenSource cts_ = new CancellationTokenSource();
@@ -220,6 +226,10 @@ namespace ServerPlugin
                 return StatusCodes.Bad;
             }
 
+            // --- Keep-alive and connection stats every 5 s ---
+            statusDb_    = db;
+            statusTimer_ = new Timer(_ => PublishStatus(), null, 0, 5000);
+
             // --- Get MongoDB collections ---
             rtCollection_  = db.GetCollection<RtDataItem>("realtimeData");
             cmdCollection_ = db.GetCollection<BsonDocument>("commandsQueue");
@@ -282,11 +292,75 @@ namespace ServerPlugin
         }
 
         // -----------------------------------------------------------------------
+        // Client sessions: counted for stats.isConnected
+        // -----------------------------------------------------------------------
+        public override int OnClientConnect()
+        {
+            Interlocked.Increment(ref clientCount_);
+            return StatusCodes.Good;
+        }
+
+        public override int OnClientDisconnect()
+        {
+            if (Interlocked.Decrement(ref clientCount_) < 0)
+                Interlocked.Exchange(ref clientCount_, 0);
+            return StatusCodes.Good;
+        }
+
+        // Writes the instance keep-alive and the connection stats. This driver
+        // runs no redundancy arbitration; with the same instance on several
+        // nodes they all write and activeNodeName shows the last one.
+        private static void PublishStatus()
+        {
+            if (statusDb_ == null || connection_ == null) return;
+            try
+            {
+                var now = DateTime.UtcNow;
+                statusDb_.GetCollection<BsonDocument>("protocolDriverInstances").UpdateOne(
+                    Builders<BsonDocument>.Filter.Eq("protocolDriver", ProtocolDriverName) &
+                    Builders<BsonDocument>.Filter.Eq("protocolDriverInstanceNumber", ProtocolDriverInstanceNumber),
+                    Builders<BsonDocument>.Update
+                        .Set("activeNodeName", jsConfig_.nodeName)
+                        .Set("activeNodeKeepAliveTimeTag", now)
+                        .Set("softwareVersion", DriverVersion));
+                int clients = Volatile.Read(ref clientCount_);
+                var connections = statusDb_.GetCollection<BsonDocument>("protocolConnections");
+                var connFilter = Builders<BsonDocument>.Filter.Eq(
+                    "protocolConnectionNumber", connection_.protocolConnectionNumber);
+                var statsUpdate = Builders<BsonDocument>.Update
+                    .Set("stats.nodeName", jsConfig_.nodeName)
+                    .Set("stats.timeTag", now)
+                    .Set("stats.isConnected", clients > 0)
+                    .Set("stats.clients", clients);
+                try
+                {
+                    connections.UpdateOne(connFilter, statsUpdate);
+                }
+                catch (MongoWriteException)
+                {
+                    // Connections are documented (and created by the Admin UI) with
+                    // "stats: null", and MongoDB cannot create fields under a null
+                    // element, so replace that null with an empty document and write
+                    // the stats again. A failing retry falls through to the log below.
+                    connections.UpdateOne(
+                        connFilter & Builders<BsonDocument>.Filter.Eq("stats", BsonNull.Value),
+                        Builders<BsonDocument>.Update.Set("stats", new BsonDocument()));
+                    connections.UpdateOne(connFilter, statsUpdate);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Error updating keep-alive/stats — " + ex.Message);
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // Shutdown
         // -----------------------------------------------------------------------
         public override void OnShutdownSignal()
         {
             Log("Shutdown signal received — stopping background threads.");
+            statusTimer_?.Dispose();
             cts_.Cancel();
             MongoChangeStream.Stop();
             Thread.Sleep(500);

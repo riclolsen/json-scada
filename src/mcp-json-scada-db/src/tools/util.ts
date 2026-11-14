@@ -24,6 +24,29 @@ const SENSITIVE_FIELDS = [
   'privateKeyPassphrase',
 ]
 
+// CIM-EMS network models, bindings and study results are critical infrastructure
+// information: the generic collection tools never read these collections or the
+// cimArtifacts bucket. CIM-EMS data is served only by the dedicated cim_ems_*
+// tools: result points (realtimeData) directly, models/bindings/runs/requests
+// through the AdminUI API with the rights of the MCP admin account.
+const CONFIDENTIAL_COLLECTIONS = [
+  'cimModels',
+  'cimMeasurementBindings',
+  'cimRuns',
+  'cimContingencyLists',
+  'cimStudyRequests',
+]
+
+export function isConfidentialCollection(name: string): boolean {
+  const n = String(name || '').trim()
+  return (
+    CONFIDENTIAL_COLLECTIONS.includes(n) || n.toLowerCase().startsWith('cimartifacts')
+  )
+}
+
+export const confidentialResult = (name: string) =>
+  textResult(`Collection '${name}' is confidential and not available through MCP.`, true)
+
 export function textResult(text: string, isError = false) {
   return {
     content: [{ type: 'text' as const, text }],

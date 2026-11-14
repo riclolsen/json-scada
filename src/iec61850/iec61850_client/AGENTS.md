@@ -15,7 +15,7 @@ MongoDB semantics, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_client`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.6.6 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.7.1 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1
 - **Binary:** `iec61850_client(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -35,6 +35,7 @@ MongoDB semantics, no native library dependency.
   - `tlsconf.go` — TLS configuration
 - **Build:** `go build -ldflags="-s -w" -o ../../../bin/iec61850_client`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
+- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = association `mms.StateConnected`; a connection without a client gets `isConnected: false` only, leaving the stored `lastReportIds` untouched
 
 ## Work Guidance
 
@@ -86,7 +87,5 @@ MongoDB semantics, no native library dependency.
   needed)
 - `go test -race ./...`
 - `go vet ./...`
-- `go list -deps ./... | grep charm` must be empty — the library's TUI dependencies must not be
-  linked in
 - End-to-end: seed an instance and connection, run against a real IED, and stop the driver
   gracefully (see Work Guidance) so it leaves no report block enabled on the device

@@ -17,6 +17,11 @@ It includes
 - MQTT Sparkplug B client, Telegraf listener, n8n integration.
 - MCP server for AI assistants (port 6001).
 - Calculations processor.
+- CIM-EMS (load flow, state estimation, N-1) on the Svedala network of ENTSO-E ReliCapGrid, with a field
+  simulator and one display per substation plus a network overview (`svedala-overview`). x86_64 hosts only; the
+  first start of the `cim_ems` service installs its Python dependencies (a few minutes). Model by Svenska kraftnät,
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); see the
+  [CIM-EMS README](../src/cim-ems/README.md#svedala-demo).
 - Change stream realtime data processor.
 - A Node/Express webserver app for user interface.
 - Role based access control and admin management UI.

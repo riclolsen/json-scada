@@ -8,13 +8,13 @@
 ARG1=${1:-linux-x64}
 case $(uname -m) in
     x86_64) ARG1="linux-x64" ;;
-    arm)    ARG1="linux-arm64";;
+    aarch64|arm64)    ARG1="linux-arm64";;
 esac
 
 ARCHITECTURE="amd64"
 case $(uname -m) in
     x86_64) ARCHITECTURE="amd64" ;;
-    arm)    ARCHITECTURE="arm64";;
+    aarch64|arm64)    ARCHITECTURE="arm64";;
 esac
 
 cd ..
@@ -58,34 +58,6 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 #cd ../OPC-DA-Client
 #dotnet restore
 #dotnet publish --self-contained --runtime win-x64 -p:PublishReadyToRun=true -f net8.0-windows -c Release -o ../../bin-wine/ OPC-DA-Client.csproj
-
-#cd ../mongo-cxx-driver/mongo-cxx-driver/build
-#cmake .. -DCMAKE_INSTALL_PREFIX="../../../mongo-cxx-driver-lib" -DCMAKE_CXX_STANDARD=17 -DBUILD_VERSION=4.0.0 -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF
-#cmake --build . --config Release
-#cmake --build . --target install --config Release
-
-# cd ../../../dnp3/opendnp3
-# mkdir build
-# cd build
-# cmake -DDNP3_EXAMPLES=OFF -DDNP3_TLS=ON ..
-# make
-# cp cpp/lib/libopendnp3.so ../../../../bin/
-
-# cd ../../Dnp3Server
-# mkdir build
-# cd build
-# cmake ..
-# make
-# cp Dnp3Server ../../../../bin/
-# cd ../..
-
-# cd Dnp3ClientCpp
-# mkdir build
-# cd build
-# cmake ..
-# make
-# cp Dnp3ClientCpp ../../../../bin/
-# cd ../..
 
 export GOBIN=~/json-scada/bin
 go env -w GO111MODULE=auto
@@ -241,6 +213,9 @@ npm run build
 cd ../inputs/file
 npm install
 npm run build
+
+# CIM-EMS driver (Python): virtual environment in src/cim-ems/.venv, x86_64 only (skipped elsewhere)
+(cd ../../../cim-ems && ./install.sh)
 
 export NODE_OPTIONS=--max-old-space-size=10000
 export ASTRO_TELEMETRY_DISABLED=1

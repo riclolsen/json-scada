@@ -483,6 +483,7 @@
     'PI_DATA_ARCHIVE_INJECTOR',
     'PI_DATA_ARCHIVE_CLIENT',
     'ONVIF',
+    'CIM-EMS',
   ]
   const driverInstances = ref([])
   const error = ref(false)

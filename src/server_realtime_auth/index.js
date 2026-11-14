@@ -299,6 +299,13 @@ let pool = null
       res.setHeader('Content-type', 'application/json')
       res.send("{ error: 'Parameter [name] empty or not specified' }")
     }
+    // CIM-EMS models and study results are confidential: they are served only
+    // by the cimEms/artifact route, which checks the engineering right.
+    if (bucketName.trim().toLowerCase().startsWith('cimartifacts')) {
+      res.setHeader('Content-type', 'application/json')
+      res.send("{ error: 'File not found' }")
+      return
+    }
     try {
       let gfs = new GridFSBucket(db, { bucketName: bucketName })
       let f = await gfs.find({ filename: filename }).toArray()
@@ -1107,7 +1114,10 @@ let pool = null
                         .findOne(findPoint)
 
                       let alarmDisableNew = {}
-                      if (userRights?.disableAlarms)
+                      if (
+                        userRights?.disableAlarms &&
+                        node.Value._Properties?.alarmDisabled !== undefined
+                      )
                         if (
                           prevData?.alarmDisabled !==
                           node.Value._Properties?.alarmDisabled
@@ -1118,7 +1128,10 @@ let pool = null
                           }
 
                       let annotationNew = {}
-                      if (userRights?.enterAnnotations)
+                      if (
+                        userRights?.enterAnnotations &&
+                        node.Value._Properties?.annotation !== undefined
+                      )
                         if (
                           prevData?.annotation !==
                           node.Value._Properties?.annotation
@@ -1128,25 +1141,35 @@ let pool = null
                           }
 
                       let loLimitNew = {}
-                      if (userRights?.enterLimits)
+                      // absent fields are left unchanged; a null limit (an
+                      // Infinity serialized as JSON) means no limit
+                      const props = node.Value._Properties || {}
+                      const limitOf = (v, inf) =>
+                        v === null ? inf : Number(v)
+                      if (userRights?.enterLimits && props.loLimit !== undefined)
                         if (
-                          prevData?.loLimit !== node.Value._Properties?.loLimit
+                          prevData?.loLimit !== limitOf(props.loLimit, -Infinity)
                         )
                           loLimitNew = {
-                            loLimit: new Double(node.Value._Properties.loLimit),
+                            loLimit: new Double(
+                              limitOf(props.loLimit, -Infinity)
+                            ),
                           }
 
                       let hiLimitNew = {}
-                      if (userRights?.enterLimits)
+                      if (userRights?.enterLimits && props.hiLimit !== undefined)
                         if (
-                          prevData?.hiLimit !== node.Value._Properties?.hiLimit
+                          prevData?.hiLimit !== limitOf(props.hiLimit, Infinity)
                         )
                           hiLimitNew = {
-                            hiLimit: new Double(node.Value._Properties.hiLimit),
+                            hiLimit: new Double(limitOf(props.hiLimit, Infinity)),
                           }
 
                       let hysteresisNew = {}
-                      if (userRights?.enterLimits)
+                      if (
+                        userRights?.enterLimits &&
+                        props.hysteresis !== undefined
+                      )
                         if (
                           prevData?.hysteresis !==
                           node.Value._Properties?.hysteresis
@@ -1163,7 +1186,7 @@ let pool = null
                       // hihihiLimit: node.Value._Properties.hiLimit,
 
                       let notesNew = {}
-                      if (userRights?.enterNotes)
+                      if (userRights?.enterNotes && props.notes !== undefined)
                         if (prevData?.notes !== node.Value._Properties?.notes)
                           notesNew = {
                             notes: node.Value._Properties.notes,
@@ -1263,7 +1286,9 @@ let pool = null
                                 : prevData?.eventTextTrue
                           else
                             eventText =
-                              valueNew.value.toFixed(2) + ' ' + prevData?.unit
+                              Number(valueNew.value).toFixed(2) +
+                              ' ' +
+                              prevData?.unit
                           db.collection(COLL_SOE).insertOne({
                             tag: prevData.tag,
                             pointKey: prevData._id,
@@ -1444,6 +1469,15 @@ let pool = null
                   beepGroup1List: 1,
                 },
               }
+
+          // JSON-SCADA extension: a NodesToRead entry with `_ValueJson: true`
+          // also gets the point's valueJson in `_Properties` (display viewer)
+          if (
+            projection &&
+            Array.isArray(req.body.Body?.NodesToRead) &&
+            req.body.Body.NodesToRead.some((n) => n?._ValueJson === true)
+          )
+            projection.projection.valueJson = 1
 
           // optimize query for better performance
           // there is a cost to query empty $in lists!
@@ -1654,6 +1688,9 @@ let pool = null
                           type: pointInfo.type,
                         }
                       }
+                      if (node._ValueJson === true)
+                        Result._Properties.valueJson =
+                          pointInfo.valueJson ?? null
                       if (
                         pointInfo.type === 'string' ||
                         pointInfo.type === 'json'

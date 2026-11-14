@@ -102,6 +102,26 @@ isAdmin = async (req, res, next) => {
   }
 }
 
+// any signed-in, existing user (no specific right required)
+isUser = async (req, res, next) => {
+  const tok = checkToken(req)
+  if (tok === false) {
+    res.status(403).send({ message: 'Require sign-in!' })
+    return
+  }
+  try {
+    const user = await User.findOne({ username: tok.username }).exec()
+    if (user) {
+      next()
+      return
+    }
+    res.status(403).send({ message: 'Require sign-in!' })
+  } catch (err) {
+    Log.log(err)
+    res.status(500).send({ message: err })
+  }
+}
+
 // check and decoded token
 checkToken = (req) => {
   let res = false
@@ -226,12 +246,42 @@ hasRight = (req, right) => {
   return false
 }
 
+// CIM-EMS engineering right (model upload/activation, binding approval, artifact
+// download): an admin role is not enough, a role must grant cimEngineering.
+hasCimEngineering = async (req) => {
+  const tok = checkToken(req)
+  if (tok === false) return false
+  try {
+    const user = await User.findOne({ username: tok.username }).exec()
+    if (!user) return false
+    const n = await Role.countDocuments({
+      _id: { $in: user.roles },
+      cimEngineering: true,
+    }).exec()
+    return n > 0
+  } catch (err) {
+    Log.log(err)
+    return false
+  }
+}
+
+isCimEngineer = async (req, res, next) => {
+  if (await hasCimEngineering(req)) {
+    next()
+    return
+  }
+  res.status(403).send({ error: 'Require CIM-EMS engineering rights!' })
+}
+
 const authJwt = {
   verifyToken,
   checkToken,
   hasRight,
   isAdmin,
+  isUser,
   canSendCommands,
   canSendCommandTo,
+  hasCimEngineering,
+  isCimEngineer,
 }
 module.exports = authJwt

@@ -4,6 +4,17 @@ Grafana webhook listener that converts Grafana alert notifications to JSON-SCADA
 
 It accepts the Grafana Alerting webhook payload (Grafana 8+ unified alerting, current API). The legacy (pre-Grafana 8) webhook notification payload is still accepted for backward compatibility.
 
+Requires Node.js.
+
+## Run
+
+    cd src/grafana_alert2event
+    npm install
+    node grafana_alert2event.js [config file]
+
+The process reads `../../conf/json-scada.json` by default; pass a path as the
+first argument or set `JS_CONFIG_FILE`.
+
 ## Environment variables
 
 - _**JS_ALERT2EVENT_IP_BIND**_ - IP bind address, default="127.0.0.1". Use "0.0.0.0" to listen on all interfaces.

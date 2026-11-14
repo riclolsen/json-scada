@@ -14,6 +14,17 @@ This driver is based on the Eclipse Tahu Javascript Sparkplug B Client library.
 
 - https://github.com/eclipse/tahu
 
+## Run
+
+    cd src/mqtt-sparkplug
+    npm install
+    node index.js [instance number] [log level] [config file]
+
+The optional arguments default to instance `1`, log level `1` and
+`../../conf/json-scada.json`; the equivalent environment variables use the
+`JS_MQTTSPB_` prefix (`JS_MQTTSPB_INSTANCE`, `JS_MQTTSPB_LOGLEVEL`) and
+`JS_CONFIG_FILE`. Command-line arguments take precedence.
+
 Here are some nice introduction about MQTT/Sparkplug-B.
 
 - https://www.mbtmag.com/best-practices/article/21172575/how-to-integrate-automation-data-with-mqttsparkplug-b

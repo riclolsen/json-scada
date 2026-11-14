@@ -57,6 +57,49 @@ process.on('unhandledRejection', (reason) =>
   let clientMongo = null
   let servers = [] // OPC-UA server instances, tracked across (re)connections for shutdown
 
+  // Every 5 s: the instance keep-alive and each connection's
+  // stats.isConnected (at least one client session open), read by the data
+  // processor's communication status tags. This driver runs no redundancy
+  // arbitration (every node serves), so when several nodes run the same
+  // instance they all write and activeNodeName shows the last one.
+  setInterval(async () => {
+    if (!clientMongo) return
+    try {
+      const db = clientMongo.db(jsConfig.mongoDatabaseName)
+      const now = new Date()
+      await db
+        .collection(jsConfig.ProtocolDriverInstancesCollectionName)
+        .updateOne(
+          {
+            protocolDriver: AppDefs.NAME,
+            protocolDriverInstanceNumber: jsConfig.Instance,
+          },
+          {
+            $set: {
+              activeNodeName: jsConfig.nodeName,
+              activeNodeKeepAliveTimeTag: now,
+              softwareVersion: AppDefs.VERSION,
+            },
+          }
+        )
+      for (const server of servers) {
+        if (server._connNumber === undefined) continue
+        await updateConnectionStats(
+          db.collection(jsConfig.ProtocolConnectionsCollectionName),
+          server._connNumber,
+          {
+            nodeName: jsConfig.nodeName,
+            timeTag: now,
+            isConnected: (server.currentSessionCount || 0) > 0,
+            sessions: server.currentSessionCount || 0,
+          }
+        )
+      }
+    } catch (err) {
+      Log.log('MongoDB - Error updating keep-alive/stats: ' + err)
+    }
+  }, 5000)
+
   // gracefully shut down and forget all running OPC-UA servers
   const shutdownServers = async () => {
     if (servers.length === 0) return
@@ -387,6 +430,7 @@ process.on('unhandledRejection', (reason) =>
             })
             server._metrics = {}
             server._name = connection.name
+            server._connNumber = connection.protocolConnectionNumber
             servers.push(server)
 
             await server.initialize()
@@ -917,10 +961,11 @@ process.on('unhandledRejection', (reason) =>
               }
             }
 
+            // Two $match stages with the same result as one $or: the first
+            // does not reference fullDocument, so the server applies it
+            // before the updateLookup and skips the document read for raw
+            // driver writes (sourceDataUpdate) and the special points.
             const csPipeline = [
-              {
-                $project: { documentKey: false },
-              },
               {
                 $match: {
                   $or: [
@@ -931,23 +976,21 @@ process.on('unhandledRejection', (reason) =>
                             $exists: false,
                           },
                         },
-                        csFilterGroup1,
-                        {
-                          'fullDocument._id': {
-                            $ne: -2,
-                          },
-                        },
-                        {
-                          'fullDocument._id': {
-                            $ne: -1,
-                          },
-                        },
+                        { 'documentKey._id': { $nin: [-2, -1] } },
                         { operationType: 'update' },
                       ],
                     },
                     { operationType: 'replace' },
                   ],
                 },
+              },
+              {
+                $match: {
+                  $or: [csFilterGroup1, { operationType: 'replace' }],
+                },
+              },
+              {
+                $project: { documentKey: false },
               },
             ]
 
@@ -974,6 +1017,7 @@ process.on('unhandledRejection', (reason) =>
 
               // start to listen for changes
               changeStream.on('change', (change) => {
+                if (!change.fullDocument) return // deleted before the lookup
                 const v = convertValueVariant(change.fullDocument)
                 for (let i = 0; i < servers.length; i++) {
                   try {
@@ -1049,6 +1093,25 @@ process.on('unhandledRejection', (reason) =>
 })()
 
 // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
+// $set stats.<field> on a connection document. Connection documents are
+// created with stats: null, where a dotted $set fails with error 28
+// (PathNotViable): replace the null with an empty document and retry once.
+async function updateConnectionStats(connsCollection, connNumber, fields) {
+  const set = {}
+  for (const [k, v] of Object.entries(fields)) set['stats.' + k] = v
+  const filter = { protocolConnectionNumber: connNumber }
+  try {
+    return await connsCollection.updateOne(filter, { $set: set })
+  } catch (err) {
+    if (err?.code !== 28) throw err
+    await connsCollection.updateOne(
+      { ...filter, stats: null },
+      { $set: { stats: {} } }
+    )
+    return await connsCollection.updateOne(filter, { $set: set })
+  }
+}
+
 async function getConnections(connsCollection, configObj) {
   let results = await connsCollection
     .find({

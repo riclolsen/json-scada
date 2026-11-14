@@ -10,6 +10,17 @@ The driver can serve multiple connections to OPC-UA clients on multiple computer
 
 To configure the driver it is necessary to create one or more driver instances and one protocol connection per instance.
 
+## Run
+
+    cd src/OPC-UA-Server
+    npm install
+    node index.js [instance number] [log level] [config file]
+
+The optional arguments default to instance `1`, log level `1` and
+`../../conf/json-scada.json`; the equivalent environment variables are
+`JS_OPCUASERVER_INSTANCE`, `JS_OPCUASERVER_LOGLEVEL` and `JS_CONFIG_FILE`.
+Command-line arguments take precedence.
+
 ## Configure a driver instance
 
 To create a new OPC-UA server instance, insert a new document in the _protocolDriverInstances_ collection using a command like this:
@@ -116,7 +127,7 @@ This driver has the following command line arguments.
 
 - _**1st arg. - Instance Number**_ [Integer] - Instance number to be executed. **Optional argument, default=1**.
 - _**2nd arg. - Log. Level**_ [Integer] - Log level (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**.
-- _**3rd arg. - Config File Path/Name**_ [String] - Complete path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**.
+- _**3rd arg. - Config File Path/Name**_ [String] - Complete path/name of the JSON-SCADA config file. **Optional argument, default="../../conf/json-scada.json"**.
 
 ## Example of JSON-SCADA Protocol Driver Instances and Connections Numbering
 

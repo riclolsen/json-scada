@@ -34,7 +34,7 @@ namespace OPCDAClientDriver
     {
         public static string CopyrightMessage = "{json:scada} OPC-DA Client Driver - Copyright 2021-2024 RLO";
         public static string ProtocolDriverName = "OPC-DA";
-        public static string DriverVersion = "0.1.1";
+        public static string DriverVersion = "0.1.2";
         public static bool Active = false; // indicates this driver instance is the active node in the moment
         public static int DataBufferLimit = 20000; // limit to start dequeuing and discarding data from the acquisition buffer
         public static int BulkWriteLimit = 1250; // limit of each bulk write to mongodb

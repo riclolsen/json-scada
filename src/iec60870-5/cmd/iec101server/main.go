@@ -40,7 +40,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-101_SERVER"
-	driverVersion      = "0.3.0"
+	driverVersion      = "0.3.1"
 )
 
 // srv101 holds the runtime state of one served IEC 101 connection.
@@ -163,6 +163,7 @@ func main() {
 	}
 
 	go engine.RunDequeueLoop()
+	go engine.RunStatusLoop(instanceNumber, driverVersion)
 	go engine.RunRealtimeStream()
 
 	// main loop: keep MongoDB connection alive (blocks forever)

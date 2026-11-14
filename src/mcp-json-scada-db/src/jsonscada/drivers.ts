@@ -50,6 +50,7 @@ export const PROTOCOL_DRIVERS: Record<string, { doc?: string; role: string }> =
     PI_DATA_ARCHIVE_INJECTOR: { role: 'server' },
     PI_DATA_ARCHIVE_CLIENT: { role: 'client' },
     ONVIF: { doc: 'camera-onvif/README.md', role: 'client' },
+    'CIM-EMS': { doc: 'cim-ems/README.md', role: 'client' },
   }
 
 export const PROTOCOL_DRIVER_NAMES = Object.keys(PROTOCOL_DRIVERS) as [

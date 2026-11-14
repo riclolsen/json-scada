@@ -97,9 +97,52 @@ exports.listUserActions = async (req, res) => {
   }
 }
 
+// Communication status tags (_System.Driver/Conn/Comm.*) are maintained by
+// cs_data_processor (see docs/schema.md, Communication status tags). It owns
+// their identity and naming: a hand change of those fields is overwritten, a
+// deletion recreated, and a hand-made tag with one of their names blocks the
+// generator. Other fields (priority, limits, alarm settings...) stay editable.
+const commStatusTagPrefixes = ['_System.Driver.', '_System.Conn.', '_System.Comm.']
+const commStatusOwnedFields = [
+  'tag',
+  'type',
+  'origin',
+  'commStatus',
+  'group1',
+  'group2',
+  'group3',
+  'description',
+  'ungroupedDescription',
+]
+const commStatusTagError =
+  'Communication status tags are maintained by the data processor: they cannot be created or deleted, and their name, type, origin, groups and descriptions cannot be changed.'
+function isCommStatusTagName(name) {
+  return (
+    typeof name === 'string' &&
+    commStatusTagPrefixes.some((p) => name.trim().startsWith(p))
+  )
+}
+async function findCommStatusTag(_id) {
+  const doc = await Tag.findOne({ _id: _id })
+    .select(commStatusOwnedFields.join(' '))
+    .lean()
+  return doc && doc.commStatus ? doc : null
+}
+// true when an update would change a field the generator owns
+function changesCommStatusOwnedField(stored, body) {
+  return commStatusOwnedFields.some(
+    (k) =>
+      k in body && JSON.stringify(body[k]) !== JSON.stringify(stored[k] ?? null)
+  )
+}
+
 exports.createTag = async (req, res) => {
   Log.log('createTag')
   try {
+    if (isCommStatusTagName(req.body?.tag) || req.body?.commStatus) {
+      res.status(200).send({ error: commStatusTagError })
+      return
+    }
     if (req.body?._id && req.body?._id != 0) {
       req.body._id = Math.trunc(parseFloat(req.body._id))
       const existingTag = await Tag.findOne({ _id: req.body._id })
@@ -151,6 +194,15 @@ exports.updateTag = async (req, res) => {
     if ('_id' in req.body) {
       let _id = req.body._id
       delete req.body._id
+      const csTag = await findCommStatusTag(_id)
+      if (
+        csTag
+          ? changesCommStatusOwnedField(csTag, req.body)
+          : isCommStatusTagName(req.body.tag) || 'commStatus' in req.body
+      ) {
+        res.status(200).send({ error: commStatusTagError })
+        return
+      }
 
       let IsNumberVal = function (value) {
         if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(value)) return true
@@ -182,6 +234,10 @@ exports.deleteTag = async (req, res) => {
     registerUserAction(req, 'deleteTag')
 
     if ('_id' in req.body) {
+      if (await findCommStatusTag(req.body._id)) {
+        res.status(200).send({ error: commStatusTagError })
+        return
+      }
       await Tag.findOneAndDelete({ _id: req.body._id })
       res.status(200).send({ error: false })
     } else res.status(200).send({ error: 'No _id in delete request.' })
@@ -1032,6 +1088,53 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('allowWritesToSupervised' in req.body)) {
       req.body.allowWritesToSupervised = false
     }
+  }
+
+  // CIM-EMS specific: defaults equal what the driver assumes for a missing field
+  if (['CIM-EMS'].includes(req?.body?.protocolDriver)) {
+    const num = (k, d, min = 0) => {
+      const v = Number(req.body[k])
+      req.body[k] = k in req.body && req.body[k] !== '' && Number.isFinite(v) ? Math.max(min, v) : d
+    }
+    if (!('cimModelId' in req.body)) req.body.cimModelId = ''
+    // empty revision fields mean "active model revision" and "latest binding revision"
+    for (const k of ['cimModelRevision', 'cimBindingRevision']) {
+      const v = Number(req.body[k])
+      req.body[k] = req.body[k] === '' || req.body[k] == null || !Number.isFinite(v) || v < 1 ? null : Math.floor(v)
+    }
+    num('cycleSeconds', 60.0, 1)
+    num('resultMaxAgeSeconds', 180.0, 1)
+    num('switchHoldSeconds', 300.0)
+    num('snapshotMaxSkewSeconds', 10.0)
+    req.body.loadFlowParameters = {
+      distributedSlack: true,
+      balanceType: 'PROPORTIONAL_TO_GENERATION_P_MAX',
+      voltageInitMode: 'UNIFORM_VALUES',
+      transformerVoltageControlOn: false,
+      ...(req.body.loadFlowParameters || {}),
+    }
+    req.body.publishFilter = {
+      busVoltages: true,
+      branchFlows: true,
+      branchLoading: true,
+      minNominalKv: 0.0,
+      ...(req.body.publishFilter || {}),
+    }
+    req.body.publishFilter.minNominalKv = Math.max(0, Number(req.body.publishFilter.minNominalKv) || 0)
+    if (!('runStateEstimation' in req.body)) req.body.runStateEstimation = false
+    req.body.estimatorParameters = { badDataThreshold: 4.0, ...(req.body.estimatorParameters || {}) }
+    req.body.estimatorParameters.badDataThreshold = Math.max(1, Number(req.body.estimatorParameters.badDataThreshold) || 4.0)
+    if (!('runContingency' in req.body)) req.body.runContingency = false
+    if (!req.body.contingencyListId) req.body.contingencyListId = 'AUTO_N1'
+    num('contingencyIntervalSeconds', 300.0)
+    num('contingencyMinGapSeconds', 10.0)
+    num('contingencyMinKv', 0.0)
+    num('contingencyPublishLimit', 200.0)
+    num('contingencyThreads', 1.0, 1)
+    req.body.contingencyPublishLimit = Math.floor(req.body.contingencyPublishLimit)
+    req.body.contingencyThreads = Math.floor(req.body.contingencyThreads)
+    if (!('autoCreateTags' in req.body)) req.body.autoCreateTags = true
+    req.body.commandsEnabled = false // the driver sends no commands
   }
 
   try {
@@ -2113,6 +2216,149 @@ exports.restartProcesses = async (req, res) => {
 
     registerUserAction(req, 'restartProcesses')
     res.status(200).send({ error: false })
+  } catch (err) {
+    Log.log(err)
+    res.status(200).send({ error: err.message || String(err) })
+  }
+}
+
+// Displays shipped with the distribution (KAW2/KIK3/KNH2/KOR1 examples and the
+// generated Svedala CIM-EMS demo); user displays never match
+const DEMO_DISPLAY_RE =
+  /^(kaw2|kik3|knh2|kor1|kor1-PergolaGrid|svedala-overview|svedala_[A-Za-z0-9_-]+)\.svg$/i
+// CIM-EMS collections (models, bindings, runs, lists, requests) and artifacts bucket
+const CIM_COLLECTIONS = [
+  'cimModels',
+  'cimMeasurementBindings',
+  'cimRuns',
+  'cimContingencyLists',
+  'cimStudyRequests',
+  'cimArtifacts.files',
+  'cimArtifacts.chunks',
+]
+// Tags kept by a prune: reserved keys, system and communication status tags
+// (the latter are removed by cs_data_processor with their connections)
+const PRUNE_TAG_FILTER = {
+  _id: { $nin: [-1, -2] },
+  origin: { $ne: 'system' },
+  commStatus: { $exists: false },
+  tag: { $not: /^_System\./ },
+}
+
+// Removes the demo/example configuration so a system can start clean: every
+// protocol connection, every non-system tag, all CIM-EMS models/bindings/runs/
+// requests/artifacts and the shipped example displays. Driver instances, process
+// instances, users, roles and system settings stay. Dry run unless confirm: true.
+exports.pruneConfiguration = async (req, res) => {
+  try {
+    const b = req.body || {}
+    const execute = b.confirm === true
+    const want = (k) => b[k] !== false
+    const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
+    const out = { error: false, dryRun: !execute, warnings: [] }
+
+    let conns = []
+    if (want('connections')) {
+      conns = await ProtocolConnection.find(
+        {},
+        { protocolConnectionNumber: 1, name: 1, protocolDriver: 1, protocolDriverInstanceNumber: 1 }
+      )
+        .lean()
+        .exec()
+      out.connections = {
+        count: conns.length,
+        names: conns.map((c) => c.name),
+      }
+    }
+    if (want('tags'))
+      out.tags = { count: await Tag.countDocuments(PRUNE_TAG_FILTER) }
+    const mdb = db.mongoose.connection.db
+    if (want('cimModels')) {
+      out.cimModels = {}
+      for (const c of CIM_COLLECTIONS)
+        out.cimModels[c] = await mdb.collection(c).countDocuments({})
+      out.cimModels.modelIds = await mdb.collection('cimModels').distinct('_id')
+    }
+    let displays = []
+    if (want('displays')) {
+      try {
+        displays = fs
+          .readdirSync(svgDir)
+          .filter((f) => DEMO_DISPLAY_RE.test(f))
+          .sort()
+      } catch (e) {
+        out.warnings.push('Cannot read the svg folder: ' + e.message)
+      }
+      out.displays = { count: displays.length, files: displays }
+      if (displays.length && fs.existsSync(path.join(svgDir, 'screen_list.js')))
+        out.warnings.push(
+          'svg/screen_list.js exists: remove the pruned displays from it (or delete it to list every display).'
+        )
+    }
+
+    if (!execute) {
+      res.status(200).send(out)
+      return
+    }
+    registerUserAction(req, 'pruneConfiguration')
+
+    if (out.tags)
+      out.tags.deleted = (await Tag.deleteMany(PRUNE_TAG_FILTER)).deletedCount
+    if (out.connections) {
+      out.connections.deleted = (
+        await ProtocolConnection.deleteMany({
+          _id: { $in: conns.map((c) => c._id) },
+        })
+      ).deletedCount
+      // the tags of the connections, when tags were not pruned as a whole
+      if (!out.tags)
+        out.connections.tagsDeleted = (
+          await Tag.deleteMany({
+            protocolSourceConnectionNumber: {
+              $in: conns.map((c) => c.protocolConnectionNumber),
+            },
+            origin: { $ne: 'system' },
+            commStatus: { $exists: false },
+          })
+        ).deletedCount
+      const seen = new Set()
+      out.connections.restarts = []
+      for (const c of conns) {
+        const key = c.protocolDriver + '#' + c.protocolDriverInstanceNumber
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.connections.restarts.push({
+          protocolDriver: c.protocolDriver,
+          protocolDriverInstanceNumber: c.protocolDriverInstanceNumber,
+          ...(await scheduleConnectionRestart(
+            c.protocolDriver,
+            c.protocolDriverInstanceNumber,
+            null
+          )),
+        })
+      }
+    }
+    if (out.cimModels) {
+      out.cimModels.deleted = {}
+      for (const c of CIM_COLLECTIONS)
+        out.cimModels.deleted[c] = (
+          await mdb.collection(c).deleteMany({})
+        ).deletedCount
+    }
+    if (out.displays) {
+      out.displays.deleted = []
+      for (const f of displays) {
+        const p = path.resolve(svgDir, path.basename(f))
+        if (!p.startsWith(svgDir + path.sep)) continue
+        try {
+          fs.unlinkSync(p)
+          out.displays.deleted.push(f)
+        } catch (e) {
+          out.warnings.push('Cannot delete display ' + f + ': ' + e.message)
+        }
+      }
+    }
+    res.status(200).send(out)
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: err.message || String(err) })

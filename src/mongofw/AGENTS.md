@@ -14,21 +14,22 @@ One-way data replication firewall/forwarder for air-gapped environments. Provide
 - **Main entry:** `index.js`
 - **Structure:**
   - `index.js` — main application logic
-  - `app-defs.js` — application definitions
+  - `app-defs.js` — network, packet and backfill parameters (`IP_DESTINATION`, `UDP_PORT`, `BACKFILL_*`)
   - `load-config.js` — configuration loader
   - `simple-logger.js` — logging utility
   - `redundancy.js` — high-availability support
   - `customized_module.js` — user-customizable processing module
 - **Diagrams:** `jsonscada-onewayrepl.drawio`, `jsonscada-onewayrepl.svg`
-- **Config:** INI file via Supervisor or environment variables
+- **Config:** JSON-SCADA config file (`JS_CONFIG_FILE`); instance/log level arguments or `JS_MONGOFW_*`
 
 ## Work Guidance
 
-- Designed for unidirectional data flow (source → destination)
-- Supports point database sync and historical data backfill
-- Operates over Ethernet data diode or tap device for physical isolation
-- Both source and destination are MongoDB instances
-- Configurable collection filtering and field mapping
+- Designed for unidirectional data flow (source → destination) over UDP
+- Watches `realtimeData` for `sourceDataUpdate` changes (change streams require a replica set), compresses and broadcasts them
+- Sends a full point-list integrity sync every `INTERVAL_INTEGRITY` seconds
+- Stores forwarded changes in the `backfillData` time series collection for `BACKFILL_EXPIRATION` days and replays them so an offline receiver catches up
+- Configures the UDP destination and tuning constants in `app-defs.js`; the receiver is `src/mongowr`
+- Suitable for an Ethernet data diode or tap device for physical isolation
 
 ## Verification
 

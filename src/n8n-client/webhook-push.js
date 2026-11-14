@@ -59,6 +59,8 @@ class WebhookPusher {
       dropped: 0,
       errors: 0,
       lastError: '',
+      // outcome of the last POST: true ok, false failed, null none yet
+      lastOk: null,
     }
   }
 
@@ -97,12 +99,14 @@ class WebhookPusher {
         ch.sending = false
         ch.backoffMs = 0
         this.stats.sent++
+        this.stats.lastOk = true
         // continue draining
         setImmediate(() => this._drain(ch))
       })
       .catch((err) => {
         ch.sending = false
         this.stats.errors++
+        this.stats.lastOk = false
         this.stats.lastError = ch.url + ': ' + (err.message || String(err))
         Log.log('Webhook - POST failed ' + this.stats.lastError, Log.levelNormal)
         // exponential backoff, capped

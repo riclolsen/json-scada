@@ -22,6 +22,8 @@ import { initRadarChart, drawRadar, initArcChart, drawArc } from './sageCharts'
 import { PreviewOverlay } from './sagePreview'
 import { PinnedAnnotationsPanel } from './sagePinned'
 import { AlarmBoxPanel } from './sageAlarmBox'
+import { parseJsonRef, compileJsonPath, walkJson, parseValueJson, scanScriptTagRefs, JSON_PREFIX } from './sageJson'
+import { parseStrRef, compileStrSelector, applyStr, STR_PREFIX } from './sageStr'
 
 // "security card" badge shape (port of websage.js produzEtiq) shown next to a
 // point that carries an annotation or has alarms inhibited.
@@ -97,6 +99,11 @@ export class SageEngine {
     })
     this.screenFilter = '' // group1 filter from #set_filter markup
     this.queryKeys = new Set()
+    this.jsonKeys = new Set() // points whose valueJson is requested (subset of queryKeys)
+    this.jsonRefs = new Map() // '!JSON <tag> <path>' -> parsed ref (+ last good value)
+    this.jsonPaths = new Map() // $J path cache: path -> compiled segments
+    this.strRefs = new Map() // '!STR <tag> <selector>' -> parsed ref (+ last good value)
+    this.strSels = new Map() // $S selector cache: selector -> compiled ops
     this.valueByKey = new Map()
     this.keyByTag = new Map()
     this.zoom = {
@@ -142,16 +149,32 @@ export class SageEngine {
     this._F = proxy((st) => (st ? st.flags : 0))
     this._S = proxy((st) => (st ? st.valueStr : ''))
     this._T = proxy((st) => (st ? st.alarmTime : ''))
+    this._$V = (t) => this.getValue(t)
+    this._$J = (t, path) => this.getJson(t, path)
+    this._$S = (t, sel) => this.getStr(t, sel)
     this._scriptApi = {
       V: this._V,
       F: this._F,
       S: this._S,
       T: this._T,
-      getValue: (t) => this.getValue(t),
+      getValue: this._$V,
       getFlags: (t) => this.getFlags(t),
+      getJson: this._$J,
+      getStr: this._$S,
       valorTagueado: (t, o) => this.valorTagueado(t, o),
       Animate: (obj, type, attrs) => animateEl(obj, type, attrs),
       RemoveAnimate: (obj) => removeAnimateEl(obj),
+    }
+  }
+
+  // Names and values in scope for screen expressions and scripts.
+  scriptScope(el) {
+    return {
+      names: ['thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', '$V', '$J', '$S'],
+      args: [
+        el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi,
+        this._$V, this._$J, this._$S,
+      ],
     }
   }
 
@@ -159,9 +182,9 @@ export class SageEngine {
   // undefined on error. `el` is exposed as `thisobj`.
   evalValue(expr, el) {
     try {
+      const { names, args } = this.scriptScope(el)
       // eslint-disable-next-line no-new-func
-      const fn = new Function('thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', 'return (' + expr + ')')
-      return fn(el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi)
+      return new Function(...names, 'return (' + expr + ')')(...args)
     } catch (e) {
       return undefined
     }
@@ -170,12 +193,135 @@ export class SageEngine {
   // Run a screen script snippet (statements) with the compat API in scope.
   runScript(src, el) {
     try {
+      const { names, args } = this.scriptScope(el)
       // eslint-disable-next-line no-new-func
-      const fn = new Function('thisobj', 'SVGDoc', 'V', 'F', 'S', 'T', 'WebSAGE', '$W', src)
-      fn(el, this.svgEl, this._V, this._F, this._S, this._T, this._scriptApi, this._scriptApi)
+      new Function(...names, src)(...args)
     } catch (e) {
       /* ignore screen-script errors */
     }
+  }
+
+  // --- valueJson access -------------------------------------------------------
+  // Read a point and request its valueJson on every refresh.
+  registerJsonTag(tag) {
+    const s = String(tag).trim()
+    if (s === '' || s.charAt(0) === '#' || s.charAt(0) === '%' || s.charAt(0) === '!') return
+    this.queryKeys.add(s)
+    this.jsonKeys.add(s)
+  }
+
+  // Register the points referenced by literal $J('TAG') / $V('TAG') calls in
+  // screen source, so they are read from the first refresh.
+  scanScriptRefs(src) {
+    for (const t of scanScriptTagRefs(src, 'J')) this.registerJsonTag(t)
+    for (const t of scanScriptTagRefs(src, 'V')) this.collectPoint(t)
+    for (const t of scanScriptTagRefs(src, 'S')) this.collectPoint(t)
+  }
+
+  jsonRef(s) {
+    let ref = this.jsonRefs.get(s)
+    if (ref === undefined) {
+      ref = parseJsonRef(s)
+      this.jsonRefs.set(s, ref)
+    }
+    return ref
+  }
+
+  // Display state of a `!JSON <tag> <path>` reference (see memberState).
+  // Undefined if the parent point is unknown or the reference is malformed.
+  jsonState(s) {
+    const ref = this.jsonRef(String(s).trim())
+    if (!ref) return undefined
+    const parent = this.getState(ref.tag)
+    if (!parent) return undefined
+    const v = parent.json === undefined ? undefined : walkJson(parent.json, ref.segs)
+    return { ...this.memberState(parent, ref, v), json: v }
+  }
+
+  // Display state of a member `v` taken from a parent point's valueJson or
+  // valueString: booleans behave as digitals (true = on: value 0, state bits
+  // 0x02), numbers/strings as analogs (objects/arrays as their JSON text).
+  // Quality, alarm, annotation and manual bits come from the parent. A missing
+  // member (undefined/null) keeps the last value found (ref.last), flagged failed.
+  memberState(parent, ref, v) {
+    const inherited = parent.flags & ~(0x03 | 0x20)
+    let found
+    if (typeof v === 'boolean') found = { value: v ? 0 : 1, base: v ? 0x02 : 0x01, valueStr: String(v) }
+    else if (typeof v === 'number') found = { value: v, base: 0x20, valueStr: String(v) }
+    else if (typeof v === 'string') found = { value: v, base: 0x20, valueStr: v }
+    else if (v !== undefined && v !== null) {
+      const txt = JSON.stringify(v)
+      found = { value: txt, base: 0x20, valueStr: txt }
+    }
+    let flags
+    if (found) {
+      ref.last = found
+      flags = found.base | inherited
+    } else {
+      // never show a live last value during historical replay
+      found = (!this.timeMachine && ref.last) || { value: 0, base: 0x20, valueStr: '' }
+      flags = found.base | inherited | 0x80
+    }
+    return { ...parent, value: found.value, valueStr: found.valueStr, flags }
+  }
+
+  // --- valueString access -----------------------------------------------------
+  strRef(s) {
+    let ref = this.strRefs.get(s)
+    if (ref === undefined) {
+      ref = parseStrRef(s)
+      this.strRefs.set(s, ref)
+    }
+    return ref
+  }
+
+  // Display state of a `!STR <tag> <selector>` reference (see memberState).
+  // Undefined if the parent point is unknown or the reference is malformed.
+  strState(s) {
+    const ref = this.strRef(String(s).trim())
+    if (!ref) return undefined
+    const parent = this.getState(ref.tag)
+    if (!parent) return undefined
+    const v = typeof parent.valueString === 'string' ? applyStr(parent.valueString, ref.ops) : undefined
+    return this.memberState(parent, ref, typeof v === 'number' && isNaN(v) ? undefined : v)
+  }
+
+  // $S(tag[, selector]) for scripts and !EVAL: a point's raw valueString, or the
+  // selector result (e.g. "$.split(';')[1]"); undefined when absent. A point
+  // not yet read is requested from the next refresh on.
+  getStr(tag, sel) {
+    if (tag === undefined || tag === null) return undefined
+    const t = String(tag).trim()
+    if (!this.queryKeys.has(t)) this.collectPoint(t)
+    const st = this.getState(t)
+    if (!st || typeof st.valueString !== 'string') return undefined
+    if (sel === undefined || sel === null || String(sel).trim() === '' || String(sel).trim() === '$') return st.valueString
+    const p = String(sel)
+    let ops = this.strSels.get(p)
+    if (ops === undefined) {
+      ops = compileStrSelector(p)
+      this.strSels.set(p, ops)
+    }
+    return ops ? applyStr(st.valueString, ops) : undefined
+  }
+
+  // $J(tag[, path]) for scripts and !EVAL: the parsed valueJson of a point (or
+  // the member at `path`, e.g. '$.pumps[0].speed'); undefined when absent. A
+  // point not yet read is requested from the next refresh on.
+  getJson(tag, path) {
+    if (tag === undefined || tag === null) return undefined
+    const t = String(tag).trim()
+    if (!this.jsonKeys.has(t)) this.registerJsonTag(t)
+    const st = this.getState(t)
+    if (!st || st.json === undefined) return undefined
+    if (path === undefined || path === null || String(path).trim() === '' || String(path).trim() === '$') return st.json
+    const p = String(path)
+    let segs = this.jsonPaths.get(p)
+    if (segs === undefined) {
+      segs = compileJsonPath(p)
+      this.jsonPaths.set(p, segs)
+    }
+    return segs ? walkJson(st.json, segs) : undefined
   }
 
   // Replace inline `!EVAL <expr> !END <tail>` segments in `text` with the
@@ -213,6 +359,9 @@ export class SageEngine {
     this.clearHighlight()
     this.screenFilter = ''
     this.queryKeys.clear()
+    this.jsonKeys.clear()
+    this.jsonRefs.clear()
+    this.strRefs.clear()
     // Reset to pass 0 so this screen's first refresh does a FULL read (askInfo):
     // group1/group2(bay)/descr/stateText/limits only come back on the full read.
     // Without this, switching screens (engine reused) left pass>0, so new points
@@ -362,6 +511,7 @@ export class SageEngine {
     if (skippedExternal > 0)
       this.onStatus(`Skipped ${skippedExternal} external screen script(s)`)
     if (code.trim() !== '') {
+      this.scanScriptRefs(code)
       try {
         // eslint-disable-next-line no-new-func
         new Function('SVGDoc', code)(this.svgEl)
@@ -427,6 +577,9 @@ export class SageEngine {
     for (const o of vec) {
       if (o.attr === 'clone' && Array.isArray(o.map)) el._cloneMap = o.map
     }
+    // points read by $J('TAG') / $V('TAG') in this label's expressions/scripts
+    if (label.indexOf('$J') >= 0 || label.indexOf('$V') >= 0 || label.indexOf('$S') >= 0)
+      this.scanScriptRefs(this.resolveCloneTag(el, label))
     for (const tagObj of vec) {
       tagObj.parent = el
       if (tagObj.tag !== undefined) tagObj.tag = this.resolveCloneTag(el, tagObj.tag)
@@ -498,8 +651,10 @@ export class SageEngine {
     } else {
       tagObj.formatoC = tc
       // single analog reading: hovering it previews the point's trend chart
+      // (not for a valueJson/valueString member: the trend would be the parent point's)
       const tag = tagObj.tag
-      this.preview.attach(
+      if (!parseJsonRef(tag) && !parseStrRef(tag))
+        this.preview.attach(
         el,
         () => {
           const key = this.resolveKey(tag)
@@ -708,8 +863,9 @@ export class SageEngine {
         } else if (mouseEvts.includes(evt) || evt === 'keydown') {
           el.addEventListener(evt, (event) => {
             try {
+              const { names, args } = this.scriptScope(event.currentTarget)
               // eslint-disable-next-line no-new-func
-              new Function('thisobj', 'evt', 'SVGDoc', param)(event.currentTarget, event, this.svgEl)
+              new Function('evt', ...names, param)(event, ...args)
             } catch (e) {
               this.onStatus('script error: ' + e.message)
             }
@@ -799,6 +955,18 @@ export class SageEngine {
     if (tag === undefined || tag === null || tag === '') return
     const s = String(tag).trim()
     if (s.charAt(0) === '#' || s.charAt(0) === '%') return // special object / clone
+    if (s.indexOf(JSON_PREFIX) === 0) {
+      // valueJson member: read the parent point with its valueJson
+      const ref = this.jsonRef(s)
+      if (ref) this.registerJsonTag(ref.tag)
+      return
+    }
+    if (s.indexOf(STR_PREFIX) === 0) {
+      // valueString member: read the parent point (valueString comes on every read)
+      const ref = this.strRef(s)
+      if (ref) this.collectPoint(ref.tag)
+      return
+    }
     if (s.charAt(0) === '!') {
       // special code referencing a trailing point
       const m = s.match(/^!(?:SLIM|ILIM|TAG|DCR|STON|STOFF|STVAL|ALR|ALM|TMP)\s*(.+)$/)
@@ -1031,6 +1199,15 @@ export class SageEngine {
     if (!isNaN(t) && this.valueByKey.has(t)) return t
     const s = String(tag).trim()
     if (this.keyByTag.has(s)) return this.keyByTag.get(s)
+    if (s.indexOf(JSON_PREFIX) === 0) {
+      // a valueJson member opens / highlights its parent point
+      const ref = this.jsonRef(s)
+      return ref ? this.resolveKey(ref.tag) : undefined
+    }
+    if (s.indexOf(STR_PREFIX) === 0) {
+      const ref = this.strRef(s)
+      return ref ? this.resolveKey(ref.tag) : undefined
+    }
     return isNaN(t) ? undefined : t
   }
 
@@ -1038,6 +1215,8 @@ export class SageEngine {
     const t = parseInt(tag)
     if (!isNaN(t)) return this.valueByKey.get(t)
     const s = String(tag).trim()
+    if (s.indexOf(JSON_PREFIX) === 0) return this.jsonState(s)
+    if (s.indexOf(STR_PREFIX) === 0) return this.strState(s)
     if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s))
     return undefined
   }
@@ -1066,6 +1245,17 @@ export class SageEngine {
     const s = String(tag).trim()
     if (this.keyByTag.has(s)) return this.valueByKey.get(this.keyByTag.get(s)).value
     if (s.charAt(0) === '#' || s.charAt(0) === '%') return RETNOK
+
+    // !JSON <tag> <path> / !STR <tag> <selector> : member of the point's
+    // valueJson / valueString
+    if (s.indexOf(JSON_PREFIX) === 0 || s.indexOf(STR_PREFIX) === 0) {
+      const st = s.indexOf(JSON_PREFIX) === 0 ? this.jsonState(s) : this.strState(s)
+      if (!st) {
+        this.markInvalid(obj)
+        return RETNOK
+      }
+      return st.value
+    }
 
     // !EVAL <expr> [!END ...] : evaluate the expression (thisobj = element)
     if (s.indexOf('!EVAL') === 0) {
@@ -1162,7 +1352,7 @@ export class SageEngine {
         // read full properties (group1/group2/descr/stateText/limits) on the first
         // pass only, values-only after (legacy: askinfo = Pass===0)
         const full = this.pass === 0
-        const points = await opc.readPoints(keys, full, this.cfg)
+        const points = await opc.readPoints(keys, full, this.cfg, this.jsonKeys)
         this.ingest(points, full)
         // report the server's data timestamp so the display clock updates only
         // on a real data update, using the server time (not the client clock)
@@ -1259,6 +1449,11 @@ export class SageEngine {
     this.valueByKey.forEach((st) => {
       st.value = 0
       st.flags |= 0x83
+      // the historian keeps no valueJson: !JSON members show failed in replay
+      st.json = undefined
+      st.jsonRaw = undefined
+      // valueString is replayed only for points whose history holds text
+      st.valueString = undefined
     })
     try {
       const snap = await opc.readHistorySnapshot(tags, date)
@@ -1280,6 +1475,7 @@ export class SageEngine {
           st.value = isNaN(num) ? 0 : num
           st.flags = 0x20 | qflag
           st.valueStr = String(s.value)
+          if (typeof s.value === 'string') st.valueString = s.value
         }
       }
       this.onStatus('')
@@ -1315,14 +1511,34 @@ export class SageEngine {
       if (p.frozen) flags |= 0x1000
       if (p.flags & 0x800) flags |= 0x800
       const prev = this.valueByKey.get(p.key)
+      // valueJson comes back only when requested (undefined otherwise: keep the
+      // last one); a json/string point without it carries its JSON as the value
+      let jsonRaw = prev ? prev.jsonRaw : undefined
+      let json = prev ? prev.json : undefined
+      if (p.valueJson !== undefined) {
+        let raw = p.valueJson
+        if ((raw === null || raw === '') && (p.type === 'json' || p.type === 'string')) raw = p.valueRaw
+        if (raw !== jsonRaw || typeof raw === 'object') {
+          jsonRaw = raw
+          json = parseValueJson(raw)
+        }
+      }
+      // raw valueString (for !STR / $S) comes on every read, value-only included
+      const valueString = typeof p.valueString === 'string' ? p.valueString : undefined
       if (prev && !full) {
         // value-only update: keep static fields, refresh dynamic ones. The
         // annotation/alarm-inhibited bits only come back on the full (askInfo)
         // read, so preserve them from the last full pass.
         prev.value = value
         prev.flags = flags | (prev.flags & (0x200 | 0x400))
+        prev.jsonRaw = jsonRaw
+        prev.json = json
+        prev.valueString = valueString
       } else {
         this.valueByKey.set(p.key, {
+          jsonRaw,
+          json,
+          valueString,
           value,
           valueStr: p.valueStr,
           flags,
@@ -1352,7 +1568,10 @@ export class SageEngine {
     for (let attempt = 0; attempt < 2 && !this.disposed; attempt++) {
       await new Promise((r) => setTimeout(r, attempt === 0 ? 400 : 1200))
       try {
-        const points = await opc.readPoints([key], true, this.cfg)
+        const cur = this.valueByKey.get(key)
+        const want =
+          this.jsonKeys.has(String(key)) || (cur && this.jsonKeys.has(cur.tag)) ? new Set([String(key)]) : undefined
+        const points = await opc.readPoints([key], true, this.cfg, want)
         if (points.length) {
           this.ingest(points, true)
           this.applyBindings()
@@ -1469,6 +1688,8 @@ export class SageEngine {
   }
 
   async fillPlotHistory(b) {
+    // members of valueJson / valueString: realtime samples only (the history is the parent's)
+    if (parseJsonRef(b.tag) || parseStrRef(b.tag)) return
     let tag = b.tag
     const k = parseInt(tag)
     if (!isNaN(k) && this.valueByKey.has(k)) tag = this.valueByKey.get(k).tag

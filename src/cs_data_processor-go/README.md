@@ -90,6 +90,21 @@ Two deliberate differences:
   and being dropped (the Node.js version raises a `TypeError` on
   `timeTag.getTime()` and swallows the whole event).
 
+Communication status tags are implemented in both (`commstatus.go` here,
+`commstatus.js` in the Node.js version) with identical tag documents:
+
+- **Communication status tags** (`commstatus.go`). Instance 1, while active,
+  keeps `_System.Driver.*`, `_System.Conn.*` and `_System.Comm.*` tags with
+  the health of every protocol driver instance and connection (driver alive
+  by an unchanged-keep-alive count, link up, tag health, active node), so SVG
+  displays and viewers can monitor communications. It polls
+  `protocolDriverInstances` / `protocolConnections` every 5 s, counts invalid
+  tags per connection every 15 s, and writes through `sourceDataUpdate` so
+  the normal conversion adds alarms, SOE and history. Turned off with
+  `commStatusTags: false` in the `processInstances` entry. Tag names and
+  points are listed in
+  [docs/schema.md](../../docs/schema.md#communication-status-tags).
+
 ## Building
 
 ```bash
@@ -225,6 +240,7 @@ with the offered rate; the win is latency, not throughput.
 | `redundancy.go` | Active/standby arbitration, publishes stats |
 | `maintenance.go` | Frozen analogs, invalid points, stopped driver detection |
 | `specialtags.go` | The two reserved system points |
+| `commstatus.go` | Communication status tags for driver instances and connections |
 | `rawdoc.go` | Typed accessors over raw BSON with JavaScript semantics |
 | `jsutil.go` | JavaScript compatible number, string and JSON rendering |
 | `config.go` | Config file and environment variables |

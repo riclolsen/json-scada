@@ -6,7 +6,7 @@
 
 SetCompress Auto
 SetCompressor lzma ; do not use /SOLID, it fails to build!
-SetCompressorDictSize 64
+SetCompressorDictSize 128
 SetDatablockOptimize On
 
 Unicode True
@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.69"
-!define VERSION_ "0.69.0.0"
+!define VERSION "v.0.70"
+!define VERSION_ "0.70.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -215,7 +215,6 @@ SetRegView 64
   
   CreateDirectory "$INSTDIR\.agents\skills"
   CreateDirectory "$INSTDIR\bin"
-  CreateDirectory "$INSTDIR\bin_alt"
   CreateDirectory "$INSTDIR\conf"
   CreateDirectory "$INSTDIR\docs"
   CreateDirectory "$INSTDIR\log"
@@ -234,6 +233,7 @@ SetRegView 64
   CreateDirectory "$INSTDIR\platform-windows\mongodb-conf"
   CreateDirectory "$INSTDIR\platform-windows\mongodb-runtime"
   CreateDirectory "$INSTDIR\platform-windows\nodejs-runtime"
+  CreateDirectory "$INSTDIR\platform-windows\python-runtime"
   CreateDirectory "$INSTDIR\platform-windows\inkscape-runtime"
   CreateDirectory "$INSTDIR\platform-windows\postgresql-data"
   CreateDirectory "$INSTDIR\platform-windows\postgresql-runtime"
@@ -261,9 +261,6 @@ SetRegView 64
   File /a /r "..\bin\*.*"
   File /a "..\platform-windows\nssm.exe"
 
-  SetOutPath $INSTDIR\bin_alt
-  File /a /r "..\bin_alt\*.*"
-
   ; preserve previous start_services.bat
   Rename $INSTDIR\platform-windows\start_services.bat $INSTDIR\platform-windows\start_services.bat.bak
 
@@ -275,9 +272,9 @@ SetRegView 64
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\OpcWatch.exe"
   File /a "..\platform-windows\vc_redist.x64.exe"
-  File /a "..\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe"
+  ;File /a "..\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe"
   File /a "..\platform-windows\dotnet-runtime-8.0.31-win-x64.exe"
-  File /a "..\platform-windows\dotnet-runtime-10.0.12-win-x64.exe"
+  ;File /a "..\platform-windows\dotnet-runtime-10.0.12-win-x64.exe"
   File /a "..\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi"
   ;File /a "..\platform-windows\gbda_aut.dll"
   ;File /a "..\platform-windows\gbhda_aw.dll"
@@ -296,9 +293,9 @@ SetRegView 64
   Sleep 1000
   ExecWait '"$INSTDIR\platform-windows\vc_redist.x64.exe" /install /passive /quiet'
   Sleep 1000
-  ExecWait '"$INSTDIR\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe" /install /passive /quiet'
+  ;ExecWait '"$INSTDIR\platform-windows\aspnetcore-runtime-8.0.23-win-x64.exe" /install /passive /quiet'
   ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-8.0.31-win-x64.exe" /install /passive /quiet'
-  ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-10.0.12-win-x64.exe" /install /passive /quiet'
+  ;ExecWait '"$INSTDIR\platform-windows\dotnet-runtime-10.0.12-win-x64.exe" /install /passive /quiet'
   Sleep 1000
   ExecWait 'msiexec /i "$INSTDIR\platform-windows\OPC Core Components Redistributable (x64) 3.00.108.msi" /qn'
   Sleep 1000
@@ -309,6 +306,12 @@ SetRegView 64
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
+  ; Python 3.13 with the CIM-EMS package and its pinned dependencies installed by
+  ; build.bat (src\cim-ems\install.bat). Replaced as a whole so removed packages do not linger.
+  ;RMDir /r "$INSTDIR\platform-windows\python-runtime"
+  SetOutPath $INSTDIR\platform-windows\python-runtime
+  File /a /r /x tests /x __pycache__ "..\platform-windows\python-runtime\*.*"
+
   SetOutPath $INSTDIR\platform-windows\telegraf-runtime
   File /a "..\platform-windows\telegraf-runtime\telegraf.exe"
   File /a "..\platform-windows\telegraf-runtime\*.conf"
@@ -317,13 +320,13 @@ SetRegView 64
   File /a /r "..\docs\*.*"
   
   SetOutPath $INSTDIR\platform-windows\jdk-runtime
-  File /a /r "..\platform-windows\jdk-runtime\*.*"
+  File /a /r /x jmods "..\platform-windows\jdk-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\metabase-runtime
   File /a "..\platform-windows\metabase-runtime\metabase.jar"
 
   SetOutPath $INSTDIR\platform-windows\grafana-runtime
-  File /a /r /x "docs" "..\platform-windows\grafana-runtime\*.*"
+  File /a /r /x *.map /x "docs" "..\platform-windows\grafana-runtime\*.*"
 
   SetOutPath $INSTDIR\mongo_seed_demo
   File /a /r "..\demo-docker\mongo_seed\files\*.*"
@@ -344,7 +347,7 @@ SetRegView 64
   File /a /r "..\platform-windows\mongodb-conf\*.*"
 
   SetOutPath $INSTDIR\platform-windows\postgresql-runtime
-  File /a /r /x *.pdb /x "pgAdmin 4" "..\platform-windows\postgresql-runtime\*.*"
+  File /a /r /x doc /x include /x StackBuilder /x *.pdb /x "pgAdmin 4" "..\platform-windows\postgresql-runtime\*.*"
 
   SetOutPath $INSTDIR\platform-windows\dbx-runtime
   File /a /r "..\platform-windows\dbx-runtime\*.*"
@@ -384,7 +387,7 @@ SetRegView 64
   File /a /r "..\src\svgedit\dist\editor\*.*"
   
   SetOutPath $INSTDIR\src\camera-onvif
-  File /a /r "..\src\camera-onvif\*.*"
+  File /a /r /x ffmpeg.exe /x *.bak /x snapshot.jpg	 "..\src\camera-onvif\*.*"
   File /a "..\platform-windows\ffmpeg.exe"
 
   SetOutPath $INSTDIR\src\demo_simul
@@ -431,8 +434,8 @@ SetRegView 64
   File /a /r "..\src\mcp-json-scada-db\src\*.*"
   SetOutPath $INSTDIR\src\mcp-json-scada-db\dist
   File /a /r "..\src\mcp-json-scada-db\dist\*.*"
-  ;SetOutPath $INSTDIR\src\mcp-json-scada-db\node_modules
-  ;File /a /r "..\src\mcp-json-scada-db\node_modules\*.*"
+  SetOutPath $INSTDIR\src\mcp-json-scada-db\node_modules
+  File /a /r "..\src\mcp-json-scada-db\node_modules\*.*"
   SetOutPath $INSTDIR\src\mcp-json-scada-db\examples
   File /a /r "..\src\mcp-json-scada-db\examples\*.*"
 
@@ -451,6 +454,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\telegraf-listener
   File /a /r "..\src\telegraf-listener\*.*"
+
+  SetOutPath $INSTDIR\src\cim-ems
+  File /a /r /x .venv /x __pycache__ /x spike /x data /x build /x *.egg-info /x *_plan.md "..\src\cim-ems\*.*"
 
   SetOutPath $INSTDIR\src\mqtt-sparkplug
   File /a "..\src\mqtt-sparkplug\*.js"
@@ -551,6 +557,8 @@ SetRegView 64
 
   SetOutPath $INSTDIR\svg
   File /a "..\conf-templates\*.svg"
+  ; Svedala CIM-EMS demo displays (ReliCapGrid model, CC BY-SA 4.0)
+  File /a "..\svg\svedala*.svg"
 
   SetOutPath $INSTDIR\conf
   File /a "..\conf-templates\php.ini"
@@ -677,11 +685,6 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_alarm_beep"`
   ClearErrors
 
-  ;ExecWait `"${SC}" stop "JSON_SCADA_shell_api"`
-  ;Sleep 50
-  ;ExecWait `"${SC}" delete "JSON_SCADA_shell_api"`
-  ;ClearErrors
-
   ExecWait `"${SC}" stop "JSON_SCADA_php"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_php"`
@@ -691,16 +694,6 @@ Section "Uninstall"
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_nginx"`
   ClearErrors
-
-  ;ExecWait `"${SC}" stop "JSON_SCADA_i104m"`
-  ;Sleep 50
-  ;ExecWait `"${SC}" delete "JSON_SCADA_i104m"`
-  ;ClearErrors
-
-  ; ExecWait `"${SC}" stop "JSON_SCADA_plctags"`
-  ; Sleep 50
-  ; ExecWait `"${SC}" delete "JSON_SCADA_plctags"`
-  ; ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_iec101client"`
   Sleep 50
@@ -895,6 +888,16 @@ Section "Uninstall"
   ExecWait `"${SC}" stop "JSON_SCADA_onvif"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_onvif"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_cim_ems"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_cim_ems"`
+  ClearErrors
+
+  ExecWait `"${SC}" stop "JSON_SCADA_cim_ems_demo_field"`
+  Sleep 50
+  ExecWait `"${SC}" delete "JSON_SCADA_cim_ems_demo_field"`
   ClearErrors
 
   ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'

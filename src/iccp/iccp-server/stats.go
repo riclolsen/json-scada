@@ -136,6 +136,7 @@ func statsDocument(nodeName string, now time.Time, s *connStats, clients []clien
 		"nodeName":                nodeName,
 		"timeTag":                 now,
 		"clientConnections":       len(clients),
+		"isConnected":             len(clients) > 0,
 		"clients":                 clientDocs,
 		"associations":            int64(s.associations),
 		"requests":                requests,
@@ -229,7 +230,7 @@ func logServerEvent(connName string, ev tase2.ServerEvent) {
 			level = LogLevelDetailed
 		}
 	}
-	if level > currentLogLevel {
+	if level > currentLogLevel() {
 		return
 	}
 	msg := "ICCP - " + connName + " event " + ev.Kind.String() + " peer " + ev.Peer.RemoteAddr

@@ -55,6 +55,7 @@
     Code,
     Workflow,
     Zap,
+    Network,
   } from 'lucide-vue-next'
 
   // shortcuts shown to admin users only
@@ -108,6 +109,14 @@
       color: 'primary',
       route: '/events-viewer-new',
       page: '/#/events-viewer-new',
+      target: '_blank',
+    },
+    {
+      titleKey: 'dashboard.cimEms',
+      icon: Network,
+      color: 'primary',
+      route: '/cim-ems',
+      page: '/#/cim-ems',
       target: '_blank',
     },
     {
