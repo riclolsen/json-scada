@@ -31,7 +31,11 @@ const { ObjectId, Double } = require('mongodb')
 const { getPgPool } = require('./pg-pool') // historian pool shared with /Invoke/
 const { authJwt } = require('./app/middlewares')
 const { canSendCommands, canSendCommandTo } = require('./app/middlewares/authJwt.js')
-const { findCommandPoint, commandRefusal } = require('./app/services/command-guard')
+const {
+  findCommandPoint,
+  commandRefusal,
+  canSeeCommand,
+} = require('./app/services/command-guard')
 const UserActionsQueue = require('./userActionsQueue')
 const UserRights = require('./app/services/user-rights')
 const { clientAddress } = require('./app/services/client-address')
@@ -308,9 +312,9 @@ const typeDefs = `#graphql
     "Get one point by its numeric point key (_id)."
     tagById(id: Float!): Tag
     "List of distinct group1 (station) names with point counts."
-    groups1: [GroupCount!]!
+    groups1(limit: Int = 20000, skip: Int = 0): [GroupCount!]!
     "List of distinct group2 (bay) names with point counts, optionally filtered by group1."
-    groups2(group1: String): [GroupCount!]!
+    groups2(group1: String, limit: Int = 20000, skip: Int = 0): [GroupCount!]!
     "Currently alarmed or out-of-normal points (like the persistentAlarms filter of the /Invoke API)."
     activeAlarms(group1: String, group2: String, limit: Int = 1000): [Tag!]!
 
@@ -332,16 +336,16 @@ const typeDefs = `#graphql
     userActions(filter: UserActionFilter, limit: Int = 1000, skip: Int = 0): [UserAction!]!
 
     "List users (admin only)."
-    users: [User!]!
+    users(limit: Int = 20000, skip: Int = 0): [User!]!
     "List roles (admin only)."
-    roles: [Role!]!
+    roles(limit: Int = 20000, skip: Int = 0): [Role!]!
     "Global system settings (admin only)."
     systemSettings: SystemSettings
 
     "List protocol driver instances."
-    protocolDriverInstances: [ProtocolDriverInstance!]!
+    protocolDriverInstances(limit: Int = 20000, skip: Int = 0): [ProtocolDriverInstance!]!
     "List protocol connections (credentials/certificates are never exposed)."
-    protocolConnections: [ProtocolConnection!]!
+    protocolConnections(limit: Int = 20000, skip: Int = 0): [ProtocolConnection!]!
 
     # ---- legacy query names kept for backward compatibility ----
     "Deprecated: use users. (admin only)"
@@ -862,6 +866,43 @@ async function budgeted(ctx, limit, run) {
   return refundRows(ctx, n, await run(n))
 }
 
+function skipOf(skip) {
+  return typeof skip === 'number' && skip > 0 ? Math.floor(skip) : 0
+}
+
+// a page of a configuration collection (users, roles, drivers, connections),
+// in a stable order, limited by the row budget
+function configPage(ctx, model, limit, skip) {
+  return budgeted(ctx, clampLimit(limit ?? MaxQueryLimit), (n) =>
+    model.find().sort({ _id: 1 }).skip(skipOf(skip)).limit(n)
+  )
+}
+
+// a page of distinct group names with point counts
+function groupPage(ctx, match, field, limit, skip) {
+  const pipeline = []
+  if (match) pipeline.push({ $match: match })
+  pipeline.push({ $group: { _id: '$' + field, count: { $sum: 1 } } })
+  pipeline.push({ $sort: { _id: 1 } })
+  const sk = skipOf(skip)
+  if (sk > 0) pipeline.push({ $skip: sk })
+  return budgeted(ctx, clampLimit(limit ?? MaxQueryLimit), async (n) => {
+    pipeline.push({ $limit: n })
+    const results = await nativeDb().collection(COLL_REALTIME).aggregate(pipeline).toArray()
+    return results.map((r) => ({ name: r._id || '', count: r.count }))
+  })
+}
+
+// all roles, read once per request: the roleDetails of every user listed
+// (aliases included) come from it instead of a query per user
+function rolesById(ctx) {
+  if (!ctx.rolesById)
+    ctx.rolesById = db.role
+      .find()
+      .then((roles) => new Map(roles.map((r) => [String(r._id), r])))
+  return ctx.rolesById
+}
+
 // group1 (station) access restriction filter for the realtime collection,
 // beep and related internal points (_id -1/-2) are always accessible
 function tagAccessFilter(ctx) {
@@ -993,8 +1034,9 @@ const resolvers = {
   JSONValue,
 
   User: {
-    roleDetails: async (parent) => {
-      return await db.role.find({ _id: { $in: parent.roles } })
+    roleDetails: async (parent, _, ctx) => {
+      const byId = await rolesById(ctx)
+      return (parent.roles || []).map((id) => byId.get(String(id))).filter(Boolean)
     },
   },
 
@@ -1049,27 +1091,17 @@ const resolvers = {
       return checkTagAccess(ctx, await db.tag.findOne({ _id: id }))
     },
 
-    groups1: async (_, __, ctx) => {
-      const match = groupAccessFilter(ctx)
-      const pipeline = []
-      if (match) pipeline.push({ $match: match })
-      pipeline.push({ $group: { _id: '$group1', count: { $sum: 1 } } })
-      pipeline.push({ $sort: { _id: 1 } })
-      const results = await nativeDb().collection(COLL_REALTIME).aggregate(pipeline).toArray()
-      return results.map((r) => ({ name: r._id || '', count: r.count }))
+    groups1: async (_, { limit, skip }, ctx) => {
+      return groupPage(ctx, groupAccessFilter(ctx), 'group1', limit, skip)
     },
 
-    groups2: async (_, { group1 }, ctx) => {
+    groups2: async (_, { group1, limit, skip }, ctx) => {
       const clauses = []
       const af = groupAccessFilter(ctx)
       if (af) clauses.push(af)
       if (typeof group1 === 'string' && group1 !== '') clauses.push({ group1: group1 })
-      const pipeline = []
-      if (clauses.length > 0) pipeline.push({ $match: { $and: clauses } })
-      pipeline.push({ $group: { _id: '$group2', count: { $sum: 1 } } })
-      pipeline.push({ $sort: { _id: 1 } })
-      const results = await nativeDb().collection(COLL_REALTIME).aggregate(pipeline).toArray()
-      return results.map((r) => ({ name: r._id || '', count: r.count }))
+      const match = clauses.length > 0 ? { $and: clauses } : null
+      return groupPage(ctx, match, 'group2', limit, skip)
     },
 
     activeAlarms: async (_, { group1, group2, limit }, ctx) => {
@@ -1253,10 +1285,13 @@ const resolvers = {
     },
 
     commandStatus: async (_, { commandHandle }, ctx) => {
-      const data = await nativeDb()
+      const mdb = nativeDb()
+      const data = await mdb
         .collection(COLL_COMMANDS)
         .findOne({ _id: toObjectId(commandHandle, 'commandHandle') })
       if (!data) return null
+      // another user's command in a station this user cannot see: unknown
+      if (AUTH && !(await canSeeCommand(mdb, ctx.rights, ctx.username, data))) return null
       let status = 'PENDING'
       if (typeof data.cancelReason === 'string') status = 'CANCELLED'
       else if (data.ack === true) status = 'ACK_OK'
@@ -1293,14 +1328,14 @@ const resolvers = {
       )
     },
 
-    users: async (_, __, ctx) => {
+    users: async (_, { limit, skip }, ctx) => {
       await requireAdmin(ctx)
-      return await db.user.find()
+      return configPage(ctx, db.user, limit, skip)
     },
 
-    roles: async (_, __, ctx) => {
+    roles: async (_, { limit, skip }, ctx) => {
       await requireAdmin(ctx)
-      return await db.role.find()
+      return configPage(ctx, db.role, limit, skip)
     },
 
     systemSettings: async (_, __, ctx) => {
@@ -1308,20 +1343,20 @@ const resolvers = {
       return await db.systemSetting.findOne({ key: 'global' })
     },
 
-    protocolDriverInstances: async (_, __, ctx) => {
+    protocolDriverInstances: async (_, { limit, skip }, ctx) => {
       await requireAdmin(ctx)
-      return await db.protocolDriverInstance.find()
+      return configPage(ctx, db.protocolDriverInstance, limit, skip)
     },
 
-    protocolConnections: async (_, __, ctx) => {
+    protocolConnections: async (_, { limit, skip }, ctx) => {
       await requireAdmin(ctx)
-      return await db.protocolConnection.find()
+      return configPage(ctx, db.protocolConnection, limit, skip)
     },
 
     // ---- legacy query names kept for backward compatibility ----
     getUsers: async (_, __, ctx) => {
       await requireAdmin(ctx)
-      return await db.user.find()
+      return configPage(ctx, db.user)
     },
     getUserByName: async (_, qry, ctx) => {
       await requireAdmin(ctx)
@@ -1342,11 +1377,11 @@ const resolvers = {
     },
     getProtocolDriverInstances: async (_, __, ctx) => {
       await requireAdmin(ctx)
-      return await db.protocolDriverInstance.find()
+      return configPage(ctx, db.protocolDriverInstance)
     },
     getProtocolConnections: async (_, __, ctx) => {
       await requireAdmin(ctx)
-      return await db.protocolConnection.find()
+      return configPage(ctx, db.protocolConnection)
     },
   },
 

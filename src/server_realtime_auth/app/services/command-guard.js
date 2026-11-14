@@ -73,4 +73,30 @@ async function commandRefusal(mdb, point) {
   return null
 }
 
-module.exports = { findCommandPoint, commandRefusal, COMMAND_POINT_FIELDS }
+// May this user see a queued command (its status, value and originator)?
+// Its originator and admins may; others only when they can see the station
+// (group1) of the command point. Special commands (no point: '$$' tags,
+// pointKey 0) of others are visible only to users not restricted to some
+// stations. Callers answer "not found" when refused, as for an unknown handle.
+async function canSeeCommand(mdb, rights, username, cmd) {
+  if (!cmd) return false
+  if (!rights) return false
+  if (rights.isAdmin) return true
+  if (typeof cmd.originatorUserName === 'string' && cmd.originatorUserName === username)
+    return true
+  const g = Array.isArray(rights.group1List) ? rights.group1List : []
+  if (g.length === 0) return true
+  const key = Number(cmd.pointKey?.valueOf?.() ?? cmd.pointKey)
+  if (!Number.isFinite(key) || key === 0) return false
+  const point = await mdb
+    .collection(COLL_REALTIME)
+    .findOne({ _id: key }, { projection: { group1: 1 }, ...PRIMARY })
+  return !!point && g.includes(point.group1)
+}
+
+module.exports = {
+  findCommandPoint,
+  commandRefusal,
+  canSeeCommand,
+  COMMAND_POINT_FIELDS,
+}

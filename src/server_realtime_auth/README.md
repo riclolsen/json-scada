@@ -276,13 +276,13 @@ The schema is self-documenting: use introspection or point any GraphQL client (A
 - _**tags(filter, limit, skip, sortBy, sortDesc)**_ - Flexible realtime points query. Filter by tag list, point key list, group1/group2/group3, type, origin, alarmed, invalid, frozen, substituted and more; substring search on tag name and description; pagination and sorting.
 - _**tagsCount(filter)**_ - Count of points matching a filter.
 - _**tag(tag) / tagById(id)**_ - Single point lookup by tag name or numeric point key.
-- _**groups1 / groups2(group1)**_ - Distinct station/bay names with point counts.
+- _**groups1(limit, skip) / groups2(group1, limit, skip)**_ - Distinct station/bay names with point counts.
 - _**activeAlarms(group1, group2, limit)**_ - Currently alarmed or out-of-normal points (like the persistentAlarms filter of the /Invoke API).
 - _**soeEvents(filter, limit, ascending)**_ - Sequence of Events query with time range, station list, priority and tag filters; optional per-tag aggregation with counts; optional filtering/sorting by source timestamp.
 - _**historicalData(tags, timeBegin, timeEnd, limit)**_ - Historical values from the PostgreSQL/TimescaleDB historian, restricted to points the user can access; _limit_ is the maximum number of values per tag (at most 50000, 500000 in one answer).
-- _**commandStatus(commandHandle)**_ - Track command acknowledgment (PENDING/ACK_OK/ACK_FAIL/CANCELLED).
-- _**protocolDriverInstances / protocolConnections**_ - Protocol configuration (credentials and certificates are never exposed).
-- _**users / roles / systemSettings / userActions(filter, limit, skip)**_ - Administrative queries (require admin rights). _userActions_ is the audit trail of user commands and changes.
+- _**commandStatus(commandHandle)**_ - Track command acknowledgment (PENDING/ACK_OK/ACK_FAIL/CANCELLED). A user sees its own commands; other commands only for points in a station (group1) it can see, special "$$" commands of others only when not restricted to some stations, admins all (others answer null, as for an unknown handle; the same applies to the /Invoke/ command acknowledgement read).
+- _**protocolDriverInstances(limit, skip) / protocolConnections(limit, skip)**_ - Protocol configuration (credentials and certificates are never exposed).
+- _**users(limit, skip) / roles(limit, skip) / systemSettings / userActions(filter, limit, skip)**_ - Administrative queries (require admin rights). Configuration and group lists default to 20000 entries. _userActions_ is the audit trail of user commands and changes.
 
 ### Mutations
 
@@ -414,7 +414,7 @@ To each user can be attributed a set of roles. Each right in each user role are 
 
 #### Access control notes
 
-- The session token only identifies the user. Rights are read from the database (cached for 10 seconds, immediately refreshed after a change of users or roles made through this server, and always fresh for commands and admin routes): a deleted user is refused and a role change applies without waiting for the token to expire. A sign-out revokes the token (also a kept copy, see the _revokedTokens_ collection) and a password change ends all the other sessions of the user. While the database is unavailable, recently cached rights are still used (up to 1 minute for commands and admin routes, 10 minutes otherwise), then requests are answered as unavailable; sign-outs made meanwhile are stored when the database is back. Sessions last the largest _maxSessionDays_ of the user's roles, at least one hour; LDAP users at most _JS_LDAP_MAX_SESSION_HOURS_ (the directory is consulted only at sign-in).
+- The session token only identifies the user. Rights are read from the database (cached for 10 seconds, immediately refreshed after a change of users or roles made through this server, and always fresh for commands and admin routes): a deleted user is refused and a role change applies without waiting for the token to expire. A sign-out revokes the token (also a kept copy, see the _revokedTokens_ collection) and a password change or a new user name ends all the other sessions of the user. While the database is unavailable, recently cached rights are still used (up to 1 minute for commands and admin routes, 10 minutes otherwise), then requests are answered as unavailable; sign-outs made meanwhile are stored when the database is back. Sessions last the largest _maxSessionDays_ of the user's roles, at least one hour; LDAP users at most _JS_LDAP_MAX_SESSION_HOURS_ (the directory is consulted only at sign-in).
 - Passwords set through this server (user creation/update, password change) need at least 8 characters. Hashes made with a lower bcrypt cost by older versions are upgraded at the next successful sign-in.
 - No change through this server can leave the installation without a user holding an _isAdmin_ role (role update, role removal from a user, user deletion), and the `admin` user can be neither renamed nor deleted.
 - The client cookie _json-scada-user_ carries the user's flags and _displayList_; when the list would not fit in a cookie it is left out (`rights.displayListTruncated: true`) and clients read it from `GET /Invoke/auth/userDisplays` (`{ "displayList": [] }`, an empty list means all displays).
