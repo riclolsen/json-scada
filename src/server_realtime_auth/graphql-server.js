@@ -30,7 +30,7 @@ const express = require('express')
 const { ObjectId, Double } = require('mongodb')
 const { getPgPool } = require('./pg-pool') // historian pool shared with /Invoke/
 const { authJwt } = require('./app/middlewares')
-const { canSendCommands, canSendCommandTo } = require('./app/middlewares/authJwt.js')
+const { propertyProblem } = require('./app/services/point-properties')
 const {
   findCommandPoint,
   commandRefusal,
@@ -926,20 +926,32 @@ function requireTokenRight(ctx, right, message) {
   }
 }
 
-// admin right as it is now (fresh, from the primary, see services/user-rights),
-// checked once per request: every admin field of an operation shares it
-function isAdminDb(ctx) {
-  if (!AUTH) return Promise.resolve(true)
-  if (ctx.token === false) return Promise.resolve(false)
-  if (!ctx.adminCheck)
-    ctx.adminCheck = authJwt
+// rights as they are now (fresh, from the primary, see services/user-rights),
+// read once per request: the admin fields and commands of an operation share
+// them. null when the session ended; the database being unavailable is an
+// error of its own (SERVICE_UNAVAILABLE), never a missing right.
+function freshRights(ctx) {
+  if (ctx.token === false) return Promise.resolve(null)
+  if (!ctx.freshRights)
+    ctx.freshRights = authJwt
       .getCurrentRights(ctx.token, { fresh: true })
-      .then((rights) => !!rights?.isAdmin)
+      .then((rights) => rights || null)
       .catch((err) => {
-        Log.log('GraphQL: admin check - ' + err.message)
+        Log.log('GraphQL: rights lookup - ' + err.message)
         throw gqlError('Database disconnected!', 'SERVICE_UNAVAILABLE')
       })
-  return ctx.adminCheck
+  return ctx.freshRights
+}
+
+async function isAdminDb(ctx) {
+  if (!AUTH) return true
+  return !!(await freshRights(ctx))?.isAdmin
+}
+
+// command rights of the user (fresh rights): may it command this group1?
+async function canCommand(ctx, group1) {
+  if (!AUTH) return true
+  return UserRights.canCommandGroup(await freshRights(ctx), group1)
 }
 
 async function requireAdmin(ctx) {
@@ -1392,7 +1404,7 @@ const resolvers = {
 
       if (AUTH) {
         // check user right for commands in mongodb (not just in the token, for better security)
-        if (!(await canSendCommands(ctx.req))) {
+        if (!(await freshRights(ctx))?.sendCommands) {
           Log.log(`GraphQL: user has no right to issue commands! [${ctx.username}]`)
           throw gqlError('User has no right to issue commands!', 'FORBIDDEN')
         }
@@ -1406,7 +1418,7 @@ const resolvers = {
       // special command tags that start with $$ do not need to be found in the database
       if (typeof tagOrId === 'string' && tagOrId.startsWith('$$')) {
         // a user whose roles restrict commands to some groups needs '$$' in that list
-        if (AUTH && !(await canSendCommandTo(ctx.req, '$$')))
+        if (!(await canCommand(ctx, '$$')))
           throw gqlError('User has no right to issue special ($$) commands!', 'FORBIDDEN')
         UserActionsQueue.enqueue({
           username: ctx.username,
@@ -1441,7 +1453,7 @@ const resolvers = {
 
       if (AUTH) {
         // check if user can command this group1 destination
-        if (!(await canSendCommandTo(ctx.req, data.group1))) {
+        if (!(await canCommand(ctx, data.group1))) {
           Log.log(
             `GraphQL: user has no right to issue commands to the group1 destination! [${ctx.username}] [${data.group1}]`
           )
@@ -1751,6 +1763,13 @@ const resolvers = {
     },
 
     updateTagProperties: async (_, { tagOrId, properties }, ctx) => {
+      // GraphQL checks the types; lengths and ranges are checked here (a
+      // null field means unchanged, as below)
+      const given = Object.fromEntries(
+        Object.entries(properties || {}).filter(([, v]) => v !== null && v !== undefined)
+      )
+      const problem = propertyProblem(given)
+      if (problem) throw gqlError(problem, 'BAD_USER_INPUT')
       const mdb = nativeDb()
       // the group1 restriction of the user applies to property writes
       const findPoint = findPointQuery(ctx, tagOrId, true)
@@ -1888,6 +1907,9 @@ async function initGQLServer(app, dbParam, authentication) {
     typeDefs,
     resolvers,
     introspection: true, // only for signed-in users (the token is checked first)
+    // never send server stack traces to clients (Apollo adds them unless
+    // NODE_ENV=production, which the services do not set)
+    includeStacktraceInErrorResponses: false,
     validationRules: [
       depthLimitRule(MaxQueryDepth, MaxIntrospectionDepth, MaxQuerySelections),
       rootFieldsRule(MaxRootFields),

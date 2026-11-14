@@ -114,6 +114,62 @@ const ROLE_UPDATE_FIELDS = [
   'maxSessionDays',
 ]
 
+// Paging and filter of the admin list routes (listTags, listUserActions).
+// A page has at most MAX_LIST_PAGE entries (the largest AdminUI option). The
+// filter is { field: value | { op: value } } with plain field names and a few
+// comparison operators: no $where/$expr/$function (code run by the database)
+// nor nested logical operators.
+const MAX_LIST_PAGE = 1000
+const LIST_FILTER_OPS = new Set(['$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$in', '$nin', '$regex', '$options', '$exists'])
+const MAX_FILTER_REGEX = 200
+function listPaging(body) {
+  let limit = Math.floor(Number(body?.itemsPerPage))
+  if (!Number.isFinite(limit) || limit < 1) limit = 10
+  limit = Math.min(limit, MAX_LIST_PAGE)
+  let page = Math.floor(Number(body?.page))
+  if (!Number.isFinite(page) || page < 1) page = 1
+  return { limit, skip: limit * (page - 1) }
+}
+function isFilterScalar(v) {
+  return v === null || ['string', 'number', 'boolean'].includes(typeof v)
+}
+// a copy of the filter, or null when it is not acceptable
+function listFilter(filter) {
+  if (filter === undefined || filter === null) return {}
+  if (typeof filter !== 'object' || Array.isArray(filter)) return null
+  const out = {}
+  for (const [k, v] of Object.entries(filter)) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/.test(k)) return null
+    if (isFilterScalar(v)) {
+      out[k] = v
+      continue
+    }
+    if (typeof v !== 'object' || Array.isArray(v)) return null
+    const cond = {}
+    for (const [op, x] of Object.entries(v)) {
+      if (!LIST_FILTER_OPS.has(op)) return null
+      if (op === '$in' || op === '$nin') {
+        if (!Array.isArray(x) || x.length > 10000 || !x.every(isFilterScalar)) return null
+      } else if (op === '$regex') {
+        if (typeof x !== 'string' || x.length > MAX_FILTER_REGEX) return null
+      } else if (op === '$options') {
+        if (typeof x !== 'string' || !/^[imsx]*$/.test(x)) return null
+      } else if (!isFilterScalar(x)) return null
+      cond[op] = x
+    }
+    out[k] = cond
+  }
+  return out
+}
+function sortOf(body, dflt) {
+  const order = {}
+  if (Array.isArray(body?.sortBy))
+    for (const s of body.sortBy.slice(0, 10))
+      if (typeof s?.key === 'string' && /^[A-Za-z_][A-Za-z0-9_.]*$/.test(s.key))
+        order[s.key] = s?.order === 'desc' ? -1 : 1
+  return Object.keys(order).length > 0 ? order : { [dflt]: 1 }
+}
+
 // Error text for an admin route answer: what the admin can act on (invalid
 // field, duplicate name, missing file), never internals such as stack traces,
 // paths of the server or database messages; the full error goes to the log.
@@ -141,28 +197,20 @@ exports.addXWebAuthUser = (req) => {
 exports.listUserActions = async (req, res) => {
   Log.log('listUserActions')
 
-  let skip = 0
-  if ('page' in req.body && 'itemsPerPage' in req.body)
-    skip = req.body.itemsPerPage * (req.body.page - 1)
-  let filter = {}
-  if ('filter' in req.body) filter = req.body.filter
-
-  let limit = req.body.itemsPerPage || 10
-  let orderby = {}
-  if ('sortBy' in req.body) {
-    for (let i = 0; i < req.body.sortBy.length; i++)
-      orderby[req.body.sortBy[i].key] =
-        req.body.sortBy[i]?.order === 'desc' ? -1 : 1
-    if (req.body.sortBy.length === 0) orderby = { timeTag: 1 }
-  } else orderby = { timeTag: 1 }
+  const { limit, skip } = listPaging(req.body)
+  const filter = listFilter(req.body?.filter)
+  if (filter === null) {
+    res.status(200).send({ error: 'Invalid filter!' })
+    return
+  }
+  const orderby = sortOf(req.body, 'timeTag')
 
   try {
-    let count = await UserAction.countDocuments(filter)
-    let userActions = await UserAction.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort(orderby)
-      .exec()
+    // the page and the total are independent queries
+    const [count, userActions] = await Promise.all([
+      UserAction.countDocuments(filter),
+      UserAction.find(filter).sort(orderby).skip(skip).limit(limit).exec(),
+    ])
     res.status(200).send({ userActions: userActions, countTotal: count })
   } catch (err) {
     Log.log(err)
@@ -330,16 +378,18 @@ exports.updateTag = async (req, res) => {
 
 exports.deleteTag = async (req, res) => {
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null) {
+      res.status(200).send({ error: 'No valid _id in delete request.' })
+      return
+    }
     registerUserAction(req, 'deleteTag')
-
-    if ('_id' in req.body) {
-      if (await findCommStatusTag(req.body._id)) {
-        res.status(200).send({ error: commStatusTagError })
-        return
-      }
-      await Tag.findOneAndDelete({ _id: req.body._id })
-      res.status(200).send({ error: false })
-    } else res.status(200).send({ error: 'No _id in delete request.' })
+    if (await findCommStatusTag(id)) {
+      res.status(200).send({ error: commStatusTagError })
+      return
+    }
+    await Tag.findOneAndDelete({ _id: id })
+    res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: errorText(err) })
@@ -349,29 +399,21 @@ exports.deleteTag = async (req, res) => {
 exports.listTags = async (req, res) => {
   Log.log('listTags')
 
-  let skip = 0
-  if ('page' in req.body && 'itemsPerPage' in req.body)
-    skip = req.body.itemsPerPage * (req.body.page - 1)
-  let filter = {}
-  if (req.body.filter && typeof req.body.filter === 'object')
-    filter = req.body.filter
+  const { limit, skip } = listPaging(req.body)
+  const filter = listFilter(req.body?.filter)
+  if (filter === null) {
+    res.status(200).send({ error: 'Invalid filter!' })
+    return
+  }
+  // the beep and its internal companion point are not listed
   filter['_id'] = { $nin: [-1, -2] }
-
-  let limit = req.body.itemsPerPage || 10
-  let orderby = {}
-  if ('sortBy' in req.body) {
-    for (let i = 0; i < req.body.sortBy.length; i++)
-      orderby[req.body.sortBy[i].key] =
-        req.body.sortBy[i]?.order === 'desc' ? -1 : 1
-    if (req.body.sortBy.length === 0) orderby = { tag: 1 }
-  } else orderby = { tag: 1 }
+  const orderby = sortOf(req.body, 'tag')
   try {
-    let count = await Tag.countDocuments(filter)
-    let tags = await Tag.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort(orderby)
-      .exec()
+    // the page and the total are independent queries
+    const [count, tags] = await Promise.all([
+      Tag.countDocuments(filter),
+      Tag.find(filter).sort(orderby).skip(skip).limit(limit).exec(),
+    ])
     let ret = { tags: tags, countTotal: count }
     res.status(200).send(ret)
   } catch (err) {
@@ -1396,12 +1438,15 @@ exports.listProtocolConnections = async (req, res) => {
 
 exports.deleteProtocolDriverInstance = async (req, res) => {
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null)
+      return res.status(200).send({ error: 'Invalid driver instance id!' })
     registerUserAction(req, 'deleteProtocolDriverInstance')
 
-    const doc = await ProtocolDriverInstance.findOne({ _id: req.body._id })
+    // the deleted document itself (not a second read) drives the service hook
+    const doc = await ProtocolDriverInstance.findOneAndDelete({ _id: id })
       .lean()
       .exec()
-    await ProtocolDriverInstance.findOneAndDelete({ _id: req.body._id })
 
     // best-effort: stop and uninstall the OS service for the removed instance
     let processWarning = undefined
@@ -1534,8 +1579,18 @@ exports.listRoles = async (req, res) => {
   }
 }
 
+// user and role are given by name: plain strings only (an object such as
+// { $ne: null } would select some other document)
+function namesOf(body) {
+  return typeof body?.username === 'string' && typeof body?.role === 'string'
+}
+
 exports.userAddRole = async (req, res) => {
   try {
+    if (!namesOf(req.body)) {
+      res.status(200).send({ error: 'Invalid user or role name!' })
+      return
+    }
     registerUserAction(req, 'userAddRole')
     let role = await Role.findOne({ name: req.body.role }).exec()
     if (!role) {
@@ -1547,7 +1602,7 @@ exports.userAddRole = async (req, res) => {
       res.status(200).send({ error: 'User not found!' })
       return
     }
-    user.roles.push(role._id)
+    user.roles.addToSet(role._id)
     await user.save()
     UserRights.invalidate()
     res.status(200).send({ error: false })
@@ -1559,7 +1614,11 @@ exports.userAddRole = async (req, res) => {
 
 exports.userRemoveRole = async (req, res) => {
   try {
-    if (req?.body?.username === 'admin' && req.body.role === 'admin') {
+    if (!namesOf(req.body)) {
+      res.status(200).send({ error: 'Invalid user or role name!' })
+      return
+    }
+    if (req.body.username === 'admin' && req.body.role === 'admin') {
       res
         .status(200)
         .send({ error: 'Cannot remove admin role from admin user!' })
@@ -1808,7 +1867,12 @@ async function usernameTaken(username, exceptId) {
 exports.createRole = async (req, res) => {
   Log.log('Create role')
   try {
-    const role = new Role(req.body)
+    const fields = pickFields(req.body, ROLE_UPDATE_FIELDS)
+    if (typeof fields.name !== 'string' || fields.name.trim() === '') {
+      res.status(200).send({ error: 'Invalid role name!' })
+      return
+    }
+    const role = new Role(fields)
     await role.save()
     req.body._id = role._id
     registerUserAction(req, 'createRole')
@@ -1822,20 +1886,47 @@ exports.createRole = async (req, res) => {
 exports.createUser = async (req, res) => {
   Log.log('Create user')
   try {
-    delete req.body.tokenVersion
-    if (await usernameTaken(req.body.username, null)) {
+    // plain allowed fields only (no id, token version or LDAP identity)
+    const fields = pickFields(req.body, [...USER_UPDATE_FIELDS, 'roles'])
+    if (typeof fields.username !== 'string' || fields.username.trim() === '') {
+      res.status(200).send({ error: 'Invalid user name!' })
+      return
+    }
+    if ('roles' in fields) {
+      const ids = Array.isArray(fields.roles) ? fields.roles : null
+      const found =
+        ids && ids.every((r) => typeof r === 'string' && /^[0-9a-fA-F]{24}$/.test(r))
+          ? await Role.countDocuments({ _id: { $in: ids } })
+          : -1
+      if (found !== new Set(ids || []).size) {
+        res.status(200).send({ error: 'Invalid role list!' })
+        return
+      }
+      fields.roles = [...new Set(ids)]
+    }
+    if (await usernameTaken(fields.username, null)) {
       res.status(200).send({ error: 'User name already exists!' })
       return
     }
-    if (req.body.password && req.body.password !== '') {
-      if (passwordTooShort(req.body.password)) {
+    if (fields.password === '' || fields.password === null) delete fields.password
+    if ('password' in fields) {
+      if (passwordTooShort(fields.password)) {
         res.status(200).send({ error: PASSWORD_TOO_SHORT })
         return
       }
-      req.body.password = await bcrypt.hash(req.body.password, BCRYPT_COST)
+      fields.password = await bcrypt.hash(fields.password, BCRYPT_COST)
     }
-    const user = new User(req.body)
-    await user.save()
+    // the unique index refuses a name created meanwhile (code 11000)
+    const user = new User(fields)
+    try {
+      await user.save()
+    } catch (err) {
+      if (err?.code === 11000 && 'username' in (err.keyValue || {})) {
+        res.status(200).send({ error: 'User name already exists!' })
+        return
+      }
+      throw err
+    }
     req.body._id = user._id
     registerUserAction(req, 'createUser')
     res.status(200).send({ error: false })
@@ -1849,8 +1940,10 @@ exports.deleteRole = async (req, res) => {
   Log.log('Delete role')
 
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null) return res.status(200).send({ error: 'Invalid role id!' })
     // do not delete a role that is attributed to a user
-    let users = await User.find({ roles: req.body._id }).exec()
+    const users = await User.find({ roles: id }).select('_id').lean().exec()
     if (users.length > 0)
       return res
         .status(200)
@@ -1858,7 +1951,7 @@ exports.deleteRole = async (req, res) => {
 
     registerUserAction(req, 'deleteRole')
 
-    await Role.findOneAndDelete({ _id: req.body._id })
+    await Role.findOneAndDelete({ _id: id })
     UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
@@ -1872,7 +1965,12 @@ exports.deleteUser = async (req, res) => {
   try {
     // the protected user is identified by the stored document, not by the
     // username the request claims
-    const target = await User.findById(req.body._id).exec()
+    const id = scalarId(req.body?._id)
+    if (id === null) {
+      res.status(200).send({ error: 'Invalid user id!' })
+      return
+    }
+    const target = await User.findById(id).read('primary').exec()
     if (req.body.username === 'admin' || target?.username === 'admin') {
       res.status(200).send({ error: 'Cannot delete admin user!' })
       return
@@ -1883,47 +1981,12 @@ exports.deleteUser = async (req, res) => {
     }
     registerUserAction(req, 'deleteUser')
 
-    await User.findOneAndDelete({ _id: req.body._id })
+    await User.findOneAndDelete({ _id: id })
     UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
     res.status(200).send({ error: errorText(err) })
-  }
-}
-
-// create user profile passing username, email, password and roles
-exports.signup = async (req, res) => {
-  if (passwordTooShort(req.body?.password))
-    return res.status(400).send({ message: PASSWORD_TOO_SHORT })
-  const user = new User({
-    username: req.body.username,
-    email: req.body.email,
-    password: await bcrypt.hash(String(req.body.password), BCRYPT_COST),
-  })
-
-  registerUserAction(req, 'signup')
-
-  try {
-    await user.save()
-
-    if (req.body.roles) {
-      let roles = await Role.find({
-        name: { $in: req.body.roles },
-      }).exec()
-      user.roles = roles.map((role) => role._id)
-      await user.save()
-      res.send({ message: 'User was registered successfully!' })
-    } else {
-      let role = await Role.findOne({ name: 'user' }).exec()
-      user.roles = [role._id]
-      await user.save()
-      res.send({ message: 'User was registered successfully!' })
-    }
-  } catch (err) {
-    Log.log(err)
-    res.status(500).send({ message: err })
-    return
   }
 }
 

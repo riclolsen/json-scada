@@ -289,7 +289,7 @@ The schema is self-documenting: use introspection or point any GraphQL client (A
 - _**issueCommand(tagOrId, value, valueString)**_ - Issue a command (control). Requires the _sendCommands_ right and permission for the point's group1 (station). Returns a _commandHandle_ to track acknowledgment via the _commandStatus_ query. Command tags beginning with "$$" are queued directly without a point lookup. Commands are logged to the SOE list and to the user actions audit trail.
 - _**ackEvents(action, tag, eventId)**_ - Acknowledge or remove SOE events (ACK_ONE_EVENT, ACK_POINT_EVENTS, ACK_ALL_EVENTS, REMOVE_ONE_EVENT, REMOVE_POINT_EVENTS, REMOVE_ALL_EVENTS). Requires the _ackEvents_ right.
 - _**ackAlarms(action, tagOrId)**_ - Acknowledge alarms or silence beep (ACK_ONE_ALARM, ACK_ALL_ALARMS, SILENCE_BEEP). Requires the _ackAlarms_ right.
-- _**updateTagProperties(tagOrId, properties)**_ - Update point annotation, notes, limits, alarm disabling, or substitute (manually enter) the value. Each property requires its respective user right (_enterAnnotations_, _enterNotes_, _enterLimits_, _disableAlarms_, _substituteValues_). Changes are audited and generate SOE events where applicable.
+- _**updateTagProperties(tagOrId, properties)**_ - Update point annotation, notes, limits, alarm disabling, or substitute (manually enter) the value. Each property requires its respective user right (_enterAnnotations_, _enterNotes_, _enterLimits_, _disableAlarms_, _substituteValues_). Annotations are at most 2000 characters, notes 10000, the hysteresis is not below zero (the same rules apply to /Invoke/ property writes, where a refused write answers _BadTypeMismatch_ and changes nothing). Changes are audited and generate SOE events where applicable.
 
 ### Examples
 

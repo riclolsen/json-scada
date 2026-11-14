@@ -209,41 +209,6 @@ const isUserPage = async (req, res, next) => {
   res.status(401).send({ ok: false, message: 'Require sign-in!' })
 }
 
-// rights read afresh from the database, null when unavailable or not signed in
-async function freshRights(req) {
-  const tok = checkToken(req)
-  if (tok === false) return null
-  try {
-    return await UserRights.getCurrentRights(tok, { fresh: true })
-  } catch (err) {
-    Log.log('Rights unavailable: ' + err.message)
-    return null
-  }
-}
-
-// User in request can send commands? (rights read from the database, not the token)
-const canSendCommands = async (req) => {
-  const rights = await freshRights(req)
-  if (!rights || !rights.sendCommands) {
-    Log.log("User not found or without rights, can't send commands!")
-    return false
-  }
-  return true
-}
-
-// User in request can send commands to a group1 location?
-const canSendCommandTo = async (req, group1) => {
-  const ok = UserRights.canCommandGroup(await freshRights(req), group1)
-  if (!ok) Log.log('User has no right to issue commands to: ' + group1)
-  return ok
-}
-
-// test a user right (current rights, from the database)
-const hasRight = async (req, right) => {
-  const rights = await freshRights(req)
-  return !!rights?.[right]
-}
-
 // CIM-EMS engineering right (model upload/activation, binding approval, artifact
 // download): an admin role is not enough, a role must grant cimEngineering.
 const hasCimEngineering = async (req) => {
@@ -269,12 +234,9 @@ const authJwt = {
   verifyToken,
   checkToken,
   getCurrentRights,
-  hasRight,
   isAdmin,
   isUser,
   isUserPage,
-  canSendCommands,
-  canSendCommandTo,
   hasCimEngineering,
   isCimEngineer,
 }
