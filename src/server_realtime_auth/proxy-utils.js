@@ -318,6 +318,29 @@ function createSupervisorProxy(supervisorServer) {
   )
 }
 
+// how often an open admin websocket is checked against the current rights
+const UPGRADE_RECHECK_MS = 30 * 1000
+
+// A browser always sends the Origin of the page opening a websocket, and a
+// page cannot change it: one from another site (also another port of this
+// host, which SameSite cookies treat as the same site) is refused. Clients
+// that are not browsers send none.
+function sameOrigin(req) {
+  const origin = req.headers?.origin
+  if (origin === undefined) return true
+  let host
+  try {
+    host = new URL(origin).host.toLowerCase()
+  } catch (e) {
+    return false
+  }
+  const hosts = [req.headers?.host, req.headers?.['x-forwarded-host']]
+    .filter((h) => typeof h === 'string')
+    .flatMap((h) => h.split(','))
+    .map((h) => h.trim().toLowerCase())
+  return hosts.includes(host)
+}
+
 // Proxy the websocket upgrades of a mounted reverse proxy, for admin users.
 // Upgrade requests never reach the express middlewares (so verifyToken cannot run on
 // them), they are handled on the raw http server and the token is verified here instead.
@@ -332,6 +355,8 @@ function attachProxyUpgrade(httpServer, proxy, mountPath, label) {
       socket.write('HTTP/1.1 ' + status + '\r\nConnection: close\r\n\r\n')
       socket.destroy()
     }
+
+    if (!sameOrigin(req)) return deny('403 Forbidden', 'cross-origin request')
 
     const decoded = checkUpgradeToken(req)
     if (decoded === false) return deny('401 Unauthorized', 'absent or invalid access token')
@@ -353,6 +378,28 @@ function attachProxyUpgrade(httpServer, proxy, mountPath, label) {
     stripSessionToken(req)
 
     proxy.upgrade(req, socket, head)
+
+    // the connection lasts while the session does: closed when the token
+    // expires, is revoked, or the user is no longer an admin (or the rights
+    // cannot be read any more)
+    const recheck = setInterval(async () => {
+      let ok = false
+      try {
+        const expired = Number(decoded.exp) > 0 && Date.now() >= decoded.exp * 1000
+        ok =
+          !expired &&
+          !!(await UserRights.getCurrentRights(decoded, { fresh: true }))?.isAdmin
+      } catch (err) {
+        ok = false
+      }
+      if (!ok) {
+        Log.log(label + ' websocket closed (session ended or admin rights removed)')
+        clearInterval(recheck)
+        socket.destroy()
+      }
+    }, UPGRADE_RECHECK_MS)
+    recheck.unref?.()
+    socket.once('close', () => clearInterval(recheck))
   })
 }
 
@@ -373,6 +420,7 @@ function attachLogioUpgrade(httpServer, logioProxy) {
 
 module.exports = {
   stripSessionToken,
+  sameOrigin,
   NODERED_MOUNT_PATH,
   NODERED_DEFAULT_SERVER,
   N8N_MOUNT_PATH,

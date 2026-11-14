@@ -157,6 +157,7 @@ const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const UserRights = require('./app/services/user-rights')
 const { clientAddress } = require('./app/services/client-address')
+const { propertyProblem, finiteNumber } = require('./app/services/point-properties')
 const {
   findCommandPoint,
   commandRefusal,
@@ -286,6 +287,7 @@ function maskConnectionString(cs) {
       // one connection pool for everything: the native handle of mongoose
       db = dbAuth.mongoose.connection.db
       HintMongoIsConnected = true
+      ensureUniqueNameIndexes(db).catch(logBgError)
     })
     .catch((err) => {
       console.error('Connection error', err)
@@ -651,7 +653,8 @@ function maskConnectionString(cs) {
           freshRights =
             (await authJwt.getCurrentRights(rslt, { fresh: true })) || {}
         } catch (e) {
-          freshRights = {} // database not available: no commands
+          // database not available: no commands, answered as unavailable
+          freshRights = { unavailable: true }
         }
       }
       return freshRights
@@ -1145,6 +1148,17 @@ function maskConnectionString(cs) {
 
                 // go check user right for command in mongodb (not just in the token for better security)
                 const cmdRights = await getFreshRights()
+                if (cmdRights.unavailable) {
+                  OpcResp.Body.ResponseHeader.ServiceResult =
+                    opc.StatusCode.BadServerNotConnected
+                  OpcResp.Body.ResponseHeader.StringTable = [
+                    opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
+                    opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
+                    'User rights unavailable (database not available), try again later!',
+                  ]
+                  res.send(OpcResp)
+                  return
+                }
                 if (!cmdRights.sendCommands) {
                   // ACTION DENIED
                   Log.log(`User has no right to issue commands! [${username}]`)
@@ -1465,6 +1479,19 @@ function maskConnectionString(cs) {
                       }
 
                       if (!node.Value || typeof node.Value !== 'object') node.Value = {}
+                      if (
+                        !node.Value._Properties ||
+                        typeof node.Value._Properties !== 'object'
+                      )
+                        node.Value._Properties = {}
+
+                      // wrong types or oversized texts: nothing of this node is written
+                      const propProblem = propertyProblem(node.Value._Properties)
+                      if (propProblem) {
+                        Log.log('Property write refused: ' + propProblem)
+                        OpcResp.Body.Results.push(opc.StatusCode.BadTypeMismatch)
+                        continue
+                      }
 
                       let alarmDisableNew = {}
                       if (
@@ -1498,7 +1525,7 @@ function maskConnectionString(cs) {
                       // Infinity serialized as JSON) means no limit
                       const props = node.Value?._Properties || {}
                       const limitOf = (v, inf) =>
-                        v === null ? inf : Number(v)
+                        v === null ? inf : finiteNumber(v)
                       if (userRights?.enterLimits && props.loLimit !== undefined)
                         if (
                           prevData?.loLimit !== limitOf(props.loLimit, -Infinity)
@@ -1523,14 +1550,9 @@ function maskConnectionString(cs) {
                         userRights?.enterLimits &&
                         props.hysteresis !== undefined
                       )
-                        if (
-                          prevData?.hysteresis !==
-                          node.Value._Properties?.hysteresis
-                        )
+                        if (prevData?.hysteresis !== finiteNumber(props.hysteresis))
                           hysteresisNew = {
-                            hysteresis: new Double(
-                              node.Value._Properties.hysteresis
-                            ),
+                            hysteresis: new Double(finiteNumber(props.hysteresis)),
                           }
 
                       // loloLimit: node.Value._Properties.loLimit,
@@ -1548,9 +1570,9 @@ function maskConnectionString(cs) {
                       let valueNew = {}
                       if ('substituted' in props && 'newValue' in props)
                         if (userRights?.substituteValues)
-                          if (prevData?.value !== props.newValue)
+                          if (prevData?.value !== finiteNumber(props.newValue))
                             valueNew = {
-                              value: new Double(props.newValue),
+                              value: new Double(finiteNumber(props.newValue)),
                             }
 
                       let set = {
@@ -3030,6 +3052,40 @@ function maskConnectionString(cs) {
     }
   }
 })()
+
+// User and role names identify them (sign-in, role assignment): unique
+// indexes make that hold also for concurrent requests. The database seed
+// creates them; an older database may lack them. Existing duplicates make the
+// creation fail: that is logged, names must then be made unique by hand.
+async function ensureUniqueNameIndexes(mdb) {
+  for (const [coll, field, name] of [
+    ['users', 'username', 'userNameIndex'],
+    ['roles', 'name', 'roleNameIndex'],
+  ]) {
+    try {
+      const indexes = await mdb
+        .collection(coll)
+        .indexes()
+        .catch((e) => {
+          if (e?.code === 26) return [] // no collection yet
+          throw e
+        })
+      const present = indexes.some(
+        (ix) =>
+          ix.unique === true &&
+          Object.keys(ix.key).length === 1 &&
+          ix.key[field] === 1
+      )
+      if (!present)
+        await mdb.collection(coll).createIndex({ [field]: 1 }, { name, unique: true })
+    } catch (err) {
+      Log.log(
+        'Could not create the unique index of ' + coll + '.' + field +
+          ' (duplicate names?): ' + err.message
+      )
+    }
+  }
+}
 
 // test mongoDB connectivity
 async function checkConnectedMongo(client) {
