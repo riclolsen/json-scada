@@ -1296,27 +1296,41 @@ async function scheduleConnectionRestart(driver, instanceNumber, oldConn) {
 
 exports.deleteProtocolConnection = async (req, res) => {
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null)
+      return res.status(200).send({ error: 'Invalid connection id!' })
     registerUserAction(req, 'deleteProtocolConnection')
 
-    if (req.body?.deleteTags === true) {
-      await Tag.deleteMany({
-        protocolSourceConnectionNumber: req.body.protocolConnectionNumber,
-      })
-    }
-
-    const conn = await ProtocolConnection.findOneAndDelete({
-      _id: req.body._id,
-    })
+    // the connection first: its tags are those of the number stored in it
+    // (never a number taken from the request), and nothing is deleted when
+    // the connection does not exist
+    const conn = await ProtocolConnection.findOneAndDelete({ _id: id })
       .lean()
       .exec()
+    if (!conn) return res.status(200).send({ error: 'Connection not found!' })
 
-    const restartInfo = conn
-      ? await scheduleConnectionRestart(
-          conn.protocolDriver,
-          conn.protocolDriverInstanceNumber,
-          null
-        )
-      : {}
+    if (req.body?.deleteTags === true) {
+      const number = Number(conn.protocolConnectionNumber)
+      if (Number.isFinite(number)) {
+        try {
+          await Tag.deleteMany({ protocolSourceConnectionNumber: number })
+        } catch (err) {
+          // the connection is gone: say so, the tags can be deleted again
+          Log.log(err)
+          return res.status(200).send({
+            error:
+              'Connection deleted, but its tags could not be deleted: ' +
+              errorText(err),
+          })
+        }
+      }
+    }
+
+    const restartInfo = await scheduleConnectionRestart(
+      conn.protocolDriver,
+      conn.protocolDriverInstanceNumber,
+      null
+    )
 
     res.status(200).send({ error: false, ...restartInfo })
   } catch (err) {
@@ -1750,6 +1764,7 @@ exports.updateUser = async (req, res) => {
       res.status(200).send({ error: PASSWORD_TOO_SHORT })
       return
     }
+    let renamed = false
     if ('username' in fields) {
       if (typeof fields.username !== 'string' || fields.username.trim() === '') {
         res.status(200).send({ error: 'Invalid user name!' })
@@ -1764,15 +1779,16 @@ exports.updateUser = async (req, res) => {
         res.status(200).send({ error: 'User name already exists!' })
         return
       }
+      renamed = !!current && current.username !== fields.username
     }
     registerUserAction(req, 'updateUser')
     const update = { $set: fields }
-    if ('password' in fields) {
+    if ('password' in fields)
       fields.password = await bcrypt.hash(fields.password, BCRYPT_COST)
-      // a password set by an admin ends the sessions of that user: the new
-      // hash and the token version change in one write
-      update.$inc = { tokenVersion: 1 }
-    }
+    // a password set by an admin, or a new user name (tokens carry the name
+    // used for the audit trail and the Grafana trusted header), ends the
+    // sessions of that user: in the same write as the change
+    if ('password' in fields || renamed) update.$inc = { tokenVersion: 1 }
     await User.updateOne({ _id: id }, update)
     UserRights.invalidate()
     res.status(200).send({ error: false })
@@ -2308,6 +2324,23 @@ const PLATFORM_SCRIPTS_DIR = path.join(
   IS_WINDOWS ? 'platform-windows' : 'platform-linux'
 )
 const PROJECT_TMP_DIR = path.join(JS_ROOT_DIR, 'tmp')
+// The project import and export scripts use the fixed PROJECT_TMP_DIR (the
+// export starts by emptying it): one of them at a time, from before the first
+// file is written there until its last file there was used and removed.
+let projectBusy = null // 'importProject' | 'exportProject' | null
+function takeProjectLock(action) {
+  if (projectBusy)
+    throw new Error(
+      'A project ' + (projectBusy === 'importProject' ? 'import' : 'export') +
+        ' is already running, try again later!'
+    )
+  projectBusy = action
+  let released = false
+  return () => {
+    if (!released && projectBusy === action) projectBusy = null
+    released = true
+  }
+}
 
 // The only scripts these endpoints are ever allowed to run.
 const PLATFORM_SCRIPTS = {
@@ -2456,7 +2489,14 @@ exports.exportProject = async (req, res) => {
 
     // The file name is passed as a separate argv entry and never reaches a
     // shell, so it cannot extend the command line.
-    const cmd = spawnPlatformScript('exportProject', [project.fileName])
+    const release = takeProjectLock('exportProject')
+    let cmd
+    try {
+      cmd = spawnPlatformScript('exportProject', [project.fileName])
+    } catch (e) {
+      release()
+      throw e
+    }
     cmd.on('close', (code) => {
       Log.log(`child process exited with code ${code}`)
       // basename is a further guard even though the name is already validated.
@@ -2465,8 +2505,9 @@ exports.exportProject = async (req, res) => {
         path.basename(project.fileName)
       )
       if (!fs.existsSync(filePath) || code != 0) {
+        release()
         Log.log('Project file not found! ' + filePath)
-        res.status(200).send({ error: 'Project file not found! ' + filePath })
+        res.status(200).send({ error: 'Project file not found!' })
         return
       }
       registerUserAction(req, 'exportProject')
@@ -2475,6 +2516,7 @@ exports.exportProject = async (req, res) => {
         if (err) Log.log('Project download error: ' + err.message)
         fs.unlink(filePath, (e) => {
           if (e) Log.log('Could not remove ' + filePath + ': ' + e.message)
+          release()
         })
       })
     })
@@ -2489,6 +2531,7 @@ exports.importProject = async (req, res) => {
   Log.log('Import project')
   let zipPath = null // removed on any failure before the import starts
   let started = false
+  let release = () => {}
   try {
     if (!req.files || !req.files.projectFileData)
       throw new Error('No project file uploaded!')
@@ -2517,6 +2560,10 @@ exports.importProject = async (req, res) => {
       res.status(400).send({ error: 'Empty project file!' })
       return
     }
+
+    // taken before anything is written to the shared directory: a refused
+    // request must not overwrite (nor clean up) the files of a running one
+    release = takeProjectLock('importProject')
 
     // Fixed extraction directory, not influenced by the request.
     const projectPath = PROJECT_TMP_DIR
@@ -2579,16 +2626,19 @@ exports.importProject = async (req, res) => {
     // the extracted files hold the whole configuration (users, connection
     // passwords): remove them, and the zip, once the import is over
     const cleanup = () => {
-      for (const p of [
+      const files = [
         zipPath,
         ...entries
           .filter((e) => !e.isDirectory)
           .map((e) => path.resolve(projectPath, e.entryName)),
-      ])
-        fs.unlink(p, (e) => {
-          if (e && e.code !== 'ENOENT')
-            Log.log('Could not remove ' + p + ': ' + e.message)
-        })
+      ]
+      for (const p of files)
+        try {
+          fs.unlinkSync(p)
+        } catch (e) {
+          if (e.code !== 'ENOENT') Log.log('Could not remove ' + p + ': ' + e.message)
+        }
+      release() // the directory is free again
     }
 
     // Fixed script, no shell, no arguments taken from the request.
@@ -2623,7 +2673,13 @@ exports.importProject = async (req, res) => {
     })
   } catch (err) {
     Log.log(err)
-    if (zipPath && !started) fs.unlink(zipPath, () => {})
+    if (!started) {
+      if (zipPath)
+        try {
+          fs.unlinkSync(zipPath)
+        } catch (e) {}
+      release()
+    }
     res.status(200).send({ error: err.message || String(err) })
   }
 }

@@ -157,7 +157,11 @@ const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
 const UserRights = require('./app/services/user-rights')
 const { clientAddress } = require('./app/services/client-address')
-const { findCommandPoint, commandRefusal } = require('./app/services/command-guard')
+const {
+  findCommandPoint,
+  commandRefusal,
+  canSeeCommand,
+} = require('./app/services/command-guard')
 
 // A point id names a point key (_id) only when it is a number or a string of
 // digits: '22KV_BRK' is a tag name, not key 22 (parseInt would say 22).
@@ -1766,6 +1770,12 @@ function maskConnectionString(cs) {
             let data = await db
               .collection(COLL_COMMANDS)
               .findOne({ _id: new ObjectId(cmdHandles[0]) })
+            // another user's command in a station this user cannot see: unknown
+            if (
+              data !== null &&
+              !(await canSeeCommand(db, userRights, username, data))
+            )
+              data = null
 
             if (data === null) {
               OpcResp.Body.ResponseHeader.ServiceResult =
