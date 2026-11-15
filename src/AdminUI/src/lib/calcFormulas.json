@@ -1,0 +1,835 @@
+{
+ "userFormulaMin": 100000,
+ "formulas": [
+  {
+   "code": 1,
+   "name": "Current from P, Q and voltage",
+   "expression": "(1000/sqrt(3)) * sqrt(P1^2 + P2^2) / P3   (0 when P3 <= 0)",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "notes": [
+    "P1 = active power (MW), P2 = reactive power (Mvar), P3 = line voltage (kV); result in A"
+   ]
+  },
+  {
+   "code": 2,
+   "name": "Power factor",
+   "expression": "P1 / sqrt(P1^2 + P2^2)",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "notes": [
+    "P1 = active power, P2 = reactive power",
+    "When P1 = P2 = 0 the result is undefined: 0 with the invalid flag"
+   ]
+  },
+  {
+   "code": 3,
+   "name": "Apparent power from P and Q",
+   "expression": "sqrt(P1^2 + P2^2)",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "notes": [
+    "P1 = active power (MW), P2 = reactive power (Mvar); result in MVA"
+   ]
+  },
+  {
+   "code": 4,
+   "name": "Sum",
+   "expression": "P1 + P2 + ... + Pn",
+   "parcels": {
+    "min": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 5,
+   "name": "Square root",
+   "expression": "sqrt(P1)",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "notes": [
+    "A negative P1 gives 0 with the invalid flag"
+   ]
+  },
+  {
+   "code": 6,
+   "name": "Logical AND",
+   "expression": "1 if every parcel != 0, else 0",
+   "parcels": {
+    "min": 1
+   },
+   "result": "digital",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 7,
+   "name": "Logical OR",
+   "expression": "1 if any parcel != 0, else 0",
+   "parcels": {
+    "min": 1
+   },
+   "result": "digital",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 8,
+   "name": "Timer (Unix time)",
+   "expression": "current Unix time in seconds",
+   "parcels": {
+    "min": 0
+   },
+   "result": "analog",
+   "quality": "never invalid",
+   "notes": [
+    "Needs no parcels (any given are ignored); the value changes every second, so it is written on every cycle"
+   ]
+  },
+  {
+   "code": 9,
+   "name": "Apparent power from current and voltage",
+   "expression": "P1 * P2 * sqrt(3) / 1000",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "notes": [
+    "P1 = current (A), P2 = line voltage (kV); result in MVA"
+   ]
+  },
+  {
+   "code": 10,
+   "name": "Negative sum",
+   "expression": "-(P1 + P2 + ... + Pn)",
+   "parcels": {
+    "min": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 11,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16 + P17 + P18 + P19 + P20 + P21 + P22 + P23 + 0.72*P24",
+   "parcels": {
+    "exact": 24
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 13,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 - P9 + P10 + P11 + P12 + 0.52*P13 + P14 + P15 - P16 - P17 + P18 + P19 + P20 + P21 + P22 - P23 - P24 + P25 + P26 + P27 + P28 + P29 + P30 + P31 + P32 + P33 + 0.2*P34 - 1",
+   "parcels": {
+    "exact": 34
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 14,
+   "name": "Scale",
+   "expression": "(P1 * 10) / 6",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 15,
+   "name": "Difference",
+   "expression": "P1 - P2",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 16,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 17,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4",
+   "parcels": {
+    "exact": 4
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 18,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4 - P5 - P6",
+   "parcels": {
+    "exact": 6
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 19,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 20,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5 - P6",
+   "parcels": {
+    "exact": 6
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 21,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 - P5 - P6 - P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 22,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 - P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 23,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 - P11",
+   "parcels": {
+    "exact": 11
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 24,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5 - P6 - P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 26,
+   "name": "Band selector",
+   "expression": "P2, but 0 when abs(P1) > 1.4 and 1 when abs(P1) <= 0.5",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "any",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 50,
+   "name": "Choice of valid parcel (backup sources)",
+   "expression": "value of the first valid parcel in the list; P1 when none is valid",
+   "parcels": {
+    "min": 1
+   },
+   "result": "any",
+   "quality": "invalid only when no parcel is valid",
+   "notes": [
+    "List the preferred source first, then the backups",
+    "50 and 51 are identical"
+   ]
+  },
+  {
+   "code": 51,
+   "name": "Choice of valid parcel (backup sources)",
+   "expression": "value of the first valid parcel in the list; P1 when none is valid",
+   "parcels": {
+    "min": 1
+   },
+   "result": "any",
+   "quality": "invalid only when no parcel is valid",
+   "notes": [
+    "List the preferred source first, then the backups",
+    "50 and 51 are identical"
+   ]
+  },
+  {
+   "code": 52,
+   "name": "Any parcel valid",
+   "expression": "1 if any parcel is valid, else 0",
+   "parcels": {
+    "min": 1
+   },
+   "result": "digital",
+   "quality": "never invalid"
+  },
+  {
+   "code": 53,
+   "name": "Span (max - min)",
+   "expression": "max(P1..Pn) - min(P1..Pn)",
+   "parcels": {
+    "min": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "notes": [
+    "Give at least two parcels; with one the result is always 0"
+   ]
+  },
+  {
+   "code": 54,
+   "name": "Double point from two single points",
+   "expression": "P1 != 0 and P2 == 0 -> 1 (ON); P1 == 0 and P2 != 0 -> 0 (OFF); P1 == P2 -> invalid + transient",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "digital",
+   "quality": "invalid (and transient) when both inputs are equal, or when any parcel is invalid",
+   "notes": [
+    "P1 = ON/closed indication, P2 = OFF/open indication"
+   ]
+  },
+  {
+   "code": 55,
+   "name": "Division",
+   "expression": "P1 / P2   (P2 = 0: 0 when P1 = 0, else +/- max float)",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 200,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4 - P5 - P6 - P7 - P8",
+   "parcels": {
+    "exact": 8
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 201,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 - P9 - P10 - P11",
+   "parcels": {
+    "exact": 11
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 202,
+   "name": "Minutes and seconds",
+   "expression": "(P1 * 60) + P2",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 203,
+   "name": "Selector",
+   "expression": "P1 != 0 ? P3 : P2",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "any",
+   "quality": "quality of the selected parcel (P1 quality is ignored)"
+  },
+  {
+   "code": 204,
+   "name": "Half",
+   "expression": "P1 / 2",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 205,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 - P4 - P5",
+   "parcels": {
+    "exact": 5
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 206,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4 - P5 - P6 - P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 207,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 - P4 - P5 - P6",
+   "parcels": {
+    "exact": 6
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 208,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4 - P5",
+   "parcels": {
+    "exact": 5
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 209,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 - P4 - P5 - P6 - P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 210,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4 - P5 - P6 - P7",
+   "parcels": {
+    "exact": 7
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 211,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 - P6 - P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 213,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4",
+   "parcels": {
+    "exact": 4
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 214,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 - P5",
+   "parcels": {
+    "exact": 5
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 215,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 - P4",
+   "parcels": {
+    "exact": 4
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 216,
+   "name": "Range check",
+   "expression": "1 if P2 <= P1 <= P3, else 0",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "digital",
+   "quality": "quality of P1 only (the limits P2, P3 are not checked)"
+  },
+  {
+   "code": 217,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 - P6",
+   "parcels": {
+    "exact": 6
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 218,
+   "name": "Range check",
+   "expression": "1 if P2 < P1 <= P3, else 0",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "digital",
+   "quality": "quality of P1 only (the limits P2, P3 are not checked)"
+  },
+  {
+   "code": 219,
+   "name": "Range check",
+   "expression": "1 if P2 <= P1 < P3, else 0",
+   "parcels": {
+    "exact": 3
+   },
+   "result": "digital",
+   "quality": "quality of P1 only (the limits P2, P3 are not checked)"
+  },
+  {
+   "code": 220,
+   "name": "Minimum of two",
+   "expression": "min(P1, P2)",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 221,
+   "name": "Maximum of two",
+   "expression": "max(P1, P2)",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 222,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5 - P6 - P7",
+   "parcels": {
+    "exact": 7
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 223,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5 - P6 - P7 - P8",
+   "parcels": {
+    "exact": 8
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 224,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 - P7",
+   "parcels": {
+    "exact": 7
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 225,
+   "name": "Constant 1",
+   "expression": "1",
+   "parcels": {
+    "min": 0,
+    "max": 1
+   },
+   "result": "digital",
+   "quality": "never invalid",
+   "legacy": true,
+   "notes": [
+    "The parcel, if any, is ignored"
+   ]
+  },
+  {
+   "code": 226,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 - P4 - P5 - P6 - P7 - P8",
+   "parcels": {
+    "exact": 8
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 227,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5",
+   "parcels": {
+    "exact": 5
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 228,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - P11 - P12",
+   "parcels": {
+    "exact": 12
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 229,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 - P10 - P11 - P12",
+   "parcels": {
+    "exact": 12
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 230,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 - P10",
+   "parcels": {
+    "exact": 10
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 231,
+   "name": "Negative part",
+   "expression": "P1 > 0 ? 0 : P1",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 232,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 - P6 - P7 - P8",
+   "parcels": {
+    "exact": 8
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 233,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 + P5 + P6 + P7 - P8 - P9 - P10 - P11",
+   "parcels": {
+    "exact": 11
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid"
+  },
+  {
+   "code": 500,
+   "name": "Logical OR",
+   "expression": "1 if any parcel != 0, else 0",
+   "parcels": {
+    "min": 1
+   },
+   "result": "digital",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true,
+   "notes": [
+    "Same as formula 7"
+   ]
+  },
+  {
+   "code": 680,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - P5",
+   "parcels": {
+    "exact": 5
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5000,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 - P4 - 0.6*P5 + P6",
+   "parcels": {
+    "exact": 6
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5022,
+   "name": "Weighted sum",
+   "expression": "P1 + 0.65*P2",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5041,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 + P4 - P5",
+   "parcels": {
+    "exact": 5
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5043,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 + P3 + P4 - P5 - P6 + P7 - P8 - P9",
+   "parcels": {
+    "exact": 9
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5172,
+   "name": "Weighted sum",
+   "expression": "-0.72*P1",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5173,
+   "name": "Weighted sum",
+   "expression": "0.38*P1",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5174,
+   "name": "Weighted sum",
+   "expression": "0.14*P1",
+   "parcels": {
+    "exact": 1
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5406,
+   "name": "Weighted sum",
+   "expression": "-P1 + P2 + P3 + P4 + P5 + P6 - P7 - P8 + P9 + P10 + P11",
+   "parcels": {
+    "exact": 11
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 5711,
+   "name": "Weighted sum",
+   "expression": "-P1 - P2 - P3 - P4",
+   "parcels": {
+    "exact": 4
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 7374,
+   "name": "Weighted sum",
+   "expression": "P1 - P2 - P3 - P4 - P5 - P6 - P7 - P8 - P9 - P10 - P11 - P12",
+   "parcels": {
+    "exact": 12
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 8055,
+   "name": "Weighted sum",
+   "expression": "P1 + P2 - P3 - P4 - P5 - P6 - P7 - P8",
+   "parcels": {
+    "exact": 8
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true
+  },
+  {
+   "code": 25673,
+   "name": "Weighted sum",
+   "expression": "P1 - P2",
+   "parcels": {
+    "exact": 2
+   },
+   "result": "analog",
+   "quality": "invalid if any parcel is invalid",
+   "legacy": true,
+   "notes": [
+    "Same as formula 15"
+   ]
+  }
+ ]
+}

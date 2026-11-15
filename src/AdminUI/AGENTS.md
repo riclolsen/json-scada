@@ -42,6 +42,7 @@ Vue.js single-page application (SPA) for the JSON-SCADA web administration inter
     - **CIM-EMS** (`components/CimEmsServiceCard.vue`): start/stop/restart of the `cim_ems` driver and `cim_ems_demo_field` services and the Python environment check (package table against the pinned versions) with an install button that runs the component's install script (`getCimEmsService` / `controlCimEmsService` / `installCimEmsDependencies`). Start is disabled while packages are missing, install while a CIM-EMS service runs; the poll runs every 2 s during an install and shows its output.
     - **Restarts:** restart protocols or processes, each confirmed.
     - **Configuration clean-up:** `pruneConfiguration`, always as a dry-run preview first. Deleting needs the word `PRUNE` typed in.
+  - Tags edit dialog, calculated points (`components/CalculatedPointEditor.vue`): formula picked from `lib/calcFormulas.json` (code, name, expression, parcel rule, result, quality, notes; legacy formulas behind a checkbox; any code can still be typed, codes from `userFormulaMin` are user processes) and parcels as an ordered list of point keys with tag name, description and value, added by a `listTags` search on tag name, description or key. `lib/calcFormulas.json` is generated from `src/mcp-json-scada-db/src/jsonscada/calculations.ts` by `node tools/gen-calc-formulas.mjs`, never edited by hand
   - Cross-section links pass a filter object through `AdminPage`: Roles → Users of a role, Driver Instances → Connections of an instance, Connections → Tags of a connection
   - Clone opens the new-item dialog with a copy of the item's configuration. A tag copy gets the next free point key and leaves out runtime fields; a connection copy gets the next free number; a role copy gets `_copy` appended to its name. Communication status tags cannot be cloned or deleted
 - `components/CimEmsPage.vue` (route `/cim-ems`, side-panel entry, open to any signed-in user) hosts `components/CimEmsTab.vue`, the CIM-EMS UI; it talks only to `/Invoke/auth/cimEms/*` (see `src/server_realtime_auth/AGENTS.md`) and waits for driver-executed requests by polling `listRequests`
@@ -58,3 +59,4 @@ Vue.js single-page application (SPA) for the JSON-SCADA web administration inter
 - `npm install` — install dependencies
 - `npm run build` — production build must succeed with no errors
 - `npm run lint` — lint check
+- `node tools/gen-calc-formulas.mjs --check` — the formula picker catalog matches the calculations formula table

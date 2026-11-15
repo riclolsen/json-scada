@@ -14,7 +14,7 @@ Compiled cyclic calculations engine written in Go. Computes calculated points (`
 - **Dependency management:** `go.mod` / `go.sum`
 - **Build output:** `calculations` binary in the installation `bin/` (`calculations.exe` on Windows); config from `../conf/json-scada.json` or the 4th argument
 - Formulas live only in the `formulas` table (`formulas.go`): name/expression, parcel count rule, evaluation with the invalid/transient rules; `calculate` applies the count rule and turns NaN/Inf into 0, invalid. Never add a formula as code outside the table
-- Formula codes are a contract with `README.md` (Formulas tables) and `src/mcp-json-scada-db/src/jsonscada/calculations.ts`, which mirrors each entry to check and preview calculated points (the README tables are the MCP `formulaTable` rows). Change all three together; codes >= 100000 stay reserved for user processes
+- Formula codes are a contract with `README.md` (Formulas tables) and `src/mcp-json-scada-db/src/jsonscada/calculations.ts`, which mirrors each entry to check and preview calculated points (the README tables are the MCP `formulaTable` rows). Change all three together, then regenerate the AdminUI formula picker catalog (`node tools/gen-calc-formulas.mjs` in `src/AdminUI`); codes >= 100000 stay reserved for user processes
 - Only points with `origin: "calculated"` and `formula > 0` are computed; they are reloaded every `reloadPeriod` (30 s), and points whose parcel count does not fit or whose formula is unknown are logged and skipped, never computed
 - Missing parcels count as 0, invalid
 - Results go to `sourceDataUpdate` (`valueAtSource`, `invalidAtSource`, `transientAtSource`, `timeTag`) for the data processor, written only when they differ from the stored `sourceDataUpdate`

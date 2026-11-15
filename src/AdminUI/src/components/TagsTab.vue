@@ -425,41 +425,12 @@
                 :label="$t('admin.tags.editUnit')"
               ></v-text-field>
 
-              <v-text-field
-                variant="outlined"
-                type="number"
+              <CalculatedPointEditor
                 v-if="editedTag.origin === 'calculated'"
-                v-model="editedTag.formula"
-                min="0"
-                :label="$t('admin.tags.editFormula')"
-              ></v-text-field>
-
-              <v-row
-                v-if="
-                  editedTag.origin === 'calculated' && editedTag.formula > 0
-                "
-              >
-                <v-col>
-                  <v-select
-                    variant="outlined"
-                    v-model="editedTag.parcels"
-                    :items="editedTag.parcels"
-                    :label="$t('admin.tags.editParcels')"
-                    multiple
-                  ></v-select>
-                </v-col>
-                <v-col>
-                  <v-btn
-                    color="blue darken-1"
-                    text
-                    variant="tonal"
-                    @click="dialogAddParcel = true"
-                  >
-                    <v-icon dark> mdi-plus </v-icon>
-                    {{ $t('admin.tags.parcelAddNew') }}
-                  </v-btn>
-                </v-col>
-              </v-row>
+                v-model:formula="editedTag.formula"
+                v-model:parcels="editedTag.parcels"
+                :self-key="editedTag._id"
+              />
             </v-expansion-panel-text>
           </v-expansion-panel>
           <v-expansion-panel :title="$t('admin.tags.sectionProtocol')">
@@ -846,43 +817,13 @@
     </v-card>
   </v-dialog>
 
-  <v-dialog scrollable v-model="dialogAddParcel" max-width="400" class="pa-8">
-    <v-card>
-      <v-card-title class="headline">
-        {{ $t('admin.tags.parcelAddNew') }}
-      </v-card-title>
-
-      <v-card-text>
-        <v-text-field
-          :label="$t('admin.tags.parcelNew')"
-          type="number"
-          min="0"
-          v-model="newParcel"
-        ></v-text-field>
-      </v-card-text>
-
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="orange darken-1"
-          text
-          variant="tonal"
-          @click="dialogAddParcel = false"
-        >
-          {{ $t('common.cancel') }}
-        </v-btn>
-        <v-btn color="blue darken-1" text variant="tonal" @click="addNewParcel">
-          {{ $t('common.ok') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <script setup>
   import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { postJson, fetchAllPages, toCsv, downloadText, fileStamp, loadPref, savePref, copyText } from '../lib/adminList'
+  import CalculatedPointEditor from './CalculatedPointEditor.vue'
 
   const props = defineProps({
     active: { type: Boolean, default: false },
@@ -933,7 +874,6 @@
   const editedTag = ref({ ...defaultTagValue.value })
   const dialogEditTag = ref(false)
   const dialogDeleteTag = ref(false)
-  const dialogAddParcel = ref(false)
   const isNewTag = ref(false)
   const tags = ref([])
   const protocolConnections = ref([])
@@ -947,7 +887,6 @@
   const page = ref(1)
   const sortBy = ref([])
   const dialogAddProtocolDestination = ref(false)
-  const newParcel = ref(0)
   const error = ref(false)
   const newProtocolDestination = ref({
     protocolDestinationConnectionNumber: 0,
@@ -1423,11 +1362,6 @@
     }
     editedTag.value.protocolDestinations.push(newProtocolDestination.value)
     dialogAddProtocolDestination.value = false
-  }
-
-  const addNewParcel = async () => {
-    editedTag.value.parcels.push(newParcel.value)
-    dialogAddParcel.value = false
   }
 
   const setError = (err) => {
