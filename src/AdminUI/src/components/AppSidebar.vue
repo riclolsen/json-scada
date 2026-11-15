@@ -217,6 +217,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import NavIcon from './NavIcon.vue'
 import { visibleGroups, aboutItem, homeItem } from '../lib/navItems'
+import { getUserSetting, setUserSetting } from '../lib/viewerHelpers'
 
 const props = defineProps({
   loggedInUser: { type: String, default: '' },
@@ -234,24 +235,23 @@ const route = useRoute()
 const { smAndDown } = useDisplay()
 const mobile = computed(() => smAndDown.value)
 
-// collapsed (icons only) state survives reloads; per browser
+// collapsed (icons only) state survives reloads; per user in this browser
 const RAIL_KEY = 'nav-rail'
 function readRail() {
-  try {
-    return localStorage.getItem(RAIL_KEY) === '1'
-  } catch (e) {
-    return false
-  }
+  return getUserSetting(RAIL_KEY) === '1'
 }
 const rail = ref(readRail())
+// another user signing in gets their own panel state
+watch(
+  () => props.loggedInUser,
+  (name) => {
+    if (name) rail.value = readRail()
+  }
+)
 const isRail = computed(() => rail.value && !mobile.value)
 function toggleRail() {
   rail.value = !rail.value
-  try {
-    localStorage.setItem(RAIL_KEY, rail.value ? '1' : '0')
-  } catch (e) {
-    /* storage unavailable: state lasts for this page only */
-  }
+  setUserSetting(RAIL_KEY, rail.value ? '1' : '0')
 }
 
 // permanent on desktop, slide-in on small screens

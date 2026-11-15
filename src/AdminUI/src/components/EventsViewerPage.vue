@@ -134,8 +134,9 @@ import PointInfoDialog from './PointInfoDialog.vue'
 import { OpcAcknowledge, BEEP_POINTKEY, CNTUPDATES_POINTKEY } from '../lib/opcCodes'
 import {
   userHasRight,
-  storageAvailable,
   readCookie,
+  getUserSetting,
+  setUserSetting,
   isInt,
   copyRowsToClipboard,
   getUserGroup1List,
@@ -568,6 +569,40 @@ function processNotifications(list) {
   }
 }
 
+// --- per-browser settings: mode, station filter, historical filter, key columns ---
+// (time mode and font size have their own keys above). Wrapped: storage may be
+// unavailable (private windows) or hold junk.
+const PREFS_KEY = 'eve_settings'
+let prefsReady = false // nothing is saved before the stored settings are applied
+let storedOff = [] // unchecked stations saved earlier that the station list did not return
+function loadPrefs() {
+  try {
+    const p = JSON.parse(getUserSetting(PREFS_KEY) || 'null')
+    return p && typeof p === 'object' ? p : null
+  } catch (e) {
+    return null
+  }
+}
+function savePrefs() {
+  if (!prefsReady) return
+  try {
+    setUserSetting(
+      PREFS_KEY,
+      JSON.stringify({
+        mode: mode.value,
+        // the unchecked stations (a station added later starts checked), keeping
+        // those missing from this station list (not loaded, or not this user's)
+        stationsOff: [...storedOff, ...group1List.value.filter((st) => !stationChecked[st])],
+        histFilter: histFilter.value,
+        showKeyCols: showKeyCols.value,
+      })
+    )
+  } catch (e) {
+    // not saved
+  }
+}
+watch([mode, histFilter, showKeyCols, () => ({ ...stationChecked })], savePrefs, { deep: true })
+
 // --- toolbar helpers ---------------------------------------------------------
 function onModeChange() {
   if (mode.value !== 3 && mode.value !== 4) {
@@ -578,14 +613,13 @@ function onModeChange() {
     const now = new Date()
     histDate.value = now.toISOString().slice(0, 10)
     histTime.value = '00:00:00'
-    histFilter.value = ''
-    histSeed = null
+    histSeed = null // the filter text is kept (saved with the settings)
   }
   setBeforeUnload(mode.value !== 4)
 }
 function toggleGpsTime() {
   gpsTime.value = gpsTime.value ? 0 : 1
-  if (storageAvailable('localStorage')) localStorage.setItem('gpstime', gpsTime.value)
+  setUserSetting('gpstime', gpsTime.value)
   if (mode.value !== 3 && mode.value !== 4) {
     clearTimeout(pollTimer)
     pollTimer = setTimeout(pollTick, 100)
@@ -595,7 +629,7 @@ function fontInc(dir) {
   const v = fontScale.value + dir
   if (v >= 10 && v <= 30) {
     fontScale.value = v
-    if (storageAvailable('localStorage')) localStorage.setItem('eve_fontsize', v)
+    setUserSetting('eve_fontsize', v)
   }
 }
 function copyGrid() {
@@ -647,23 +681,38 @@ onMounted(async () => {
   else if (tg === 1) gpsTime.value = 0
   else {
     const gps = readCookie('gpstime')
-    const lsGps = storageAvailable('localStorage') ? localStorage.getItem('gpstime') : null
+    const lsGps = getUserSetting('gpstime')
     if (lsGps !== null && isInt(lsGps)) gpsTime.value = parseInt(lsGps)
     else if (isInt(gps)) gpsTime.value = parseInt(gps)
     else gpsTime.value = tg === 2 ? 1 : 0
   }
 
-  if (storageAvailable('localStorage')) {
-    const fs = parseInt(localStorage.getItem('eve_fontsize'))
+  {
+    const fs = parseInt(getUserSetting('eve_fontsize'))
     if (!isNaN(fs) && fs >= 10 && fs <= 30) fontScale.value = fs
   }
 
   group1List.value = (await opc.getGroup1List()).filter((s) => s !== '')
   group1List.value.forEach((s) => (stationChecked[s] = true))
 
+  // stored settings; a mode in the URL or route props wins. Frozen (3) comes
+  // back as normal: a frozen view starts empty and would never fill.
+  const prefs = loadPrefs()
+  if (prefs) {
+    if (Number.isInteger(prefs.mode) && prefs.mode >= 0 && prefs.mode <= 4)
+      mode.value = prefs.mode === 3 ? 0 : prefs.mode
+    if (Array.isArray(prefs.stationsOff))
+      for (const st of prefs.stationsOff.filter((x) => typeof x === 'string').slice(0, 1000))
+        if (st in stationChecked) stationChecked[st] = false
+        else storedOff.push(st)
+    if (typeof prefs.histFilter === 'string') histFilter.value = prefs.histFilter.slice(0, 200)
+    if (typeof prefs.showKeyCols === 'boolean') showKeyCols.value = prefs.showKeyCols
+  }
+  if (props.mode) mode.value = props.mode
   if (route.value.query.modo === '4' || props.mode === 4) mode.value = 4
 
   histDate.value = new Date().toISOString().slice(0, 10)
+  prefsReady = true
   window.addEventListener('keydown', onKeydown)
   setBeforeUnload(mode.value !== 4)
   if ('Notification' in window && cfg.value.EventsViewer_Notific && Notification.permission === 'default')

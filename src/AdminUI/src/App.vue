@@ -54,7 +54,8 @@ import { ref, watch, provide, onMounted, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
-import { STORAGE_KEY } from './i18n'
+import { STORAGE_KEY, getStoredLocale } from './i18n'
+import { getUserSetting, setUserSetting } from './lib/viewerHelpers'
 import AppSidebar from './components/AppSidebar.vue'
 
 const THEME_STORAGE_KEY = 'user-theme'
@@ -65,7 +66,8 @@ const route = useRoute()
 const vuetifyTheme = useTheme()
 const { locale, t } = useI18n()
 
-const getStoredTheme = () => localStorage.getItem(THEME_STORAGE_KEY) || 'dark'
+// theme and language are kept per user (see getUserSetting)
+const getStoredTheme = () => getUserSetting(THEME_STORAGE_KEY) || 'dark'
 const theme = ref(getStoredTheme())
 
 // `?embed=1`: the page runs inside an iframe (Display Viewer hover preview,
@@ -112,6 +114,17 @@ watch(
 
 const currentLocale = ref(locale.value)
 const loggedInUser = ref('')
+// a user who signs in gets their own theme and language back
+watch(loggedInUser, (name) => {
+  if (!name) return
+  const th = getStoredTheme()
+  if (th !== theme.value) {
+    theme.value = th
+    vuetifyTheme.global.name.value = th
+  }
+  const loc = getStoredLocale()
+  if (loc !== currentLocale.value) currentLocale.value = loc
+})
 const isLDAPUser = ref(false)
 const showChangePasswordDialog = ref(false)
 const newPassword = ref('')
@@ -155,7 +168,7 @@ onMounted(() => {
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
   vuetifyTheme.global.name.value = theme.value
-  localStorage.setItem(THEME_STORAGE_KEY, theme.value)
+  setUserSetting(THEME_STORAGE_KEY, theme.value, { alsoShared: true })
 }
 
 const setLoggedInUser = (username) => {
@@ -255,7 +268,7 @@ const changePwd = () => {
 
 watch(currentLocale, (newLocale) => {
   locale.value = newLocale
-  localStorage.setItem(STORAGE_KEY, newLocale)
+  setUserSetting(STORAGE_KEY, newLocale, { alsoShared: true })
 })
 
 function checkLogin() {

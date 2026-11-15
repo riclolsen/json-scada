@@ -1,4 +1,5 @@
 import { createI18n } from 'vue-i18n'
+import { getUserSetting } from './lib/viewerHelpers'
 
 const loadLocaleMessages = async () => {
   const locales = import.meta.glob('./locales/*.json')
@@ -15,7 +16,8 @@ const loadLocaleMessages = async () => {
 
 export const STORAGE_KEY = 'user-locale'
 
-export const getStoredLocale = () => localStorage.getItem(STORAGE_KEY) || 'en'
+// per user (the signed-in user's own choice, else this browser's last one)
+export const getStoredLocale = () => getUserSetting(STORAGE_KEY) || 'en'
 
 export const setupI18n = async () => {
   const messages = await loadLocaleMessages()

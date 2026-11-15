@@ -143,7 +143,8 @@ import {
 } from '../lib/opcCodes'
 import {
   userHasRight,
-  storageAvailable,
+  getUserSetting,
+  setUserSetting,
   copyRowsToClipboard,
   getUserGroup1List,
 } from '../lib/viewerHelpers'
@@ -462,13 +463,12 @@ function applyCustomSelector(sel) {
   stationChips.value.forEach((s) => (filterOut[s.id] = !sel.group1List.includes(s.id)))
   persistFilters()
 }
+// station filter and font size are kept per user (getUserSetting / setUserSetting)
 function persistFilters() {
-  if (storageAvailable('localStorage'))
-    localStorage.setItem('almFilter', JSON.stringify(filterOut))
+  setUserSetting('almFilter', JSON.stringify(filterOut))
 }
 function loadFilters() {
-  if (!storageAvailable('localStorage')) return
-  const s = localStorage.getItem('almFilter')
+  const s = getUserSetting('almFilter')
   if (s) {
     try {
       Object.assign(filterOut, JSON.parse(s))
@@ -490,7 +490,7 @@ function fontInc(dir) {
   const v = fontScale.value + dir
   if (v >= 10 && v <= 30) {
     fontScale.value = v
-    if (storageAvailable('localStorage')) localStorage.setItem('tab_fontsize', v)
+    setUserSetting('tab_fontsize', v)
   }
 }
 function copyGrid() {
@@ -530,8 +530,8 @@ function beforeUnloadGuard(e) {
 onMounted(async () => {
   onAccessDenied(() => router.push('/login'))
   cfg.value = await loadViewersConfig()
-  if (storageAvailable('localStorage')) {
-    const fs = parseInt(localStorage.getItem('tab_fontsize'))
+  {
+    const fs = parseInt(getUserSetting('tab_fontsize'))
     if (!isNaN(fs) && fs >= 10 && fs <= 30) fontScale.value = fs
   }
   group1List.value = await opc.getGroup1List()

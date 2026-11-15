@@ -2,6 +2,8 @@
 // JSON posts to the admin routes, paged bulk reads for exports, CSV files and
 // per-browser list preferences.
 
+import { getUserSetting, setUserSetting } from './viewerHelpers'
+
 export async function postJson(url, body) {
   const resp = await fetch(url, {
     method: 'post',
@@ -64,23 +66,20 @@ export function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-// Per-browser preferences of the admin lists (columns, page size); storage
-// may be unavailable (private windows), so a failure falls back to the default.
+// Per-user preferences of the admin lists (columns, page size, view), kept in
+// this browser (getUserSetting / setUserSetting); storage may be unavailable
+// (private windows), so a failure falls back to the default.
 const PREF_PREFIX = 'admin-pref-'
 export function loadPref(key, dflt) {
   try {
-    const v = localStorage.getItem(PREF_PREFIX + key)
+    const v = getUserSetting(PREF_PREFIX + key)
     return v === null ? dflt : JSON.parse(v)
   } catch (e) {
     return dflt
   }
 }
 export function savePref(key, value) {
-  try {
-    localStorage.setItem(PREF_PREFIX + key, JSON.stringify(value))
-  } catch (e) {
-    // not stored
-  }
+  setUserSetting(PREF_PREFIX + key, JSON.stringify(value))
 }
 
 export async function copyText(text) {
