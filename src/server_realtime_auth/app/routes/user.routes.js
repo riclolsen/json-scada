@@ -32,19 +32,6 @@ module.exports = function (
     next()
   })
 
-  // add charset for special sage displays
-  app.use(
-    '/sage-cepel-displays/',
-    [authJwt.verifyToken],
-    express.static('../AdminUI/dist/sage-cepel-displays', {
-      setHeaders: function (res, path) {
-        if (/.*\.html/.test(path)) {
-          res.set({ 'content-type': 'text/html; charset=iso-8859-1' })
-        }
-      },
-    })
-  )
-
   // reverse proxy for grafana
   app.use(
     '/grafana',

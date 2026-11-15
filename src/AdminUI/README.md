@@ -49,9 +49,8 @@ directory at the site root, so no separate web server or process is needed.
 - `src/plugins/` — Vuetify, router, i18n and other plugin setup
 - `src/styles/` — global and shared styles
 - `public/` — static files served at the site root: images, alarm sounds,
-  `conf/config_viewers.js` viewer overrides, the release notes, the ONVIF
-  `camera.html` page and the SAGE HTML display updater (`scripts/main.js`,
-  `sage-cepel-displays/`)
+  `conf/config_viewers.js` viewer overrides, the release notes and the ONVIF
+  `camera.html` page
 
 ## Related documentation
 

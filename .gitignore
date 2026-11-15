@@ -26,9 +26,6 @@ src/i104m/json-scada.json
 src/carbone-reports/point_list.ods
 src/dnp3/Dnp3Client/Properties/
 src/htdocs-admin/translate.bat
-src/htdocs/sage-cepel-displays/Tela_*.*
-src/htdocs/sage-cepel-displays/css/
-src/htdocs/sage-cepel-displays/scripts/
 src/mqtt-sparkplug/mqtt-cli-shell.cmd
 src/mqtt-sparkplug/root.srl
 src/mqtt-sparkplug/scada.js
