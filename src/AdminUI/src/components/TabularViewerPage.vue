@@ -588,6 +588,13 @@ onUnmounted(() => {
   user-select: none;
 }
 
+/* the virtual scroller's spacer rows (one cell, inline height 0) size
+   themselves; the fixed row height above would add a blank line */
+.tabular-grid :deep(tbody td[colspan][style]) {
+  height: 0 !important;
+  padding: 0 !important;
+}
+
 .tabular-grid :deep(th) {
   padding: 0 4px !important;
   height: var(--row-height) !important;
