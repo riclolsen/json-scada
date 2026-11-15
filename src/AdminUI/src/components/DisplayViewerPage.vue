@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0 display-root">
+  <v-container ref="rootEl" fluid class="pa-0 display-root">
     <!-- Toolbar -->
     <v-toolbar
       v-show="!barHidden"
@@ -148,6 +148,7 @@ const statusMsg = ref('')
 const clockDate = ref('')
 const clockTime = ref('')
 const alarmBoxShown = ref(false)
+const rootEl = ref(null)
 const slideshow = ref(false)
 const slideProgress = ref(0) // 0-100, time elapsed toward the next slideshow advance
 // ?embed=1 (hover preview, #foreign_object): no side panel and no toolbar
@@ -502,6 +503,7 @@ onMounted(async () => {
       clockTime.value = d.toLocaleTimeString()
     },
     onAlarmBox: (visible) => (alarmBoxShown.value = visible),
+    alarmBoxHost: rootEl.value?.$el || null,
   })
 
   const initial =
@@ -529,6 +531,7 @@ onUnmounted(() => {
 
 <style scoped>
 .display-root {
+  position: relative; /* holds the alarm box (top right) */
   height: 100vh;
   display: flex;
   flex-direction: column;

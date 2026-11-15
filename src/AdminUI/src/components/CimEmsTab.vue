@@ -725,8 +725,11 @@
       const json = await getJson(API + 'listModels')
       models.value = json.models || []
       canEngineer.value = !!json.canEngineer
-      if (!bModelId.value && modelIds.value.length)
+      // a model chosen here does not fire the selector's update event: load its bindings too
+      if (!bModelId.value && modelIds.value.length) {
         bModelId.value = modelIds.value[0]
+        fetchBindings(null)
+      }
     } catch (err) {
       notify(String(err.message || err), 'error')
     }

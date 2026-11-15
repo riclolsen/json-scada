@@ -73,7 +73,7 @@ function rgbMix(a, b, t) {
 }
 
 export class SageEngine {
-  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink, onUpdateTime, onAlarmBox }) {
+  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink, onUpdateTime, onAlarmBox, alarmBoxHost }) {
     this.container = container
     this.cfg = cfg
     this.onOpenPoint = onOpenPoint || (() => {})
@@ -96,7 +96,7 @@ export class SageEngine {
       this.highlightByKey(k)
       // alarm box sits top-right, so anchor there -> dialog opens bottom-left
       this.onOpenPoint(k, { x: window.innerWidth - 40, y: 60 })
-    })
+    }, alarmBoxHost)
     this.screenFilter = '' // group1 filter from #set_filter markup
     this.queryKeys = new Set()
     this.jsonKeys = new Set() // points whose valueJson is requested (subset of queryKeys)
@@ -1398,6 +1398,7 @@ export class SageEngine {
           alarmTime: p.alarmTime || '',
         }
       })
+      if (this.disposed || this.timeMachine) return // left the page or entered replay meanwhile
       this.alarmBox.render(items)
       this.onAlarmBox(items.length > 0) // box is shown only when there are alarms
     } catch (e) {
