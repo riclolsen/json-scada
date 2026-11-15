@@ -910,5 +910,25 @@
       "saved": "绑定版本 {revision} 已保存：{count} 个中已批准 {approved} 个",
       "rerunQueued": "已请求运行"
     }
+  },
+  "trendViewer": {
+    "title": "趋势查看器",
+    "panLeft": "时间后退",
+    "panRight": "时间前进",
+    "zoomIn": "放大（时间）",
+    "zoomOut": "缩小（时间）",
+    "yUp": "数值上移",
+    "yDown": "数值下移",
+    "yZoomIn": "放大（数值）",
+    "yZoomOut": "缩小（数值）",
+    "markers": "线 / 点",
+    "reset": "重置视图并实时跟随",
+    "downloadCsv": "下载 CSV",
+    "current": "当前值",
+    "hiLimit": "上限",
+    "loLimit": "下限",
+    "noData": "此时间段内无数据",
+    "noPoint": "未指定点（使用 ?point=<键或标签>）",
+    "notFound": "未找到该点"
   }
 }

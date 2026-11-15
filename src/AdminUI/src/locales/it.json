@@ -910,5 +910,25 @@
       "saved": "Revisione dei collegamenti {revision} salvata: {approved} di {count} approvati",
       "rerunQueued": "Esecuzione richiesta"
     }
+  },
+  "trendViewer": {
+    "title": "Visualizzatore Tendenze",
+    "panLeft": "Indietro nel tempo",
+    "panRight": "Avanti nel tempo",
+    "zoomIn": "Ingrandisci (tempo)",
+    "zoomOut": "Riduci (tempo)",
+    "yUp": "Sposta valori in alto",
+    "yDown": "Sposta valori in basso",
+    "yZoomIn": "Ingrandisci (valori)",
+    "yZoomOut": "Riduci (valori)",
+    "markers": "Linee / punti",
+    "reset": "Ripristina vista e segui in tempo reale",
+    "downloadCsv": "Scarica CSV",
+    "current": "Valore attuale",
+    "hiLimit": "Limite superiore",
+    "loLimit": "Limite inferiore",
+    "noData": "Nessun dato in questo periodo",
+    "noPoint": "Nessun punto indicato (usa ?point=<chiave o tag>)",
+    "notFound": "Punto non trovato"
   }
 }

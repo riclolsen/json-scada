@@ -658,7 +658,7 @@ export class SageEngine {
         el,
         () => {
           const key = this.resolveKey(tag)
-          return key !== undefined ? 'trend.html?NPONTO=' + key + '&HIDECTRLS=1' : null
+          return key !== undefined ? '/#/trend-viewer?point=' + key + '&embed=1&controls=0' : null
         },
         610,
         340
@@ -808,15 +808,8 @@ export class SageEngine {
       const screen = src.trim()
       el.style.cursor = 'pointer'
       el.addEventListener('click', () => this.onScreenLink(screen))
-      // hovering a screen link previews that screen (zoomed-out, toolbar hidden)
-      const name = screen.endsWith('.svg') ? screen : screen + '.svg'
-      const zoom = this.cfg.ScreenViewer_DisplayPreviewZoom || 0.5
-      const zpw = Math.round(this.cfg.ScreenViewer_SVGMaxWidth / zoom)
-      const zph = Math.round(this.cfg.ScreenViewer_SVGMaxHeight / zoom)
-      this.preview.attach(
-        el,
-        `display.html?SELTELA=../svg/${name}&ZPX=0&ZPY=0&ZPW=${zpw}&ZPH=${zph}&HIDETB=1`
-      )
+      // hovering a screen link previews that screen (fitted, no toolbar)
+      this.preview.attach(el, '/#/display-viewer?screen=' + encodeURIComponent(screen) + '&embed=1')
     }
   }
 

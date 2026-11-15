@@ -910,5 +910,25 @@
       "saved": "Zuordnungsrevision {revision} gespeichert: {approved} von {count} freigegeben",
       "rerunQueued": "Lauf angefordert"
     }
+  },
+  "trendViewer": {
+    "title": "Trendanzeige",
+    "panLeft": "Zeitlich zurück",
+    "panRight": "Zeitlich vor",
+    "zoomIn": "Vergrößern (Zeit)",
+    "zoomOut": "Verkleinern (Zeit)",
+    "yUp": "Werte nach oben",
+    "yDown": "Werte nach unten",
+    "yZoomIn": "Vergrößern (Werte)",
+    "yZoomOut": "Verkleinern (Werte)",
+    "markers": "Linien / Punkte",
+    "reset": "Ansicht zurücksetzen und live folgen",
+    "downloadCsv": "CSV herunterladen",
+    "current": "Aktueller Wert",
+    "hiLimit": "Obergrenze",
+    "loLimit": "Untergrenze",
+    "noData": "Keine Daten in diesem Zeitraum",
+    "noPoint": "Kein Punkt angegeben (?point=<Schlüssel oder Tag> verwenden)",
+    "notFound": "Punkt nicht gefunden"
   }
 }

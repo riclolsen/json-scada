@@ -336,7 +336,11 @@ function logCommand(point, value) {
 }
 
 function openTrend(p) {
-  window.open('/trend.html?NPONTO=' + p.key, 'Trend ' + p.key, 'height=400,width=700,resizable=yes')
+  window.open(
+    '/#/trend-viewer?point=' + p.key + '&embed=1',
+    'trend' + p.key,
+    'height=480,width=900,resizable=yes'
+  )
 }
 function openCurves(p) {
   const url =

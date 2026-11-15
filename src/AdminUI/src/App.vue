@@ -1,6 +1,6 @@
 <template>
   <v-app :theme="theme">
-    <v-app-bar app height="48">
+    <v-app-bar v-if="!embedded" app height="48">
       <v-app-bar-title class="text-subtitle-1">
         <router-link to="/" class="text-decoration-none">
           <v-tooltip :text="version">
@@ -92,19 +92,27 @@ const { locale, t } = useI18n()
 const getStoredTheme = () => localStorage.getItem(THEME_STORAGE_KEY) || 'dark'
 const theme = ref(getStoredTheme())
 
+// `?embed=1`: the page runs inside an iframe (Display Viewer hover preview,
+// #foreign_object) or a bare popup — no app bar
+// (read from the URL too: the first render happens before the router resolves)
+const isEmbedFlag = (v) => v === '1' || v === 'true'
+const embedded = computed(
+  () =>
+    isEmbedFlag(route.query.embed) ||
+    isEmbedFlag(new URLSearchParams(window.location.hash.split('?')[1] || '').get('embed'))
+)
+provide('embedded', embedded)
+
 // Map route paths to i18n dashboard translation keys
 const pageTitle = computed(() => {
   const map = {
     '/login': 'login.title',
     '/dashboard': 'dashboard.title',
     '/display-viewer': 'dashboard.displayViewer',
-    '/display-viewer-new': 'dashboard.displayViewer',
     '/alarms-viewer': 'dashboard.alarmsViewer',
-    '/alarms-viewer-new': 'dashboard.alarmsViewer',
     '/tabular-viewer': 'dashboard.tabularViewer',
-    '/tabular-viewer-new': 'dashboard.tabularViewer',
     '/events-viewer': 'dashboard.eventsViewer',
-    '/events-viewer-new': 'dashboard.eventsViewer',
+    '/trend-viewer': 'trendViewer.title',
     '/log-viewer': 'dashboard.logViewer',
     '/about': 'dashboard.about',
     '/admin': 'dashboard.admin',

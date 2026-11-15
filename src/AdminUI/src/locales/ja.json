@@ -910,5 +910,25 @@
       "saved": "バインディングリビジョン {revision} を保存しました：{count} 件中 {approved} 件承認",
       "rerunQueued": "実行を要求しました"
     }
+  },
+  "trendViewer": {
+    "title": "トレンドビューア",
+    "panLeft": "時間を戻る",
+    "panRight": "時間を進む",
+    "zoomIn": "拡大（時間）",
+    "zoomOut": "縮小（時間）",
+    "yUp": "値を上へ移動",
+    "yDown": "値を下へ移動",
+    "yZoomIn": "拡大（値）",
+    "yZoomOut": "縮小（値）",
+    "markers": "線 / 点",
+    "reset": "表示をリセットしてリアルタイム追従",
+    "downloadCsv": "CSVをダウンロード",
+    "current": "現在値",
+    "hiLimit": "上限",
+    "loLimit": "下限",
+    "noData": "この期間のデータはありません",
+    "noPoint": "ポイントが指定されていません（?point=<キーまたはタグ> を使用）",
+    "notFound": "ポイントが見つかりません"
   }
 }

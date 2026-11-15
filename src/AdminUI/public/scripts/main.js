@@ -49,8 +49,36 @@ addCSS(sageDisplayDir + '/css/base.css')
 addCSS(sageDisplayDir + '/css/font.css')
 addCSS(sageDisplayDir + '/css/form.css')
 addScript(sageDisplayDir + '/scripts/main.js')
-addScript('/opc-codes.js')
-addScript('/util.js')
+
+// OPC web HMI protocol codes used here (subset of src/lib/opcCodes.js)
+var OpcNamespaceMongodb = 2
+var OpcServiceCode = { ServiceFault: 395, ReadRequest: 629, ReadResponse: 632 }
+var OpcStatusCodes = {
+  Good: 0,
+  GoodNoData: 0x00a50000,
+  BadUserAccessDenied: 0x801f0000,
+  BadIdentityTokenInvalid: 0x80200000,
+  BadIdentityTokenRejected: 0x80210000
+}
+var TimestampsToReturn = { Both: 2 }
+var OpcKeyType = { Numeric: 0, String: 1 }
+var OpcAttributeId = { Description: 5, Value: 13 }
+
+// fetch() that aborts after `tout` ms
+function fetchTimeout (url, tout, options) {
+  var controller = new AbortController()
+  var timeout = setTimeout(function () {
+    controller.abort()
+  }, tout || 1000)
+  return fetch(
+    url,
+    Object.assign({ credentials: 'same-origin' }, options, {
+      signal: controller.signal
+    })
+  ).finally(function () {
+    clearTimeout(timeout)
+  })
+}
 
 var queryKeys = []
 var keysIdsMap = []

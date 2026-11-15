@@ -4,17 +4,14 @@ import DashboardPage from '../components/DashboardPage.vue'
 import AboutPage from '../components/AboutPage.vue'
 import AdminPage from '../components/AdminPage.vue'
 import DisplayViewerPage from '../components/DisplayViewerPage.vue'
-import DisplayViewerNewPage from '../components/DisplayViewerNewPage.vue'
 import TabularViewerPage from '../components/TabularViewerPage.vue'
-import TabularViewerNewPage from '../components/TabularViewerNewPage.vue'
 import EventsViewerPage from '../components/EventsViewerPage.vue'
-import EventsViewerNewPage from '../components/EventsViewerNewPage.vue'
+import TrendViewerPage from '../components/TrendViewerPage.vue'
 import GrafanaPage from '../components/GrafanaPage.vue'
 import ApolloPage from '../components/ApolloPage.vue'
 import NodeRedPage from '../components/NodeRedPage.vue'
 import N8nPage from '../components/N8nPage.vue'
 import MetabasePage from '../components/MetabasePage.vue'
-import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
 import LogViewerPage from '../components/LogViewerPage.vue' 
 import CustomDevelopmentsPage from '../components/CustomDevelopmentsPage.vue'
 import CimEmsPage from '../components/CimEmsPage.vue'
@@ -24,39 +21,20 @@ const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: LoginPage },
   { path: '/dashboard', component: DashboardPage },
-  {
-    path: '/display-viewer',
-    component: DisplayViewerPage,
-  },
-  {
-    path: '/display-viewer-new',
-    component: DisplayViewerNewPage,
-  },
+  { path: '/display-viewer', component: DisplayViewerPage },
+  { path: '/tabular-viewer', component: TabularViewerPage },
   {
     path: '/alarms-viewer',
-    component: AlarmsViewerPage,
-  },
-  {
-    path: '/tabular-viewer',
     component: TabularViewerPage,
-  },
-  {
-    path: '/tabular-viewer-new',
-    component: TabularViewerNewPage,
-  },
-  {
-    path: '/alarms-viewer-new',
-    component: TabularViewerNewPage,
     props: { mode: 'ALARMS_VIEWER' },
   },
-  {
-    path: '/events-viewer',
-    component: EventsViewerPage,
-  },
-  {
-    path: '/events-viewer-new',
-    component: EventsViewerNewPage,
-  },
+  { path: '/events-viewer', component: EventsViewerPage },
+  { path: '/trend-viewer', component: TrendViewerPage },
+  // former paths of the native viewers (kept for bookmarks and saved links)
+  { path: '/display-viewer-new', redirect: (to) => ({ path: '/display-viewer', query: to.query }) },
+  { path: '/tabular-viewer-new', redirect: (to) => ({ path: '/tabular-viewer', query: to.query }) },
+  { path: '/alarms-viewer-new', redirect: (to) => ({ path: '/alarms-viewer', query: to.query }) },
+  { path: '/events-viewer-new', redirect: (to) => ({ path: '/events-viewer', query: to.query }) },
   { path: '/log-viewer', component: LogViewerPage },
   { path: '/about', component: AboutPage },
   { path: '/admin', component: AdminPage },

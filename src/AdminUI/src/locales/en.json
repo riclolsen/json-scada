@@ -910,5 +910,25 @@
       "saved": "Binding revision {revision} saved: {approved} of {count} approved",
       "rerunQueued": "Run requested"
     }
+  },
+  "trendViewer": {
+    "title": "Trend Viewer",
+    "panLeft": "Pan back in time",
+    "panRight": "Pan forward in time",
+    "zoomIn": "Zoom in (time)",
+    "zoomOut": "Zoom out (time)",
+    "yUp": "Move values up",
+    "yDown": "Move values down",
+    "yZoomIn": "Zoom in (values)",
+    "yZoomOut": "Zoom out (values)",
+    "markers": "Lines / points",
+    "reset": "Reset view and follow live",
+    "downloadCsv": "Download CSV",
+    "current": "Current value",
+    "hiLimit": "High limit",
+    "loLimit": "Low limit",
+    "noData": "No data in this period",
+    "noPoint": "No point given (use ?point=<key or tag>)",
+    "notFound": "Point not found"
   }
 }

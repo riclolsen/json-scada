@@ -910,5 +910,25 @@
       "saved": "Revisión de vínculos {revision} guardada: {approved} de {count} aprobados",
       "rerunQueued": "Ejecución solicitada"
     }
+  },
+  "trendViewer": {
+    "title": "Visor de Tendencias",
+    "panLeft": "Retroceder en el tiempo",
+    "panRight": "Avanzar en el tiempo",
+    "zoomIn": "Acercar (tiempo)",
+    "zoomOut": "Alejar (tiempo)",
+    "yUp": "Mover valores hacia arriba",
+    "yDown": "Mover valores hacia abajo",
+    "yZoomIn": "Acercar (valores)",
+    "yZoomOut": "Alejar (valores)",
+    "markers": "Líneas / puntos",
+    "reset": "Restablecer vista y seguir en vivo",
+    "downloadCsv": "Descargar CSV",
+    "current": "Valor actual",
+    "hiLimit": "Límite superior",
+    "loLimit": "Límite inferior",
+    "noData": "Sin datos en este período",
+    "noPoint": "No se indicó un punto (use ?point=<clave o tag>)",
+    "notFound": "Punto no encontrado"
   }
 }
