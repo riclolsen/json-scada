@@ -414,7 +414,7 @@
       }),
     })
       .then((res) => res.json())
-      .then((json) => {
+      .then(() => {
         fetchUsers() // refreshes users
         closeDeleteConfirmDialog()
       })
@@ -437,7 +437,7 @@
       }),
     })
       .then((res) => res.json())
-      .then((json) => {
+      .then(() => {
         // fetchUsers(); // refreshes users
       })
       .catch((err) => {
@@ -462,7 +462,7 @@
       }),
     })
       .then((res) => res.json())
-      .then((json) => {
+      .then(() => {
         // fetchUsers(); // refreshes users
       })
       .catch((err) => {

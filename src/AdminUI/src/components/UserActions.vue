@@ -125,15 +125,6 @@
     return dates.value.join(' - ')
   })
 
-  const items = computed(() => {
-    return [
-      {
-        name: 'User Actions',
-        children: userActions.value,
-      },
-    ]
-  })
-
   watch(
     [page, itemsPerPage, sortBy],
     () => {

@@ -92,23 +92,7 @@
       })
   }
 
-  const parseCookie = (str) => {
-    if (str === '') return {}
-    return str
-      .split(';')
-      .map((v) => v.split('='))
-      .reduce((acc, v) => {
-        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
-        return acc
-      }, {})
-  }
-
   function testLogin() {
-    let ck = parseCookie(document.cookie)
-    if ('json-scada-user' in ck) {
-      ck = JSON.parse(ck['json-scada-user'])
-    }
-
     fetch('/Invoke/test/user', {
       headers: {
         Accept: 'application/json',

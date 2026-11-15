@@ -4419,7 +4419,7 @@
       )
     },
     topic: () => {
-      return true || t('admin.protocolConnections.rulesInvalidTopic')
+      return true
     },
     topicScripted: (value) => {
       return (

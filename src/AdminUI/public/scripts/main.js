@@ -1,4 +1,5 @@
 'use strict'
+/* global socket_di: readonly -- defined by the SAGE display page scripts */
 
 /*
  * Updater for SAGE (Cepel) HTML/SVG Displays (SAGE-web)
@@ -153,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //console.log('Timer')
 
     // use this to redefine failed values color
-    corRgalr = function (val) {
+    window.corRgalr = function () {
       return statusInvalidColor
     }
 

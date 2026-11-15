@@ -549,7 +549,7 @@
         for (let i = 0; i < json.length; i++) {
           let rights = ''
           for (const key in json[i]) {
-            if (json[i].hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(json[i], key)) {
               if (typeof json[i][key] === 'boolean' && json[i][key]) {
                 rights += key + ', '
               }

@@ -304,7 +304,7 @@ function rowProps({ item }) {
   const q = item.qualifier
   const pri = parseInt(q.charAt(0))
   const acked = q.indexOf('L') === -1
-  let color = ''
+  let color
   let fontWeight = 'normal'
   if (removedIds.has(item.rowId)) {
     color = elimTxtColor.value

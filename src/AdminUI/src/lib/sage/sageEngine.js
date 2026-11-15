@@ -1485,7 +1485,7 @@ export class SageEngine {
   ingest(points, full) {
     points.forEach((p) => {
       let value
-      let flags = 0
+      let flags
       if (p.type === 'digital') {
         value = p.valueRaw ? 0 : 1 // OSHMI: on(true)=0, off(false)=1
         flags = p.valueRaw ? 0x02 : 0x01
