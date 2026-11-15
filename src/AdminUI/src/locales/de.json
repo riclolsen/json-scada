@@ -230,7 +230,26 @@
       "deleteUserCancel": "Stornieren",
       "deleteUserExecute": "Benutzer löschen",
       "confirmDelete": "Löschen bestätigen",
-      "deleteConfirmMessage": "Möchten Sie diesen Benutzer wirklich löschen?"
+      "deleteConfirmMessage": "Möchten Sie diesen Benutzer wirklich löschen?",
+      "search": "Benutzername oder E-Mail suchen",
+      "filterRole": "Rolle",
+      "local": "Lokal",
+      "noRoles": "Keine Rollen",
+      "authentication": "Anmeldung",
+      "effectiveRights": "Wirksame Rechte (alle Rollen kombiniert)",
+      "protectedUser": "Der Benutzer admin kann nicht gelöscht werden",
+      "passwordMin": "Mindestens {n} Zeichen",
+      "passwordKeep": "Leer lassen, um das aktuelle Passwort zu behalten",
+      "invalidEmail": "Ungültige E-Mail-Adresse",
+      "rolesHint": "Die Rechte aller Rollen werden kombiniert",
+      "ldapUser": "LDAP-Benutzer (meldet sich mit dem Verzeichnispasswort an)",
+      "sectionAccount": "Konto",
+      "summary": {
+        "total": "Benutzer",
+        "admins": "Administratoren",
+        "ldap": "LDAP-Benutzer",
+        "noRoles": "Ohne Rollen"
+      }
     },
     "rolesManagement": {
       "title": "Rollenverwaltung",
@@ -238,7 +257,12 @@
         "name": "Name",
         "description": "Beschreibung",
         "rights": "Rechte",
-        "actions": "Aktionen"
+        "actions": "Aktionen",
+        "group1": "Stationen (Ansicht)",
+        "commands": "Stationen (Befehl)",
+        "displays": "Anzeigen",
+        "session": "Sitzung (Tage)",
+        "users": "Benutzer"
       },
       "addRole": "Neue Rolle",
       "editRole": "Rolle bearbeiten",
@@ -274,7 +298,24 @@
       "deleteRole": "Rolle löschen",
       "deleteRoleConfirm": "Möchten Sie diese Rolle wirklich löschen?",
       "cimEngineering": "CIM-EMS-Engineering",
-      "cimEngineeringHint": "Darf Netzmodelle hochladen und aktivieren, Zuordnungen freigeben und CIM-EMS-Artefakte herunterladen (erfordert auch Admin)."
+      "cimEngineeringHint": "Darf Netzmodelle hochladen und aktivieren, Zuordnungen freigeben und CIM-EMS-Artefakte herunterladen (erfordert auch Admin).",
+      "search": "Rolle suchen",
+      "viewList": "Liste",
+      "viewMatrix": "Rechtematrix",
+      "scopeAll": "Alle",
+      "scopeCount": "{n} ausgewählt",
+      "sectionGeneral": "Allgemein",
+      "sectionPermissions": "Berechtigungen",
+      "sectionScope": "Zugriffsbereich",
+      "scopeEmptyHint": "Leer lassen, um alles zu erlauben",
+      "scopeCommandHint": "Leer: die Stationen, die der Benutzer sehen kann. $$ erlaubt Sonderbefehle",
+      "inUse": "Benutzern zugewiesen: kann nicht gelöscht werden",
+      "protectedRole": "Die Rolle admin kann nicht gelöscht werden",
+      "summary": {
+        "total": "Rollen",
+        "admin": "Admin-Rollen",
+        "unused": "Nicht zugewiesen"
+      }
     },
     "protocolDriverInstances": {
       "title": "Protokolltreiberinstanzen",
@@ -339,6 +380,21 @@
         "started": "Start angefordert",
         "stopped": "Stopp angefordert",
         "restarted": "Neustart angefordert"
+      },
+      "search": "Treiber oder Knoten suchen",
+      "filterNode": "Knoten",
+      "alive": "Läuft",
+      "notAlive": "Gestoppt",
+      "noKeepAlive": "Noch kein Keep-alive",
+      "connections": "Verbindungen",
+      "showConnections": "Verbindungen anzeigen",
+      "version": "Version",
+      "details": "Details",
+      "serviceName": "Betriebssystemdienst",
+      "nodesHint": "Knoten, die diese Instanz ausführen dürfen; Namen eingeben, um einen Knoten hinzuzufügen",
+      "deleteHasConnections": "{n} Verbindung(en) nutzen diese Instanz",
+      "summary": {
+        "total": "Instanzen"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "Name",
         "description": "Beschreibung",
         "stats": "Statistiken",
-        "actions": "Aktionen"
+        "actions": "Aktionen",
+        "status": "Status",
+        "endpoint": "Adresse",
+        "tags": "Tags",
+        "health": "Zustand"
       },
       "protocolDriver": "Protokolltreiber",
       "protocolDriverInstanceNumber": "Instanznummer",
@@ -725,6 +785,23 @@
         "contingencyMinKv": "Min. Nennspannung AUTO_N1 (kV)",
         "contingencyPublishLimit": "Als Punkte veröffentlichte Ausfälle",
         "contingencyThreads": "Solver-Threads (1 = reproduzierbar)"
+      },
+      "search": "Name, Beschreibung oder Adresse suchen",
+      "filterDriver": "Treiber",
+      "filterStatus": "Status",
+      "showTags": "Tags anzeigen",
+      "noStats": "Der Treiber meldet keine Statistiken",
+      "healthHint": "Anteil gültiger Tags der Verbindung",
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "unknown": "Unbekannt",
+        "disabled": "Deaktiviert"
+      },
+      "summary": {
+        "total": "Verbindungen",
+        "tags": "Tags",
+        "invalidTags": "Ungültige Tags"
       }
     },
     "userActions": {
@@ -735,11 +812,22 @@
         "properties": "Eigenschaften: ",
         "pointKey": "Punktschlüssel",
         "tag": "Etikett",
-        "time": "Zeit"
+        "time": "Zeit",
+        "details": "Details"
       },
       "searchUsername": "Suche Benutzername",
       "searchAction": "Suchaktion",
-      "searchDateRange": "Datumsbereich"
+      "searchDateRange": "Datumsbereich",
+      "searchTag": "Tag suchen",
+      "filterBy": "Klicken, um nach diesem Wert zu filtern",
+      "periods": {
+        "all": "Gesamter Zeitraum",
+        "lastHour": "Letzte Stunde",
+        "last24h": "Letzte 24 h",
+        "last7d": "Letzte 7 Tage",
+        "last30d": "Letzte 30 Tage",
+        "custom": "Benutzerdefiniert"
+      }
     },
     "tags": {
       "searchTag": "Such-Tag",
@@ -823,8 +911,31 @@
         "valueJson": "Wert (JSON)",
         "valueString": "Wert (Zeichenfolge)",
         "quality": "Qualität",
-        "actions": "Aktionen"
-      }
+        "actions": "Aktionen",
+        "origin": "Herkunft",
+        "group2": "Gruppe2",
+        "group3": "Gruppe3",
+        "value": "Wert",
+        "timeTag": "Aktualisiert",
+        "address": "Adresse",
+        "priority": "Priorität"
+      },
+      "filterType": "Typ",
+      "filterOrigin": "Herkunft",
+      "filterConnection": "Verbindung",
+      "filterGroup1": "Gruppe 1",
+      "filterQuality": "Qualität",
+      "filterAlarm": "Alarm",
+      "qualityValid": "Gültig",
+      "qualityInvalid": "Ungültig",
+      "alarmed": "Alarmiert",
+      "notAlarmed": "Nicht alarmiert",
+      "frozen": "Eingefroren",
+      "substituted": "Ersetzt",
+      "alarmDisabled": "Alarme aus",
+      "system": "System",
+      "systemTagHint": "Vom Datenprozessor verwaltet",
+      "noConnection": "Keine Verbindung"
     },
     "systemSettings": {
       "title": "Systemeinstellungen / Projekt",
@@ -847,7 +958,38 @@
       "processManagement": "Prozessmanagement",
       "processManagementDisabled": "Die Prozessverwaltung ist auf dem Server deaktiviert (kein Service-Backend auf diesem Host).",
       "autoManageServices": "Automatische Erstellung/Aktualisierung/Entfernung von Betriebssystemdiensten bei Instanzänderungen",
-      "autoRestartOnConnectionChange": "Der Treiber wird automatisch neu gestartet, wenn sich seine Verbindungen ändern."
+      "autoRestartOnConnectionChange": "Der Treiber wird automatisch neu gestartet, wenn sich seine Verbindungen ändern.",
+      "backupTitle": "Projektsicherung",
+      "exportHint": "Lädt eine ZIP-Datei mit Tags, Protokollverbindungen, Treiber- und Prozessinstanzen, Benutzern, Rollen und SVG-Anzeigen herunter.",
+      "projectNameRule": "Nur Buchstaben, Ziffern, Punkt, Bindestrich und Unterstrich",
+      "importHint": "Ersetzt diese Konfiguration durch den Inhalt einer Projekt-ZIP-Datei. Die Datei muss einen Benutzer mit einer Admin-Rolle enthalten.",
+      "importConfirmTitle": "Konfiguration ersetzen?",
+      "importConfirmText": "Tags, Verbindungen, Treiberinstanzen, Benutzer, Rollen und Anzeigen werden durch den Inhalt von {file} ersetzt. Nicht umkehrbar: zuerst eine Sicherung exportieren.",
+      "exportDone": "Projekt exportiert: {file}",
+      "fileTooLarge": "Die Datei ist größer als {size}",
+      "on": "Aktiv",
+      "off": "Inaktiv",
+      "autoManageServicesHint": "Installiert, aktualisiert und entfernt die Betriebssystemdienste der Treiberinstanzen automatisch.",
+      "autoRestartHint": "Startet den Treiber neu, wenn sich eine seiner Verbindungen ändert.",
+      "localNode": "Knoten",
+      "maintenanceTitle": "Neustarts",
+      "restart": "Neu starten",
+      "restartProtocolsHint": "Startet alle Protokolltreiber-Prozesse neu; die Kommunikation stoppt für einige Sekunden.",
+      "restartProcessesHint": "Startet alle JSON-SCADA-Prozesse neu, auch diesen Webserver: die Seite verbindet sich danach neu.",
+      "restartRequested": "Neustart angefordert",
+      "pruneTitle": "Konfiguration bereinigen",
+      "pruneHint": "Entfernt die Demo- oder Beispielkonfiguration für einen sauberen Neuanfang. Treiberinstanzen, Benutzer, Rollen und Einstellungen bleiben erhalten.",
+      "pruneConnections": "Protokollverbindungen (und ihre Tags)",
+      "pruneTags": "Alle Tags außer Systemtags",
+      "pruneCim": "CIM-EMS-Modelle, Läufe und Artefakte",
+      "pruneDisplays": "Mitgelieferte Beispielanzeigen",
+      "pruneWillDelete": "Wird gelöscht",
+      "pruneDeleted": "Gelöscht",
+      "prunePreview": "Vorschau",
+      "pruneExecute": "Löschen",
+      "pruneConfirmText": "Die ausgewählte Konfiguration wird endgültig gelöscht. Zuerst eine Sicherung exportieren, falls sie noch gebraucht wird.",
+      "pruneTypeToConfirm": "{word} eingeben, um zu bestätigen",
+      "pruneDone": "Konfiguration bereinigt"
     },
     "cimEms": {
       "readOnly": "Nur Lesen: Hochladen und Aktivieren von Modellen, Freigabe von Zuordnungen und Downloads erfordern eine Rolle mit dem CIM-EMS-Engineering-Recht.",
@@ -909,6 +1051,37 @@
       "activeNow": "Aktive Revision ist jetzt {revision}",
       "saved": "Zuordnungsrevision {revision} gespeichert: {approved} von {count} freigegeben",
       "rerunQueued": "Lauf angefordert"
+    },
+    "sections": {
+      "users": "Benutzerkonten und ihre Rollen",
+      "roles": "Zugriffsrechte und Anzeigeberechtigungen",
+      "drivers": "Protokolltreiber-Prozesse und die Knoten, auf denen sie laufen",
+      "connections": "Kommunikationsverbindungen der Protokolltreiber",
+      "tags": "Punktdatenbank: Konfiguration und aktuelle Werte",
+      "userActions": "Prüfprotokoll der Aktionen von Bedienern und Administratoren",
+      "system": "Projektexport und -import, Wartung und Systemeinstellungen"
+    },
+    "common": {
+      "filters": "Filter",
+      "clearFilters": "Filter zurücksetzen",
+      "columns": "Spalten",
+      "exportCsv": "CSV exportieren",
+      "autoRefresh": "Automatisch aktualisieren (5 s)",
+      "results": "{n} Ergebnisse",
+      "all": "Alle",
+      "edit": "Bearbeiten",
+      "clone": "Duplizieren",
+      "copyName": "Namen kopieren",
+      "copy": "Kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "openTrend": "Trend öffnen",
+      "exportLimited": "Export auf die ersten {n} Zeilen begrenzt",
+      "required": "Erforderlich",
+      "saved": "Gespeichert",
+      "secondsAgo": "vor {n} s",
+      "minutesAgo": "vor {n} min",
+      "hoursAgo": "vor {n} h",
+      "daysAgo": "vor {n} T"
     }
   },
   "trendViewer": {

@@ -3,10 +3,10 @@
     <!-- Toolbar -->
     <v-toolbar density="compact" color="surface" class="mb-1 px-2" flat>
       <template v-if="!isAlarmsViewer">
-        <span class="text-caption mr-1">{{ $t('tabularViewer.station') }}</span>
+        <span class="text-body-small mr-1">{{ $t('tabularViewer.station') }}</span>
         <v-select v-model="filterStation" :items="group1List" density="compact" variant="outlined" hide-details
           class="mr-2" style="max-width: 200px" @update:model-value="onStationChange"></v-select>
-        <span class="text-caption mr-1">{{ $t('tabularViewer.bay') }}</span>
+        <span class="text-body-small mr-1">{{ $t('tabularViewer.bay') }}</span>
         <v-select v-model="filterBay" :items="bayList" density="compact" variant="outlined" hide-details class="mr-2"
           style="max-width: 200px" @update:model-value="onFilterChange"></v-select>
         <v-checkbox v-model="showOnlyCommandable" :label="$t('tabularViewer.showCommandable')" density="compact"
@@ -45,10 +45,10 @@
       <v-spacer></v-spacer>
       <v-checkbox v-model="blockUpdates" :label="$t('tabularViewer.blockUpdates')" density="compact" hide-details
         class="mr-2"></v-checkbox>
-      <span class="text-caption mr-2">
+      <span class="text-body-small mr-2">
         <b>{{ visibleRows.length }}</b> / {{ rows.length }} — {{ lastUpdate }}
       </span>
-      <span class="text-caption fan">{{ fanState }}</span>
+      <span class="text-body-small fan">{{ fanState }}</span>
     </v-toolbar>
 
     <!-- Alarms-viewer filter chips -->

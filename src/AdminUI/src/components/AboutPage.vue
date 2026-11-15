@@ -1,7 +1,7 @@
 <template>
   <div class="about-root">
     <v-toolbar density="compact" color="surface" flat class="px-2 about-bar">
-      <v-toolbar-title class="text-subtitle-1 font-weight-medium">{{ $t('dashboard.about') }}</v-toolbar-title>
+      <v-toolbar-title class="text-body-large font-weight-medium">{{ $t('dashboard.about') }}</v-toolbar-title>
       <v-progress-circular v-if="loading" indeterminate size="18" width="2" class="mr-2"></v-progress-circular>
     </v-toolbar>
     <v-divider></v-divider>

@@ -230,7 +230,26 @@
       "deleteUserCancel": "Cancellare",
       "deleteUserExecute": "Elimina utente",
       "confirmDelete": "Conferma Elimina",
-      "deleteConfirmMessage": "Sei sicuro di voler eliminare questo utente?"
+      "deleteConfirmMessage": "Sei sicuro di voler eliminare questo utente?",
+      "search": "Cerca utente o e-mail",
+      "filterRole": "Ruolo",
+      "local": "Locale",
+      "noRoles": "Nessun ruolo",
+      "authentication": "Autenticazione",
+      "effectiveRights": "Diritti effettivi (tutti i ruoli combinati)",
+      "protectedUser": "L’utente admin non può essere eliminato",
+      "passwordMin": "Almeno {n} caratteri",
+      "passwordKeep": "Lasciare vuoto per mantenere la password attuale",
+      "invalidEmail": "Indirizzo e-mail non valido",
+      "rolesHint": "I diritti di tutti i ruoli vengono combinati",
+      "ldapUser": "Utente LDAP (accede con la password della directory)",
+      "sectionAccount": "Account",
+      "summary": {
+        "total": "Utenti",
+        "admins": "Amministratori",
+        "ldap": "Utenti LDAP",
+        "noRoles": "Senza ruoli"
+      }
     },
     "rolesManagement": {
       "title": "Gestione dei ruoli",
@@ -238,7 +257,12 @@
         "name": "Nome",
         "description": "Descrizione",
         "rights": "Diritti",
-        "actions": "Azioni"
+        "actions": "Azioni",
+        "group1": "Stazioni (vista)",
+        "commands": "Stazioni (comando)",
+        "displays": "Schermate",
+        "session": "Sessione (giorni)",
+        "users": "Utenti"
       },
       "addRole": "Nuovo ruolo",
       "editRole": "Modifica ruolo",
@@ -274,7 +298,24 @@
       "deleteRole": "Elimina ruolo",
       "deleteRoleConfirm": "Sei sicuro di voler eliminare questo ruolo?",
       "cimEngineering": "Ingegneria CIM-EMS",
-      "cimEngineeringHint": "Può caricare e attivare modelli di rete, approvare collegamenti e scaricare artefatti CIM-EMS (richiede anche Admin)."
+      "cimEngineeringHint": "Può caricare e attivare modelli di rete, approvare collegamenti e scaricare artefatti CIM-EMS (richiede anche Admin).",
+      "search": "Cerca ruolo",
+      "viewList": "Elenco",
+      "viewMatrix": "Matrice dei diritti",
+      "scopeAll": "Tutti",
+      "scopeCount": "{n} selezionati",
+      "sectionGeneral": "Generale",
+      "sectionPermissions": "Permessi",
+      "sectionScope": "Ambito di accesso",
+      "scopeEmptyHint": "Lasciare vuoto per consentire tutto",
+      "scopeCommandHint": "Vuoto: le stazioni che l’utente può vedere. $$ consente i comandi speciali",
+      "inUse": "Assegnato a utenti: non eliminabile",
+      "protectedRole": "Il ruolo admin non può essere eliminato",
+      "summary": {
+        "total": "Ruoli",
+        "admin": "Ruoli amministratore",
+        "unused": "Non assegnati"
+      }
     },
     "protocolDriverInstances": {
       "title": "Istanze del driver del protocollo",
@@ -339,6 +380,21 @@
         "started": "avvio richiesto",
         "stopped": "richiesta di arresto",
         "restarted": "riavvio richiesto"
+      },
+      "search": "Cerca driver o nodo",
+      "filterNode": "Nodo",
+      "alive": "In esecuzione",
+      "notAlive": "Fermo",
+      "noKeepAlive": "Nessun keep-alive",
+      "connections": "Connessioni",
+      "showConnections": "Mostra connessioni",
+      "version": "Versione",
+      "details": "Dettagli",
+      "serviceName": "Servizio del SO",
+      "nodesHint": "Nodi autorizzati a eseguire questa istanza; digitare un nome per aggiungere un nodo",
+      "deleteHasConnections": "{n} connessione/i usano questa istanza",
+      "summary": {
+        "total": "Istanze"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "Nome",
         "description": "Descrizione",
         "stats": "Statistiche",
-        "actions": "Azioni"
+        "actions": "Azioni",
+        "status": "Stato",
+        "endpoint": "Indirizzo",
+        "tags": "Tag",
+        "health": "Salute"
       },
       "protocolDriver": "Driver del protocollo",
       "protocolDriverInstanceNumber": "Numero di istanza",
@@ -725,6 +785,23 @@
         "contingencyMinKv": "Tensione nominale min. AUTO_N1 (kV)",
         "contingencyPublishLimit": "Contingenze pubblicate come punti",
         "contingencyThreads": "Thread del solver (1 = riproducibile)"
+      },
+      "search": "Cerca nome, descrizione o indirizzo",
+      "filterDriver": "Driver",
+      "filterStatus": "Stato",
+      "showTags": "Mostra tag",
+      "noStats": "Nessuna statistica fornita dal driver",
+      "healthHint": "Percentuale di tag validi della connessione",
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "unknown": "Sconosciuto",
+        "disabled": "Disabilitata"
+      },
+      "summary": {
+        "total": "Connessioni",
+        "tags": "Tag",
+        "invalidTags": "Tag non validi"
       }
     },
     "userActions": {
@@ -735,11 +812,22 @@
         "properties": "Proprietà:",
         "pointKey": "Punto chiave",
         "tag": "Etichetta",
-        "time": "tempo"
+        "time": "tempo",
+        "details": "Dettagli"
       },
       "searchUsername": "Cerca Nome utente",
       "searchAction": "Azione di ricerca",
-      "searchDateRange": "Intervallo di date"
+      "searchDateRange": "Intervallo di date",
+      "searchTag": "Cerca tag",
+      "filterBy": "Fare clic per filtrare per questo valore",
+      "periods": {
+        "all": "Tutto",
+        "lastHour": "Ultima ora",
+        "last24h": "Ultime 24 h",
+        "last7d": "Ultimi 7 giorni",
+        "last30d": "Ultimi 30 giorni",
+        "custom": "Personalizzato"
+      }
     },
     "tags": {
       "searchTag": "Cerca Tag",
@@ -823,8 +911,31 @@
         "valueJson": "Valore (JSON)",
         "valueString": "Valore (Stringa)",
         "quality": "Qualità",
-        "actions": "Azioni"
-      }
+        "actions": "Azioni",
+        "origin": "Origine",
+        "group2": "Gruppo2",
+        "group3": "Gruppo3",
+        "value": "Valore",
+        "timeTag": "Aggiornato",
+        "address": "Indirizzo",
+        "priority": "Priorità"
+      },
+      "filterType": "Tipo",
+      "filterOrigin": "Origine",
+      "filterConnection": "Connessione",
+      "filterGroup1": "Gruppo 1",
+      "filterQuality": "Qualità",
+      "filterAlarm": "Allarme",
+      "qualityValid": "Valido",
+      "qualityInvalid": "Non valido",
+      "alarmed": "In allarme",
+      "notAlarmed": "Non in allarme",
+      "frozen": "Congelato",
+      "substituted": "Sostituito",
+      "alarmDisabled": "Allarmi disattivati",
+      "system": "Sistema",
+      "systemTagHint": "Gestito dal processore dati",
+      "noConnection": "Nessuna connessione"
     },
     "systemSettings": {
       "title": "Impostazioni di sistema / Progetto",
@@ -847,7 +958,38 @@
       "processManagement": "Gestione dei processi",
       "processManagementDisabled": "La gestione dei processi è disabilitata sul server (nessun backend di servizio su questo host).",
       "autoManageServices": "Creazione/aggiornamento/rimozione automatica dei servizi del sistema operativo al variare delle istanze.",
-      "autoRestartOnConnectionChange": "Riavvia automaticamente il driver quando cambiano le sue connessioni"
+      "autoRestartOnConnectionChange": "Riavvia automaticamente il driver quando cambiano le sue connessioni",
+      "backupTitle": "Backup del progetto",
+      "exportHint": "Scarica un file zip con tag, connessioni di protocollo, istanze di driver e processi, utenti, ruoli e schermate SVG.",
+      "projectNameRule": "Solo lettere, cifre, punto, trattino e trattino basso",
+      "importHint": "Sostituisce quella configurazione con il contenuto di un file zip di progetto. Il file deve contenere un utente con un ruolo amministratore.",
+      "importConfirmTitle": "Sostituire la configurazione?",
+      "importConfirmText": "Tag, connessioni, istanze di driver, utenti, ruoli e schermate vengono sostituiti dal contenuto di {file}. Operazione irreversibile: esportare prima un backup.",
+      "exportDone": "Progetto esportato: {file}",
+      "fileTooLarge": "Il file supera {size}",
+      "on": "Attiva",
+      "off": "Disattiva",
+      "autoManageServicesHint": "Installa, aggiorna e rimuove automaticamente i servizi del SO delle istanze di driver.",
+      "autoRestartHint": "Riavvia il driver quando cambia una delle sue connessioni.",
+      "localNode": "Nodo",
+      "maintenanceTitle": "Riavvii",
+      "restart": "Riavvia",
+      "restartProtocolsHint": "Riavvia tutti i processi dei driver di protocollo; la comunicazione si interrompe per alcuni secondi.",
+      "restartProcessesHint": "Riavvia tutti i processi JSON-SCADA, incluso questo server web: la pagina si riconnette al ritorno.",
+      "restartRequested": "riavvio richiesto",
+      "pruneTitle": "Pulizia della configurazione",
+      "pruneHint": "Rimuove la configurazione demo o di esempio per partire da zero. Istanze di driver, utenti, ruoli e impostazioni vengono mantenuti.",
+      "pruneConnections": "Connessioni di protocollo (e i loro tag)",
+      "pruneTags": "Tutti i tag tranne quelli di sistema",
+      "pruneCim": "Modelli, esecuzioni e artefatti CIM-EMS",
+      "pruneDisplays": "Schermate di esempio fornite",
+      "pruneWillDelete": "Verrà eliminato",
+      "pruneDeleted": "Eliminato",
+      "prunePreview": "Anteprima",
+      "pruneExecute": "Elimina",
+      "pruneConfirmText": "La configurazione selezionata viene eliminata definitivamente. Esportare prima un backup se potrebbe servire.",
+      "pruneTypeToConfirm": "Digitare {word} per confermare",
+      "pruneDone": "Configurazione ripulita"
     },
     "cimEms": {
       "readOnly": "Sola lettura: caricamento e attivazione dei modelli, approvazione dei collegamenti e download richiedono un ruolo con il diritto di ingegneria CIM-EMS.",
@@ -909,6 +1051,37 @@
       "activeNow": "La revisione attiva ora è {revision}",
       "saved": "Revisione dei collegamenti {revision} salvata: {approved} di {count} approvati",
       "rerunQueued": "Esecuzione richiesta"
+    },
+    "sections": {
+      "users": "Account utente e relativi ruoli",
+      "roles": "Diritti di accesso e permessi delle schermate",
+      "drivers": "Processi dei driver di protocollo e nodi che li eseguono",
+      "connections": "Collegamenti di comunicazione dei driver di protocollo",
+      "tags": "Database dei punti: configurazione e valori attuali",
+      "userActions": "Registro di audit delle azioni di operatori e amministratori",
+      "system": "Esportazione e importazione del progetto, manutenzione e impostazioni di sistema"
+    },
+    "common": {
+      "filters": "Filtri",
+      "clearFilters": "Cancella filtri",
+      "columns": "Colonne",
+      "exportCsv": "Esporta CSV",
+      "autoRefresh": "Aggiornamento automatico (5 s)",
+      "results": "{n} risultati",
+      "all": "Tutti",
+      "edit": "Modifica",
+      "clone": "Duplica",
+      "copyName": "Copia nome",
+      "copy": "Copia",
+      "copied": "Copiato negli appunti",
+      "openTrend": "Apri trend",
+      "exportLimited": "Esportazione limitata alle prime {n} righe",
+      "required": "Obbligatorio",
+      "saved": "Salvato",
+      "secondsAgo": "{n} s fa",
+      "minutesAgo": "{n} min fa",
+      "hoursAgo": "{n} h fa",
+      "daysAgo": "{n} g fa"
     }
   },
   "trendViewer": {

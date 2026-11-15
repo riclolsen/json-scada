@@ -230,7 +230,26 @@
       "deleteUserCancel": "Cancel",
       "deleteUserExecute": "Delete User",
       "confirmDelete": "Confirm Delete",
-      "deleteConfirmMessage": "Are you sure you want to delete this user?"
+      "deleteConfirmMessage": "Are you sure you want to delete this user?",
+      "search": "Search user name or email",
+      "filterRole": "Role",
+      "local": "Local",
+      "noRoles": "No roles",
+      "authentication": "Authentication",
+      "effectiveRights": "Effective rights (all roles combined)",
+      "protectedUser": "The admin user cannot be deleted",
+      "passwordMin": "At least {n} characters",
+      "passwordKeep": "Leave empty to keep the current password",
+      "invalidEmail": "Invalid email address",
+      "rolesHint": "The rights of all roles are combined",
+      "ldapUser": "LDAP user (signs in with the directory password)",
+      "sectionAccount": "Account",
+      "summary": {
+        "total": "Users",
+        "admins": "Administrators",
+        "ldap": "LDAP users",
+        "noRoles": "Without roles"
+      }
     },
     "rolesManagement": {
       "title": "Roles Management",
@@ -238,7 +257,12 @@
         "name": "Name",
         "description": "Description",
         "rights": "Rights",
-        "actions": "Actions"
+        "actions": "Actions",
+        "group1": "Stations (view)",
+        "commands": "Stations (command)",
+        "displays": "Displays",
+        "session": "Session (days)",
+        "users": "Users"
       },
       "addRole": "New Role",
       "editRole": "Edit Role",
@@ -274,7 +298,24 @@
       "deleteRole": "Delete Role",
       "deleteRoleConfirm": "Are you sure you want to delete this role?",
       "cimEngineering": "CIM-EMS Engineering",
-      "cimEngineeringHint": "Can upload and activate network models, approve bindings and download CIM-EMS artifacts (also needs Admin)."
+      "cimEngineeringHint": "Can upload and activate network models, approve bindings and download CIM-EMS artifacts (also needs Admin).",
+      "search": "Search role name",
+      "viewList": "List",
+      "viewMatrix": "Rights matrix",
+      "scopeAll": "All",
+      "scopeCount": "{n} selected",
+      "sectionGeneral": "General",
+      "sectionPermissions": "Permissions",
+      "sectionScope": "Access scope",
+      "scopeEmptyHint": "Leave empty to allow all",
+      "scopeCommandHint": "Empty: the stations the user can see. $$ allows special commands",
+      "inUse": "Assigned to users: cannot be deleted",
+      "protectedRole": "The admin role cannot be deleted",
+      "summary": {
+        "total": "Roles",
+        "admin": "Admin roles",
+        "unused": "Unassigned"
+      }
     },
     "protocolDriverInstances": {
       "title": "Protocol Driver Instances",
@@ -339,6 +380,21 @@
         "started": "start requested",
         "stopped": "stop requested",
         "restarted": "restart requested"
+      },
+      "search": "Search driver or node",
+      "filterNode": "Node",
+      "alive": "Running",
+      "notAlive": "Stopped",
+      "noKeepAlive": "No keep-alive yet",
+      "connections": "Connections",
+      "showConnections": "Show connections",
+      "version": "Version",
+      "details": "Details",
+      "serviceName": "OS service",
+      "nodesHint": "Nodes allowed to run this instance; type a name to add a node",
+      "deleteHasConnections": "{n} connection(s) use this instance",
+      "summary": {
+        "total": "Instances"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "Name",
         "description": "Description",
         "stats": "Stats",
-        "actions": "Actions"
+        "actions": "Actions",
+        "status": "Status",
+        "endpoint": "Endpoint",
+        "tags": "Tags",
+        "health": "Health"
       },
       "protocolDriver": "Protocol Driver",
       "protocolDriverInstanceNumber": "Instance Number",
@@ -725,21 +785,49 @@
         "contingencyMinKv": "AUTO_N1 min nominal voltage (kV)",
         "contingencyPublishLimit": "Contingencies published as points",
         "contingencyThreads": "Solver threads (1 = reproducible)"
+      },
+      "search": "Search name, description or endpoint",
+      "filterDriver": "Driver",
+      "filterStatus": "Status",
+      "showTags": "Show tags",
+      "noStats": "No statistics reported by the driver",
+      "healthHint": "Percentage of valid tags of the connection",
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "unknown": "Unknown",
+        "disabled": "Disabled"
+      },
+      "summary": {
+        "total": "Connections",
+        "tags": "Tags",
+        "invalidTags": "Invalid tags"
       }
     },
     "userActions": {
       "title": "User Actions",
       "headers": {
-        "username": "user",
+        "username": "User",
         "action": "Action",
         "properties": "Properties: ",
         "pointKey": "Point key",
         "tag": "Tag",
-        "time": "time"
+        "time": "Time",
+        "details": "Details"
       },
       "searchUsername": "Search Username",
       "searchAction": "Search Action",
-      "searchDateRange": "Date Range"
+      "searchDateRange": "Date Range",
+      "searchTag": "Search Tag",
+      "filterBy": "Click to filter by this value",
+      "periods": {
+        "all": "All time",
+        "lastHour": "Last hour",
+        "last24h": "Last 24 h",
+        "last7d": "Last 7 days",
+        "last30d": "Last 30 days",
+        "custom": "Custom"
+      }
     },
     "tags": {
       "searchTag": "Search Tag",
@@ -823,8 +911,31 @@
         "valueJson": "Value (JSON)",
         "valueString": "Value (String)",
         "quality": "Quality",
-        "actions": "Actions"
-      }
+        "actions": "Actions",
+        "origin": "Origin",
+        "group2": "Group2",
+        "group3": "Group3",
+        "value": "Value",
+        "timeTag": "Updated",
+        "address": "Address",
+        "priority": "Priority"
+      },
+      "filterType": "Type",
+      "filterOrigin": "Origin",
+      "filterConnection": "Connection",
+      "filterGroup1": "Group 1",
+      "filterQuality": "Quality",
+      "filterAlarm": "Alarm",
+      "qualityValid": "Valid",
+      "qualityInvalid": "Invalid",
+      "alarmed": "Alarmed",
+      "notAlarmed": "Not alarmed",
+      "frozen": "Frozen",
+      "substituted": "Substituted",
+      "alarmDisabled": "Alarms off",
+      "system": "System",
+      "systemTagHint": "Maintained by the data processor",
+      "noConnection": "No connection"
     },
     "systemSettings": {
       "title": "System Settings / Project",
@@ -847,7 +958,38 @@
       "processManagement": "Process Management",
       "processManagementDisabled": "Process management is disabled on the server (no service backend on this host).",
       "autoManageServices": "Automatically create/update/remove OS services when instances change",
-      "autoRestartOnConnectionChange": "Automatically restart the driver when its connections change"
+      "autoRestartOnConnectionChange": "Automatically restart the driver when its connections change",
+      "backupTitle": "Project backup",
+      "exportHint": "Downloads a zip file with the tags, protocol connections, driver and process instances, users, roles and SVG displays.",
+      "projectNameRule": "Letters, digits, dot, dash and underscore only",
+      "importHint": "Replaces that configuration with the contents of a project zip file. The file must contain a user with an admin role.",
+      "importConfirmTitle": "Replace the configuration?",
+      "importConfirmText": "Tags, connections, driver instances, users, roles and displays are replaced by the contents of {file}. This cannot be undone: export a backup first.",
+      "exportDone": "Project exported: {file}",
+      "fileTooLarge": "The file is larger than {size}",
+      "on": "Enabled",
+      "off": "Disabled",
+      "autoManageServicesHint": "Install, update and remove the OS services of the driver instances automatically.",
+      "autoRestartHint": "Restart the driver when one of its connections changes.",
+      "localNode": "Node",
+      "maintenanceTitle": "Restarts",
+      "restart": "Restart",
+      "restartProtocolsHint": "Restarts every protocol driver process; communication stops for a few seconds.",
+      "restartProcessesHint": "Restarts all JSON-SCADA processes, including this web server: the page reconnects when it is back.",
+      "restartRequested": "restart requested",
+      "pruneTitle": "Configuration clean-up",
+      "pruneHint": "Removes the demo or example configuration so the system can start clean. Driver instances, users, roles and settings are kept.",
+      "pruneConnections": "Protocol connections (and their tags)",
+      "pruneTags": "All tags except system tags",
+      "pruneCim": "CIM-EMS models, runs and artifacts",
+      "pruneDisplays": "Shipped example displays",
+      "pruneWillDelete": "Will be deleted",
+      "pruneDeleted": "Deleted",
+      "prunePreview": "Preview",
+      "pruneExecute": "Delete",
+      "pruneConfirmText": "The selected configuration is deleted for good. Export a backup first if you may need it again.",
+      "pruneTypeToConfirm": "Type {word} to confirm",
+      "pruneDone": "Configuration cleaned up"
     },
     "cimEms": {
       "readOnly": "Read-only view: model upload, activation, binding approval and downloads need a role with the CIM-EMS engineering right.",
@@ -909,6 +1051,37 @@
       "activeNow": "Active revision is now {revision}",
       "saved": "Binding revision {revision} saved: {approved} of {count} approved",
       "rerunQueued": "Run requested"
+    },
+    "sections": {
+      "users": "User accounts and their roles",
+      "roles": "Access rights and display permissions",
+      "drivers": "Protocol driver processes and the nodes that run them",
+      "connections": "Communication links of the protocol drivers",
+      "tags": "Point database: configuration and current values",
+      "userActions": "Audit trail of operator and administrator actions",
+      "system": "Project export and import, maintenance and system settings"
+    },
+    "common": {
+      "filters": "Filters",
+      "clearFilters": "Clear filters",
+      "columns": "Columns",
+      "exportCsv": "Export CSV",
+      "autoRefresh": "Auto refresh (5 s)",
+      "results": "{n} results",
+      "all": "All",
+      "edit": "Edit",
+      "clone": "Duplicate",
+      "copyName": "Copy name",
+      "copy": "Copy",
+      "copied": "Copied to clipboard",
+      "openTrend": "Open trend",
+      "exportLimited": "Export limited to the first {n} rows",
+      "required": "Required",
+      "saved": "Saved",
+      "secondsAgo": "{n} s ago",
+      "minutesAgo": "{n} min ago",
+      "hoursAgo": "{n} h ago",
+      "daysAgo": "{n} d ago"
     }
   },
   "trendViewer": {

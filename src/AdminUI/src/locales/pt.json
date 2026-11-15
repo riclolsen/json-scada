@@ -230,7 +230,26 @@
       "deleteUserCancel": "Cancelar",
       "deleteUserExecute": "Excluir usuário",
       "confirmDelete": "Confirmar Excluir",
-      "deleteConfirmMessage": "Tem certeza de que deseja excluir este usuário?"
+      "deleteConfirmMessage": "Tem certeza de que deseja excluir este usuário?",
+      "search": "Buscar usuário ou e-mail",
+      "filterRole": "Função",
+      "local": "Local",
+      "noRoles": "Sem funções",
+      "authentication": "Autenticação",
+      "effectiveRights": "Direitos efetivos (todas as funções combinadas)",
+      "protectedUser": "O usuário admin não pode ser excluído",
+      "passwordMin": "Pelo menos {n} caracteres",
+      "passwordKeep": "Deixe vazio para manter a senha atual",
+      "invalidEmail": "Endereço de e-mail inválido",
+      "rolesHint": "Os direitos de todas as funções são combinados",
+      "ldapUser": "Usuário LDAP (entra com a senha do diretório)",
+      "sectionAccount": "Conta",
+      "summary": {
+        "total": "Usuários",
+        "admins": "Administradores",
+        "ldap": "Usuários LDAP",
+        "noRoles": "Sem funções"
+      }
     },
     "rolesManagement": {
       "title": "Gerenciamento de Papéis",
@@ -238,7 +257,12 @@
         "name": "Nome",
         "description": "Descrição",
         "rights": "Direitos",
-        "actions": "Ações"
+        "actions": "Ações",
+        "group1": "Estações (visualizar)",
+        "commands": "Estações (comandar)",
+        "displays": "Telas",
+        "session": "Sessão (dias)",
+        "users": "Usuários"
       },
       "addRole": "Novo Papel",
       "editRole": "Editar Papel",
@@ -274,7 +298,24 @@
       "deleteRole": "Excluir função",
       "deleteRoleConfirm": "Tem certeza de que deseja excluir esta função?",
       "cimEngineering": "Engenharia CIM-EMS",
-      "cimEngineeringHint": "Pode enviar e ativar modelos de rede, aprovar vínculos e baixar artefatos CIM-EMS (também requer Admin)."
+      "cimEngineeringHint": "Pode enviar e ativar modelos de rede, aprovar vínculos e baixar artefatos CIM-EMS (também requer Admin).",
+      "search": "Buscar função",
+      "viewList": "Lista",
+      "viewMatrix": "Matriz de direitos",
+      "scopeAll": "Todos",
+      "scopeCount": "{n} selecionados",
+      "sectionGeneral": "Geral",
+      "sectionPermissions": "Permissões",
+      "sectionScope": "Escopo de acesso",
+      "scopeEmptyHint": "Deixe vazio para permitir tudo",
+      "scopeCommandHint": "Vazio: as estações que o usuário pode ver. $$ permite comandos especiais",
+      "inUse": "Atribuída a usuários: não pode ser excluída",
+      "protectedRole": "A função admin não pode ser excluída",
+      "summary": {
+        "total": "Funções",
+        "admin": "Funções de administrador",
+        "unused": "Não atribuídas"
+      }
     },
     "protocolDriverInstances": {
       "title": "Instâncias do driver de protocolo",
@@ -339,6 +380,21 @@
         "started": "início solicitado",
         "stopped": "parada solicitada",
         "restarted": "reinício solicitado"
+      },
+      "search": "Buscar driver ou nó",
+      "filterNode": "Nó",
+      "alive": "Em execução",
+      "notAlive": "Parado",
+      "noKeepAlive": "Ainda sem keep-alive",
+      "connections": "Conexões",
+      "showConnections": "Ver conexões",
+      "version": "Versão",
+      "details": "Detalhes",
+      "serviceName": "Serviço do SO",
+      "nodesHint": "Nós autorizados a executar esta instância; digite um nome para adicionar um nó",
+      "deleteHasConnections": "{n} conexão(ões) usam esta instância",
+      "summary": {
+        "total": "Instâncias"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "Nome",
         "description": "Descrição",
         "stats": "Estatísticas",
-        "actions": "Ações"
+        "actions": "Ações",
+        "status": "Estado",
+        "endpoint": "Endereço",
+        "tags": "Tags",
+        "health": "Saúde"
       },
       "protocolDriver": "Driver de protocolo",
       "protocolDriverInstanceNumber": "Número da instância",
@@ -725,6 +785,23 @@
         "contingencyMinKv": "Tensão nominal mín. AUTO_N1 (kV)",
         "contingencyPublishLimit": "Contingências publicadas como pontos",
         "contingencyThreads": "Threads do solver (1 = reprodutível)"
+      },
+      "search": "Buscar nome, descrição ou endereço",
+      "filterDriver": "Driver",
+      "filterStatus": "Estado",
+      "showTags": "Ver tags",
+      "noStats": "Nenhuma estatística informada pelo driver",
+      "healthHint": "Percentual de tags válidos da conexão",
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "unknown": "Desconhecido",
+        "disabled": "Desabilitada"
+      },
+      "summary": {
+        "total": "Conexões",
+        "tags": "Tags",
+        "invalidTags": "Tags inválidos"
       }
     },
     "userActions": {
@@ -735,11 +812,22 @@
         "properties": "Propriedades:",
         "pointKey": "Chave de ponto",
         "tag": "Marcação",
-        "time": "tempo"
+        "time": "tempo",
+        "details": "Detalhes"
       },
       "searchUsername": "Pesquisar nome de usuário",
       "searchAction": "Ação de pesquisa",
-      "searchDateRange": "Intervalo de datas"
+      "searchDateRange": "Intervalo de datas",
+      "searchTag": "Buscar tag",
+      "filterBy": "Clique para filtrar por este valor",
+      "periods": {
+        "all": "Tudo",
+        "lastHour": "Última hora",
+        "last24h": "Últimas 24 h",
+        "last7d": "Últimos 7 dias",
+        "last30d": "Últimos 30 dias",
+        "custom": "Personalizado"
+      }
     },
     "tags": {
       "searchTag": "Tag de pesquisa",
@@ -823,8 +911,31 @@
         "valueJson": "Valor (JSON)",
         "valueString": "Valor (String)",
         "quality": "Qualidade",
-        "actions": "Ações"
-      }
+        "actions": "Ações",
+        "origin": "Origem",
+        "group2": "Grupo2",
+        "group3": "Grupo3",
+        "value": "Valor",
+        "timeTag": "Atualizado",
+        "address": "Endereço",
+        "priority": "Prioridade"
+      },
+      "filterType": "Tipo",
+      "filterOrigin": "Origem",
+      "filterConnection": "Conexão",
+      "filterGroup1": "Grupo 1",
+      "filterQuality": "Qualidade",
+      "filterAlarm": "Alarme",
+      "qualityValid": "Válido",
+      "qualityInvalid": "Inválido",
+      "alarmed": "Alarmado",
+      "notAlarmed": "Sem alarme",
+      "frozen": "Congelado",
+      "substituted": "Substituído",
+      "alarmDisabled": "Alarmes desativados",
+      "system": "Sistema",
+      "systemTagHint": "Mantido pelo processador de dados",
+      "noConnection": "Sem conexão"
     },
     "systemSettings": {
       "title": "Configurações do sistema / Projeto",
@@ -847,7 +958,38 @@
       "processManagement": "Gerenciamento de Processos",
       "processManagementDisabled": "O gerenciamento de processos está desabilitado no servidor (sem backend de serviço neste host).",
       "autoManageServices": "Criar/atualizar/remover serviços do SO automaticamente quando instâncias mudam",
-      "autoRestartOnConnectionChange": "Reiniciar o driver automaticamente quando suas conexões mudam"
+      "autoRestartOnConnectionChange": "Reiniciar o driver automaticamente quando suas conexões mudam",
+      "backupTitle": "Backup do projeto",
+      "exportHint": "Baixa um arquivo zip com os tags, conexões de protocolo, instâncias de drivers e processos, usuários, funções e telas SVG.",
+      "projectNameRule": "Somente letras, dígitos, ponto, hífen e sublinhado",
+      "importHint": "Substitui essa configuração pelo conteúdo de um arquivo zip de projeto. O arquivo deve conter um usuário com uma função de administrador.",
+      "importConfirmTitle": "Substituir a configuração?",
+      "importConfirmText": "Tags, conexões, instâncias de drivers, usuários, funções e telas são substituídos pelo conteúdo de {file}. Não pode ser desfeito: exporte um backup antes.",
+      "exportDone": "Projeto exportado: {file}",
+      "fileTooLarge": "O arquivo é maior que {size}",
+      "on": "Ativado",
+      "off": "Desativado",
+      "autoManageServicesHint": "Instala, atualiza e remove automaticamente os serviços do SO das instâncias de drivers.",
+      "autoRestartHint": "Reinicia o driver quando uma de suas conexões muda.",
+      "localNode": "Nó",
+      "maintenanceTitle": "Reinícios",
+      "restart": "Reiniciar",
+      "restartProtocolsHint": "Reinicia todos os processos de drivers de protocolo; a comunicação para por alguns segundos.",
+      "restartProcessesHint": "Reinicia todos os processos do JSON-SCADA, inclusive este servidor web: a página reconecta quando ele voltar.",
+      "restartRequested": "reinício solicitado",
+      "pruneTitle": "Limpeza da configuração",
+      "pruneHint": "Remove a configuração de demonstração ou exemplo para começar do zero. Instâncias de drivers, usuários, funções e ajustes são mantidos.",
+      "pruneConnections": "Conexões de protocolo (e seus tags)",
+      "pruneTags": "Todos os tags, exceto os do sistema",
+      "pruneCim": "Modelos, execuções e artefatos CIM-EMS",
+      "pruneDisplays": "Telas de exemplo distribuídas",
+      "pruneWillDelete": "Será excluído",
+      "pruneDeleted": "Excluído",
+      "prunePreview": "Visualizar",
+      "pruneExecute": "Excluir",
+      "pruneConfirmText": "A configuração selecionada é excluída definitivamente. Exporte um backup antes se puder precisar dela.",
+      "pruneTypeToConfirm": "Digite {word} para confirmar",
+      "pruneDone": "Configuração limpa"
     },
     "cimEms": {
       "readOnly": "Somente leitura: envio e ativação de modelos, aprovação de vínculos e downloads exigem um papel com o direito de engenharia CIM-EMS.",
@@ -909,6 +1051,37 @@
       "activeNow": "A revisão ativa agora é {revision}",
       "saved": "Revisão de vínculos {revision} salva: {approved} de {count} aprovados",
       "rerunQueued": "Execução solicitada"
+    },
+    "sections": {
+      "users": "Contas de usuário e suas funções",
+      "roles": "Direitos de acesso e permissões de telas",
+      "drivers": "Processos dos drivers de protocolo e os nós que os executam",
+      "connections": "Enlaces de comunicação dos drivers de protocolo",
+      "tags": "Base de pontos: configuração e valores atuais",
+      "userActions": "Trilha de auditoria das ações de operadores e administradores",
+      "system": "Exportação e importação do projeto, manutenção e configurações do sistema"
+    },
+    "common": {
+      "filters": "Filtros",
+      "clearFilters": "Limpar filtros",
+      "columns": "Colunas",
+      "exportCsv": "Exportar CSV",
+      "autoRefresh": "Atualização automática (5 s)",
+      "results": "{n} resultados",
+      "all": "Todos",
+      "edit": "Editar",
+      "clone": "Duplicar",
+      "copyName": "Copiar nome",
+      "copy": "Copiar",
+      "copied": "Copiado para a área de transferência",
+      "openTrend": "Abrir tendência",
+      "exportLimited": "Exportação limitada às primeiras {n} linhas",
+      "required": "Obrigatório",
+      "saved": "Salvo",
+      "secondsAgo": "há {n} s",
+      "minutesAgo": "há {n} min",
+      "hoursAgo": "há {n} h",
+      "daysAgo": "há {n} d"
     }
   },
   "trendViewer": {

@@ -1,69 +1,201 @@
 <template>
-  <v-container fluid class="protocol-connections-tab">
-    <v-btn
-      class="mt-0 me-2"
-      size="small"
-      color="blue"
-      @click="openAddProtocolConnectionDialog"
-    >
-      {{ $t('admin.protocolConnections.addProtocolConnection') }}
-      <v-icon> mdi-plus </v-icon>
-    </v-btn>
+  <div class="protocol-connections-tab">
+    <AdminSummary v-model="statusTile" :tiles="summaryTiles" />
 
-    <v-btn
-      color="secondary"
-      size="small"
-      class="mt-0"
-      @click="fetchProtocolConnections"
-    >
-      {{ $t('common.refresh') }}
-      <v-icon>mdi-refresh</v-icon>
-    </v-btn>
+    <div class="admin-toolbar">
+      <v-btn color="primary" variant="flat" prepend-icon="mdi-plus" @click="openAddProtocolConnectionDialog">
+        {{ $t('admin.protocolConnections.addProtocolConnection') }}
+      </v-btn>
+      <v-text-field
+        v-model="search"
+        class="admin-search"
+        density="compact"
+        variant="outlined"
+        hide-details
+        clearable
+        prepend-inner-icon="mdi-magnify"
+        :label="$t('admin.protocolConnections.search')"
+      ></v-text-field>
+      <v-select
+        v-model="filterDrivers"
+        class="admin-search"
+        :items="driversInUse"
+        :label="$t('admin.protocolConnections.filterDriver')"
+        multiple
+        chips
+        closable-chips
+        clearable
+        density="compact"
+        variant="outlined"
+        hide-details
+      ></v-select>
+      <v-chip v-if="filterInstance !== null" closable label @click:close="filterInstance = null">
+        {{ $t('admin.protocolDriverInstances.headers.protocolDriverInstanceNumber') }} {{ filterInstance }}
+      </v-chip>
+      <v-select
+        v-model="filterStatus"
+        class="conn-status-select"
+        :items="statusItems"
+        :label="$t('admin.protocolConnections.filterStatus')"
+        density="compact"
+        variant="outlined"
+        hide-details
+      ></v-select>
+      <v-spacer></v-spacer>
+      <span class="admin-count">{{ $t('admin.common.results', { n: filteredConnections.length }) }}</span>
+      <v-btn icon variant="text" size="small" :title="$t('common.refresh')" :loading="loading" @click="fetchProtocolConnections">
+        <v-icon>mdi-refresh</v-icon>
+      </v-btn>
+      <v-btn
+        icon
+        variant="text"
+        size="small"
+        :color="autoRefresh ? 'primary' : undefined"
+        :title="$t('admin.common.autoRefresh')"
+        @click="autoRefresh = !autoRefresh"
+      >
+        <v-icon>{{ autoRefresh ? 'mdi-timer-sync-outline' : 'mdi-timer-off-outline' }}</v-icon>
+      </v-btn>
+      <v-btn icon variant="text" size="small" :title="$t('admin.common.exportCsv')" @click="exportCsv">
+        <v-icon>mdi-file-delimited-outline</v-icon>
+      </v-btn>
+    </div>
 
     <v-data-table
+      v-model:expanded="expanded"
+      v-model:items-per-page="itemsPerPage"
       :headers="headers"
-      :items="protocolConnections"
-      :items-per-page="5"
-      class="mt-4 elevation-1"
-      :load-children="fetchProtocolConnections"
+      :items="filteredConnections"
+      :items-per-page-options="[10, 25, 50, 100, -1]"
+      item-value="_id"
+      show-expand
+      hover
+      density="compact"
+      class="admin-table"
+      :sort-by="[{ key: 'protocolConnectionNumber', order: 'asc' }]"
       :items-per-page-text="$t('common.itemsPerPageText')"
     >
-      <template #[`item.icon`]="{ item }">
-        <v-icon v-if="!item.children"> mdi-swap-horizontal </v-icon>
+      <template #[`item.status`]="{ item }">
+        <v-chip size="small" label variant="tonal" :color="statusOf(item).color" class="conn-status">
+          <v-icon start size="10">mdi-circle</v-icon>
+          {{ $t('admin.protocolConnections.status.' + statusOf(item).key) }}
+        </v-chip>
+      </template>
+      <template #[`item.name`]="{ item }">
+        <div class="conn-name">{{ item.name }}</div>
+        <div v-if="item.description" class="text-body-small text-medium-emphasis conn-desc">{{ item.description }}</div>
+      </template>
+      <template #[`item.protocolConnectionNumber`]="{ item }">
+        <span class="admin-mono">{{ item.protocolConnectionNumber }}</span>
       </template>
       <template #[`item.protocolDriver`]="{ item }">
-        <span class="text-caption"
-          >{{ item.protocolDriver }} <br />
-          {{ item.protocolDriverInstanceNumber }}</span
-        >
+        <span class="text-body-small">
+          <span class="font-weight-medium">{{ item.protocolDriver }}</span>
+          <span class="text-medium-emphasis"> · #{{ item.protocolDriverInstanceNumber }}</span>
+        </span>
       </template>
-      <template #[`item.stats`]="{ item }">
-        <span class="text-caption">{{ item.stats }}</span>
+      <template #[`item.endpoint`]="{ item }">
+        <span class="admin-mono text-medium-emphasis" :title="endpointsOf(item).join('\n')">
+          {{ endpointsOf(item)[0] || '—' }}
+          <span v-if="endpointsOf(item).length > 1"> +{{ endpointsOf(item).length - 1 }}</span>
+        </span>
+      </template>
+      <template #[`item.tagCount`]="{ item }">
+        <template v-if="commOf(item).TagCount !== undefined">
+          <span class="admin-mono">{{ commOf(item).TagCount }}</span>
+          <span v-if="commOf(item).InvalidTags" class="text-error text-body-small"> ({{ commOf(item).InvalidTags }} ✕)</span>
+        </template>
+        <span v-else class="text-disabled">—</span>
+      </template>
+      <template #[`item.health`]="{ item }">
+        <div v-if="commOf(item).Health !== undefined" class="conn-health"
+          :title="$t('admin.protocolConnections.healthHint')">
+          <v-progress-linear :model-value="commOf(item).Health" :color="healthColor(commOf(item).Health)" height="6"
+            rounded></v-progress-linear>
+          <span class="text-body-small">{{ Math.round(commOf(item).Health) }}%</span>
+        </div>
+        <span v-else class="text-disabled">—</span>
       </template>
       <template #[`item.enabled`]="{ item }">
-        <v-icon v-if="item.enabled" color="green">mdi-check</v-icon>
-        <v-icon v-else color="red">mdi-close</v-icon>
+        <v-switch :model-value="!!item.enabled" color="primary" density="compact" hide-details inset
+          :loading="toggling === item._id" @update:model-value="(v) => setEnabled(item, v)"></v-switch>
       </template>
-
       <template #[`item.actions`]="{ item }">
-        <v-icon
-          size="small"
-          class="me-2"
-          @click="openEditProtocolConnectionDialog(item)"
-        >
-          mdi-pencil
-        </v-icon>
-        <v-icon size="small" @click="openDeleteProtocolConnectionDialog(item)">
-          mdi-delete
-        </v-icon>
+        <div class="admin-row-actions">
+          <v-btn icon variant="text" size="x-small" :title="$t('admin.common.edit')"
+            @click="openEditProtocolConnectionDialog(item)">
+            <v-icon size="18">mdi-pencil-outline</v-icon>
+          </v-btn>
+          <v-btn icon variant="text" size="x-small" :title="$t('admin.protocolConnections.showTags')"
+            @click="emit('show-tags', item.protocolConnectionNumber)">
+            <v-icon size="18">mdi-tag-multiple-outline</v-icon>
+          </v-btn>
+          <v-menu location="bottom end">
+            <template #activator="{ props }">
+              <v-btn icon variant="text" size="x-small" v-bind="props"><v-icon size="18">mdi-dots-vertical</v-icon></v-btn>
+            </template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-content-duplicate" @click="openCloneProtocolConnectionDialog(item)">
+                <v-list-item-title>{{ $t('admin.common.clone') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-tag-multiple-outline" @click="emit('show-tags', item.protocolConnectionNumber)">
+                <v-list-item-title>{{ $t('admin.protocolConnections.showTags') }}</v-list-item-title>
+              </v-list-item>
+              <v-divider></v-divider>
+              <v-list-item prepend-icon="mdi-delete-outline" base-color="error"
+                @click="openDeleteProtocolConnectionDialog(item)">
+                <v-list-item-title>{{ $t('common.delete') }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+      </template>
+      <template #expanded-row="{ columns, item }">
+        <tr>
+          <td :colspan="columns.length" class="admin-details">
+            <div class="admin-details-grid">
+              <div>
+                <div class="text-label-medium text-uppercase">{{ $t('admin.protocolConnections.headers.stats') }}</div>
+                <dl v-if="statsEntries(item).length" class="admin-kv">
+                  <template v-for="[k, v] in statsEntries(item)" :key="k">
+                    <dt>{{ k }}</dt>
+                    <dd class="admin-mono">{{ v }}</dd>
+                  </template>
+                </dl>
+                <div v-else class="text-body-small text-medium-emphasis">{{ $t('admin.protocolConnections.noStats') }}</div>
+              </div>
+              <div>
+                <div class="text-label-medium text-uppercase">{{ $t('admin.protocolConnections.headers.endpoint') }}</div>
+                <dl class="admin-kv">
+                  <template v-for="e in endpointsOf(item)" :key="e">
+                    <dt>•</dt>
+                    <dd class="admin-mono">{{ e }}</dd>
+                  </template>
+                  <template v-if="commOf(item).StatsAge !== undefined">
+                    <dt>StatsAge</dt>
+                    <dd class="admin-mono">{{ Math.round(commOf(item).StatsAge) }} s</dd>
+                  </template>
+                  <template v-if="commOf(item).ActiveNode">
+                    <dt>ActiveNode</dt>
+                    <dd class="admin-mono">{{ commOf(item).ActiveNode }}</dd>
+                  </template>
+                </dl>
+              </div>
+            </div>
+          </td>
+        </tr>
       </template>
     </v-data-table>
-  </v-container>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3500" location="bottom right">
+      {{ snackbar.text }}
+    </v-snackbar>
+  </div>
 
   <v-dialog scrollable v-model="dialogEditConnection" max-width="750px">
     <v-card class="mx-n8">
       <v-card-title>
-        <span class="text-h5">{{
+        <span class="text-headline-small">{{
           $t('admin.protocolConnections.editProtocolConnection')
         }}</span>
       </v-card-title>
@@ -178,7 +310,7 @@
 
         <v-card class="mt-n4" tile variant="outlined">
           <v-card-title>
-            <span class="text-h5">
+            <span class="text-headline-small">
               {{ $t('admin.protocolConnections.protocolConnectionParameters') }}
             </span>
           </v-card-title>
@@ -316,11 +448,11 @@
               </v-row>
               <v-dialog v-model="dialogAddURL" max-width="450" class="pa-8">
                 <v-card>
-                  <v-card-title class="text-h5">
+                  <v-card-title class="text-headline-small">
                     {{ $t('admin.protocolConnections.remoteEndpointsAddNew') }}
                   </v-card-title>
 
-                  <v-card-title class="text-h5">
+                  <v-card-title class="text-headline-small">
                     <v-text-field
                       autofocus
                       :label="
@@ -487,7 +619,7 @@
               "
             >
               <v-card variant="outlined" class="pa-3">
-                <v-card-title class="text-subtitle-1 pa-0 mb-2">
+                <v-card-title class="text-body-large pa-0 mb-2">
                   {{ $t('admin.protocolConnections.cimEms.title') }}
                 </v-card-title>
                 <v-row dense>
@@ -532,7 +664,7 @@
                   </v-col>
                 </v-row>
 
-                <div class="text-subtitle-2 mt-4">
+                <div class="text-title-small mt-4">
                   {{ $t('admin.protocolConnections.cimEms.loadFlow') }}
                 </div>
                 <v-row dense>
@@ -574,7 +706,7 @@
                   </v-col>
                 </v-row>
 
-                <div class="text-subtitle-2 mt-4">
+                <div class="text-title-small mt-4">
                   {{ $t('admin.protocolConnections.cimEms.publish') }}
                 </div>
                 <v-row dense>
@@ -1921,7 +2053,7 @@
           "
         >
           <v-card-title>
-            <span class="text-h5">
+            <span class="text-headline-small">
               {{ $t('admin.protocolConnections.tcpParameters') }}
             </span>
           </v-card-title>
@@ -2092,7 +2224,7 @@
           "
         >
           <v-card-title>
-            <span class="text-h5">
+            <span class="text-headline-small">
               {{ $t('admin.protocolConnections.tlsParameters') }}
             </span>
           </v-card-title>
@@ -2813,7 +2945,7 @@
           "
         >
           <v-card-title>
-            <span class="text-h5">
+            <span class="text-headline-small">
               {{ $t('admin.protocolConnections.pubSubCard') }}
             </span>
           </v-card-title>
@@ -3407,7 +3539,7 @@
           "
         >
           <v-card-title>
-            <span class="text-h5">
+            <span class="text-headline-small">
               {{ $t('admin.protocolConnections.modbusParameters') }}
             </span>
           </v-card-title>
@@ -3999,7 +4131,7 @@
           "
         >
           <v-card-title>
-            <span class="text-h5">
+            <span class="text-headline-small">
               {{ $t('admin.protocolConnections.serialParameters') }}
             </span>
           </v-card-title>
@@ -4255,7 +4387,7 @@
 
   <v-dialog v-model="dialogDelConn" max-width="400">
     <v-card>
-      <v-card-title class="text-h5">
+      <v-card-title class="text-headline-small">
         {{ $t('admin.protocolConnections.deleteProtocolConnection') }}
       </v-card-title>
 
@@ -4301,31 +4433,232 @@
 <script setup>
   import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { postJson, fetchAllPages, toCsv, downloadText, fileStamp, loadPref, savePref } from '../lib/adminList'
+  import AdminSummary from './AdminSummary.vue'
 
+  const props = defineProps({
+    // the section is shown (auto refresh runs only then)
+    active: { type: Boolean, default: false },
+    // { driver, instance } from the Driver Instances section
+    driverFilter: { type: Object, default: null },
+  })
+  const emit = defineEmits(['show-tags'])
   const { t } = useI18n()
   const headers = computed(() => [
-    { title: '#', key: 'id', align: 'end' },
+    { title: t('admin.protocolConnections.headers.status'), key: 'status', sortable: false, width: 120 },
+    { title: '#', key: 'protocolConnectionNumber', align: 'end', width: 70 },
     { title: t('admin.protocolConnections.headers.name'), key: 'name' },
     {
-      title: t('admin.protocolConnections.headers.protocolConnectionNumber'),
-      align: 'end',
-      key: 'protocolConnectionNumber',
-    },
-    {
-      title: t(
-        'admin.protocolConnections.headers.protocolDriverAndInstanceNumber'
-      ),
-      align: 'start',
+      title: t('admin.protocolConnections.headers.protocolDriverAndInstanceNumber'),
       key: 'protocolDriver',
     },
-    { title: t('admin.protocolConnections.headers.enabled'), key: 'enabled' },
-    { title: t('admin.protocolConnections.headers.stats'), key: 'stats' },
+    { title: t('admin.protocolConnections.headers.endpoint'), key: 'endpoint', sortable: false },
     {
-      title: t('admin.protocolConnections.headers.actions'),
-      key: 'actions',
-      sortable: false,
+      title: t('admin.protocolConnections.headers.tags'),
+      key: 'tagCount',
+      align: 'end',
+      value: (item) => commOf(item).TagCount ?? -1,
     },
+    {
+      title: t('admin.protocolConnections.headers.health'),
+      key: 'health',
+      width: 130,
+      value: (item) => commOf(item).Health ?? -1,
+    },
+    { title: t('admin.protocolConnections.headers.enabled'), key: 'enabled', width: 90 },
+    { title: '', key: 'actions', sortable: false, align: 'end', width: 110 },
+    { title: '', key: 'data-table-expand', width: 40 },
   ])
+
+  // Connection health from the communication status tags kept by the data
+  // processor (_System.Conn.<name>.<Point>, group3 = connection name; see
+  // docs/schema.md); without them (data processor not running) the status
+  // falls back to stats.isConnected
+  const commByName = ref({})
+  const COMM_PREFIX = '_System.Conn.'
+  async function fetchCommStatus() {
+    try {
+      const { items } = await fetchAllPages(
+        '/Invoke/auth/listTags',
+        { filter: { tag: { $regex: '^_System\\.Conn\\.' } } },
+        'tags',
+        20000
+      )
+      const map = {}
+      for (const tg of items) {
+        const name = tg.group3
+        const prefix = COMM_PREFIX + name + '.'
+        if (!name || !tg.tag?.startsWith(prefix)) continue
+        const point = tg.tag.slice(prefix.length)
+        if (point.startsWith('Stats.')) continue
+        const m = (map[name] = map[name] || {})
+        if (tg.invalid && point !== 'Status') continue
+        m[point] = tg.type === 'string' ? tg.valueString : tg.value
+        if (point === 'Status') m.StatusInvalid = !!tg.invalid
+      }
+      commByName.value = map
+    } catch (err) {
+      console.warn(err)
+    }
+  }
+  const commOf = (item) => commByName.value[item.name] || {}
+
+  function statusOf(item) {
+    if (!item.enabled) return { key: 'disabled', color: 'grey' }
+    const c = commOf(item)
+    if (c.Status !== undefined && !c.StatusInvalid)
+      return c.Status ? { key: 'online', color: 'success' } : { key: 'offline', color: 'error' }
+    const linkUp = item.stats?.isConnected
+    if (linkUp === true) return { key: 'online', color: 'success' }
+    if (linkUp === false) return { key: 'offline', color: 'error' }
+    return { key: 'unknown', color: 'warning' }
+  }
+  const healthColor = (h) => (h >= 99 ? 'success' : h >= 80 ? 'warning' : 'error')
+
+  function endpointsOf(item) {
+    const list = [
+      ...(Array.isArray(item.ipAddresses) ? item.ipAddresses : []),
+      ...(Array.isArray(item.endpointURLs) ? item.endpointURLs : []),
+    ]
+    if (item.ipAddressLocalBind) list.push(item.ipAddressLocalBind)
+    if (item.portName) list.push(item.portName)
+    return list.filter((e) => e !== undefined && e !== null && String(e).trim() !== '').map(String)
+  }
+  function statsEntries(item) {
+    const st = item.stats
+    if (!st || typeof st !== 'object') return []
+    return Object.entries(st).map(([k, v]) => [
+      k,
+      v && typeof v === 'object' ? JSON.stringify(v) : String(v),
+    ])
+  }
+
+  // list filters (client side: the whole list is read at once)
+  const search = ref('')
+  const filterDrivers = ref([])
+  const filterStatus = ref('all')
+  // the Driver Instances section asks for the connections of one instance
+  const filterInstance = ref(null)
+  watch(
+    () => props.driverFilter,
+    (f) => {
+      if (!f) return
+      filterDrivers.value = [f.driver]
+      filterInstance.value = f.instance ?? null
+      filterStatus.value = 'all'
+    },
+    { immediate: true }
+  )
+  watch(filterDrivers, (d) => {
+    if (d.length !== 1) filterInstance.value = null
+  })
+
+  const expanded = ref([])
+  const itemsPerPage = ref(loadPref('connections-page-size', 25))
+  watch(itemsPerPage, (n) => savePref('connections-page-size', n))
+  const statusItems = computed(() => [
+    { title: t('admin.common.all'), value: 'all' },
+    ...['online', 'offline', 'unknown', 'disabled'].map((k) => ({
+      title: t('admin.protocolConnections.status.' + k),
+      value: k,
+    })),
+  ])
+  const driversInUse = computed(() =>
+    [...new Set(protocolConnections.value.map((c) => c.protocolDriver).filter(Boolean))].sort()
+  )
+  const filteredConnections = computed(() => {
+    const q = (search.value || '').trim().toLowerCase()
+    return protocolConnections.value.filter(
+      (c) =>
+        (!q ||
+          String(c.name || '').toLowerCase().includes(q) ||
+          String(c.description || '').toLowerCase().includes(q) ||
+          String(c.protocolConnectionNumber) === q ||
+          endpointsOf(c).some((e) => e.toLowerCase().includes(q))) &&
+        (!filterDrivers.value.length || filterDrivers.value.includes(c.protocolDriver)) &&
+        (filterInstance.value === null || c.protocolDriverInstanceNumber === filterInstance.value) &&
+        (filterStatus.value === 'all' || statusOf(c).key === filterStatus.value)
+    )
+  })
+  // the status tiles set the status filter
+  const statusTile = computed({
+    get: () => (filterStatus.value === 'all' ? null : filterStatus.value),
+    set: (v) => (filterStatus.value = v || 'all'),
+  })
+
+  const summaryTiles = computed(() => {
+    const list = protocolConnections.value
+    const count = (k) => list.filter((c) => statusOf(c).key === k).length
+    const comm = Object.values(commByName.value)
+    const sum = (k) => comm.reduce((a, c) => a + (Number(c[k]) || 0), 0)
+    const tiles = [
+      { key: 'total', icon: 'mdi-lan', color: 'primary', value: list.length, label: t('admin.protocolConnections.summary.total') },
+      { key: 'online', filter: 'online', icon: 'mdi-check-network-outline', color: 'success', value: count('online'), label: t('admin.protocolConnections.status.online') },
+      { key: 'offline', filter: 'offline', icon: 'mdi-close-network-outline', color: 'error', value: count('offline'), label: t('admin.protocolConnections.status.offline') },
+      { key: 'unknown', filter: 'unknown', icon: 'mdi-help-network-outline', color: 'warning', value: count('unknown'), label: t('admin.protocolConnections.status.unknown') },
+      { key: 'disabled', filter: 'disabled', icon: 'mdi-minus-network-outline', color: 'grey', value: count('disabled'), label: t('admin.protocolConnections.status.disabled') },
+    ]
+    if (comm.length) {
+      tiles.push(
+        { key: 'tags', icon: 'mdi-tag-multiple-outline', color: 'primary', value: sum('TagCount').toLocaleString(), label: t('admin.protocolConnections.summary.tags') },
+        { key: 'invalid', icon: 'mdi-alert-circle-outline', color: sum('InvalidTags') ? 'error' : 'success', value: sum('InvalidTags').toLocaleString(), label: t('admin.protocolConnections.summary.invalidTags') }
+      )
+    }
+    return tiles
+  })
+
+  const snackbar = ref({ show: false, text: '', color: undefined })
+  function notify(text, color) {
+    snackbar.value = { show: true, text, color }
+  }
+
+  // enable/disable from the list: the whole connection is saved, as the
+  // edit dialog does
+  const toggling = ref(null)
+  async function setEnabled(item, enabled) {
+    toggling.value = item._id
+    try {
+      const connDup = { ...item, enabled }
+      delete connDup.id
+      const json = await postJson('/Invoke/auth/updateProtocolConnection', connDup)
+      if (json.error) notify(t('common.error') + ' ' + json.error, 'error')
+    } catch (err) {
+      notify(t('common.error') + ' ' + err.message, 'error')
+    } finally {
+      toggling.value = null
+    }
+    await fetchProtocolConnections()
+  }
+
+  function exportCsv() {
+    const cols = [
+      { title: 'protocolConnectionNumber', value: (r) => r.protocolConnectionNumber },
+      { title: 'name', value: (r) => r.name },
+      { title: 'description', value: (r) => r.description },
+      { title: 'protocolDriver', value: (r) => r.protocolDriver },
+      { title: 'protocolDriverInstanceNumber', value: (r) => r.protocolDriverInstanceNumber },
+      { title: 'enabled', value: (r) => !!r.enabled },
+      { title: 'status', value: (r) => statusOf(r).key },
+      { title: 'endpoints', value: (r) => endpointsOf(r).join(' ') },
+      { title: 'tagCount', value: (r) => commOf(r).TagCount },
+      { title: 'invalidTags', value: (r) => commOf(r).InvalidTags },
+      { title: 'health', value: (r) => commOf(r).Health },
+    ]
+    downloadText('connections_' + fileStamp() + '.csv', toCsv(filteredConnections.value, cols))
+  }
+
+  // the list and status are read again every 5 s while the section is shown
+  const autoRefresh = ref(false)
+  let refreshTimer = null
+  watch([autoRefresh, () => props.active], ([on, active]) => {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+    if (on && active)
+      refreshTimer = setInterval(() => {
+        if (!document.hidden && !loading.value && !dialogEditConnection.value) fetchProtocolConnections()
+      }, 5000)
+  })
+  onUnmounted(() => clearInterval(refreshTimer))
 
   const dialogEditConnection = ref(false)
   const editedConnection = ref({})
@@ -4566,11 +4899,6 @@
   // Lifecycle hooks
   onMounted(async () => {
     await fetchProtocolConnections()
-    document.documentElement.style.overflowY = 'scroll'
-  })
-
-  onUnmounted(async () => {
-    document.documentElement.style.overflowY = 'auto'
   })
 
   const updateProtocolConnection = async () => {
@@ -4590,6 +4918,7 @@
       if (json.error) {
         console.warn(json)
         error.value = true
+        notify(t('common.error') + ' ' + json.error, 'error')
         return
       }
       dialogEditConnection.value = false
@@ -4753,16 +5082,25 @@
     }
   }
 
+  const loading = ref(false)
   const fetchProtocolConnections = async () => {
+    loading.value = true
     try {
       const response = await fetch('/Invoke/auth/listProtocolConnections')
       const json = await response.json()
+      if (!Array.isArray(json)) {
+        notify(t('common.error') + ' ' + (json?.error || ''), 'error')
+        return
+      }
       for (let i = 0; i < json.length; i++) {
         json[i].id = i + 1
       }
       protocolConnections.value = json
+      await fetchCommStatus()
     } catch (err) {
       console.warn(err)
+    } finally {
+      loading.value = false
     }
   }
 
@@ -4782,6 +5120,28 @@
     } catch (err) {
       console.warn(err)
       error.value = true
+    }
+  }
+
+  // copy of a connection as a new one (next free number, name + _COPY);
+  // runtime statistics are left out
+  const openCloneProtocolConnectionDialog = async (item) => {
+    await fetchProtocolDriverInstancesByType()
+    try {
+      const response = await fetch('/Invoke/auth/getProtocolConnectionModel')
+      const json = await response.json()
+      if (json.error || !json.protocolConnection) {
+        notify(t('common.error') + ' ' + (json.error || ''), 'error')
+        return
+      }
+      const copy = JSON.parse(JSON.stringify(item))
+      for (const f of ['_id', 'id', 'stats', 'protocolConnectionNumber']) delete copy[f]
+      const model = { ...json.protocolConnection }
+      delete model._id
+      editedConnection.value = { ...model, ...copy, name: (item.name || '') + '_COPY' }
+      dialogEditConnection.value = true
+    } catch (err) {
+      notify(t('common.error') + ' ' + err.message, 'error')
     }
   }
 
@@ -4842,5 +5202,33 @@
 
   .v-textarea textarea {
     line-height: 1.1em !important;
+  }
+</style>
+
+<style scoped>
+  .conn-status-select {
+    flex: 0 1 170px;
+    min-width: 140px;
+  }
+  .conn-status {
+    min-width: 92px;
+  }
+  .conn-name {
+    font-weight: 500;
+  }
+  .conn-desc {
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .conn-health {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 100px;
+  }
+  .conn-health .v-progress-linear {
+    flex: 1 1 auto;
   }
 </style>

@@ -14,9 +14,3 @@
     border: 0;
   }
 </style>
-
-<style>
-  html {
-    overflow-y: hidden;
-  }
-</style>

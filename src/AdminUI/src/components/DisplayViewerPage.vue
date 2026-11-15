@@ -79,7 +79,7 @@
       </v-btn>
 
       <v-spacer></v-spacer>
-      <span class="text-caption mr-2">{{ statusMsg }}</span>
+      <span class="text-body-small mr-2">{{ statusMsg }}</span>
     </v-toolbar>
 
     <!-- Display update date/time, stacked (date over time); sits left of the alarm
@@ -92,7 +92,7 @@
     <!-- Time Machine controls -->
     <div v-if="tmActive" class="tm-bar px-2">
       <v-icon size="small" class="mr-2">mdi-history</v-icon>
-      <span class="text-caption mr-2">{{ $t('displayViewer.timeMachine') }}</span>
+      <span class="text-body-small mr-2">{{ $t('displayViewer.timeMachine') }}</span>
       <input type="date" v-model="tmDate" :max="todayStr" min="2013-01-01" class="tm-date" @change="tmChanged" />
       <span class="tm-time mx-3">{{ tmTimeStr }}</span>
       <input

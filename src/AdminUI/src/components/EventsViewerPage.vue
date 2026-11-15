@@ -61,19 +61,19 @@
       </v-btn>
 
       <v-spacer></v-spacer>
-      <span class="text-caption mr-2"><b>{{ rows.length }}</b> {{ $t('eventsViewer.events') }}{{ filterText }}</span>
-      <span class="text-caption fan">{{ fanState }}</span>
+      <span class="text-body-small mr-2"><b>{{ rows.length }}</b> {{ $t('eventsViewer.events') }}{{ filterText }}</span>
+      <span class="text-body-small fan">{{ fanState }}</span>
     </v-toolbar>
 
     <!-- Historical controls -->
     <v-toolbar v-if="mode === 4" density="compact" color="surface" class="mb-1 px-2" flat>
-      <span class="text-caption mr-1">{{ $t('eventsViewer.hist.date') }}</span>
+      <span class="text-body-small mr-1">{{ $t('eventsViewer.hist.date') }}</span>
       <v-text-field v-model="histDate" type="date" density="compact" variant="outlined" hide-details class="mr-2"
         style="max-width: 170px"></v-text-field>
-      <span class="text-caption mr-1">{{ $t('eventsViewer.hist.time') }}</span>
+      <span class="text-body-small mr-1">{{ $t('eventsViewer.hist.time') }}</span>
       <v-text-field v-model="histTime" type="time" step="1" density="compact" variant="outlined" hide-details
         class="mr-2" style="max-width: 140px"></v-text-field>
-      <span class="text-caption mr-1">{{ $t('eventsViewer.hist.filter') }}</span>
+      <span class="text-body-small mr-1">{{ $t('eventsViewer.hist.filter') }}</span>
       <v-text-field v-model="histFilter" density="compact" variant="outlined" hide-details class="mr-2"
         style="max-width: 160px"></v-text-field>
       <v-btn size="small" color="primary" variant="tonal" @click="histSearch">{{ $t('eventsViewer.toolbar.find')

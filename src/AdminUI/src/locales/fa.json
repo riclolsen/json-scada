@@ -230,7 +230,26 @@
       "deleteUserCancel": "لغو کنید",
       "deleteUserExecute": "حذف کاربر",
       "confirmDelete": "حذف را تایید کنید",
-      "deleteConfirmMessage": "آیا مطمئن هستید که می خواهید این کاربر را حذف کنید؟"
+      "deleteConfirmMessage": "آیا مطمئن هستید که می خواهید این کاربر را حذف کنید؟",
+      "search": "جستجوی نام کاربری یا ایمیل",
+      "filterRole": "نقش",
+      "local": "محلی",
+      "noRoles": "بدون نقش",
+      "authentication": "احراز هویت",
+      "effectiveRights": "حقوق مؤثر (همه نقش‌ها با هم)",
+      "protectedUser": "کاربر admin حذف‌شدنی نیست",
+      "passwordMin": "دست‌کم {n} نویسه",
+      "passwordKeep": "برای حفظ گذرواژه فعلی خالی بگذارید",
+      "invalidEmail": "نشانی ایمیل نامعتبر",
+      "rolesHint": "حقوق همه نقش‌ها ترکیب می‌شوند",
+      "ldapUser": "کاربر LDAP (با گذرواژه دایرکتوری وارد می‌شود)",
+      "sectionAccount": "حساب",
+      "summary": {
+        "total": "کاربران",
+        "admins": "مدیران",
+        "ldap": "کاربران LDAP",
+        "noRoles": "بدون نقش"
+      }
     },
     "rolesManagement": {
       "title": "مدیریت نقش ها",
@@ -238,7 +257,12 @@
         "name": "نام",
         "description": "توضیحات",
         "rights": "حقوق",
-        "actions": "اقدامات"
+        "actions": "اقدامات",
+        "group1": "ایستگاه‌ها (مشاهده)",
+        "commands": "ایستگاه‌ها (فرمان)",
+        "displays": "نمایشگرها",
+        "session": "نشست (روز)",
+        "users": "کاربران"
       },
       "addRole": "نقش جدید",
       "editRole": "ویرایش نقش",
@@ -274,7 +298,24 @@
       "deleteRole": "نقش را حذف کنید",
       "deleteRoleConfirm": "آیا مطمئن هستید که می خواهید این نقش را حذف کنید؟",
       "cimEngineering": "مهندسی CIM-EMS",
-      "cimEngineeringHint": "می‌تواند مدل‌های شبکه را بارگذاری و فعال کند، اتصال‌ها را تأیید کند و فایل‌های CIM-EMS را دریافت کند (به مجوز مدیر نیز نیاز دارد)."
+      "cimEngineeringHint": "می‌تواند مدل‌های شبکه را بارگذاری و فعال کند، اتصال‌ها را تأیید کند و فایل‌های CIM-EMS را دریافت کند (به مجوز مدیر نیز نیاز دارد).",
+      "search": "جستجوی نقش",
+      "viewList": "فهرست",
+      "viewMatrix": "ماتریس حقوق",
+      "scopeAll": "همه",
+      "scopeCount": "{n} انتخاب‌شده",
+      "sectionGeneral": "عمومی",
+      "sectionPermissions": "مجوزها",
+      "sectionScope": "دامنه دسترسی",
+      "scopeEmptyHint": "برای اجازه همه خالی بگذارید",
+      "scopeCommandHint": "خالی: ایستگاه‌هایی که کاربر می‌بیند. $$ فرمان‌های ویژه را مجاز می‌کند",
+      "inUse": "به کاربران تخصیص یافته: حذف‌شدنی نیست",
+      "protectedRole": "نقش admin حذف‌شدنی نیست",
+      "summary": {
+        "total": "نقش‌ها",
+        "admin": "نقش‌های مدیر",
+        "unused": "تخصیص‌نیافته"
+      }
     },
     "protocolDriverInstances": {
       "title": "نمونه های درایور پروتکل",
@@ -339,6 +380,21 @@
         "started": "شروع درخواست شده",
         "stopped": "درخواست توقف داده شد",
         "restarted": "درخواست راه‌اندازی مجدد شد"
+      },
+      "search": "جستجوی درایور یا گره",
+      "filterNode": "گره",
+      "alive": "در حال اجرا",
+      "notAlive": "متوقف",
+      "noKeepAlive": "هنوز keep-alive نرسیده",
+      "connections": "اتصال‌ها",
+      "showConnections": "نمایش اتصال‌ها",
+      "version": "نسخه",
+      "details": "جزئیات",
+      "serviceName": "سرویس سیستم‌عامل",
+      "nodesHint": "گره‌های مجاز به اجرای این نمونه؛ برای افزودن گره نامی بنویسید",
+      "deleteHasConnections": "{n} اتصال از این نمونه استفاده می‌کند",
+      "summary": {
+        "total": "نمونه‌ها"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "نام",
         "description": "توضیحات",
         "stats": "آمار",
-        "actions": "اقدامات"
+        "actions": "اقدامات",
+        "status": "وضعیت",
+        "endpoint": "نشانی",
+        "tags": "تگ‌ها",
+        "health": "سلامت"
       },
       "protocolDriver": "درایور پروتکل",
       "protocolDriverInstanceNumber": "شماره نمونه",
@@ -725,6 +785,23 @@
         "contingencyMinKv": "حداقل ولتاژ نامی AUTO_N1 (کیلوولت)",
         "contingencyPublishLimit": "پیشامدهای منتشرشده به‌صورت نقطه",
         "contingencyThreads": "رشته‌های حل‌کننده (1 = تکرارپذیر)"
+      },
+      "search": "جستجوی نام، توضیح یا نشانی",
+      "filterDriver": "درایور",
+      "filterStatus": "وضعیت",
+      "showTags": "نمایش تگ‌ها",
+      "noStats": "درایور آماری گزارش نمی‌دهد",
+      "healthHint": "درصد تگ‌های معتبر اتصال",
+      "status": {
+        "online": "برخط",
+        "offline": "برون‌خط",
+        "unknown": "نامشخص",
+        "disabled": "غیرفعال"
+      },
+      "summary": {
+        "total": "اتصال‌ها",
+        "tags": "تگ‌ها",
+        "invalidTags": "تگ‌های نامعتبر"
       }
     },
     "userActions": {
@@ -735,11 +812,22 @@
         "properties": "خواص: ",
         "pointKey": "کلید نقطه",
         "tag": "برچسب بزنید",
-        "time": "زمان"
+        "time": "زمان",
+        "details": "جزئیات"
       },
       "searchUsername": "جستجوی نام کاربری",
       "searchAction": "اقدام جستجو",
-      "searchDateRange": "محدوده تاریخ"
+      "searchDateRange": "محدوده تاریخ",
+      "searchTag": "جستجوی تگ",
+      "filterBy": "برای فیلتر بر اساس این مقدار کلیک کنید",
+      "periods": {
+        "all": "همه زمان‌ها",
+        "lastHour": "ساعت گذشته",
+        "last24h": "۲۴ ساعت گذشته",
+        "last7d": "۷ روز گذشته",
+        "last30d": "۳۰ روز گذشته",
+        "custom": "سفارشی"
+      }
     },
     "tags": {
       "searchTag": "برچسب جستجو",
@@ -823,8 +911,31 @@
         "valueJson": "مقدار (JSON)",
         "valueString": "مقدار (رشته)",
         "quality": "کیفیت",
-        "actions": "اقدامات"
-      }
+        "actions": "اقدامات",
+        "origin": "منشأ",
+        "group2": "گروه۲",
+        "group3": "گروه۳",
+        "value": "مقدار",
+        "timeTag": "به‌روزرسانی",
+        "address": "نشانی",
+        "priority": "اولویت"
+      },
+      "filterType": "نوع",
+      "filterOrigin": "منشأ",
+      "filterConnection": "اتصال",
+      "filterGroup1": "گروه ۱",
+      "filterQuality": "کیفیت",
+      "filterAlarm": "هشدار",
+      "qualityValid": "معتبر",
+      "qualityInvalid": "نامعتبر",
+      "alarmed": "در هشدار",
+      "notAlarmed": "بدون هشدار",
+      "frozen": "منجمد",
+      "substituted": "جایگزین‌شده",
+      "alarmDisabled": "هشدارها خاموش",
+      "system": "سیستم",
+      "systemTagHint": "توسط پردازشگر داده نگهداری می‌شود",
+      "noConnection": "بدون اتصال"
     },
     "systemSettings": {
       "title": "تنظیمات سیستم / پروژه",
@@ -847,7 +958,38 @@
       "processManagement": "مدیریت فرآیند",
       "processManagementDisabled": "مدیریت فرآیند روی سرور غیرفعال است (هیچ سرویس پشتیبانی روی این میزبان وجود ندارد).",
       "autoManageServices": "ایجاد/به‌روزرسانی/حذف خودکار سرویس‌های سیستم عامل هنگام تغییر نمونه‌ها",
-      "autoRestartOnConnectionChange": "هنگام تغییر اتصالات، درایور را به طور خودکار مجدداً راه‌اندازی کنید"
+      "autoRestartOnConnectionChange": "هنگام تغییر اتصالات، درایور را به طور خودکار مجدداً راه‌اندازی کنید",
+      "backupTitle": "پشتیبان پروژه",
+      "exportHint": "یک فایل zip شامل تگ‌ها، اتصال‌های پروتکل، نمونه‌های درایور و فرایند، کاربران، نقش‌ها و نمایشگرهای SVG دانلود می‌کند.",
+      "projectNameRule": "فقط حروف، ارقام، نقطه، خط تیره و زیرخط",
+      "importHint": "این پیکربندی را با محتوای فایل zip پروژه جایگزین می‌کند. فایل باید کاربری با نقش مدیر داشته باشد.",
+      "importConfirmTitle": "پیکربندی جایگزین شود؟",
+      "importConfirmText": "تگ‌ها، اتصال‌ها، نمونه‌های درایور، کاربران، نقش‌ها و نمایشگرها با محتوای {file} جایگزین می‌شوند. بازگشت‌پذیر نیست: ابتدا پشتیبان بگیرید.",
+      "exportDone": "پروژه صادر شد: {file}",
+      "fileTooLarge": "فایل بزرگ‌تر از {size} است",
+      "on": "فعال",
+      "off": "غیرفعال",
+      "autoManageServicesHint": "سرویس‌های سیستم‌عامل نمونه‌های درایور را خودکار نصب، به‌روز و حذف می‌کند.",
+      "autoRestartHint": "وقتی یکی از اتصال‌های درایور تغییر کند آن را بازراه‌اندازی می‌کند.",
+      "localNode": "گره",
+      "maintenanceTitle": "بازراه‌اندازی‌ها",
+      "restart": "بازراه‌اندازی",
+      "restartProtocolsHint": "همه فرایندهای درایور پروتکل را بازراه‌اندازی می‌کند؛ ارتباط چند ثانیه قطع می‌شود.",
+      "restartProcessesHint": "همه فرایندهای JSON-SCADA از جمله این سرور وب را بازراه‌اندازی می‌کند: صفحه پس از بازگشت دوباره وصل می‌شود.",
+      "restartRequested": "بازراه‌اندازی درخواست شد",
+      "pruneTitle": "پاک‌سازی پیکربندی",
+      "pruneHint": "پیکربندی نمایشی یا نمونه را حذف می‌کند تا سیستم از نو شروع شود. نمونه‌های درایور، کاربران، نقش‌ها و تنظیمات حفظ می‌شوند.",
+      "pruneConnections": "اتصال‌های پروتکل (و تگ‌هایشان)",
+      "pruneTags": "همه تگ‌ها به جز تگ‌های سیستم",
+      "pruneCim": "مدل‌ها، اجراها و خروجی‌های CIM-EMS",
+      "pruneDisplays": "نمایشگرهای نمونه همراه",
+      "pruneWillDelete": "حذف خواهد شد",
+      "pruneDeleted": "حذف شد",
+      "prunePreview": "پیش‌نمایش",
+      "pruneExecute": "حذف",
+      "pruneConfirmText": "پیکربندی انتخاب‌شده برای همیشه حذف می‌شود. اگر ممکن است لازم شود ابتدا پشتیبان بگیرید.",
+      "pruneTypeToConfirm": "برای تأیید {word} را بنویسید",
+      "pruneDone": "پیکربندی پاک‌سازی شد"
     },
     "cimEms": {
       "readOnly": "فقط خواندنی: بارگذاری و فعال‌سازی مدل‌ها، تأیید اتصال‌ها و دریافت فایل‌ها به نقشی با مجوز مهندسی CIM-EMS نیاز دارد.",
@@ -909,6 +1051,37 @@
       "activeNow": "ویرایش فعال اکنون {revision} است",
       "saved": "ویرایش اتصال‌ها {revision} ذخیره شد: {approved} از {count} تأیید شده",
       "rerunQueued": "اجرا درخواست شد"
+    },
+    "sections": {
+      "users": "حساب‌های کاربری و نقش‌های آن‌ها",
+      "roles": "حقوق دسترسی و مجوزهای نمایشگرها",
+      "drivers": "فرایندهای درایورهای پروتکل و گره‌هایی که آن‌ها را اجرا می‌کنند",
+      "connections": "پیوندهای ارتباطی درایورهای پروتکل",
+      "tags": "پایگاه نقاط: پیکربندی و مقادیر فعلی",
+      "userActions": "دنباله ممیزی اقدامات اپراتورها و مدیران",
+      "system": "صدور و ورود پروژه، نگهداری و تنظیمات سیستم"
+    },
+    "common": {
+      "filters": "فیلترها",
+      "clearFilters": "پاک کردن فیلترها",
+      "columns": "ستون‌ها",
+      "exportCsv": "خروجی CSV",
+      "autoRefresh": "بازخوانی خودکار (۵ ثانیه)",
+      "results": "{n} نتیجه",
+      "all": "همه",
+      "edit": "ویرایش",
+      "clone": "تکثیر",
+      "copyName": "کپی نام",
+      "copy": "کپی",
+      "copied": "در کلیپ‌بورد کپی شد",
+      "openTrend": "باز کردن روند",
+      "exportLimited": "خروجی به {n} ردیف نخست محدود شد",
+      "required": "الزامی",
+      "saved": "ذخیره شد",
+      "secondsAgo": "{n} ثانیه پیش",
+      "minutesAgo": "{n} دقیقه پیش",
+      "hoursAgo": "{n} ساعت پیش",
+      "daysAgo": "{n} روز پیش"
     }
   },
   "trendViewer": {

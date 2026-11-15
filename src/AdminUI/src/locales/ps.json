@@ -230,7 +230,26 @@
       "deleteUserCancel": "لغوه کړئ",
       "deleteUserExecute": "کارن ړنګ کړئ",
       "confirmDelete": "ړنګول تایید کړئ",
-      "deleteConfirmMessage": "ایا تاسو ډاډه یاست چې دا کارن حذف کول غواړئ؟"
+      "deleteConfirmMessage": "ایا تاسو ډاډه یاست چې دا کارن حذف کول غواړئ؟",
+      "search": "د کارن نوم یا بریښنالیک ولټوئ",
+      "filterRole": "رول",
+      "local": "محلي",
+      "noRoles": "رول نشته",
+      "authentication": "تصدیق",
+      "effectiveRights": "اغېزمن حقونه (ټول رولونه یوځای)",
+      "protectedUser": "د admin کارن نشي ړنګېدای",
+      "passwordMin": "لږ تر لږه {n} توري",
+      "passwordKeep": "د اوسني پټنوم ساتلو لپاره یې تش پرېږدئ",
+      "invalidEmail": "ناسم بریښنالیک پته",
+      "rolesHint": "د ټولو رولونو حقونه یوځای کیږي",
+      "ldapUser": "LDAP کارن (د لارښود په پټنوم ننوځي)",
+      "sectionAccount": "حساب",
+      "summary": {
+        "total": "کارنان",
+        "admins": "مدیران",
+        "ldap": "LDAP کارنان",
+        "noRoles": "بې رول"
+      }
     },
     "rolesManagement": {
       "title": "د رولونو مدیریت",
@@ -238,7 +257,12 @@
         "name": "نوم",
         "description": "تفصیل",
         "rights": "حقوق",
-        "actions": "کړنې"
+        "actions": "کړنې",
+        "group1": "سټیشنونه (لیدل)",
+        "commands": "سټیشنونه (امر)",
+        "displays": "ښودنې",
+        "session": "ناسته (ورځې)",
+        "users": "کارنان"
       },
       "addRole": "نوی رول",
       "editRole": "رول سمول",
@@ -274,7 +298,24 @@
       "deleteRole": "رول ړنګ کړئ",
       "deleteRoleConfirm": "ایا تاسو ډاډه یاست چې تاسو دا رول حذف کول غواړئ؟",
       "cimEngineering": "د CIM-EMS انجینري",
-      "cimEngineeringHint": "کولی شي د شبکې ماډلونه پورته او فعال کړي، تړاوونه تصویب کړي او د CIM-EMS فایلونه ښکته کړي (د اډمین حق ته هم اړتیا لري)."
+      "cimEngineeringHint": "کولی شي د شبکې ماډلونه پورته او فعال کړي، تړاوونه تصویب کړي او د CIM-EMS فایلونه ښکته کړي (د اډمین حق ته هم اړتیا لري).",
+      "search": "رول ولټوئ",
+      "viewList": "لیست",
+      "viewMatrix": "د حقونو جدول",
+      "scopeAll": "ټول",
+      "scopeCount": "{n} ټاکل شوي",
+      "sectionGeneral": "عمومي",
+      "sectionPermissions": "اجازې",
+      "sectionScope": "د لاسرسي ساحه",
+      "scopeEmptyHint": "د ټولو د اجازې لپاره یې تش پرېږدئ",
+      "scopeCommandHint": "تش: هغه سټیشنونه چې کارن یې لیدلی شي. $$ ځانګړي امرونه اجازه کوي",
+      "inUse": "کارنانو ته ورکړل شوی: نشي ړنګېدای",
+      "protectedRole": "د admin رول نشي ړنګېدای",
+      "summary": {
+        "total": "رولونه",
+        "admin": "د مدیر رولونه",
+        "unused": "نه دي ورکړل شوي"
+      }
     },
     "protocolDriverInstances": {
       "title": "د پروتوکول چلوونکي مثالونه",
@@ -339,6 +380,21 @@
         "started": "د پیل غوښتنه وشوه",
         "stopped": "د بندولو غوښتنه وشوه",
         "restarted": "د بیا پیل غوښتنه وشوه"
+      },
+      "search": "ډرایور یا نوډ ولټوئ",
+      "filterNode": "نوډ",
+      "alive": "روان",
+      "notAlive": "ودرېدلی",
+      "noKeepAlive": "تر اوسه keep-alive نشته",
+      "connections": "اړیکې",
+      "showConnections": "اړیکې وښایاست",
+      "version": "نسخه",
+      "details": "جزئیات",
+      "serviceName": "د سیستم خدمت",
+      "nodesHint": "هغه نوډونه چې دا نمونه چلولی شي؛ د نوډ زیاتولو لپاره نوم ولیکئ",
+      "deleteHasConnections": "{n} اړیکې دا نمونه کاروي",
+      "summary": {
+        "total": "نمونې"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "نوم",
         "description": "تفصیل",
         "stats": "احصایې",
-        "actions": "کړنې"
+        "actions": "کړنې",
+        "status": "حالت",
+        "endpoint": "پته",
+        "tags": "ټګونه",
+        "health": "روغتیا"
       },
       "protocolDriver": "د پروتوکول چلوونکی",
       "protocolDriverInstanceNumber": "د نمونې شمېره",
@@ -725,6 +785,23 @@
         "contingencyMinKv": "د AUTO_N1 لږ تر لږه نومیز ولتاژ (kV)",
         "contingencyPublishLimit": "د ټکو په توګه خپرې شوې پېښې",
         "contingencyThreads": "د حل کوونکي تارونه (1 = د تکرار وړ)"
+      },
+      "search": "نوم، تشریح یا پته ولټوئ",
+      "filterDriver": "ډرایور",
+      "filterStatus": "حالت",
+      "showTags": "ټګونه وښایاست",
+      "noStats": "ډرایور هیڅ احصایه نه ورکوي",
+      "healthHint": "د اړیکې د باوري ټګونو سلنه",
+      "status": {
+        "online": "آنلاین",
+        "offline": "آفلاین",
+        "unknown": "نامعلوم",
+        "disabled": "غیرفعال"
+      },
+      "summary": {
+        "total": "اړیکې",
+        "tags": "ټګونه",
+        "invalidTags": "ناباوري ټګونه"
       }
     },
     "userActions": {
@@ -735,11 +812,22 @@
         "properties": "ملکیتونه: ",
         "pointKey": "ټکي کیلي",
         "tag": "ټګ",
-        "time": "وخت"
+        "time": "وخت",
+        "details": "جزئیات"
       },
       "searchUsername": "د کارن نوم لټون",
       "searchAction": "د لټون عمل",
-      "searchDateRange": "د نیټې سلسله"
+      "searchDateRange": "د نیټې سلسله",
+      "searchTag": "ټګ ولټوئ",
+      "filterBy": "د دې ارزښت له مخې د فلټر لپاره کلیک وکړئ",
+      "periods": {
+        "all": "ټول وخت",
+        "lastHour": "وروستی ساعت",
+        "last24h": "وروستي ۲۴ ساعته",
+        "last7d": "وروستۍ ۷ ورځې",
+        "last30d": "وروستۍ ۳۰ ورځې",
+        "custom": "دودیز"
+      }
     },
     "tags": {
       "searchTag": "د لټون نښه",
@@ -823,8 +911,31 @@
         "valueJson": "ارزښت (JSON)",
         "valueString": "ارزښت (سټرینګ)",
         "quality": "کیفیت",
-        "actions": "کړنې"
-      }
+        "actions": "کړنې",
+        "origin": "سرچینه",
+        "group2": "ډله۲",
+        "group3": "ډله۳",
+        "value": "ارزښت",
+        "timeTag": "تازه شوی",
+        "address": "پته",
+        "priority": "لومړیتوب"
+      },
+      "filterType": "ډول",
+      "filterOrigin": "سرچینه",
+      "filterConnection": "اړیکه",
+      "filterGroup1": "ډله ۱",
+      "filterQuality": "کیفیت",
+      "filterAlarm": "خبرتیا",
+      "qualityValid": "باوري",
+      "qualityInvalid": "ناباوري",
+      "alarmed": "په خبرتیا کې",
+      "notAlarmed": "بې خبرتیا",
+      "frozen": "کنګل شوی",
+      "substituted": "بدل شوی",
+      "alarmDisabled": "خبرتیاوې بندې",
+      "system": "سیستم",
+      "systemTagHint": "د ډیټا پروسیسر لخوا ساتل کیږي",
+      "noConnection": "اړیکه نشته"
     },
     "systemSettings": {
       "title": "د سیسټم ترتیبات / پروژه",
@@ -847,7 +958,38 @@
       "processManagement": "د پروسې مدیریت",
       "processManagementDisabled": "د پروسې مدیریت په سرور کې غیر فعال دی (په دې کوربه کې د خدماتو بیک اینډ نشته).",
       "autoManageServices": "کله چې مثالونه بدل شي نو په اتوماتيک ډول د OS خدمات جوړ کړئ/تازه کړئ/لرې کړئ",
-      "autoRestartOnConnectionChange": "کله چې ډرایور اړیکې بدلې شي نو په اتوماتيک ډول یې بیا پیل کړئ"
+      "autoRestartOnConnectionChange": "کله چې ډرایور اړیکې بدلې شي نو په اتوماتيک ډول یې بیا پیل کړئ",
+      "backupTitle": "د پروژې بیک‌اپ",
+      "exportHint": "یو zip فایل ښکته کوي چې ټګونه، د پروتوکول اړیکې، د ډرایور او پروسې نمونې، کارنان، رولونه او SVG ښودنې لري.",
+      "projectNameRule": "یوازې توري، عددونه، ټکی، ډش او انډرسکور",
+      "importHint": "دا تنظیمات د پروژې zip فایل په منځپانګه بدلوي. فایل باید یو کارن ولري چې د مدیر رول ولري.",
+      "importConfirmTitle": "تنظیمات بدل شي؟",
+      "importConfirmText": "ټګونه، اړیکې، د ډرایور نمونې، کارنان، رولونه او ښودنې د {file} په منځپانګه بدلیږي. بیرته نه راګرځي: لومړی بیک‌اپ صادر کړئ.",
+      "exportDone": "پروژه صادر شوه: {file}",
+      "fileTooLarge": "فایل له {size} لوی دی",
+      "on": "فعال",
+      "off": "غیرفعال",
+      "autoManageServicesHint": "د ډرایور نمونو د سیستم خدمتونه په اتومات ډول نصبوي، تازه کوي او لرې کوي.",
+      "autoRestartHint": "کله چې د ډرایور یوه اړیکه بدله شي، ډرایور بیا پیلوي.",
+      "localNode": "نوډ",
+      "maintenanceTitle": "بیا پیلونه",
+      "restart": "بیا پیلول",
+      "restartProtocolsHint": "د پروتوکول ټولې ډرایور پروسې بیا پیلوي؛ اړیکه د څو ثانیو لپاره درېږي.",
+      "restartProcessesHint": "د JSON-SCADA ټولې پروسې بیا پیلوي، په شمول د دې ویب سرور: پاڼه وروسته بیا نښلي.",
+      "restartRequested": "بیا پیلول وغوښتل شول",
+      "pruneTitle": "د تنظیماتو پاکول",
+      "pruneHint": "د ښودنې یا بېلګې تنظیمات لرې کوي ترڅو سیستم له سره پیل شي. د ډرایور نمونې، کارنان، رولونه او تنظیمات ساتل کیږي.",
+      "pruneConnections": "د پروتوکول اړیکې (او د هغوی ټګونه)",
+      "pruneTags": "ټول ټګونه پرته له سیستم ټګونو",
+      "pruneCim": "د CIM-EMS ماډلونه، چلونې او محصولات",
+      "pruneDisplays": "د بېلګې ښودنې",
+      "pruneWillDelete": "ړنګیږي",
+      "pruneDeleted": "ړنګ شو",
+      "prunePreview": "مخکتنه",
+      "pruneExecute": "ړنګول",
+      "pruneConfirmText": "ټاکل شوي تنظیمات د تل لپاره ړنګیږي. که اړتیا یې کیدای شي، لومړی بیک‌اپ صادر کړئ.",
+      "pruneTypeToConfirm": "د تایید لپاره {word} ولیکئ",
+      "pruneDone": "تنظیمات پاک شول"
     },
     "cimEms": {
       "readOnly": "یوازې لیدل: د ماډلونو پورته کول او فعالول، د تړاوونو تصویب او ښکته کول د CIM-EMS انجینري حق لرونکي رول ته اړتیا لري.",
@@ -909,6 +1051,37 @@
       "activeNow": "فعاله بیاکتنه اوس {revision} ده",
       "saved": "د تړاوونو بیاکتنه {revision} وساتل شوه: له {count} څخه {approved} تصویب شوي",
       "rerunQueued": "چلول وغوښتل شول"
+    },
+    "sections": {
+      "users": "د کارن حسابونه او د هغوی رولونه",
+      "roles": "د لاسرسي حقونه او د ښودنو اجازې",
+      "drivers": "د پروتوکول ډرایور پروسې او هغه نوډونه چې دوی چلوي",
+      "connections": "د پروتوکول ډرایورونو د اړیکې لینکونه",
+      "tags": "د ټکو ډیټابیس: تنظیمات او اوسني ارزښتونه",
+      "userActions": "د چلوونکو او مدیرانو د کړنو د پلټنې ثبت",
+      "system": "د پروژې صادرول او واردول، ساتنه او د سیستم تنظیمات"
+    },
+    "common": {
+      "filters": "فلټرونه",
+      "clearFilters": "فلټرونه پاک کړئ",
+      "columns": "ستنې",
+      "exportCsv": "CSV صادرول",
+      "autoRefresh": "اتومات تازه کول (۵ ثانیې)",
+      "results": "{n} پایلې",
+      "all": "ټول",
+      "edit": "سمول",
+      "clone": "کاپي جوړول",
+      "copyName": "نوم کاپي کړئ",
+      "copy": "کاپي",
+      "copied": "کلیپ بورډ ته کاپي شو",
+      "openTrend": "رجحان پرانیزئ",
+      "exportLimited": "صادرول تر لومړیو {n} قطارونو محدود دي",
+      "required": "اړین",
+      "saved": "خوندي شو",
+      "secondsAgo": "{n} ثانیې مخکې",
+      "minutesAgo": "{n} دقیقې مخکې",
+      "hoursAgo": "{n} ساعته مخکې",
+      "daysAgo": "{n} ورځې مخکې"
     }
   },
   "trendViewer": {

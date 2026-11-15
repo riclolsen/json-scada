@@ -230,7 +230,26 @@
       "deleteUserCancel": "يلغي",
       "deleteUserExecute": "حذف المستخدم",
       "confirmDelete": "تأكيد الحذف",
-      "deleteConfirmMessage": "هل أنت متأكد أنك تريد حذف هذا المستخدم؟"
+      "deleteConfirmMessage": "هل أنت متأكد أنك تريد حذف هذا المستخدم؟",
+      "search": "ابحث باسم المستخدم أو البريد",
+      "filterRole": "الدور",
+      "local": "محلي",
+      "noRoles": "بدون أدوار",
+      "authentication": "المصادقة",
+      "effectiveRights": "الحقوق الفعلية (كل الأدوار مجتمعة)",
+      "protectedUser": "لا يمكن حذف المستخدم admin",
+      "passwordMin": "{n} أحرف على الأقل",
+      "passwordKeep": "اتركه فارغًا للإبقاء على كلمة المرور الحالية",
+      "invalidEmail": "عنوان بريد إلكتروني غير صالح",
+      "rolesHint": "تُجمع حقوق كل الأدوار",
+      "ldapUser": "مستخدم LDAP (يسجل الدخول بكلمة مرور الدليل)",
+      "sectionAccount": "الحساب",
+      "summary": {
+        "total": "المستخدمون",
+        "admins": "المسؤولون",
+        "ldap": "مستخدمو LDAP",
+        "noRoles": "بدون أدوار"
+      }
     },
     "rolesManagement": {
       "title": "إدارة الأدوار",
@@ -238,7 +257,12 @@
         "name": "اسم",
         "description": "وصف",
         "rights": "حقوق",
-        "actions": "الإجراءات"
+        "actions": "الإجراءات",
+        "group1": "المحطات (عرض)",
+        "commands": "المحطات (تحكم)",
+        "displays": "الشاشات",
+        "session": "الجلسة (أيام)",
+        "users": "المستخدمون"
       },
       "addRole": "دور جديد",
       "editRole": "تعديل الدور",
@@ -274,7 +298,24 @@
       "deleteRole": "حذف الدور",
       "deleteRoleConfirm": "هل أنت متأكد أنك تريد حذف هذا الدور؟",
       "cimEngineering": "هندسة CIM-EMS",
-      "cimEngineeringHint": "يمكنه رفع نماذج الشبكة وتفعيلها واعتماد الربط وتنزيل ملفات CIM-EMS (يتطلب أيضًا صلاحية المسؤول)."
+      "cimEngineeringHint": "يمكنه رفع نماذج الشبكة وتفعيلها واعتماد الربط وتنزيل ملفات CIM-EMS (يتطلب أيضًا صلاحية المسؤول).",
+      "search": "ابحث عن دور",
+      "viewList": "قائمة",
+      "viewMatrix": "مصفوفة الحقوق",
+      "scopeAll": "الكل",
+      "scopeCount": "{n} محدد",
+      "sectionGeneral": "عام",
+      "sectionPermissions": "الأذونات",
+      "sectionScope": "نطاق الوصول",
+      "scopeEmptyHint": "اتركه فارغًا للسماح بالكل",
+      "scopeCommandHint": "فارغ: المحطات التي يراها المستخدم. $$ يسمح بالأوامر الخاصة",
+      "inUse": "مسند إلى مستخدمين: لا يمكن حذفه",
+      "protectedRole": "لا يمكن حذف الدور admin",
+      "summary": {
+        "total": "الأدوار",
+        "admin": "أدوار المسؤول",
+        "unused": "غير مسندة"
+      }
     },
     "protocolDriverInstances": {
       "title": "حالات برنامج تشغيل البروتوكول",
@@ -339,6 +380,21 @@
         "started": "بدء التشغيل مطلوب",
         "stopped": "تم طلب الإيقاف",
         "restarted": "طلب إعادة التشغيل"
+      },
+      "search": "ابحث عن برنامج تشغيل أو عقدة",
+      "filterNode": "العقدة",
+      "alive": "قيد التشغيل",
+      "notAlive": "متوقف",
+      "noKeepAlive": "لا توجد إشارة حياة بعد",
+      "connections": "الاتصالات",
+      "showConnections": "عرض الاتصالات",
+      "version": "الإصدار",
+      "details": "التفاصيل",
+      "serviceName": "خدمة النظام",
+      "nodesHint": "العقد المسموح لها بتشغيل هذه النسخة؛ اكتب اسمًا لإضافة عقدة",
+      "deleteHasConnections": "{n} اتصال يستخدم هذه النسخة",
+      "summary": {
+        "total": "النسخ"
       }
     },
     "protocolConnections": {
@@ -352,7 +408,11 @@
         "name": "اسم",
         "description": "وصف",
         "stats": "الإحصائيات",
-        "actions": "الإجراءات"
+        "actions": "الإجراءات",
+        "status": "الحالة",
+        "endpoint": "العنوان",
+        "tags": "الوسوم",
+        "health": "السلامة"
       },
       "protocolDriver": "برنامج تشغيل البروتوكول",
       "protocolDriverInstanceNumber": "رقم المثيل",
@@ -725,6 +785,23 @@
         "contingencyMinKv": "أدنى جهد اسمي لـ AUTO_N1 (ك.ف)",
         "contingencyPublishLimit": "الطوارئ المنشورة كنقاط",
         "contingencyThreads": "خيوط المحلل (1 = قابل للتكرار)"
+      },
+      "search": "ابحث بالاسم أو الوصف أو العنوان",
+      "filterDriver": "برنامج التشغيل",
+      "filterStatus": "الحالة",
+      "showTags": "عرض الوسوم",
+      "noStats": "لا يبلغ برنامج التشغيل عن إحصاءات",
+      "healthHint": "نسبة الوسوم الصالحة في الاتصال",
+      "status": {
+        "online": "متصل",
+        "offline": "غير متصل",
+        "unknown": "غير معروف",
+        "disabled": "معطل"
+      },
+      "summary": {
+        "total": "الاتصالات",
+        "tags": "الوسوم",
+        "invalidTags": "وسوم غير صالحة"
       }
     },
     "userActions": {
@@ -735,11 +812,22 @@
         "properties": "ملكيات: ",
         "pointKey": "مفتاح النقطة",
         "tag": "العلامة",
-        "time": "وقت"
+        "time": "وقت",
+        "details": "التفاصيل"
       },
       "searchUsername": "بحث اسم المستخدم",
       "searchAction": "إجراء البحث",
-      "searchDateRange": "نطاق التاريخ"
+      "searchDateRange": "نطاق التاريخ",
+      "searchTag": "البحث عن وسم",
+      "filterBy": "انقر للتصفية حسب هذه القيمة",
+      "periods": {
+        "all": "كل الفترات",
+        "lastHour": "الساعة الأخيرة",
+        "last24h": "آخر 24 ساعة",
+        "last7d": "آخر 7 أيام",
+        "last30d": "آخر 30 يومًا",
+        "custom": "مخصص"
+      }
     },
     "tags": {
       "searchTag": "علامة البحث",
@@ -823,8 +911,31 @@
         "valueJson": "القيمة (JSON)",
         "valueString": "القيمة (سلسلة)",
         "quality": "جودة",
-        "actions": "الإجراءات"
-      }
+        "actions": "الإجراءات",
+        "origin": "المصدر",
+        "group2": "المجموعة2",
+        "group3": "المجموعة3",
+        "value": "القيمة",
+        "timeTag": "آخر تحديث",
+        "address": "العنوان",
+        "priority": "الأولوية"
+      },
+      "filterType": "النوع",
+      "filterOrigin": "المصدر",
+      "filterConnection": "الاتصال",
+      "filterGroup1": "المجموعة 1",
+      "filterQuality": "الجودة",
+      "filterAlarm": "الإنذار",
+      "qualityValid": "صالح",
+      "qualityInvalid": "غير صالح",
+      "alarmed": "في حالة إنذار",
+      "notAlarmed": "بدون إنذار",
+      "frozen": "مجمّد",
+      "substituted": "مستبدل",
+      "alarmDisabled": "الإنذارات معطلة",
+      "system": "النظام",
+      "systemTagHint": "يديره معالج البيانات",
+      "noConnection": "بدون اتصال"
     },
     "systemSettings": {
       "title": "إعدادات النظام / المشروع",
@@ -847,7 +958,38 @@
       "processManagement": "إدارة العمليات",
       "processManagementDisabled": "تم تعطيل إدارة العمليات على الخادم (لا توجد خدمة خلفية على هذا المضيف).",
       "autoManageServices": "إنشاء/تحديث/إزالة خدمات نظام التشغيل تلقائيًا عند تغيير الحالات",
-      "autoRestartOnConnectionChange": "إعادة تشغيل برنامج التشغيل تلقائيًا عند تغيير اتصالاته"
+      "autoRestartOnConnectionChange": "إعادة تشغيل برنامج التشغيل تلقائيًا عند تغيير اتصالاته",
+      "backupTitle": "نسخة احتياطية للمشروع",
+      "exportHint": "ينزّل ملف zip يحتوي الوسوم واتصالات البروتوكولات ونسخ برامج التشغيل والعمليات والمستخدمين والأدوار وشاشات SVG.",
+      "projectNameRule": "أحرف وأرقام ونقطة وشرطة وشرطة سفلية فقط",
+      "importHint": "يستبدل هذه الإعدادات بمحتوى ملف zip لمشروع. يجب أن يحتوي الملف على مستخدم بدور مسؤول.",
+      "importConfirmTitle": "استبدال الإعدادات؟",
+      "importConfirmText": "تُستبدل الوسوم والاتصالات ونسخ برامج التشغيل والمستخدمون والأدوار والشاشات بمحتوى {file}. لا يمكن التراجع: صدّر نسخة احتياطية أولًا.",
+      "exportDone": "تم تصدير المشروع: {file}",
+      "fileTooLarge": "حجم الملف أكبر من {size}",
+      "on": "مفعّل",
+      "off": "معطّل",
+      "autoManageServicesHint": "يثبّت خدمات النظام لنسخ برامج التشغيل ويحدّثها ويزيلها تلقائيًا.",
+      "autoRestartHint": "يعيد تشغيل برنامج التشغيل عند تغيّر أحد اتصالاته.",
+      "localNode": "العقدة",
+      "maintenanceTitle": "إعادة التشغيل",
+      "restart": "إعادة تشغيل",
+      "restartProtocolsHint": "يعيد تشغيل كل عمليات برامج تشغيل البروتوكولات؛ يتوقف الاتصال بضع ثوانٍ.",
+      "restartProcessesHint": "يعيد تشغيل كل عمليات JSON-SCADA بما فيها خادم الويب هذا: تعيد الصفحة الاتصال عند عودته.",
+      "restartRequested": "طُلبت إعادة التشغيل",
+      "pruneTitle": "تنظيف الإعدادات",
+      "pruneHint": "يزيل إعدادات العرض التوضيحي أو الأمثلة لبدء النظام من جديد. تبقى نسخ برامج التشغيل والمستخدمون والأدوار والإعدادات.",
+      "pruneConnections": "اتصالات البروتوكولات (ووسومها)",
+      "pruneTags": "كل الوسوم عدا وسوم النظام",
+      "pruneCim": "نماذج CIM-EMS وتشغيلاتها ونواتجها",
+      "pruneDisplays": "شاشات الأمثلة المرفقة",
+      "pruneWillDelete": "سيُحذف",
+      "pruneDeleted": "حُذف",
+      "prunePreview": "معاينة",
+      "pruneExecute": "حذف",
+      "pruneConfirmText": "تُحذف الإعدادات المحددة نهائيًا. صدّر نسخة احتياطية أولًا إن كنت قد تحتاجها.",
+      "pruneTypeToConfirm": "اكتب {word} للتأكيد",
+      "pruneDone": "تم تنظيف الإعدادات"
     },
     "cimEms": {
       "readOnly": "عرض للقراءة فقط: رفع النماذج وتفعيلها واعتماد الربط والتنزيل تتطلب دورًا يملك صلاحية هندسة CIM-EMS.",
@@ -909,6 +1051,37 @@
       "activeNow": "المراجعة النشطة الآن هي {revision}",
       "saved": "تم حفظ مراجعة الربط {revision}: اعتُمد {approved} من {count}",
       "rerunQueued": "تم طلب التشغيل"
+    },
+    "sections": {
+      "users": "حسابات المستخدمين وأدوارهم",
+      "roles": "صلاحيات الوصول وأذونات الشاشات",
+      "drivers": "عمليات برامج تشغيل البروتوكولات والعُقد التي تشغّلها",
+      "connections": "روابط الاتصال لبرامج تشغيل البروتوكولات",
+      "tags": "قاعدة النقاط: الإعدادات والقيم الحالية",
+      "userActions": "سجل تدقيق إجراءات المشغلين والمسؤولين",
+      "system": "تصدير المشروع واستيراده والصيانة وإعدادات النظام"
+    },
+    "common": {
+      "filters": "عوامل التصفية",
+      "clearFilters": "مسح عوامل التصفية",
+      "columns": "الأعمدة",
+      "exportCsv": "تصدير CSV",
+      "autoRefresh": "تحديث تلقائي (5 ث)",
+      "results": "{n} نتيجة",
+      "all": "الكل",
+      "edit": "تعديل",
+      "clone": "تكرار",
+      "copyName": "نسخ الاسم",
+      "copy": "نسخ",
+      "copied": "تم النسخ إلى الحافظة",
+      "openTrend": "فتح المنحنى",
+      "exportLimited": "التصدير مقتصر على أول {n} صف",
+      "required": "مطلوب",
+      "saved": "تم الحفظ",
+      "secondsAgo": "قبل {n} ث",
+      "minutesAgo": "قبل {n} د",
+      "hoursAgo": "قبل {n} س",
+      "daysAgo": "قبل {n} يوم"
     }
   },
   "trendViewer": {

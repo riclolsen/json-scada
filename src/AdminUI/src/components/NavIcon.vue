@@ -76,6 +76,26 @@ const ICONS = {
   customDevelopments: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4.5l-3 15"/>',
   // about: info
   about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.1"/>',
+  // admin sections
+  users:
+    '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 19.5c.9-3.3 3.3-5 6.5-5s5.6 1.7 6.5 5"/>' +
+    '<path d="M15.5 5.3a3.5 3.5 0 0 1 0 6.4M17.5 14.8c2.1.6 3.4 2.2 4 4.7"/>',
+  roles:
+    '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="m8.8 12 2.2 2.2 4.3-4.4"/>',
+  driverInstance:
+    '<rect x="6" y="6" width="12" height="12" rx="1.75"/><rect x="9.5" y="9.5" width="5" height="5" rx=".75"/>' +
+    '<path d="M9.5 6V3M14.5 6V3M9.5 21v-3M14.5 21v-3M6 9.5H3M6 14.5H3M21 9.5h-3M21 14.5h-3"/>',
+  connection:
+    '<rect x="2.5" y="9" width="5.5" height="6" rx="1.25"/><rect x="16" y="9" width="5.5" height="6" rx="1.25"/>' +
+    '<path d="M8 12h2.5M13.5 12H16"/><path d="m10.5 10 3 4M13.5 10l-3 4"/>',
+  tag:
+    '<path d="M3.5 4.8v6.4c0 .5.2.9.5 1.2l8.1 8.1a1.6 1.6 0 0 0 2.3 0l6-6a1.6 1.6 0 0 0 0-2.3L12.3 4a1.7 1.7 0 0 0-1.2-.5H4.8c-.7 0-1.3.6-1.3 1.3z"/>' +
+    '<circle cx="8" cy="8" r="1.4"/>',
+  history:
+    '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4h4"/><path d="M12 7.5V12l3 2"/>',
+  settings:
+    '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>' +
+    '<circle cx="12" cy="12" r="6.6"/>',
   // utility icons
   openNew:
     '<path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>',

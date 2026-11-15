@@ -2,11 +2,11 @@
   <div class="home-root">
     <div class="home-card">
       <img src="/images/json-scada.svg" alt="{json:scada}" class="home-logo" />
-      <div class="text-h6 font-weight-medium mt-4">{{ $t('nav.welcomeTitle', { product: '{json:scada}' }) }}</div>
-      <div v-if="user" class="text-body-2 text-medium-emphasis mt-1">
+      <div class="text-title-large font-weight-medium mt-4">{{ $t('nav.welcomeTitle', { product: '{json:scada}' }) }}</div>
+      <div v-if="user" class="text-body-medium text-medium-emphasis mt-1">
         {{ $t('nav.signedInAs', { user }) }}
       </div>
-      <div class="home-hint text-body-2 mt-6">
+      <div class="home-hint text-body-medium mt-6">
         <div class="hint-row">
           <NavIcon name="openHere" :size="18" />
           <span>{{ $t('nav.hintSameWindow') }}</span>
