@@ -94,7 +94,7 @@
     <!-- Data grid -->
     <v-data-table-virtual :headers="headers" :items="visibleRows"
       :no-data-text="failed ? $t('tabularViewer.serverFail') : $t('tabularViewer.noData')" density="compact"
-      fixed-header :height="gridHeight" :item-height="rowHeight" item-value="key" class="tabular-grid"
+      fixed-header :height="'100%'" :item-height="rowHeight" item-value="key" class="tabular-grid"
       :style="{ '--row-height': rowHeight + 'px' }" :row-props="rowProps" @click:row="onRowClick">
       <template #[`item.descr`]="{ item }">
         <span class="d-block text-truncate" :title="item.descr">{{ item.descr }}</span>
@@ -181,7 +181,6 @@ const fanState = ref('(!)')
 const fontScale = ref(13)
 const showKeyCols = ref(false)
 const failed = ref(false)
-const gridHeight = ref(window.innerHeight - 110)
 
 const criticalSound = ref(null)
 const nonCriticalSound = ref(null)
@@ -521,9 +520,6 @@ function onKeydown(e) {
   }
 }
 
-function onResize() {
-  gridHeight.value = window.innerHeight - (isAlarmsViewer.value ? 160 : 110)
-}
 
 function beforeUnloadGuard(e) {
   e.preventDefault()
@@ -554,8 +550,6 @@ onMounted(async () => {
     }, 1500)
   }
   window.addEventListener('keydown', onKeydown)
-  window.addEventListener('resize', onResize)
-  onResize()
   pollTick()
 })
 
@@ -563,7 +557,6 @@ onUnmounted(() => {
   clearTimeout(pollTimer)
   clearInterval(beepTimer)
   window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('resize', onResize)
   window.removeEventListener('beforeunload', beforeUnloadGuard)
 })
 </script>
@@ -571,11 +564,20 @@ onUnmounted(() => {
 <style scoped>
 .tabular-root {
   height: 100vh;
+  /* toolbars at the top, the grid takes the rest of the page height */
+  display: flex;
+  flex-direction: column;
   font-size: var(--tab-font-size, 13px);
   user-select: none;
 }
 
+.tabular-root > :not(.tabular-grid) {
+  flex: 0 0 auto;
+}
+
 .tabular-grid {
+  flex: 1 1 0;
+  min-height: 0;
   font-size: var(--tab-font-size, 13px);
 }
 

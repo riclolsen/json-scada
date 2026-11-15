@@ -2,7 +2,8 @@
  * Embedded alarm box for the Display Viewer — native port of the legacy
  * almbox.html iframe (loaded via the screen's #set_filter group1 markup).
  *
- * Lists the substation's currently-alarmed points in a compact top-right box
+ * Lists the substation's currently-alarmed points in a compact box at the
+ * top-right corner of the page, over the viewer toolbar's right end,
  * that expands on hover (legacy: ~40px collapsed -> ~105px on mouseover) and is
  * scrollable. Rows are clickable to open point access. The engine feeds it the
  * alarmed points (opc.readFiltered({station, onlyAlarms:true})) each refresh.
@@ -34,7 +35,7 @@ export class AlarmBoxPanel {
     const box = document.createElement('div')
     Object.assign(box.style, {
       position: 'fixed',
-      top: '50px',
+      top: '0px',
       right: '0px',
       zIndex: '7',
       width: '372px',

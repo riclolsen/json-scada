@@ -1,7 +1,14 @@
 <template>
   <v-container fluid class="pa-0 display-root">
     <!-- Toolbar -->
-    <v-toolbar v-show="!barHidden" density="compact" color="surface" class="px-2 display-bar" flat>
+    <v-toolbar
+      v-show="!barHidden"
+      density="compact"
+      color="surface"
+      class="px-2 display-bar"
+      :class="{ 'bar-alarmbox': alarmBoxShown }"
+      flat
+    >
       <v-select
         v-model="selectedScreen"
         :items="screenItems"
@@ -79,7 +86,7 @@
       </v-btn>
 
       <v-spacer></v-spacer>
-      <span class="text-body-small mr-2">{{ statusMsg }}</span>
+      <span class="text-body-small mr-2 display-status">{{ statusMsg }}</span>
     </v-toolbar>
 
     <!-- Display update date/time, stacked (date over time); sits left of the alarm
@@ -570,11 +577,25 @@ onUnmounted(() => {
   color: #ffb74d;
   font-weight: 600;
 }
+/* keep the status text clear of the clock and of the alarm box,
+   which sit over the toolbar's right end */
+.display-bar {
+  padding-right: 80px !important;
+}
+.display-bar.bar-alarmbox {
+  padding-right: 450px !important;
+}
+.display-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* Display update date/time — stacked, anchored just left of the alarm box
-   (alarm box is fixed at right:0, width 372). */
+   (alarm box is fixed at top:0, right:0, width 372), inside the toolbar row. */
 .display-datetime {
   position: fixed;
-  top: 50px;
+  top: 4px;
   right: 380px;
   z-index: 7;
   text-align: right;
