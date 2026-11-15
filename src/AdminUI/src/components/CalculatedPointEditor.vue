@@ -5,7 +5,8 @@
       <v-autocomplete
         :model-value="catalogValue"
         :items="formulaItems"
-        :custom-filter="formulaFilter"
+        v-model:search="formulaSearch"
+        no-filter
         item-value="code"
         item-title="title"
         :label="$t('admin.tags.calc.formula')"
@@ -18,13 +19,13 @@
         @update:model-value="setFormula"
       >
         <template #item="{ props: itemProps, item }">
-          <v-list-item v-bind="itemProps" :title="item.raw.title">
-            <v-list-item-subtitle class="calc-mono">{{ item.raw.expression }}</v-list-item-subtitle>
+          <v-list-item v-bind="itemProps" :title="item.title">
+            <v-list-item-subtitle class="calc-mono">{{ item.expression }}</v-list-item-subtitle>
             <template #append>
-              <v-chip v-if="item.raw.legacy" size="x-small" label variant="tonal" class="me-1">
+              <v-chip v-if="item.legacy" size="x-small" label variant="tonal" class="me-1">
                 {{ $t('admin.tags.calc.legacy') }}
               </v-chip>
-              <v-chip size="x-small" label variant="tonal" color="primary">{{ ruleText(item.raw.parcels) }}</v-chip>
+              <v-chip size="x-small" label variant="tonal" color="primary">{{ ruleText(item.parcels) }}</v-chip>
             </template>
           </v-list-item>
         </template>
@@ -134,11 +135,11 @@
           @update:model-value="addPicked"
         >
           <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :title="item.raw.tag">
-              <v-list-item-subtitle>{{ item.raw.description }}</v-list-item-subtitle>
+            <v-list-item v-bind="itemProps" :title="item.tag">
+              <v-list-item-subtitle>{{ item.description }}</v-list-item-subtitle>
               <template #append>
-                <span class="text-body-small text-medium-emphasis me-2">{{ valueText(item.raw) }}</span>
-                <v-chip size="x-small" label variant="tonal">{{ item.raw.type }} · {{ item.raw._id }}</v-chip>
+                <span class="text-body-small text-medium-emphasis me-2">{{ valueText(item) }}</span>
+                <v-chip size="x-small" label variant="tonal">{{ item.type }} · {{ item._id }}</v-chip>
               </template>
             </v-list-item>
           </template>
@@ -163,6 +164,7 @@
   import { postJson, escapeRegex } from '../lib/adminList'
   import catalog from '../lib/calcFormulas.json'
 
+  // Vuetify 4 item slots receive the raw item as `item` (the wrapper is `internalItem`).
   // Formula and parcels of a calculated point (Admin > Tags edit dialog). The
   // formula catalog is generated from the calculations engine table
   // (tools/gen-calc-formulas.mjs); parcels are point keys in formula order.
@@ -183,17 +185,23 @@
   watch(def, (d) => {
     if (d?.legacy) showLegacy.value = true
   }, { immediate: true })
-  const formulaItems = computed(() =>
+  // filtered here on code, name and expression (the box shows the chosen title
+  // as its text: that alone does not filter)
+  const formulaSearch = ref('')
+  const allFormulaItems = computed(() =>
     catalog.formulas
       .filter((f) => showLegacy.value || !f.legacy || f.code === formulaNum.value)
-      .map((f) => ({ ...f, title: f.code + ' – ' + f.name }))
+      .map((f) => ({
+        ...f,
+        title: f.code + ' – ' + f.name,
+        search: (f.code + ' ' + f.name + ' ' + f.expression).toLowerCase(),
+      }))
   )
-  const formulaFilter = (value, query, item) => {
-    const q = String(query || '').trim().toLowerCase()
-    if (!q) return true
-    const f = item.raw
-    return (f.code + ' ' + f.name + ' ' + f.expression).toLowerCase().includes(q)
-  }
+  const formulaItems = computed(() => {
+    const q = String(formulaSearch.value || '').trim().toLowerCase()
+    if (!q || (def.value && q === (def.value.code + ' – ' + def.value.name).toLowerCase())) return allFormulaItems.value
+    return allFormulaItems.value.filter((f) => f.search.includes(q))
+  })
   function setFormula(v) {
     const n = Math.max(0, Math.trunc(Number(v) || 0))
     emit('update:formula', n)
