@@ -136,6 +136,35 @@ Inkscape+SAGE:
 
 -------------------------------------------------------------------
 
+Notes for version 0.71:
+
+* AdminUI redesign: left side navigation panel replaces the top bar and dashboard; native Vue viewers for displays, tabular data, alarms, events and trends (legacy HTML viewers removed); About page shows the release notes.
+* AdminUI Admin page: summary tiles, search, filters, CSV export and auto refresh for users, roles (with rights matrix), driver instances, connections (live communication status), tags and user actions; clone for tags, connections and roles; System section with project backup, service settings, restarts and a previewed configuration clean-up.
+* AdminUI tooling and npm packages upgraded (Vuetify 4, ESLint 10).
+* Realtime server hardening: user rights read from the database, token revocation, sign-in throttling, request limits and safer admin routes.
+* Removed the legacy updater for SAGE exported HTML displays (/sage-cepel-displays).
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+* On the JSON-SCADA desktop folder: execute "_Start_Services".
+* On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* To enable CIM_EMS service: install python dependencies by executing C:\json-scada\src\cim-ems\install.bat.
+* To access the MCP server: start the service and config your agent to access http://localhost:6001/mcp.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 12GB RAM and 30GB of free space in the "C:" drive.
+* MongoDB requires AVX instructions on x86 CPU. Use a modern x86 CPU with 6 cores or more.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 443, 8080, 3000, 3001, 9000, 20000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+
+-------------------------------------------------------------------
+
 Notes for version 0.70:
 
 * New CIM-EMS driver: CGMES 2.4.15 network models, load flow, state estimation and contingency analysis with results as ordinary points. Ships with a Python 3.14 runtime (platform-windows\python-runtime); the JSON_SCADA_cim_ems service is installed with manual start. Admin tab CIM-EMS for models, bindings and runs (needs the new role right CIM-EMS Engineering).
