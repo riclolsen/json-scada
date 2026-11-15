@@ -11,7 +11,6 @@
     "@mdi/font": "7.4.47",
     "@mdi/js": "^7.4.47",
     "core-js": "^3.51.0",
-    "lucide-vue-next": "^1.0.0",
     "roboto-fontface": "*",
     "vega": "^6.4.0",
     "vega-lite": "^6.5.0",

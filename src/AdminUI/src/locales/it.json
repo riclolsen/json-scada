@@ -930,5 +930,26 @@
     "noData": "Nessun dato in questo periodo",
     "noPoint": "Nessun punto indicato (usa ?point=<chiave o tag>)",
     "notFound": "Punto non trovato"
+  },
+  "nav": {
+    "home": "Home",
+    "openNewWindow": "Apri in una nuova finestra",
+    "openHere": "Apri qui",
+    "collapse": "Comprimi pannello",
+    "expand": "Espandi pannello",
+    "language": "Lingua",
+    "darkTheme": "Tema scuro",
+    "lightTheme": "Tema chiaro",
+    "menu": "Menu",
+    "welcomeTitle": "Benvenuto in {product}",
+    "signedInAs": "Connesso come {user}",
+    "hintSameWindow": "Fai clic su una voce del pannello laterale per aprirla qui",
+    "hintNewWindow": "Usa il pulsante freccia (o Ctrl+clic) per aprirla in una nuova finestra",
+    "hintCollapse": "Comprimi il pannello alle sole icone con il pulsante in basso",
+    "groups": {
+      "operation": "Esercizio",
+      "analytics": "Analisi",
+      "engineering": "Ingegneria"
+    }
   }
 }

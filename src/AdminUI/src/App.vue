@@ -1,44 +1,19 @@
 <template>
   <v-app :theme="theme">
-    <v-app-bar v-if="!embedded" app height="48">
-      <v-app-bar-title class="text-subtitle-1">
-        <router-link to="/" class="text-decoration-none">
-          <v-tooltip :text="version">
-            <template v-slot:activator="{ props }">
-              <span v-bind="props">{{ $t('app.title') }}</span>
-            </template>
-          </v-tooltip>
-        </router-link>
-      </v-app-bar-title>
-      <v-spacer></v-spacer>
-      <span class="text-body-2 font-weight-medium" style="position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; white-space: nowrap; opacity: 0.9;">{{ pageTitle }}</span>
-      <v-select v-model="currentLocale" :items="availableLocales" variant="outlined" density="compact" hide-details
-        class="mr-2" style="max-width: 120px"></v-select>
-      <v-btn icon size="small" @click="toggleTheme">
-        <v-icon>{{
-          theme === 'light' ? 'mdi-weather-night' : 'mdi-weather-sunny'
-        }}</v-icon>
-      </v-btn>
-      <v-menu v-if="loggedInUser" offset-y>
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" variant="text" class="ml-2">
-            <v-icon right size="small">mdi-account-circle</v-icon>
-            {{ loggedInUser }}
-          </v-btn>
-        </template>
-        <v-list>
-          <v-list-item @click="logout">
-            <v-list-item-title>{{ $t('app.logout') }} <v-icon> mdi-logout </v-icon>
-            </v-list-item-title>
-          </v-list-item>
-          <v-list-item v-if="!isLDAPUser" @click="openChangePasswordDialog">
-            <v-list-item-title>{{ $t('login.changePassword') }}
-              <v-icon> mdi-lock-reset </v-icon>
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-    </v-app-bar>
+    <AppSidebar
+      v-if="!embedded"
+      :logged-in-user="loggedInUser || ''"
+      :isLDAPUser="isLDAPUser"
+      :is-admin="isAdmin"
+      :theme="theme"
+      :locale="currentLocale"
+      :available-locales="availableLocales"
+      :version="version"
+      @update:locale="(l) => (currentLocale = l)"
+      @toggle-theme="toggleTheme"
+      @logout="logout"
+      @change-password="openChangePasswordDialog"
+    />
 
     <!-- Change Password Dialog -->
     <v-dialog scrollable v-if="loggedInUser" v-model="showChangePasswordDialog" max-width="400px">
@@ -80,6 +55,7 @@ import { useTheme } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { STORAGE_KEY } from './i18n'
+import AppSidebar from './components/AppSidebar.vue'
 
 const THEME_STORAGE_KEY = 'user-theme'
 
@@ -93,7 +69,7 @@ const getStoredTheme = () => localStorage.getItem(THEME_STORAGE_KEY) || 'dark'
 const theme = ref(getStoredTheme())
 
 // `?embed=1`: the page runs inside an iframe (Display Viewer hover preview,
-// #foreign_object) or a bare popup — no app bar
+// #foreign_object) or a bare popup — no side panel
 // (read from the URL too: the first render happens before the router resolves)
 const isEmbedFlag = (v) => v === '1' || v === 'true'
 const embedded = computed(
@@ -103,11 +79,11 @@ const embedded = computed(
 )
 provide('embedded', embedded)
 
-// Map route paths to i18n dashboard translation keys
+// Map route paths to i18n keys for the browser tab title
 const pageTitle = computed(() => {
   const map = {
     '/login': 'login.title',
-    '/dashboard': 'dashboard.title',
+    '/dashboard': 'nav.home',
     '/display-viewer': 'dashboard.displayViewer',
     '/alarms-viewer': 'dashboard.alarmsViewer',
     '/tabular-viewer': 'dashboard.tabularViewer',
@@ -128,6 +104,11 @@ const pageTitle = computed(() => {
   const key = map[route.path]
   return key ? t(key) : ''
 })
+watch(
+  pageTitle,
+  (title) => (document.title = title ? title + ' · ' + t('app.title') : t('app.title')),
+  { immediate: true }
+)
 
 const currentLocale = ref(locale.value)
 const loggedInUser = ref('')
@@ -137,6 +118,17 @@ const newPassword = ref('')
 const confirmNewPassword = ref('')
 const currentPassword = ref('')
 const errorMessage = ref('')
+
+// admin-only menu entries follow the signed-in user's rights (cookie)
+const isAdmin = computed(() => {
+  if (!loggedInUser.value) return false
+  try {
+    const ck = parseCookie(document.cookie)
+    return !!JSON.parse(ck['json-scada-user'] || '{}')?.rights?.isAdmin
+  } catch (e) {
+    return false
+  }
+})
 
 const availableLocales = [
   { title: 'English', value: 'en' },
@@ -317,12 +309,5 @@ provide('setLoggedInUser', setLoggedInUser)
 <style>
 html {
   overflow-y: auto;
-}
-</style>
-
-<style scoped>
-.text-decoration-none {
-  text-decoration: none;
-  color: inherit;
 }
 </style>

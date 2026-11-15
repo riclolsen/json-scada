@@ -930,5 +930,26 @@
     "noData": "په دې موده کې معلومات نشته",
     "noPoint": "هېڅ ټکی نه دی ټاکل شوی (?point=<کیلي یا ټګ> وکاروئ)",
     "notFound": "ټکی ونه موندل شو"
+  },
+  "nav": {
+    "home": "کور",
+    "openNewWindow": "په نوې کړکۍ کې پرانیستل",
+    "openHere": "دلته پرانیستل",
+    "collapse": "تخته ټولول",
+    "expand": "تخته پراخول",
+    "language": "ژبه",
+    "darkTheme": "تیاره بڼه",
+    "lightTheme": "روښانه بڼه",
+    "menu": "مینو",
+    "welcomeTitle": "{product} ته ښه راغلاست",
+    "signedInAs": "د {user} په توګه ننوتی",
+    "hintSameWindow": "د اړخ تختې یو توکی کلیک کړئ چې دلته پرانیستل شي",
+    "hintNewWindow": "د غشي تڼۍ (یا Ctrl+کلیک) یې په نوې کړکۍ کې پرانیزي",
+    "hintCollapse": "د لاندې تڼۍ په مرسته تخته یوازې انځورګوټو ته ټوله کړئ",
+    "groups": {
+      "operation": "عملیات",
+      "analytics": "شننه",
+      "engineering": "انجنیري"
+    }
   }
 }

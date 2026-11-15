@@ -96,7 +96,7 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
   - **Clone Properties:** `{"attr":"set", "tag":"#copy_xsac_from", "src":"MASTER_ELEMENT_ID", "align":"Right", "type":"Data"}`
   - **Vega Charts:** `{"attr":"set", "tag":"#vega4", "src":"TAG1,TAG2", "prompt":"URL_OR_JSON", "align":"Right", "type":"Data"}`
   - **ONVIF Camera:** `{"attr":"set", "tag":"#camera", "src":"CAM_NAME", "prompt":"width=500 height=500", "align":"Right", "type":"Data"}`
-  - **Embedded page:** `{"attr":"set", "tag":"#foreign_object", "src":"/#/events-viewer?embed=1", "prompt":"", "align":"Right", "type":"Data"}` _(on a `<rect>`; Src = any URL, shown in an iframe; AdminUI viewers take `?embed=1` to drop the app bar: `/#/events-viewer`, `/#/alarms-viewer`, `/#/tabular-viewer`, `/#/display-viewer?screen=NAME`, `/#/trend-viewer?point=TAG_OR_KEY`; Prompt = optional iframe attributes)_
+  - **Embedded page:** `{"attr":"set", "tag":"#foreign_object", "src":"/#/events-viewer?embed=1", "prompt":"", "align":"Right", "type":"Data"}` _(on a `<rect>`; Src = any URL, shown in an iframe; AdminUI viewers take `?embed=1` to drop the side panel: `/#/events-viewer`, `/#/alarms-viewer`, `/#/tabular-viewer`, `/#/display-viewer?screen=NAME`, `/#/trend-viewer?point=TAG_OR_KEY`; Prompt = optional iframe attributes)_
 - All fields are required to ensure proper parsing and functionality.
 
 ### 8. Script

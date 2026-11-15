@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0 display-root" :class="{ 'display-embedded': embedded }">
+  <v-container fluid class="pa-0 display-root">
     <!-- Toolbar -->
     <v-toolbar v-show="!barHidden" density="compact" color="surface" class="px-2 display-bar" flat>
       <v-select
@@ -143,7 +143,7 @@ const clockTime = ref('')
 const alarmBoxShown = ref(false)
 const slideshow = ref(false)
 const slideProgress = ref(0) // 0-100, time elapsed toward the next slideshow advance
-// ?embed=1 (hover preview, #foreign_object): no app bar and no toolbar
+// ?embed=1 (hover preview, #foreign_object): no side panel and no toolbar
 const embedded = inject('embedded', ref(false))
 const barHidden = ref(embedded.value)
 
@@ -522,16 +522,13 @@ onUnmounted(() => {
 
 <style scoped>
 .display-root {
-  height: calc(100vh - 48px);
+  height: 100vh;
   display: flex;
   flex-direction: column;
   /* The mimic is operated by mouse/keyboard, not read as a document — keep
      panning, double-clicks and shortcuts from selecting labels/SVG text. */
   user-select: none;
   -webkit-user-select: none;
-}
-.display-root.display-embedded {
-  height: 100vh;
 }
 .svg-container {
   flex: 1 1 auto;

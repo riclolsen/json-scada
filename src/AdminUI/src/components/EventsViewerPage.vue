@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-1 events-root" :class="{ 'viewer-embedded': embedded }" :style="rootStyle">
+  <v-container fluid class="pa-1 events-root" :style="rootStyle">
     <!-- Toolbar -->
     <v-toolbar density="compact" color="surface" class="mb-1 px-2" flat>
       <v-btn-toggle v-model="mode" mandatory density="compact" variant="outlined" divided class="mr-2"
@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
@@ -140,9 +140,6 @@ import {
   copyRowsToClipboard,
   getUserGroup1List,
 } from '../lib/viewerHelpers'
-
-// ?embed=1 (#foreign_object iframe in a display): no app bar
-const embedded = inject('embedded', ref(false))
 
 const props = defineProps({
   mode: { type: Number, default: 0 },
@@ -701,11 +698,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.events-root.viewer-embedded {
-  height: 100vh;
-}
 .events-root {
-  height: calc(100vh - 60px);
+  height: 100vh;
   font-size: var(--eve-font-size, 14px);
   user-select: none;
 }

@@ -930,5 +930,26 @@
     "noData": "此时间段内无数据",
     "noPoint": "未指定点（使用 ?point=<键或标签>）",
     "notFound": "未找到该点"
+  },
+  "nav": {
+    "home": "首页",
+    "openNewWindow": "在新窗口中打开",
+    "openHere": "在此打开",
+    "collapse": "收起面板",
+    "expand": "展开面板",
+    "language": "语言",
+    "darkTheme": "深色主题",
+    "lightTheme": "浅色主题",
+    "menu": "菜单",
+    "welcomeTitle": "欢迎使用 {product}",
+    "signedInAs": "当前登录用户：{user}",
+    "hintSameWindow": "点击侧边面板中的项目即可在此打开",
+    "hintNewWindow": "使用箭头按钮（或 Ctrl+单击）在新窗口中打开",
+    "hintCollapse": "通过底部按钮可将面板收起为仅显示图标",
+    "groups": {
+      "operation": "运行",
+      "analytics": "分析",
+      "engineering": "工程"
+    }
   }
 }

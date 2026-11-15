@@ -930,5 +930,26 @@
     "noData": "Keine Daten in diesem Zeitraum",
     "noPoint": "Kein Punkt angegeben (?point=<Schlüssel oder Tag> verwenden)",
     "notFound": "Punkt nicht gefunden"
+  },
+  "nav": {
+    "home": "Start",
+    "openNewWindow": "In neuem Fenster öffnen",
+    "openHere": "Hier öffnen",
+    "collapse": "Leiste einklappen",
+    "expand": "Leiste ausklappen",
+    "language": "Sprache",
+    "darkTheme": "Dunkles Design",
+    "lightTheme": "Helles Design",
+    "menu": "Menü",
+    "welcomeTitle": "Willkommen bei {product}",
+    "signedInAs": "Angemeldet als {user}",
+    "hintSameWindow": "Klicken Sie auf einen Eintrag der Seitenleiste, um ihn hier zu öffnen",
+    "hintNewWindow": "Mit der Pfeiltaste (oder Strg+Klick) in einem neuen Fenster öffnen",
+    "hintCollapse": "Mit der unteren Schaltfläche die Leiste auf Symbole einklappen",
+    "groups": {
+      "operation": "Betrieb",
+      "analytics": "Analyse",
+      "engineering": "Engineering"
+    }
   }
 }

@@ -930,5 +930,26 @@
     "noData": "No data in this period",
     "noPoint": "No point given (use ?point=<key or tag>)",
     "notFound": "Point not found"
+  },
+  "nav": {
+    "home": "Home",
+    "openNewWindow": "Open in new window",
+    "openHere": "Open here",
+    "collapse": "Collapse panel",
+    "expand": "Expand panel",
+    "language": "Language",
+    "darkTheme": "Dark theme",
+    "lightTheme": "Light theme",
+    "menu": "Menu",
+    "welcomeTitle": "Welcome to {product}",
+    "signedInAs": "Signed in as {user}",
+    "hintSameWindow": "Click an item in the side panel to open it here",
+    "hintNewWindow": "Use the arrow button (or Ctrl+click) to open it in a new window",
+    "hintCollapse": "Collapse the panel to icons only from its bottom button",
+    "groups": {
+      "operation": "Operation",
+      "analytics": "Analytics",
+      "engineering": "Engineering"
+    }
   }
 }

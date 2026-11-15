@@ -1,239 +1,64 @@
 <template>
-  <v-container fluid>
-    <v-row>
-      <v-col
-        v-for="shortcut in shortcuts"
-        :key="shortcut.titleKey"
-        cols="12"
-        sm="6"
-        md="4"
-      >
-        <v-card
-          v-if="!(adminOnlyShortcuts.includes(shortcut.titleKey) && !isAdmin())"
-          density="compact"
-          :color="shortcut.color"
-          hover
-          @click="handleCardClick(shortcut)"
-        >
-          <v-card-title class="text-h6">
-            {{ $t(shortcut.titleKey) }}
-          </v-card-title>
-          <v-card-text class="text-center pb-0">
-            <component :is="shortcut.icon" size="64" />
-          </v-card-text>
-          <v-card-actions class="pt-0">
-            <v-btn
-              v-if="shortcut.page"
-              icon
-              :href="shortcut.page"
-              :target="shortcut.target"
-              @click.stop=""
-            >
-              <v-icon>mdi-open-in-new</v-icon>
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+  <div class="home-root">
+    <div class="home-card">
+      <img src="/images/json-scada.svg" alt="{json:scada}" class="home-logo" />
+      <div class="text-h6 font-weight-medium mt-4">{{ $t('nav.welcomeTitle', { product: '{json:scada}' }) }}</div>
+      <div v-if="user" class="text-body-2 text-medium-emphasis mt-1">
+        {{ $t('nav.signedInAs', { user }) }}
+      </div>
+      <div class="home-hint text-body-2 mt-6">
+        <div class="hint-row">
+          <NavIcon name="openHere" :size="18" />
+          <span>{{ $t('nav.hintSameWindow') }}</span>
+        </div>
+        <div class="hint-row">
+          <NavIcon name="openNew" :size="18" />
+          <span>{{ $t('nav.hintNewWindow') }}</span>
+        </div>
+        <div class="hint-row">
+          <NavIcon name="collapse" :size="18" />
+          <span>{{ $t('nav.hintCollapse') }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue'
-  import { useRouter } from 'vue-router'
-  import {
-    Monitor,
-    Bell,
-    Table,
-    Calendar,
-    FileText,
-    UserCog,
-    HelpCircle,
-    BarChart,
-    Database,
-    PenTool,
-    Code,
-    Workflow,
-    Zap,
-    Network,
-  } from 'lucide-vue-next'
+import { computed } from 'vue'
+import NavIcon from './NavIcon.vue'
+import { getUserObj } from '../lib/viewerHelpers'
 
-  // shortcuts shown to admin users only
-  const adminOnlyShortcuts = [
-    'dashboard.admin',
-    'dashboard.logViewer',
-    'dashboard.svgedit',
-    'dashboard.nodered',
-    'dashboard.n8n',
-  ]
-
-  // Lifecycle hooks
-  onMounted(async () => {
-    document.documentElement.style.overflowY = 'scroll'
-  })
-
-  onUnmounted(async () => {
-    document.documentElement.style.overflowY = 'hidden'
-  })
-
-  const router = useRouter()
-
-  const shortcuts = ref([
-    {
-      titleKey: 'dashboard.displayViewer',
-      icon: Monitor,
-      color: 'primary',
-      route: '/display-viewer',
-      page: '/#/display-viewer',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.alarmsViewer',
-      icon: Bell,
-      color: 'primary',
-      route: '/alarms-viewer',
-      page: '/#/alarms-viewer',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.tabularViewer',
-      icon: Table,
-      color: 'primary',
-      route: '/tabular-viewer',
-      page: '/#/tabular-viewer',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.eventsViewer',
-      icon: Calendar,
-      color: 'primary',
-      route: '/events-viewer',
-      page: '/#/events-viewer',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.cimEms',
-      icon: Network,
-      color: 'primary',
-      route: '/cim-ems',
-      page: '/#/cim-ems',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.grafana',
-      icon: BarChart,
-      color: 'secondary',
-      route: '/grafana',
-      page: '/grafana',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.metabase',
-      icon: Database,
-      color: 'secondary',
-      route: '', // metabase (is not working iframed)
-      page: '/metabase',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.admin',
-      icon: UserCog,
-      color: 'warning',
-      route: '/admin',
-      page: '/#/admin',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.nodered',
-      icon: Workflow,
-      color: 'warning',
-      route: '/nodered',
-      page: '/#/nodered',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.n8n',
-      icon: Zap,
-      color: 'warning',
-      route: '/n8n',
-      page: '/#/n8n',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.apollo',
-      icon: Workflow,
-      color: 'warning',
-      route: '/apollo',
-      page: '/#/apollo',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.svgedit',
-      icon: PenTool,
-      color: 'warning',
-      route: '/svg-edit',
-      page: '/svgedit',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.logViewer',
-      icon: FileText,
-      color: 'warning',
-      route: '/log-viewer',
-      page: '/log-viewer-ui',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.customDevelopments',
-      icon: Code,
-      color: 'secondary',
-      route: '/custom-developments',
-      page: '/custom-developments',
-      target: '_blank',
-    },
-    {
-      titleKey: 'dashboard.about',
-      icon: HelpCircle,
-      color: 'green',
-      route: '/about',
-      page: '/#/about',
-      target: '_blank',
-    },
-  ])
-
-  const handleCardClick = (shortcut) => {
-    if (shortcut.route) {
-      navigateTo(shortcut.route)
-    } else if (shortcut.page) {
-      window.open(shortcut.page, shortcut.target || '_blank')
-    }
-  }
-
-  const navigateTo = (route) => {
-    if (route.startsWith('http://') || route.startsWith('https://')) {
-      window.open(route, '_blank')
-    } else {
-      router.push(route)
-    }
-  }
-
-  const parseCookie = (str) => {
-    if (str === '') return {}
-    return str
-      .split(';')
-      .map((v) => v.split('='))
-      .reduce((acc, v) => {
-        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
-        return acc
-      }, {})
-  }
-
-  const isAdmin = () => {
-    let ck = parseCookie(document.cookie)
-    if ('json-scada-user' in ck) {
-      ck = JSON.parse(ck['json-scada-user'])
-      if (ck?.rights?.isAdmin) return true
-    }
-    return false
-  }
+// Landing page after sign-in; navigation lives in the side panel (AppSidebar).
+const user = computed(() => (getUserObj() || {}).username || '')
 </script>
+
+<style scoped>
+.home-root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.home-card {
+  max-width: 460px;
+  text-align: center;
+}
+.home-logo {
+  width: min(320px, 70vw);
+  height: auto;
+}
+.home-hint {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: start;
+  opacity: 0.8;
+}
+.hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+</style>

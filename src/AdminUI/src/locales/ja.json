@@ -930,5 +930,26 @@
     "noData": "この期間のデータはありません",
     "noPoint": "ポイントが指定されていません（?point=<キーまたはタグ> を使用）",
     "notFound": "ポイントが見つかりません"
+  },
+  "nav": {
+    "home": "ホーム",
+    "openNewWindow": "新しいウィンドウで開く",
+    "openHere": "ここで開く",
+    "collapse": "パネルを折りたたむ",
+    "expand": "パネルを展開",
+    "language": "言語",
+    "darkTheme": "ダークテーマ",
+    "lightTheme": "ライトテーマ",
+    "menu": "メニュー",
+    "welcomeTitle": "{product} へようこそ",
+    "signedInAs": "{user} としてサインイン中",
+    "hintSameWindow": "サイドパネルの項目をクリックするとここに開きます",
+    "hintNewWindow": "矢印ボタン（または Ctrl+クリック）で新しいウィンドウに開きます",
+    "hintCollapse": "下部のボタンでパネルをアイコンのみに折りたためます",
+    "groups": {
+      "operation": "運用",
+      "analytics": "分析",
+      "engineering": "エンジニアリング"
+    }
   }
 }

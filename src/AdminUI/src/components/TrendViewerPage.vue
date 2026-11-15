@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0 trend-root" :class="{ 'trend-embedded': embedded }">
+  <v-container fluid class="pa-0 trend-root">
     <!-- Toolbar (hidden with ?controls=0, e.g. the Display Viewer hover preview) -->
     <v-toolbar v-if="showControls" density="compact" color="surface" class="px-2 trend-bar" flat>
       <v-btn-toggle
@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { loadViewersConfig, getViewersConfig } from '../lib/viewersConfig'
@@ -204,13 +204,12 @@ import { Flags } from '../lib/opcCodes'
 import { decodeQuality } from '../lib/viewerHelpers'
 
 // Trend Viewer: one point's history plus live values.
-// Query: point=<key or tag> (legacy NPONTO/TAG accepted), embed=1 (no app bar),
+// Query: point=<key or tag> (legacy NPONTO/TAG accepted), embed=1 (no side panel),
 // controls=0 (no toolbar, for the Display Viewer hover preview).
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const route = router.currentRoute
-const embedded = inject('embedded', ref(false))
 
 const q = route.value.query
 const pointRef = String(q.point || q.NPONTO || q.TAG || '').trim()
@@ -780,14 +779,11 @@ onUnmounted(() => {
 
 <style scoped>
 .trend-root {
-  height: calc(100vh - 48px);
+  height: 100vh;
   display: flex;
   flex-direction: column;
   user-select: none;
   -webkit-user-select: none;
-}
-.trend-root.trend-embedded {
-  height: 100vh;
 }
 .trend-bar {
   flex: 0 0 auto;
