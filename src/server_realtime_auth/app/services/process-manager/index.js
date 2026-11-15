@@ -349,8 +349,85 @@ async function reconcileAll(instanceDocs, opts = {}) {
   return results
 }
 
+// --- core services -------------------------------------------------------------
+// Services installed by the platform scripts (not protocol drivers), controlled
+// by name only: status, start, stop, restart. Their definitions (command line,
+// environment, start type) stay owned by create_services.bat / the supervisor
+// .ini files, so these never create, rewrite or remove a service.
+const CORE_SERVICES = {
+  mcp: { winServiceName: 'JSON_SCADA_mcp_server', programName: 'mcp_server' },
+}
+
+function coreSpec(key) {
+  const s = CORE_SERVICES[key]
+  if (!s) throw new ProcessError('Unknown service')
+  return {
+    ...s,
+    serviceName: process.platform === 'win32' ? s.winServiceName : s.programName,
+  }
+}
+
+async function coreStatus(key) {
+  const spec = coreSpec(key)
+  const b = backend()
+  if (!b)
+    return {
+      manageable: false,
+      reason: isEnabled() ? 'no process backend on this host' : 'process management disabled',
+      serviceName: spec.serviceName,
+      installed: false,
+      state: 'UNKNOWN',
+      node: localNodeName(),
+    }
+  return enqueue(async () => {
+    try {
+      const st = await b.status(spec)
+      return {
+        manageable: true,
+        reason: '',
+        node: localNodeName(),
+        serviceName: st.serviceName,
+        installed: st.installed,
+        state: st.state,
+        startMode: st.startMode,
+      }
+    } catch (err) {
+      Log.log('ProcessManager core status error: ' + err.message)
+      return {
+        manageable: true,
+        reason: '',
+        node: localNodeName(),
+        serviceName: spec.serviceName,
+        installed: false,
+        state: 'UNKNOWN',
+        error: err.message,
+      }
+    }
+  })
+}
+
+async function coreControl(key, action) {
+  if (!['start', 'stop', 'restart'].includes(action))
+    throw new ProcessError('Unknown action')
+  const spec = coreSpec(key)
+  const b = backend()
+  if (!b)
+    throw new ProcessError(
+      isEnabled() ? 'no process backend on this host' : 'process management disabled'
+    )
+  return enqueue(async () => {
+    const st = await b.status(spec)
+    if (!st.installed)
+      throw new ProcessError('service ' + spec.serviceName + ' is not installed on this host')
+    if (action === 'restart' && st.state !== 'RUNNING') return b.start(spec)
+    return b[action](spec)
+  })
+}
+
 module.exports = {
   ProcessError,
+  coreStatus,
+  coreControl,
   isEnabled,
   isManageable,
   status,

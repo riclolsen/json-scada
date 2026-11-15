@@ -51,6 +51,10 @@ The server expects a MongoDB connection string. You can configure this via envir
 - `JS_MCPJSDB_CUSTOM_DEV_DIR`: Folder of the custom developments read by `check_custom_developments` and the API reference (defaults to the `custom-developments` folder next to this package).
 - `JS_MCPJSDB_LOG_DIR`: Folder of the process log files (defaults to the `log` folder next to `src`, where supervisor and the Windows services write `<process>.log`).
 
+### Settings from the AdminUI
+
+The HTTP service can also be configured from the AdminUI (**Admin > System > MCP server**), which saves its settings in MongoDB (`systemSettings` document `{ "key": "mcpServer" }`) and starts, stops or restarts the service (`JSON_SCADA_mcp_server` on Windows, supervisor program `mcp_server` on Linux; with process management enabled). The server reads them once at startup, in HTTP mode only: a saved value replaces the matching variable above (`IP_BIND`, `HTTP_PORT`, `ALLOWED_HOSTS`, `ADMIN_USERNAME`/`ADMIN_PASSWORD` or admin tools off, `ADMIN_URL`, `CIM_EMS_TOOLS`) and the log level; anything not saved keeps the environment value. A server started over stdio by an AI client never reads them. Restart the service after a change. The sign-in password is stored for the server but never shown again in the AdminUI.
+
 ### Command Line Arguments
 
 - **_1st arg. - Instance Number_** \[Integer] - Instance number to be executed. **Optional argument, default=1**. Env. variable: **JS_MCPJSDB_INSTANCE**.

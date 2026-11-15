@@ -51,7 +51,7 @@
           <user-actions-tab ref="userActionsRef" :active="activeTab === 'userActions'" />
         </v-window-item>
         <v-window-item value="system">
-          <system-settings-tab ref="systemRef" />
+          <system-settings-tab ref="systemRef" :active="activeTab === 'system'" />
         </v-window-item>
       </v-window>
     </div>

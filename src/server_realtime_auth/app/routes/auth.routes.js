@@ -223,6 +223,21 @@ module.exports = function (app, accessPoint) {
     processController.syncDriverServices
   )
   app.use(
+    accessPoint + 'auth/getMcpServer',
+    [authJwt.isAdmin],
+    processController.getMcpServer
+  )
+  app.post(
+    accessPoint + 'auth/updateMcpServer',
+    [authJwt.isAdmin],
+    processController.updateMcpServer
+  )
+  app.post(
+    accessPoint + 'auth/controlMcpServer',
+    [authJwt.isAdmin],
+    processController.controlMcpServer
+  )
+  app.use(
     accessPoint + 'auth/getSystemSettings',
     [authJwt.isAdmin],
     processController.getSystemSettings

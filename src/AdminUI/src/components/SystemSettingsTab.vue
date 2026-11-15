@@ -132,6 +132,9 @@
         </v-card-text>
       </v-card>
 
+      <!-- MCP server (AI assistants) -->
+      <McpServerCard ref="mcpRef" :active="active" />
+
       <!-- restarts -->
       <v-card variant="outlined" class="sys-card">
         <v-card-item prepend-icon="mdi-restart">
@@ -272,9 +275,12 @@
   import { ref, computed, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import AdminSummary from './AdminSummary.vue'
+  import McpServerCard from './McpServerCard.vue'
   import { postJson, fileStamp } from '../lib/adminList'
 
   const { t } = useI18n()
+  defineProps({ active: { type: Boolean, default: true } })
+  const mcpRef = ref(null)
 
   const snackbar = ref({ show: false, text: '', color: undefined })
   function notify(text, color) {
@@ -357,6 +363,7 @@
   function refresh() {
     fetchSystemSettings()
     fetchCounts()
+    mcpRef.value?.refresh?.()
   }
   onMounted(refresh)
   defineExpose({ refresh })

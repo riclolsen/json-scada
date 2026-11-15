@@ -38,6 +38,7 @@ Vue.js single-page application (SPA) for the JSON-SCADA web administration inter
     - **Counts:** totals of tags, connections, driver instances, users, roles and displays.
     - **Project backup:** export and import. The export file name must match the server's plain zip-name rule, and a response that is not a zip file (it starts with `PK`) is treated as a JSON `{ error }`. An import replaces the whole configuration, so it needs a confirmation.
     - **Service management:** the system settings, saved on change.
+    - **MCP server** (`components/McpServerCard.vue`): state, client address and start/stop/restart of the MCP HTTP service, and its settings (`getMcpServer` / `updateMcpServer` / `controlMcpServer`). The stored password is never read back: an empty field keeps it. A poll keeps unsaved edits; Save and restart applies a change at once (the MCP server reads its settings only at startup).
     - **Restarts:** restart protocols or processes, each confirmed.
     - **Configuration clean-up:** `pruneConfiguration`, always as a dry-run preview first. Deleting needs the word `PRUNE` typed in.
   - Cross-section links pass a filter object through `AdminPage`: Roles → Users of a role, Driver Instances → Connections of an instance, Connections → Tags of a connection

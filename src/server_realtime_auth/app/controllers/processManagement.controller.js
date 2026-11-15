@@ -17,7 +17,7 @@
 
 // HTTP endpoints for protocol driver service management: start / stop / restart a
 // single instance, bulk status for the AdminUI table, sync/reconcile, and the global
-// settings toggles. All routes are admin-only (wired in auth.routes.js).
+// settings toggles, and the MCP server service. All routes are admin-only (wired in auth.routes.js).
 
 'use strict'
 
@@ -28,6 +28,7 @@ const { checkToken } = require('../middlewares/authJwt')
 const ProcessManager = require('../services/process-manager')
 const RestartScheduler = require('../services/restart-scheduler')
 const SystemSettings = require('../services/system-settings')
+const McpSettings = require('../services/mcp-settings')
 
 const ProtocolDriverInstance = db.protocolDriverInstance
 
@@ -204,6 +205,75 @@ exports.getSystemSettings = async (req, res) => {
     })
   } catch (err) {
     Log.log('getSystemSettings error: ' + err.message)
+    res.status(200).send({ error: errorText(err) })
+  }
+}
+
+// --- MCP server (src/mcp-json-scada-db) HTTP service ---------------------------
+
+// Settings (no password), service state on this host and whether the
+// configured address answers here.
+exports.getMcpServer = async (req, res) => {
+  try {
+    const settings = await McpSettings.getSettings()
+    const [service, listening, adminUser] = await Promise.all([
+      ProcessManager.coreStatus('mcp'),
+      McpSettings.probe(settings.ipBind, settings.httpPort),
+      settings.adminTools
+        ? McpSettings.checkAdminUser(settings.adminUsername)
+        : Promise.resolve('notSet'),
+    ])
+    res.status(200).send({
+      error: false,
+      settings,
+      service,
+      listening,
+      adminUser,
+      processManagementEnabled: ProcessManager.isEnabled(),
+    })
+  } catch (err) {
+    Log.log('getMcpServer error: ' + err.message)
+    res.status(200).send({ error: errorText(err) })
+  }
+}
+
+// Saves the settings; { restart: true } also restarts the service when it runs
+// (the MCP server reads its settings only at startup).
+exports.updateMcpServer = async (req, res) => {
+  try {
+    registerUserAction(req, 'updateMcpServer') // the queue masks the password
+    const settings = await McpSettings.updateSettings(req.body || {})
+    let restarted = false
+    if (req.body?.restart === true) {
+      const st = await ProcessManager.coreStatus('mcp')
+      if (st.manageable && st.state === 'RUNNING') {
+        await ProcessManager.coreControl('mcp', 'restart')
+        restarted = true
+      }
+    }
+    res.status(200).send({ error: false, settings, restarted })
+  } catch (err) {
+    Log.log('updateMcpServer error: ' + err.message)
+    res.status(200).send({
+      error: err instanceof McpSettings.SettingsError ? err.message : errorText(err),
+    })
+  }
+}
+
+// { action: 'start' | 'stop' | 'restart' }
+exports.controlMcpServer = async (req, res) => {
+  const action = req.body?.action
+  Log.log('controlMcpServer ' + String(action).slice(0, 20))
+  try {
+    if (!['start', 'stop', 'restart'].includes(action)) {
+      res.status(200).send({ error: 'Invalid action!' })
+      return
+    }
+    registerUserAction(req, action + 'McpServer')
+    const result = await ProcessManager.coreControl('mcp', action)
+    res.status(200).send({ error: false, result })
+  } catch (err) {
+    Log.log('controlMcpServer error: ' + err.message)
     res.status(200).send({ error: errorText(err) })
   }
 }
