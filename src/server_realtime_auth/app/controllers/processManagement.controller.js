@@ -42,17 +42,34 @@ function registerUserAction(req, actionName) {
   })
 }
 
-// Resolves the full instance document referenced by a request body.
+// Answer text of an error: the messages of the service management (meant for
+// the admin) as they are, anything else (database, spawn) only in the log.
+function errorText(err) {
+  if (err instanceof ProcessManager.ProcessError) return err.message
+  if (err?.name === 'CastError') return 'Invalid instance id!'
+  return 'Operation failed, see the server log.'
+}
+
+// Resolves the full instance document referenced by a request body: by its
+// _id, or by driver name and instance number. Only plain values reach the
+// query (an object such as { $ne: null } would select some other instance);
+// null when the reference is not valid.
 async function resolveInstance(req) {
-  const q = {}
-  if (req.body?._id) q._id = req.body._id
-  else {
-    q.protocolDriver = req.body?.protocolDriver
-    q.protocolDriverInstanceNumber = Math.trunc(
-      Number(req.body?.protocolDriverInstanceNumber)
-    )
+  const id = req.body?._id
+  if (id !== undefined && id !== null && id !== '') {
+    if (typeof id !== 'string' && typeof id !== 'number') return null
+    return ProtocolDriverInstance.findOne({ _id: id }).lean().exec()
   }
-  return ProtocolDriverInstance.findOne(q).lean().exec()
+  const driver = req.body?.protocolDriver
+  const number = Number(req.body?.protocolDriverInstanceNumber)
+  if (typeof driver !== 'string' || driver === '' || !Number.isFinite(number))
+    return null
+  return ProtocolDriverInstance.findOne({
+    protocolDriver: driver,
+    protocolDriverInstanceNumber: Math.trunc(number),
+  })
+    .lean()
+    .exec()
 }
 
 function actionHandler(actionName, opName) {
@@ -73,7 +90,7 @@ function actionHandler(actionName, opName) {
       res.status(200).send({ error: false, result })
     } catch (err) {
       Log.log(actionName + ' error: ' + err.message)
-      res.status(200).send({ error: err.message || String(err) })
+      res.status(200).send({ error: errorText(err) })
     }
   }
 }
@@ -95,7 +112,37 @@ exports.restartProtocolDriverInstance = actionHandler(
 // supervisorctl when several browsers poll).
 let statusCache = null
 let statusCacheTime = 0
+let statusRefresh = null // the refresh running now, shared by concurrent polls
+let statusGen = 0 // bumped by a sync: an older refresh does not fill the cache
 const STATUS_TTL_MS = 3000
+
+async function loadStatuses() {
+  const instances = await ProtocolDriverInstance.find({}).lean().exec()
+  const statuses = await ProcessManager.listStatuses(instances)
+  const out = instances.map((inst, i) => {
+    const st = statuses[i]
+    return {
+      protocolDriver: inst.protocolDriver,
+      protocolDriverInstanceNumber: inst.protocolDriverInstanceNumber,
+      serviceName: st.serviceName,
+      manageable: st.manageable,
+      reason: st.reason || '',
+      installed: st.installed,
+      state: st.state,
+      startMode: st.startMode,
+      node: st.node,
+      restartPending: RestartScheduler.isPending(
+        inst.protocolDriver,
+        inst.protocolDriverInstanceNumber
+      ),
+    }
+  })
+  return {
+    enabled: ProcessManager.isEnabled(),
+    localNode: ProcessManager.localNodeName(),
+    statuses: out,
+  }
+}
 
 exports.listDriverProcessStatus = async (req, res) => {
   try {
@@ -103,37 +150,25 @@ exports.listDriverProcessStatus = async (req, res) => {
       res.status(200).send(statusCache)
       return
     }
-    const instances = await ProtocolDriverInstance.find({}).lean().exec()
-    const statuses = await ProcessManager.listStatuses(instances)
-    const out = instances.map((inst, i) => {
-      const st = statuses[i]
-      return {
-        protocolDriver: inst.protocolDriver,
-        protocolDriverInstanceNumber: inst.protocolDriverInstanceNumber,
-        serviceName: st.serviceName,
-        manageable: st.manageable,
-        reason: st.reason || '',
-        installed: st.installed,
-        state: st.state,
-        startMode: st.startMode,
-        node: st.node,
-        restartPending: RestartScheduler.isPending(
-          inst.protocolDriver,
-          inst.protocolDriverInstanceNumber
-        ),
-      }
-    })
-    const payload = {
-      enabled: ProcessManager.isEnabled(),
-      localNode: ProcessManager.localNodeName(),
-      statuses: out,
+    if (!statusRefresh) {
+      const gen = statusGen
+      const p = loadStatuses()
+        .then((payload) => {
+          if (gen === statusGen) {
+            statusCache = payload
+            statusCacheTime = Date.now()
+          }
+          return payload
+        })
+        .finally(() => {
+          if (statusRefresh === p) statusRefresh = null
+        })
+      statusRefresh = p
     }
-    statusCache = payload
-    statusCacheTime = Date.now()
-    res.status(200).send(payload)
+    res.status(200).send(await statusRefresh)
   } catch (err) {
     Log.log('listDriverProcessStatus error: ' + err.message)
-    res.status(200).send({ error: err.message || String(err) })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -146,10 +181,12 @@ exports.syncDriverServices = async (req, res) => {
       removeOrphans: req.body?.removeOrphans === true,
     })
     statusCache = null // force refresh
+    statusGen++
+    statusRefresh = null // later polls do not join a refresh from before the sync
     res.status(200).send({ error: false, result })
   } catch (err) {
     Log.log('syncDriverServices error: ' + err.message)
-    res.status(200).send({ error: err.message || String(err) })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -167,7 +204,7 @@ exports.getSystemSettings = async (req, res) => {
     })
   } catch (err) {
     Log.log('getSystemSettings error: ' + err.message)
-    res.status(200).send({ error: err.message || String(err) })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -178,6 +215,6 @@ exports.updateSystemSettings = async (req, res) => {
     res.status(200).send({ error: false, settings })
   } catch (err) {
     Log.log('updateSystemSettings error: ' + err.message)
-    res.status(200).send({ error: err.message || String(err) })
+    res.status(200).send({ error: errorText(err) })
   }
 }

@@ -22,7 +22,7 @@
 'use strict'
 
 const paths = require('./paths')
-const { run } = require('./exec')
+const { run, ProcessError } = require('./exec')
 
 const AUTO = 'SERVICE_AUTO_START'
 const DEMAND = 'SERVICE_DEMAND_START'
@@ -111,7 +111,7 @@ async function applyParams(spec, startMode) {
   for (const c of setCalls) {
     const r = await nssmRun(c)
     if (r.code !== 0)
-      throw new Error(
+      throw new ProcessError(
         'nssm ' + c.slice(0, 3).join(' ') + ' failed: ' + errText(r)
       )
   }
@@ -137,7 +137,7 @@ async function ensureService(spec, opts = {}) {
   if (!st.installed) {
     const inst = await nssmRun(['install', name, spec.cmd, ...spec.args])
     if (inst.code !== 0)
-      throw new Error('nssm install failed: ' + errText(inst))
+      throw new ProcessError('nssm install failed: ' + errText(inst))
     await applyParams(spec, startMode)
     return { action: 'created', serviceName: name }
   }
@@ -157,7 +157,7 @@ async function removeService(spec) {
   if (['RUNNING', 'STARTING', 'PAUSED', 'STOPPING'].includes(st.state))
     await nssmRun(['stop', spec.winServiceName])
   const r = await nssmRun(['remove', spec.winServiceName, 'confirm'])
-  if (r.code !== 0) throw new Error('nssm remove failed: ' + errText(r))
+  if (r.code !== 0) throw new ProcessError('nssm remove failed: ' + errText(r))
   return { action: 'removed', serviceName: spec.winServiceName }
 }
 
@@ -167,7 +167,7 @@ async function start(spec) {
   if (r.code !== 0) {
     const st = await status(spec)
     if (st.state === 'RUNNING') return { action: 'already-running' }
-    throw new Error('nssm start failed: ' + errText(r))
+    throw new ProcessError('nssm start failed: ' + errText(r))
   }
   return { action: 'started' }
 }
@@ -177,14 +177,14 @@ async function stop(spec) {
   if (r.code !== 0) {
     const st = await status(spec)
     if (st.state === 'STOPPED') return { action: 'already-stopped' }
-    throw new Error('nssm stop failed: ' + errText(r))
+    throw new ProcessError('nssm stop failed: ' + errText(r))
   }
   return { action: 'stopped' }
 }
 
 async function restart(spec) {
   const r = await nssmRun(['restart', spec.winServiceName])
-  if (r.code !== 0) throw new Error('nssm restart failed: ' + errText(r))
+  if (r.code !== 0) throw new ProcessError('nssm restart failed: ' + errText(r))
   return { action: 'restarted' }
 }
 

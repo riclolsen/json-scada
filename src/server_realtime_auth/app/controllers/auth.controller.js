@@ -1671,49 +1671,52 @@ exports.userDisplays = (req, res) => {
   res.status(200).send({ displayList: req.rights?.displayList || [] })
 }
 
+// The display (svg) folder of the installation, independent of the working
+// directory of the process (listDisplays, openDisplay and saveDisplay).
+const SVG_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
+// a display file name: an .svg name directly in SVG_DIR
+const DISPLAY_NAME_RE = /^[^.][^/\\:]*\.svg$/i
+function displayPath(name) {
+  if (typeof name !== 'string') return null
+  const fileName = path.basename(name)
+  const p = path.resolve(SVG_DIR, fileName)
+  return DISPLAY_NAME_RE.test(fileName) && path.dirname(p) === SVG_DIR
+    ? { fileName, p }
+    : null
+}
+
 exports.listDisplays = (req, res) => {
   Log.log('listDisplays')
 
-  fs.readdir('../../svg', function (err, files) {
-    //handling error
+  fs.readdir(SVG_DIR, function (err, files) {
     if (err) {
       Log.log(err)
       res.status(200).send({ error: errorText(err) })
       return
     }
-
-    let svgFiles = files.filter(function (file) {
-      return path.extname(file).toLowerCase() === '.svg'
-    })
-
-    res.status(200).send(svgFiles)
+    res.status(200).send(files.filter((f) => path.extname(f).toLowerCase() === '.svg'))
   })
 }
 
 exports.openDisplay = (req, res) => {
   Log.log('openDisplay')
 
-  // Sanitize file path to prevent directory traversal
-  const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
-  const requestedPath = path.resolve(
-    svgDir,
-    path.basename(req.query.file || '')
-  )
-
-  if (!requestedPath.startsWith(svgDir)) {
-    Log.log('openDisplay: Invalid file path attempted: ' + req.query.file)
-    res.status(400).send({ error: 'Invalid file path' })
+  // one .svg name directly in the svg folder (a repeated parameter arrives
+  // as an array, other files of the folder are not displays)
+  const target = displayPath(req.query?.file)
+  if (!target) {
+    Log.log('openDisplay: Invalid file name attempted: ' + String(req.query?.file))
+    res.status(400).send({ error: 'Invalid file name (must be a .svg file)' })
     return
   }
 
-  fs.readFile(requestedPath, function (err, data) {
-    //handling error
+  fs.readFile(target.p, function (err, data) {
     if (err) {
       Log.log(err)
       res.status(200).send({ error: errorText(err) })
       return
     }
-
+    // as before: a binary download, never rendered (and run) as a page
     res.status(200).send(data)
   })
 }
@@ -1722,14 +1725,8 @@ exports.saveDisplay = (req, res) => {
   Log.log('saveDisplay')
 
   // only .svg files directly in the svg folder (no directory traversal)
-  const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
-  const fileName = path.basename(String(req.body?.file || ''))
-  const requestedPath = path.resolve(svgDir, fileName)
-
-  if (
-    !/^[^.][^/\\]*\.svg$/i.test(fileName) ||
-    path.dirname(requestedPath) !== svgDir
-  ) {
+  const target = displayPath(req.body?.file)
+  if (!target) {
     Log.log('saveDisplay: Invalid file name attempted: ' + req.body?.file)
     res.status(400).send({ error: 'Invalid file name (must be a .svg file)' })
     return
@@ -1739,6 +1736,7 @@ exports.saveDisplay = (req, res) => {
     return
   }
 
+  const { fileName, p: requestedPath } = target
   fs.writeFile(requestedPath, req.body.content, function (err) {
     //handling error
     if (err) {

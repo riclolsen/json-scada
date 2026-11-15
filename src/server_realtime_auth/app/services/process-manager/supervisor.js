@@ -23,9 +23,10 @@
 'use strict'
 
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 const paths = require('./paths')
-const { run } = require('./exec')
+const { run, ProcessError } = require('./exec')
 
 let cfg = null
 function configure(configObj) {
@@ -36,10 +37,16 @@ function pm() {
   return (cfg && cfg.processManagement) || {}
 }
 
+// Default to the inet_http_server provided by the shipped supervisord.conf
+// (127.0.0.1:9000, admin/jsonscada); avoids unix-socket permission issues for
+// the jsonscada user. Override via config or JS_SUPERVISOR_* env vars.
+//
+// The credentials go to supervisorctl in a private config file
+// ([supervisorctl] section, -c), not as -u/-p arguments: a command line is
+// visible to every local user (ps, /proc/<pid>/cmdline).
+let ctlConfFile = null
+let ctlConfContent = null
 function ctlBaseArgs() {
-  // Default to the inet_http_server provided by the shipped supervisord.conf
-  // (127.0.0.1:9000, admin/jsonscada); avoids unix-socket permission issues for
-  // the jsonscada user. Override via config or JS_SUPERVISOR_* env vars.
   const url =
     pm().supervisorUrl ||
     process.env.JS_SUPERVISOR_URL ||
@@ -47,10 +54,34 @@ function ctlBaseArgs() {
   const user = pm().supervisorUser || process.env.JS_SUPERVISOR_USER || 'admin'
   const pass =
     pm().supervisorPassword || process.env.JS_SUPERVISOR_PASSWORD || 'jsonscada'
-  const args = []
-  if (url) args.push('-s', url, '-u', user, '-p', pass)
-  return args
+  // supervisor reads the file with configparser: no line breaks in values
+  const clean = (v) => String(v).replace(/[\r\n]/g, '')
+  const content =
+    '[supervisorctl]\n' +
+    'serverurl=' + clean(url) + '\n' +
+    'username=' + clean(user) + '\n' +
+    'password=' + clean(pass) + '\n'
+  if (content !== ctlConfContent || !ctlConfFile || !fs.existsSync(ctlConfFile)) {
+    if (!ctlConfFile || !fs.existsSync(path.dirname(ctlConfFile))) {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-scada-ctl-'))
+      fs.chmodSync(dir, 0o700)
+      ctlConfFile = path.join(dir, 'supervisorctl.conf')
+    }
+    fs.writeFileSync(ctlConfFile, content, { mode: 0o600 })
+    fs.chmodSync(ctlConfFile, 0o600)
+    ctlConfContent = content
+  }
+  return ['-c', ctlConfFile]
 }
+// the file holds a password: removed when the server ends
+process.once('exit', () => {
+  if (!ctlConfFile) return
+  try {
+    fs.rmSync(path.dirname(ctlConfFile), { recursive: true, force: true })
+  } catch (e) {
+    /* ignore */
+  }
+})
 
 async function ctl(args) {
   return run('supervisorctl', [...ctlBaseArgs(), ...args], { utf16: false })
@@ -174,7 +205,7 @@ async function ensureService(spec, opts = {}) {
   // Program exists but is defined by a legacy root-owned file: adopt for control,
   // but refuse to rewrite it (migration script must move it into the managed dir).
   if (st.installed && !st.managedHere)
-    throw new Error(
+    throw new ProcessError(
       'program ' +
         spec.programName +
         ' is defined by a legacy supervisor config; run platform-linux/migrate_supervisor_inis.sh to manage it here'
@@ -187,9 +218,9 @@ async function ensureService(spec, opts = {}) {
   fs.writeFileSync(iniPath(spec), renderIni(spec, startMode), 'utf8')
 
   const rr = await ctl(['reread'])
-  if (rr.code !== 0) throw new Error('supervisorctl reread failed: ' + errText(rr))
+  if (rr.code !== 0) throw new ProcessError('supervisorctl reread failed: ' + errText(rr))
   const up = await ctl(['update', spec.programName])
-  if (up.code !== 0) throw new Error('supervisorctl update failed: ' + errText(up))
+  if (up.code !== 0) throw new ProcessError('supervisorctl update failed: ' + errText(up))
   return {
     action: st.installed ? 'updated' : 'created',
     serviceName: spec.programName,
@@ -209,7 +240,7 @@ async function removeService(spec) {
     return { action: 'absent', serviceName: spec.programName }
   }
   if (!st.managedHere)
-    throw new Error(
+    throw new ProcessError(
       'program ' +
         spec.programName +
         ' is defined by a legacy supervisor config; remove it manually or run the migration script'
@@ -217,9 +248,9 @@ async function removeService(spec) {
   await ctl(['stop', spec.programName])
   fs.unlinkSync(iniPath(spec))
   const rr = await ctl(['reread'])
-  if (rr.code !== 0) throw new Error('supervisorctl reread failed: ' + errText(rr))
+  if (rr.code !== 0) throw new ProcessError('supervisorctl reread failed: ' + errText(rr))
   const up = await ctl(['update'])
-  if (up.code !== 0) throw new Error('supervisorctl update failed: ' + errText(up))
+  if (up.code !== 0) throw new ProcessError('supervisorctl update failed: ' + errText(up))
   return { action: 'removed', serviceName: spec.programName }
 }
 
@@ -227,7 +258,7 @@ async function start(spec) {
   const r = await ctl(['start', spec.programName])
   const text = (r.stdout || '') + (r.stderr || '')
   if (r.code !== 0 && !/already started/i.test(text))
-    throw new Error('supervisorctl start failed: ' + errText(r))
+    throw new ProcessError('supervisorctl start failed: ' + errText(r))
   return { action: 'started' }
 }
 
@@ -235,13 +266,13 @@ async function stop(spec) {
   const r = await ctl(['stop', spec.programName])
   const text = (r.stdout || '') + (r.stderr || '')
   if (r.code !== 0 && !/not running/i.test(text))
-    throw new Error('supervisorctl stop failed: ' + errText(r))
+    throw new ProcessError('supervisorctl stop failed: ' + errText(r))
   return { action: 'stopped' }
 }
 
 async function restart(spec) {
   const r = await ctl(['restart', spec.programName])
-  if (r.code !== 0) throw new Error('supervisorctl restart failed: ' + errText(r))
+  if (r.code !== 0) throw new ProcessError('supervisorctl restart failed: ' + errText(r))
   return { action: 'restarted' }
 }
 
