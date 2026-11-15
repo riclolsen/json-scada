@@ -143,6 +143,9 @@ Notes for version 0.71:
 * AdminUI tooling and npm packages upgraded (Vuetify 4, ESLint 10).
 * Realtime server hardening: user rights read from the database, token revocation, sign-in throttling, request limits and safer admin routes.
 * AdminUI System section: start/stop and settings of the MCP server service; start/stop of the CIM-EMS services, check of its Python environment and install of missing Python dependencies.
+* AdminUI Tags: calculated point editor with a searchable formula catalog (expression, parcel rule and notes) and an ordered parcel list with tag search by name, description or key, current values and parcel count check.
+* AdminUI preferences kept per user in the browser: Events Viewer mode, station and historical filters, key columns, time mode and font size; Tabular/Alarms Viewer station filter and font size; admin list page sizes, columns and views; theme, language and side panel state.
+* Display Viewer alarm box placed at the top right of the viewer page only; CIM-EMS Bindings tab now loads the bindings of the first model when opened.
 * Removed the legacy updater for SAGE exported HTML displays (/sage-cepel-displays).
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
