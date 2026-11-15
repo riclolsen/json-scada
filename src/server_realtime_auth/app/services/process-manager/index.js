@@ -28,6 +28,7 @@ const nssm = require('./nssm')
 const supervisor = require('./supervisor')
 const Log = require('../../../simple-logger')
 const LoadConfig = require('../../../load-config')
+const { ProcessError } = require('./exec')
 
 let configObj = null
 function cfg() {
@@ -197,7 +198,7 @@ async function removeService(instanceDoc) {
 
 async function start(instanceDoc) {
   const m = isManageable(instanceDoc)
-  if (!m.manageable) throw new Error(m.reason)
+  if (!m.manageable) throw new ProcessError(m.reason)
   const spec = makeSpec(instanceDoc)
   return enqueue(async () => {
     const st = await backend().status(spec)
@@ -212,14 +213,14 @@ async function start(instanceDoc) {
 
 async function stop(instanceDoc) {
   const m = isManageable(instanceDoc)
-  if (!m.manageable) throw new Error(m.reason)
+  if (!m.manageable) throw new ProcessError(m.reason)
   const spec = makeSpec(instanceDoc)
   return enqueue(() => backend().stop(spec))
 }
 
 async function restart(instanceDoc) {
   const m = isManageable(instanceDoc)
-  if (!m.manageable) throw new Error(m.reason)
+  if (!m.manageable) throw new ProcessError(m.reason)
   const spec = makeSpec(instanceDoc)
   return enqueue(async () => {
     const st = await backend().status(spec)
@@ -349,6 +350,7 @@ async function reconcileAll(instanceDocs, opts = {}) {
 }
 
 module.exports = {
+  ProcessError,
   isEnabled,
   isManageable,
   status,

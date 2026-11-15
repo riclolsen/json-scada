@@ -235,6 +235,9 @@ const MaxEventRows = 100000 // max rows returned by an events (soeData) query
 const UserActionsFlushMs = 1000 // interval to write the queued user actions to mongodb
 const UserActionsBatch = 500 // user actions written per insert
 const MaxFilteredReadRows = 100000 // max points returned by a ContentFilter read
+// nodes of one write request (commands, acks, property writes); the clients
+// write one at a time, a larger batch is a script or a flood of commands
+const MaxWriteNodes = 100
 // fields of the points returned by a ContentFilter read
 const FilteredReadFields = Object.fromEntries(
   ['_id', 'tag', 'type', 'value', 'valueString', 'valueDefault', 'invalid',
@@ -718,6 +721,17 @@ function maskConnectionString(cs) {
               opc.getStatusCodeName(opc.StatusCode.GoodNoData),
               opc.getStatusCodeText(opc.StatusCode.GoodNoData),
               'No NodesToWrite',
+            ]
+            res.send(OpcResp)
+            return
+          }
+          if (req.body.Body.NodesToWrite.length > MaxWriteNodes) {
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.BadTooManyOperations
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.BadTooManyOperations),
+              opc.getStatusCodeText(opc.StatusCode.BadTooManyOperations),
+              'Too many NodesToWrite (maximum ' + MaxWriteNodes + ')',
             ]
             res.send(OpcResp)
             return

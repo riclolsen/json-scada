@@ -77,4 +77,14 @@ function run(cmd, args, opts = {}) {
   })
 }
 
-module.exports = { run, DEFAULT_TIMEOUT_MS }
+// An error of the service management meant for the admin (a driver that is
+// not manageable, a failed supervisorctl/nssm action with its output): its
+// message is answered to the AdminUI, other errors only go to the log.
+class ProcessError extends Error {
+  constructor(msg) {
+    super(String(msg).slice(0, 1000))
+    this.name = 'ProcessError'
+  }
+}
+
+module.exports = { run, DEFAULT_TIMEOUT_MS, ProcessError }

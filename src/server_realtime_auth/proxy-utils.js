@@ -341,6 +341,26 @@ function sameOrigin(req) {
   return hosts.includes(host)
 }
 
+// Why an Origin was refused, for the log. A forwarded Host without the port
+// of the Origin is the usual cause behind a reverse proxy on another port
+// (nginx `proxy_set_header Host $host` drops it, `$http_host` keeps it).
+function originRefusalText(req) {
+  const origin = String(req.headers?.origin)
+  let o
+  try {
+    o = new URL(origin)
+  } catch (e) {
+    return 'cross-origin request (invalid Origin)'
+  }
+  const host = String(req.headers?.host || '').toLowerCase()
+  if (o.port && host === o.hostname.toLowerCase())
+    return (
+      'cross-origin request: Origin ' + o.host + ' vs Host ' + host +
+      ' (a reverse proxy dropped the port? use "proxy_set_header Host $http_host" in nginx)'
+    )
+  return 'cross-origin request: Origin ' + o.host + ' vs Host ' + (host || '(none)')
+}
+
 // Proxy the websocket upgrades of a mounted reverse proxy, for admin users.
 // Upgrade requests never reach the express middlewares (so verifyToken cannot run on
 // them), they are handled on the raw http server and the token is verified here instead.
@@ -356,7 +376,7 @@ function attachProxyUpgrade(httpServer, proxy, mountPath, label) {
       socket.destroy()
     }
 
-    if (!sameOrigin(req)) return deny('403 Forbidden', 'cross-origin request')
+    if (!sameOrigin(req)) return deny('403 Forbidden', originRefusalText(req))
 
     const decoded = checkUpgradeToken(req)
     if (decoded === false) return deny('401 Unauthorized', 'absent or invalid access token')
