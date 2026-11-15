@@ -142,6 +142,7 @@ Notes for version 0.71:
 * AdminUI Admin page: summary tiles, search, filters, CSV export and auto refresh for users, roles (with rights matrix), driver instances, connections (live communication status), tags and user actions; clone for tags, connections and roles; System section with project backup, service settings, restarts and a previewed configuration clean-up.
 * AdminUI tooling and npm packages upgraded (Vuetify 4, ESLint 10).
 * Realtime server hardening: user rights read from the database, token revocation, sign-in throttling, request limits and safer admin routes.
+* AdminUI System section: start/stop and settings of the MCP server service; start/stop of the CIM-EMS services, check of its Python environment and install of missing Python dependencies.
 * Removed the legacy updater for SAGE exported HTML displays (/sage-cepel-displays).
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
@@ -150,8 +151,8 @@ To quickly run the system after installed, open the JSON-SCADA desktop folder an
 * On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
 * Default login credentials: username=admin password=jsonscada.
 * Metabase credentials: username=json@scada.com password=jsonscada123.
-* To enable CIM_EMS service: install python dependencies by executing C:\json-scada\src\cim-ems\install.bat.
-* To access the MCP server: start the service and config your agent to access http://localhost:6001/mcp.
+* To enable CIM_EMS service: install python dependencies in Admin > System > CIM-EMS (or execute C:\json-scada\src\cim-ems\install.bat).
+* To access the MCP server: start the service (Admin > System > MCP server) and config your agent to access http://localhost:6001/mcp.
 
 Requirements and recommendations:
 

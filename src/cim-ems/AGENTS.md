@@ -27,7 +27,10 @@ once its content has moved into this README and `docs/schema.md`.
 - **Packaging:** `install.sh` creates `.venv` here (`pip install .`) and exits 0 with a notice on non-x86_64.
   `install.bat` installs into `platform-windows/python-runtime` when it exists (shipped by the Windows installer),
   else creates `.venv`. Callers: `platform-linux/build.sh`, `platform-windows/build.bat`/`buildupd.bat`, root
-  `Dockerfile` (amd64). Supervisor program `cim_ems` (`platform-*/cim_ems.ini`, `autostart=false`) runs
+  `Dockerfile` (amd64), and the AdminUI (Admin > System > CIM-EMS card, through
+  `src/server_realtime_auth/app/services/cim-ems-env.js`, which also reads the package name, version and `==` pins of
+  `pyproject.toml`'s `dependencies` to report a missing or other-version environment; keep that list one requirement per
+  quoted string). Supervisor program `cim_ems` (`platform-*/cim_ems.ini`, `autostart=false`) runs
   `.venv/bin/python -m cim_ems 1 1 <conf>/json-scada.json`; Windows service `JSON_SCADA_cim_ems` (demand start) runs
   `python-runtime\python.exe -m cim_ems`. Process manager entry `CIM-EMS` (type `python`) in
   `src/server_realtime_auth/app/services/process-manager/driver-catalog.js` uses the same names.

@@ -134,6 +134,7 @@
 
       <!-- MCP server (AI assistants) -->
       <McpServerCard ref="mcpRef" :active="active" />
+      <CimEmsServiceCard ref="cimRef" :active="active" />
 
       <!-- restarts -->
       <v-card variant="outlined" class="sys-card">
@@ -276,11 +277,13 @@
   import { useI18n } from 'vue-i18n'
   import AdminSummary from './AdminSummary.vue'
   import McpServerCard from './McpServerCard.vue'
+  import CimEmsServiceCard from './CimEmsServiceCard.vue'
   import { postJson, fileStamp } from '../lib/adminList'
 
   const { t } = useI18n()
   defineProps({ active: { type: Boolean, default: true } })
   const mcpRef = ref(null)
+  const cimRef = ref(null)
 
   const snackbar = ref({ show: false, text: '', color: undefined })
   function notify(text, color) {
@@ -364,6 +367,7 @@
     fetchSystemSettings()
     fetchCounts()
     mcpRef.value?.refresh?.()
+    cimRef.value?.refresh?.()
   }
   onMounted(refresh)
   defineExpose({ refresh })

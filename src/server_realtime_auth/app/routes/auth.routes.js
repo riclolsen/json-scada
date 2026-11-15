@@ -238,6 +238,21 @@ module.exports = function (app, accessPoint) {
     processController.controlMcpServer
   )
   app.use(
+    accessPoint + 'auth/getCimEmsService',
+    [authJwt.isAdmin],
+    processController.getCimEmsService
+  )
+  app.post(
+    accessPoint + 'auth/controlCimEmsService',
+    [authJwt.isAdmin],
+    processController.controlCimEmsService
+  )
+  app.post(
+    accessPoint + 'auth/installCimEmsDependencies',
+    [authJwt.isAdmin],
+    processController.installCimEmsDependencies
+  )
+  app.use(
     accessPoint + 'auth/getSystemSettings',
     [authJwt.isAdmin],
     processController.getSystemSettings

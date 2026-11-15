@@ -356,6 +356,12 @@ async function reconcileAll(instanceDocs, opts = {}) {
 // .ini files, so these never create, rewrite or remove a service.
 const CORE_SERVICES = {
   mcp: { winServiceName: 'JSON_SCADA_mcp_server', programName: 'mcp_server' },
+  // instance 1 of the CIM-EMS driver (same names as driver-catalog.js) and its demo field simulator
+  cimEms: { winServiceName: 'JSON_SCADA_cim_ems', programName: 'cim_ems' },
+  cimEmsDemoField: {
+    winServiceName: 'JSON_SCADA_cim_ems_demo_field',
+    programName: 'cim_ems_demo_field',
+  },
 }
 
 function coreSpec(key) {

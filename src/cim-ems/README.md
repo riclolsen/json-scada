@@ -22,6 +22,12 @@ to automatic once a model and bindings are in place. The Admin UI process manage
 the others (instances above 1 get `cim_ems_<n>` / `JSON_SCADA_cim_ems_<n>`); it uses `.venv` when present, else the
 bundled runtime.
 
+Admin > System has a CIM-EMS card that starts and stops the `cim_ems` and `cim_ems_demo_field` services, compares
+the installed packages with the versions pinned in `pyproject.toml`, and runs `install.sh` / `install.bat` on the
+server when they are missing or differ (output in the card and in `log/cim_ems_install.log`). The install needs
+internet access and is refused while a CIM-EMS service runs. On Windows it checks the bundled runtime first, as the
+service and `install.bat` do.
+
 ## Offline model check
 
 ```

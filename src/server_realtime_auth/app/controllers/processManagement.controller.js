@@ -17,7 +17,7 @@
 
 // HTTP endpoints for protocol driver service management: start / stop / restart a
 // single instance, bulk status for the AdminUI table, sync/reconcile, and the global
-// settings toggles, and the MCP server service. All routes are admin-only (wired in auth.routes.js).
+// settings toggles, the MCP server service and the CIM-EMS services with their Python environment. All routes are admin-only (wired in auth.routes.js).
 
 'use strict'
 
@@ -29,6 +29,7 @@ const ProcessManager = require('../services/process-manager')
 const RestartScheduler = require('../services/restart-scheduler')
 const SystemSettings = require('../services/system-settings')
 const McpSettings = require('../services/mcp-settings')
+const CimEmsEnv = require('../services/cim-ems-env')
 
 const ProtocolDriverInstance = db.protocolDriverInstance
 
@@ -275,6 +276,117 @@ exports.controlMcpServer = async (req, res) => {
   } catch (err) {
     Log.log('controlMcpServer error: ' + err.message)
     res.status(200).send({ error: errorText(err) })
+  }
+}
+
+// --- CIM-EMS (src/cim-ems) services and Python environment ---------------------
+
+const CIM_SERVICES = { main: 'cimEms', demoField: 'cimEmsDemoField' }
+const BUSY_STATES = ['RUNNING', 'STARTING', 'STOPPING', 'BACKOFF']
+
+// Services that run the CIM-EMS environment: both core services and every
+// CIM-EMS driver instance managed on this host (instances > 1 included).
+async function cimEmsRunning() {
+  const names = []
+  const [main, demo] = await Promise.all([
+    ProcessManager.coreStatus('cimEms'),
+    ProcessManager.coreStatus('cimEmsDemoField'),
+  ])
+  for (const st of [main, demo])
+    if (st.manageable && BUSY_STATES.includes(st.state)) names.push(st.serviceName)
+  const instances = await ProtocolDriverInstance.find({ protocolDriver: 'CIM-EMS' }).lean().exec()
+  if (instances.length) {
+    const statuses = await ProcessManager.listStatuses(instances)
+    for (const st of statuses)
+      if (st.manageable && BUSY_STATES.includes(st.state) && !names.includes(st.serviceName))
+        names.push(st.serviceName)
+  }
+  return names
+}
+
+// Service states, the Python environment check and the install job.
+// { recheck: true } (query or body) checks the environment again at once.
+exports.getCimEmsService = async (req, res) => {
+  try {
+    const force = req.query?.recheck === 'true' || req.body?.recheck === true
+    const [main, demoField, environment] = await Promise.all([
+      ProcessManager.coreStatus('cimEms'),
+      ProcessManager.coreStatus('cimEmsDemoField'),
+      CimEmsEnv.isInstalling()
+        ? Promise.resolve(null)
+        : CimEmsEnv.check({ force }),
+    ])
+    res.status(200).send({
+      error: false,
+      services: { main, demoField },
+      environment,
+      install: CimEmsEnv.jobView(),
+      processManagementEnabled: ProcessManager.isEnabled(),
+    })
+  } catch (err) {
+    Log.log('getCimEmsService error: ' + err.message)
+    res.status(200).send({ error: errorText(err) })
+  }
+}
+
+// { service: 'main' | 'demoField', action: 'start' | 'stop' | 'restart' }
+exports.controlCimEmsService = async (req, res) => {
+  const service = req.body?.service
+  const action = req.body?.action
+  Log.log('controlCimEmsService ' + String(service).slice(0, 20) + ' ' + String(action).slice(0, 20))
+  try {
+    if (!Object.hasOwn(CIM_SERVICES, service) || !['start', 'stop', 'restart'].includes(action)) {
+      res.status(200).send({ error: 'Invalid service or action!' })
+      return
+    }
+    if (action !== 'stop') {
+      if (CimEmsEnv.isInstalling()) {
+        res.status(200).send({ error: 'The Python dependencies are being installed, wait for the end.' })
+        return
+      }
+      const env = await CimEmsEnv.check()
+      if (env.state === 'missing' || env.state === 'unsupported') {
+        res.status(200).send({
+          error: 'The CIM-EMS Python environment is not ready (' + (env.reason || env.state) + ').',
+        })
+        return
+      }
+    }
+    registerUserAction(req, action + 'CimEmsService')
+    const result = await ProcessManager.coreControl(CIM_SERVICES[service], action)
+    res.status(200).send({ error: false, result })
+  } catch (err) {
+    Log.log('controlCimEmsService error: ' + err.message)
+    res.status(200).send({ error: errorText(err) })
+  }
+}
+
+// Runs src/cim-ems/install.sh (install.bat on Windows) in the background;
+// refused while a service using the environment runs (install.sh recreates
+// the .venv, pip cannot replace loaded files on Windows).
+exports.installCimEmsDependencies = async (req, res) => {
+  Log.log('installCimEmsDependencies')
+  try {
+    if (CimEmsEnv.isInstalling()) {
+      res.status(200).send({ error: 'An installation is already running.' })
+      return
+    }
+    const running = await cimEmsRunning()
+    if (running.length) {
+      res.status(200).send({
+        error: 'Stop these services first: ' + running.join(', '),
+      })
+      return
+    }
+    registerUserAction(req, 'installCimEmsDependencies')
+    const ck = req.token || checkToken(req)
+    const install = CimEmsEnv.startInstall(ck ? ck.username : '')
+    res.status(200).send({ error: false, install })
+  } catch (err) {
+    Log.log('installCimEmsDependencies error: ' + err.message)
+    res.status(200).send({
+      error: err instanceof CimEmsEnv.EnvError ? err.message : errorText(err),
+    })
   }
 }
 
