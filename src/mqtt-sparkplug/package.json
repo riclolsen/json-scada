@@ -9,9 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "jsonpath-plus": "^10.0.0",
+    "jsonpath-plus": "^11.3.0",
     "long": "^5.3.2",
-    "mongodb": "^7.0.0",
+    "mongodb": "^7.9.0",
     "mqtt": "^5.7.0",
     "pako": "^3.0.1",
     "queue-fifo": "^0.2.6",
@@ -19,5 +19,8 @@
     "sparkplug-payload": "^1.0.3",
     "streamifier": "^0.1.1",
     "winston": "^3.13.0"
+  },
+  "overrides": {
+    "protobufjs": "^8.8.1"
   }
 }

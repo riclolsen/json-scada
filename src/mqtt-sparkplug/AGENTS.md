@@ -25,6 +25,7 @@ Node.js MQTT client with Sparkplug B payload support for JSON-SCADA. Bridges MQT
   - `redundancy.js` — high-availability support
 - **Config:** INI file via Supervisor or environment variables
 - **Build:** `npm install` for dependencies
+- **Dependency override:** `package.json` `overrides` forces `protobufjs` ^8 under `sparkplug-payload` (which pins a vulnerable ^6; it only uses the `protobufjs/minimal` runtime with pre-generated code). After changing either package, confirm encode/decode output is unchanged and `npm audit` is clean
 - **Connection stats:** a 5 s loop in `index.js` (active node only) writes `stats.nodeName`, `stats.timeTag` and `stats.isConnected` = broker session connected, with dotted `$set` paths (`updateConnectionStats`: on error 28, a null `stats` is replaced with an empty document and the update retried)
 - **Broker sessions:** one MQTT client per session, recreated by the main loop (mqtt.js auto-reconnect is off); 3 consecutive failed sessions rotate to the next `endpointURLs` entry. `bdSeq` increments per session and matches the NDEATH will (QoS 1, only when `groupId` and `edgeNodeId` are set) and the NBIRTH; a clean stop publishes the NDEATH explicitly
 - **Host STATE:** with `scadaHostId`, two extra MQTT sessions publish retained STATE in Sparkplug 3.0 (`spBv1.0/STATE/<id>`, JSON) and 2.2 (`STATE/<id>`) formats, each with its own OFFLINE will, and republish ONLINE when they see themselves reported offline
@@ -38,7 +39,7 @@ Node.js MQTT client with Sparkplug B payload support for JSON-SCADA. Bridges MQT
 ## Work Guidance
 
 - MQTT 3.1.1 only
-- Sparkplug B: birth/death certificates, metrics, data set, template, Bytes/File (base64 string tags); array datatypes are not decoded by `sparkplug-payload` and are discarded with a log line
+- Sparkplug B: birth/death certificates, metrics, data set, template, Bytes/File (base64 string tags); array datatypes are not decoded by `sparkplug-payload` and are discarded with a log line; `sparkplug-payload` 1.0.3 decodes DataSet columns only of UInt32, UInt64, Float, Double, Boolean and String types (other column types make the whole message undecodable)
 - TLS support for MQTT broker connections
 - Auto-tag feature creates MongoDB tags from discovered MQTT topics
 - Device simulator (`device-simul.js`) useful for testing without real devices
