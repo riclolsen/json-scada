@@ -43,8 +43,6 @@ function Start(interval, clientMongo, db, configObj, MongoStatus) {
 async function ProcessRedundancy(clientMongo, db, configObj) {
   if (!clientMongo || !db) return
 
-  Log.levelCurrent = configObj.LogLevel
-
   const countKeepAliveUpdatesLimit = 4
 
   // poor man's local static variables
@@ -82,6 +80,17 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
     } else {
       // check for disabled or node not allowed
       const instance = result
+
+      // the instance logLevel can raise the level set by argument/environment
+      const instLevel = Number(instance?.logLevel)
+      const level =
+        Number.isFinite(instLevel) && instLevel > configObj.LogLevel ?
+          instLevel
+        : configObj.LogLevel
+      if (level !== Log.levelCurrent) {
+        Log.levelCurrent = level
+        Log.log('Redundancy - Log level ' + level, Log.levelMin)
+      }
 
       let instKeepAliveTimeTag = null
 

@@ -45,6 +45,8 @@ const {
   parseCommandAddress,
   toNumber,
   nextSeq,
+  opcUaStatusIsBad,
+  opcUaDate,
 } = require('./sparkplug-utils')
 
 // The process is kept alive on unexpected errors (a crash/restart loop could
@@ -62,6 +64,7 @@ const RebirthRequests = {} // by node locator: time of last rebirth request
 const ValuesQueue = new Queue() // queue of values to update acquisition
 const SparkplugPublishQueue = new Queue() // queue of values to publish as Sparkplug-B
 const BirthAliases = new Set() // aliases declared in the last published DBIRTH
+const BirthWindowChanges = new Map() // by _id: changes seen during the first births
 const SCRIPT_TIMEOUT_MS = 1000 // limit for each topicsScripted script run
 let SparkplugDeviceBirthed = false
 let PendingDeviceRebirth = false // a changed tag is missing from the DBIRTH
@@ -69,7 +72,7 @@ let PublishingBirths = false
 let LastBirthTime = 0
 let AutoCreateTags = true
 const MongoStatus = { HintMongoIsConnected: false }
-let LastNodeRebirth = 0
+let DeferredRebirth = null // { handle, timer } of a rebirth answered later
 let BdSeq = 0 // birth/death sequence of the next MQTT session
 let MongoUpdatesRunning = false
 
@@ -354,17 +357,31 @@ let MongoUpdatesRunning = false
               // start listen to changes
               changeStream.on('change', (change) => {
                 if (!change.fullDocument) return // deleted before the lookup
-                // do not queue data changes until device connected and sparkplug birthed
-                if (
-                  !SparkplugClientObj?.handle?.connected ||
-                  (connection.groupId &&
-                    connection.groupId.trim() !== '' &&
-                    !SparkplugDeviceBirthed)
-                )
-                  return
+                // do not queue data changes until connected
+                if (!SparkplugClientObj?.handle?.connected) return
 
                 let data = getMetricPayload(change.fullDocument, connection)
-                if (data) SparkplugPublishQueue.enqueue(data)
+                if (!data) return
+
+                // before the first births no DDATA can go out; changes seen
+                // while the births are being built (after their database
+                // snapshot was read) are published right after them
+                if (
+                  connection.groupId &&
+                  connection.groupId.trim() !== '' &&
+                  !SparkplugDeviceBirthed
+                ) {
+                  if (
+                    PublishingBirths &&
+                    BirthWindowChanges.size < AppDefs.MAX_QUEUEDMETRICS
+                  )
+                    BirthWindowChanges.set(
+                      String(change.fullDocument._id),
+                      data
+                    )
+                  return
+                }
+                SparkplugPublishQueue.enqueue(data)
               })
             } catch (e) {
               Log.log('MongoDB - CS Error: ' + e, Log.levelMin)
@@ -578,9 +595,11 @@ async function publishBirths(
     spHandle.publishNodeBirth(nbc, {
       compress: AppDefs.SPARKPLUG_COMPRESS_NBIRTH,
     })
-    spHandle.publishDeviceBirth(jscadaConnection.deviceId, dbc, {
-      compress: AppDefs.SPARKPLUG_COMPRESS_DBIRTH,
-    })
+    const dbirthBytes = spHandle.publishDeviceBirth(
+      jscadaConnection.deviceId,
+      dbc,
+      { compress: AppDefs.SPARKPLUG_COMPRESS_DBIRTH }
+    )
     BirthAliases.clear()
     dbc.metrics.forEach((m) => BirthAliases.add(m.alias))
     PendingDeviceRebirth = false
@@ -593,8 +612,18 @@ async function publishBirths(
         jscadaConnection.deviceId +
         '" with ' +
         dbc.metrics.length +
-        ' metrics'
+        ' metrics (' +
+        dbirthBytes +
+        ' bytes)'
     )
+    // the DBIRTH carries every tag in one message; brokers may limit the size
+    if (dbirthBytes > AppDefs.DBIRTH_SIZE_WARNING)
+      Log.log(
+        'Sparkplug - Warning: DBIRTH of ' +
+          dbirthBytes +
+          ' bytes may exceed the broker message size limit',
+        Log.levelMin
+      )
     return dbc
   } finally {
     PublishingBirths = false
@@ -1146,7 +1175,9 @@ function getSparkplugConfig(connection) {
     maxVersion = allowedVersions[allowedVersions.length - 1]
   }
 
-  let secOpts = {}
+  // the TLS version range applies to any TLS connection (also an mqtts:// URL
+  // used without useSecurity)
+  let secOpts = { minVersion: minVersion, maxVersion: maxVersion }
   if (connection.useSecurity) {
     let certOpts = {}
     if (
@@ -1180,10 +1211,12 @@ function getSparkplugConfig(connection) {
     }
 
     secOpts = {
-      rejectUnauthorized: connection.chainValidation,
-      minVersion: minVersion,
-      maxVersion: maxVersion,
-      ciphers: connection.cipherList,
+      ...secOpts,
+      // chain validation is on unless explicitly disabled
+      rejectUnauthorized: connection.chainValidation !== false,
+      ...(typeof connection.cipherList === 'string' ?
+        { ciphers: connection.cipherList }
+      : {}),
       ...certOpts,
     }
   }
@@ -1203,6 +1236,45 @@ function getSparkplugConfig(connection) {
     publishDeath: true, // NDEATH on clean stops (the will covers abrupt losses)
     ...secOpts,
   }
+}
+
+// bdSeq of a new MQTT session. The last one used is kept in the driver instance
+// document, so it keeps incrementing across restarts and redundancy failovers
+// (a late NDEATH will of a previous process must not match the new NBIRTH).
+// Without the database the in-memory sequence is used.
+async function nextSessionBdSeq(db, configObj) {
+  let bdSeq = BdSeq
+  try {
+    const doc = await db
+      .collection(configObj.ProtocolDriverInstancesCollectionName)
+      .findOneAndUpdate(
+        {
+          protocolDriver: AppDefs.NAME,
+          protocolDriverInstanceNumber: configObj.Instance,
+        },
+        [
+          {
+            $set: {
+              sparkplugBdSeq: {
+                $mod: [
+                  {
+                    $add: [{ $toInt: { $ifNull: ['$sparkplugBdSeq', -1] } }, 1],
+                  },
+                  256,
+                ],
+              },
+            },
+          },
+        ],
+        { returnDocument: 'after', projection: { sparkplugBdSeq: 1 } }
+      )
+    const v = doc?.sparkplugBdSeq
+    if (Number.isInteger(v) && v >= 0 && v <= 255) bdSeq = v
+  } catch (e) {
+    Log.log('Sparkplug - Could not persist bdSeq: ' + e.message)
+  }
+  BdSeq = nextSeq(bdSeq)
+  return bdSeq
 }
 
 // manage Sparkplug B Client connection, subscriptions, messages, events
@@ -1281,8 +1353,7 @@ async function sparkplugProcess(
       }
 
       // bdSeq must change for each new MQTT session (NBIRTH/NDEATH pairing)
-      config.bdSeq = BdSeq
-      BdSeq = nextSeq(BdSeq)
+      config.bdSeq = await nextSessionBdSeq(sparkplugProcess.db, configObj)
 
       const handle = SparkplugClient.newClient(config)
       spClient.handle = handle
@@ -1338,6 +1409,7 @@ async function sparkplugProcess(
           return
 
         SparkplugPublishQueue.clear() // clear old data
+        BirthWindowChanges.clear()
         try {
           const dbc = await publishBirths(
             handle,
@@ -1347,19 +1419,33 @@ async function sparkplugProcess(
             jscadaConnection,
             configObj
           )
-          // also publish initial values as regular topics
-          if (dbc)
+          if (dbc) {
+            // also publish initial values as regular topics
             dbc.metrics.forEach((elem) => {
               SparkplugPublishQueue.enqueue(elem)
             })
+            // then the changes that happened while the births were built
+            BirthWindowChanges.forEach((elem) => {
+              SparkplugPublishQueue.enqueue(elem)
+            })
+          }
         } catch (err) {
           Log.log(logModS + 'Error publishing births: ' + err)
+        } finally {
+          BirthWindowChanges.clear()
         }
       })
 
       handle.on('connect', function () {
         sparkplugProcess.connectionRetries = 0
         Log.log(logMod + 'Event: Connected to broker')
+        // A new session starts with an empty datatype registry in the adapter
+        // and may have missed births and deaths: every other edge node must be
+        // birthed again before its data is used (the first data from it
+        // requests a rebirth)
+        Object.values(DevicesList).forEach((d) => (d.birthed = false))
+        Object.keys(NodeStates).forEach((k) => delete NodeStates[k])
+        Object.keys(RebirthRequests).forEach((k) => delete RebirthRequests[k])
         // Subscribe topics (plain, as-files and scripted)
         const topics = []
         if (jscadaConnection.topics instanceof Array)
@@ -1458,8 +1544,23 @@ async function sparkplugProcess(
       const isUaData = (v) =>
         v !== null && typeof v === 'object' && v?.MessageType === 'ua-data'
 
-      // process non sparkplug b messages
+      // process non sparkplug b messages (an error in one message, e.g. a
+      // malformed payload, must not affect the session)
       handle.on('nonSparkplugMessage', function (topic, payload, packet) {
+        try {
+          processRegularMessage(topic, payload, packet)
+        } catch (err) {
+          Log.log(
+            logMod +
+              'Error processing message on topic ' +
+              topic +
+              ': ' +
+              (err?.stack || err)
+          )
+        }
+      })
+
+      const processRegularMessage = (topic, payload, packet) => {
         if (sparkplugProcess.db === null || !MongoStatus.HintMongoIsConnected)
           return
 
@@ -1468,7 +1569,8 @@ async function sparkplugProcess(
             'Event: Regular MQTT message, topic: ' +
             topic +
             ' size: ' +
-            payload.length
+            payload.length,
+          Log.levelDetailed
         )
 
         // topics to be saved as files
@@ -1586,7 +1688,7 @@ async function sparkplugProcess(
           })
           EnqueueJsonValue(jpRes, baseAddress || topic + '/' + jpt.jsonPath)
         })
-      })
+      }
 
       // process received node commands (for this node)
       handle.on('ncmd', async function (payload) {
@@ -1606,26 +1708,51 @@ async function sparkplugProcess(
                   sparkplugProcess.db === null
                 )
                   break
-                if (
-                  LastNodeRebirth + AppDefs.SECONDS_BETWEEN_REBIRTHS * 1000 >
-                  new Date().getTime()
-                ) {
-                  Log.log(
-                    logModS +
-                      `Node Rebirth command received, ignoring until after ${AppDefs.SECONDS_BETWEEN_REBIRTHS} seconds`
-                  )
-                  break
+                {
+                  const rebirth = () =>
+                    publishBirths(
+                      handle,
+                      sparkplugProcess.db.collection(
+                        configObj.RealtimeDataCollectionName
+                      ),
+                      jscadaConnection,
+                      configObj
+                    )
+                  // requests shortly after a birth (of any cause) are
+                  // answered by one birth at the end of the waiting time
+                  const wait =
+                    LastBirthTime +
+                    AppDefs.SECONDS_BETWEEN_REBIRTHS * 1000 -
+                    new Date().getTime()
+                  if (wait > 0) {
+                    Log.log(
+                      logModS +
+                        'Node Rebirth command received, deferred ' +
+                        Math.ceil(wait / 1000) +
+                        ' s'
+                    )
+                    if (DeferredRebirth?.handle === handle) break
+                    if (DeferredRebirth) clearTimeout(DeferredRebirth.timer)
+                    const timer = setTimeout(() => {
+                      if (DeferredRebirth?.timer === timer)
+                        DeferredRebirth = null
+                      if (
+                        spClient.handle !== handle ||
+                        !handle.connected ||
+                        sparkplugProcess.db === null
+                      )
+                        return
+                      Log.log(logModS + 'Deferred Node Rebirth')
+                      rebirth().catch((err) =>
+                        Log.log(logModS + 'Rebirth error: ' + err)
+                      )
+                    }, wait)
+                    DeferredRebirth = { handle, timer }
+                    break
+                  }
+                  Log.log(logModS + 'Node Rebirth command received')
+                  await rebirth()
                 }
-                LastNodeRebirth = new Date().getTime()
-                Log.log(logModS + 'Node Rebirth command received')
-                await publishBirths(
-                  handle,
-                  sparkplugProcess.db.collection(
-                    configObj.RealtimeDataCollectionName
-                  ),
-                  jscadaConnection,
-                  configObj
-                )
                 break
               case 'Node Control/Reboot':
                 if (
@@ -1772,7 +1899,10 @@ async function sparkplugProcess(
         payload.metrics = metricsIn.filter(
           (metric) => !(metric?.type === undefined || metric?.type === null)
         )
-        Log.log(logModS + 'Event: Sparkplug B message on topic: ' + topic)
+        Log.log(
+          logModS + 'Event: Sparkplug B message on topic: ' + topic,
+          Log.levelDetailed
+        )
         if (payload.metrics.length < metricsIn.length)
           Log.log(
             logModS +
@@ -1810,6 +1940,17 @@ async function sparkplugProcess(
             nodeLocator + '/' + topicInfo.deviceId
           : nodeLocator
         const msgType = topicInfo.msgType
+
+        // metrics with an alias and no datatype refer to a BIRTH not seen
+        if (
+          topicInfo.untypedMetrics > 0 &&
+          ['NDATA', 'DDATA'].includes(msgType)
+        )
+          requestRebirth(
+            topicInfo,
+            nodeLocator,
+            'Metrics not declared in a known BIRTH'
+          )
 
         // seq is shared by all messages of an edge node except NDEATH; a gap
         // means lost messages, so ask for a rebirth (data is still processed)
@@ -2328,6 +2469,20 @@ async function ProcessDeviceCommand(
   MongoStatus
 ) {
   if (!mongoClient || !MongoStatus.HintMongoIsConnected) return
+  // a command without a value is refused (it must never become a 0/OFF)
+  if (
+    metric?.isNull === true ||
+    metric?.value === null ||
+    metric?.value === undefined
+  ) {
+    Log.log(
+      'Sparkplug - Refused command without value: ' +
+        deviceId +
+        '/' +
+        metric?.name
+    )
+    return
+  }
   const db = mongoClient.db(configObj.mongoDatabaseName)
   const rtCollection = db.collection(configObj.RealtimeDataCollectionName)
   const cmdQueue = db.collection(configObj.CommandsQueueCollectionName)
@@ -2518,6 +2673,14 @@ function InvalidatePathTags(
 
 // convert possible JSON value to number and string and enqueue for mongo update
 function EnqueueJsonValue(JsonValue, protocolSourceObjectAddress) {
+  // a JSONPath that matches nothing in the payload leaves the tag as it is
+  if (JsonValue === undefined) {
+    Log.log(
+      'MQTT - No value in payload for ' + protocolSourceObjectAddress,
+      Log.levelDetailed
+    )
+    return
+  }
   let value = 0,
     valueString = '',
     type = 'json'
@@ -2637,19 +2800,12 @@ function ProcessOpcUaPubSubMessage(opcMsgObj, topic) {
 
   messages.forEach((dataSetMessage) => {
     const dataSetWriterId = dataSetMessage?.DataSetWriterId || 'unknown'
-    const messageTimestamp =
-      dataSetMessage?.Timestamp ?
-        new Date(dataSetMessage.Timestamp)
-      : new Date()
+    const messageTimestamp = opcUaDate(dataSetMessage?.Timestamp)
     const messageStatus = dataSetMessage?.Status
     const payload = dataSetMessage?.Payload
 
     // Check for message-level status indicating bad quality
-    let messageInvalid = false
-    if (messageStatus && !messageStatus?.Symbol?.includes('Good')) {
-      // Non-zero status indicates bad quality at message level
-      messageInvalid = true
-    }
+    const messageInvalid = opcUaStatusIsBad(messageStatus)
 
     if (payload && typeof payload === 'object') {
       // Explode each field in the payload
@@ -2657,8 +2813,8 @@ function ProcessOpcUaPubSubMessage(opcMsgObj, topic) {
         const objectAddress = `${topic}/${publisherId}/${dataSetWriterId}/${fieldName}`
 
         let extractedValue = null
-        let fieldTimestamp = messageTimestamp
-        let fieldTimestampOk = !!dataSetMessage.Timestamp
+        let fieldTimestamp = messageTimestamp || new Date()
+        let fieldTimestampOk = messageTimestamp !== null
         let fieldInvalid = messageInvalid
         let valueType = 'json'
         let value = 0
@@ -2672,36 +2828,16 @@ function ProcessOpcUaPubSubMessage(opcMsgObj, topic) {
             extractedValue = fieldValue.Value?.Body ?? fieldValue.Value
 
             // Extract source timestamp if available
-            if (fieldValue.SourceTimestamp) {
-              fieldTimestamp = new Date(fieldValue.SourceTimestamp)
-              fieldTimestampOk = true
-            } else if (fieldValue.ServerTimestamp) {
-              fieldTimestamp = new Date(fieldValue.ServerTimestamp)
+            const ts =
+              opcUaDate(fieldValue.SourceTimestamp) ||
+              opcUaDate(fieldValue.ServerTimestamp)
+            if (ts) {
+              fieldTimestamp = ts
               fieldTimestampOk = true
             }
 
             // Extract quality/status - StatusCode 0 or absent means Good
-            if ('StatusCode' in fieldValue) {
-              const statusCode = fieldValue.StatusCode
-              // StatusCode can be a number or an object with Code property
-              const codeValue =
-                typeof statusCode === 'object' ? statusCode.Code : statusCode
-              // In OPC UA, StatusCode high bits indicate severity:
-              // 0x00000000 = Good, 0x40000000 = Uncertain, 0x80000000 = Bad
-              if (
-                codeValue !== undefined &&
-                codeValue !== null &&
-                codeValue !== 0
-              ) {
-                // Check if it's Bad (high bit set) or Uncertain
-                if ((codeValue & 0x80000000) !== 0) {
-                  fieldInvalid = true
-                } else if ((codeValue & 0x40000000) !== 0) {
-                  // Uncertain - could mark as invalid or handle differently
-                  fieldInvalid = true
-                }
-              }
-            }
+            if (opcUaStatusIsBad(fieldValue.StatusCode)) fieldInvalid = true
           } else if ('Body' in fieldValue) {
             // Variant format with Type and Body
             extractedValue = fieldValue.Body

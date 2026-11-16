@@ -122,6 +122,31 @@ function nextSeq(seq) {
   return (toNumber(seq) + 1) % 256
 }
 
+// OPC UA StatusCode as a number, {Code, Symbol} or absent (Good). Severity is
+// in the 2 high bits: 00 Good, 01 Uncertain, 10/11 Bad; Uncertain and Bad
+// are invalid. A status of unknown shape is invalid.
+function opcUaStatusIsBad(status) {
+  if (status === undefined || status === null) return false
+  let code = status
+  if (typeof status === 'object') {
+    if (typeof status.Code === 'number') code = status.Code
+    else if (typeof status.Symbol === 'string')
+      return !status.Symbol.startsWith('Good')
+    else if (status.Code === undefined && status.Symbol === undefined)
+      return false // empty object: Good
+    else return true
+  }
+  if (typeof code !== 'number' || !Number.isFinite(code)) return true
+  return code >>> 0 >= 0x40000000
+}
+
+// valid Date from an OPC UA timestamp, or null
+function opcUaDate(v) {
+  if (v === undefined || v === null || v === '') return null
+  const d = new Date(v)
+  return isNaN(d.getTime()) ? null : d
+}
+
 module.exports = {
   SparkplugNS,
   topicMatchSub,
@@ -132,4 +157,6 @@ module.exports = {
   parseCommandAddress,
   toNumber,
   nextSeq,
+  opcUaStatusIsBad,
+  opcUaDate,
 }

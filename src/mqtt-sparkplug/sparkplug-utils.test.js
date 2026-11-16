@@ -88,3 +88,23 @@ test('topicStr', () => {
   assert.strictEqual(U.topicStr(' a/b+c#d '), 'a|b^c@d')
   assert.strictEqual(U.topicStr(null), '')
 })
+
+test('OPC UA status and timestamps', () => {
+  assert.strictEqual(U.opcUaStatusIsBad(undefined), false)
+  assert.strictEqual(U.opcUaStatusIsBad(0), false)
+  assert.strictEqual(U.opcUaStatusIsBad(5), false)
+  assert.strictEqual(U.opcUaStatusIsBad(0x40000000), true) // Uncertain
+  assert.strictEqual(U.opcUaStatusIsBad(0x80340000), true) // Bad
+  assert.strictEqual(U.opcUaStatusIsBad({}), false)
+  assert.strictEqual(U.opcUaStatusIsBad({ Code: 0x80000000 }), true)
+  assert.strictEqual(U.opcUaStatusIsBad({ Symbol: 'Good' }), false)
+  assert.strictEqual(U.opcUaStatusIsBad({ Symbol: 'BadTimeout' }), true)
+  assert.strictEqual(U.opcUaStatusIsBad({ Symbol: 5 }), true)
+  assert.strictEqual(U.opcUaStatusIsBad('x'), true)
+  assert.strictEqual(U.opcUaDate(undefined), null)
+  assert.strictEqual(U.opcUaDate('garbage'), null)
+  assert.strictEqual(
+    U.opcUaDate('2026-01-02T03:04:05Z').toISOString(),
+    '2026-01-02T03:04:05.000Z'
+  )
+})

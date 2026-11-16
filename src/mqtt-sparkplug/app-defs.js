@@ -22,7 +22,7 @@ module.exports = {
   ENV_PREFIX: 'JS_MQTTSPB_',
   AUTOTAG_PREFIX: 'MQTT',
   MSG: '{json:scada} - MQTT-Sparkplug-B Client Driver',
-  VERSION: '0.4.0',
+  VERSION: '0.4.1',
   MAX_QUEUEDMETRICS: 10000,
   SPARKPLUG_PUBLISH_INTERVAL: 777,
   SPARKPLUG_COMPRESS_DBIRTH: false,
@@ -35,4 +35,5 @@ module.exports = {
   MQTT_CONNECTION_KEEPALIVE: 15,
   SECONDS_BETWEEN_NODE_REQUESTS: 300,
   SECONDS_BETWEEN_REBIRTHS: 30,
+  DBIRTH_SIZE_WARNING: 256 * 1024, // bytes, log a warning above this size
 }

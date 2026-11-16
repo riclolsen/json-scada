@@ -30,6 +30,7 @@ var mqtt = require('mqtt'),
   pako = require('pako')
 
 var compressed = 'SPBV1.0_COMPRESSED'
+var STOP_TIMEOUT = 3000 // ms to wait for the death/OFFLINE ack on stop
 var DATATYPE_TEMPLATE = 19
 
 const { transports, createLogger, format } = require('winston')
@@ -142,6 +143,89 @@ function DatatypeRegistry() {
 }
 
 /*
+ * sparkplug-payload decodes DataSet cells only for UInt32 (long value), Int64,
+ * Float, Double, Boolean and String columns and throws on any other type,
+ * losing the whole message. Cells of other column types are rewritten before
+ * decoding: Int8..UInt32 (int value) -> Double, UInt64 and DateTime -> Int64,
+ * Text and UUID -> String. Returns true when the raw payload was changed.
+ */
+var DS_INT64 = 4,
+  DS_DOUBLE = 10,
+  DS_STRING = 12,
+  DATATYPE_DATASET = 16
+
+function isSet(v) {
+  return v !== null && v !== undefined
+}
+
+function normalizeDataSet(ds) {
+  if (!ds || !Array.isArray(ds.types)) return false
+  var types = ds.types
+  var target = types.map(function (t) {
+    switch (t) {
+      case 1: // Int8
+      case 2: // Int16
+      case 3: // Int32
+      case 5: // UInt8
+      case 6: // UInt16
+      case 7: // UInt32
+        return DS_DOUBLE
+      case 8: // UInt64
+      case 13: // DateTime
+        return DS_INT64
+      case 14: // Text
+      case 15: // UUID
+        return DS_STRING
+      default:
+        return t
+    }
+  })
+  if (
+    target.every(function (t, i) {
+      return t === types[i]
+    })
+  )
+    return false
+  ;(Array.isArray(ds.rows) ? ds.rows : []).forEach(function (row) {
+    var elements = Array.isArray(row?.elements) ? row.elements : []
+    elements.forEach(function (el, i) {
+      if (!el || target[i] !== DS_DOUBLE || types[i] === DS_DOUBLE) return
+      var n = null
+      if (isSet(el.intValue)) {
+        n = Number(el.intValue) >>> 0
+        if (types[i] === 1) n = (n << 24) >> 24
+        else if (types[i] === 2) n = (n << 16) >> 16
+        else if (types[i] === 3) n = n | 0
+      } else if (isSet(el.longValue)) n = Number(el.longValue)
+      delete el.intValue
+      delete el.longValue
+      if (n !== null) el.doubleValue = n
+    })
+  })
+  ds.types = target
+  return true
+}
+
+function normalizeDataSets(metrics) {
+  var changed = false
+  ;(Array.isArray(metrics) ? metrics : []).forEach(function (m) {
+    if (!m) return
+    if (m.datatype === DATATYPE_DATASET && m.datasetValue)
+      changed = normalizeDataSet(m.datasetValue) || changed
+    if (m.datatype === DATATYPE_TEMPLATE && m.templateValue)
+      changed = normalizeDataSets(m.templateValue.metrics) || changed
+  })
+  return changed
+}
+
+// top level metrics with no datatype (not declared in a known BIRTH)
+function countUntyped(metrics) {
+  return (Array.isArray(metrics) ? metrics : []).filter(function (m) {
+    return m && !m.datatype
+  }).length
+}
+
+/*
  * Host Application STATE session. Each format runs on its own MQTT session,
  * so its will (OFFLINE) is independent from the edge node NDEATH will.
  *  - '3.0': topic spBv1.0/STATE/<hostId>, JSON {online, timestamp}
@@ -177,6 +261,10 @@ function StateSession(format, hostId, version, baseOptions, serverUrl) {
   var client = mqtt.connect(serverUrl, options)
 
   client.on('connect', function () {
+    if (stopping) {
+      client.end(true)
+      return
+    }
     logger.info('STATE session connected (' + format + '), ' + topic)
     client.subscribe(topic, { qos: 1 })
     client.publish(topic, online, { qos: 1, retain: true })
@@ -208,10 +296,17 @@ function StateSession(format, hostId, version, baseOptions, serverUrl) {
       client.publish(topic, online, { qos: 1, retain: true })
   }
 
+  // the OFFLINE publish may never be acknowledged on a dead link: the session
+  // is ended anyway (and never reconnects) after a short wait
   this.stop = function () {
     stopping = true
+    client.options.reconnectPeriod = 0
     if (client.connected) {
+      var timer = setTimeout(function () {
+        client.end(true)
+      }, STOP_TIMEOUT)
       client.publish(topic, offline, { qos: 1, retain: true }, function () {
+        clearTimeout(timer)
         client.end()
       })
     } else client.end(true)
@@ -237,7 +332,7 @@ function SparkplugClient(config) {
     cert = getProperty(config, 'cert', ''),
     pfx = getProperty(config, 'pfx', ''),
     passphrase = getProperty(config, 'passphrase', ''),
-    minVersion = getProperty(config, 'minVersion', 'TLSv1'),
+    minVersion = getProperty(config, 'minVersion', 'TLSv1.2'),
     maxVersion = getProperty(config, 'maxVersion', 'TLSv1.3'),
     ciphers = getProperty(config, 'ciphers', ''),
     rejectUnauthorized = getProperty(config, 'rejectUnauthorized', true),
@@ -388,12 +483,14 @@ function SparkplugClient(config) {
     // decode a (possibly compressed) Sparkplug B protobuf payload, restoring
     // datatypes and names omitted in DATA/CMD messages from the last BIRTH
     decodeSparkplugPayload = function (message, topicInfo) {
-      var bytes = message,
-        outer = decodePayload(bytes)
-      if (outer.uuid !== undefined && outer.uuid === compressed)
-        bytes = decompressPayload(outer)
+      // the compression check uses the raw decoding: the library decoder
+      // would throw on DataSets that are only fixed below
+      var bytes = message
+      if (ProtoPayload.decode(bytes).uuid === compressed)
+        bytes = decompressPayload(decodePayload(bytes))
 
       var raw = ProtoPayload.decode(bytes),
+        changed = false,
         locator =
           topicInfo.groupId +
           '/' +
@@ -411,10 +508,13 @@ function SparkplugClient(config) {
         case 'DDATA':
         case 'NCMD':
         case 'DCMD':
-          if (datatypes.fill(locator, raw))
-            bytes = ProtoPayload.encode(raw).finish()
+          if (datatypes.fill(locator, raw)) changed = true
+          // metrics still untyped refer to a BIRTH this client has not seen
+          topicInfo.untypedMetrics = countUntyped(raw.metrics)
           break
       }
+      if (normalizeDataSets(raw.metrics)) changed = true
+      if (changed) bytes = ProtoPayload.encode(raw).finish()
       return decodePayload(bytes)
     },
     // remember datatypes of births this client publishes (for received commands)
@@ -569,9 +669,11 @@ function SparkplugClient(config) {
     addSeqNumber(payload)
     recordOwnBirth(groupId + '/' + edgeNode + '/' + deviceId, payload, false)
     logger.info('Publishing DBIRTH for device ' + deviceId)
-    var p = maybeCompressPayload(payload, options)
-    client.publish(topic, encodePayload(p))
+    var p = maybeCompressPayload(payload, options),
+      bytes = encodePayload(p)
+    client.publish(topic, bytes)
     if (logger.level === 'debug') messageAlert('published', topic, p)
+    return bytes.length // encoded size, for the application to check limits
   }
 
   // Publishes device DEATH certificates
@@ -611,7 +713,11 @@ function SparkplugClient(config) {
       var topic = version + '/' + groupId + '/NDEATH/' + edgeNode,
         payload = getDeathPayload()
       logger.info('Publishing Edge Node Death')
+      var timer = setTimeout(function () {
+        client.end(true)
+      }, STOP_TIMEOUT)
       client.publish(topic, encodePayload(payload), { qos: 1 }, function () {
+        clearTimeout(timer)
         client.end()
       })
       if (logger.level === 'debug') messageAlert('published', topic, payload)
@@ -754,7 +860,19 @@ function SparkplugClient(config) {
       logger.debug('packetreceive: ' + JSON.stringify(packet, replacer))
     })
 
+    // an exception thrown here (or by an application listener) would stop
+    // mqtt.js from processing further packets of the session
     client.on('message', function (topic, message, packet) {
+      try {
+        onMessage(topic, message, packet)
+      } catch (e) {
+        logger.error(
+          'Error processing message on topic ' + topic + ': ' + (e?.stack || e)
+        )
+      }
+    })
+
+    function onMessage(topic, message, packet) {
       var payload, topicInfo
 
       var splitTopic = topic.split('/')
@@ -810,7 +928,7 @@ function SparkplugClient(config) {
         // exclude messages from itself
         sparkplugClient.emit('message', topic, payload, topicInfo)
       }
-    })
+    }
 
     return sparkplugClient
   })(this)
