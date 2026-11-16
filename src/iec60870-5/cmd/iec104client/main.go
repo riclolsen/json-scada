@@ -51,7 +51,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-104"
-	driverVersion      = "0.3.0"
+	driverVersion      = "0.4.0"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -68,7 +68,8 @@ type conn104 struct {
 	mu              sync.Mutex
 	cli             *cs104.Client
 	connected       atomic.Bool
-	addrIdx         int // index into cfg.IPAddresses (dual-server failover)
+	connecting      atomic.Bool // TCP/TLS connection attempt in progress
+	addrIdx         int         // index into cfg.IPAddresses (dual-server failover)
 	lastConnAttempt time.Time
 
 	cntGI          int
@@ -171,6 +172,7 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 		cli.LogMode(true)
 	}
 	cli.SetOnConnectHandler(func(cl *cs104.Client) {
+		c.connecting.Store(false)
 		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connected")
 		cl.SendStartDt() // required to activate the 104 link
 	})
@@ -178,7 +180,13 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 		jslog.Log(jslog.LevelDetailed, "%s", c.cfg.Name+" - STARTDT CON received")
 		c.connected.Store(true)
 	})
+	// called on any failed connection attempt (refused, unreachable, t0)
+	cli.SetConnectTimeoutHandler(func(cl *cs104.Client) {
+		c.connecting.Store(false)
+		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connection attempt failed")
+	})
 	cli.SetConnectionLostHandler(func(cl *cs104.Client) {
+		c.connecting.Store(false)
 		wasConnected := c.connected.Swap(false)
 		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connection closed")
 		if wasConnected {
@@ -189,6 +197,7 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 	c.cli = cli
 	c.mu.Unlock()
 	c.lastConnAttempt = time.Now()
+	c.connecting.Store(true)
 	jslog.Log(jslog.LevelBasic, "%s - Connecting to %s", c.cfg.Name, addr)
 	return cli.Start()
 }
@@ -238,6 +247,11 @@ func supervise(c *conn104, e *cliapp.Engine) {
 		if cli == nil || !cli.IsConnected() {
 			if cli != nil && c.connected.Load() {
 				c.connected.Store(false)
+			}
+			// let an attempt in progress finish: it may take up to t0
+			// (TCP connect plus TLS handshake) before the library gives up
+			if c.connecting.Load() && time.Since(c.lastConnAttempt) < c.config.ConnectTimeout0+2*time.Second {
+				continue
 			}
 			// rate-limit reconnection attempts
 			if time.Since(c.lastConnAttempt) < 3*time.Second {
@@ -323,7 +337,11 @@ func main() {
 	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(db, protocolDriverName, instanceNumber)
-	if err != nil || len(connCfgs) == 0 {
+	if err != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "Error loading connections: "+err.Error())
+		os.Exit(-1)
+	}
+	if len(connCfgs) == 0 {
 		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
@@ -415,8 +433,9 @@ func main() {
 	redundancy.Config = cfg
 	redundancy.DriverName = protocolDriverName
 	redundancy.InstanceNumber = instanceNumber
-	// No OnActivate/OnDeactivate: acquisition runs on both nodes, and only
-	// command execution gates on Active().
+	// No OnActivate/OnDeactivate: supervise polls Active() and closes the
+	// protocol connection on an inactive node; command execution also gates
+	// on it.
 	redundancy.OnTick = statsFn
 	go redundancy.Run(context.Background())
 

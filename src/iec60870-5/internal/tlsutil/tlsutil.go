@@ -141,6 +141,10 @@ func BuildTLSConfig(cfg *model.ConnCfg, isServer bool) (*tls.Config, error) {
 		return nil, fmt.Errorf("error loading peer certificates: %v", err)
 	}
 
+	peerUsage := x509.ExtKeyUsageServerAuth
+	if isServer {
+		peerUsage = x509.ExtKeyUsageClientAuth
+	}
 	verifyPeer := func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return fmt.Errorf("no peer certificate")
@@ -153,7 +157,7 @@ func BuildTLSConfig(cfg *model.ConnCfg, isServer bool) (*tls.Config, error) {
 			}
 			return fmt.Errorf("peer certificate not in the allowed list")
 		}
-		if cfg.ChainValidation && rootPool != nil {
+		if cfg.ChainValidation {
 			cert, err := x509.ParseCertificate(rawCerts[0])
 			if err != nil {
 				return err
@@ -164,7 +168,14 @@ func BuildTLSConfig(cfg *model.ConnCfg, isServer bool) (*tls.Config, error) {
 					inter.AddCert(ic)
 				}
 			}
-			_, err = cert.Verify(x509.VerifyOptions{Roots: rootPool, Intermediates: inter})
+			// a server verifies a client certificate, a client a server
+			// one; without rootCertFilePath (rootPool nil) the system
+			// roots are used
+			_, err = cert.Verify(x509.VerifyOptions{
+				Roots:         rootPool,
+				Intermediates: inter,
+				KeyUsages:     []x509.ExtKeyUsage{peerUsage},
+			})
 			return err
 		}
 		return nil // chainValidation false: accept (C# parity)

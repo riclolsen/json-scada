@@ -40,7 +40,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-101_SERVER"
-	driverVersion      = "0.3.1"
+	driverVersion      = "0.4.0"
 )
 
 // srv101 holds the runtime state of one served IEC 101 connection.
@@ -118,7 +118,11 @@ func main() {
 	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(engine.DB(), protocolDriverName, instanceNumber)
-	if err != nil || len(connCfgs) == 0 {
+	if err != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "Error loading connections: "+err.Error())
+		os.Exit(-1)
+	}
+	if len(connCfgs) == 0 {
 		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
@@ -126,7 +130,7 @@ func main() {
 	var servers []*srv101
 	for _, cc := range connCfgs {
 		s := &srv101{cfg: cc, engine: engine}
-		engConn := &srvapp.Conn{Cfg: cc}
+		engConn := srvapp.NewConn(cc)
 		s.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		servers = append(servers, s)

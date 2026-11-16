@@ -91,7 +91,7 @@ A instance for this driver can have many server ports defined that must be descr
 - _**t3**_ [Double] - Protocol _t3_ timeout in seconds. **Mandatory parameter**.
 - _**serverModeMultiActive**_ [Boolean] - When true there is kept a separate data buffer for each client. **Mandatory parameter**.
 - _**maxClientConnections**_ [Double] - Maximum number of clients allowed to connect at the same time. **Mandatory parameter**.
-- _**maxQueueSize**_ [Double] - Maximum number of messages that can be buffered. **Mandatory parameter**.
+- _**maxQueueSize**_ [Double] - Maximum number of spontaneous information objects buffered for sending (the oldest are dropped when full; 5000 when unset). **Mandatory parameter**.
 
 Parameters needed only for TLS encrypted connections (when there are redundant servers, the same set of certificates is applied to connections to both servers).
 
@@ -99,7 +99,7 @@ Parameters needed only for TLS encrypted connections (when there are redundant s
 - _**passphrase**_ [String] - Password to the server certificate file (\*.pfx). **Optional parameter**.
 - _**peerCertFilePath**_ [String] - Path to certificate file used to verify the client (\*.cer). Not required when _allowOnlySpecificCertificates=false_. **Optional parameter**.
 - _**peerCertFilesPaths**_ [Array of Strings] - Path to certificate files used to verify additional clients (\*.cer). Not required when _allowOnlySpecificCertificates=false_. **Optional parameter**.
-- _**rootCertFilePath**_ [String] - Path to CA certificate file to check the certificates - not required when _chainValidation=false_. **Optional parameter**.
+- _**rootCertFilePath**_ [String] - Path to CA certificate file to check the certificates - not required when _chainValidation=false_. Without _rootCertFilePath_ the system root certificates are used. **Optional parameter**.
 - _**allowOnlySpecificCertificates**_ [bool] - Indicates whether the driver allows only specific certificates. Default: false. **Optional parameter**.
 - _**chainValidation**_ [bool] - Indicates whether the drivers performs a X509 chain validation against the registered CA certificates. Default: false. **Optional parameter**.
 
@@ -159,7 +159,7 @@ Parameters description for _protocolDestinations_
 - _**protocolDestinationASDU**_ - ASDU type number code for data transport. E.g 13 for float, 1 for digital single, 45 for digital command. **Mandatory parameter**.
 - _**protocolDestinationCommandDuration**_ - Command options, IEC-104 QU field: 0=Unspecified, 1=Short Pulse, 2=Long Pulse, 3=Persistent. Just meaningful for commands. **Mandatory parameter**.
 - _**protocolDestinationCommandUseSBO**_ - Use or not Select Before Operate for the command. Use _false_ for direct execution. Only meaningful for commands. **Mandatory parameter**.
-- _**protocolDestinationKConv1**_ - Conversion factor for values (multiplier). Use -1 to invert digital states. **Mandatory parameter**.
+- _**protocolDestinationKConv1**_ - Conversion factor for values (multiplier), applied alike to spontaneous data, interrogation and read replies. Use -1 to invert digital states. **Mandatory parameter**.
 - _**protocolDestinationKConv2**_ - Conversion factor for values (adder). **Mandatory parameter**.
 - _**protocolDestinationGroup**_ - Group of distribution (0-16). Zero will respond only to station general interrogation (INROGEN). 1-16 will respond to the specific group interrogation and INROGEN. Use -1 to avoid inclusion on any group interrogation response. **Mandatory parameter**.
 - _**protocolDestinationHoursShift**_ - Number of hours to shift field time stamps. Use positive values to add hours and negative to subtract. Zero will keep the time stamps intact. **Mandatory parameter**.

@@ -211,3 +211,23 @@ func TestDistributeAutoTagsTopicsFilter(t *testing.T) {
 		t.Errorf("non-matching tag: got %d destinations, want 0", n)
 	}
 }
+
+// A tag created with protocolDestinations: null (the usual default) gets its
+// destination like a tag without the field.
+func TestDistributeAutoTagsNullDestinations(t *testing.T) {
+	jslog.SetLevel(0)
+	db := testDB(t)
+	colRt := db.Collection(jsmongo.RealtimeDataCollectionName)
+	nullDest := seedTag(1, "DIG_NULL", "digital", "supervised", "KAW2")
+	nullDest["protocolDestinations"] = nil
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := colRt.InsertOne(ctx, nullDest); err != nil {
+		t.Fatal(err)
+	}
+	e := &Engine{Conns: []*Conn{newTestConn(1, nil)}, db: db}
+	e.DistributeAutoTags()
+	if d := destsFor(t, db, 1, 1); len(d) != 1 || int(d[0].ObjectAddress) != 1 {
+		t.Fatalf("destinations %v, want one at IOA 1", d)
+	}
+}

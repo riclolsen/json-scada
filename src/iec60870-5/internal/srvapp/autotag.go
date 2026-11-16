@@ -186,13 +186,11 @@ func (e *Engine) DistributeAutoTags() {
 				tagID := tagDoc["_id"]
 				tagStr, _ := tagDoc["tag"].(string)
 
-				// Ensure the protocolDestinations array field exists before pushing
+				// Ensure protocolDestinations is an array before pushing: a
+				// missing field or a null (the usual default) is replaced
 				uctx, ucancel := context.WithTimeout(ctx, 10*time.Second)
 				_, _ = colRt.UpdateOne(uctx,
-					bson.M{"$and": bson.A{
-						bson.M{"_id": tagID},
-						bson.M{"protocolDestinations": bson.M{"$exists": false}},
-					}},
+					bson.M{"_id": tagID, "protocolDestinations": nil},
 					bson.M{"$set": bson.M{"protocolDestinations": bson.A{}}})
 				ucancel()
 

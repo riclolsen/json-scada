@@ -48,7 +48,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-101"
-	driverVersion      = "0.3.1"
+	driverVersion      = "0.4.0"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -278,7 +278,11 @@ func main() {
 	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(db, protocolDriverName, instanceNumber)
-	if err != nil || len(connCfgs) == 0 {
+	if err != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "Error loading connections: "+err.Error())
+		os.Exit(-1)
+	}
+	if len(connCfgs) == 0 {
 		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
@@ -339,8 +343,9 @@ func main() {
 	redundancy.Config = cfg
 	redundancy.DriverName = protocolDriverName
 	redundancy.InstanceNumber = instanceNumber
-	// No OnActivate/OnDeactivate: acquisition runs on both nodes, and only
-	// command execution gates on Active().
+	// No OnActivate/OnDeactivate: supervise polls Active() and closes the
+	// protocol connection on an inactive node; command execution also gates
+	// on it.
 	redundancy.OnTick = statsFn
 	go redundancy.Run(context.Background())
 

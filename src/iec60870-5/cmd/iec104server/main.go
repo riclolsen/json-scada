@@ -46,7 +46,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-104_SERVER"
-	driverVersion      = "0.3.1"
+	driverVersion      = "0.4.0"
 )
 
 // srv104 holds the runtime state of one served IEC 104 connection.
@@ -64,6 +64,17 @@ func (s *srv104) sessionCount() int {
 	s.sessMu.Lock()
 	defer s.sessMu.Unlock()
 	return len(s.sessions)
+}
+
+// sessionList returns the accepted sessions (spontaneous data targets).
+func (s *srv104) sessionList() []asdu.Connect {
+	s.sessMu.Lock()
+	defer s.sessMu.Unlock()
+	out := make([]asdu.Connect, 0, len(s.sessions))
+	for c := range s.sessions {
+		out = append(out, c)
+	}
+	return out
 }
 
 func (s *srv104) originatorIPs() string {
@@ -193,7 +204,11 @@ func main() {
 	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(engine.DB(), protocolDriverName, instanceNumber)
-	if err != nil || len(connCfgs) == 0 {
+	if err != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "Error loading connections: "+err.Error())
+		os.Exit(-1)
+	}
+	if len(connCfgs) == 0 {
 		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
@@ -201,8 +216,9 @@ func main() {
 	var servers []*srv104
 	for _, cc := range connCfgs {
 		s := &srv104{cfg: cc, engine: engine, sessions: map[asdu.Connect]string{}}
-		engConn := &srvapp.Conn{Cfg: cc}
+		engConn := srvapp.NewConn(cc)
 		engConn.OriginatorIP = s.originatorIPs
+		engConn.Sessions = s.sessionList
 		s.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		servers = append(servers, s)
@@ -288,6 +304,7 @@ func main() {
 			remote := sref.sessions[c]
 			delete(sref.sessions, c)
 			sref.sessMu.Unlock()
+			sref.engine.ForgetLink(sref.engConn, c)
 			jslog.Log(jslog.LevelBasic, "%s - Connection event %s - CLOSED", sref.cfg.Name, remote)
 			go sref.updateConnStats(remote, "CLOSED")
 		})

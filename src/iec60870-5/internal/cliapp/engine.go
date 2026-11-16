@@ -24,7 +24,9 @@ package cliapp
 
 import (
 	"context"
+	"errors"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,12 +91,17 @@ type Engine struct {
 	DriverName     string
 	InstanceNumber int
 	Conns          []*Conn
-	// Active reports whether this node runs the protocol. Command execution
-	// gates on it; acquisition does not, which is this driver family's design.
+	// Active reports whether this node runs the protocol. The drivers' link
+	// supervisors close the connections on an inactive node; command
+	// execution also gates on it, for a command arriving during the switch.
 	Active func() bool
 
 	dataQ chan conv.IecValue
 	ackQ  chan conv.IecCmdAck
+
+	// carry holds a batch whose write failed on a broken connection, to be
+	// written first after reconnecting (writer goroutine only)
+	carry []conv.IecValue
 }
 
 // New creates the engine.
@@ -270,19 +277,23 @@ func (e *Engine) RunMongoWriter() {
 			defer idle.Stop()
 
 			for {
-				var pending []conv.IecValue
-				select {
-				case ia := <-e.ackQ:
-					e.writeAck(collectionCmd, ia)
-				case iv := <-e.dataQ:
-					pending = append(pending, iv)
-				case <-idle.C:
-					if !jsmongo.PingOK(client) {
-						jslog.Log(jslog.LevelBasic, "Error on MongoDB connection")
-						time.Sleep(3 * time.Second)
-						return // reconnect
+				// a batch left over by a failed write goes first
+				pending := e.carry
+				e.carry = nil
+				if len(pending) == 0 {
+					select {
+					case ia := <-e.ackQ:
+						e.writeAck(collectionCmd, ia)
+					case iv := <-e.dataQ:
+						pending = append(pending, iv)
+					case <-idle.C:
+						if !jsmongo.PingOK(client) {
+							jslog.Log(jslog.LevelBasic, "Error on MongoDB connection")
+							time.Sleep(3 * time.Second)
+							return // reconnect
+						}
+						continue
 					}
-					continue
 				}
 
 				// command acks that are already waiting
@@ -310,16 +321,14 @@ func (e *Engine) RunMongoWriter() {
 					continue
 				}
 
-				writes, insertDocs := e.buildWrites(collection, pending)
+				writes, inserts := e.buildWrites(collection, pending)
 
 				// Flush inserts before updates so the update filter finds the new docs
-				if len(insertDocs) > 0 {
-					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-					_, err := collection.InsertMany(ctx, insertDocs, options.InsertMany().SetOrdered(false))
-					cancel()
-					if err != nil {
-						// Duplicate key on redundancy failover is tolerated
-						jslog.Log(jslog.LevelDetailed, "%s", "Mongo - InsertMany error (possible duplicate): "+err.Error())
+				if len(inserts) > 0 {
+					if !e.insertTags(collection, inserts) {
+						e.carry = pending
+						time.Sleep(3 * time.Second)
+						return // reconnect
 					}
 				}
 
@@ -328,14 +337,74 @@ func (e *Engine) RunMongoWriter() {
 				_, err := collection.BulkWrite(ctx, writes, options.BulkWrite().SetOrdered(false))
 				cancel()
 				if err != nil {
-					jslog.Log(jslog.LevelBasic, "%s", "Exception Mongo: "+err.Error())
-					time.Sleep(3 * time.Second)
-					return // reconnect
+					var bwe mongo.BulkWriteException
+					if errors.As(err, &bwe) && bwe.WriteConcernError == nil {
+						// per-document errors: the server took the batch,
+						// writing it again would fail the same way
+						jslog.Log(jslog.LevelBasic, "%s", "Exception Mongo: "+err.Error())
+					} else {
+						jslog.Log(jslog.LevelBasic, "%s", "Exception Mongo: "+err.Error()+" (batch kept for retry)")
+						e.carry = pending
+						time.Sleep(3 * time.Second)
+						return // reconnect
+					}
 				}
 				idle.Reset(writerIdlePing)
 			}
 		}()
 	}
+}
+
+// pendingInsert is a new tag document for autoCreateTags, with the
+// connection and address it was created for.
+type pendingInsert struct {
+	conn *Conn
+	key  [2]int
+	doc  bson.D
+}
+
+// insertTags inserts new auto-created tags. A tag that could not be
+// inserted is forgotten, so the next value for its address tries again. A
+// duplicate tag name means the tag exists already; a duplicate _id means the
+// allocated key was taken, so the connection's key is looked up again.
+// Returns false on a connection-level error (everything is retried).
+func (e *Engine) insertTags(collection *mongo.Collection, inserts []pendingInsert) bool {
+	docs := make([]interface{}, len(inserts))
+	for i, in := range inserts {
+		docs[i] = in.doc
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	_, err := collection.InsertMany(ctx, docs, options.InsertMany().SetOrdered(false))
+	cancel()
+	if err == nil {
+		return true
+	}
+	var bwe mongo.BulkWriteException
+	if !errors.As(err, &bwe) || bwe.WriteConcernError != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "Mongo - InsertMany error: "+err.Error())
+		for _, in := range inserts {
+			delete(in.conn.inserted, in.key)
+		}
+		return false
+	}
+	for _, we := range bwe.WriteErrors {
+		if we.Index < 0 || we.Index >= len(inserts) {
+			continue
+		}
+		in := inserts[we.Index]
+		if we.Code == 11000 && !strings.Contains(we.Message, "_id_") {
+			// tag already there (redundancy failover): fine
+			jslog.Log(jslog.LevelDetailed, "%s", "Mongo - InsertMany duplicate tag: "+we.Message)
+			continue
+		}
+		if we.Code == 11000 {
+			in.conn.lastNewKey = 0 // key taken: look up the highest again
+		}
+		delete(in.conn.inserted, in.key)
+		jslog.Log(jslog.LevelBasic, "%s - Error inserting new tag %d;%d (will retry): %s",
+			in.conn.Cfg.Name, in.key[0], in.key[1], we.Message)
+	}
+	return true
 }
 
 // writeAck records a command confirmation on the latest matching
@@ -355,9 +424,9 @@ func (e *Engine) writeAck(collectionCmd *mongo.Collection, ia conv.IecCmdAck) {
 
 // buildWrites turns acquired values into realtimeData updates, plus the tag
 // documents to insert first for new addresses on autoCreateTags connections.
-func (e *Engine) buildWrites(collection *mongo.Collection, vals []conv.IecValue) ([]mongo.WriteModel, []interface{}) {
+func (e *Engine) buildWrites(collection *mongo.Collection, vals []conv.IecValue) ([]mongo.WriteModel, []pendingInsert) {
 	writes := make([]mongo.WriteModel, 0, len(vals))
-	var insertDocs []interface{}
+	var inserts []pendingInsert
 	detailed := jslog.Level() >= jslog.LevelDetailed
 	for _, iv := range vals {
 		// Auto-create a new tag document on first value for a new {CA, IOA} pair
@@ -367,7 +436,8 @@ func (e *Engine) buildWrites(collection *mongo.Collection, vals []conv.IecValue)
 			if !srv.inserted[key] {
 				srv.inserted[key] = true
 				newID := GetNextAutoKey(srv, collection)
-				insertDocs = append(insertDocs, NewRealtimeTagDoc(iv, srv.Cfg.Name, newID))
+				inserts = append(inserts, pendingInsert{conn: srv, key: key,
+					doc: NewRealtimeTagDoc(iv, srv.Cfg.Name, newID)})
 				jslog.Log(jslog.LevelBasic, "%s - INSERT NEW TAG: %s;%d;%d",
 					srv.Cfg.Name, srv.Cfg.Name, iv.CommonAddress, iv.Address)
 			}
@@ -385,7 +455,7 @@ func (e *Engine) buildWrites(collection *mongo.Collection, vals []conv.IecValue)
 		writes = append(writes, mongo.NewUpdateOneModel().
 			SetFilter(filter).SetUpdate(e.sourceDataUpdateDoc(iv)))
 	}
-	return writes, insertDocs
+	return writes, inserts
 }
 
 // RunCommandsStream watches commandsQueue inserts via change stream and
