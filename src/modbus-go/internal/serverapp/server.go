@@ -76,7 +76,17 @@ type Server struct {
 	cancel  context.CancelFunc
 	done    chan struct{}
 	front   *mbnet.Front
+	// serialOpened is when the serial port was opened, zero while closed.
+	serialOpened time.Time
 }
+
+// unlimitedBackendClients is the go-modbus server's connection limit when
+// maxClientConnections is 0 (no limit at the front-end).
+const unlimitedBackendClients = 1 << 16
+
+// socketGapMin is the least inter-frame gap on a socket: TCP may deliver one
+// RTU frame in segments a few milliseconds apart.
+const socketGapMin = 100 * time.Millisecond
 
 // NewServer prepares a connection; Start runs it.
 func NewServer(cfg Config, sink CommandSink, feeder Feeder) *Server {
@@ -89,11 +99,24 @@ func NewServer(cfg Config, sink CommandSink, feeder Feeder) *Server {
 // SetFeeder sets the feeder before Start.
 func (s *Server) SetFeeder(f Feeder) { s.Feeder = f }
 
-// Stats is a snapshot.
+// Stats is a snapshot. On a serial line, where masters do not connect, one
+// client is counted while the port is open and a master has sent a request
+// within clientIdleTimeoutMs (any time since the port opened when that is 0).
 func (s *Server) Stats() Stats {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return Stats{Status: s.status, Clients: s.clients, Reads: s.st.reads.Load(), Writes: s.st.writes.Load(),
+	clients := s.clients
+	if s.Cfg.IsSerial() {
+		clients = 0
+		if !s.serialOpened.IsZero() {
+			last := time.Unix(0, s.st.lastRequest.Load())
+			idle := time.Duration(s.Cfg.ClientIdleTimeoutMs) * time.Millisecond
+			if !last.Before(s.serialOpened) && (idle <= 0 || time.Since(last) < idle) {
+				clients = 1
+			}
+		}
+	}
+	return Stats{Status: s.status, Clients: clients, Reads: s.st.reads.Load(), Writes: s.st.writes.Load(),
 		Exceptions: s.st.exceptions.Load(), LastError: s.lastErr}
 }
 
@@ -193,15 +216,17 @@ func (s *Server) startBackend() (*modbus.Server, string, error) {
 	if idle > 0 {
 		backendIdle = idle + 30*time.Second
 	}
-	maxc := int(s.Cfg.MaxClientConnections)
-	if maxc < 1 {
-		maxc = 1
+	// The front-end enforces maxClientConnections; the backend only has to
+	// take every connection the front-end and the RTU gateways open.
+	backendMax := uint(unlimitedBackendClients)
+	if maxc := int(s.Cfg.MaxClientConnections); maxc > 0 {
+		backendMax = uint(2*maxc + 4)
 	}
 	h := &Handler{cfg: s.Cfg, pm: s.PM, wh: s.wh, addrs: &s.addrs, st: &s.st}
 	srv, err := modbus.NewServer(&modbus.ServerConfig{
 		URL:        "tcp://" + addr,
 		Timeout:    backendIdle,
-		MaxClients: uint(2*maxc + 4),
+		MaxClients: backendMax,
 		Logger:     drv.LibLogger{Prefix: s.Cfg.Name},
 		Metrics:    metrics{name: s.Cfg.Name, st: &s.st},
 	}, h)
@@ -225,6 +250,15 @@ func (s *Server) acceptUnit(unit byte) bool {
 func (s *Server) idleGap() time.Duration {
 	ms := mbcore.RTUIdleGapMs(s.Cfg.BaudRate, s.Cfg.InterFrameDelayMs)
 	return time.Duration(ms * float64(time.Millisecond))
+}
+
+// socketGap is the inter-frame gap of RTU over TCP/TLS: interFrameDelayMs when
+// set, otherwise the serial gap but at least socketGapMin.
+func (s *Server) socketGap() time.Duration {
+	if s.Cfg.InterFrameDelayMs > 0 {
+		return s.idleGap()
+	}
+	return max(s.idleGap(), socketGapMin)
 }
 
 // serve runs one listening session; it returns when ctx ends or listening fails.
@@ -256,7 +290,7 @@ func (s *Server) serve(ctx context.Context) error {
 	front := mbnet.NewFront(mbnet.FrontConfig{
 		Bind: s.Cfg.IPAddressLocalBind, DefaultPort: s.Cfg.DefaultPort(), TLS: tcfg, Framing: framing,
 		MaxClients: int(s.Cfg.MaxClientConnections), IdleTimeout: time.Duration(s.Cfg.ClientIdleTimeoutMs) * time.Millisecond,
-		AllowList: s.Cfg.IPAddresses, Upstream: upstream, Addrs: &s.addrs, IdleGap: s.idleGap(),
+		AllowList: s.Cfg.IPAddresses, Upstream: upstream, Addrs: &s.addrs, IdleGap: s.socketGap(),
 		AcceptUnit: s.acceptUnit, Log: s.log,
 		OnClient: func(remote string, connected bool, n int) {
 			s.mu.Lock()
@@ -301,6 +335,13 @@ func (s *Server) serveSerial(ctx context.Context, upstream string) error {
 	gap := s.idleGap()
 	open := func() (io.ReadWriteCloser, error) { return mbnet.OpenSerial(opts, gap) }
 	mbnet.ServeSerial(ctx, open, upstream, &s.addrs, s.acceptUnit, s.log, func(isOpen bool, err error) {
+		s.mu.Lock()
+		if isOpen {
+			s.serialOpened = time.Now()
+		} else {
+			s.serialOpened = time.Time{}
+		}
+		s.mu.Unlock()
 		if isOpen {
 			s.setStatus("listening", "")
 			jslog.Log(jslog.LevelBasic, "%s: listening on %s (%s)", s.Cfg.Name, s.Cfg.PortName, ModeSerial)
@@ -313,5 +354,8 @@ func (s *Server) serveSerial(ctx context.Context, upstream string) error {
 		s.setStatus("listen failed", msg)
 		jslog.Log(jslog.LevelBasic, "%s: serial port %s: %s, retrying in 5 s", s.Cfg.Name, s.Cfg.PortName, msg)
 	})
+	s.mu.Lock()
+	s.serialOpened = time.Time{}
+	s.mu.Unlock()
 	return nil
 }

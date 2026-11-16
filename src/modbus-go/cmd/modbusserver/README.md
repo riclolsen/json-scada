@@ -109,7 +109,7 @@ the wrong type takes the default.
 | `parity` | `Even` | `None`, `Even` or `Odd`. `Mark` and `Space` are not supported: they are logged and treated as `None`. |
 | `stopBits` | `One` | `One` or `Two`. `One5` is treated as `Two`. |
 | `handshake` | `None` | Flow control is not supported. Any other value is logged and ignored. |
-| `interFrameDelayMs` | `0` | Silence that ends an RTU request frame, in milliseconds. `0` means 3.5 character times at `baudRate`, rounded up, at least 2 ms. |
+| `interFrameDelayMs` | `0` | Silence that ends an RTU request frame, in milliseconds. `0` means 3.5 character times at `baudRate`, rounded up, at least 2 ms on a serial port and at least 100 ms in `RTU over TCP/TLS Passive`, where TCP may deliver a frame in pieces. A frame whose length is known from its function code ends without waiting for the gap. |
 
 The serial port always uses 8 data bits. When the listening socket or the serial port cannot be
 opened, the driver logs it and tries again every 5 seconds.
@@ -136,7 +136,7 @@ answered.
 | `stringEncoding` | `latin1` | `latin1`, `utf8` or `ascii`. |
 | `useModiconAddresses` | `false` | Accept plain 1-based Modicon numbers (`40001`) as object addresses. |
 | `invalidValuePolicy` | `last` | What an invalid tag serves: `last` keeps the last value, `zero` serves 0. Modbus has no quality flags. |
-| `allowWritesToSupervised` | `false` | When `true`, a write to a supervised tag's address stores the written value in the server's register bank (not in the tag) instead of being refused. |
+| `allowWritesToSupervised` | `false` | When `true`, a write to an address that only a supervised tag maps stores the written value in the server's register bank (not in the tag) instead of being refused. The tag's next value overwrites it. |
 
 ### TLS
 
@@ -190,9 +190,11 @@ db.realtimeData.updateOne({ tag: 'A_TAG_NAME' }, {
   tag.
 - A supervised tag and its command twin may share an address. A read returns the status, a write
   sends the command.
+- Several register bit tags (`hr:N.b0`, `hr:N.b1`, ...) may share a register. Each bit receives
+  its own writes.
 - Tags are mapped in `_id` order. When two tags claim the same address of a unit, the later one
-  overwrites the served value, the first command tag receives the writes, and the overlap is
-  logged at level 2. A destination whose address or ASDU cannot be parsed is skipped and logged
+  overwrites the served value, the first command tag receives the writes (a supervised tag only
+  when no command tag claims the address), and the overlap is logged at level 2. A destination whose address or ASDU cannot be parsed is skipped and logged
   at level 2.
 
 ## Serving reads
@@ -205,7 +207,9 @@ The change stream only follows the processed values (`cs_data_processor` writes)
 tags, plus any change of `protocolDestinations`, inserts and replaces; MongoDB filters out the
 other updates before reading the document. When a rebuild changes the set of mapped tags, the
 stream reopens right after its last event (logged at level 2: `rt change stream reopened for the
-new tag set`).
+new tag set`). When the stream fails, the map is rebuilt as soon as a new stream is open, so
+changes made in between are not missed; the same happens once at start. Values that change while
+a rebuild reads `realtimeData` are applied on top of it.
 
 The served value is the tag's `value` (or `valueString` for strings) scaled with
 `protocolDestinationKConv1/2` only: `value` already is the engineering value, so the tag's own
@@ -260,16 +264,21 @@ How each write function is mapped:
 |---|---|
 | FC5 | The coil's command tag. |
 | FC15 | Each command tag whose address is in the written range. |
-| FC6 | The register's command tag. |
-| FC16 | Each command tag the written range covers **completely**; a tag written only in part is skipped. |
-| FC22 | A register bit command tag (`hr:N.bB`). The resulting bit is `(current AND andMask) OR (orMask AND NOT andMask)`, the current bit being the served one. |
+| FC6 | The register's command tag, which must start at that register and occupy only it (a 32-bit or longer value needs FC16). On a register of bit tags, every bit tag, each with its bit of the written value. |
+| FC16 | Each command tag the written range covers **completely**; a tag written only in part is skipped. Bit tags as for FC6. |
+| FC22 | The register bit command tags (`hr:N.bB`) whose bit the masks change (`andMask` bit 0). The resulting bit is `(current AND andMask) OR (orMask AND NOT andMask)`, the current bit being the served one. |
+
+A write reaches a register's command tag first, then its bit command tags, then a supervised tag.
+Every address a write reaches is checked before anything is relayed: one refused address refuses
+the whole request.
 
 Write outcomes:
 
 | Situation | Answer |
 |---|---|
 | Relayed | Normal response |
-| No command tag at the address (or FC22 to a tag that is not a register bit) | Exception 02 ILLEGAL DATA ADDRESS |
+| Stored in a supervised tag's address (`allowWritesToSupervised: true`) | Normal response |
+| No tag at the address; FC6 to part of a multi-register tag; FC16 that covers no tag completely; FC22 that changes no mapped bit | Exception 02 ILLEGAL DATA ADDRESS |
 | A supervised tag, with `allowWritesToSupervised: false` | Exception 01 ILLEGAL FUNCTION |
 | `commandsEnabled: false` | Exception 01 ILLEGAL FUNCTION |
 | The written registers cannot be decoded as the ASDU | Exception 03 ILLEGAL DATA VALUE |
@@ -285,7 +294,7 @@ While the node is active, every 5 seconds the driver writes the connection's `st
 | Field | Meaning |
 |---|---|
 | `status` | `listening`, `listen failed` or `stopped`. |
-| `clients` | Masters connected now. |
+| `clients` | Masters connected now. On a serial port, 1 while a master has sent a request within `clientIdleTimeoutMs` (any time since the port opened when that is 0), else 0. `stats.isConnected` is `true` while `clients` is above 0. |
 | `reads` | Read requests served. |
 | `writes` | Write requests received. |
 | `exceptions` | Exception responses sent. |

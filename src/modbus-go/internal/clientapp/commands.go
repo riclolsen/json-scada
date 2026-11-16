@@ -124,6 +124,9 @@ func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc 
 	if err != nil {
 		return false, err.Error()
 	}
+	if !mbcore.IsWritableArea(addr.Area) {
+		return false, fmt.Sprintf("area %s is read-only", addr.Area)
+	}
 	asduStr, _ := doc["protocolSourceASDU"].(string)
 	asdu, err := mbcore.ParseAsdu(asduStr, addr.Area, c.Cfg.Defaults())
 	if err != nil {
@@ -144,8 +147,25 @@ func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc 
 	var op func(ctx context.Context) error
 	u8, a16 := uint8(unit), uint16(addr.Offset)
 
+	digital := mbcore.IsBitArea(addr.Area) || addr.HasBit() || asdu.Type == mbcore.TypeBool
+	if digital && math.IsNaN(rawValue) {
+		return false, "invalid value for an ON/OFF command: " + fieldStr(doc, "value")
+	}
+
 	switch {
-	case mbcore.IsBitArea(addr.Area) || asdu.Type == mbcore.TypeBool:
+	case asdu.Type == mbcore.TypeBool && !mbcore.IsBitArea(addr.Area) && !addr.HasBit():
+		// a whole register used as a boolean: write 1 or 0
+		on := rawValue != 0
+		if kconv1 == -1 {
+			on = !on
+		}
+		w := uint16(0)
+		if on {
+			w = 1
+		}
+		pdu = []byte{mbcore.FCWriteSingleRegister, byte(a16 >> 8), byte(a16), 0, byte(w)}
+		op = func(ctx context.Context) error { return cl.WriteRegister(ctx, u8, a16, w) }
+	case mbcore.IsBitArea(addr.Area):
 		on := rawValue != 0
 		if kconv1 == -1 {
 			on = !on

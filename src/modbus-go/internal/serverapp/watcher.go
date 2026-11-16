@@ -74,12 +74,16 @@ func (w *Watcher) filter() bson.M {
 	return bson.M{"protocolDestinations.protocolDestinationConnectionNumber": w.Cfg.ProtocolConnectionNumber}
 }
 
-// FullReload rebuilds the map from realtimeData, in _id order.
+// FullReload rebuilds the map from realtimeData, in _id order. Updates that
+// arrive from the change stream while the documents are read are applied on
+// top of them.
 func (w *Watcher) FullReload(ctx context.Context) error {
 	fctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
+	w.PM.BeginReload()
 	docs, err := jsmongo.FindAll(fctx, w.Coll, w.filter(), options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}))
 	if err != nil {
+		w.PM.EndReload()
 		return err
 	}
 	tags := make([]TagDoc, 0, len(docs))
@@ -176,6 +180,10 @@ func (w *Watcher) watch(ctx context.Context) {
 	// resume is the token of a stream closed to change its filter: the next
 	// one starts right after it, so no change falls in between.
 	var resume bson.Raw
+	// lost is set while changes may have been missed: before the first stream
+	// opens (the initial load ran before it) and after a stream failed. The
+	// next stream that opens asks for a full reload.
+	lost := true
 	for ctx.Err() == nil {
 		opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 		if resume != nil {
@@ -186,10 +194,18 @@ func (w *Watcher) watch(ctx context.Context) {
 		resume = nil
 		restarted := false
 		if err != nil {
+			lost = true
 			if ctx.Err() == nil {
 				jslog.Log(jslog.LevelBasic, "%s: rt watch failed: %v", w.Cfg.Name, err)
 			}
 		} else {
+			if lost {
+				lost = false
+				select {
+				case w.reload <- struct{}{}:
+				default:
+				}
+			}
 			stop := make(chan struct{})
 			go func() {
 				select {
@@ -210,8 +226,11 @@ func (w *Watcher) watch(ctx context.Context) {
 			restarted = sctx.Err() != nil && ctx.Err() == nil
 			if restarted {
 				resume = cs.ResumeToken()
-			} else if err := cs.Err(); err != nil && ctx.Err() == nil {
-				jslog.Log(jslog.LevelBasic, "%s: rt change stream error: %v", w.Cfg.Name, err)
+			} else {
+				lost = true
+				if err := cs.Err(); err != nil && ctx.Err() == nil {
+					jslog.Log(jslog.LevelBasic, "%s: rt change stream error: %v", w.Cfg.Name, err)
+				}
 			}
 			_ = cs.Close(context.Background())
 		}

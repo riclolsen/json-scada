@@ -16,8 +16,9 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
 ## Local Contracts
 
 - **Language:** Go 1.26, module `modbus-go`, `cmd/` + `internal/` layout, listed in `src/go.work`
-- **Library:** `github.com/otfabric/go-modbus` v1.10.7 (MIT) and `github.com/otfabric/go-serial`.
-  Pin the version; diff the API of what this module uses before bumping.
+- **Library:** `github.com/otfabric/go-modbus` v1.17.0 (MIT) and `github.com/otfabric/go-serial`
+  v0.5.0 (the version go-modbus requires; `mbnet` uses it directly). Pin the versions; diff the
+  API of what this module uses, and read the libraries' `RELEASE.md`, before bumping.
 - **Binaries:** `modbus-client(.exe)` and `modbus-server(.exe)` in `bin/`.
 - **Service names do not change:** Supervisor programs `modbusclient` / `modbusserver`, Windows
   services `JSON_SCADA_modbusclient` / `JSON_SCADA_modbusserver`, process-manager keys
@@ -43,7 +44,9 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
     and testing.
   - Every key `config.go` reads must be in the driver README (`TestReadmeDocumentsEveryConfigKey`).
     A changed default, statistic, command result or log line is a README change in the same commit.
-- **Connection stats:** `stats.isConnected` (via `jsstats.Entry.IsConnected`) — client: `Stats().Status == "connected"`; server: at least one client attached
+- **Connection stats:** `stats.isConnected` (via `jsstats.Entry.IsConnected`) — client:
+  `Stats().Status == "connected"`, set once the device answers (a silent peer is a lost link);
+  server: at least one client attached, or on a serial port a request within `clientIdleTimeoutMs`
 
 ## Work Guidance
 
@@ -58,6 +61,11 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
   the server's go-modbus instance listens on a private `127.0.0.1` port behind `mbnet.Front`,
   which owns the allow-list, client limit, idle timeout, TLS and RTU framing. Handlers must
   resolve `ClientAddr` through `AddrMap` to name the real master.
+- Client commands go through one queue per connection and run one at a time, in arrival order.
+- The server backend answers only connections registered in `AddrMap` (front-end and RTU
+  gateway); register a new path's upstream connection there before it sends a request.
+- Server write routing goes through `PointMap.LookupWrite` slots (word point, bit points): check
+  every target of a request before relaying any.
 - Server handler exceptions are wrapped in `handlerError` (logged and counted once); the
   `metrics` hook logs only exceptions the library sends itself. Keep that split.
 - Do not set a client-level timeout on the MongoDB client; give each call its own deadline

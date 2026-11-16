@@ -26,7 +26,13 @@ differ from the former Node.js drivers.
 | `RTU over TLS` | `RTU over TLS Passive` | RTU frames over TLS | 802 |
 
 Serial ports use 8 data bits, parity none, even or odd, and one or two stop bits. Flow control
-and mark/space parity are not available.
+and mark/space parity are not available. On Windows `portName` must be a device name: `COM3`,
+`COM10` and `\\.\COM10` work; other paths are refused.
+
+In `RTU over TCP` and `RTU over TLS` the client closes the socket after a request that timed out
+and opens a new one for the next request, so a late answer cannot be taken for the next one. A
+gateway that allows a single connection and keeps a closed one for a while may refuse the new
+one; raise `timeoutMs` so that slow units answer in time.
 
 ## Value types
 
@@ -132,12 +138,14 @@ it, and the drivers add them around it:
   connect to a front-end that applies `ipAddresses`, `maxClientConnections` and
   `clientIdleTimeoutMs`, and terminates TLS with the connection's own settings (the library's
   server always requires client certificates). Each master's address is passed to the handler,
-  so logs and relayed commands name the real master.
+  so logs and relayed commands name the real master. The library's server answers only the
+  connections the front-end and the RTU gateway opened, so a local process that finds the private
+  port cannot bypass TLS or the allow-list.
 - **Server RTU.** In `Serial`, `RTU over TCP Passive` and `RTU over TLS Passive`, a gateway cuts
   RTU request frames (length prediction with CRC check, and the inter-frame gap as fallback),
   has them served by the library and sends the RTU response, or nothing for a broadcast.
-- **Commands ahead of polling.** A command waits only for the request in progress, not for the
-  poll cycle.
+- **Commands ahead of polling.** Commands run one at a time, in arrival order. A command waits
+  only for the request in progress, not for the poll cycle.
 
 The code:
 
@@ -174,9 +182,10 @@ Configuration and behaviour match the former Node.js drivers except for the foll
 8. **Invalidation.** On link loss the client marks the connection's tags invalid once per outage,
    not on every failed attempt.
 9. **Link loss detection.** The library reconnects by itself, so the client counts the link as
-   lost when a whole poll cycle gets no answer and at least one transport error. A cycle stops at
-   the first transport error when nothing has answered yet, so failover to the next address is
-   not delayed by the remaining blocks.
+   lost when a whole poll cycle gets no answer (every block timed out or hit a transport error),
+   and reports `connected` only once the device has answered. A cycle stops at the first
+   transport error, or after 3 timed-out blocks, while nothing has answered yet, so failover to
+   the next address is not delayed by the remaining blocks.
 10. **Command routing fields** relayed by the server (`protocolSourceObjectAddress`,
     `protocolSourceASDU`) are copied as stored on the tag, numbers included; the Node.js driver
     turned the address into a string.
@@ -194,6 +203,13 @@ Configuration and behaviour match the former Node.js drivers except for the foll
     `stateTextFalse`/`eventTextFalse` `FALSE`, as the other Go client drivers do. The Node.js
     driver left the state texts empty, so the data processor stored an empty `valueString` and
     displays showed no value.
+17. **Client command checks.** A command for `di` or `ir` is refused (`area di is read-only`), and
+    an ON/OFF command whose value is not a number is refused instead of switching ON. A register
+    with ASDU `bool` is read as ON when not zero and written with FC6 as 1 or 0, not as a coil.
+18. **Server write mapping.** FC6 to a register of a multi-register tag is refused with exception
+    02 instead of relaying a half-written value. Register bit tags sharing a register each
+    receive their own bit (FC22 only the bits its masks change). A write that reaches a refused
+    address relays nothing at all.
 
 The Node.js server already took part in redundancy, and so does this one, unlike the other Go
 server drivers.

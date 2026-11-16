@@ -44,6 +44,13 @@ func (a *AddrMap) Put(local, remote string) { a.m.Store(local, remote) }
 // Delete forgets a loopback connection.
 func (a *AddrMap) Delete(local string) { a.m.Delete(local) }
 
+// Known reports whether a go-modbus ClientAddr is a connection the front-end
+// or an RTU gateway opened; any other one reached the private port directly.
+func (a *AddrMap) Known(clientAddr string) bool {
+	_, ok := a.m.Load(clientAddr)
+	return ok
+}
+
 // Resolve maps a go-modbus ClientAddr to the real remote.
 func (a *AddrMap) Resolve(clientAddr string) string {
 	if v, ok := a.m.Load(clientAddr); ok {
@@ -493,7 +500,7 @@ func ServeSerial(ctx context.Context, open func() (io.ReadWriteCloser, error), u
 		}
 		onState(true, nil)
 		// The port's read timeout is the inter-frame gap, so the session sees ctx
-		// end within one gap; closing the port under a blocked Read is not safe.
+		// end within one gap and the port is closed only once it has returned.
 		up := NewUpstream(upstream, "serial", addrs)
 		ServeRTU(&SerialFrameReader{Port: port, Ctx: ctx}, port, "serial", up, accept, log)
 		up.Close()

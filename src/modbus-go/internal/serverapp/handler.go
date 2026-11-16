@@ -27,6 +27,7 @@ import (
 // counters are the request statistics.
 type counters struct {
 	reads, writes, exceptions atomic.Int64
+	lastRequest               atomic.Int64 // UnixNano of the last request served
 }
 
 // Handler implements modbus.RequestHandler and modbus.MaskWriteHandler.
@@ -47,12 +48,20 @@ func (e handlerError) Unwrap() error { return e.err }
 
 func (h *Handler) remote(clientAddr string) string { return h.addrs.Resolve(clientAddr) }
 
-// gate applies strictUnitId: an unserved unit gets no answer at all.
-func (h *Handler) gate(unit uint8, remote string) error {
+// gate answers nothing to a connection that did not come through the
+// front-end (a local process that found the private port would bypass TLS
+// and the allow-list), and applies strictUnitId: an unserved unit gets no
+// answer at all.
+func (h *Handler) gate(unit uint8, clientAddr, remote string) error {
+	if !h.addrs.Known(clientAddr) {
+		jslog.Log(jslog.LevelDetailed, "%s: [%s] request ignored: connection did not come through the listener", h.cfg.Name, clientAddr)
+		return modbus.ErrNoResponse
+	}
 	if unit != 0 && h.cfg.StrictUnitID && !h.pm.AcceptsUnit(int(unit)) {
 		jslog.Log(jslog.LevelDetailed, "%s: [%s] request ignored: unit id %d not served (strictUnitId is enabled)", h.cfg.Name, remote, unit)
 		return modbus.ErrNoResponse
 	}
+	h.st.lastRequest.Store(time.Now().UnixNano())
 	return nil
 }
 
@@ -118,7 +127,7 @@ func coilsPDU(fc byte, addr uint16, bits []bool) []byte {
 // HandleCoils serves FC1, FC5 and FC15.
 func (h *Handler) HandleCoils(_ context.Context, req *modbus.CoilsRequest) ([]bool, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, remote); err != nil {
+	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	fc := byte(req.FunctionCode)
@@ -143,7 +152,7 @@ func (h *Handler) HandleCoils(_ context.Context, req *modbus.CoilsRequest) ([]bo
 // HandleDiscreteInputs serves FC2.
 func (h *Handler) HandleDiscreteInputs(_ context.Context, req *modbus.DiscreteInputsRequest) ([]bool, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, remote); err != nil {
+	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	h.st.reads.Add(1)
@@ -157,7 +166,7 @@ func (h *Handler) HandleDiscreteInputs(_ context.Context, req *modbus.DiscreteIn
 // HandleHoldingRegisters serves FC3, FC6 and FC16.
 func (h *Handler) HandleHoldingRegisters(_ context.Context, req *modbus.HoldingRegistersRequest) ([]uint16, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, remote); err != nil {
+	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	fc := byte(req.FunctionCode)
@@ -182,7 +191,7 @@ func (h *Handler) HandleHoldingRegisters(_ context.Context, req *modbus.HoldingR
 // HandleInputRegisters serves FC4.
 func (h *Handler) HandleInputRegisters(_ context.Context, req *modbus.InputRegistersRequest) ([]uint16, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, remote); err != nil {
+	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	h.st.reads.Add(1)
@@ -196,7 +205,7 @@ func (h *Handler) HandleInputRegisters(_ context.Context, req *modbus.InputRegis
 // HandleMaskWrite serves FC22.
 func (h *Handler) HandleMaskWrite(_ context.Context, req *modbus.MaskWriteRequest) error {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, remote); err != nil {
+	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
 		return err
 	}
 	h.st.writes.Add(1)

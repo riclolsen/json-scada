@@ -99,20 +99,90 @@ func (b *banks) bits(a mbcore.Area) map[int]bool {
 	return b.di
 }
 
+// WriteSlot holds the points a write to one address reaches: Word for a coil
+// or a whole register (any register of a multi-register value), Bits for the
+// register bit points, by bit. A command point takes the slot from a
+// supervised one; among points of the same kind the first in _id order keeps it.
+type WriteSlot struct {
+	Word *Point
+	Bits [16]*Point
+}
+
+// HasBits reports whether any register bit point is mapped.
+func (s WriteSlot) HasBits() bool {
+	for _, p := range s.Bits {
+		if p != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// bitCommands reports whether a register bit command point is mapped.
+func (s WriteSlot) bitCommands() bool {
+	for _, p := range s.Bits {
+		if p != nil && p.IsCommand {
+			return true
+		}
+	}
+	return false
+}
+
+// takesSlot reports whether p replaces cur in a write slot.
+func takesSlot(p, cur *Point) bool { return cur == nil || (p.IsCommand && !cur.IsCommand) }
+
+type pendingUpdate struct {
+	value       float64
+	valueString string
+	invalid     bool
+}
+
 // PointMap is safe for concurrent use.
 type PointMap struct {
 	cfg Config
 
 	mu         sync.RWMutex
 	units      map[int]*banks
-	writeIndex map[string]*Point
+	writeIndex map[string]*WriteSlot
 	byID       map[string]*Point
 	points     []*Point
+
+	// While a full reload reads realtimeData, live updates are also kept here
+	// and applied on top of the rebuilt map, so a value that changed during
+	// the read is not lost.
+	reloading int
+	pending   map[string]pendingUpdate
 }
 
 // NewPointMap starts an empty map.
 func NewPointMap(cfg Config) *PointMap {
-	return &PointMap{cfg: cfg, units: map[int]*banks{}, writeIndex: map[string]*Point{}, byID: map[string]*Point{}}
+	return &PointMap{cfg: cfg, units: map[int]*banks{}, writeIndex: map[string]*WriteSlot{}, byID: map[string]*Point{}}
+}
+
+// BeginReload starts recording live updates for the next Rebuild.
+func (m *PointMap) BeginReload() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.reloading++
+	if m.pending == nil {
+		m.pending = map[string]pendingUpdate{}
+	}
+}
+
+// EndReload abandons a reload that will not call Rebuild.
+func (m *PointMap) EndReload() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.endReloadLocked()
+}
+
+func (m *PointMap) endReloadLocked() {
+	if m.reloading > 0 {
+		m.reloading--
+	}
+	if m.reloading == 0 {
+		m.pending = nil
+	}
 }
 
 func writeKey(unit int, a mbcore.Area, off int) string { return fmt.Sprintf("%d:%s:%d", unit, a, off) }
@@ -192,10 +262,11 @@ func truthy(x any) bool {
 }
 
 // Rebuild replaces the map with the given documents, in order: the first
-// command point covering an address receives its writes.
+// command point covering an address receives its writes. Updates recorded
+// since BeginReload are applied on top.
 func (m *PointMap) Rebuild(docs []TagDoc) {
 	units := map[int]*banks{}
-	writeIndex := map[string]*Point{}
+	writeIndex := map[string]*WriteSlot{}
 	byID := map[string]*Point{}
 	var points []*Point
 	owner := map[string]string{}
@@ -222,10 +293,19 @@ func (m *PointMap) Rebuild(docs []TagDoc) {
 			} else {
 				owner[k] = p.Tag
 			}
-			if p.IsCommand && mbcore.IsWritableArea(p.Area) {
+			if mbcore.IsWritableArea(p.Area) {
 				wk := writeKey(p.Unit, p.Area, p.Offset+i)
-				if _, ok := writeIndex[wk]; !ok {
-					writeIndex[wk] = p
+				s := writeIndex[wk]
+				if s == nil {
+					s = &WriteSlot{}
+					writeIndex[wk] = s
+				}
+				if p.HasBit() {
+					if takesSlot(p, s.Bits[p.Bit]) {
+						s.Bits[p.Bit] = p
+					}
+				} else if takesSlot(p, s.Word) {
+					s.Word = p
 				}
 			}
 		}
@@ -233,6 +313,12 @@ func (m *PointMap) Rebuild(docs []TagDoc) {
 	}
 
 	m.mu.Lock()
+	for id, u := range m.pending {
+		if p := byID[id]; p != nil {
+			encodeInto(m.cfg, units[p.Unit], p, u.value, u.valueString, u.invalid)
+		}
+	}
+	m.endReloadLocked()
 	m.units, m.writeIndex, m.byID, m.points = units, writeIndex, byID, points
 	m.mu.Unlock()
 
@@ -348,7 +434,11 @@ func summarize(ks []int) string {
 func (m *PointMap) Update(id any, value float64, valueString string, invalid bool) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	p := m.byID[drv.AnyString(id)]
+	key := drv.AnyString(id)
+	if m.reloading > 0 {
+		m.pending[key] = pendingUpdate{value: value, valueString: valueString, invalid: invalid}
+	}
+	p := m.byID[key]
 	if p == nil {
 		return false
 	}
@@ -388,6 +478,10 @@ func encodeInto(cfg Config, b *banks, p *Point, value float64, valueString strin
 		setBit(b.regs(p.Area), p, value != 0)
 		return
 	}
+	if p.Asdu.Type == mbcore.TypeBool {
+		putBool(b, p, value != 0)
+		return
+	}
 	var v mbcore.Value
 	if p.Asdu.Type == mbcore.TypeString {
 		v = mbcore.Str(valueString)
@@ -411,6 +505,10 @@ func storeRaw(cfg Config, b *banks, p *Point, raw mbcore.Value) {
 		setBit(b.regs(p.Area), p, raw.Float() != 0)
 		return
 	}
+	if p.Asdu.Type == mbcore.TypeBool {
+		putBool(b, p, raw.Float() != 0)
+		return
+	}
 	v := raw
 	if p.Asdu.Type == mbcore.TypeString {
 		v = mbcore.Str(raw.String())
@@ -428,6 +526,18 @@ func setBit(regs map[int]uint16, p *Point, on bool) {
 		cur &^= 1 << uint(p.Bit)
 	}
 	regs[p.Offset] = cur
+}
+
+// putBool serves a whole register as a boolean: 1 or 0, KConv1 -1 inverting.
+func putBool(b *banks, p *Point, on bool) {
+	if p.Kconv1 == -1 {
+		on = !on
+	}
+	w := uint16(0)
+	if on {
+		w = 1
+	}
+	b.regs(p.Area)[p.Offset] = w
 }
 
 func putWire(cfg Config, b *banks, p *Point, v mbcore.Value) {
@@ -499,11 +609,14 @@ func (m *PointMap) ReadRegisters(unit int, a mbcore.Area, start, qty int) ([]uin
 	return out, true
 }
 
-// LookupWrite is the command point at a written address, if any.
-func (m *PointMap) LookupWrite(unit int, a mbcore.Area, off int) *Point {
+// LookupWrite is the write slot of an address; empty when nothing is mapped.
+func (m *PointMap) LookupWrite(unit int, a mbcore.Area, off int) WriteSlot {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return m.writeIndex[writeKey(unit, a, off)]
+	if s := m.writeIndex[writeKey(unit, a, off)]; s != nil {
+		return *s
+	}
+	return WriteSlot{}
 }
 
 // DecodeWrittenValue decodes the registers a master wrote into the raw value
@@ -515,6 +628,13 @@ func DecodeWrittenValue(p *Point, regs []uint16) (mbcore.Value, error) {
 			return mbcore.Value{}, fmt.Errorf("no register written")
 		}
 		return mbcore.Num(float64((regs[0] >> uint(p.Bit)) & 1)), nil
+	}
+	if p.Asdu.Type == mbcore.TypeBool {
+		if len(regs) < 1 {
+			return mbcore.Value{}, fmt.Errorf("no register written")
+		}
+		// as for a coil, the KConv1 -1 inversion is applied when routing
+		return boolValue(regs[0] != 0), nil
 	}
 	wire := make([]byte, 2*len(regs))
 	for i, r := range regs {
