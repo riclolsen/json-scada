@@ -132,10 +132,6 @@
         </v-card-text>
       </v-card>
 
-      <!-- MCP server (AI assistants) -->
-      <McpServerCard ref="mcpRef" :active="active" />
-      <CimEmsServiceCard ref="cimRef" :active="active" />
-
       <!-- restarts -->
       <v-card variant="outlined" class="sys-card">
         <v-card-item prepend-icon="mdi-restart">
@@ -207,6 +203,10 @@
           </div>
         </v-card-text>
       </v-card>
+
+      <!-- MCP server (AI assistants) and CIM-EMS services -->
+      <McpServerCard ref="mcpRef" :active="active" />
+      <CimEmsServiceCard ref="cimRef" :active="active" />
     </div>
 
     <!-- confirm a restart -->
