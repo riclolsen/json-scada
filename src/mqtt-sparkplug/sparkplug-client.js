@@ -1,7 +1,7 @@
 /*
  * MQTT-Sparkplug B Client Lib Adapter for JSON-SCADA
  *
- * {json:scada} - Copyright (c) 2020-2024 - Ricardo L. Olsen
+ * {json:scada} - Copyright (c) 2020-2026 - Ricardo L. Olsen
  * This file is part of the JSON-SCADA distribution (https://github.com/riclolsen/json-scada).
  *
  * Derived from https://github.com/Cirrus-Link/Sparkplug/tree/master/client_libraries/javascript/sparkplug-client
@@ -23,26 +23,24 @@
 var mqtt = require('mqtt'),
   sparkplug = require('sparkplug-payload'),
   sparkplugbpayload = sparkplug.get('spBv1.0'),
+  ProtoPayload = require('sparkplug-payload/lib/sparkplugPayloadProto').org
+    .eclipse.tahu.protobuf.Payload,
   events = require('events'),
   util = require('util'),
   pako = require('pako')
 
 var compressed = 'SPBV1.0_COMPRESSED'
+var DATATYPE_TEMPLATE = 19
 
 const { transports, createLogger, format } = require('winston')
 const logger = createLogger({
   format: format.combine(
-    //format.json(),
     format.printf(
       (info) =>
         `${new Date().toISOString()} - SparkplugClientLib - ${info.message}`
     )
   ),
-  transports: [
-    new transports.Console(),
-    //new transports.File({filename: 'logs/error/error.log', level: 'error'}),
-    //new transports.File({filename: 'logs/activity/activity.log', level:'info'})
-  ],
+  transports: [new transports.Console()],
 })
 
 logger.level = 'warn'
@@ -59,6 +57,164 @@ var getProperty = function (config, propName, defaultValue) {
     return config[propName]
   } else {
     return defaultValue
+  }
+}
+
+var hasOwn = function (obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop)
+}
+
+/*
+ * Datatypes declared in BIRTH messages, by node/device locator.
+ * Sparkplug B 3.0 senders omit the datatype (and may use only the alias) in
+ * DATA and CMD messages; sparkplug-payload then decodes no type and no value.
+ * Missing datatypes and names are restored from the last BIRTH before decoding.
+ */
+function DatatypeRegistry() {
+  var entries = new Map()
+
+  function record(entry, metrics, prefix) {
+    metrics.forEach(function (m) {
+      if (!m.datatype) return
+      var hasName = hasOwn(m, 'name') && m.name !== ''
+      var info = { datatype: m.datatype, name: hasName ? m.name : undefined }
+      if (hasName) entry.byName.set(prefix + m.name, info)
+      if (prefix === '' && hasOwn(m, 'alias'))
+        entry.byAlias.set(String(m.alias), info)
+      if (
+        m.datatype === DATATYPE_TEMPLATE &&
+        hasName &&
+        m.templateValue &&
+        Array.isArray(m.templateValue.metrics)
+      )
+        record(entry, m.templateValue.metrics, prefix + m.name + '/')
+    })
+  }
+
+  function fill(entry, metrics, prefix) {
+    var changed = false
+    metrics.forEach(function (m) {
+      var info
+      var hasName = hasOwn(m, 'name') && m.name !== ''
+      if (hasName) info = entry.byName.get(prefix + m.name)
+      if (!info && prefix === '' && hasOwn(m, 'alias'))
+        info = entry.byAlias.get(String(m.alias))
+      if (!info) return
+      if (!m.datatype) {
+        m.datatype = info.datatype
+        changed = true
+      }
+      if (!hasName && info.name !== undefined) {
+        m.name = info.name
+        hasName = true
+        changed = true
+      }
+      if (
+        m.datatype === DATATYPE_TEMPLATE &&
+        hasName &&
+        m.templateValue &&
+        Array.isArray(m.templateValue.metrics)
+      )
+        changed =
+          fill(entry, m.templateValue.metrics, prefix + m.name + '/') || changed
+    })
+    return changed
+  }
+
+  // a new BIRTH replaces what was known for that locator; an NBIRTH also
+  // drops the devices of the node (they will be birthed again)
+  this.birth = function (locator, rawPayload, isNodeBirth) {
+    if (isNodeBirth)
+      Array.from(entries.keys()).forEach(function (k) {
+        if (k === locator || k.startsWith(locator + '/')) entries.delete(k)
+      })
+    var entry = { byName: new Map(), byAlias: new Map() }
+    entries.set(locator, entry)
+    if (Array.isArray(rawPayload.metrics)) record(entry, rawPayload.metrics, '')
+  }
+
+  // returns true when the raw payload was changed
+  this.fill = function (locator, rawPayload) {
+    var entry = entries.get(locator)
+    if (!entry || !Array.isArray(rawPayload.metrics)) return false
+    return fill(entry, rawPayload.metrics, '')
+  }
+}
+
+/*
+ * Host Application STATE session. Each format runs on its own MQTT session,
+ * so its will (OFFLINE) is independent from the edge node NDEATH will.
+ *  - '3.0': topic spBv1.0/STATE/<hostId>, JSON {online, timestamp}
+ *  - '2.2': topic STATE/<hostId>, plain ONLINE/OFFLINE
+ */
+function StateSession(format, hostId, version, baseOptions, serverUrl) {
+  var timestamp = new Date().getTime(),
+    topic,
+    online,
+    offline,
+    stopping = false
+  if (format === '3.0') {
+    topic = version + '/STATE/' + hostId
+    online = JSON.stringify({ online: true, timestamp: timestamp })
+    offline = JSON.stringify({ online: false, timestamp: timestamp })
+  } else {
+    topic = 'STATE/' + hostId
+    online = 'ONLINE'
+    offline = 'OFFLINE'
+  }
+
+  var options = {
+    ...baseOptions,
+    clientId:
+      baseOptions.clientId ?
+        baseOptions.clientId + (format === '3.0' ? '_STATE' : '_STATE22')
+      : '',
+    reconnectPeriod: 5000,
+    will: { topic: topic, payload: offline, qos: 1, retain: true },
+  }
+  if (options.clientId === '') delete options.clientId
+
+  var client = mqtt.connect(serverUrl, options)
+
+  client.on('connect', function () {
+    logger.info('STATE session connected (' + format + '), ' + topic)
+    client.subscribe(topic, { qos: 1 })
+    client.publish(topic, online, { qos: 1, retain: true })
+  })
+  // a host must republish ONLINE when it sees itself reported OFFLINE
+  // (e.g. a late will from a previous session)
+  client.on('message', function (t, message) {
+    if (stopping || t !== topic) return
+    var text = message.toString()
+    var isOffline = text === 'OFFLINE'
+    if (format === '3.0') {
+      try {
+        isOffline = JSON.parse(text)?.online === false
+      } catch (e) {
+        isOffline = false
+      }
+    }
+    if (isOffline) {
+      logger.info('Own STATE reported offline, republishing ONLINE')
+      client.publish(topic, online, { qos: 1, retain: true })
+    }
+  })
+  client.on('error', function (err) {
+    logger.warn('STATE session error (' + format + '): ' + err.message)
+  })
+
+  this.publishOnline = function () {
+    if (client.connected)
+      client.publish(topic, online, { qos: 1, retain: true })
+  }
+
+  this.stop = function () {
+    stopping = true
+    if (client.connected) {
+      client.publish(topic, offline, { qos: 1, retain: true }, function () {
+        client.end()
+      })
+    } else client.end(true)
   }
 }
 
@@ -81,7 +237,6 @@ function SparkplugClient(config) {
     cert = getProperty(config, 'cert', ''),
     pfx = getProperty(config, 'pfx', ''),
     passphrase = getProperty(config, 'passphrase', ''),
-    // secureProtocol = getProperty(config, "secureProtocol", ""),
     minVersion = getProperty(config, 'minVersion', 'TLSv1'),
     maxVersion = getProperty(config, 'maxVersion', 'TLSv1.3'),
     ciphers = getProperty(config, 'ciphers', ''),
@@ -91,13 +246,15 @@ function SparkplugClient(config) {
     clean = getProperty(config, 'clean', true),
     keepalive = getProperty(config, 'keepalive', 5),
     connectTimeout = getProperty(config, 'connectTimeout', 30 * 1000),
-    devices = [],
+    // the edge node role is active only with a group and edge node id
+    isEdgeNode =
+      typeof groupId === 'string' &&
+      groupId.trim() !== '' &&
+      typeof edgeNode === 'string' &&
+      edgeNode.trim() !== '',
+    stateSessions = [],
+    datatypes = new DatatypeRegistry(),
     client = null,
-    connecting = false,
-    connected = false,
-    type_int32 = 7,
-    type_boolean = 11,
-    type_string = 12,
     // Increments a sequence number
     incrementSeqNum = function () {
       if (seq == 256) {
@@ -148,29 +305,16 @@ function SparkplugClient(config) {
     },
     // Get DEATH payload
     getDeathPayload = function () {
-      var payload = {
-          timestamp: new Date().getTime(),
-        },
-        metric = [
+      return {
+        timestamp: new Date().getTime(),
+        metrics: [
           {
             name: 'bdSeq',
             value: bdSeq,
             type: 'uint64',
           },
-        ]
-      payload.metrics = metric
-      return payload
-    },
-    // Publishes DEATH certificates for the edge node
-    publishNDeath = function (client) {
-      var payload, topic
-
-      // Publish DEATH certificate for edge node
-      logger.info('Publishing Edge Node Death')
-      payload = getDeathPayload()
-      topic = version + '/' + groupId + '/NDEATH/' + edgeNode
-      client.publish(topic, encodePayload(payload))
-      if (logger.level === 'debug') messageAlert('published', topic, payload)
+        ],
+      }
     },
     // Logs a message alert to the console
     messageAlert = function (alert, topic, payload) {
@@ -181,7 +325,6 @@ function SparkplugClient(config) {
     },
     compressPayload = function (payload, options) {
       var algorithm = null,
-        compressedPayload,
         resultPayload = {
           uuid: compressed,
         }
@@ -189,25 +332,20 @@ function SparkplugClient(config) {
       if (logger.level === 'debug')
         logger.debug('Compressing payload ' + JSON.stringify(options))
 
-      // See if any options have been set
       if (options !== undefined && options !== null) {
-        // Check algorithm
         if (options['algorithm']) {
           algorithm = options['algorithm']
         }
       }
 
       if (algorithm === null || algorithm.toUpperCase() === 'DEFLATE') {
-        logger.debug('Compressing with DEFLATE!')
         resultPayload.body = pako.deflate(payload)
       } else if (algorithm.toUpperCase() === 'GZIP') {
-        logger.debug('Compressing with GZIP')
         resultPayload.body = pako.gzip(payload)
       } else {
         throw new Error('Unknown or unsupported algorithm ' + algorithm)
       }
 
-      // Create and add the algorithm metric if is has been specified in the options
       if (algorithm !== null) {
         resultPayload.metrics = [
           {
@@ -224,8 +362,6 @@ function SparkplugClient(config) {
       var metrics = payload.metrics,
         algorithm = null
 
-      logger.debug('Decompressing payload')
-
       if (metrics !== undefined && metrics !== null) {
         for (var i = 0; i < metrics.length; i++) {
           if (metrics[i].name === 'algorithm') {
@@ -235,10 +371,8 @@ function SparkplugClient(config) {
       }
 
       if (algorithm === null || algorithm.toUpperCase() === 'DEFLATE') {
-        logger.debug('Decompressing with DEFLATE!')
         return pako.inflate(payload.body)
       } else if (algorithm.toUpperCase() === 'GZIP') {
-        logger.debug('Decompressing with GZIP')
         return pako.ungzip(payload.body)
       } else {
         throw new Error('Unknown or unsupported algorithm ' + algorithm)
@@ -246,20 +380,53 @@ function SparkplugClient(config) {
     },
     maybeCompressPayload = function (payload, options) {
       if (options !== undefined && options !== null && options.compress) {
-        // Compress the payload
         return compressPayload(encodePayload(payload), options)
       } else {
-        // Don't compress the payload
         return payload
       }
     },
-    maybeDecompressPayload = function (payload) {
-      if (payload.uuid !== undefined && payload.uuid === compressed) {
-        // Decompress the payload
-        return decodePayload(decompressPayload(payload))
-      } else {
-        // The payload is not compressed
-        return payload
+    // decode a (possibly compressed) Sparkplug B protobuf payload, restoring
+    // datatypes and names omitted in DATA/CMD messages from the last BIRTH
+    decodeSparkplugPayload = function (message, topicInfo) {
+      var bytes = message,
+        outer = decodePayload(bytes)
+      if (outer.uuid !== undefined && outer.uuid === compressed)
+        bytes = decompressPayload(outer)
+
+      var raw = ProtoPayload.decode(bytes),
+        locator =
+          topicInfo.groupId +
+          '/' +
+          topicInfo.edgeNodeId +
+          (topicInfo.deviceId ? '/' + topicInfo.deviceId : '')
+
+      switch (topicInfo.msgType) {
+        case 'NBIRTH':
+          datatypes.birth(locator, raw, true)
+          break
+        case 'DBIRTH':
+          datatypes.birth(locator, raw, false)
+          break
+        case 'NDATA':
+        case 'DDATA':
+        case 'NCMD':
+        case 'DCMD':
+          if (datatypes.fill(locator, raw))
+            bytes = ProtoPayload.encode(raw).finish()
+          break
+      }
+      return decodePayload(bytes)
+    },
+    // remember datatypes of births this client publishes (for received commands)
+    recordOwnBirth = function (locator, payload, isNodeBirth) {
+      try {
+        datatypes.birth(
+          locator,
+          ProtoPayload.decode(encodePayload(payload)),
+          isNodeBirth
+        )
+      } catch (e) {
+        logger.warn('Could not record birth datatypes: ' + e.message)
       }
     },
     isSparkplugPayloadMsgType = function (msgType) {
@@ -305,15 +472,16 @@ function SparkplugClient(config) {
 
   this.client = null
   this.logger = logger
+  this.connecting = false
+  this.connected = false
 
   // Publishes Node BIRTH certificates for the edge node
   this.publishNodeBirth = function (payload, options) {
     var topic = version + '/' + groupId + '/NBIRTH/' + edgeNode
     // Reset sequence number
     seq = 0
-    // Add seq number
     addSeqNumber(payload)
-    // Add bdSeq number
+    // Add bdSeq number (must match the bdSeq of the NDEATH will)
     var metrics = payload.metrics
     if (metrics !== undefined && metrics !== null) {
       metrics.push({
@@ -322,8 +490,8 @@ function SparkplugClient(config) {
         value: bdSeq,
       })
     }
+    recordOwnBirth(groupId + '/' + edgeNode, payload, true)
 
-    // Publish BIRTH certificate for edge node
     logger.info('Publishing Edge Node Birth')
     var p = maybeCompressPayload(payload, options)
     client.publish(topic, encodePayload(p))
@@ -333,15 +501,13 @@ function SparkplugClient(config) {
   // Publishes Node Data messages for the edge node
   this.publishNodeData = function (payload, options) {
     var topic = version + '/' + groupId + '/NDATA/' + edgeNode
-    // Add seq number
     addSeqNumber(payload)
-    // Publish
     logger.info('Publishing NDATA')
     client.publish(topic, encodePayload(maybeCompressPayload(payload, options)))
     if (logger.level === 'debug') messageAlert('published', topic, payload)
   }
 
-  // Publishes Node Command messages for the edge node
+  // Publishes Node Command messages (host role: no edge node seq number)
   this.publishNodeCmd = function (group, edge, payload, options, callback) {
     if (typeof options === 'function') {
       callback = options
@@ -349,9 +515,6 @@ function SparkplugClient(config) {
     }
 
     var topic = version + '/' + group + '/NCMD/' + edge
-    // Add seq number
-    addSeqNumber(payload)
-    // Publish
     logger.info('Publishing NCMD for node ' + edge)
     client.publish(
       topic,
@@ -364,12 +527,8 @@ function SparkplugClient(config) {
 
   // Publishes device data
   this.publishDeviceData = function (deviceId, payload, options, pubOptions) {
-    //if (!pubOptions)
-    //  pubOptions = {"qos" : 1, "retain": true};
     var topic = version + '/' + groupId + '/DDATA/' + edgeNode + '/' + deviceId
-    // Add seq number
     addSeqNumber(payload)
-    // Publish
     logger.info('Publishing DDATA for device ' + deviceId)
     client.publish(
       topic,
@@ -379,7 +538,7 @@ function SparkplugClient(config) {
     if (logger.level === 'debug') messageAlert('published', topic, payload)
   }
 
-  // Publishes device command
+  // Publishes device command (host role: no edge node seq number)
   this.publishDeviceCmd = function (
     group,
     edge,
@@ -394,9 +553,6 @@ function SparkplugClient(config) {
     }
 
     var topic = version + '/' + group + '/DCMD/' + edge + '/' + device
-    // Add seq number
-    addSeqNumber(payload)
-    // Publish
     logger.info('Publishing DCMD for device ' + device)
     client.publish(
       topic,
@@ -410,9 +566,8 @@ function SparkplugClient(config) {
   // Publishes device BIRTH certificates
   this.publishDeviceBirth = function (deviceId, payload, options) {
     var topic = version + '/' + groupId + '/DBIRTH/' + edgeNode + '/' + deviceId
-    // Add seq number
     addSeqNumber(payload)
-    // Publish
+    recordOwnBirth(groupId + '/' + edgeNode + '/' + deviceId, payload, false)
     logger.info('Publishing DBIRTH for device ' + deviceId)
     var p = maybeCompressPayload(payload, options)
     client.publish(topic, encodePayload(p))
@@ -424,93 +579,114 @@ function SparkplugClient(config) {
     var topic =
         version + '/' + groupId + '/DDEATH/' + edgeNode + '/' + deviceId,
       options = {}
-    // Add seq number
     addSeqNumber(payload)
-    // Publish
     logger.info('Publishing DDEATH for device ' + deviceId)
     client.publish(topic, encodePayload(maybeCompressPayload(payload, options)))
     if (logger.level === 'debug') messageAlert('published', topic, payload)
   }
 
-  // Publishes SCADA HOST BIRTH certificates
+  // Republishes SCADA HOST STATE ONLINE (the STATE sessions also do it on connect)
   this.publishScadaHostBirth = function () {
-    if (scadaHostId.trim() === '') {
+    if (stateSessions.length === 0) {
       logger.info(
         'Can not publish SCADA Host Birth as scadaHostId is not defined.'
       )
       return
     }
-
-    var topic = 'STATE/' + scadaHostId,
-      payload = 'ONLINE'
-
-    // Publish
-    logger.info('Publishing SCADA HOST BIRTH for host ' + scadaHostId)
-    client.publish(topic, payload, { qos: 1, retain: true })
-    if (logger.level === 'debug') messageAlert('published', topic, payload)
+    stateSessions.forEach(function (s) {
+      s.publishOnline()
+    })
   }
 
   this.stop = function () {
-    logger.debug('publishDeath: ' + publishDeath)
-    if (publishDeath) {
-      // Publish the DEATH certificate
-      publishNDeath(client)
-    }
-    client.end()
+    var self = this
+    self.connecting = false
+    stateSessions.forEach(function (s) {
+      s.stop()
+    })
+    stateSessions = []
+    if (!client) return
+    // a clean DISCONNECT discards the will, so publish the death explicitly
+    if (publishDeath && isEdgeNode && client.connected) {
+      var topic = version + '/' + groupId + '/NDEATH/' + edgeNode,
+        payload = getDeathPayload()
+      logger.info('Publishing Edge Node Death')
+      client.publish(topic, encodePayload(payload), { qos: 1 }, function () {
+        client.end()
+      })
+      if (logger.level === 'debug') messageAlert('published', topic, payload)
+    } else client.end(true)
   }
 
   // Configures and connects the client
   return (function (sparkplugClient) {
-    const deviceWill = {
-      topic: version + '/' + groupId + '/NDEATH/' + edgeNode,
-      payload: encodePayload(getDeathPayload()),
-      qos: 0,
-      retain: false,
-    }
-    const scadaWill = {
-      topic: 'STATE/' + scadaHostId,
-      payload: 'OFFLINE',
-      qos: 1,
-      retain: true,
+    var tlsOptions = {
+      ...(ca !== '' ? { ca: ca } : {}),
+      ...(key !== '' ? { key: key } : {}),
+      ...(cert !== '' ? { cert: cert } : {}),
+      ...(pfx !== '' ? { pfx: pfx } : {}),
+      ...(passphrase !== '' ? { passphrase: passphrase } : {}),
+      ...(ciphers !== '' ? { ciphers: ciphers } : {}),
+      ...(minVersion !== '' ? { minVersion: minVersion } : {}),
+      ...(maxVersion !== '' ? { maxVersion: maxVersion } : {}),
+      rejectUnauthorized: rejectUnauthorized,
     }
 
-    var // Client connection options
-      clientOptions = {
-        clientId: clientId,
-        clean: clean,
-        keepalive: keepalive,
-        reschedulePings: false,
-        connectTimeout: connectTimeout,
-        // "protocolVersion": 5,
-        username: username,
-        password: password,
-        // agent:false,
-        ...(ca !== '' ? { ca: ca } : {}),
-        ...(key !== '' ? { key: key } : {}),
-        ...(cert !== '' ? { cert: cert } : {}),
-        ...(pfx !== '' ? { pfx: pfx } : {}),
-        ...(passphrase !== '' ? { passphrase: passphrase } : {}),
-        // ... ((secureProtocol!=="")? { "secureProtocol" : secureProtocol } : {}),
-        ...(ciphers !== '' ? { ciphers: ciphers } : {}),
-        ...(minVersion !== '' ? { minVersion: minVersion } : {}),
-        ...(maxVersion !== '' ? { maxVersion: maxVersion } : {}),
-        rejectUnauthorized: rejectUnauthorized,
-        will: scadaHostId !== '' ? scadaWill : deviceWill,
-      }
+    var clientOptions = {
+      ...(clientId !== '' ? { clientId: clientId } : {}),
+      clean: clean,
+      keepalive: keepalive,
+      reschedulePings: false,
+      connectTimeout: connectTimeout,
+      // the application recreates the client (and rotates brokers) on failures
+      reconnectPeriod: 0,
+      username: username,
+      password: password,
+      ...tlsOptions,
+      ...(isEdgeNode ?
+        {
+          will: {
+            topic: version + '/' + groupId + '/NDEATH/' + edgeNode,
+            payload: encodePayload(getDeathPayload()),
+            qos: 1,
+            retain: false,
+          },
+        }
+      : {}),
+    }
 
-    // Connect to the MQTT server
     sparkplugClient.connecting = true
     if (logger.level === 'debug') {
       logger.debug('Attempting to connect: ' + serverUrl)
-      logger.debug('              options: ' + JSON.stringify(clientOptions))
+      logger.debug(
+        '              options: ' +
+          JSON.stringify({ ...clientOptions, password: '***' })
+      )
     }
     client = mqtt.connect(serverUrl, clientOptions)
     sparkplugClient.client = client
-    logger.debug('Finished attempting to connect')
 
-    /*
-     * 'connect' handler
-     */
+    if (typeof scadaHostId === 'string' && scadaHostId.trim() !== '') {
+      var stateOptions = {
+        clientId: clientId,
+        clean: true,
+        keepalive: keepalive,
+        connectTimeout: connectTimeout,
+        username: username,
+        password: password,
+        ...tlsOptions,
+      }
+      stateSessions = ['3.0', '2.2'].map(function (fmt) {
+        return new StateSession(
+          fmt,
+          scadaHostId.trim(),
+          version,
+          stateOptions,
+          serverUrl
+        )
+      })
+    }
+
     client.on('connect', function () {
       // bdSeq is NOT incremented here: it must match the bdSeq of the NDEATH
       // will message registered at connection time (Sparkplug B spec)
@@ -519,34 +695,29 @@ function SparkplugClient(config) {
       sparkplugClient.connected = true
       sparkplugClient.emit('connect')
 
-      // Subscribe to control/command messages for both the edge node and the attached devices
-      logger.info(
-        'Subscribing to control/command messages for both the edge node and the attached devices'
-      )
-      client.subscribe(version + '/' + groupId + '/NCMD/' + edgeNode + '/#', {
-        qos: 0,
-      })
-      client.subscribe(version + '/' + groupId + '/DCMD/' + edgeNode + '/#', {
-        qos: 0,
-      })
+      if (isEdgeNode) {
+        client.subscribe(version + '/' + groupId + '/NCMD/' + edgeNode + '/#', {
+          qos: 0,
+        })
+        client.subscribe(version + '/' + groupId + '/DCMD/' + edgeNode + '/#', {
+          qos: 0,
+        })
+      }
 
-      // Emit the "birth" event to notify the application to send a births
+      // Emit the "birth" event to notify the application to send births
       sparkplugClient.emit('birth')
     })
 
-    /*
-     * 'error' handler
-     */
     client.on('error', function (error) {
-      if (sparkplugClient.connecting) {
+      if (
+        sparkplugClient.connecting &&
+        sparkplugClient.listenerCount('error') > 0
+      ) {
+        sparkplugClient.connecting = false
         sparkplugClient.emit('error', error)
-        client.end()
-      }
+      } else logger.warn('MQTT client error: ' + error.message)
     })
 
-    /*
-     * 'close' handler
-     */
     client.on('close', function () {
       if (sparkplugClient.connected) {
         sparkplugClient.connected = false
@@ -554,17 +725,12 @@ function SparkplugClient(config) {
       }
     })
 
-    /*
-     * 'reconnect' handler
-     */
     client.on('reconnect', function () {
       sparkplugClient.emit('reconnect')
     })
 
-    /*
-     * 'offline' handler
-     */
     client.on('offline', function () {
+      sparkplugClient.connected = false
       sparkplugClient.emit('offline')
     })
 
@@ -578,36 +744,26 @@ function SparkplugClient(config) {
       return value
     }
 
-    /*
-     * 'packetsend' handler
-     */
     client.on('packetsend', function (packet) {
+      if (logger.level !== 'debug') return
       logger.debug('packetsend: ' + JSON.stringify(packet, replacer))
     })
 
-    /*
-     * 'packetreceive' handler
-     */
     client.on('packetreceive', function (packet) {
       if (logger.level !== 'debug') return
       logger.debug('packetreceive: ' + JSON.stringify(packet, replacer))
     })
 
-    /*
-     * 'message' handler
-     */
     client.on('message', function (topic, message, packet) {
-      var payload, timestamp, topicInfo
+      var payload, topicInfo
 
-      // Split the topic up into tokens
       var splitTopic = topic.split('/')
 
       // discard non Sparkplug B payload messages (STATE is not protobuf)
       topicInfo = parseSparkplugTopic(splitTopic)
       if (topicInfo === null) {
         // invalid topics under the Sparkplug B namespace are discarded,
-        // except STATE (host online/offline, plain payload): do not
-        // process them as regular MQTT messages
+        // except STATE (host online/offline, plain payload)
         if (splitTopic[0] === version && splitTopic[1] !== 'STATE') {
           logger.debug('Discarding invalid Sparkplug B topic: ' + topic)
           return
@@ -617,8 +773,7 @@ function SparkplugClient(config) {
       }
 
       try {
-        payload = maybeDecompressPayload(decodePayload(message))
-        timestamp = payload.timestamp
+        payload = decodeSparkplugPayload(message, topicInfo)
       } catch (e) {
         payload = decodeJsonPayload(message)
         if (payload === null) {
@@ -630,33 +785,30 @@ function SparkplugClient(config) {
           )
           return
         }
-        timestamp = payload.timestamp
       }
 
       if (logger.level === 'debug') messageAlert('arrived', topic, payload)
 
       if (
+        isEdgeNode &&
         topicInfo.groupId === groupId &&
         topicInfo.msgType === 'NCMD' &&
         topicInfo.edgeNodeId === edgeNode
       ) {
-        // Emit the "command" event
         sparkplugClient.emit('ncmd', payload)
       } else if (
+        isEdgeNode &&
         topicInfo.groupId === groupId &&
         topicInfo.msgType === 'DCMD' &&
         topicInfo.edgeNodeId === edgeNode
       ) {
-        // Emit the "command" event for the given deviceId
         sparkplugClient.emit('dcmd', topicInfo.deviceId, payload)
-      } else {
+      } else if (
+        topicInfo.groupId !== groupId ||
+        topicInfo.edgeNodeId !== edgeNode
+      ) {
         // exclude messages from itself
-        if (
-          topicInfo.namespace === version &&
-          (topicInfo.groupId !== groupId || topicInfo.edgeNodeId !== edgeNode)
-        )
-          // emit decoded message
-          sparkplugClient.emit('message', topic, payload, topicInfo)
+        sparkplugClient.emit('message', topic, payload, topicInfo)
       }
     })
 

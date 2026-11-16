@@ -34,6 +34,9 @@ Official MQTT and Sparkplug B Specifications
 
 - https://mqtt.org/mqtt-specification/
 - https://www.eclipse.org/tahu/spec/Sparkplug%20Topic%20Namespace%20and%20State%20ManagementV2.2-with%20appendix%20B%20format%20-%20Eclipse.pdf
+- https://sparkplug.eclipse.org/specification/
+
+The driver connects with MQTT 3.1.1.
 
 ## Configure a driver instance
 
@@ -108,17 +111,17 @@ Each instance for this driver can have just one connection defined that must be 
 - _**name**_ [String] - Name for a connection. Will be used for logging. **Mandatory parameter**.
 - _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
-- _**commandsEnabled**_ [Boolean] - Allows to disable commands (publishing messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
+- _**commandsEnabled**_ [Boolean] - Allows to disable commands (publishing messages in control direction) for a connection. Use false here to disable commands. It also controls the Sparkplug B node commands _Node Control/Reboot_ and _Node Control/Next Server_: they are offered in the NBIRTH and honoured only when commands are enabled (_Node Control/Rebirth_ is always honoured). **Mandatory parameter**.
 - _**autoCreateTags**_ [Boolean] - Enables automatic creation of all discovered tags. **Mandatory parameter**.
-- _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. **Mandatory parameter**.
-- _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. JSON Path Plus can be used to extract values from MQTT JSON payloads, add a JSONPath query to the topic string, e.g. "root*topic/subtopic/$.property1" this will extract the value of \_property1* from the JSON payload. Regular MQTT topics will be converted to tags with the full topic name as the object address (including JSONPath, when used). To explode a JSON payload auto expanding properties as tags, use JSONPathPlus syntax ending as '_~' as in "root_topic/subtopic/$._~", this will create a tag for each property in the JSON payload. **Mandatory parameter**.
+- _**endpointURLs**_ [Array of Strings] - List of URLS for connection to MQTT brokers. Use more than one broker only in case of redundant brokers. After 3 consecutive failed connections the driver tries the next broker of the list. **Mandatory parameter**.
+- _**topics**_ [Array of Strings] - List of topics to subscribe on MQTT broker. Sparkplug B devices publish to "spBv1.0/#". Sparkplug B metrics will be converted as tags with topic name (minus "spBv1.0" root and message type) plus metric name. JSON Path Plus can be used to extract values from MQTT JSON payloads, add a JSONPath query to the topic string, e.g. "root*topic/subtopic/$.property1" this will extract the value of \_property1* from the JSON payload. Regular MQTT topics will be converted to tags with the full topic name as the object address (including JSONPath, when used). The MQTT wildcards `+` and `#` can be used; with a wildcard, the object address is built from each received topic (e.g. "sensors/+/$.temp" creates "sensors/s1/$.temp", "sensors/s2/$.temp", ...). To explode a JSON payload auto expanding properties as tags, use JSONPathPlus syntax ending as '_~' as in "root_topic/subtopic/$._~", this will create a tag for each property in the JSON payload. **Mandatory parameter**.
 - _**topicsAsFiles**_ [Array of Strings] - List of topics to subscribe on MQTT broker to be saved as files on MongoDB (Gridfs). **Mandatory parameter**.
 - _**topicsScripted**_ [Array of Objects] - List of topics to subscribe on MQTT broker to be treated with dedicated scripts to extract data. **Mandatory parameter**.
 - _**clientId**_ [String] - MQTT Client Id for the connection. If configured, it should be unique over all MQTT clients. Leave empty to to be automatically assigned by the broker. **Optional parameter**.
 - _**groupId**_ [String] - Group Id for publishing. Leave empty to avoid Sparkplug B publishing. **Mandatory parameter**.
 - _**edgeNodeId**_ [String] - Edge Node Id for publishing. **Mandatory parameter**.
 - _**deviceId**_ [String] - Device Id for publishing. **Optional parameter**.
-- _**scadaHostId**_ [String] - Scada host Id for Primary Application STATE publishing. Leave empty if not a primary application. **Mandatory parameter**.
+- _**scadaHostId**_ [String] - Scada host Id for Primary Application STATE publishing. Leave empty if not a primary application. The STATE is published (retained, QoS 1) in both the Sparkplug B 3.0 format (topic "spBv1.0/STATE/_scadaHostId_", JSON payload `{"online": true, "timestamp": 1794835578443}`) and the 2.2 format (topic "STATE/_scadaHostId_", payload "ONLINE"/"OFFLINE"). Each format uses its own MQTT session (client id _clientId_ + "\_STATE" and + "\_STATE22") carrying the OFFLINE will, so the edge node session keeps its NDEATH will. **Mandatory parameter**.
 - _**publishTopicRoot**_ [String] - Non-Sparkplug MQTT topic root for publishing tags. Leave empty to not publish tags as normal topics. **Mandatory parameter**.
 - _**username**_ [String] - The username for the MQTT broker connection. **Optional parameter**.
 - _**password**_ [String] - The password for the MQTT broker connection. **Optional parameter**.
@@ -149,6 +152,10 @@ JSON Path Plus
 ### Configuration Hints
 
 - To act as a Sparkplug Primary (or non-primary) SCADA host, configure the _scadaHostId_ property.
+- Received Sparkplug B messages are checked as a host application: metric datatypes and names omitted in DATA and CMD messages (Sparkplug B 3.0) are taken from the last BIRTH, a gap in the _seq_ sequence of an edge node requests a rebirth, and an NDEATH whose _bdSeq_ differs from the last NBIRTH is ignored as stale.
+- Metrics flagged _is_historical_ (store-and-forward) are sent to the historian without changing the live value; metrics flagged _is_transient_ are not recorded in the historian.
+- _Bytes_ and _File_ metrics become string tags with base64 content; other datatypes without a direct mapping are stored as JSON. Array datatypes are not supported by the payload decoder and are discarded (logged).
+- Tags acquired by this same connection are never published back (neither as Sparkplug B nor as regular topics). A tag that is not in the last DBIRTH triggers a new NBIRTH/DBIRTH (at most every 30 seconds) before its updates are published.
 - To subscribe to Sparkplug B devices, configure the _topics_ property with a list of topics with root "spBv1.0/".
 - To subscribe to regular MQTT topics, configure the _topics_ property with a list of the desired topics.
 - The topics property can have mixed Sparkplug and regular topics listed.
@@ -218,19 +225,21 @@ To send commands via Sparkplug B, configure the command tag as below. Tags can a
         $set: {
             "protocolSourceConnectionNumber": 1200, // connection number used by the MQTT client driver
             "protocolSourceASDU": "boolean", // metric type: int,int8,int16,int32,int64,uint8,uint16,uint32,uint64,float,double,boolean,string,datetime,text
-            "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/device_id/metric_name", // topic name/metric name, for DCMD (do not include DCMD in the parameter!)
-            // "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/metric_name", // topic name/metric name, for NCMD (do not include NCMD)
+            "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/device_id/metric_name", // topic name/metric name, for DCMD
+            // "protocolSourceObjectAddress": "spBv1.0/group_id/edge_node_id/metric_name", // topic name/metric name, for NCMD
             "protocolSourceCommandDuration": 0, // no effect for sparkplug B
             "protocolSourceCommandUseSBO": false, // no effect for sparkplug B
             "kconv1": 1.0, // conversion factor: multiplier
             "kconv2": 0.0, // conversion factor: adder
         }});
 
+Metric names may contain slashes. An address whose metric starts with "Node Control/" (e.g. "spBv1.0/group_id/edge_node_id/Node Control/Rebirth") is sent as an NCMD. The message type can also be given explicitly, as in the Sparkplug topic: "spBv1.0/group_id/NCMD/edge_node_id/metric_name" or "spBv1.0/group_id/DCMD/edge_node_id/device_id/metric_name".
+
 ## Receive (Device) Commands Via Sparkplug B
 
 If commands are enabled for the connection and Sparkplug B is configured, all commands from the tags database are enabled automatically (even without _protocolDestinations_ defined!). In this case, commands are routed to other protocols. The tag is used as the Sparkplug B metric name.
 
-Commands will be listed in the metrics available on the DBIRTH message with the property _isCommand=true_.
+Commands will be listed in the metrics available on the DBIRTH message with the property _isCommand=true_. A DCMD metric can address the command by name or by alias (the alias is the tag _\_id_). Commands with _commandBlocked_ true, on the command tag or on its supervised tag, are refused.
 
     {"name":"KAW2AL-21XCBR5238----K","alias":64001,"value":false,"type":"boolean","properties":{"isCommand":{"type":"boolean","value":true},"description":{"type":"string","value":"KAW2~FD21 13,8kV~BRK52-38:status-Cmd"},"good":{"type":"boolean","value":false}}}
 
@@ -291,8 +300,8 @@ It is necessary to subscribe the topic using the _topicsScripted_ array property
                 "
         }]
 
-All scripts are executed in a shared sandboxed Javascript VM. The MQTT payload of each message is passed as a buffer in the "shared.payload" object. The sandboxed VM context is preserved and reused at each call, so variables created inside the scripts are also preserved.
+All scripts are executed in a shared Javascript VM context (Node.js _vm_). The MQTT payload of each message is passed as a UTF-8 string in "shared.payload" and as a Uint8Array in "shared.payloadBytes" (for binary payloads, e.g. `new DataView(shared.payloadBytes.buffer)`). The context is preserved and reused at each call, so variables created inside the scripts are also preserved. Each script run is limited to 1 second. Scripts receive no host objects (no _process_, _require_ or _Buffer_), but the VM is not a security boundary: scripts are trusted configuration, edit them only as an administrator.
 
 The "shared.dataArray" should receive the array of objects with at least "value" and "id" properties set.
 
-Can also be set the following optional properties: "type", "qualityOk", "timestamp", "transient", "valueString", "valueJson", "causeOfTransmissionAtSource".
+Can also be set the following optional properties: "type", "qualityOk", "timestamp", "transient", "valueString", "valueJson", "causeOfTransmissionAtSource". The array is copied out of the VM as JSON, so use plain values (numbers, strings, booleans, objects; dates as timestamps).

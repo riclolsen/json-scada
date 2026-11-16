@@ -119,7 +119,7 @@ async function GetAutoKeyInitialValue(rtCollection, configObj) {
   return AutoKeyId
 }
 
-let ListCreatedTags = []
+const ListCreatedTags = new Set()
 
 async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
   let splitTopic = []
@@ -133,7 +133,7 @@ async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
     tag += data.protocolSourceObjectAddress
   }
 
-  if (!ListCreatedTags.includes(tag)) {
+  if (!ListCreatedTags.has(tag)) {
     // possibly not created tag, must check
     let res = await rtDataCollection
       .find({
@@ -198,11 +198,11 @@ async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
 
       let resIns = await rtDataCollection.insertOne(newTag)
       if (resIns.acknowledged)
-        ListCreatedTags.push(tag) // change for mongo driver >= 4.0
+        ListCreatedTags.add(tag) // change for mongo driver >= 4.0
       else Log.log('Auto Key - Error inserting tag : ' + tag, Log.levelDetailed)
     } else {
       // found (already exists, no need to create), just list as created
-      ListCreatedTags.push(tag)
+      ListCreatedTags.add(tag)
     }
   }
 }

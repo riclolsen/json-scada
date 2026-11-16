@@ -68,15 +68,17 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
       // not found, then create a new entry
       ProcessActive = true
       Log.log('Redundancy - Instance config not found, creating one...')
-      db.collection(configObj.ProtocolDriverInstancesCollectionName).insertOne({
-        protocolDriver: AppDefs.NAME,
-        protocolDriverInstanceNumber: new Double(configObj.Instance),
-        enabled: true,
-        logLevel: new Double(configObj.LogLevel),
-        nodeNames: [],
-        activeNodeName: configObj.nodeName,
-        activeNodeKeepAliveTimeTag: new Date(),
-      })
+      await db
+        .collection(configObj.ProtocolDriverInstancesCollectionName)
+        .insertOne({
+          protocolDriver: AppDefs.NAME,
+          protocolDriverInstanceNumber: new Double(configObj.Instance),
+          enabled: true,
+          logLevel: new Double(configObj.LogLevel),
+          nodeNames: [],
+          activeNodeName: configObj.nodeName,
+          activeNodeKeepAliveTimeTag: new Date(),
+        })
     } else {
       // check for disabled or node not allowed
       const instance = result
@@ -136,22 +138,22 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
 
       if (ProcessActive) {
         // process active, then update keep alive
-        db.collection(
-          configObj.ProtocolDriverInstancesCollectionName
-        ).updateOne(
-          {
-            protocolDriver: AppDefs.NAME,
-            protocolDriverInstanceNumber: new Double(configObj.Instance),
-          },
-          {
-            $set: {
-              activeNodeName: configObj.nodeName,
-              activeNodeKeepAliveTimeTag: new Date(),
-              softwareVersion: AppDefs.VERSION,
-              stats: {},
+        await db
+          .collection(configObj.ProtocolDriverInstancesCollectionName)
+          .updateOne(
+            {
+              protocolDriver: AppDefs.NAME,
+              protocolDriverInstanceNumber: new Double(configObj.Instance),
             },
-          }
-        )
+            {
+              $set: {
+                activeNodeName: configObj.nodeName,
+                activeNodeKeepAliveTimeTag: new Date(),
+                softwareVersion: AppDefs.VERSION,
+                stats: {},
+              },
+            }
+          )
       }
     }
   } catch (err) {
