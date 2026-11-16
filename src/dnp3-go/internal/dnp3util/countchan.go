@@ -127,8 +127,8 @@ type CountOptions struct {
 	// SerialConfig does not carry.
 	OpenDelay time.Duration
 	// Retry is the backoff between attempts. The zero value tries once and
-	// gives up, which is what a passive channel wants: its Connect blocks on
-	// accept rather than failing.
+	// gives up; BuildChannel sets DefaultRetry for every mode, passive ones
+	// included, because a listener that cannot bind must try again.
 	Retry Retry
 }
 
@@ -138,7 +138,11 @@ type countChannel struct {
 	inners   []channel.Channel
 	opts     CountOptions
 	counters *Counters
-	allowed  map[string]bool
+	// allowed holds the permitted peers given as IP addresses, in canonical
+	// form, and allowedHosts those given as host names, resolved when a peer
+	// connects so a DNS change is followed. Both nil means anyone may connect.
+	allowed      map[string]bool
+	allowedHosts []string
 
 	// idx is the endpoint to try next. It advances on every failed attempt and
 	// stays put on a success, so a connection settles on whichever address is
@@ -177,21 +181,41 @@ func WrapCounting(inner channel.Channel, opts CountOptions) (channel.Channel, *C
 // a retry delay first. A successful connection stays where it is.
 func WrapCountingAll(inners []channel.Channel, opts CountOptions) (channel.Channel, *Counters) {
 	c := &countChannel{inners: inners, opts: opts, counters: &Counters{}}
-	if len(opts.AllowedRemoteIPs) > 0 {
-		c.allowed = make(map[string]bool, len(opts.AllowedRemoteIPs))
-		for _, a := range opts.AllowedRemoteIPs {
-			// The field holds "host" or "host:port"; only the host is matched,
-			// because an inbound connection's source port is ephemeral.
-			if h := HostOf(a, ""); h != "" {
-				c.allowed[h] = true
-			}
+	for _, a := range opts.AllowedRemoteIPs {
+		// The field holds "host" or "host:port"; only the host is matched,
+		// because an inbound connection's source port is ephemeral.
+		h := HostOf(a, "")
+		if h == "" {
+			continue
 		}
-		if len(c.allowed) == 0 {
-			c.allowed = nil
+		if ip := canonicalIP(h); ip != "" {
+			if c.allowed == nil {
+				c.allowed = map[string]bool{}
+			}
+			c.allowed[ip] = true
+		} else {
+			c.allowedHosts = append(c.allowedHosts, h)
 		}
 	}
 	return c, c.counters
 }
+
+// canonicalIP renders an address in the form a peer's address is compared in,
+// so "::ffff:10.0.0.1" and "10.0.0.1" match. It returns "" for a host name.
+func canonicalIP(host string) string {
+	if i := strings.IndexByte(host, '%'); i >= 0 {
+		host = host[:i] // an IPv6 zone does not identify the peer
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return ""
+	}
+	return ip.String()
+}
+
+// hostLookupTimeout bounds the resolution of an allowed host name while a peer
+// waits to be accepted.
+const hostLookupTimeout = 5 * time.Second
 
 func (c *countChannel) Connect(ctx context.Context) (io.ReadWriteCloser, error) {
 	// failures counts attempts since the last success, which is what decides
@@ -283,7 +307,7 @@ func (c *countChannel) wait(ctx context.Context, d time.Duration) bool {
 // permitted reports whether a peer is on the allowed list. A connection with no
 // network address — a pipe in a test — is always permitted.
 func (c *countChannel) permitted(conn io.ReadWriteCloser) bool {
-	if c.allowed == nil {
+	if c.allowed == nil && c.allowedHosts == nil {
 		return true
 	}
 	nc, ok := conn.(net.Conn)
@@ -294,11 +318,38 @@ func (c *countChannel) permitted(conn io.ReadWriteCloser) bool {
 	if err != nil {
 		host = nc.RemoteAddr().String()
 	}
-	if c.allowed[host] {
+	peer := canonicalIP(host)
+	if peer == "" {
+		peer = host
+	}
+	if c.allowed[peer] || c.resolvesTo(peer) {
 		return true
 	}
 	jslog.Log(jslog.LevelBasic, "%s - Refused connection from %s: not in the allowed address list",
 		c.opts.Name, host)
+	return false
+}
+
+// resolvesTo reports whether one of the allowed host names currently resolves
+// to the peer's address. A name that does not resolve permits nothing.
+func (c *countChannel) resolvesTo(peer string) bool {
+	if len(c.allowedHosts) == 0 {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), hostLookupTimeout)
+	defer cancel()
+	for _, h := range c.allowedHosts {
+		addrs, err := net.DefaultResolver.LookupHost(ctx, h)
+		if err != nil {
+			jslog.Log(jslog.LevelDetailed, "%s - Cannot resolve allowed host %s: %v", c.opts.Name, h, err)
+			continue
+		}
+		for _, a := range addrs {
+			if canonicalIP(a) == peer {
+				return true
+			}
+		}
+	}
 	return false
 }
 

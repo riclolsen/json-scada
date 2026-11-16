@@ -34,6 +34,7 @@ const (
 	GroupFrozenCounter      = 21
 	GroupFrozenCounterEvent = 23
 	GroupAnalogInput        = 30
+	GroupFrozenAnalogInput  = 31
 	GroupAnalogOutputStatus = 40
 	GroupAnalogOutputBlock  = 41
 	GroupOctetString        = 110
@@ -67,6 +68,8 @@ func GroupDescription(g int) string {
 		return "Frozen Counter"
 	case GroupAnalogInput:
 		return "Analog Input"
+	case GroupFrozenAnalogInput:
+		return "Frozen Analog Input"
 	case GroupAnalogOutputStatus:
 		return "Analog Output Status"
 	case GroupCROBCommand:

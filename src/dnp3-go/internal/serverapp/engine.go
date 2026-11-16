@@ -281,7 +281,7 @@ func (e *Engine) distribute(doc bson.M) {
 	}
 	byConn := map[int][]Destination{}
 	for _, d := range DestinationsOf(doc) {
-		if _, ok := e.byNum[d.ConnectionNumber]; ok {
+		if _, ok := e.byNum[d.ConnectionNumber]; ok && d.ValidAddress() {
 			byConn[d.ConnectionNumber] = append(byConn[d.ConnectionNumber], d)
 		}
 	}

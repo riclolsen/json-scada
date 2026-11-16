@@ -193,7 +193,7 @@ One document in `protocolConnections` per outstation:
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `localLinkAddress` | `1` | The outstation's own DNP3 link address. |
+| `localLinkAddress` | `1` | The outstation's own DNP3 link address, `0` to `65535`. Outside that range the driver stops at startup. |
 | `remoteLinkAddress` | `1` | The master's link address. Frames from any other source address are not answered. |
 | `enableUnsolicited` | `true` | Let the outstation send unsolicited event reports (once the master enables them). When `false`, events can only be polled. |
 | `serverQueueSize` | `1000` | Capacity of the event buffer of this connection, in events across all classes. When full, the oldest event is discarded and the master is told by the event buffer overflow indication. |
@@ -225,7 +225,15 @@ One document in `protocolConnections` per outstation:
 The usual case: the driver listens on `ipAddressLocalBind` and the master connects. One master
 connection is served at a time on an endpoint. When `ipAddresses` is not empty, only connections
 from those hosts are accepted (the host part is compared; the port is ignored); any other peer is
-dropped.
+dropped. Entries may be IP addresses, compared in canonical form (`::ffff:10.0.0.1` is
+`10.0.0.1`), or host names, resolved each time a peer connects. When several connections share
+the endpoint, a peer is accepted if any of their lists allows it, and a connection with an empty
+list leaves the endpoint open to all: the peer is checked before it says which outstation it
+wants.
+
+If the endpoint cannot be bound at startup (the port is still held by another process, or the
+bind address is not up yet), the driver logs the reason and keeps retrying with a backoff of up
+to a minute; each failure counts in `numOpenFail`.
 
 ### TCP active and TLS active
 
@@ -286,7 +294,7 @@ A tag may have several destinations, on the same or on different connections.
 | --- | --- | --- |
 | `protocolDestinationConnectionNumber` | | The connection (outstation) the tag is published on. |
 | `protocolDestinationCommonAddress` | | The **object family**, see the table below. |
-| `protocolDestinationObjectAddress` | | The point **index**, `0` to `65535`. |
+| `protocolDestinationObjectAddress` | | The point **index**, `0` to `65535`. A destination outside that range is ignored, with one log line at startup. |
 | `protocolDestinationASDU` | `0` | Selects the variations in which the point is sent. See [Object families and variations](#object-families-and-variations). |
 | `protocolDestinationKConv1` | `1` | Scale factor. For a digital tag, `-1` inverts the value. |
 | `protocolDestinationKConv2` | `0` | Offset. The value sent is `value x KConv1 + KConv2`. |
@@ -400,7 +408,7 @@ same value and quality produces no event.)
 | --- | --- | --- |
 | Binary input, binary output status | `value` of a digital tag | `true`/`false`; inverted when `KConv1` is `-1` |
 | Double-bit input | `value` of a digital tag | `true` is *determined on*, `false` is *determined off*; with `transient` set, `true` is *indeterminate* and `false` is *intermediate* |
-| Counter, frozen counter | `value` | `value x KConv1 + KConv2`, as an unsigned 32-bit integer. Keep these tags non-negative |
+| Counter, frozen counter | `value` | `value x KConv1 + KConv2`, as an unsigned 32-bit integer. A negative result is sent as `0` and one past 4294967295 as 4294967295, both flagged DISCONTINUITY |
 | Analog input, analog output status | `value` | `value x KConv1 + KConv2` |
 
 ### Quality
@@ -630,7 +638,7 @@ Every 5 seconds the driver refreshes the keep-alive on its instance document (se
 | `isConnected` | A master is connected (the link is up). |
 | `numBytesRx`, `numBytesTx` | Bytes received and sent on the channel. |
 | `numOpen`, `numClose` | Times the channel was opened and closed. |
-| `numOpenFail` | Failed attempts to open the channel (dial-out modes and serial); a deliberate shutdown is not one. |
+| `numOpenFail` | Failed attempts to open the channel: dials and serial opens, and binds of a passive endpoint; a deliberate shutdown is not one. |
 | `numLinkFrameRx` | Link frames decoded without error on the endpoint. |
 | `numLinkFrameTx` | Link frames routed to this outstation. |
 | `numHeaderCrcError`, `numBodyCrcError` | Link frames rejected for a bad header or body checksum. |

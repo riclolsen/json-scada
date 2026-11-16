@@ -105,6 +105,13 @@ func rangeScanLoop(ctx context.Context, conn *Connection, session *master.Sessio
 			conn.Name, rs.Group, rs.Variation, rs.StartAddress, rs.StopAddress)
 		return
 	}
+	// Group and variation are one octet each on the wire; narrowing a larger
+	// number would read a different object than the one configured.
+	if rs.Group < 0 || rs.Group > 255 || rs.Variation < 0 || rs.Variation > 255 {
+		jslog.Log(jslog.LevelBasic, "%s - Range scan g%dv%d ignored: group and variation must be 0..255",
+			conn.Name, rs.Group, rs.Variation)
+		return
+	}
 	t := time.NewTicker(time.Duration(rs.Period) * time.Second)
 	defer t.Stop()
 

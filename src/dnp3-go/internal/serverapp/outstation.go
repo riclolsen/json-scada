@@ -82,20 +82,36 @@ func tagsFor(ctx context.Context, db *mongo.Database, connNumber int) ([]bson.M,
 }
 
 // destinationsFor returns the destinations of a tag that belong to this
-// connection.
+// connection and carry a usable object address.
 func destinationsFor(doc bson.M, connNumber int) []Destination {
 	var out []Destination
 	for _, d := range DestinationsOf(doc) {
-		if d.ConnectionNumber == connNumber {
+		if d.ConnectionNumber == connNumber && d.ValidAddress() {
 			out = append(out, d)
 		}
 	}
 	return out
 }
 
+// reportInvalidAddresses logs, once at load, every destination of this
+// connection whose object address is not a point index and is therefore
+// ignored.
+func reportInvalidAddresses(conn *Connection, tags []bson.M) {
+	for _, doc := range tags {
+		for _, d := range DestinationsOf(doc) {
+			if d.ConnectionNumber == conn.ProtocolConnectionNumber && !d.ValidAddress() {
+				jslog.Log(jslog.LevelBasic,
+					"%s - Destination of tag %s ignored: object address %d is out of range (0..65535).",
+					conn.Name, jsmongo.GetString(doc, "tag", ""), d.ObjectAddress)
+			}
+		}
+	}
+}
+
 // sizeDatabase works out how many points of each family the connection needs,
 // which is the highest object address of each plus one.
 func sizeDatabase(conn *Connection, tags []bson.M) outstation.DatabaseConfig {
+	reportInvalidAddresses(conn, tags)
 	last := map[family]int{}
 	for f := famBinary; f <= famTimeAndInterval; f++ {
 		last[f] = -1

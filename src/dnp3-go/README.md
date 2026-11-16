@@ -3,7 +3,8 @@
 Pure-Go implementations of the JSON-SCADA DNP3 master and outstation drivers, built on
 [github.com/dscsystems/go-dnp3](https://github.com/dscsystems/go-dnp3).
 
-They are **drop-in alternatives** to the C++ drivers in `src/dnp3`:
+They replace the C++ drivers that lived in `src/dnp3` until commit `e0227836` (read them from git
+history when a `parity:` comment needs checking):
 
 | Binary | Replaces | `protocolDriver` |
 | --- | --- | --- |
@@ -103,6 +104,13 @@ Intentional differences. Everything not listed here is meant to behave identical
 | D26 | An active connection uses every entry of `ipAddresses` as an alternative address for the same device, trying them in turn until one answers. The C++ drivers use only the first and their documentation says so. |
 | D27 | Every change of a digital or analog value is reported as an event **with its time**. The C++ server picks the untimed analog event variations (g32v1, g32v2, g32v5, g32v6) for `protocolDestinationASDU` 1, 2, 5 and 6 — 5 being the default and 6 what auto-creation uses — so a master learns that an analog changed but not when. The Go server uses the timed variation of the same width and type instead (g32v3, g32v4, g32v7, g32v8); the static variation still follows the ASDU. See [`cmd/dnp3server/README.md`](cmd/dnp3server/README.md#values-quality-and-time). |
 | D28 | The server stamps `activeNodeName` and `activeNodeKeepAliveTimeTag` on its instance document every 5 seconds, with the statistics, so health checks can see it running. The C++ server never writes them, so it always looked stopped. There is still no redundancy election: the fields are informational, and with several nodes running the instance the last writer wins. See [`cmd/dnp3server/README.md`](cmd/dnp3server/README.md#driver-instance). |
+| D29 | A batch of values MongoDB does not accept is put back on the queue and written again, and a tag whose insert fails is tried again with its next value. The C++ client drops both, and a dropped tag stays missing until a restart. |
+| D30 | Going to standby does not invalidate the points. The C++ client invalidated them on every channel close, including the one deactivation causes, while the other node was already writing the same tags. |
+| D31 | An analog setpoint the selected encoding cannot carry is cancelled with `value_out_of_range`. The C++ client converted it and sent a wrapped value (40000 as a 16-bit integer operated -25536). |
+| D32 | The client files frozen analog inputs (g31, g33) under common address `31`. The C++ client filed them under `30`, on the running analog of the same index, which a device reporting both overwrote on every poll. |
+| D33 | Device time stamps are checked against a window relative to this machine's clock (from 2001-09-09 to a year ahead), and the client's own `timeTag` is not checked at all. The C++ client used the fixed window 2001-09-09 to 2033-05-18 for both, which would have discarded every time from 2033. |
+| D34 | The server ignores a destination whose object address is outside 0–65535, and clamps a counter value that does not fit 32 unsigned bits, flagging it DISCONTINUITY. The C++ server narrowed both, so address 65541 overwrote point 5 and a counter of -1 was sent as 4294967295. |
+| D35 | A passive endpoint that cannot be bound is retried until it can. Peers allowed by `ipAddresses` may be host names, addresses are compared in canonical form, and connections sharing an endpoint merge their lists. |
 
 
 
@@ -145,7 +153,6 @@ depends on them.
 | ID | Quirk |
 | --- | --- |
 | Q1 | The client files frozen counters under `protocolSourceCommonAddress` **23**, the event group, not the 21 the C++ driver's README names. Changing it would orphan every existing frozen counter tag. |
-| Q2 | Timestamps outside 2001-09-09 … 2033-05-18 are zeroed before `sourceDataUpdate` is written. It is a guard against a device reporting a wild time; it will also discard legitimate timestamps from 2033. |
 | Q3 | CROB durations 10, 12, 20 and 22 appear in the C++ driver's README but were never implemented by the C++ switch. They produce a block that operates nothing. A guess here would operate the wrong coil of a breaker, so they are left as they are and documented instead. |
 | Q4 | `sourceDataUpdate.asduAtSource` always ends in variation 0, and `causeOfTransmissionAtSource` is always 20. |
 | Q6 | The server ignores `timeSyncMode` and accepts every clock write from a master, as the C++ server's `DefaultOutstationApplication` does. Refusing it is not harmless: the outstation asks for the time (NEED_TIME) until it is set, so a master keeps writing it, and the refusal (NO_FUNC_CODE_SUPPORT) would be repeated on every connection. Event times come from the tags, not from this clock, so accepting the write changes nothing but the indication. |

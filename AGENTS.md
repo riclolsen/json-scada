@@ -89,7 +89,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 
 - [src/AdminUI/](src/AdminUI/AGENTS.md) — Vue.js web admin interface SPA
 - [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, operation, health/log diagnosis, displays, calculated and system tags, custom developments, CIM-EMS control)
-- [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in alternative)
+- [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in replacement; the services run it)
 - [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
 - [src/server_realtime_auth/](src/server_realtime_auth/AGENTS.md) — Realtime WebSocket server (Node.js)

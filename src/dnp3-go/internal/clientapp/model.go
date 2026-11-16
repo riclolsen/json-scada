@@ -36,7 +36,7 @@ import (
 // Driver identity.
 const (
 	ProtocolDriverName = "DNP3"
-	DriverVersion      = "0.2.1"
+	DriverVersion      = "0.2.2"
 	DriverMessage      = "{json:scada} DNP3 Client Driver (Go)"
 )
 
@@ -316,6 +316,31 @@ func (q *ValueQueue) Drain() ([]Dnp3Value, int) {
 	q.values, q.squashed = nil, 0
 	clear(q.coalesceAt)
 	return batch, squashed
+}
+
+// Requeue puts back, ahead of anything queued since, a batch the writer took
+// with Drain and could not write. Order is kept, so an event sequence is
+// written as it arrived; the coalescing index is rebuilt to point at the
+// newest static of each point, wherever it now sits.
+func (q *ValueQueue) Requeue(batch []Dnp3Value) {
+	if len(batch) == 0 {
+		return
+	}
+	q.mu.Lock()
+	values := make([]Dnp3Value, 0, len(batch)+len(q.values))
+	values = append(values, batch...)
+	values = append(values, q.values...)
+	q.values = values
+	clear(q.coalesceAt)
+	for i, v := range q.values {
+		if v.IsEvent {
+			delete(q.coalesceAt, keyOf(v))
+		} else {
+			q.coalesceAt[keyOf(v)] = i
+		}
+	}
+	q.mu.Unlock()
+	q.cond.Signal()
 }
 
 // Len reports how many values are waiting.

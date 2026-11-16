@@ -273,17 +273,39 @@ func (e *Engine) linkWatchLoop(ctx context.Context) {
 		case <-t.C:
 		}
 		for _, conn := range e.conns {
-			session := conn.Session()
-			now := session != nil && session.Connected()
-			conn.connected.Store(now)
-			if conn.wasConnected && !now {
-				jslog.Log(jslog.LevelBasic, "%s - Channel state: CLOSED", conn.Name)
+			if e.observeLink(conn) {
 				go e.invalidatePoints(ctx, conn.ProtocolConnectionNumber, conn.Name)
 			}
-			if !conn.wasConnected && now {
-				jslog.Log(jslog.LevelBasic, "%s - Channel state: OPEN", conn.Name)
-			}
-			conn.wasConnected = now
 		}
 	}
+}
+
+// observeLink records a connection's link state and reports whether its points
+// must now be invalidated.
+//
+// Only a link lost while this node is active does that. Going to standby stops
+// the sessions too, and that drop must leave the points alone: a node is
+// deactivated because the other node has become active, which by then is
+// polling the same devices and writing the same tags, and an invalidation here
+// would mark them all invalid until each one next changed.
+func (e *Engine) observeLink(conn *Connection) bool {
+	session := conn.Session()
+	now := session != nil && session.Connected()
+	conn.connected.Store(now)
+	was := conn.wasConnected
+	conn.wasConnected = now
+
+	switch {
+	case was && !now:
+		running := session != nil && (e.redundancy == nil || e.redundancy.Active())
+		if !running {
+			jslog.Log(jslog.LevelBasic, "%s - Channel state: CLOSED (standby)", conn.Name)
+			return false
+		}
+		jslog.Log(jslog.LevelBasic, "%s - Channel state: CLOSED", conn.Name)
+		return true
+	case !was && now:
+		jslog.Log(jslog.LevelBasic, "%s - Channel state: OPEN", conn.Name)
+	}
+	return false
 }

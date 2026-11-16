@@ -38,7 +38,7 @@ import (
 // Driver identity.
 const (
 	ProtocolDriverName = "DNP3_SERVER"
-	DriverVersion      = "0.2.1"
+	DriverVersion      = "0.2.2"
 	DriverMessage      = "{json:scada} DNP3 Outstation Server Driver (Go)"
 )
 
@@ -70,6 +70,14 @@ func DestinationFromDoc(d bson.M) Destination {
 		Group:            jsmongo.GetInt(d, "protocolDestinationGroup", 0),
 		HoursShift:       jsmongo.GetDouble(d, "protocolDestinationHoursShift", 0),
 	}
+}
+
+// ValidAddress reports whether the destination's object address is a DNP3 point
+// index. One outside 0..65535 is ignored everywhere: narrowing it to the
+// 16-bit index the database uses would wrap it onto another point (65541
+// would overwrite point 5).
+func (d Destination) ValidAddress() bool {
+	return d.ObjectAddress >= 0 && d.ObjectAddress <= MaxObjectAddress
 }
 
 // DestinationsOf reads the whole protocolDestinations array of a tag.

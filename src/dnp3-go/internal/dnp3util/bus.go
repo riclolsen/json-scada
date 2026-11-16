@@ -108,7 +108,14 @@ func BuildGroups(specs []StationSpec, master bool) ([]*Group, error) {
 		group := members[key]
 		lead := group[0]
 
-		ch, counters, err := lead.Channel.BuildChannel(lead.AllowedRemoteIPs)
+		for _, s := range group {
+			if err := checkLinkAddresses(s); err != nil {
+				closeAll(groups)
+				return nil, err
+			}
+		}
+
+		ch, counters, err := lead.Channel.BuildChannel(allowedOf(group))
 		if err != nil {
 			closeAll(groups)
 			return nil, fmt.Errorf("%s - error creating channel: %w", lead.Name, err)
@@ -230,6 +237,36 @@ func warnPacing(endpoint string, group []StationSpec, turnaround time.Duration) 
 				"the line allows about %.2f. Check the scan intervals.",
 			endpoint, len(group), exchanges, 1.0/turnaround.Seconds())
 	}
+}
+
+// allowedOf merges the allowed-client lists of the connections sharing a
+// passive endpoint. The filter runs when a peer connects, before any frame
+// says which outstation it wants, so it cannot be applied per station: a peer
+// any of them accepts is accepted, and a connection with no list makes the
+// endpoint open to everyone.
+func allowedOf(group []StationSpec) []string {
+	var out []string
+	for _, s := range group {
+		if len(s.AllowedRemoteIPs) == 0 {
+			return nil
+		}
+		out = append(out, s.AllowedRemoteIPs...)
+	}
+	return out
+}
+
+// checkLinkAddresses refuses a link address that does not fit the 16 bits a
+// frame carries; narrowing it would silently talk to a different station.
+func checkLinkAddresses(s StationSpec) error {
+	for _, a := range []struct {
+		name  string
+		value int
+	}{{"localLinkAddress", s.LocalLinkAddress}, {"remoteLinkAddress", s.RemoteLinkAddress}} {
+		if a.value < 0 || a.value > 0xFFFF {
+			return fmt.Errorf("%s - %s %d is out of range (0..65535)", s.Name, a.name, a.value)
+		}
+	}
+	return nil
 }
 
 func closeAll(groups []*Group) {

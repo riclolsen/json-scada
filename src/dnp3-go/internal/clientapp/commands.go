@@ -24,6 +24,7 @@ package clientapp
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"dnp3-go/internal/dnp3util"
@@ -153,17 +154,15 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 	case dnp3util.GroupCROBCommand:
 		command = master.CROB(index, dnp3util.CROBFor(duration, value))
 	case dnp3util.GroupAnalogOutputBlock:
-		switch variation {
-		case 1:
-			command = master.AnalogOutputInt32(index, int32(value))
-		case 2:
-			command = master.AnalogOutputInt16(index, int16(value))
-		case 4:
-			command = master.AnalogOutputFloat64(index, value)
-		default:
-			// Variation 3 and anything unrecognised: single precision, as the
-			// C++ driver's final fall-through does.
-			command = master.AnalogOutputFloat32(index, float32(value))
+		var ok bool
+		command, ok = analogOutput(index, variation, value)
+		if !ok {
+			// A plain conversion would wrap: 40000 sent as g41v2 operates
+			// -25536. A setpoint the variation cannot carry is refused.
+			jslog.Log(jslog.LevelBasic, "%s - Setpoint %v does not fit g41v%d; command refused",
+				conn.Name, value, variation)
+			cancelCommand(ctx, coll, id, "value_out_of_range")
+			return
 		}
 	default:
 		cancelCommand(ctx, coll, id, "unsupported_group")
@@ -193,6 +192,39 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 		jslog.Log(jslog.LevelBasic, "%s - Command result: %s", name, description)
 		ackCommand(context.Background(), e, id, ok, description)
 	}()
+}
+
+// analogOutput builds the analog output block a variation asks for, reporting
+// false when the value cannot be represented in it. The integer variations
+// truncate a fraction, as the C++ driver did.
+func analogOutput(index uint16, variation int, value float64) (master.Command, bool) {
+	if math.IsNaN(value) {
+		return master.Command{}, false
+	}
+	switch variation {
+	case 1:
+		if value < math.MinInt32 || value >= math.MaxInt32+1 {
+			return master.Command{}, false
+		}
+		return master.AnalogOutputInt32(index, int32(value)), true
+	case 2:
+		if value < math.MinInt16 || value >= math.MaxInt16+1 {
+			return master.Command{}, false
+		}
+		return master.AnalogOutputInt16(index, int16(value)), true
+	case 4:
+		if math.IsInf(value, 0) {
+			return master.Command{}, false
+		}
+		return master.AnalogOutputFloat64(index, value), true
+	default:
+		// Variation 3 and anything unrecognised: single precision, as the C++
+		// driver's final fall-through does.
+		if math.Abs(value) > math.MaxFloat32 {
+			return master.Command{}, false
+		}
+		return master.AnalogOutputFloat32(index, float32(value)), true
+	}
 }
 
 // validPointIndex reports whether an object address fits the 16-bit point
